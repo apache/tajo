@@ -99,7 +99,7 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public void close() {
-    executor.shutdownNow();
+    executor.shutdown();
   }
 
   @Override
@@ -338,7 +338,7 @@ public class QueryClientImpl implements QueryClient {
       public void run() {
         try {
           future.set(fetchNextQueryResult(queryId, fetchRowNum));
-        } catch (TajoException e) {
+        } catch (Throwable e) {
           future.setException(e);
         }
       }
