@@ -1,0 +1,39 @@
+{
+  "IsExternal": false,
+  "TableName": "sales",
+  "Attributes": [
+    {
+      "ColumnDefName": "col1",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "col2",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    }
+  ],
+  "PartitionMethodDesc": {
+    "Columns": [
+      {
+        "ColumnDefName": "col3",
+        "DataTypeName": "INT4",
+        "OpType": "DataType"
+      },
+      {
+        "ColumnDefName": "col4",
+        "DataTypeName": "FLOAT4",
+        "OpType": "DataType"
+      },
+      {
+        "ColumnDefName": "col5",
+        "DataTypeName": "TEXT",
+        "OpType": "DataType"
+      }
+    ],
+    "IsOmitValues": false,
+    "PartitionType": "COLUMN"
+  },
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}

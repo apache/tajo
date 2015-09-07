@@ -28,7 +28,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;

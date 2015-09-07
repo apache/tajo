@@ -1,4 +1,0 @@
-SELECT A.*
-FROM table1 A
-WHERE A.member_name is not null
-and A.post_code is null
