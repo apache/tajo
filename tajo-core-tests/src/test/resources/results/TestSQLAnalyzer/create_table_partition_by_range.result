@@ -1,0 +1,55 @@
+{
+  "IsExternal": false,
+  "TableName": "sales",
+  "Attributes": [
+    {
+      "ColumnDefName": "col1",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "col2",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    }
+  ],
+  "PartitionMethodDesc": {
+    "Columns": [
+      {
+        "ColumnName": "col1",
+        "OpType": "Column"
+      }
+    ],
+    "Specifiers": [
+      {
+        "End": {
+          "Value": "2",
+          "ValueType": "Unsigned_Integer",
+          "OpType": "Literal"
+        },
+        "IsMaxValue": false,
+        "PartitionSpecName": "col1"
+      },
+      {
+        "End": {
+          "Value": "5",
+          "ValueType": "Unsigned_Integer",
+          "OpType": "Literal"
+        },
+        "IsMaxValue": false,
+        "PartitionSpecName": "col1"
+      },
+      {
+        "End": {
+          "ColumnName": "MAXVALUE",
+          "OpType": "Column"
+        },
+        "IsMaxValue": false,
+        "PartitionSpecName": "col1"
+      }
+    ],
+    "PartitionType": "RANGE"
+  },
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}

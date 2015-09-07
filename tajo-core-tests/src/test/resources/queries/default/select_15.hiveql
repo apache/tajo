@@ -1,1 +1,0 @@
-select id,  cast(point as string) as point, cast(score as int) as score from table1
