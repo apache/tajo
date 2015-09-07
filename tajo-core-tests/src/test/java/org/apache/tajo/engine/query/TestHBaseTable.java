@@ -682,9 +682,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
       scanner = htable.getScanner(scan);
 
       assertStrings(resultSetToString(scanner,
-        new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
-        new byte[][]{null, Bytes.toBytes("a"), null, Bytes.toBytes("b")},
-        new boolean[]{false, false, false, true}, tableDesc.getSchema()));
+          new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
+          new byte[][]{null, Bytes.toBytes("a"), null, Bytes.toBytes("b")},
+          new boolean[]{false, false, false, true}, tableDesc.getSchema()));
 
     } finally {
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
