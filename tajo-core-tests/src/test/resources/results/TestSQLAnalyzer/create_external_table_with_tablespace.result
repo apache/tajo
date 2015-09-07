@@ -1,0 +1,34 @@
+{
+  "IsExternal": true,
+  "TableName": "hbase_blog",
+  "Attributes": [
+    {
+      "ColumnDefName": "rowkey",
+      "DataTypeName": "TEXT",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "author",
+      "DataTypeName": "TEXT",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "register_date",
+      "DataTypeName": "TEXT",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "title",
+      "DataTypeName": "TEXT",
+      "OpType": "DataType"
+    }
+  ],
+  "SpaceName": "hbasecluster1",
+  "StorageType": "hbase",
+  "Properties": {
+    "columns": ":key,info:author,info:date,content:title",
+    "table": "blog"
+  },
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}
