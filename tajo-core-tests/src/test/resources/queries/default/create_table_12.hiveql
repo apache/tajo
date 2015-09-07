@@ -1,4 +1,0 @@
-create external table table1  (name string, age int)
-ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
-STORED as  textfile
-location '/user/hive/table1'

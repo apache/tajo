@@ -35,6 +35,7 @@ import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 
 import javax.annotation.Nullable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
@@ -124,15 +125,13 @@ public class TablespaceManager implements StorageService {
     String json;
     try {
       json = FileUtil.readTextFileFromResource(fileName);
+    } catch (FileNotFoundException fnfe) {
+      return null;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
 
-    if (json != null) {
-      return parseJson(json);
-    } else {
-      return null;
-    }
+    return parseJson(json);
   }
 
   private static JSONObject parseJson(String json) {
