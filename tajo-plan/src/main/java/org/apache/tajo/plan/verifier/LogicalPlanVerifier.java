@@ -32,6 +32,7 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.util.TUtil;
 
 import java.util.Stack;
 
@@ -242,7 +243,14 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   private static void ensureDomains(VerificationState state, Schema targetTableScheme, Schema schema)
       throws TajoException {
     for (int i = 0; i < schema.size(); i++) {
-      if (!CatalogUtil.isCompatibleType(
+
+      // null can be used anywhere
+      if (schema.getColumn(i).getDataType().getType() == Type.NULL_TYPE) {
+        continue;
+      }
+
+      // checking castable between two data types
+      if (!TUtil.containsInNestedMap(CatalogUtil.OPERATION_CASTING_MAP,
           schema.getColumn(i).getDataType().getType(), targetTableScheme.getColumn(i).getDataType().getType())) {
         Column targetColumn = targetTableScheme.getColumn(i);
         Column insertColumn = schema.getColumn(i);
