@@ -32,6 +32,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 
@@ -80,8 +81,10 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   @Override
   public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
-    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD);
-    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD);
+    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD) *
+        StorageUnit.KB;
+    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD) *
+        StorageUnit.KB;
     boolean broadcastJoinEnabled = queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED);
     if (broadcastJoinEnabled &&
         (thresholdForNonCrossJoin > 0 || thresholdForCrossJoin > 0)) {
