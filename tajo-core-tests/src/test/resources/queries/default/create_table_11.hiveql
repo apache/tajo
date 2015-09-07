@@ -1,3 +1,0 @@
-create external table table1 (name string, age int)
-STORED as rcfile
-location '/user/hive/table1'
