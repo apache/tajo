@@ -57,8 +57,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
    * @param properties configurations
    * @throws java.io.IOException
    */
-  public TajoClientImpl(ServiceTracker tracker, @Nullable String baseDatabase, KeyValueSet properties)
-      throws SQLException {
+  public TajoClientImpl(ServiceTracker tracker, @Nullable String baseDatabase, KeyValueSet properties) {
 
     super(tracker, baseDatabase, properties);
 
@@ -75,8 +74,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
    * @param properties configurations
    * @throws java.io.IOException
    */
-  public TajoClientImpl(InetSocketAddress addr, @Nullable String baseDatabase, KeyValueSet properties)
-      throws SQLException {
+  public TajoClientImpl(InetSocketAddress addr, @Nullable String baseDatabase, KeyValueSet properties) {
     this(new DummyServiceTracker(addr), baseDatabase, properties);
   }
 

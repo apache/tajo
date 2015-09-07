@@ -1,0 +1,29 @@
+1 + 2
+3 - 4
+5 * 6
+7 / 8
+10 % 2
+1 * 2 > 3 / 4
+1 * 2 < 3 / 4
+1 * 2 = 3 / 4
+1 * 2 != 3 / 4
+1 * 2 <> 3 / 4
+gender in ('male', 'female')
+gender not in ('male', 'female')
+score > 90 and age < 20
+score > 90 and age < 20 and name != 'hyunsik'
+score > 90 or age < 20
+score > 90 or age < 20 and name != 'hyunsik'
+((a+3 > 1) or 1=1) and (3 != (abc + 4) and type in (3,4))
+3
+1.2
+sum(age)
+now()
+not (90 > 100)
+type like '%top'
+type not like 'top%'
+col = 'value'
+col is null
+col is not null
+col = null
+col != null

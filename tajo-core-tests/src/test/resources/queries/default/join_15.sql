@@ -1,1 +1,0 @@
-select  * from x join y join (select * from a join b  on a.age = b.age join c on a.sex = c.sex) as ss

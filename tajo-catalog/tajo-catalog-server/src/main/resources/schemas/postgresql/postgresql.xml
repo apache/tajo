@@ -21,6 +21,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+      * 8 - 2015-09-02: Wrong table type problem in catalog (TAJO-1808)
       * 7 - 2015-07-30: Add a column and index for partition keys (TAJO-1346)
       * 6 - 2015-07-24: Merge the index branch into the master branch (TAJO-1300)
       * 5 - 2015-06-15: Implement TablespaceManager to load Tablespaces (TAJO-1616)
@@ -30,7 +31,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-	<tns:base version="7">
+	<tns:base version="8">
 		<tns:objects>
 			<tns:Object name="META" type="table" order="0">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -121,7 +122,6 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   					NULL_ORDERS VARCHAR(128) NOT NULL, -- array of null orderings
   					IS_UNIQUE BOOLEAN NOT NULL,
   					IS_CLUSTERED BOOLEAN NOT NULL,
-  					CONSTRAINT INDEXES_PKEY PRIMARY KEY (INDEX_ID),
   					FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
   					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>

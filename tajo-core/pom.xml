@@ -67,7 +67,6 @@
         </executions>
         <configuration>
           <excludes>
-            <exclude>derby.log</exclude>
             <exclude>benchmark/**</exclude>
             <exclude>src/main/resources/META-INF/services/*</exclude>
             <exclude>src/main/resources/webapps/static/js/*</exclude>

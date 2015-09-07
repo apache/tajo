@@ -33,8 +33,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UndefinedFunctionException;
+import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -43,13 +43,13 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.apache.tajo.catalog.CatalogConstants.CATALOG_URI;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
@@ -65,40 +65,17 @@ public class TestCatalog {
 	static CatalogServer server;
 	static CatalogService catalog;
 
-  public static TajoConf newTajoConfForCatalogTest() throws IOException {
-    final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
+  public static TajoConf newTajoConfForCatalogTest() throws IOException, UnsupportedCatalogStore {
+    return CatalogTestingUtil.configureCatalog(new TajoConf(), setupClusterTestBuildDir().getAbsolutePath());
+  }
 
-    String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
-
-    // here, we don't choose HiveCatalogStore due to some dependency problems.
-    if (driverClass == null || driverClass.equals(HIVE_CATALOG_CLASS_NAME)) {
-      driverClass = DerbyStore.class.getCanonicalName();
-    }
-    String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
-    if (catalogURI == null) {
-      Path path = CommonTestingUtil.getTestDir();
-      catalogURI = String.format("jdbc:derby:%s/db;create=true", path.toUri().getPath());
-    }
-    String connectionId = System.getProperty(CatalogConstants.CONNECTION_ID);
-    String password = System.getProperty(CatalogConstants.CONNECTION_PASSWORD);
-
-    TajoConf conf = new TajoConf();
-    conf.set(CatalogConstants.STORE_CLASS, driverClass);
-    conf.set(CATALOG_URI, catalogURI);
-    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
-
-    // MySQLStore/MariaDB/PostgreSQL requires username (and password).
-    if (isConnectionIdRequired(driverClass)) {
-      if (connectionId == null) {
-        throw new TajoInternalError(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
-      }
-      conf.set(CatalogConstants.CONNECTION_ID, connectionId);
-      if (password != null) {
-        conf.set(CatalogConstants.CONNECTION_PASSWORD, password);
-      }
-    }
-
-    return conf;
+  public static File setupClusterTestBuildDir() throws IOException {
+    String randomStr = UUID.randomUUID().toString();
+    String dirStr = CommonTestingUtil.getTestDir(randomStr).toString();
+    File dir = new File(dirStr).getAbsoluteFile();
+    // Have it cleaned up on exit
+    dir.deleteOnExit();
+    return dir;
   }
 
 	@BeforeClass
@@ -123,13 +100,6 @@ public class TestCatalog {
     }
 	}
 
-  public static boolean isConnectionIdRequired(String driverClass) {
-    return driverClass.equals(MySQLStore.class.getCanonicalName()) ||
-           driverClass.equals(MariaDBStore.class.getCanonicalName()) ||
-           driverClass.equals(PostgreSQLStore.class.getCanonicalName()) ||
-	   driverClass.equals(OracleStore.class.getCanonicalName());
-  }
-	
 	@AfterClass
 	public static void tearDown() throws IOException {
 	  server.stop();

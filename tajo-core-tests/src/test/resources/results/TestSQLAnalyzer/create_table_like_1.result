@@ -1,0 +1,7 @@
+{
+  "IsExternal": false,
+  "TableName": "new_table",
+  "IfNotExists": false,
+  "LikeParentTable": "orig_name",
+  "OpType": "CreateTable"
+}
