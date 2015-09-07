@@ -801,6 +801,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
           break;
         }
       }
+      if (groupByNode.getInSchema().containsAll(EvalTreeUtil.findUniqueColumns(copy))) {
+        isEvalAggrFunction = true;
+      }
       if (isEvalAggrFunction) {
         aggrEvals.add(copy);
         aggrEvalOrigins.add(eval);
@@ -812,7 +815,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     // transform
-
     HavingNode workingHavingNode;
     if (havingNode != null) {
       workingHavingNode = havingNode;
@@ -1027,14 +1029,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
           colToValue.get(keySortSpecs[i].getSortKey()));
     }
     return simplePredicates;
-  }
-
-  private static Datum[] extractPredicateValues(List<Predicate> predicates) {
-    Datum[] values = new Datum[predicates.size()];
-    for (int i = 0; i < values.length; i++) {
-      values[i] = predicates.get(i).value;
-    }
-    return values;
   }
 
   private static Column[] extractColumns(Set<Predicate> predicates) {

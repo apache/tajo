@@ -18,8 +18,8 @@ Available Session Variables:
 \set LC_MONETARY [text value] - Formatting of currency amounts
 \set LC_NUMERIC [text value] - Formatting of numbers
 \set LC_TIME [text value] - Formatting of dates and times
-\set BROADCAST_NON_CROSS_JOIN_THRESHOLD [long value] - restriction for the total bytes of broadcasted table for non-cross join
-\set BROADCAST_CROSS_JOIN_THRESHOLD [long value] - restriction for the total bytes of broadcasted table for cross join
+\set BROADCAST_NON_CROSS_JOIN_THRESHOLD [long value] - restriction for the total size of broadcasted table for non-cross join (kb)
+\set BROADCAST_CROSS_JOIN_THRESHOLD [long value] - restriction for the total size of broadcasted table for cross join (kb)
 \set JOIN_TASK_INPUT_SIZE [int value] - join task input size (mb) 
 \set SORT_TASK_INPUT_SIZE [int value] - sort task input size (mb)
 \set GROUPBY_TASK_INPUT_SIZE [int value] - group by task input size (mb)

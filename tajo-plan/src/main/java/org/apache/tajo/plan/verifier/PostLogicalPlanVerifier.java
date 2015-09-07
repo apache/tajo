@@ -26,6 +26,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.verifier.PostLogicalPlanVerifier.Context;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.TUtil;
 
 import java.util.List;
@@ -89,7 +90,7 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<Context, Ob
         List<String> largeRelationNames = TUtil.newList();
 
         if (isSimpleRelationNode(node.getLeftChild())) {
-          if (getTableVolume((ScanNode) node.getLeftChild()) <= context.bcastLimitForCrossJoin) {
+          if (getTableVolume((ScanNode) node.getLeftChild()) <= context.bcastLimitForCrossJoin * StorageUnit.KB) {
             crossJoinAllowed = true;
           } else {
             largeRelationNames.add(((ScanNode) node.getLeftChild()).getCanonicalName());
@@ -97,7 +98,7 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<Context, Ob
         }
 
         if (isSimpleRelationNode(node.getRightChild())) {
-          if (getTableVolume((ScanNode) node.getRightChild()) <= context.bcastLimitForCrossJoin) {
+          if (getTableVolume((ScanNode) node.getRightChild()) <= context.bcastLimitForCrossJoin * StorageUnit.KB) {
             crossJoinAllowed = true;
           } else {
             largeRelationNames.add(((ScanNode) node.getRightChild()).getCanonicalName());

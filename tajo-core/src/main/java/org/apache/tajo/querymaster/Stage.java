@@ -1048,14 +1048,47 @@ public class Stage implements EventHandler<StageEvent> {
      * @return
      */
     public static int getNonLeafTaskNum(Stage stage) {
+      // This method is assumed to be called only for aggregation or sort.
+      LogicalNode plan = stage.getBlock().getPlan();
+      LogicalNode sortNode = PlannerUtil.findTopNode(plan, NodeType.SORT);
+      LogicalNode groupbyNode = PlannerUtil.findTopNode(plan, NodeType.GROUP_BY);
+
+      // Task volume is assumed to be 64 MB by default.
+      long taskVolume = 64;
+
+      if (groupbyNode != null && sortNode == null) {
+        // aggregation plan
+        taskVolume = stage.getContext().getQueryContext().getLong(SessionVars.GROUPBY_TASK_INPUT_SIZE);
+      } else if (sortNode != null && groupbyNode == null) {
+        // sort plan
+        taskVolume = stage.getContext().getQueryContext().getLong(SessionVars.SORT_TASK_INPUT_SIZE);
+      } else if (sortNode != null /* && groupbyNode != null */) {
+        // NOTE: when the plan includes both aggregation and sort, usually aggregation is executed first.
+        // If not, we need to check the query plan is valid.
+        LogicalNode aggChildOfSort = PlannerUtil.findTopNode(sortNode, NodeType.GROUP_BY);
+        boolean aggFirst = aggChildOfSort != null && aggChildOfSort.equals(groupbyNode);
+        // Set task volume according to the operator which will be executed first.
+        if (aggFirst) {
+          // choose aggregation task volume
+          taskVolume = stage.getContext().getQueryContext().getLong(SessionVars.GROUPBY_TASK_INPUT_SIZE);
+        } else {
+          // choose sort task volume
+          LOG.warn("Sort is executed before aggregation.");
+          taskVolume = stage.getContext().getQueryContext().getLong(SessionVars.SORT_TASK_INPUT_SIZE);
+        }
+      } else {
+        LOG.warn("Task volume is chosen as " + taskVolume + " in unexpected case.");
+      }
+
       // Getting intermediate data size
       long volume = getInputVolume(stage.getMasterPlan(), stage.context, stage.getBlock());
 
-      int mb = (int) Math.ceil((double)volume / 1048576);
+      int mb = (int) Math.ceil((double)volume / (double)StorageUnit.MB);
       LOG.info(stage.getId() + ", Table's volume is approximately " + mb + " MB");
-      // determine the number of task per 64MB
-      int minTaskNum = Math.max(1, stage.getContext().getQueryMasterContext().getConf().getInt(ConfVars.$TEST_MIN_TASK_NUM.varname, 1));
-      int maxTaskNum = Math.max(minTaskNum, (int) Math.ceil((double)mb / 64));
+      // determine the number of task
+      int minTaskNum = Math.max(1, stage.getContext().getQueryMasterContext().getConf().
+          getInt(ConfVars.$TEST_MIN_TASK_NUM.varname, 1));
+      int maxTaskNum = Math.max(minTaskNum, (int) Math.ceil((double)mb / taskVolume));
       LOG.info(stage.getId() + ", The determined number of non-leaf tasks is " + maxTaskNum);
       return maxTaskNum;
     }
