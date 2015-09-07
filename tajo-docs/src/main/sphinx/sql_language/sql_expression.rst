@@ -16,7 +16,7 @@ A type cast converts a specified-typed data to another-typed data. Tajo has two 
   CAST ( expression AS type )
   expression::type
 
-In addition, several functions are provided for type conversion. Please refer to `:doc:data_type_func_and_operators` and `:doc:datetime_func_and_operators`.
+In addition, several functions are provided for type conversion. Please refer to :doc:`../functions/data_type_func_and_operators` and :doc:`../functions/datetime_func_and_operators`.
 
 -------------------------
 String Literals
@@ -38,21 +38,19 @@ The syntax for a function call consists of the name of a function and its argume
 
   function_name ([expression [, expression ... ]] )
 
-For more information about functions, please refer to `:doc:functions`.
+For more information about functions, please refer to :doc:`../functions`.
 
 -------------------------
 Window Function Calls
 -------------------------
 
-- introduction
-
-A window function call
+A window function call performs aggregate operation across the ``window`` which is a set of rows that are related to the current row. An window function has the following syntax. 
 
 .. code-block:: sql
 
   function_name OVER ( window_definition )
 
-where *function_name* is the name of window function. 
+where *function_name* is the name of aggregation function. Any aggregation function or window function can be used. For built-in aggregation functions and window functions, please refer to :doc:`../functions/agg_func` and :doc:`../functions/window_func`.
 
 *window_definition* has the following syntax.
 
