@@ -34,6 +34,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1816: Refactor SQL parser tests. (hyunsik)
+
     TAJO-1738: Improve off-heap RowBlock. (jinho)
 
     TAJO-1810: Remove QueryMasterTask cache immediately, if it stored to 
