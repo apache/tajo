@@ -199,7 +199,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param partitionColumns The partition columns schema
    * @return The array of path filter, accpeting all partition paths.
    */
-  private static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
+  public static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
     Column target;
     PathFilter [] filters = new PathFilter[partitionColumns.size()];
     List<EvalNode> accumulatedFilters = Lists.newArrayList();
@@ -214,7 +214,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return filters;
   }
 
-  private static Path [] toPathArray(FileStatus[] fileStatuses) {
+  public static Path [] toPathArray(FileStatus[] fileStatuses) {
     Path [] paths = new Path[fileStatuses.length];
     for (int j = 0; j < fileStatuses.length; j++) {
       paths[j] = fileStatuses[j].getPath();

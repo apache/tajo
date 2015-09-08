@@ -847,7 +847,38 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName,
                                                          String tableName) {
-    throw new UnsupportedOperationException();
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
+    List<PartitionDescProto> partitions = null;
+
+    try {
+      client = clientPool.getClient();
+      partitions = TUtil.newList();
+
+      List<Partition> hivePartitions = client.getHiveClient().listPartitionsByFilter(databaseName, tableName
+        , "", (short) -1);
+
+      for (Partition hivePartition : hivePartitions) {
+        CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
+        builder.setPath(hivePartition.getSd().getLocation());
+
+        int startIndex = hivePartition.getSd().getLocation().indexOf(tableName) + tableName.length();
+        String partitionName = hivePartition.getSd().getLocation().substring(startIndex + 1);
+          builder.setPartitionName(partitionName);
+
+        partitions.add(builder.build());
+      }
+
+    } catch (NoSuchObjectException e) {
+      return null;
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+    return partitions;
+
   }
 
 
@@ -1031,7 +1062,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         // Unfortunately, hive client add_partitions doesn't run as expected. The method never read the ifNotExists
         // parameter. So, if Tajo adds existing partition to Hive, it will threw AlreadyExistsException. To avoid
         // above error, we need to filter existing partitions before call add_partitions.
-        if (existingPartition != null) {
+        if (existingPartition == null) {
           Partition partition = new Partition();
           partition.setDbName(databaseName);
           partition.setTableName(tableName);

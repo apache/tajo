@@ -35,6 +35,7 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
+
   @Test
   public final void testAlterTableName() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "ABC");
@@ -75,7 +76,8 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddPartition() throws Exception {
     executeDDL("create_partitioned_table.sql", null);
 
-    String tableName = CatalogUtil.buildFQName("TestAlterTable", "partitioned_table");
+    String simpleTableName = "partitioned_table";
+    String tableName = CatalogUtil.buildFQName(getCurrentDatabase(), simpleTableName);
     assertTrue(catalog.existsTable(tableName));
 
     TableDesc retrieved = catalog.getTableDesc(tableName);
@@ -88,7 +90,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_add_partition1.sql", null);
     executeDDL("alter_table_add_partition2.sql", null);
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    List<CatalogProtos.PartitionDescProto> partitions =
+      catalog.getPartitions(getCurrentDatabase(), simpleTableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), 1);
     assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
@@ -106,9 +109,112 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
 
-    partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
     assertFalse(fs.exists(partitionPath));
+
+    catalog.dropTable(tableName);
+  }
+
+  @Test
+  public final void testAlterTableRepairPartition() throws Exception {
+    executeDDL("create_partitioned_table2.sql", null);
+
+    String simpleTableName = "partitioned_table2";
+    String tableName = CatalogUtil.buildFQName(getCurrentDatabase(), simpleTableName);
+    assertTrue(catalog.existsTable(tableName));
+
+    TableDesc tableDesc = catalog.getTableDesc(tableName);
+    assertEquals(tableDesc.getName(), tableName);
+    assertEquals(tableDesc.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
+    assertEquals(tableDesc.getPartitionMethod().getExpressionSchema().getAllColumns().size(), 2);
+    assertEquals(tableDesc.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "col1");
+    assertEquals(tableDesc.getPartitionMethod().getExpressionSchema().getColumn(1).getSimpleName(), "col2");
+
+    ResultSet res = executeString(
+      "insert overwrite into " + simpleTableName + " select l_quantity, l_returnflag, l_orderkey, l_partkey " +
+      " from default.lineitem");
+    res.close();
+
+    res = executeString("select * from " + simpleTableName + " order by col1, col2, col3, col4");
+    String result = resultSetToString(res);
+    String expectedResult = "col3,col4,col1,col2\n" +
+      "-------------------------------\n" +
+      "17.0,N,1,1\n" +
+      "36.0,N,1,1\n" +
+      "38.0,N,2,2\n" +
+      "45.0,R,3,2\n" +
+      "49.0,R,3,3\n";
+
+    res.close();
+    assertEquals(expectedResult, result);
+
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 4);
+
+    Path tablePath = new Path(tableDesc.getUri());
+    FileSystem fs = tablePath.getFileSystem(conf);
+    assertTrue(fs.exists(new Path(tableDesc.getUri())));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=1/col2=1")));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=2/col2=2")));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=2")));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=3")));
+
+    // Remove all partitions
+    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 1 , col2 = 1)");
+    res.close();
+
+    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 2 , col2 = 2)");
+    res.close();
+
+    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 2)");
+    res.close();
+
+    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)");
+    res.close();
+
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 0);
+
+    assertTrue(fs.exists(new Path(tableDesc.getUri())));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=1/col2=1")));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=2/col2=2")));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=2")));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=3")));
+
+    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
+    res.close();
+
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 4);
+
+
+    // Remove just one of existing partitions
+    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)");
+    res.close();
+
+    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
+    res.close();
+
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 4);
+
+
+    // Remove a partition directory from filesystem
+    fs.delete(new Path(tablePath.toUri() + "/col1=3/col2=3"), true);
+    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
+    res.close();
+
+    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 4);
+
+
+    catalog.dropTable(tableName);
   }
 }

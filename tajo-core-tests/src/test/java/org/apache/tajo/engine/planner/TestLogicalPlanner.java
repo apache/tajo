@@ -1259,6 +1259,25 @@ public class TestLogicalPlanner {
     return root.getChild();
   }
 
+  @Test
+  public final void testAlterTableRepairPartiton() throws TajoException {
+    QueryContext qc = createQueryContext();
+
+    String sql = "ALTER TABLE table1 REPAIR PARTITION";
+    Expr expr = sqlAnalyzer.parse(sql);
+    LogicalPlan rootNode = planner.createPlan(qc, expr);
+    LogicalNode plan = rootNode.getRootBlock().getRoot();
+    testJsonSerDerObject(plan);
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
+
+    AlterTableNode msckNode = root.getChild();
+
+    assertEquals(msckNode.getAlterTableOpType(), AlterTableOpType.REPAIR_PARTITION);
+    assertEquals(msckNode.getTableName(), "table1");
+  }
+
   String [] ALTER_PARTITIONS = {
     "ALTER TABLE partitioned_table ADD PARTITION (col1 = 1 , col2 = 2) LOCATION 'hdfs://xxx" +
       ".com/warehouse/partitioned_table/col1=1/col2=2'", //0
