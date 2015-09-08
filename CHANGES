@@ -247,6 +247,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1821: Temporary data is not cleared after TestCatalog. (jihoon)
+
     TAJO-1805: In the 'Execute Query' page of web UI, default database 
     should be set as 'default'. (Contributed by Dongkyu Hwangbo, committed 
     by hyunsik)
