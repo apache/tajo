@@ -36,6 +36,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1729: No handling of default case in DDLExecutor.
+    (Contributed by Dongkyu Hwangbo. Committed by jinho)
+
     TAJO-1818: Separate sql parser into an independent maven module.
     (hyunsik) 
 
