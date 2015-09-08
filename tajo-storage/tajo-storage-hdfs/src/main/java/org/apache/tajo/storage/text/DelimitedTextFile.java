@@ -219,15 +219,19 @@ public class DelimitedTextFile {
 
     @Override
     public void flush() throws IOException {
-      flushBuffer();
-      outputStream.flush();
+      if(inited) {
+        flushBuffer();
+        outputStream.flush();
+      }
     }
 
     @Override
     public void close() throws IOException {
 
       try {
-        serializer.release();
+        if(serializer != null) {
+          serializer.release();
+        }
 
         if(outputStream != null){
           flush();
