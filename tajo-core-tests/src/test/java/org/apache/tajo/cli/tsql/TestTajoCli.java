@@ -315,38 +315,6 @@ public class TestTajoCli {
     assertOutputResult(consoleResult);
   }
 
-  private void verifyRunWhenError() throws Exception {
-    Thread t = new Thread() {
-      public void run() {
-        try {
-          PipedOutputStream po = new PipedOutputStream();
-          InputStream is = new PipedInputStream(po);
-          ByteArrayOutputStream out = new ByteArrayOutputStream();
-
-          TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-          setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-          TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
-
-          tc.executeMetaCommand("\\set ON_ERROR_STOP false");
-          assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
-
-          po.write(new String("asdf;\nqwe;\nzxcv;\n").getBytes());
-
-          if(tc.runShell() == -1)
-            Thread.currentThread().interrupt();
-
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    };
-
-    t.start();
-    Thread.sleep(5000);
-    if(!t.isAlive())
-      assertTrue(false);
-  }
-
   @Test
   public void testGetConf() throws Exception {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
@@ -395,7 +363,35 @@ public class TestTajoCli {
 
   @Test
   public void testRunWhenError() throws Exception {
-    verifyRunWhenError();
+    Thread t = new Thread() {
+      public void run() {
+        try {
+          PipedOutputStream po = new PipedOutputStream();
+          InputStream is = new PipedInputStream(po);
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+          TajoConf tajoConf = new TajoConf();
+          setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+          TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
+
+          tc.executeMetaCommand("\\set ON_ERROR_STOP false");
+          assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
+
+          po.write(new String("asdf;\nqwe;\nzxcv;\n").getBytes());
+
+          if(tc.runShell() == -1)
+            Thread.currentThread().interrupt();
+
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    };
+
+    t.start();
+    Thread.sleep(1000);
+    if(!t.isAlive())
+      assertTrue("TSQL should be alive", false);
   }
 
   @Test
