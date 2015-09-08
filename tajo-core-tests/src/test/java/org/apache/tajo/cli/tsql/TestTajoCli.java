@@ -379,9 +379,7 @@ public class TestTajoCli {
 
           po.write(new String("asdf;\nqwe;\nzxcv;\n").getBytes());
 
-          if(tc.runShell() == -1)
-            Thread.currentThread().interrupt();
-
+          tc.runShell();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -392,6 +390,8 @@ public class TestTajoCli {
     Thread.sleep(1000);
     if(!t.isAlive())
       assertTrue("TSQL should be alive", false);
+    else
+      t.interrupt();
   }
 
   @Test
