@@ -381,17 +381,19 @@ public class TestTajoCli {
 
           tc.runShell();
         } catch (Exception e) {
-          e.printStackTrace();
+          throw new RuntimeException("Cannot run thread in testRunWhenError", e);
         }
       }
     };
 
     t.start();
     Thread.sleep(1000);
-    if(!t.isAlive())
-      assertTrue("TSQL should be alive", false);
-    else
+    if(!t.isAlive()) {
+      fail("TSQL should be alive");
+    }
+    else {
       t.interrupt();
+    }
   }
 
   @Test
