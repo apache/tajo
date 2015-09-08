@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.parser;
+package org.apache.tajo.parser.sql;
 
 import org.antlr.v4.runtime.*;
 import org.apache.commons.lang.StringUtils;

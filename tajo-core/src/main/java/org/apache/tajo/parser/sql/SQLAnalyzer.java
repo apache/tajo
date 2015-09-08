@@ -16,8 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.parser;
+package org.apache.tajo.parser.sql;
 
+import com.facebook.presto.hive.shaded.com.google.common.base.Function;
+import com.facebook.presto.hive.shaded.com.google.common.collect.Collections2;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -31,9 +34,9 @@ import org.apache.tajo.algebra.CreateIndex.IndexMethodSpec;
 import org.apache.tajo.algebra.DataTypeExpr.MapType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.algebra.Sort.SortSpec;
-import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.parser.sql.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -44,7 +47,7 @@ import static org.apache.tajo.algebra.CreateTable.*;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
-import static org.apache.tajo.engine.parser.SQLParser.*;
+import static org.apache.tajo.parser.sql.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
@@ -81,7 +84,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
   }
 
-  public Expr visitSession_statement(@NotNull SQLParser.Session_statementContext ctx) {
+  public Expr visitSession_statement(@NotNull Session_statementContext ctx) {
 
     if (checkIfExist(ctx.CATALOG())) {
 
@@ -120,7 +123,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitNon_join_query_expression(SQLParser.Non_join_query_expressionContext ctx) {
+  public Expr visitNon_join_query_expression(Non_join_query_expressionContext ctx) {
 
     Expr current = visitNon_join_query_term(ctx.non_join_query_term());
     if (ctx.getChildCount() == 1) {
@@ -150,8 +153,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           idx++;
         }
 
-        SQLParser.Query_termContext queryTermContext =
-            (SQLParser.Query_termContext) ctx.getChild(idx);
+        Query_termContext queryTermContext =
+            (Query_termContext) ctx.getChild(idx);
         Expr right = visitQuery_term(queryTermContext);
 
         left = current;
@@ -211,7 +214,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitQuery_specification(SQLParser.Query_specificationContext ctx) {
+  public Expr visitQuery_specification(Query_specificationContext ctx) {
     Expr current = null;
     if (ctx.table_expression() != null) {
       current = visitFrom_clause(ctx.table_expression().from_clause());
@@ -281,7 +284,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public Projection visitSelect_list(SQLParser.Select_listContext ctx) {
+  public Projection visitSelect_list(Select_listContext ctx) {
     Projection projection = new Projection();
     NamedExpr[] targets = new NamedExpr[ctx.select_sublist().size()];
     for (int i = 0; i < targets.length; i++) {
@@ -304,7 +307,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
    * @return
    */
   @Override
-  public NamedExpr visitSelect_sublist(SQLParser.Select_sublistContext ctx) {
+  public NamedExpr visitSelect_sublist(Select_sublistContext ctx) {
     if (ctx.qualified_asterisk() != null) {
       return visitQualified_asterisk(ctx.qualified_asterisk());
     } else {
@@ -313,7 +316,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public RelationList visitFrom_clause(SQLParser.From_clauseContext ctx) {
+  public RelationList visitFrom_clause(From_clauseContext ctx) {
     Expr[] relations = new Expr[ctx.table_reference_list().table_reference().size()];
     for (int i = 0; i < relations.length; i++) {
       relations[i] = visitTable_reference(ctx.table_reference_list().table_reference(i));
@@ -322,12 +325,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Selection visitWhere_clause(SQLParser.Where_clauseContext ctx) {
+  public Selection visitWhere_clause(Where_clauseContext ctx) {
     return new Selection(visitSearch_condition(ctx.search_condition()));
   }
 
   @Override
-  public Aggregation visitGroupby_clause(SQLParser.Groupby_clauseContext ctx) {
+  public Aggregation visitGroupby_clause(Groupby_clauseContext ctx) {
     Aggregation clause = new Aggregation();
 
     // If grouping group is not empty
@@ -339,7 +342,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       groups.add(null);
 
       for (int i = 0; i < elementSize; i++) {
-        SQLParser.Grouping_elementContext element =
+        Grouping_elementContext element =
             ctx.grouping_element_list().grouping_element().get(i);
         if (element.ordinary_grouping_set() != null) {
           if (ordinaryExprs == null) {
@@ -368,7 +371,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return clause;
   }
 
-  @Override public WindowFunctionExpr visitWindow_function(@NotNull SQLParser.Window_functionContext context) {
+  @Override public WindowFunctionExpr visitWindow_function(@NotNull Window_functionContext context) {
     WindowFunctionExpr windowFunction = null;
 
     Window_function_typeContext functionType = context.window_function_type();
@@ -387,7 +390,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     } else if (checkIfExist(functionType.ROW_NUMBER())) {
       functionBody = new GeneralSetFunctionExpr("row_number", false, new Expr[] {});
     } else if (checkIfExist(functionType.FIRST_VALUE())) {
-      functionBody = new GeneralSetFunctionExpr("first_value", false, new Expr[]{ visitColumn_reference(functionType.column_reference())});
+      functionBody = new GeneralSetFunctionExpr("first_value", false,
+          new Expr[]{ visitColumn_reference(functionType.column_reference())});
     } else if (checkIfExist(functionType.LAST_VALUE())) {
       functionBody = new GeneralSetFunctionExpr("last_value", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
     } else if (checkIfExist(functionType.LAG())) {
@@ -432,19 +436,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Window visitWindow_clause(@NotNull SQLParser.Window_clauseContext ctx) {
+  public Window visitWindow_clause(@NotNull Window_clauseContext ctx) {
     Window.WindowDefinition [] definitions =
         new Window.WindowDefinition[ctx.window_definition_list().window_definition().size()];
     for (int i = 0; i < definitions.length; i++) {
       Window_definitionContext windowDefinitionContext = ctx.window_definition_list().window_definition(i);
-      String windowName = windowDefinitionContext.window_name().identifier().getText();
+      String windowName = buildIdentifier(windowDefinitionContext.window_name().identifier());
       WindowSpec windowSpec = buildWindowSpec(windowDefinitionContext.window_specification());
       definitions[i] = new Window.WindowDefinition(windowName, windowSpec);
     }
     return new Window(definitions);
   }
 
-  public WindowSpec buildWindowSpec(SQLParser.Window_specificationContext ctx) {
+  public WindowSpec buildWindowSpec(Window_specificationContext ctx) {
     WindowSpec windowSpec = new WindowSpec();
     if (checkIfExist(ctx.window_specification_details())) {
       Window_specification_detailsContext windowSpecDetail = ctx.window_specification_details();
@@ -535,7 +539,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     Sort.SortSpec specs[] = new Sort.SortSpec[size];
     for (int i = 0; i < size; i++) {
-      SQLParser.Sort_specifierContext specContext = context.sort_specifier(i);
+      Sort_specifierContext specContext = context.sort_specifier(i);
       Expr sortKeyExpr = visitRow_value_predicand(specContext.key);
       specs[i] = new Sort.SortSpec(sortKeyExpr);
       if (specContext.order_specification() != null) {
@@ -555,17 +559,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Sort visitOrderby_clause(SQLParser.Orderby_clauseContext ctx) {
+  public Sort visitOrderby_clause(Orderby_clauseContext ctx) {
     return new Sort(buildSortSpecs(ctx.sort_specifier_list()));
   }
 
   @Override
-  public Limit visitLimit_clause(SQLParser.Limit_clauseContext ctx) {
+  public Limit visitLimit_clause(Limit_clauseContext ctx) {
     return new Limit(visitNumeric_value_expression(ctx.numeric_value_expression()));
   }
 
   @Override
-  public Expr visitJoined_table(SQLParser.Joined_tableContext ctx) {
+  public Expr visitJoined_table(Joined_tableContext ctx) {
     Expr top = visitTable_primary(ctx.table_primary());
 
     // The following loop builds a left deep join tree.
@@ -580,7 +584,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Join visitJoined_table_primary(SQLParser.Joined_table_primaryContext ctx) {
+  public Join visitJoined_table_primary(Joined_table_primaryContext ctx) {
     Join join;
     if (ctx.CROSS() != null) {
       join = new Join(JoinType.CROSS);
@@ -658,7 +662,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitTable_primary(SQLParser.Table_primaryContext ctx) {
+  public Expr visitTable_primary(Table_primaryContext ctx) {
     if (ctx.table_or_query_name() != null) {
       Relation relation = new Relation(ctx.table_or_query_name().getText());
       if (ctx.alias != null) {
@@ -674,12 +678,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
 
   @Override
-  public Expr visitSubquery(SQLParser.SubqueryContext ctx) {
+  public Expr visitSubquery(SubqueryContext ctx) {
     return visitQuery_expression(ctx.query_expression());
   }
 
   @Override
-  public BetweenPredicate visitBetween_predicate(SQLParser.Between_predicateContext ctx) {
+  public BetweenPredicate visitBetween_predicate(Between_predicateContext ctx) {
     Expr predicand = visitRow_value_predicand(ctx.predicand);
     Expr begin = visitRow_value_predicand(ctx.between_predicate_part_2().begin);
     Expr end = visitRow_value_predicand(ctx.between_predicate_part_2().end);
@@ -688,7 +692,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public CaseWhenPredicate visitSimple_case(SQLParser.Simple_caseContext ctx) {
+  public CaseWhenPredicate visitSimple_case(Simple_caseContext ctx) {
     Expr leftTerm = visitBoolean_value_expression(ctx.boolean_value_expression());
     CaseWhenPredicate caseWhen = new CaseWhenPredicate();
 
@@ -713,7 +717,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public CaseWhenPredicate visitSearched_case(SQLParser.Searched_caseContext ctx) {
+  public CaseWhenPredicate visitSearched_case(Searched_caseContext ctx) {
     CaseWhenPredicate caseWhen = new CaseWhenPredicate();
 
     for (int i = 0; i < ctx.searched_when_clause().size(); i++) {
@@ -729,7 +733,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitCommon_value_expression(SQLParser.Common_value_expressionContext ctx) {
+  public Expr visitCommon_value_expression(Common_value_expressionContext ctx) {
     if (checkIfExist(ctx.NULL())) {
       return new NullLiteral();
     } else {
@@ -738,18 +742,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitParenthesized_value_expression(SQLParser.Parenthesized_value_expressionContext ctx) {
+  public Expr visitParenthesized_value_expression(Parenthesized_value_expressionContext ctx) {
     return visitValue_expression(ctx.value_expression());
   }
 
   @Override
-  public Expr visitBoolean_value_expression(SQLParser.Boolean_value_expressionContext ctx) {
+  public Expr visitBoolean_value_expression(Boolean_value_expressionContext ctx) {
     Expr current = visitOr_predicate(ctx.or_predicate());
     return current;
   }
 
   @Override
-  public Expr visitOr_predicate(SQLParser.Or_predicateContext ctx) {
+  public Expr visitOr_predicate(Or_predicateContext ctx) {
     Expr current = visitAnd_predicate(ctx.and_predicate());
 
     Expr left;
@@ -764,7 +768,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitAnd_predicate(SQLParser.And_predicateContext ctx) {
+  public Expr visitAnd_predicate(And_predicateContext ctx) {
     Expr current = visitBoolean_factor(ctx.boolean_factor());
 
     Expr left;
@@ -779,7 +783,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitBoolean_factor(SQLParser.Boolean_factorContext ctx) {
+  public Expr visitBoolean_factor(Boolean_factorContext ctx) {
     if (ctx.NOT() != null) {
       return new NotExpr(visitBoolean_test(ctx.boolean_test()));
     } else {
@@ -788,7 +792,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitBoolean_test(SQLParser.Boolean_testContext ctx) {
+  public Expr visitBoolean_test(Boolean_testContext ctx) {
     if (checkIfExist(ctx.is_clause())) {
       Is_clauseContext isClauseContext = ctx.is_clause();
       if (checkIfExist(isClauseContext.NOT())) {
@@ -810,7 +814,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitBoolean_primary(SQLParser.Boolean_primaryContext ctx) {
+  public Expr visitBoolean_primary(Boolean_primaryContext ctx) {
     if (ctx.predicate() != null) {
       return visitPredicate(ctx.predicate());
     } else {
@@ -819,7 +823,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitBoolean_predicand(SQLParser.Boolean_predicandContext ctx) {
+  public Expr visitBoolean_predicand(Boolean_predicandContext ctx) {
     if (checkIfExist(ctx.nonparenthesized_value_expression_primary())) {
       return visitNonparenthesized_value_expression_primary(ctx.nonparenthesized_value_expression_primary());
     } else {
@@ -829,12 +833,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitNonparenthesized_value_expression_primary(
-      SQLParser.Nonparenthesized_value_expression_primaryContext ctx) {
+      Nonparenthesized_value_expression_primaryContext ctx) {
     return visitChildren(ctx);
   }
 
   @Override
-  public Expr visitRow_value_predicand(SQLParser.Row_value_predicandContext ctx) {
+  public Expr visitRow_value_predicand(Row_value_predicandContext ctx) {
     if (checkIfExist(ctx.row_value_special_case())) {
       return visitRow_value_special_case(ctx.row_value_special_case());
     } else {
@@ -843,7 +847,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitRow_value_constructor_predicand(SQLParser.Row_value_constructor_predicandContext ctx) {
+  public Expr visitRow_value_constructor_predicand(Row_value_constructor_predicandContext ctx) {
     if (checkIfExist(ctx.boolean_predicand())) {
       return visitBoolean_predicand(ctx.boolean_predicand());
     } else {
@@ -852,7 +856,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public BinaryOperator visitComparison_predicate(SQLParser.Comparison_predicateContext ctx) {
+  public BinaryOperator visitComparison_predicate(Comparison_predicateContext ctx) {
     TerminalNode operator = (TerminalNode) ctx.comp_op().getChild(0);
     return new BinaryOperator(tokenToExprType(operator.getSymbol().getType()),
         visitRow_value_predicand(ctx.left),
@@ -860,7 +864,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitNumeric_value_expression(SQLParser.Numeric_value_expressionContext ctx) {
+  public Expr visitNumeric_value_expression(Numeric_value_expressionContext ctx) {
     Expr current = visitTerm(ctx.term(0));
 
     Expr left;
@@ -881,7 +885,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitTerm(SQLParser.TermContext ctx) {
+  public Expr visitTerm(TermContext ctx) {
     Expr current = visitFactor(ctx.factor(0));
 
     Expr left;
@@ -904,7 +908,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitFactor(SQLParser.FactorContext ctx) {
+  public Expr visitFactor(FactorContext ctx) {
     Expr current = visitNumeric_primary(ctx.numeric_primary());
     if (checkIfExist(ctx.sign()) && checkIfExist(ctx.sign().MINUS())) {
       current = new SignedExpr(true, current);
@@ -913,7 +917,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitNumeric_primary(SQLParser.Numeric_primaryContext ctx) {
+  public Expr visitNumeric_primary(Numeric_primaryContext ctx) {
     Expr current = null;
     if (checkIfExist(ctx.value_expression_primary())) {
       current = visitValue_expression_primary(ctx.value_expression_primary());
@@ -929,40 +933,40 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   public static OpType tokenToExprType(int tokenId) {
     switch (tokenId) {
-      case SQLParser.UNION:
+      case UNION:
         return OpType.Union;
-      case SQLParser.EXCEPT:
+      case EXCEPT:
         return OpType.Except;
-      case SQLParser.INTERSECT:
+      case INTERSECT:
         return OpType.Intersect;
 
-      case SQLParser.AND:
+      case AND:
         return OpType.And;
-      case SQLParser.OR:
+      case OR:
         return OpType.Or;
 
-      case SQLParser.EQUAL:
+      case EQUAL:
         return OpType.Equals;
-      case SQLParser.NOT_EQUAL:
+      case NOT_EQUAL:
         return OpType.NotEquals;
-      case SQLParser.LTH:
+      case LTH:
         return OpType.LessThan;
-      case SQLParser.LEQ:
+      case LEQ:
         return OpType.LessThanOrEquals;
-      case SQLParser.GTH:
+      case GTH:
         return OpType.GreaterThan;
-      case SQLParser.GEQ:
+      case GEQ:
         return OpType.GreaterThanOrEquals;
 
-      case SQLParser.MULTIPLY:
+      case MULTIPLY:
         return OpType.Multiply;
-      case SQLParser.DIVIDE:
+      case DIVIDE:
         return OpType.Divide;
-      case SQLParser.MODULAR:
+      case MODULAR:
         return OpType.Modular;
-      case SQLParser.PLUS:
+      case PLUS:
         return OpType.Plus;
-      case SQLParser.MINUS:
+      case MINUS:
         return OpType.Minus;
 
       default:
@@ -971,13 +975,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public InPredicate visitIn_predicate(SQLParser.In_predicateContext ctx) {
+  public InPredicate visitIn_predicate(In_predicateContext ctx) {
     return new InPredicate(visitChildren(ctx.numeric_value_expression()),
         visitIn_predicate_value(ctx.in_predicate_value()), ctx.NOT() != null);
   }
 
   @Override
-  public Expr visitIn_predicate_value(SQLParser.In_predicate_valueContext ctx) {
+  public Expr visitIn_predicate_value(In_predicate_valueContext ctx) {
     if (checkIfExist(ctx.in_value_list())) {
       int size = ctx.in_value_list().row_value_predicand().size();
       Expr [] exprs = new Expr[size];
@@ -991,7 +995,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitArray(SQLParser.ArrayContext ctx) {
+  public Expr visitArray(ArrayContext ctx) {
     int size = ctx.numeric_value_expression().size();
     Expr[] exprs = new Expr[size];
     for (int i = 0; i < size; i++) {
@@ -1001,7 +1005,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitPattern_matching_predicate(SQLParser.Pattern_matching_predicateContext ctx) {
+  public Expr visitPattern_matching_predicate(Pattern_matching_predicateContext ctx) {
     Expr predicand = visitChildren(ctx.row_value_predicand());
     Expr pattern = new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()),
         LiteralType.String);
@@ -1039,19 +1043,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public IsNullPredicate visitNull_predicate(SQLParser.Null_predicateContext ctx) {
+  public IsNullPredicate visitNull_predicate(Null_predicateContext ctx) {
     Expr predicand = visitRow_value_predicand(ctx.row_value_predicand());
     return new IsNullPredicate(ctx.NOT() != null, predicand);
   }
 
   @Override
-  public ExistsPredicate visitExists_predicate(SQLParser.Exists_predicateContext ctx) {
+  public ExistsPredicate visitExists_predicate(Exists_predicateContext ctx) {
     return new ExistsPredicate(new SimpleTableSubquery(visitTable_subquery(ctx.table_subquery())), ctx.NOT() != null);
   }
 
   @Override
-  public ColumnReferenceExpr visitColumn_reference(SQLParser.Column_referenceContext ctx) {
-    String columnReferenceName = ctx.getText();
+  public ColumnReferenceExpr visitColumn_reference(Column_referenceContext ctx) {
+    String columnReferenceName = buildIdentifierChain(ctx.identifier());
     // find the last dot (.) position to separate a name into both a qualifier and name
     int lastDotIdx = columnReferenceName.lastIndexOf(".");
 
@@ -1065,7 +1069,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public LiteralValue visitUnsigned_numeric_literal(@NotNull SQLParser.Unsigned_numeric_literalContext ctx) {
+  public LiteralValue visitUnsigned_numeric_literal(@NotNull Unsigned_numeric_literalContext ctx) {
     if (ctx.NUMBER() != null) {
       long lValue = Long.parseLong(ctx.getText());
       if (lValue >= Integer.MIN_VALUE && lValue <= Integer.MAX_VALUE) {
@@ -1079,7 +1083,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public GeneralSetFunctionExpr visitAggregate_function(SQLParser.Aggregate_functionContext ctx) {
+  public GeneralSetFunctionExpr visitAggregate_function(Aggregate_functionContext ctx) {
     if (ctx.COUNT() != null && ctx.MULTIPLY() != null) {
       return new CountRowsFunctionExpr();
     } else {
@@ -1088,7 +1092,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public GeneralSetFunctionExpr visitGeneral_set_function(SQLParser.General_set_functionContext ctx) {
+  public GeneralSetFunctionExpr visitGeneral_set_function(General_set_functionContext ctx) {
     String signature = ctx.set_function_type().getText();
     boolean distinct = checkIfExist(ctx.set_qualifier()) && checkIfExist(ctx.set_qualifier().DISTINCT());
     Expr param = visitValue_expression(ctx.value_expression());
@@ -1097,7 +1101,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public FunctionExpr visitRoutine_invocation(SQLParser.Routine_invocationContext ctx) {
+  public FunctionExpr visitRoutine_invocation(Routine_invocationContext ctx) {
     String signature = ctx.function_name().getText();
     FunctionExpr function = new FunctionExpr(signature);
     if (ctx.sql_argument_list() != null) {
@@ -1117,7 +1121,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public NamedExpr visitDerived_column(Derived_columnContext ctx) {
     NamedExpr target = new NamedExpr(visitValue_expression(ctx.value_expression()));
     if (ctx.as_clause() != null) {
-      target.setAlias(ctx.as_clause().identifier().getText());
+      target.setAlias(buildIdentifier(ctx.as_clause().identifier()));
     }
     return target;
   }
@@ -1133,12 +1137,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitCharacter_string_type(SQLParser.Character_string_typeContext ctx) {
+  public Expr visitCharacter_string_type(Character_string_typeContext ctx) {
     return new LiteralValue(stripQuote(ctx.getText()), LiteralType.String);
   }
 
   @Override
-  public Expr visitCharacter_value_expression(SQLParser.Character_value_expressionContext ctx) {
+  public Expr visitCharacter_value_expression(Character_value_expressionContext ctx) {
     Expr current = visitCharacter_factor(ctx.character_factor(0));
 
     Expr left;
@@ -1175,14 +1179,6 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitExtract_expression(Extract_expressionContext ctx) {
     Expr extractTarget = new LiteralValue(ctx.extract_field_string.getText(), LiteralType.String);
     Expr extractSource = visitDatetime_value_expression(ctx.extract_source().datetime_value_expression());
-//    if (checkIfExist(ctx.extract_source().column_reference())) {
-//      extractSource = visitColumn_reference(ctx.extract_source().column_reference());
-//    } else if (checkIfExist(ctx.extract_source().datetime_literal())) {
-//      extractSource = visitDatetime_literal(ctx.extract_source().datetime_literal());
-//    } else {
-//      return null;
-//    }
-
 
     String functionName = "date_part";
     Expr[] params = new Expr[]{extractTarget, extractSource};
@@ -1191,7 +1187,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitTrim_function(SQLParser.Trim_functionContext ctx) {
+  public Expr visitTrim_function(Trim_functionContext ctx) {
     Expr trimSource = visitChildren(ctx.trim_operands().trim_source);
     String functionName = "trim";
     if (checkIfExist(ctx.trim_operands().FROM())) {
@@ -1223,9 +1219,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitCreate_index_statement(SQLParser.Create_index_statementContext ctx) {
+  public Expr visitCreate_index_statement(Create_index_statementContext ctx) {
     String indexName = ctx.index_name.getText();
-    String tableName = ctx.table_name().getText();
+    String tableName = buildIdentifierChain(ctx.table_name().identifier());
     Relation relation = new Relation(tableName);
     SortSpec[] sortSpecs = buildSortSpecs(ctx.sort_specifier_list());
     NamedExpr[] targets = new NamedExpr[sortSpecs.length];
@@ -1242,7 +1238,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createIndex.setUnique(true);
     }
     if (checkIfExist(ctx.method_specifier())) {
-      String methodName = ctx.method_specifier().identifier().getText();
+      String methodName = buildIdentifier(ctx.method_specifier().identifier());
       createIndex.setMethodSpec(new IndexMethodSpec(methodName));
     }
     if (checkIfExist(ctx.param_clause())) {
@@ -1262,27 +1258,27 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitDrop_index_statement(SQLParser.Drop_index_statementContext ctx) {
-    String indexName = ctx.identifier().getText();
+  public Expr visitDrop_index_statement(Drop_index_statementContext ctx) {
+    String indexName = buildIdentifier(ctx.identifier());
     return new DropIndex(indexName);
   }
 
   @Override
-  public Expr visitDatabase_definition(@NotNull SQLParser.Database_definitionContext ctx) {
-    return new CreateDatabase(ctx.identifier().getText(), null, checkIfExist(ctx.if_not_exists()));
+  public Expr visitDatabase_definition(@NotNull Database_definitionContext ctx) {
+    return new CreateDatabase(buildIdentifier(ctx.identifier()), null, checkIfExist(ctx.if_not_exists()));
   }
 
   @Override
-  public Expr visitDrop_database_statement(@NotNull SQLParser.Drop_database_statementContext ctx) {
-    return new DropDatabase(ctx.identifier().getText(), checkIfExist(ctx.if_exists()));
+  public Expr visitDrop_database_statement(@NotNull Drop_database_statementContext ctx) {
+    return new DropDatabase(buildIdentifier(ctx.identifier()), checkIfExist(ctx.if_exists()));
   }
 
   @Override
-  public Expr visitCreate_table_statement(SQLParser.Create_table_statementContext ctx) {
-    String tableName = ctx.table_name(0).getText();
+  public Expr visitCreate_table_statement(Create_table_statementContext ctx) {
+    String tableName = buildIdentifierChain(ctx.table_name(0).identifier());
     CreateTable createTable = new CreateTable(tableName, checkIfExist(ctx.if_not_exists()));
     if(checkIfExist(ctx.LIKE()))  {
-      createTable.setLikeParentTable(ctx.like_table_name.getText());
+      createTable.setLikeParentTable(buildIdentifierChain(ctx.like_table_name.identifier()));
       return createTable;
     }
 
@@ -1334,18 +1330,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitTruncate_table_statement(@NotNull SQLParser.Truncate_table_statementContext ctx) {
+  public Expr visitTruncate_table_statement(@NotNull Truncate_table_statementContext ctx) {
     List<Table_nameContext> tableNameContexts = ctx.table_name();
     List<String> tableNames = new ArrayList<String>();
 
     for (Table_nameContext eachTableNameContext: tableNameContexts) {
-      tableNames.add(eachTableNameContext.getChild(0).getText());
+      tableNames.add(buildIdentifierChain(eachTableNameContext.identifier()));
     }
 
     return new TruncateTable(tableNames);
   }
 
-  private ColumnDefinition[] getDefinitions(SQLParser.Table_elementsContext ctx) {
+  private ColumnDefinition[] getDefinitions(Table_elementsContext ctx) {
     int size = ctx.field_element().size();
     ColumnDefinition[] elements = new ColumnDefinition[size];
     for (int i = 0; i < size; i++) {
@@ -1360,7 +1356,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return elements;
   }
 
-  public PartitionMethodDescExpr parseTablePartitioningClause(SQLParser.Table_partitioning_clausesContext ctx) {
+  public PartitionMethodDescExpr parseTablePartitioningClause(Table_partitioning_clausesContext ctx) {
 
     if (checkIfExist(ctx.range_partitions())) { // For Range Partition
       Range_partitionsContext rangePartitionsContext = ctx.range_partitions();
@@ -1420,8 +1416,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public DataTypeExpr visitData_type(SQLParser.Data_typeContext ctx) {
-    SQLParser.Predefined_typeContext predefined_type = ctx.predefined_type();
+  public DataTypeExpr visitData_type(Data_typeContext ctx) {
+    Predefined_typeContext predefined_type = ctx.predefined_type();
 
     DataTypeExpr typeDefinition = null;
 
@@ -1430,7 +1426,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     // TEXT
     if (checkIfExist(predefined_type.character_string_type())) {
 
-      SQLParser.Character_string_typeContext character_string_type = predefined_type.character_string_type();
+      Character_string_typeContext character_string_type = predefined_type.character_string_type();
 
 
       if ((checkIfExist(character_string_type.CHARACTER()) || checkIfExist(character_string_type.CHAR())) &&
@@ -1584,7 +1580,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
       // binary data types
     } else if (checkIfExist(predefined_type.binary_type())) {
-      SQLParser.Binary_typeContext binaryType = predefined_type.binary_type();
+      Binary_typeContext binaryType = predefined_type.binary_type();
 
       if (checkIfExist(binaryType.VARBINARY()) || checkIfExist(binaryType.VARYING())) {
         typeDefinition = new DataTypeExpr(Type.VARBINARY.name());
@@ -1616,7 +1612,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitInsert_statement(SQLParser.Insert_statementContext ctx) {
+  public Expr visitInsert_statement(Insert_statementContext ctx) {
     Insert insertExpr = new Insert();
 
     if (ctx.OVERWRITE() != null) {
@@ -1624,7 +1620,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     if (ctx.table_name() != null) {
-      insertExpr.setTableName(ctx.table_name().getText());
+      insertExpr.setTableName(buildIdentifierChain(ctx.table_name().identifier()));
 
       if (ctx.column_reference_list() != null) {
         ColumnReferenceExpr [] targetColumns =
@@ -1660,12 +1656,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitDrop_table_statement(SQLParser.Drop_table_statementContext ctx) {
-    return new DropTable(ctx.table_name().getText(), checkIfExist(ctx.if_exists()), checkIfExist(ctx.PURGE()));
+  public Expr visitDrop_table_statement(Drop_table_statementContext ctx) {
+    return new DropTable(buildIdentifierChain(ctx.table_name().identifier()),
+        checkIfExist(ctx.if_exists()), checkIfExist(ctx.PURGE()));
   }
 
 
-  private Map<String, String> getParams(SQLParser.Param_clauseContext ctx) {
+  private Map<String, String> getParams(Param_clauseContext ctx) {
     Map<String, String> params = new HashMap<String, String>();
     for (int i = 0; i < ctx.param().size(); i++) {
       params.put(stripQuote(ctx.param(i).key.getText()), stripQuote(ctx.param(i).value.getText()));
@@ -1691,19 +1688,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitCast_specification(SQLParser.Cast_specificationContext ctx) {
+  public Expr visitCast_specification(Cast_specificationContext ctx) {
     Expr operand = visitChildren(ctx.cast_operand());
     DataTypeExpr castTarget = visitData_type(ctx.cast_target().data_type());
     return new CastExpr(operand, castTarget);
   }
 
   @Override
-  public Expr visitUnsigned_value_specification(@NotNull SQLParser.Unsigned_value_specificationContext ctx) {
+  public Expr visitUnsigned_value_specification(@NotNull Unsigned_value_specificationContext ctx) {
     return visitChildren(ctx);
   }
 
   @Override
-  public Expr visitUnsigned_literal(@NotNull SQLParser.Unsigned_literalContext ctx) {
+  public Expr visitUnsigned_literal(@NotNull Unsigned_literalContext ctx) {
     if (checkIfExist(ctx.unsigned_numeric_literal())) {
       return visitUnsigned_numeric_literal(ctx.unsigned_numeric_literal());
     } else {
@@ -1712,7 +1709,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitGeneral_literal(SQLParser.General_literalContext ctx) {
+  public Expr visitGeneral_literal(General_literalContext ctx) {
     if (checkIfExist(ctx.Character_String_Literal())) {
       return new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()), LiteralType.String);
     } else if (checkIfExist(ctx.datetime_literal())) {
@@ -1723,7 +1720,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitDatetime_literal(@NotNull SQLParser.Datetime_literalContext ctx) {
+  public Expr visitDatetime_literal(@NotNull Datetime_literalContext ctx) {
     if (checkIfExist(ctx.time_literal())) {
       return visitTime_literal(ctx.time_literal());
     } else if (checkIfExist(ctx.date_literal())) {
@@ -1736,19 +1733,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitTime_literal(SQLParser.Time_literalContext ctx) {
+  public Expr visitTime_literal(Time_literalContext ctx) {
     String timePart = stripQuote(ctx.time_string.getText());
     return new TimeLiteral(parseTime(timePart));
   }
 
   @Override
-  public Expr visitDate_literal(SQLParser.Date_literalContext ctx) {
+  public Expr visitDate_literal(Date_literalContext ctx) {
     String datePart = stripQuote(ctx.date_string.getText());
     return new DateLiteral(parseDate(datePart));
   }
 
   @Override
-  public Expr visitTimestamp_literal(SQLParser.Timestamp_literalContext ctx) {
+  public Expr visitTimestamp_literal(Timestamp_literalContext ctx) {
     String timestampStr = stripQuote(ctx.timestamp_string.getText());
     String[] parts = timestampStr.split(" ");
     String datePart = parts[0];
@@ -1757,28 +1754,28 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitInterval_literal(@NotNull SQLParser.Interval_literalContext ctx) {
+  public Expr visitInterval_literal(@NotNull Interval_literalContext ctx) {
     String intervalStr = stripQuote(ctx.interval_string.getText());
     return new IntervalLiteral(intervalStr);
   }
 
   @Override
-  public Expr visitDatetime_value_expression(@NotNull SQLParser.Datetime_value_expressionContext ctx) {
+  public Expr visitDatetime_value_expression(@NotNull Datetime_value_expressionContext ctx) {
     return visitDatetime_term(ctx.datetime_term());
   }
 
   @Override
-  public Expr visitDatetime_term(@NotNull SQLParser.Datetime_termContext ctx) {
+  public Expr visitDatetime_term(@NotNull Datetime_termContext ctx) {
     return visitDatetime_factor(ctx.datetime_factor());
   }
 
   @Override
-  public Expr visitDatetime_factor(@NotNull SQLParser.Datetime_factorContext ctx) {
+  public Expr visitDatetime_factor(@NotNull Datetime_factorContext ctx) {
     return visitDatetime_primary(ctx.datetime_primary());
   }
 
   @Override
-  public Expr visitDatetime_primary(@NotNull SQLParser.Datetime_primaryContext ctx) {
+  public Expr visitDatetime_primary(@NotNull Datetime_primaryContext ctx) {
     if (checkIfExist(ctx.value_expression_primary())) {
       return visitValue_expression_primary(ctx.value_expression_primary());
     } else {
@@ -1787,7 +1784,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitDatetime_value_function(@NotNull SQLParser.Datetime_value_functionContext ctx) {
+  public Expr visitDatetime_value_function(@NotNull Datetime_value_functionContext ctx) {
     if (checkIfExist(ctx.current_date_value_function())) {
       return visitCurrent_date_value_function(ctx.current_date_value_function());
     } else if (checkIfExist(ctx.current_time_value_function())) {
@@ -1798,21 +1795,21 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitCurrent_date_value_function(@NotNull SQLParser.Current_date_value_functionContext ctx) {
+  public Expr visitCurrent_date_value_function(@NotNull Current_date_value_functionContext ctx) {
     String functionName = "current_date";
     Expr[] params = new Expr[]{};
     return new FunctionExpr(functionName, params);
   }
 
   @Override
-  public Expr visitCurrent_time_value_function(@NotNull SQLParser.Current_time_value_functionContext ctx) {
+  public Expr visitCurrent_time_value_function(@NotNull Current_time_value_functionContext ctx) {
     String functionName = "current_time";
     Expr[] params = new Expr[]{};
     return new FunctionExpr(functionName, params);
   }
 
   @Override
-  public Expr visitCurrent_timestamp_value_function(@NotNull SQLParser.Current_timestamp_value_functionContext ctx) {
+  public Expr visitCurrent_timestamp_value_function(@NotNull Current_timestamp_value_functionContext ctx) {
     String functionName = "now";
     Expr[] params = new Expr[]{};
     return new FunctionExpr(functionName, params);
@@ -1845,27 +1842,27 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitAlter_tablespace_statement(@NotNull SQLParser.Alter_tablespace_statementContext ctx) {
+  public Expr visitAlter_tablespace_statement(@NotNull Alter_tablespace_statementContext ctx) {
     AlterTablespace alter = new AlterTablespace(ctx.space_name.getText());
     alter.setLocation(stripQuote(ctx.uri.getText()));
     return alter;
   }
 
   @Override
-  public Expr visitAlter_table_statement(SQLParser.Alter_table_statementContext ctx) {
+  public Expr visitAlter_table_statement(Alter_table_statementContext ctx) {
 
     final List<Table_nameContext> tables = ctx.table_name();
 
-    final AlterTable alterTable = new AlterTable(tables.get(0).getText());
+    final AlterTable alterTable = new AlterTable(buildIdentifierChain(tables.get(0).identifier()));
 
     if (tables.size() == 2) {
-      alterTable.setNewTableName(tables.get(1).getText());
+      alterTable.setNewTableName(buildIdentifierChain(tables.get(1).identifier()));
     }
 
     if (checkIfExist(ctx.column_name()) && ctx.column_name().size() == 2) {
       final List<Column_nameContext> columns = ctx.column_name();
-      alterTable.setColumnName(columns.get(0).getText());
-      alterTable.setNewColumnName(columns.get(1).getText());
+      alterTable.setColumnName(buildIdentifier(columns.get(0).identifier()));
+      alterTable.setNewColumnName(buildIdentifier(columns.get(1).identifier()));
     }
 
     Field_elementContext field_elementContext = ctx.field_element();
@@ -1883,7 +1880,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       Expr[] values = new Expr[size];
       for (int i = 0; i < size; i++) {
         Partition_column_valueContext columnValue = columnValueList.get(i);
-        columns[i] = new ColumnReferenceExpr(columnValue.identifier().getText());
+        columns[i] = new ColumnReferenceExpr(buildIdentifier(columnValue.identifier()));
         values[i] = visitRow_value_predicand(columnValue.row_value_predicand());
       }
       alterTable.setColumns(columns);
@@ -1906,7 +1903,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return alterTable;
   }
 
-  private Map<String, String> getProperties(SQLParser.Property_listContext ctx) {
+  private Map<String, String> getProperties(Property_listContext ctx) {
     Map<String, String> params = new HashMap<String, String>();
     for (int i = 0; i < ctx.property().size(); i++) {
       params.put(stripQuote(ctx.property(i).key.getText()), stripQuote(ctx.property(i).value.getText()));
@@ -1915,7 +1912,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     return params;
   }
 
-  private AlterTableOpType determineAlterTableType(SQLParser.Alter_table_statementContext ctx) {
+  private AlterTableOpType determineAlterTableType(Alter_table_statementContext ctx) {
 
     final int RENAME_MASK = 00000001;
     final int COLUMN_MASK = 00000010;
@@ -1982,5 +1979,28 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       default:
         return null;
     }
+  }
+
+  /**
+   * Return identifier, where text case sensitivity is kept depending on the kind of identifier and
+   *
+   * @param identifier IdentifierContext
+   * @return Identifier
+   */
+  private static String buildIdentifier(IdentifierContext identifier) {
+    if (checkIfExist(identifier.nonreserved_keywords())) {
+      return identifier.getText().toLowerCase();
+    } else {
+      return identifier.getText();
+    }
+  }
+
+  private static String buildIdentifierChain(final Collection<IdentifierContext> identifierChains) {
+    return Joiner.on(".").join(Collections2.transform(identifierChains, new Function<IdentifierContext, String>() {
+      @Override
+      public String apply(IdentifierContext identifierContext) {
+        return buildIdentifier(identifierContext);
+      }
+    }));
   }
 }
