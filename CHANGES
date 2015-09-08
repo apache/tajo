@@ -249,6 +249,10 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1805: In the 'Execute Query' page of web UI, default database 
+    should be set as 'default'. (Contributed by Dongkyu Hwangbo, committed 
+    by hyunsik)
+
     TAJO-1823: Can't start TajoMaster. (hyunsik)
 
     TAJO-1820: Fix wrong case sensitivity rules of non-reserved keywords.
