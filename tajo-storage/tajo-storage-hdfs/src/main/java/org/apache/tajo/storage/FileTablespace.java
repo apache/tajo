@@ -95,7 +95,8 @@ public class FileTablespace extends Tablespace {
       };
 
   private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true);
-  private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, true);
+  private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, true, false);
+  private static final FormatProperty ParquetProperties = new FormatProperty(true, false, true, true);
 
   protected FileSystem fs;
   protected Path spacePath;
@@ -697,6 +698,12 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public FormatProperty getFormatProperty(TableMeta meta) {
+    String storeType = meta.getStoreType();
+
+    if (storeType.equalsIgnoreCase("parquet")) {
+      return ParquetProperties;
+    }
+
     return GeneralFileProperties;
   }
 

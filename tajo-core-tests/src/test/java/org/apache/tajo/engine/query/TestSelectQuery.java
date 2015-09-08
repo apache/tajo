@@ -682,7 +682,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE IF EXISTS timezoned_load2 PURGE");
     }
   }
-  
+
   @Test
   public void testMultiBytesDelimiter1() throws Exception {
     executeDDL("multibytes_delimiter_table1_ddl.sql", "multibytes_delimiter1");
@@ -768,6 +768,15 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testSelectOnSessionTable() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testParquetCountQuery() throws Exception {
+    executeFile("lineitem_parquet.sql");
+    
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

@@ -97,6 +97,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     List<Expr> unplannedExprs = TUtil.newList();
     boolean debugOrUnitTests;
     Integer noNameSubqueryId = 0;
+    boolean isSimpleCountQuery = false;
 
     public PlanContext(OverridableConf context, LogicalPlan plan, QueryBlock block, EvalTreeOptimizer evalOptimizer,
                        boolean debugOrUnitTests) {

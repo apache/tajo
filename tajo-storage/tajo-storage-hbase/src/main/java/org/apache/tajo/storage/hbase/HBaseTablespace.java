@@ -71,8 +71,8 @@ public class HBaseTablespace extends Tablespace {
   private static final Log LOG = LogFactory.getLog(HBaseTablespace.class);
 
   public static final StorageProperty HBASE_STORAGE_PROPERTIES = new StorageProperty("hbase", false, true, false);
-  public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true, false, true);
-  public static final FormatProperty PUT_MODE_PROPERTIES = new FormatProperty(true, true, false);
+  public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true, false, true, false);
+  public static final FormatProperty PUT_MODE_PROPERTIES = new FormatProperty(true, true, false, false);
 
   private Configuration hbaseConf;
 

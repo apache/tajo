@@ -113,6 +113,7 @@ message ScanNode {
   optional EvalNodeTree qual = 5;
   optional bool broadcast = 6;
   required bool nameResolveBase = 7;
+  optional bool isCountQuery = 8;
 }
 
 message PartitionScanSpec {
