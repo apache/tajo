@@ -349,7 +349,7 @@ public abstract class NameResolver {
     }
 
     // check for tbname.column_name.nested_field
-    if (qualifierParts.length >= 1) {
+    if (columnNamePosition < 0 && qualifierParts.length >= 1) {
       RelationNode rel = lookupTable(block, qualifierParts[0]);
       if (rel != null) {
         guessedRelations.add(rel);
@@ -358,7 +358,7 @@ public abstract class NameResolver {
     }
 
     // column.nested_fieldX...
-    if (guessedRelations.size() == 0 && qualifierParts.length > 0) {
+    if (columnNamePosition < 0 && guessedRelations.size() == 0 && qualifierParts.length > 0) {
       Collection<RelationNode> rels = lookupTableByColumns(block, StringUtils.join(qualifierParts,
           NestedPathUtil.PATH_DELIMITER, 0));
 

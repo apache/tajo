@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -32,10 +33,10 @@ public class JavaResourceUtil {
   }
 
   /**
-   * It returns a string from a text file found in classpath.
+   * Read a file stored in a local file system and return the string contents.
    *
    * @param resource Resource file name
-   * @return String contents if exists. Otherwise, it will return null.
+   * @return String contents
    * @throws IOException
    */
   public static String readTextFromResource(String resource) throws IOException {

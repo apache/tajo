@@ -1,0 +1,1 @@
+select name, addr from people join student on x = y join professor on l = m

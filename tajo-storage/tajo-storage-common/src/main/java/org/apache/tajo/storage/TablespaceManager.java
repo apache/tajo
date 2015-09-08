@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,6 +40,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.UriUtil;
 
 import javax.annotation.Nullable;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
@@ -133,15 +134,13 @@ public class TablespaceManager implements StorageService {
     String json;
     try {
       json = JavaResourceUtil.readTextFromResource(fileName);
+    } catch (FileNotFoundException fnfe) {
+      return null;      
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
 
-    if (json != null) {
-      return parseJson(json);
-    } else {
-      return null;
-    }
+    return parseJson(json);
   }
 
   private static JSONObject parseJson(String json) {
