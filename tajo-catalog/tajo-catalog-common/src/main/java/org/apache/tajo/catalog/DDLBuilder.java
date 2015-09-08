@@ -170,7 +170,6 @@ public class DDLBuilder {
 
     for(int i = 0; i < splitPartitionName.length; i++) {
       String[] partitionColumnValue = splitPartitionName[i].split("=");
-
       if (i > 0) {
         sb.append(",");
       }
@@ -187,9 +186,7 @@ public class DDLBuilder {
           break;
       }
     }
-
     sb.append(") LOCATION '").append(partition.getPath()).append("';\n");
-
     return sb.toString();
   }
 }
