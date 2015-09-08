@@ -426,7 +426,7 @@ public class TajoCli {
           latestState = parser.getState();
           currentPrompt = updatePrompt(latestState);
 
-          // If the ON_ERROR_STOP flag is not set, Cli should stop on query failure.
+          // If the ON_ERROR_STOP flag is set, Cli should stop on query failure.
           if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
             return exitCode;
           }
