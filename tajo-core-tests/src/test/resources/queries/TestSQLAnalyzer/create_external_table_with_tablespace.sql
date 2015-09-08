@@ -1,1 +1,0 @@
-CREATE EXTERNAL TABLE hbase_blog (rowkey text, author text, register_date text, title text)  TABLESPACE hbasecluster1 USING hbase WITH ('table'='blog', 'columns'=':key,info:author,info:date,content:title');
