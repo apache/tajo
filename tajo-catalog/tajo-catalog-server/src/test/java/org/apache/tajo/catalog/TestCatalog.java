@@ -28,7 +28,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
-import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -38,12 +37,12 @@ import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -64,18 +63,11 @@ public class TestCatalog {
 	
 	static CatalogServer server;
 	static CatalogService catalog;
+  static String testDir;
 
-  public static TajoConf newTajoConfForCatalogTest() throws IOException, UnsupportedCatalogStore {
-    return CatalogTestingUtil.configureCatalog(new TajoConf(), setupClusterTestBuildDir().getAbsolutePath());
-  }
-
-  public static File setupClusterTestBuildDir() throws IOException {
-    String randomStr = UUID.randomUUID().toString();
-    String dirStr = CommonTestingUtil.getTestDir(randomStr).toString();
-    File dir = new File(dirStr).getAbsoluteFile();
-    // Have it cleaned up on exit
-    dir.deleteOnExit();
-    return dir;
+  public static Pair<TajoConf, String> newTajoConfForCatalogTest() throws IOException, UnsupportedCatalogStore {
+    String testDir = CommonTestingUtil.getTestDir().toString();
+    return new Pair<>(CatalogTestingUtil.configureCatalog(new TajoConf(), testDir), testDir);
   }
 
 	@BeforeClass
@@ -83,9 +75,11 @@ public class TestCatalog {
 
 
     Path defaultTableSpace = CommonTestingUtil.getTestDir();
+    Pair<TajoConf, String> confAndTestDir = newTajoConfForCatalogTest();
+    testDir = confAndTestDir.getSecond();
 
 	  server = new CatalogServer();
-    server.init(newTajoConfForCatalogTest());
+    server.init(confAndTestDir.getFirst());
     server.start();
     catalog = new LocalCatalogWrapper(server);
     if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
@@ -103,6 +97,7 @@ public class TestCatalog {
 	@AfterClass
 	public static void tearDown() throws IOException {
 	  server.stop();
+    CommonTestingUtil.cleanupTestDir(testDir);
 	}
 
   @Test
