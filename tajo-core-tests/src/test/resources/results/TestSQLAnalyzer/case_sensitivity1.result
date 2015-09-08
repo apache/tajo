@@ -1,0 +1,13 @@
+{
+  "IsExternal": false,
+  "TableName": "default.table1",
+  "Attributes": [
+    {
+      "ColumnDefName": "xxx",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    }
+  ],
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}

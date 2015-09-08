@@ -18,6 +18,9 @@
 
 package org.apache.tajo.parser.sql;
 
+import com.facebook.presto.hive.shaded.com.google.common.base.Function;
+import com.facebook.presto.hive.shaded.com.google.common.collect.Collections2;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -387,7 +390,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     } else if (checkIfExist(functionType.ROW_NUMBER())) {
       functionBody = new GeneralSetFunctionExpr("row_number", false, new Expr[] {});
     } else if (checkIfExist(functionType.FIRST_VALUE())) {
-      functionBody = new GeneralSetFunctionExpr("first_value", false, new Expr[]{ visitColumn_reference(functionType.column_reference())});
+      functionBody = new GeneralSetFunctionExpr("first_value", false,
+          new Expr[]{ visitColumn_reference(functionType.column_reference())});
     } else if (checkIfExist(functionType.LAST_VALUE())) {
       functionBody = new GeneralSetFunctionExpr("last_value", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
     } else if (checkIfExist(functionType.LAG())) {
@@ -437,7 +441,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         new Window.WindowDefinition[ctx.window_definition_list().window_definition().size()];
     for (int i = 0; i < definitions.length; i++) {
       Window_definitionContext windowDefinitionContext = ctx.window_definition_list().window_definition(i);
-      String windowName = windowDefinitionContext.window_name().identifier().getText();
+      String windowName = buildIdentifier(windowDefinitionContext.window_name().identifier());
       WindowSpec windowSpec = buildWindowSpec(windowDefinitionContext.window_specification());
       definitions[i] = new Window.WindowDefinition(windowName, windowSpec);
     }
@@ -1051,7 +1055,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public ColumnReferenceExpr visitColumn_reference(Column_referenceContext ctx) {
-    String columnReferenceName = ctx.getText();
+    String columnReferenceName = buildIdentifierChain(ctx.identifier());
     // find the last dot (.) position to separate a name into both a qualifier and name
     int lastDotIdx = columnReferenceName.lastIndexOf(".");
 
@@ -1117,7 +1121,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public NamedExpr visitDerived_column(Derived_columnContext ctx) {
     NamedExpr target = new NamedExpr(visitValue_expression(ctx.value_expression()));
     if (ctx.as_clause() != null) {
-      target.setAlias(ctx.as_clause().identifier().getText());
+      target.setAlias(buildIdentifier(ctx.as_clause().identifier()));
     }
     return target;
   }
@@ -1175,14 +1179,6 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitExtract_expression(Extract_expressionContext ctx) {
     Expr extractTarget = new LiteralValue(ctx.extract_field_string.getText(), LiteralType.String);
     Expr extractSource = visitDatetime_value_expression(ctx.extract_source().datetime_value_expression());
-//    if (checkIfExist(ctx.extract_source().column_reference())) {
-//      extractSource = visitColumn_reference(ctx.extract_source().column_reference());
-//    } else if (checkIfExist(ctx.extract_source().datetime_literal())) {
-//      extractSource = visitDatetime_literal(ctx.extract_source().datetime_literal());
-//    } else {
-//      return null;
-//    }
-
 
     String functionName = "date_part";
     Expr[] params = new Expr[]{extractTarget, extractSource};
@@ -1225,7 +1221,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitCreate_index_statement(Create_index_statementContext ctx) {
     String indexName = ctx.index_name.getText();
-    String tableName = ctx.table_name().getText();
+    String tableName = buildIdentifierChain(ctx.table_name().identifier());
     Relation relation = new Relation(tableName);
     SortSpec[] sortSpecs = buildSortSpecs(ctx.sort_specifier_list());
     NamedExpr[] targets = new NamedExpr[sortSpecs.length];
@@ -1242,7 +1238,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createIndex.setUnique(true);
     }
     if (checkIfExist(ctx.method_specifier())) {
-      String methodName = ctx.method_specifier().identifier().getText();
+      String methodName = buildIdentifier(ctx.method_specifier().identifier());
       createIndex.setMethodSpec(new IndexMethodSpec(methodName));
     }
     if (checkIfExist(ctx.param_clause())) {
@@ -1263,26 +1259,26 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDrop_index_statement(Drop_index_statementContext ctx) {
-    String indexName = ctx.identifier().getText();
+    String indexName = buildIdentifier(ctx.identifier());
     return new DropIndex(indexName);
   }
 
   @Override
   public Expr visitDatabase_definition(@NotNull Database_definitionContext ctx) {
-    return new CreateDatabase(ctx.identifier().getText(), null, checkIfExist(ctx.if_not_exists()));
+    return new CreateDatabase(buildIdentifier(ctx.identifier()), null, checkIfExist(ctx.if_not_exists()));
   }
 
   @Override
   public Expr visitDrop_database_statement(@NotNull Drop_database_statementContext ctx) {
-    return new DropDatabase(ctx.identifier().getText(), checkIfExist(ctx.if_exists()));
+    return new DropDatabase(buildIdentifier(ctx.identifier()), checkIfExist(ctx.if_exists()));
   }
 
   @Override
   public Expr visitCreate_table_statement(Create_table_statementContext ctx) {
-    String tableName = ctx.table_name(0).getText();
+    String tableName = buildIdentifierChain(ctx.table_name(0).identifier());
     CreateTable createTable = new CreateTable(tableName, checkIfExist(ctx.if_not_exists()));
     if(checkIfExist(ctx.LIKE()))  {
-      createTable.setLikeParentTable(ctx.like_table_name.getText());
+      createTable.setLikeParentTable(buildIdentifierChain(ctx.like_table_name.identifier()));
       return createTable;
     }
 
@@ -1339,7 +1335,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     List<String> tableNames = new ArrayList<String>();
 
     for (Table_nameContext eachTableNameContext: tableNameContexts) {
-      tableNames.add(eachTableNameContext.getChild(0).getText());
+      tableNames.add(buildIdentifierChain(eachTableNameContext.identifier()));
     }
 
     return new TruncateTable(tableNames);
@@ -1624,7 +1620,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     if (ctx.table_name() != null) {
-      insertExpr.setTableName(ctx.table_name().getText());
+      insertExpr.setTableName(buildIdentifierChain(ctx.table_name().identifier()));
 
       if (ctx.column_reference_list() != null) {
         ColumnReferenceExpr [] targetColumns =
@@ -1661,7 +1657,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitDrop_table_statement(Drop_table_statementContext ctx) {
-    return new DropTable(ctx.table_name().getText(), checkIfExist(ctx.if_exists()), checkIfExist(ctx.PURGE()));
+    return new DropTable(buildIdentifierChain(ctx.table_name().identifier()),
+        checkIfExist(ctx.if_exists()), checkIfExist(ctx.PURGE()));
   }
 
 
@@ -1856,16 +1853,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
     final List<Table_nameContext> tables = ctx.table_name();
 
-    final AlterTable alterTable = new AlterTable(tables.get(0).getText());
+    final AlterTable alterTable = new AlterTable(buildIdentifierChain(tables.get(0).identifier()));
 
     if (tables.size() == 2) {
-      alterTable.setNewTableName(tables.get(1).getText());
+      alterTable.setNewTableName(buildIdentifierChain(tables.get(1).identifier()));
     }
 
     if (checkIfExist(ctx.column_name()) && ctx.column_name().size() == 2) {
       final List<Column_nameContext> columns = ctx.column_name();
-      alterTable.setColumnName(columns.get(0).getText());
-      alterTable.setNewColumnName(columns.get(1).getText());
+      alterTable.setColumnName(buildIdentifier(columns.get(0).identifier()));
+      alterTable.setNewColumnName(buildIdentifier(columns.get(1).identifier()));
     }
 
     Field_elementContext field_elementContext = ctx.field_element();
@@ -1883,7 +1880,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       Expr[] values = new Expr[size];
       for (int i = 0; i < size; i++) {
         Partition_column_valueContext columnValue = columnValueList.get(i);
-        columns[i] = new ColumnReferenceExpr(columnValue.identifier().getText());
+        columns[i] = new ColumnReferenceExpr(buildIdentifier(columnValue.identifier()));
         values[i] = visitRow_value_predicand(columnValue.row_value_predicand());
       }
       alterTable.setColumns(columns);
@@ -1982,5 +1979,28 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       default:
         return null;
     }
+  }
+
+  /**
+   * Return identifier, where text case sensitivity is kept depending on the kind of identifier and
+   *
+   * @param identifier IdentifierContext
+   * @return Identifier
+   */
+  private static String buildIdentifier(IdentifierContext identifier) {
+    if (checkIfExist(identifier.nonreserved_keywords())) {
+      return identifier.getText().toLowerCase();
+    } else {
+      return identifier.getText();
+    }
+  }
+
+  private static String buildIdentifierChain(final Collection<IdentifierContext> identifierChains) {
+    return Joiner.on(".").join(Collections2.transform(identifierChains, new Function<IdentifierContext, String>() {
+      @Override
+      public String apply(IdentifierContext identifierContext) {
+        return buildIdentifier(identifierContext);
+      }
+    }));
   }
 }
