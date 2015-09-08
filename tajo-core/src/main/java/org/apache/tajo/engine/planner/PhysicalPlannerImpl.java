@@ -941,7 +941,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
           FragmentProto[] fragmentProtos =
                 FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new Fragment[fileFragments.size()]));
-
           ctx.addFragments(canonicalName, fragmentProtos);
           return new PartitionMergeScanExec(ctx, scanNode, fragmentProtos);
         }
