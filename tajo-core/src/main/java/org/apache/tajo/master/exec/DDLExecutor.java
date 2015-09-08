@@ -620,6 +620,7 @@ public class DDLExecutor {
     List<PartitionDescProto> existingPartitions = catalog.getPartitions(databaseName, simpleTableName);
     List<String> existingPartitionNames = TUtil.newList();
     Path existingPartitionPath = null;
+
     for(PartitionDescProto existingPartition : existingPartitions) {
       existingPartitionPath = new Path(existingPartition.getPath());
       existingPartitionNames.add(existingPartition.getPartitionName());
