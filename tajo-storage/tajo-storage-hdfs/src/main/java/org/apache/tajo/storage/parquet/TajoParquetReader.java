@@ -19,10 +19,10 @@
 package org.apache.tajo.storage.parquet;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.parquet.hadoop.ParquetReader;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.Tuple;
-import org.apache.parquet.filter.UnboundRecordFilter;
+import org.apache.tajo.storage.thirdparty.parquet.ParquetReader;
+import parquet.filter.UnboundRecordFilter;
 
 import java.io.IOException;
 
