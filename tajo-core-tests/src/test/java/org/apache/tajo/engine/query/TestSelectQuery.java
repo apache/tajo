@@ -690,10 +690,10 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned");
       executeDDL("datetime_table_timezoned_orc_ddl.sql", null, "timezoned_orc");
 
-      executeString("INSERT OVERWRITE INTO timezoned_orc SELECT * FROM timezoned");
+      executeString("INSERT OVERWRITE INTO timezoned_orc SELECT t_timestamp, t_date FROM timezoned");
 
       ResultSet res = executeQuery();
-      assertResultSet(res, "testTimezonedTable3.result");
+      assertResultSet(res, "testTimezonedORCTable.result");
       executeString("SET TIME ZONE 'GMT'");
       cleanupQuery(res);
     } finally {
