@@ -1,0 +1,1 @@
+drop table information_schema_test_table

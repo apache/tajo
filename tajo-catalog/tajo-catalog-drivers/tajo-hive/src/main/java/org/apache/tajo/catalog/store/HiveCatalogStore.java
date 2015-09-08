@@ -1017,6 +1017,11 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
+  public List<TablePartitionKeyProto> getAllPartitionKeys() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
     , boolean ifNotExists) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;

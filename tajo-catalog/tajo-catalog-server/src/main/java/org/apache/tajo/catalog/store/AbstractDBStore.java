@@ -2320,6 +2320,37 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       CatalogUtil.closeQuietly(pstmt4);
     }
   }
+  @Override
+  public List<TablePartitionKeyProto> getAllPartitionKeys() {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<TablePartitionKeyProto> partitions = new ArrayList<TablePartitionKeyProto>();
+
+    try {
+      String sql = " SELECT A." + COL_PARTITIONS_PK + ", A.COLUMN_NAME, A.PARTITION_VALUE " +
+        " FROM " + TB_PARTTION_KEYS + " A ";
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        TablePartitionKeyProto.Builder builder = TablePartitionKeyProto.newBuilder();
+
+        builder.setPartitionId(resultSet.getInt(COL_PARTITIONS_PK));
+        builder.setColumnName(resultSet.getString("COLUMN_NAME"));
+        builder.setPartitionValue(resultSet.getString("PARTITION_VALUE"));
+        partitions.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+
+    return partitions;
+  }
 
   @Override
   public void createIndex(final IndexDescProto proto) throws UndefinedDatabaseException, UndefinedTableException {

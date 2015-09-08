@@ -1048,6 +1048,28 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
+    public GetTablePartitionKeysResponse getAllPartitionKeys(RpcController controller, NullProto request) {
+      rlock.lock();
+
+      try {
+        return GetTablePartitionKeysResponse.newBuilder()
+          .setState(OK)
+          .addAllPartitionKey(store.getAllPartitionKeys())
+          .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetTablePartitionKeysResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
+
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
     public ReturnState createIndex(RpcController controller, IndexDescProto indexDesc) {
       String dbName = indexDesc.getTableIdentifier().getDatabaseName();
 
