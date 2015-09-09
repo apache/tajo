@@ -255,6 +255,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1829: Fix DelimitedTextFileAppender NPE in negative tests. (jinho)
+
     TAJO-1674: Validation of CTAS schema mismatch. (hyunsik)
 
     TAJO-1819: Cannot find existing tables when pgsql catalog starts up. 
