@@ -233,12 +233,10 @@ public class DelimitedTextFile {
           serializer.release();
         }
 
-        if(outputStream != null){
-          flush();
-        }
+        flush();
 
         // Statistical section
-        if (enabledStats) {
+        if (enabledStats && stats != null) {
           stats.setNumBytes(getOffset());
         }
 
