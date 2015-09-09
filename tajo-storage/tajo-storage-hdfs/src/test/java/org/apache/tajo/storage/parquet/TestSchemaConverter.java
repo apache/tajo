@@ -22,8 +22,8 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.Test;
-import org.apache.parquet.schema.MessageType;
-import org.apache.parquet.schema.MessageTypeParser;
+import parquet.schema.MessageType;
+import parquet.schema.MessageTypeParser;
 
 import java.util.ArrayList;
 import java.util.List;

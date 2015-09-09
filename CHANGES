@@ -594,6 +594,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1826: Revert 'refining code for Parquet 1.8.1'. 
+    (Contributed by Jongyoung Park, committed by hyunsik)
+
     TAJO-1641: Add window function documentation. (jihoon)
 
     TAJO-1749: Refine JDBC exceptions to better handle exceptional 
