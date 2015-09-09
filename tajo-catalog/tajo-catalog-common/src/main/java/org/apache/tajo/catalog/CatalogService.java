@@ -163,7 +163,7 @@ public interface CatalogService {
       UndefinedTableException;
 
   List<PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException, UndefinedOperatorException;
+    UndefinedTableException, UndefinedPartitionMethodException;
 
   boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
   UndefinedTableException, UndefinedPartitionMethodException;
