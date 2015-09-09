@@ -36,6 +36,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1828: tajo-daemon scripts should kill process after process can not 
+    stop gracefully. (jinho)
+
     TAJO-1729: No handling of default case in DDLExecutor.
     (Contributed by Dongkyu Hwangbo. Committed by jinho)
 
@@ -251,6 +254,11 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1782: Check ON_ERROR_STOP flag in TSQL when error is occured. 
+    (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
+    TAJO-1829: Fix DelimitedTextFileAppender NPE in negative tests. (jinho)
 
     TAJO-1674: Validation of CTAS schema mismatch. (hyunsik)
 
@@ -585,6 +593,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1826: Revert 'refining code for Parquet 1.8.1'. 
+    (Contributed by Jongyoung Park, committed by hyunsik)
 
     TAJO-1641: Add window function documentation. (jihoon)
 

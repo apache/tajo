@@ -36,7 +36,6 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.DefaultTajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
@@ -405,7 +404,7 @@ public class TajoCli {
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
-    
+
     try {
       while((line = reader.readLine(currentPrompt + "> ")) != null) {
         if (line.equals("")) {
@@ -427,19 +426,19 @@ public class TajoCli {
           latestState = parser.getState();
           currentPrompt = updatePrompt(latestState);
 
-          // if at least one failed
-          if (exitCode != 0) {
+          // If the ON_ERROR_STOP flag is set, Cli should stop on query failure.
+          if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
             return exitCode;
           }
         }
       }
     } catch (Exception e) {
-      System.err.println(ERROR_PREFIX + "Exception was thrown. Casued by " + e.getMessage());
-      
+      System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
+
       if (client != null) {
         client.close();
       }
-      
+
       throw e;
     }
     return 0;
