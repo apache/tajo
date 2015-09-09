@@ -714,6 +714,15 @@ public class ProjectionPushDownRule extends
                              Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
 
+    // visit a child node
+    LogicalNode child = super.visitGroupBy(newContext, plan, block, node, stack);
+
+    node.setInSchema(child.getOutSchema());
+    if (node.isForDistinctBlock()) { // the grouping columns should be updated according to the schema of child node.
+      node.setGroupingColumns(child.getOutSchema().toArray());
+      node.setTargets(PlannerUtil.schemaToTargets(child.getOutSchema()));
+    }
+
     // Getting grouping key names
     final int groupingKeyNum = node.getGroupingColumns().length;
     LinkedHashSet<String> groupingKeyNames = null;
@@ -727,7 +736,7 @@ public class ProjectionPushDownRule extends
 
     // Getting eval names
 
-    final String [] aggEvalNames;
+    final String[] aggEvalNames;
     if (node.hasAggFunctions()) {
       final int evalNum = node.getAggFunctions().length;
       aggEvalNames = new String[evalNum];
@@ -740,10 +749,6 @@ public class ProjectionPushDownRule extends
       aggEvalNames = null;
     }
 
-    // visit a child node
-    LogicalNode child = super.visitGroupBy(newContext, plan, block, node, stack);
-
-    node.setInSchema(child.getOutSchema());
 
     List<Target> targets = Lists.newArrayList();
     if (groupingKeyNum > 0 && groupingKeyNames != null) {
