@@ -282,7 +282,9 @@ public class HdfsServiceTracker extends HAServiceTracker {
   }
 
   @Override
-  public void delete() throws IOException {
+  public synchronized void delete() throws IOException {
+    stopped = true;
+
     if (ShutdownHookManager.get().isShutdownInProgress()) return;
 
     String fileName = masterName.replaceAll(":", "_");
@@ -290,8 +292,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
     fs.delete(new Path(activePath, fileName), false);
     fs.delete(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE), false);
     fs.delete(new Path(backupPath, fileName), false);
-
-    stopped = true;
   }
 
   @Override
@@ -365,15 +365,12 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
               // If active master is dead, this master should be active master instead of
               // previous active master.
-              if (!checkConnection(currentActiveMaster)) {
+              if (!stopped && !checkConnection(currentActiveMaster)) {
                 Path activeFile = new Path(activePath, currentActiveMaster.replaceAll(":", "_"));
                 fs.delete(activeFile, false);
 
-                //TODO If  active file is written successfully, the lock file must be deleted
-                if (!stopped) { // protect twice deletion
-                  Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
-                  fs.delete(lockFile, false);
-                }
+                Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
+                fs.delete(lockFile, false);
                 register();
               }
             }
