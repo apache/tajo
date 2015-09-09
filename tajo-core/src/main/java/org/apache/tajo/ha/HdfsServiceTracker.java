@@ -463,11 +463,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
       Path activeMasterEntry = null;
 
       loop:while (retry < maxRetry) {
-        try {
-          this.wait(pause);
-        } catch (InterruptedException e) {
-          throw new ServiceTrackerException(e);
-        }
 
         for (FileStatus eachFile : files) {
           //check if active file is written
@@ -475,6 +470,12 @@ public class HdfsServiceTracker extends HAServiceTracker {
             activeMasterEntry = eachFile.getPath();
             break loop;
           }
+        }
+
+        try {
+          this.wait(pause);
+        } catch (InterruptedException e) {
+          throw new ServiceTrackerException(e);
         }
 
         files = fs.listStatus(activeMasterBaseDir);
