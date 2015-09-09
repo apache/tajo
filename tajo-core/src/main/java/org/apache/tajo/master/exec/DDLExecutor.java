@@ -155,17 +155,12 @@ public class DDLExecutor {
         simpleIndexName, createIndexNode.getIndexPath(),
         createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
         createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
-
-    if (catalog.createIndex(indexDesc)) {
-      LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
-    } else {
-      LOG.info("Index creation " + qualifiedIndexName + " is failed.");
-      throw new TajoInternalError("Cannot create index \"" + qualifiedIndexName + "\".");
-    }
+    catalog.createIndex(indexDesc);
+    LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
   }
 
   public void dropIndex(final QueryContext queryContext, final DropIndexNode dropIndexNode)
-      throws UndefinedIndexException {
+      throws UndefinedIndexException, UndefinedDatabaseException {
 
     String databaseName, simpleIndexName;
     if (CatalogUtil.isFQTableName(dropIndexNode.getIndexName())) {
@@ -182,11 +177,7 @@ public class DDLExecutor {
     }
 
     IndexDesc desc = catalog.getIndexByName(databaseName, simpleIndexName);
-
-    if (!catalog.dropIndex(databaseName, simpleIndexName)) {
-      LOG.info("Cannot drop index \"" + simpleIndexName + "\".");
-      throw new TajoInternalError("Cannot drop index \"" + simpleIndexName + "\".");
-    }
+    catalog.dropIndex(databaseName, simpleIndexName);
 
     Path indexPath = new Path(desc.getIndexPath());
     try {

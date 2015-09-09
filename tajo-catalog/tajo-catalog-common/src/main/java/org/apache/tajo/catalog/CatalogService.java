@@ -169,7 +169,7 @@ public interface CatalogService {
   void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
     , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException;
 
-  boolean createIndex(IndexDesc index);
+  void createIndex(IndexDesc index) throws DuplicateIndexException;
 
   boolean existIndexByName(String databaseName, String indexName);
 
@@ -187,7 +187,7 @@ public interface CatalogService {
 
   Collection<IndexDesc> getAllIndexesByTable(String databaseName, String tableName);
 
-  boolean dropIndex(String databaseName, String indexName);
+  void dropIndex(String databaseName, String indexName) throws UndefinedIndexException, UndefinedDatabaseException;
 
   void createFunction(FunctionDesc funcDesc) throws DuplicateFunctionException;
 

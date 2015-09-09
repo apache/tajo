@@ -71,7 +71,7 @@ public class TajoTestingCluster {
 	private TajoConf conf;
   private FileSystem defaultFS;
   private MiniDFSCluster dfsCluster;
-	private MiniCatalogServer catalogServer;
+	private CatalogServer catalogServer;
   private HBaseTestClusterUtil hbaseUtil;
 
   private TajoMaster tajoMaster;
@@ -289,27 +289,33 @@ public class TajoTestingCluster {
   ////////////////////////////////////////////////////////
   // Catalog Section
   ////////////////////////////////////////////////////////
-  public MiniCatalogServer startCatalogCluster() throws Exception {
+  public CatalogServer startCatalogCluster() throws Exception {
     if(isCatalogServerRunning) throw new IOException("Catalog Cluster already running");
 
     CatalogTestingUtil.configureCatalog(conf, clusterTestBuildDir.getAbsolutePath());
     LOG.info("Apache Derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
-    catalogServer = new MiniCatalogServer(conf);
+    catalogServer = new CatalogServer();
+    catalogServer.init(conf);
+    catalogServer.start();
     isCatalogServerRunning = true;
     return this.catalogServer;
   }
 
   public void shutdownCatalogCluster() {
     if (catalogServer != null) {
-      this.catalogServer.shutdown();
+      this.catalogServer.stop();
     }
     isCatalogServerRunning = false;
   }
 
-  public MiniCatalogServer getMiniCatalogCluster() {
+  public CatalogServer getMiniCatalogCluster() {
     return this.catalogServer;
+  }
+
+  public CatalogService getCatalogService() {
+    return new LocalCatalogWrapper(catalogServer);
   }
 
   public boolean isHiveCatalogStoreRunning() {

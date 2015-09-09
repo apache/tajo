@@ -77,7 +77,6 @@ public class TestTajoJdbcNegative extends QueryTestCaseBase {
       fail("Must be failed.");
     } catch (SQLException s) {
       assertEquals(toSQLState(ResultCode.CLIENT_CONNECTION_EXCEPTION), s.getSQLState());
-      assertEquals("Connection refused: localhost/127.0.0.1:" + port, s.getMessage());
     }
   }
 
