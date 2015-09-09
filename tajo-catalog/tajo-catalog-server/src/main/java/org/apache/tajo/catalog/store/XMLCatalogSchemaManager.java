@@ -239,14 +239,14 @@ public class XMLCatalogSchemaManager {
     }
     
     for (; paramIdx <= pstmt.getParameterMetaData().getParameterCount(); paramIdx++) {
-      pstmt.setString(paramIdx, params[paramIdx-1]);
+      pstmt.setString(paramIdx, params[paramIdx-1].toUpperCase());
     }
     
     ResultSet rs = null;
     try {
       rs = pstmt.executeQuery();
       while (rs.next()) {
-        if (rs.getString(1).equals(params[params.length - 1].toUpperCase())) {
+        if (rs.getString(1).toUpperCase().equals(params[params.length - 1].toUpperCase())) {
           result = true;
           break;
         }
