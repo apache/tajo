@@ -137,6 +137,22 @@ public class DelimitedTextFile {
         throw new FileNotFoundException(path.toString());
       }
 
+      if (enabledStats) {
+        this.stats = new TableStatistics(this.schema);
+      }
+
+      if(serializer != null) {
+        serializer.release();
+      }
+      serializer = getLineSerde().createSerializer(schema, meta);
+      serializer.init();
+
+      bufferSize = conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
+      if (os == null) {
+        os = new NonSyncByteArrayOutputStream(bufferSize);
+      }
+      os.reset();
+
       if (this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
         String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
         codecFactory = new CompressionCodecFactory(conf);
@@ -163,19 +179,6 @@ public class DelimitedTextFile {
         outputStream = new DataOutputStream(new BufferedOutputStream(fos));
       }
 
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
-      }
-
-      serializer = getLineSerde().createSerializer(schema, meta);
-      serializer.init();
-
-      bufferSize = conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
-      if (os == null) {
-        os = new NonSyncByteArrayOutputStream(bufferSize);
-      }
-
-      os.reset();
       pos = fos.getPos();
       bufferedBytes = 0;
       super.init();
@@ -219,19 +222,21 @@ public class DelimitedTextFile {
 
     @Override
     public void flush() throws IOException {
-      flushBuffer();
-      outputStream.flush();
+      if(inited) {
+        flushBuffer();
+        outputStream.flush();
+      }
     }
 
     @Override
     public void close() throws IOException {
 
       try {
-        serializer.release();
-
-        if(outputStream != null){
-          flush();
+        if(serializer != null) {
+          serializer.release();
         }
+
+        flush();
 
         // Statistical section
         if (enabledStats) {
