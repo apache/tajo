@@ -52,6 +52,7 @@ import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.plan.util.PartitionFilterEvalNodeVisitor;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
@@ -870,9 +871,73 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) {
-    throw new TajoRuntimeException(new UnsupportedException());
+  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request)
+    throws UndefinedTableException {
+
+    List<PartitionDescProto> list = null;
+
+    try {
+      TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
+
+      String filter = getFilter(request.getTableName(), tableDesc.getPartition().getExpressionSchema().getFieldsList()
+        , request.getAlgebra());
+
+      if (filter == null || filter.equals("")) {
+        throw  new UnsupportedPartitionFilterException(request.getAlgebra());
+      }
+
+    } catch (TajoException se) {
+      throw new TajoInternalError(se);
+    }
+
+    return list;
   }
+
+  private String getFilter(String tableName, List<ColumnProto> partitionColumns, String json) throws TajoException {
+
+    Expr[] exprs = null;
+
+    if (json != null && !json.isEmpty()) {
+      Expr algebra = JsonHelper.fromJson(json, Expr.class);
+      exprs = AlgebraicUtil.toConjunctiveNormalFormArray(algebra);
+    }
+
+    // Write table alias for all levels
+    String tableAlias;
+
+    PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
+    visitor.setIsHiveCatalog(true);
+
+    Expr[] filters = AlgebraicUtil.getAccumulatedFiltersByExpr(tableName, partitionColumns, exprs);
+
+    StringBuffer sb = new StringBuffer();
+
+    // Write join clause from second column to last column.
+    Column target;
+
+    for (int i = 0; i < partitionColumns.size(); i++) {
+      target = new Column(partitionColumns.get(i));
+
+      if (!(filters[i] instanceof NullLiteral)) {
+        if (sb.length() > 0) {
+          sb.append(" AND ");
+        }
+
+        visitor.setColumn(target);
+        visitor.visit(null, new Stack<Expr>(), filters[i]);
+
+        // Hive api doesn't support row constant statement;
+        if (visitor.isExistRowCostant()) {
+          return null;
+        }
+
+        sb.append(visitor.getResult());
+      }
+    }
+
+    return sb.toString();
+  }
+
 
   @Override
   public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request)

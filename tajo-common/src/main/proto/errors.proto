@@ -154,6 +154,8 @@ enum ResultCode {
   NUMERIC_OVERFLOW                      = 803;  // Numeric value overflow
   VALUE_LARGER_THAN_PRECISION           = 804;  // Value larger than column precision
 
+  UNSUPPORTED_PARTITION_FILTER          = 805; // Unspported partition filter
+
   // Meta Catalog
   CAT_UPGRADE_REQUIRED                  = 901;  // Migration
   CAT_CANNOT_CONNECT                    = 902;  // Cannot connect metadata server

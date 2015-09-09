@@ -101,6 +101,8 @@ public class ErrorMessages {
 
     ADD_MESSAGE(LMD_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
+    ADD_MESSAGE(UNSUPPORTED_PARTITION_FILTER, "unsupported partition filter: %s", 1);
+
     // Storage and Data Format
     ADD_MESSAGE(UNAVAILABLE_TABLE_LOCATION, "unavailable table location '%s': %s", 2);
     ADD_MESSAGE(UNKNOWN_DATAFORMAT, "unknown data format: '%s'", 1);
