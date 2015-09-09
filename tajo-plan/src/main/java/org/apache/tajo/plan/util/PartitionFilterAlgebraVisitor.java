@@ -47,6 +47,8 @@ import java.util.TimeZone;
 public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, Expr> {
   private String tableAlias;
   private Column column;
+  private boolean isHiveCatalog = false;
+  private boolean existRowCostant = false;
 
   private Stack<String> queries = new Stack();
   private List<Pair<Type, Object>> parameters = TUtil.newList();
@@ -65,6 +67,22 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   public void setColumn(Column column) {
     this.column = column;
+  }
+
+  public boolean isHiveCatalog() {
+    return isHiveCatalog;
+  }
+
+  public void setIsHiveCatalog(boolean isHiveCatalog) {
+    this.isHiveCatalog = isHiveCatalog;
+  }
+
+  public boolean isExistRowCostant() {
+    return existRowCostant;
+  }
+
+  public void setExistRowCostant(boolean existRowCostant) {
+    this.existRowCostant = existRowCostant;
   }
 
   public List<Pair<Type, Object>> getParameters() {
@@ -98,9 +116,14 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   @Override
   public Expr visitDateLiteral(Object ctx, Stack<Expr> stack, DateLiteral expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
-    sb.append("?").append(" )");
-    parameters.add(new Pair(Type.DATE, Date.valueOf(expr.toString())));
-    queries.push(sb.toString());
+
+    if (!isHiveCatalog) {
+      sb.append("?").append(" )");
+      parameters.add(new Pair(Type.DATE, Date.valueOf(expr.toString())));
+      queries.push(sb.toString());
+    } else {
+      sb.append("\"").append(expr.toString()).append("\"");
+    }
     return expr;
   }
 
@@ -108,36 +131,40 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   public Expr visitTimestampLiteral(Object ctx, Stack<Expr> stack, TimestampLiteral expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
 
-    DateValue dateValue = expr.getDate();
-    TimeValue timeValue = expr.getTime();
+    if (!isHiveCatalog) {
+      DateValue dateValue = expr.getDate();
+      TimeValue timeValue = expr.getTime();
 
-    int [] dates = ExprAnnotator.dateToIntArray(dateValue.getYears(),
-      dateValue.getMonths(),
-      dateValue.getDays());
-    int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
-      timeValue.getMinutes(),
-      timeValue.getSeconds(),
-      timeValue.getSecondsFraction());
+      int [] dates = ExprAnnotator.dateToIntArray(dateValue.getYears(),
+        dateValue.getMonths(),
+        dateValue.getDays());
+      int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
+        timeValue.getMinutes(),
+        timeValue.getSeconds(),
+        timeValue.getSecondsFraction());
 
-    long julianTimestamp;
-    if (timeValue.hasSecondsFraction()) {
-      julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
-        times[3] * 1000);
+      long julianTimestamp;
+      if (timeValue.hasSecondsFraction()) {
+        julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
+          times[3] * 1000);
+      } else {
+        julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
+      }
+
+      TimeMeta tm = new TimeMeta();
+      DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
+
+      TimeZone tz = TimeZone.getDefault();
+      DateTimeUtil.toUTCTimezone(tm, tz);
+
+      sb.append("?").append(" )");
+      Timestamp timestamp = new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
+      parameters.add(new Pair(Type.TIMESTAMP, timestamp));
+
+      queries.push(sb.toString());
     } else {
-      julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
+      sb.append("\"").append(expr.toString()).append("\"");
     }
-
-    TimeMeta tm = new TimeMeta();
-    DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
-
-    TimeZone tz = TimeZone.getDefault();
-    DateTimeUtil.toUTCTimezone(tm, tz);
-
-    sb.append("?").append(" )");
-    Timestamp timestamp = new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
-    parameters.add(new Pair(Type.TIMESTAMP, timestamp));
-
-    queries.push(sb.toString());
 
     return expr;
   }
@@ -146,29 +173,33 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   public Expr visitTimeLiteral(Object ctx, Stack<Expr> stack, TimeLiteral expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
 
-    TimeValue timeValue = expr.getTime();
+    if (!isHiveCatalog) {
+      TimeValue timeValue = expr.getTime();
 
-    int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
-      timeValue.getMinutes(),
-      timeValue.getSeconds(),
-      timeValue.getSecondsFraction());
+      int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
+        timeValue.getMinutes(),
+        timeValue.getSeconds(),
+        timeValue.getSecondsFraction());
 
-    long time;
-    if (timeValue.hasSecondsFraction()) {
-      time = DateTimeUtil.toTime(times[0], times[1], times[2], times[3] * 1000);
+      long time;
+      if (timeValue.hasSecondsFraction()) {
+        time = DateTimeUtil.toTime(times[0], times[1], times[2], times[3] * 1000);
+      } else {
+        time = DateTimeUtil.toTime(times[0], times[1], times[2], 0);
+      }
+      TimeDatum timeDatum = new TimeDatum(time);
+      TimeMeta tm = timeDatum.asTimeMeta();
+
+      TimeZone tz = TimeZone.getDefault();
+      DateTimeUtil.toUTCTimezone(tm, tz);
+
+      sb.append("?").append(" )");
+      parameters.add(new Pair(Type.TIME, new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs))));
+
+      queries.push(sb.toString());
     } else {
-      time = DateTimeUtil.toTime(times[0], times[1], times[2], 0);
+      sb.append("\"").append(expr.toString()).append("\"");
     }
-    TimeDatum timeDatum = new TimeDatum(time);
-    TimeMeta tm = timeDatum.asTimeMeta();
-
-    TimeZone tz = TimeZone.getDefault();
-    DateTimeUtil.toUTCTimezone(tm, tz);
-
-    sb.append("?").append(" )");
-    parameters.add(new Pair(Type.TIME, new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs))));
-
-    queries.push(sb.toString());
 
     return expr;
   }
@@ -177,22 +208,33 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   public Expr visitLiteral(Object ctx, Stack<Expr> stack, LiteralValue expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
 
-    sb.append("?").append(" )");
-    switch (expr.getValueType()) {
-      case Boolean:
-        parameters.add(new Pair(Type.BOOLEAN, Boolean.valueOf(expr.getValue())));
-        break;
-      case Unsigned_Float:
-        parameters.add(new Pair(Type.FLOAT8, Double.valueOf(expr.getValue())));
-        break;
-      case String:
-        parameters.add(new Pair(Type.TEXT, expr.getValue()));
-        break;
-      default:
-        parameters.add(new Pair(Type.INT8, Long.valueOf(expr.getValue())));
-        break;
+    if (!isHiveCatalog) {
+      sb.append("?").append(" )");
+      switch (expr.getValueType()) {
+        case Boolean:
+          parameters.add(new Pair(Type.BOOLEAN, Boolean.valueOf(expr.getValue())));
+          break;
+        case Unsigned_Float:
+          parameters.add(new Pair(Type.FLOAT8, Double.valueOf(expr.getValue())));
+          break;
+        case String:
+          parameters.add(new Pair(Type.TEXT, expr.getValue()));
+          break;
+        default:
+          parameters.add(new Pair(Type.INT8, Long.valueOf(expr.getValue())));
+          break;
+      }
+      queries.push(sb.toString());
+    } else {
+      switch (expr.getValueType()) {
+        case String:
+          sb.append("\"").append(expr.getValue()).append("\"");
+          break;
+        default:
+          sb.append(expr.getValue());
+          break;
+      }
     }
-    queries.push(sb.toString());
 
     return expr;
   }
@@ -200,19 +242,26 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   @Override
   public Expr visitValueListExpr(Object ctx, Stack<Expr> stack, ValueListExpr expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
-    sb.append("(");
-    for(int i = 0; i < expr.getValues().length; i++) {
-      if (i > 0) {
-        sb.append(", ");
+
+    if (!isHiveCatalog) {
+      sb.append("(");
+      for(int i = 0; i < expr.getValues().length; i++) {
+        if (i > 0) {
+          sb.append(", ");
+        }
+        sb.append("?");
+        stack.push(expr.getValues()[i]);
+        visit(ctx, stack, expr.getValues()[i]);
+        stack.pop();
       }
-      sb.append("?");
-      stack.push(expr.getValues()[i]);
-      visit(ctx, stack, expr.getValues()[i]);
-      stack.pop();
+      sb.append(")");
+      sb.append(" )");
+      queries.push(sb.toString());
+    } else {
+      // Hive API cannot support IN clause for filter.
+      existRowCostant = true;
     }
-    sb.append(")");
-    sb.append(" )");
-    queries.push(sb.toString());
+
     return expr;
   }
 
@@ -220,11 +269,15 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   public Expr visitColumnReference(Object ctx, Stack<Expr> stack, ColumnReferenceExpr expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
 
-    sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
-      .append(" = '").append(expr.getName()).append("'")
-      .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
+    if (!isHiveCatalog) {
+      sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
+        .append(" = '").append(expr.getName()).append("'")
+        .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
 
-    queries.push(sb.toString());
+      queries.push(sb.toString());
+    } else {
+      sb.append(expr.getName());
+    }
     return expr;
   }
 
@@ -253,7 +306,9 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       }
     }
 
-    sb.append(" )");
+    if (!isHiveCatalog) {
+      sb.append(" )");
+    }
     queries.push(sb.toString());
 
     return expr;
@@ -268,13 +323,13 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
     visit(ctx, stack, expr.begin());
     String beginSql= queries.pop();
-    if (beginSql.endsWith(")")) {
+    if (!isHiveCatalog && beginSql.endsWith(")")) {
       beginSql = beginSql.substring(0, beginSql.length()-1);
     }
 
     visit(ctx, stack, expr.end());
     String endSql = queries.pop();
-    if (endSql.endsWith(")")) {
+    if (!isHiveCatalog && endSql.endsWith(")")) {
       endSql = beginSql.substring(0, endSql.length()-1);
     }
 
@@ -284,7 +339,11 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     sb.append(beginSql);
     sb.append(" AND ");
     sb.append(endSql);
-    sb.append(")");
+
+    if (!isHiveCatalog) {
+      sb.append(")");
+    }
+
     queries.push(sb.toString());
 
     return expr;
@@ -306,7 +365,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       result = queries.pop();
 
       String whenSql = condition + " " + result;
-      if (whenSql.endsWith(")")) {
+      if (!isHiveCatalog && whenSql.endsWith(")")) {
         whenSql = whenSql.substring(0, whenSql.length()-1);
       }
 
@@ -316,14 +375,17 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     if (expr.hasElseResult()) {
       visit(ctx, stack, expr.getElseResult());
       String elseSql = queries.pop();
-      if (elseSql.endsWith(")")) {
+      if (!isHiveCatalog && elseSql.endsWith(")")) {
         elseSql = elseSql.substring(0, elseSql.length()-1);
       }
 
       sb.append("ELSE ").append(elseSql).append(" END");
     }
 
-    sb.append(")");
+    if (!isHiveCatalog) {
+      sb.append(")");
+    }
+
     stack.pop();
     return expr;
   }

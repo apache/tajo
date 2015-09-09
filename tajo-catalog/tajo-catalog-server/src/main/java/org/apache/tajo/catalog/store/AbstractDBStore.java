@@ -2352,6 +2352,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     String tableAlias;
 
     PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
+    visitor.setIsHiveCatalog(false);
 
     Expr[] filters = AlgebraicUtil.getAccumulatedFiltersByExpr(tableName, partitionColumns, exprs);
 
