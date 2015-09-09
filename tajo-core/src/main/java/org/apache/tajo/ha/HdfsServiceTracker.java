@@ -365,13 +365,17 @@ public class HdfsServiceTracker extends HAServiceTracker {
               if (!checkConnection(currentActiveMaster)) {
                 Path activeFile = new Path(activePath, currentActiveMaster.replaceAll(":", "_"));
                 fs.delete(activeFile, false);
-                Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
-                fs.delete(lockFile, false);
+
+                //TODO If  active file is written successfully, the lock file must be deleted
+                if (!stopped) { // protect twice deletion
+                  Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
+                  fs.delete(lockFile, false);
+                }
                 register();
               }
             }
           } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error(e.getMessage(), e);
           }
         }
       }
