@@ -134,26 +134,27 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
 
     try {
-      // HiveCatalogStore provides list of table partitions with where clause because hive just provides api using
-      // the filter string. So, this rewriter need to differentiate HiveCatalogStore and other catalogs.
-      if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
-        PartitionsByFilterProto request = buildFilterWithHiveCatalogStore(splits[0], splits[1],
-          partitionColumns, conjunctiveForms);
-
-        if ((conjunctiveForms == null) || (conjunctiveForms != null && !request.getFilter().equals(""))) {
-          partitions = catalog.getPartitionsByFilter(request);
-        }
+      if (conjunctiveForms == null) {
+        partitions = catalog.getAllPartitions(splits[0], splits[1]);
       } else {
-        // Only when exists table partitions on catalog, try to get list of table partitions.
-        if (catalog.existPartitions(splits[0], splits[1])) {
-          // If there are no filters, this don't need to build direct sql for getting table partitions.
-          if (conjunctiveForms == null) {
-            partitions = catalog.getAllPartitions(splits[0], splits[1]);
-          } else {
+        // HiveCatalogStore provides list of table partitions with where clause because hive just provides api using
+        // the filter string. So, this rewriter need to differentiate HiveCatalogStore and other catalogs.
+        if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
+          PartitionsByFilterProto request = buildFilterWithHiveCatalogStore(splits[0], splits[1],
+            partitionColumns, conjunctiveForms);
+
+          if (conjunctiveForms != null && !request.getFilter().equals("")) {
+            partitions = catalog.getPartitionsByFilter(request);
+          }
+        } else {
+          // Only when exists table partitions on catalog, try to get list of table partitions.
+          if (catalog.existPartitions(splits[0], splits[1])) {
+            // If there are no filters, this don't need to build direct sql for getting table partitions.
             PartitionsByAlgebraProto request = buildFilterWithDBStore(splits[0], splits[1], conjunctiveForms);
             partitions = catalog.getPartitionsByAlgebra(request);
           }
         }
+
       }
 
       // If catalog returns list of table partitions successfully, build path lists for scanning table data.
