@@ -390,9 +390,9 @@ public class TestTajoCli {
     Thread.sleep(1000);
     if(!t.isAlive()) {
       fail("TSQL should be alive");
-    }
-    else {
+    } else {
       t.interrupt();
+      t.join();
     }
   }
 
