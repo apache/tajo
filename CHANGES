@@ -255,6 +255,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1782: Check ON_ERROR_STOP flag in TSQL when error is occured. 
+    (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
     TAJO-1829: Fix DelimitedTextFileAppender NPE in negative tests. (jinho)
 
     TAJO-1674: Validation of CTAS schema mismatch. (hyunsik)
