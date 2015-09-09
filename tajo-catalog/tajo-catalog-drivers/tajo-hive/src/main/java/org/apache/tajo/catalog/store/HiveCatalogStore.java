@@ -869,7 +869,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request)
+  public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
@@ -896,7 +896,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
 
       List<Partition> hivePartitions = client.getHiveClient().listPartitionsByFilter(databaseName, tableName
-        , request.getDirectSql(), (short) -1);
+        , request.getFilter(), (short) -1);
 
       for (Partition hivePartition : hivePartitions) {
         CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();

@@ -27,7 +27,7 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByDirectSqlProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByFilterProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -137,11 +137,11 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       // HiveCatalogStore provides list of table partitions with where clause because hive just provides api using
       // the filter string. So, this rewriter need to differentiate HiveCatalogStore and other catalogs.
       if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
-        PartitionsByDirectSqlProto request = buildDirectSQLWithHiveCatalogStore(splits[0], splits[1],
+        PartitionsByFilterProto request = buildFilterWithHiveCatalogStore(splits[0], splits[1],
           partitionColumns, conjunctiveForms);
 
-        if ((conjunctiveForms == null) || (conjunctiveForms != null && !request.getDirectSql().equals(""))) {
-          partitions = catalog.getPartitionsByDirectSql(request);
+        if ((conjunctiveForms == null) || (conjunctiveForms != null && !request.getFilter().equals(""))) {
+          partitions = catalog.getPartitionsByFilter(request);
         }
       } else {
         // Only when exists table partitions on catalog, try to get list of table partitions.
@@ -150,7 +150,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           if (conjunctiveForms == null) {
             partitions = catalog.getAllPartitions(splits[0], splits[1]);
           } else {
-            PartitionsByAlgebraProto request = buildDirectSQLWithDBStore(splits[0], splits[1], conjunctiveForms);
+            PartitionsByAlgebraProto request = buildFilterWithDBStore(splits[0], splits[1], conjunctiveForms);
             partitions = catalog.getPartitionsByAlgebra(request);
           }
         }
@@ -250,7 +250,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static PartitionsByAlgebraProto buildDirectSQLWithDBStore(
+  public static PartitionsByAlgebraProto buildFilterWithDBStore(
     String databaseName, String tableName, EvalNode [] conjunctiveForms) {
 
     PartitionsByAlgebraProto.Builder request = PartitionsByAlgebraProto.newBuilder();
@@ -286,10 +286,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static PartitionsByDirectSqlProto buildDirectSQLWithHiveCatalogStore(
+  public static PartitionsByFilterProto buildFilterWithHiveCatalogStore(
     String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
 
-    PartitionsByDirectSqlProto.Builder request = PartitionsByDirectSqlProto.newBuilder();
+    PartitionsByFilterProto.Builder request = PartitionsByFilterProto.newBuilder();
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
 
@@ -322,7 +322,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         visitor.clearParameters();
       }
     }
-    request.setDirectSql(sb.toString());
+    request.setFilter(sb.toString());
 
     return request.build();
   }

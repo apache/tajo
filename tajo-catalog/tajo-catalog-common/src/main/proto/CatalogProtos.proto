@@ -267,10 +267,10 @@ message PartitionsByAlgebraProto {
   required string algebra = 3;
 }
 
-message PartitionsByDirectSqlProto {
+message PartitionsByFilterProto {
   required string databaseName = 1;
   required string tableName = 2;
-  required string directSql = 3;
+  required string filter = 3;
 }
 
 message TablespaceProto {

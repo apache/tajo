@@ -2220,8 +2220,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsByDirectSql(PartitionsByDirectSqlProto request) {
-    throw new TajoRuntimeException(new UnsupportedException("getPartitionsByDirectSql"));
+  public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) {
+    throw new TajoRuntimeException(new UnsupportedException("getPartitionsByFilter"));
   }
 
   @Override

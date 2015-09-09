@@ -1107,8 +1107,8 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetPartitionsResponse getPartitionsByDirectSql(RpcController controller,
-                                                 PartitionsByDirectSqlProto request) throws ServiceException {
+    public GetPartitionsResponse getPartitionsByFilter(RpcController controller,
+                                                 PartitionsByFilterProto request) throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
@@ -1132,7 +1132,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        List<PartitionDescProto> partitions = store.getPartitionsByDirectSql(request);
+        List<PartitionDescProto> partitions = store.getPartitionsByFilter(request);
         builder.addAllPartition(partitions);
         builder.setState(OK);
         return builder.build();

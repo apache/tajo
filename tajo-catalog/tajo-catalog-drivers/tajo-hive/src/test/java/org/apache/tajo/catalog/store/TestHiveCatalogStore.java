@@ -275,23 +275,23 @@ public class TestHiveCatalogStore {
     partitionNames.add("n_nationkey=50/n_date=20150802");
     testAddPartitions(table1.getUri(), NATION, partitionNames);
 
-    CatalogProtos.PartitionsByDirectSqlProto.Builder directSQLRequest = CatalogProtos
-      .PartitionsByDirectSqlProto.newBuilder();
+    CatalogProtos.PartitionsByFilterProto.Builder FilterRequest = CatalogProtos
+      .PartitionsByFilterProto.newBuilder();
 
-    directSQLRequest.setDatabaseName(DB_NAME);
-    directSQLRequest.setTableName(NATION);
-    directSQLRequest.setDirectSql("n_nationkey = 10 or n_nationkey = 20");
+    FilterRequest.setDatabaseName(DB_NAME);
+    FilterRequest.setTableName(NATION);
+    FilterRequest.setFilter("n_nationkey = 10 or n_nationkey = 20");
 
-    List<CatalogProtos.PartitionDescProto> tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
+    List<CatalogProtos.PartitionDescProto> tablePartitions = store.getPartitionsByFilter(FilterRequest.build());
     assertEquals(tablePartitions.size(), 4);
 
-    directSQLRequest = CatalogProtos.PartitionsByDirectSqlProto.newBuilder();
-    directSQLRequest.setDatabaseName(DB_NAME);
-    directSQLRequest.setTableName(NATION);
+    FilterRequest = CatalogProtos.PartitionsByFilterProto.newBuilder();
+    FilterRequest.setDatabaseName(DB_NAME);
+    FilterRequest.setTableName(NATION);
 
-    directSQLRequest.setDirectSql("n_nationkey = 10 and n_date = \"20150101\"");
+    FilterRequest.setFilter("n_nationkey = 10 and n_date = \"20150101\"");
 
-    tablePartitions = store.getPartitionsByDirectSql(directSQLRequest.build());
+    tablePartitions = store.getPartitionsByFilter(FilterRequest.build());
     assertEquals(tablePartitions.size(), 1);
 
     testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
