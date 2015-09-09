@@ -1122,7 +1122,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       }
 
       if (addPartitions.size() > 0) {
-        List<Partition> results = client.getHiveClient().add_partitions(addPartitions, true, true);
+        client.getHiveClient().add_partitions(addPartitions, true, true);
       }
     } catch (Exception e) {
       throw new TajoInternalError(e);
