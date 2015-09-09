@@ -1449,7 +1449,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     } else {
       executeString(
         "create table " + tableName + "(col1 int4, col2 int4) partition by column(key date) "
-          + " as select l_orderkey, l_partkey, l_shipdate from lineitem");
+          + " as select l_orderkey, l_partkey, l_shipdate::date from lineitem");
     }
 
     assertTrue(client.existTable(tableName));
@@ -1747,7 +1747,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     executeString("DROP TABLE " + databaseName + "." + tableName + " PURGE").close();
     executeString("DROP database " + databaseName).close();
-    res.close();
   }
 
 }
