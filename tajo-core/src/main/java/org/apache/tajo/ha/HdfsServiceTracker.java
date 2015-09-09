@@ -189,7 +189,10 @@ public class HdfsServiceTracker extends HAServiceTracker {
         }
       }
     }
-    startPingChecker();
+
+    if(!isActiveMaster()) {
+      startPingChecker();
+    }
   }
 
   /**
