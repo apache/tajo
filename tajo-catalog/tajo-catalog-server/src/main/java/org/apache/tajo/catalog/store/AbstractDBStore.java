@@ -2244,11 +2244,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
-      conn = getConnection();
 
       directSQL = getDirectSQL(tableDesc.getTableName(), tableDesc.getPartition()
         .getExpressionSchema().getFieldsList(), request.getAlgebra(), filterSets);
 
+      conn = getConnection();
       pstmt = conn.prepareStatement(directSQL);
 
       // Set table id by force because first parameter of all direct sql is table id
