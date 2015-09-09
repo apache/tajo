@@ -430,8 +430,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final List<PartitionDescProto> getAllPartitions(final String databaseName, final String tableName) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedPartitionException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
@@ -440,7 +439,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
-      throwsIfThisError(response.getState(), UndefinedPartitionException.class);
       ensureOk(response.getState());
       return response.getPartitionList();
 
