@@ -1695,6 +1695,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     String databaseName = "test_partition";
     String tableName = CatalogUtil.normalizeIdentifier("part");
 
+    ClientProtos.SubmitQueryResponse response;
     if (nodeType == NodeType.INSERT) {
       res = executeString(
         "create table " + databaseName + "." + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
@@ -1704,16 +1705,23 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(2, catalog.getTableDesc(databaseName, tableName).getSchema().size());
       assertEquals(3, catalog.getTableDesc(databaseName, tableName).getLogicalSchema().size());
 
-      res = testBase.execute(
+      response = client.executeQuery(
         "insert overwrite into " + databaseName + "." + tableName + " select l_orderkey, l_partkey, " +
           "l_quantity from lineitem");
     } else {
-      res = testBase.execute(
+      response = client.executeQuery(
         "create table "+ databaseName + "." + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
           + " as select l_orderkey, l_partkey, l_quantity from lineitem");
     }
 
-    MasterPlan plan = getQueryPlan(res);
+    QueryId queryId = new QueryId(response.getQueryId());
+    testingCluster.waitForQuerySubmitted(queryId, 10);
+    QueryMasterTask queryMasterTask = testingCluster.getQueryMasterTask(queryId);
+    assertNotNull(queryMasterTask);
+    TajoClientUtil.waitCompletion(client, queryId);
+
+    MasterPlan plan = queryMasterTask.getQuery().getPlan();
+
     ExecutionBlock rootEB = plan.getRoot();
 
     assertEquals(1, plan.getChildCount(rootEB.getId()));
