@@ -1018,7 +1018,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
 
-        List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
+        List<PartitionDescProto> partitions = store.getAllPartitions(dbName, tbName);
 
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
         for (PartitionDescProto partition : partitions) {

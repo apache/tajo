@@ -854,7 +854,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) {
+  public List<CatalogProtos.PartitionDescProto> getAllPartitions(String databaseName, String tableName) {
     throw new TajoRuntimeException(new UnsupportedException("getPartitions"));
   }
 

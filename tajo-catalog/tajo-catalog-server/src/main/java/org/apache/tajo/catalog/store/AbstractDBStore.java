@@ -2136,7 +2136,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<PartitionDescProto> getPartitions(String databaseName, String tableName)
+  public List<PartitionDescProto> getAllPartitions(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedPartitionException{
 
