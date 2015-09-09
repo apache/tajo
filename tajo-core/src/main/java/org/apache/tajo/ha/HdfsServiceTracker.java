@@ -459,11 +459,12 @@ public class HdfsServiceTracker extends HAServiceTracker {
       int maxRetry = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_MAX_NUM);
       int retry = 0;
 
-      FileStatus[] files = fs.listStatus(activeMasterBaseDir);
+
       Path activeMasterEntry = null;
+      FileStatus[] files = null;
 
       loop:while (retry < maxRetry) {
-
+        files = fs.listStatus(activeMasterBaseDir);
         for (FileStatus eachFile : files) {
           //check if active file is written
           if (!eachFile.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE) && eachFile.getLen() > 0) {
@@ -477,12 +478,10 @@ public class HdfsServiceTracker extends HAServiceTracker {
         } catch (InterruptedException e) {
           throw new ServiceTrackerException(e);
         }
-
-        files = fs.listStatus(activeMasterBaseDir);
       }
 
-      if (activeMasterEntry == null) {
-        throw new ServiceTrackerException("No such active master in : " + activeMasterBaseDir);
+      if (files == null || activeMasterEntry == null) {
+        throw new ServiceTrackerException("Active master entry cannot be found in: " + activeMasterBaseDir);
       }
 
       if (files.length < 1) {
