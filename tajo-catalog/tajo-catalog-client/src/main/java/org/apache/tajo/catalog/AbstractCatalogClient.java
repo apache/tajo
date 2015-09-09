@@ -471,7 +471,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
       ensureOk(response.getState());
-    return response.getPartitionList();
+      return response.getPartitionList();
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return null;
