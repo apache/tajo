@@ -79,6 +79,11 @@ message GetIndexByColumnNamesRequest {
   repeated string columnNames = 2;
 }
 
+message GetPartitionsResponse {
+  required ReturnState state = 1;
+  repeated PartitionDescProto partition = 2;
+}
+
 message GetTablePartitionsResponse {
   required ReturnState state = 1;
   repeated TablePartitionProto part = 2;

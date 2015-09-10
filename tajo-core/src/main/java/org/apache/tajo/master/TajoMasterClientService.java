@@ -960,7 +960,7 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, SessionedStringProto request)
+    public PartitionListResponse getPartitionsByTableName(RpcController controller, SessionedStringProto request)
       throws ServiceException {
 
       try {
@@ -978,12 +978,12 @@ public class TajoMasterClientService extends AbstractService {
         }
 
         List<PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
-        return GetPartitionsResponse.newBuilder()
+        return PartitionListResponse.newBuilder()
           .setState(OK)
           .addAllPartition(partitions)
           .build();
       } catch (Throwable t) {
-        return GetPartitionsResponse.newBuilder()
+        return PartitionListResponse.newBuilder()
           .setState(returnError(t))
           .build();
       }

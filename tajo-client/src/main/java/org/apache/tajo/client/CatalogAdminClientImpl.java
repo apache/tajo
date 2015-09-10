@@ -244,7 +244,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   public List<PartitionDescProto> getAllPartitions(final String tableName) {
     final BlockingInterface stub = conn.getTMStub();
 
-    GetPartitionsResponse response;
+    PartitionListResponse response;
     try {
       response = stub.getPartitionsByTableName(null,
         conn.getSessionedString(tableName));
