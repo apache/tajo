@@ -44,7 +44,7 @@ public class JavaResourceUtil {
     if (stream != null) {
       return FileUtil.readTextFromStream(stream);
     } else {
-      return null;
+      throw new FileNotFoundException(resource);
     }
   }
 }
