@@ -287,7 +287,11 @@ public class JSPUtil {
   }
 
   static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.#");
+
   public static String percentFormat(float value) {
+    if (Float.isInfinite(value) || Float.isNaN(value)) {
+      value = 0.0f;
+    }
     return PERCENT_FORMAT.format(value * 100.0f);
   }
 
