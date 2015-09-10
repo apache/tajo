@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
@@ -54,19 +55,9 @@ import static org.junit.Assert.*;
  */
 public class TestSQLAnalyzer {
   @Rule public TestName name = new TestName();
-
-  public static Expr parseQuery(String sql) {
-    ANTLRInputStream input = new ANTLRInputStream(sql);
-    SQLLexer lexer = new SQLLexer(input);
-    CommonTokenStream tokens = new CommonTokenStream(lexer);
-
-    SQLParser parser = new SQLParser(tokens);
-    parser.setErrorHandler(new BailErrorStrategy());
-    parser.setBuildParseTree(true);
-
-    SQLAnalyzer visitor = new SQLAnalyzer();
-    SQLParser.SqlContext context = parser.sql();
-    return visitor.visitSql(context);
+  final static SQLAnalyzer analyzer = new SQLAnalyzer();
+  public static Expr parseQuery(String sql) throws SQLSyntaxError {
+    return analyzer.parse(sql);
   }
 
   public Collection<File> getResourceFiles(String subdir) throws URISyntaxException, IOException {
@@ -134,6 +125,38 @@ public class TestSQLAnalyzer {
         fail("Parsing '" + pair.getFirst() + "' failed, its cause: " + t.getMessage());
       }
     }
+    System.out.flush();
+  }
+
+  /**
+   * In order to add more unit tests, please add SQL files into resources/results/TestSQLAnalyzer/positive.
+   * This test just checkes if SQL statements are parsed successfully.
+   *
+   * @throws IOException
+   * @throws URISyntaxException
+   */
+  @Test
+  public void testErrorMessages() throws IOException, URISyntaxException {
+    for (Pair<String, String> pair : getFileContents("errors")) {
+
+      String fileName = pair.getFirst().split("\\.")[0];
+      String expectedResult = "";
+
+      try {
+        expectedResult = FileUtil.readTextFileFromResource("results/TestSQLAnalyzer/errors/" + fileName + ".result");
+      } catch (FileNotFoundException fnfe) {
+      }
+
+      try {
+        Expr expr = parseQuery(pair.getSecond());
+        System.out.println(expr);
+        fail(pair.getFirst() + " must be failed.");
+      } catch (SQLSyntaxError e) {
+        assertEquals("Error message is different from " + fileName + ".result", expectedResult, e.getMessage());
+      }
+      System.out.println(pair.getFirst() + " test passed...");
+    }
+    System.out.flush();
   }
 
   /**
@@ -148,7 +171,12 @@ public class TestSQLAnalyzer {
   @Test
   public void testGeneratedAlgebras() throws IOException, URISyntaxException {
     for (Pair<String, String> pair : getFileContents(".")) {
-      Expr expr = parseQuery(pair.getSecond());
+      Expr expr = null;
+      try {
+        expr = parseQuery(pair.getSecond());
+      } catch (SQLSyntaxError t) {
+        fail(t.getMessage());
+      }
 
       String expectedResult = null;
       String fileName = null;
@@ -165,6 +193,7 @@ public class TestSQLAnalyzer {
           expectedResult.trim(), expr.toJson().trim());
       System.out.println(pair.getFirst() + " test passed..");
     }
+    System.out.flush();
   }
 
   private static Expr parseExpr(String sql) {
@@ -194,6 +223,7 @@ public class TestSQLAnalyzer {
       testExprs(pair.getFirst(), pair.getSecond());
       System.out.println(pair.getFirst() + " test passed..");
     }
+    System.out.flush();
   }
 
   private void testExprs(String file, String fileContents) {
