@@ -165,9 +165,6 @@ public interface CatalogService {
   List<PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException;
 
-  boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
-  UndefinedTableException, UndefinedPartitionMethodException;
-
   List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 

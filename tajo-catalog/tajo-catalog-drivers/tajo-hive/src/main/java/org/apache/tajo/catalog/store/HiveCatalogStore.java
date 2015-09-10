@@ -861,11 +861,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public boolean existPartitions(String databaseName, String tableName) {
-    throw new TajoRuntimeException(new UnsupportedException());
-  }
-
-  @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 

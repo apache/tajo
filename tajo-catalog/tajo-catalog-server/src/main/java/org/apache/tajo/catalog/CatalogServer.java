@@ -957,44 +957,6 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public ReturnState existPartitionsByTableName(RpcController controller, TableIdentifierProto request)
-      throws ServiceException {
-      String dbName = request.getDatabaseName();
-      String tbName = request.getTableName();
-
-      try {
-        // linked meta data do not support partition.
-        // So, the request that wants to get partitions in this db will be failed.
-        if (linkedMetadataManager.existsDatabase(dbName)) {
-          return errUndefinedPartitionMethod(tbName);
-        }
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-        return returnError(t);
-      }
-
-      if (metaDictionary.isSystemDatabase(dbName)) {
-        return errUndefinedPartitionMethod(tbName);
-      }
-
-      rlock.lock();
-      try {
-        if (store.existPartitions(dbName, tbName)) {
-          return OK;
-        } else {
-          return errUndefinedPartitions(tbName);
-        }
-
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-        return returnError(t);
-
-      } finally {
-        rlock.unlock();
-      }
-    }
-
-    @Override
     public GetPartitionsResponse getPartitionsByTableName(RpcController controller, TableIdentifierProto request)
       throws ServiceException {
       String dbName = request.getDatabaseName();

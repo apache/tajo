@@ -21,15 +21,15 @@ package org.apache.tajo.exception;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class UndefinedPartitionsException extends TajoException {
+public class PartitionNotFoundException extends TajoException {
 
   private static final long serialVersionUID = 277182608283894939L;
 
-  public UndefinedPartitionsException(ReturnState state) {
+  public PartitionNotFoundException(ReturnState state) {
     super(state);
   }
 
-  public UndefinedPartitionsException(String tableName) {
-    super(ResultCode.UNDEFINED_PARTITION, tableName);
+  public PartitionNotFoundException(String tableName) {
+    super(ResultCode.PARTITION_NOT_FOUND, tableName);
   }
 }

@@ -122,7 +122,6 @@ service CatalogProtocolService {
 
   rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (GetPartitionDescResponse);
   rpc getPartitionsByTableName(TableIdentifierProto) returns (GetPartitionsResponse);
-  rpc existPartitionsByTableName(TableIdentifierProto) returns (ReturnState);
   rpc getAllPartitions(NullProto) returns (GetTablePartitionsResponse);
   rpc addPartitions(AddPartitionsProto) returns (ReturnState);
   rpc getPartitionsByAlgebra(PartitionsByAlgebraProto) returns (GetPartitionsResponse);

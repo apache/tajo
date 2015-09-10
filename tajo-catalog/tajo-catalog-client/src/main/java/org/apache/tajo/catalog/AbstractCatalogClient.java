@@ -448,17 +448,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean existPartitions(String databaseName, String tableName) {
-    try {
-      final BlockingInterface stub = getStub();
-      final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
-      return isSuccess(stub.existPartitionsByTableName(null, request));
-    } catch (ServiceException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     try {

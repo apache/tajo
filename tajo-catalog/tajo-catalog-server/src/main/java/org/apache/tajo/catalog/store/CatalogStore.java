@@ -100,9 +100,6 @@ public interface CatalogStore extends Closeable {
   List<CatalogProtos.PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException;
 
-  boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException;
-
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                 String partitionName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException;

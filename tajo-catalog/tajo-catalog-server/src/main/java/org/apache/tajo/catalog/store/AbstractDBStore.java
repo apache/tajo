@@ -2178,22 +2178,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return partitions;
   }
 
-  @Override
-  public boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException {
+  public boolean existPartitionsOnCatalog(int databaseId, int tableId) {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
     boolean result = false;
 
     try {
-      int databaseId = getDatabaseId(databaseName);
-      int tableId = getTableId(databaseId, databaseName, tableName);
-
-      if (!existPartitionMethod(databaseName, tableName)) {
-        throw new UndefinedPartitionMethodException(tableName);
-      }
-
       String sql = "SELECT COUNT(*) CNT FROM "
         + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
 
@@ -2241,6 +2232,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
       if (!existPartitionMethod(request.getDatabaseName(), request.getTableName())) {
         throw new UndefinedPartitionMethodException(request.getTableName());
+      }
+
+      if (!existPartitionsOnCatalog(databaseId, tableId)) {
+        throw new PartitionNotFoundException(request.getTableName());
       }
 
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
