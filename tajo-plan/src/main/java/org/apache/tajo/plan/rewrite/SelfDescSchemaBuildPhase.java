@@ -18,11 +18,9 @@
 
 package org.apache.tajo.plan.rewrite;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.LogicalPlan;
@@ -50,11 +48,17 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     return "Self-describing schema build phase";
   }
 
+  private static String getQualifiedRelationName(PlanContext context, Relation relation) {
+    return CatalogUtil.isFQTableName(relation.getName()) ?
+        relation.getName() :
+        CatalogUtil.buildFQName(context.getQueryContext().get(SessionVars.CURRENT_DATABASE), relation.getName());
+  }
+
   @Override
   public boolean isEligible(PlanContext context, Expr expr) throws TajoException {
     Set<Relation> relations = ExprFinder.finds(expr, OpType.Relation);
     for (Relation eachRelation : relations) {
-      if (catalog.getTableDesc(eachRelation.getCanonicalName()).hasSelfDescSchema()) {
+      if (catalog.getTableDesc(getQualifiedRelationName(context, eachRelation)).hasSelfDescSchema()) {
         return true;
       }
     }
@@ -79,39 +83,6 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
   }
 
   static class Processor extends BaseAlgebraVisitor<ProcessorContext, LogicalNode> {
-
-//    @Override
-//    public LogicalNode postHook(ProcessorContext ctx, Stack<Expr> stack, Expr expr, LogicalNode current)
-//        throws TajoException {
-//      QueryBlock queryBlock = ctx.planContext.getPlan().getBlockByExpr(expr);
-//      LogicalNode currentNode = queryBlock.getNodeFromExpr(expr);
-//      if (expr instanceof UnaryOperator) {
-//        Expr childExpr = ((UnaryOperator) expr).getChild();
-//        LogicalNode childNode = queryBlock.getNodeFromExpr(childExpr);
-//        currentNode.setInSchema(childNode.getOutSchema());
-//        currentNode.setOutSchema(currentNode.getInSchema());
-//      } else if (expr instanceof Join) {
-//        Expr leftChildExpr = ((Join) expr).getLeft();
-//        Expr rightChildExpr = ((Join) expr).getRight();
-//        LogicalNode leftChildNode = queryBlock.getNodeFromExpr(leftChildExpr);
-//        LogicalNode rightChildNode = queryBlock.getNodeFromExpr(rightChildExpr);
-//        currentNode.setInSchema(SchemaUtil.merge(leftChildNode.getOutSchema(), rightChildNode.getOutSchema()));
-//        currentNode.setOutSchema(currentNode.getInSchema());
-//      } else if (expr instanceof SetOperation) {
-//        Expr childExpr = ((SetOperation) expr).getLeft();
-//        LogicalNode childNode = queryBlock.getNodeFromExpr(childExpr);
-//        currentNode.setInSchema(childNode.getOutSchema());
-//        currentNode.setOutSchema(currentNode.getInSchema());
-//      } else if (expr instanceof TablePrimarySubQuery) {
-//        Expr subqueryExpr = ((TablePrimarySubQuery) expr).getSubQuery();
-//        QueryBlock childBlock = ctx.planContext.getPlan().getBlockByExpr(subqueryExpr);
-//        LogicalNode subqueryNode = childBlock.getNodeFromExpr(subqueryExpr);
-//        currentNode.setInSchema(subqueryNode.getOutSchema());
-//        currentNode.setOutSchema(currentNode.getInSchema());
-//      }
-//
-//      return current;
-//    }
 
     private static <T extends LogicalNode> T getNodeFromExpr(LogicalPlan plan, Expr expr) {
       return plan.getBlockByExpr(expr).getNodeFromExpr(expr);
@@ -286,15 +257,13 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       TableDesc desc = scan.getTableDesc();
 
       if (desc.hasSelfDescSchema()) {
-        if (ctx.projectColumns.containsKey(expr.getCanonicalName())) {
+        if (ctx.projectColumns.containsKey(getQualifiedRelationName(ctx.planContext, expr))) {
           Schema schema = new Schema();
-          for (ColumnReferenceExpr col : ctx.projectColumns.get(expr.getCanonicalName())) {
+          for (ColumnReferenceExpr col : ctx.projectColumns.get(getQualifiedRelationName(ctx.planContext, expr))) {
             schema.addColumn(NameResolver.resolve(plan, queryBlock, col, NameResolvingMode.RELS_ONLY));
           }
           desc.setSchema(schema);
           scan.init(desc);
-//          scan.setInSchema(schema);
-//          scan.setOutSchema(schema);
         } else {
           // error
           throw new RuntimeException("Error");

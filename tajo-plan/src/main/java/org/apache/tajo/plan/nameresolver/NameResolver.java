@@ -432,15 +432,17 @@ public abstract class NameResolver {
       // check self-describing relations
       for (RelationNode rel : block.getRelations()) {
         if (describeSchemaByItself(rel)) {
+          columnNamePosition = 0;
           guessedRelations.add(rel);
         }
       }
 
       if (guessedRelations.size() > 1) {
         throw new AmbiguousColumnException(columnRef.getCanonicalName());
+      } else if (guessedRelations.size() == 0) {
+        throw new UndefinedColumnException(columnRef.getCanonicalName());
       }
 
-      throw new UndefinedColumnException(columnRef.getCanonicalName());
     } else if (guessedRelations.size() > 1) {
       throw new AmbiguousColumnException(columnRef.getCanonicalName());
     }
