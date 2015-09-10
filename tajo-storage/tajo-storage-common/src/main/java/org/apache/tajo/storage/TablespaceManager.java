@@ -279,7 +279,7 @@ public class TablespaceManager implements StorageService {
     Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(UriUtil.getScheme(uri));
 
     if (clazz == null) {
-      throw new RuntimeException("There is no tablespace for " + uri.toString());
+      throw new RuntimeException("Not found Tablespace handler for " + uri.toString());
     }
 
     try {
