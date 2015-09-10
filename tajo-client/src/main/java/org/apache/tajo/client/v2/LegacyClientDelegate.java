@@ -66,6 +66,12 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
   }
 
   @Override
+  public void close() {
+    executor.shutdown();
+    super.close();
+  }
+
+  @Override
   public int executeUpdate(String sql) throws TajoException {
     queryClient.updateQuery(sql);
     return 0;
