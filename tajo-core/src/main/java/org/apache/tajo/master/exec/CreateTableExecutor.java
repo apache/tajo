@@ -78,7 +78,7 @@ public class CreateTableExecutor {
   public TableDesc create(QueryContext queryContext,
                           String tableName,
                           @Nullable String tableSpaceName,
-                          Schema schema,
+                          @Nullable Schema schema,
                           TableMeta meta,
                           @Nullable URI uri,
                           boolean isExternal,

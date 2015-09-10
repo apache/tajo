@@ -37,6 +37,10 @@ public class ResolverBySubExprsAndRels extends NameResolver {
     }
 
     if (column == null) {
+      column = resolveFromAllSelfDescReslInAllBlocks(plan, block, columnRef);
+    }
+
+    if (column == null) {
       throw new UndefinedColumnException(columnRef.getCanonicalName());
     }
     return column;

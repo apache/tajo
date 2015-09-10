@@ -205,4 +205,18 @@ public class TestSQLAnalyzer {
       }
     }
   }
+
+  @Test
+  public void testSchemaless1() {
+    String sql = "create external table schemaless using json with ('compression.codec'='none') partition by column (id int8) location 'file:///schemaless'";
+    Expr expr = parseQuery(sql);
+    System.out.println(expr);
+  }
+
+  @Test
+  public void testSchemaless2() {
+    String sql = "create table schemaless using json with ('compression.codec'='none') partition by column (id int8)";
+    Expr expr = parseQuery(sql);
+    System.out.println(expr);
+  }
 }

@@ -1285,9 +1285,13 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
-      ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
+      if (checkIfExist(ctx.table_elements())) {
+        ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
+        createTable.setTableElements(elements);
+      } else {
+        createTable.setHasSelfDesribeSchema();
+      }
       String storageType = ctx.storage_type.getText();
-      createTable.setTableElements(elements);
       createTable.setStorageType(storageType);
 
       if (checkIfExist(ctx.LOCATION())) {
@@ -1298,6 +1302,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (checkIfExist(ctx.table_elements())) {
         ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
         createTable.setTableElements(elements);
+      } else {
+        createTable.setHasSelfDesribeSchema();
       }
 
       if (checkIfExist(ctx.TABLESPACE())) {

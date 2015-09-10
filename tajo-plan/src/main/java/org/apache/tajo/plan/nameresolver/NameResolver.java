@@ -26,9 +26,11 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.RelationNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
@@ -178,18 +180,24 @@ public abstract class NameResolver {
         throw new UndefinedTableException(qualifier);
       }
 
-      // Please consider a query case:
-      // select lineitem.l_orderkey from lineitem a order by lineitem.l_orderkey;
-      //
-      // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still should be available.
-      // The below code makes it possible. Otherwise, it cannot find any match in the relation schema.
-      if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
-        canonicalName =
-            CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
-      }
+      Column column;
+      if (describeSchemaByItself(relationOp)) {
+        column = guessColumn(CatalogUtil.buildFQName(normalized.getFirst(), normalized.getSecond()));
 
-      Schema schema = relationOp.getLogicalSchema();
-      Column column = schema.getColumn(canonicalName);
+      } else {
+        // Please consider a query case:
+        // select lineitem.l_orderkey from lineitem a order by lineitem.l_orderkey;
+        //
+        // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still should be available.
+        // The below code makes it possible. Otherwise, it cannot find any match in the relation schema.
+        if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
+          canonicalName =
+              CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
+        }
+
+        Schema schema = relationOp.getLogicalSchema();
+        column = schema.getColumn(canonicalName);
+      }
 
       return column;
     } else {
@@ -248,8 +256,30 @@ public abstract class NameResolver {
     if (!candidates.isEmpty()) {
       return ensureUniqueColumn(candidates);
     } else {
+      List<RelationNode> candidateRels = TUtil.newList();
+      for (RelationNode rel : block.getRelations()) {
+        if (describeSchemaByItself(rel)) {
+          candidateRels.add(rel);
+        }
+      }
+      if (candidateRels.size() == 1) {
+        return guessColumn(CatalogUtil.buildFQName(candidateRels.get(0).getCanonicalName(), columnName));
+      } else if (candidateRels.size() > 1) {
+        // TODO: TooManySchemalessRelationsException
+        throw new AmbiguousColumnException(columnName);
+      }
+
       return null;
     }
+  }
+
+  static boolean describeSchemaByItself(RelationNode relationNode) {
+    return relationNode instanceof ScanNode && ((ScanNode) relationNode).getTableDesc().hasSelfDescSchema();
+  }
+
+  static Column guessColumn(String qualifiedName) {
+    // TODO: other data types must be supported.
+    return new Column(qualifiedName, Type.TEXT);
   }
 
   /**
@@ -271,6 +301,31 @@ public abstract class NameResolver {
         Column found = rel.getLogicalSchema().getColumn(columnRef.getName());
         if (found != null) {
           candidates.add(found);
+        }
+      }
+    }
+
+    if (!candidates.isEmpty()) {
+      return NameResolver.ensureUniqueColumn(candidates);
+    } else {
+      return null;
+    }
+  }
+
+
+
+  static Column resolveFromAllSelfDescReslInAllBlocks(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+      throws AmbiguousColumnException{
+    List<Column> candidates = Lists.newArrayList();
+
+    // from all relations of all query blocks
+    for (LogicalPlan.QueryBlock eachBlock : plan.getQueryBlocks()) {
+
+      for (RelationNode rel : eachBlock.getRelations()) {
+        if (describeSchemaByItself(rel)) {
+          Column col = guessColumn(CatalogUtil.buildFQName(rel.getCanonicalName(),
+              columnRef.getCanonicalName()));
+          candidates.add(col);
         }
       }
     }
@@ -374,13 +429,24 @@ public abstract class NameResolver {
 
     // throw exception if no column cannot be founded or two or more than columns are founded
     if (guessedRelations.size() == 0) {
+      // check self-describing relations
+      for (RelationNode rel : block.getRelations()) {
+        if (describeSchemaByItself(rel)) {
+          guessedRelations.add(rel);
+        }
+      }
+
+      if (guessedRelations.size() > 1) {
+        throw new AmbiguousColumnException(columnRef.getCanonicalName());
+      }
+
       throw new UndefinedColumnException(columnRef.getCanonicalName());
     } else if (guessedRelations.size() > 1) {
       throw new AmbiguousColumnException(columnRef.getCanonicalName());
     }
 
     String qualifier = guessedRelations.iterator().next().getCanonicalName();
-    String columnName = "";
+    String columnName;
 
     if (columnNamePosition >= qualifierParts.length) { // if there is no column in qualifierParts
       columnName = columnRef.getName();
@@ -398,7 +464,7 @@ public abstract class NameResolver {
       columnName += NestedPathUtil.PATH_DELIMITER + columnRef.getName();
     }
 
-    return new Pair<String, String>(qualifier, columnName);
+    return new Pair<>(qualifier, columnName);
   }
 
   static Column ensureUniqueColumn(List<Column> candidates) throws AmbiguousColumnException {

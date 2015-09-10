@@ -711,7 +711,10 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     if (node.hasUri()) {
       storeTableBuilder.setUri(node.getUri().toString());
     }
-    storeTableBuilder.setTableSchema(node.getTableSchema().getProto());
+
+    if (node.hasTableSchema()) {
+      storeTableBuilder.setTableSchema(node.getTableSchema().getProto());
+    }
 
     if (node.hasPartition()) {
       storeTableBuilder.setPartitionMethod(node.getPartitionMethod().getProto());

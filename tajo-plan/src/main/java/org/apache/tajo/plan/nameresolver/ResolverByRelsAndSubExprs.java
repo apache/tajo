@@ -33,7 +33,11 @@ public class ResolverByRelsAndSubExprs extends NameResolver {
 
     Column column = resolveFromRelsWithinBlock(plan, block, columnRef);
     if (column == null) {
-      column =  resolveFromCurrentAndChildNode(block, columnRef);
+      column = resolveFromCurrentAndChildNode(block, columnRef);
+    }
+
+    if (column == null) {
+      column = resolveFromAllSelfDescReslInAllBlocks(plan, block, columnRef);
     }
 
     if (column == null) {

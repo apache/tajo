@@ -32,9 +32,15 @@ public class ResolverByRels extends NameResolver {
       throws AmbiguousColumnException, AmbiguousTableException, UndefinedColumnException, UndefinedTableException {
 
     Column column = resolveFromRelsWithinBlock(plan, block, columnRef);
-    if (column == null) {
-      throw new UndefinedColumnException(columnRef.getCanonicalName());
+    if (column != null) {
+      return column;
     }
-    return column;
+
+    column = resolveFromAllSelfDescReslInAllBlocks(plan, block, columnRef);
+    if (column != null) {
+      return column;
+    }
+
+    throw new UndefinedColumnException(columnRef.getCanonicalName());
   }
 }

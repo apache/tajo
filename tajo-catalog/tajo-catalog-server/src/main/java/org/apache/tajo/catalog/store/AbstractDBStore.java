@@ -801,7 +801,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn.setAutoCommit(false);
 
       String sql = "INSERT INTO TABLES (DB_ID, " + COL_TABLES_NAME +
-          ", TABLE_TYPE, PATH, STORE_TYPE) VALUES(?, ?, ?, ?, ?) ";
+          ", TABLE_TYPE, PATH, STORE_TYPE, HAS_SELF_DESCRIBE_SCHEMA) VALUES(?, ?, ?, ?, ?, ?) ";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -817,6 +817,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       pstmt.setString(4, table.getPath());
       pstmt.setString(5, table.getMeta().getStoreType());
+      pstmt.setBoolean(6, table.hasSelfDescSchema());
       pstmt.executeUpdate();
       pstmt.close();
 
@@ -1619,7 +1620,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Geting Table Description
       //////////////////////////////////////////
       String sql =
-          "SELECT TID, " + COL_TABLES_NAME + ", TABLE_TYPE, PATH, STORE_TYPE FROM TABLES " +
+          "SELECT TID, " + COL_TABLES_NAME + ", TABLE_TYPE, PATH, STORE_TYPE, HAS_SELF_DESCRIBE_SCHEMA FROM TABLES " +
               "WHERE DB_ID = ? AND " + COL_TABLES_NAME + "=?";
 
       if (LOG.isDebugEnabled()) {
@@ -1645,34 +1646,37 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       tableBuilder.setPath(res.getString(4).trim());
       storeType = res.getString(5).trim();
+      tableBuilder.setSelfDescSchema(res.getBoolean(6));
 
       res.close();
       pstmt.close();
 
-      //////////////////////////////////////////
-      // Geting Column Descriptions
-      //////////////////////////////////////////
-      CatalogProtos.SchemaProto.Builder schemaBuilder = CatalogProtos.SchemaProto.newBuilder();
-      sql = "SELECT COLUMN_NAME, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH from " + TB_COLUMNS +
-          " WHERE " + COL_TABLES_PK + " = ? ORDER BY ORDINAL_POSITION ASC";
+      if (!tableBuilder.getSelfDescSchema()) {
+        //////////////////////////////////////////
+        // Geting Column Descriptions
+        //////////////////////////////////////////
+        CatalogProtos.SchemaProto.Builder schemaBuilder = CatalogProtos.SchemaProto.newBuilder();
+        sql = "SELECT COLUMN_NAME, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH from " + TB_COLUMNS +
+            " WHERE " + COL_TABLES_PK + " = ? ORDER BY ORDINAL_POSITION ASC";
 
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sql);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql);
+        }
+
+        pstmt = conn.prepareStatement(sql);
+        pstmt.setInt(1, tableId);
+        res = pstmt.executeQuery();
+
+        while (res.next()) {
+          schemaBuilder.addFields(resultToColumnProto(res));
+        }
+
+        tableBuilder.setSchema(
+            CatalogUtil.getQualfiedSchema(databaseName + "." + tableName, schemaBuilder.build()));
+
+        res.close();
+        pstmt.close();
       }
-
-      pstmt = conn.prepareStatement(sql);
-      pstmt.setInt(1, tableId);
-      res = pstmt.executeQuery();
-
-      while (res.next()) {
-        schemaBuilder.addFields(resultToColumnProto(res));
-      }
-
-      tableBuilder.setSchema(
-          CatalogUtil.getQualfiedSchema(databaseName + "." + tableName, schemaBuilder.build()));
-
-      res.close();
-      pstmt.close();
 
       //////////////////////////////////////////
       // Geting Table Properties
