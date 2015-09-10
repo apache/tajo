@@ -19,9 +19,12 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.junit.Test;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertTrue;
 
 public class TestQueryValidation extends QueryTestCaseBase {
 
@@ -61,5 +64,27 @@ public class TestQueryValidation extends QueryTestCaseBase {
   public void testUnsupportedStoreType() throws IOException {
     // See TAJO-1249
     assertInvalidSQLFromFile("invalid_store_format.sql");
+  }
+
+  @Test
+  public void testCreateExternalTableWithTablespace() throws Exception {
+    boolean sqlSyntaxErrorFound = false;
+    try {
+      executeFile("create_external_table_with_tablespace.sql");
+    } catch (SQLSyntaxError sqlSyntaxError) {
+      sqlSyntaxErrorFound = true;
+    }
+    assertTrue(sqlSyntaxErrorFound);
+  }
+
+  @Test
+  public void testCreateExternalTableWithoutLocation() throws Exception {
+    boolean sqlSyntaxErrorFound = false;
+    try {
+      executeFile("create_external_table_without_location.sql");
+    } catch (SQLSyntaxError sqlSyntaxError) {
+      sqlSyntaxErrorFound = true;
+    }
+    assertTrue(sqlSyntaxErrorFound);
   }
 }
