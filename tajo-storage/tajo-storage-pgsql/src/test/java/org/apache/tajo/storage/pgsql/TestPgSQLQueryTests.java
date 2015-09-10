@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.pgsql;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.conf.TajoConf;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,7 +76,24 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @SimpleTest
   @Test
   public void testTPCH_Q2_Part_MixedStorage() throws Exception {
-    runSimpleTests();
+    // Manually enable broadcast feature
+    try {
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "true");
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
+          "" + (5 * 1024));
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+          "" + (2 * 1024));
+
+      runSimpleTests();
+
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
+          TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
+          TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+          TajoConf.ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.defaultVal);
+    }
   }
 
   @SimpleTest
