@@ -126,6 +126,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return queryBlock;
     }
 
+    public LogicalPlan getPlan() {
+      return plan;
+    }
+
     public OverridableConf getQueryContext() {
       return queryContext;
     }
@@ -160,7 +164,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     PlanContext context = new PlanContext(queryContext, plan, rootBlock, evalOptimizer, debug);
-    preprocessor.visit(context, new Stack<Expr>(), expr);
+    preprocessor.process(context, expr);
     plan.resetGeneratedId();
     LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
 

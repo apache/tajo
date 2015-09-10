@@ -39,7 +39,7 @@ public interface LogicalPlanRewriteRule {
    * For example, the selection push down can not be applied to the query plan without any filter.
    * In such case, it will return false.
    *
-   * @param plan The plan to be checked
+   * @param context rewrite rule context.
    * @return True if this rule can be applied to a given plan. Otherwise, false.
    */
   boolean isEligible(LogicalPlanRewriteRuleContext context);
@@ -49,7 +49,7 @@ public interface LogicalPlanRewriteRule {
    * It must be guaranteed that the input logical plan is not modified even after rewrite.
    * In other words, the rewrite has to modify an plan copied from the input plan.
    *
-   * @param plan Input logical plan. It will not be modified.
+   * @param context rewrite rule context.
    * @return The rewritten logical plan.
    */
   LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException;
