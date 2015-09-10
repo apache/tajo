@@ -19,18 +19,9 @@
 package org.apache.tajo.master;
 
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogConstants.INFORMATION_SCHEMA_TABLES;
 import org.junit.Test;
 
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class TestNonForwardQueryResultSystemScanner extends QueryTestCaseBase {
-
-
   @Test
   public void testGetNextRowsForAggregateFunction() throws Exception {
     assertQueryStr("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES " +
@@ -46,21 +37,5 @@ public class TestNonForwardQueryResultSystemScanner extends QueryTestCaseBase {
   @Test
   public void testGetClusterDetails() throws Exception {
     assertQueryStr("SELECT TYPE FROM INFORMATION_SCHEMA.CLUSTER");
-  }
-
-  @Test
-  public void testGetTables() throws Exception {
-    List<String> tables = client.getTableList(CatalogConstants.INFORMATION_SCHEMA_DB_NAME);
-    assertEquals(10, tables.size());
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.TABLESPACE.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.DATABASES.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.TABLES.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.COLUMNS.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.INDEXES.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.TABLE_OPTIONS.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.TABLE_STATS.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.PARTITIONS.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.CLUSTER.name().toLowerCase()));
-    assertTrue(tables.contains(INFORMATION_SCHEMA_TABLES.SESSION.name().toLowerCase()));
   }
 }

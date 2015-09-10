@@ -61,17 +61,4 @@ public class CatalogConstants {
   public static final String COL_PARTITION_VALUE = "PARTITION_VALUE";
   
   public static final String INFORMATION_SCHEMA_DB_NAME = "information_schema";
-
-  public static enum INFORMATION_SCHEMA_TABLES {
-    TABLESPACE,
-    DATABASES,
-    TABLES,
-    COLUMNS,
-    INDEXES,
-    TABLE_OPTIONS,
-    TABLE_STATS,
-    PARTITIONS,
-    CLUSTER,
-    SESSION
-  }
 }
