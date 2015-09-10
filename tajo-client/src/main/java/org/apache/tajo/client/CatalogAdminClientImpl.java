@@ -241,6 +241,22 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
+  public List<PartitionDescProto> getAllPartitions(final String tableName) {
+    final BlockingInterface stub = conn.getTMStub();
+
+    GetPartitionsResponse response;
+    try {
+      response = stub.getPartitionsByTableName(null,
+        conn.getSessionedString(tableName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    ensureOk(response.getState());
+    return response.getPartitionList();
+  }
+
+  @Override
   public List<FunctionDescProto> getFunctions(final String functionName) {
 
     final BlockingInterface stub = conn.getTMStub();
