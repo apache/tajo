@@ -23,6 +23,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestPgSQLQueryTests extends QueryTestCaseBase {
+  @SuppressWarnings("unused")
+  // This should be invoked for initializing PgSQLTestServer
   private static final String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrl();
 
   public TestPgSQLQueryTests() {
@@ -32,12 +34,6 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @BeforeClass
   public static void setUp() {
     QueryTestCaseBase.testingCluster.getMaster().refresh();
-  }
-
-  @SimpleTest
-  @Test
-  public void testSimpleFilter() throws Exception {
-    runSimpleTests();
   }
 
   @SimpleTest
@@ -74,5 +70,50 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @Test
   public void testTPCH_Q2_Part() throws Exception {
     runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testTPCH_Q2_Part_MixedStorage() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testSimpleFilter() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testInPredicateWithNumbers() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testInPredicateWithLiterals() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testCountAsterisk() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testCtasToHdfs() throws Exception {
+    try {
+      executeString("CREATE DATABASE pgtmp").close();
+      executeString("CREATE TABLE pgtmp.offload AS SELECT * FROM LINEITEM").close();
+
+      runSimpleTests();
+
+    } finally {
+      executeString("DROP TABLE IF EXISTS pgtmp.offload").close();
+      executeString("DROP DATABASE IF EXISTS pgtmp").close();
+    }
   }
 }

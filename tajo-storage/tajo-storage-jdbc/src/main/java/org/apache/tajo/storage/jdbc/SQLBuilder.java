@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.jdbc;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -51,12 +52,17 @@ public class SQLBuilder {
   public String build(String tableName, Column [] targets, @Nullable EvalNode filter, @Nullable Long limit) {
 
     StringBuilder selectClause = new StringBuilder("SELECT ");
-    selectClause.append(StringUtils.join(targets, ",", new Function<Column, String>() {
-      @Override
-      public String apply(@Nullable Column input) {
-        return input.getSimpleName();
-      }
-    })).append(" ");
+    if (targets.length > 0) {
+      selectClause.append(StringUtils.join(targets, ",", new Function<Column, String>() {
+        @Override
+        public String apply(@Nullable Column input) {
+          return input.getSimpleName();
+        }
+      }));
+    } else {
+      selectClause.append("1");
+    }
+    selectClause.append(" ");
 
     StringBuilder fromClause = new StringBuilder("FROM ");
     fromClause.append(tableName).append(" ");
@@ -148,16 +154,13 @@ public class SQLBuilder {
   public void visitScan(SQLBuilderContext ctx, ScanNode scan, Stack<LogicalNode> stack) {
 
     StringBuilder selectClause = new StringBuilder("SELECT ");
-    selectClause.append(StringUtils.join(scan.getTargets(), ",", new Function<Target, String>() {
-      @Override
-      public String apply(@Nullable Target t) {
-        StringBuilder sb = new StringBuilder(sqlExprGen.generate(t.getEvalTree()));
-        if (t.hasAlias()) {
-          sb.append(" AS ").append(t.getAlias());
-        }
-        return sb.toString();
-      }
-    }));
+    if (scan.getTargets().length > 0) {
+      selectClause.append(generateTargetList(scan.getTargets()));
+    } else {
+      selectClause.append("1");
+    }
+
+    selectClause.append(" ");
 
     ctx.sb.append("FROM ").append(scan.getTableName()).append(" ");
 
@@ -168,5 +171,18 @@ public class SQLBuilder {
     if (scan.hasQual()) {
       ctx.sb.append("WHERE " + sqlExprGen.generate(scan.getQual()));
     }
+  }
+
+  public String generateTargetList(Target [] targets) {
+    return StringUtils.join(targets, ",", new Function<Target, String>() {
+      @Override
+      public String apply(@Nullable Target t) {
+        StringBuilder sb = new StringBuilder(sqlExprGen.generate(t.getEvalTree()));
+        if (t.hasAlias()) {
+          sb.append(" AS ").append(t.getAlias());
+        }
+        return sb.toString();
+      }
+    });
   }
 }

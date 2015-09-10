@@ -18,12 +18,14 @@
 
 package org.apache.tajo.storage.jdbc;
 
+import com.google.common.base.Function;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.util.StringUtils;
 
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
@@ -117,18 +119,13 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
 
   protected EvalNode visitRowConstant(Context context, RowConstantEval row, Stack<EvalNode> stack) {
     StringBuilder sb = new StringBuilder("(");
-
-    boolean first = true;
-    for (Datum d : row.getValues()) {
-      if (!first) {
-        sb.append(",");
-        first = false;
+    sb.append(StringUtils.join(row.getValues(), ",", new Function<Datum, String>() {
+      @Override
+      public String apply(Datum v) {
+        return convertLiteralToSQLRepr(v);
       }
-      sb.append(convertLiteralToSQLRepr(d));
-    }
-
+    }));
     sb.append(")");
-
     context.put(sb.toString());
 
     return row;
