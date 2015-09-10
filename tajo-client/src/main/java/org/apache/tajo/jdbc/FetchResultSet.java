@@ -21,11 +21,17 @@ package org.apache.tajo.jdbc;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.client.QueryClient;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.DefaultTajoException;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class FetchResultSet extends TajoResultSetBase {
   protected QueryClient tajoClient;
@@ -84,8 +90,11 @@ public class FetchResultSet extends TajoResultSetBase {
       }
 
       return null;
-    } catch (Throwable t) {
+    } catch (ExecutionException e) {
+      Throwable t = e.getCause();
       throw new IOException(t.getMessage(), t);
+    } catch (Throwable t) {
+      throw new TajoInternalError(t);
     }
   }
 
@@ -94,6 +103,21 @@ public class FetchResultSet extends TajoResultSetBase {
     if (currentResultSet != null) {
       currentResultSet.close();
       currentResultSet = null;
+    }
+
+    if (nextResultSet != null) {
+      try {
+        nextResultSet.get(1, TimeUnit.SECONDS).close();
+      } catch (ExecutionException e) {
+        Throwable t = e.getCause();
+        if (t instanceof DefaultTajoException) {
+          throw SQLExceptionUtil.toSQLException((DefaultTajoException) t);
+        } else {
+          throw new TajoSQLException(Errors.ResultCode.INTERNAL_ERROR, t, t.getMessage());
+        }
+      } catch (Throwable t) {
+        throw new TajoSQLException(Errors.ResultCode.INTERNAL_ERROR, t, t.getMessage());
+      }
     }
     tajoClient.closeQuery(queryId);
   }

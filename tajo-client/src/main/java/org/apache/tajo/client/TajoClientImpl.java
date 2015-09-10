@@ -137,10 +137,6 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.getResultResponse(queryId);
   }
 
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws TajoException {
-    return queryClient.fetchNextQueryResult(queryId, fetchRowNum);
-  }
-
   @Override
   public Future<TajoMemoryResultSet> asyncFetchNextQueryResult(QueryId queryId, int fetchRowNum) {
     return queryClient.asyncFetchNextQueryResult(queryId, fetchRowNum);

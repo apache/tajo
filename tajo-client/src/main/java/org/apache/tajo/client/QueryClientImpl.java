@@ -346,8 +346,8 @@ public class QueryClientImpl implements QueryClient {
     return future;
   }
 
-  @Override
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws TajoException {
+  protected TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum)
+      throws TajoException {
 
     boolean compress = conn.getProperties().getBool(SessionVars.RESULT_COMPRESS);
 
