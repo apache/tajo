@@ -241,7 +241,9 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public List<PartitionDescProto> getAllPartitions(final String tableName) {
+  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException {
+
     final BlockingInterface stub = conn.getTMStub();
 
     PartitionListResponse response;
@@ -250,6 +252,18 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
         conn.getSessionedString(tableName));
     } catch (ServiceException e) {
       throw new RuntimeException(e);
+    }
+
+    if (isThisError(response.getState(), ResultCode.UNDEFINED_DATABASE)) {
+      throw new UndefinedDatabaseException(response.getState());
+    }
+
+    if (isThisError(response.getState(), ResultCode.UNDEFINED_TABLE)) {
+      throw new UndefinedTableException(response.getState());
+    }
+
+    if (isThisError(response.getState(), ResultCode.UNDEFINED_PARTITION_METHOD)) {
+      throw new UndefinedPartitionMethodException(response.getState());
     }
 
     ensureOk(response.getState());

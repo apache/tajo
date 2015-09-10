@@ -236,7 +236,8 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.getFunctions(functionName);
   }
 
-  public List<PartitionDescProto> getAllPartitions(final String tableName) {
+  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException {
     return catalogClient.getAllPartitions(tableName);
   }
 
