@@ -254,17 +254,9 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       throw new RuntimeException(e);
     }
 
-    if (isThisError(response.getState(), ResultCode.UNDEFINED_DATABASE)) {
-      throw new UndefinedDatabaseException(response.getState());
-    }
-
-    if (isThisError(response.getState(), ResultCode.UNDEFINED_TABLE)) {
-      throw new UndefinedTableException(response.getState());
-    }
-
-    if (isThisError(response.getState(), ResultCode.UNDEFINED_PARTITION_METHOD)) {
-      throw new UndefinedPartitionMethodException(response.getState());
-    }
+    throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
+    throwsIfThisError(response.getState(), UndefinedTableException.class);
+    throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
 
     ensureOk(response.getState());
     return response.getPartitionList();
