@@ -1372,5 +1372,11 @@ public class TestLogicalPlanner {
     LogicalPlan logicalPlan = planner.createPlan(context, expr);
 
     LogicalNode node = logicalPlan.getRootNode().getChild();
+    System.out.println(node.getPlanString());
+  }
+
+  @Test
+  public void testSelectWhereFromSelfDescTable() throws Exception {
+
   }
 }
