@@ -323,18 +323,40 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
-    Schema outSchema = projectionNode.getOutSchema();
-    GroupbyNode dupRemoval = context.plan.createNode(GroupbyNode.class);
-    dupRemoval.setChild(child);
-    dupRemoval.setInSchema(projectionNode.getInSchema());
-    dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
-    dupRemoval.setGroupingColumns(outSchema.toArray());
+    if (child.getType() == NodeType.SORT) {
+      SortNode sortNode = (SortNode) child;
 
-    block.registerNode(dupRemoval);
-    postHook(context, stack, null, dupRemoval);
+      GroupbyNode dupRemoval = context.plan.createNode(GroupbyNode.class);
+      dupRemoval.setForDistinctBlock();
+      dupRemoval.setChild(sortNode.getChild());
+      dupRemoval.setInSchema(sortNode.getInSchema());
+      dupRemoval.setTargets(PlannerUtil.schemaToTargets(sortNode.getInSchema()));
+      dupRemoval.setGroupingColumns(sortNode.getInSchema().toArray());
 
-    projectionNode.setChild(dupRemoval);
-    projectionNode.setInSchema(dupRemoval.getOutSchema());
+      block.registerNode(dupRemoval);
+      postHook(context, stack, null, dupRemoval);
+
+      sortNode.setChild(dupRemoval);
+      sortNode.setInSchema(dupRemoval.getOutSchema());
+      sortNode.setOutSchema(dupRemoval.getOutSchema());
+      projectionNode.setInSchema(sortNode.getOutSchema());
+      projectionNode.setChild(sortNode);
+
+    } else {
+      Schema outSchema = projectionNode.getOutSchema();
+      GroupbyNode dupRemoval = context.plan.createNode(GroupbyNode.class);
+      dupRemoval.setForDistinctBlock();
+      dupRemoval.setChild(child);
+      dupRemoval.setInSchema(projectionNode.getInSchema());
+      dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
+      dupRemoval.setGroupingColumns(outSchema.toArray());
+
+      block.registerNode(dupRemoval);
+      postHook(context, stack, null, dupRemoval);
+
+      projectionNode.setChild(dupRemoval);
+      projectionNode.setInSchema(dupRemoval.getOutSchema());
+    }
   }
 
   private Pair<String [], ExprNormalizer.WindowSpecReferences []> doProjectionPrephase(PlanContext context,

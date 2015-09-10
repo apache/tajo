@@ -362,6 +362,41 @@ public class TestTajoCli {
   }
 
   @Test
+  public void testRunWhenError() throws Exception {
+    Thread t = new Thread() {
+      public void run() {
+        try {
+          PipedOutputStream po = new PipedOutputStream();
+          InputStream is = new PipedInputStream(po);
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+          TajoConf tajoConf = new TajoConf();
+          setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+          TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
+
+          tc.executeMetaCommand("\\set ON_ERROR_STOP false");
+          assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
+
+          po.write(new String("asdf;\nqwe;\nzxcv;\n").getBytes());
+
+          tc.runShell();
+        } catch (Exception e) {
+          throw new RuntimeException("Cannot run thread in testRunWhenError", e);
+        }
+      }
+    };
+
+    t.start();
+    Thread.sleep(1000);
+    if(!t.isAlive()) {
+      fail("TSQL should be alive");
+    } else {
+      t.interrupt();
+      t.join();
+    }
+  }
+
+  @Test
   public void testHelpSessionVars() throws Exception {
     tajoCli.executeMetaCommand("\\help set");
     assertOutputResult(new String(out.toByteArray()));
