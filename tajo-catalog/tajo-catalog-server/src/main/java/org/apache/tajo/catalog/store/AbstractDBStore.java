@@ -2178,6 +2178,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return partitions;
   }
 
+  /**
+   * Check if list of partitios exist on catalog.
+   *
+   *
+   * @param databaseId
+   * @param tableId
+   * @return
+   */
   public boolean existPartitionsOnCatalog(int databaseId, int tableId) {
     Connection conn = null;
     ResultSet res = null;
@@ -2222,7 +2230,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet res = null;
     int currentIndex = 1;
-    String directSQL = null;
+    String selectStatement = null;
 
     List<PartitionDescProto> partitions = TUtil.newList();
     List<PartitionFilterSet> filterSets = TUtil.newList();
@@ -2240,11 +2248,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
 
-      directSQL = getDirectSQL(tableDesc.getTableName(), tableDesc.getPartition()
+      selectStatement = getSelectStatementForPartitions(tableDesc.getTableName(), tableDesc.getPartition()
         .getExpressionSchema().getFieldsList(), request.getAlgebra(), filterSets);
 
       conn = getConnection();
-      pstmt = conn.prepareStatement(directSQL);
+      pstmt = conn.prepareStatement(selectStatement);
 
       // Set table id by force because first parameter of all direct sql is table id
       pstmt.setInt(currentIndex, tableId);
@@ -2306,7 +2314,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   /**
-   * This will build select statement and parameters for querying partitions and partition keys in CatalogStore.
+   * Create a select statement and parameters for querying partitions and partition keys in CatalogStore.
    *
    * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
    * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20.
@@ -2333,7 +2341,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    * @throws TajoException
    * @throws SQLException
    */
-  private String getDirectSQL(String tableName, List<ColumnProto> partitionColumns, String json,
+  private String getSelectStatementForPartitions(String tableName, List<ColumnProto> partitionColumns, String json,
     List<PartitionFilterSet> filterSets) throws TajoException, SQLException {
 
     Expr[] exprs = null;
