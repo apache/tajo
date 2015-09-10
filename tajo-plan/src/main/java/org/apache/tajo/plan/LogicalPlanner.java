@@ -618,11 +618,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public static void throwCannotEvaluateException(Projectable projectable, String columnName) throws TajoException {
     if (projectable instanceof UnaryNode && ((UnaryNode) projectable).getChild().getType() == NodeType.GROUP_BY) {
-      throw new TajoInternalError(columnName
+      throw makeSyntaxError(columnName
           + " must appear in the GROUP BY clause or be used in an aggregate function at node ("
           + projectable.getPID() + ")");
     } else {
-      throw new TajoInternalError(String.format("Cannot evaluate the field \"%s\" at node (%d)",
+      throw makeSyntaxError(String.format("Cannot evaluate the field \"%s\" at node (%d)",
           columnName, projectable.getPID()));
     }
   }
