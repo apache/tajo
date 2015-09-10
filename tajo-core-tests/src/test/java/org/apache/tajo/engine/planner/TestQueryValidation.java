@@ -21,13 +21,14 @@ package org.apache.tajo.engine.planner;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.exception.SQLSyntaxError;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 public class TestQueryValidation extends QueryTestCaseBase {
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void testInsertWithWrongTargetColumn() throws Exception {
@@ -69,25 +70,17 @@ public class TestQueryValidation extends QueryTestCaseBase {
 
   @Test
   public void testCreateExternalTableWithTablespace() throws Exception {
-    boolean sqlSyntaxErrorFound = false;
-    try {
-      executeFile("create_external_table_with_tablespace.sql");
-    } catch (SQLSyntaxError error) {
-      sqlSyntaxErrorFound = true;
-      assertEquals("Tablespace clause is not allowed for an external table.", error.getMessage());
-    }
-    assertTrue(sqlSyntaxErrorFound);
+    exception.expect(SQLSyntaxError.class);
+    exception.expectMessage("Tablespace clause is not allowed for an external table.");
+
+    executeFile("create_external_table_with_tablespace.sql");
   }
 
   @Test
   public void testCreateExternalTableWithoutLocation() throws Exception {
-    boolean sqlSyntaxErrorFound = false;
-    try {
-      executeFile("create_external_table_without_location.sql");
-    } catch (SQLSyntaxError error) {
-      sqlSyntaxErrorFound = true;
-      assertEquals("LOCATION clause must be required for an external table.", error.getMessage());
-    }
-    assertTrue(sqlSyntaxErrorFound);
+    exception.expect(SQLSyntaxError.class);
+    exception.expectMessage("LOCATION clause must be required for an external table.");
+
+    executeFile("create_external_table_without_location.sql");
   }
 }
