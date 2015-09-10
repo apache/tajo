@@ -21,6 +21,7 @@ package org.apache.tajo.plan.verifier;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.exception.DataTypeMismatchException;
 import org.apache.tajo.plan.logical.NodeType;
 
 public class SyntaxErrorUtil {
@@ -29,8 +30,8 @@ public class SyntaxErrorUtil {
     return new SyntaxErrorException(ResultCode.SYNTAX_ERROR, message);
   }
 
-  public static SyntaxErrorException makeDataTypeMisMatch(Column src, Column target) {
-    return new SyntaxErrorException(ResultCode.DATATYPE_MISMATCH,
+  public static DataTypeMismatchException makeDataTypeMisMatch(Column src, Column target) {
+    return new DataTypeMismatchException(
         src.getSimpleName(), src.getDataType().getType().name(),
         target.getSimpleName(), target.getDataType().getType().name());
   }

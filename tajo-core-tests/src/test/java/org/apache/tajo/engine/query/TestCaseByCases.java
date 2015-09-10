@@ -180,4 +180,11 @@ public class TestCaseByCases extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  @Option(withExplain = true)
+  @SimpleTest
+  public final void testTAJO_1600() throws Exception {
+    runSimpleTests();
+  }
 }

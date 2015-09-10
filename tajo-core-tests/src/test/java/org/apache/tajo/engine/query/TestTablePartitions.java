@@ -37,14 +37,11 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.jdbc.FetchResultSet;
-import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -211,7 +208,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
-      tableDesc.getStats().getNumRows());
+        tableDesc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -254,7 +251,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName,
-      new String[]{"key"}, desc.getStats().getNumRows());
+        new String[]{"key"}, desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
@@ -674,7 +671,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1"},
-      desc.getStats().getNumRows());
+        desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -733,7 +730,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2"},
-      desc.getStats().getNumRows());
+        desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1045,7 +1042,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col2"},
-      desc.getStats().getNumRows());
+        desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1079,25 +1076,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
-  }
-
-  private MasterPlan getQueryPlan(ResultSet res) {
-    QueryId queryId;
-    if (res instanceof TajoMemoryResultSet) {
-      queryId = ((TajoMemoryResultSet) res).getQueryId();
-    } else {
-      queryId = ((FetchResultSet) res).getQueryId();
-    }
-
-    for (TajoWorker eachWorker : testingCluster.getTajoWorkers()) {
-      QueryMasterTask queryMasterTask = eachWorker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
-      if (queryMasterTask != null) {
-        return queryMasterTask.getQuery().getPlan();
-      }
-    }
-
-    fail("Can't find query from workers" + queryId);
-    return null;
   }
 
   @Test

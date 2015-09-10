@@ -18,15 +18,17 @@
 
 package org.apache.tajo.plan.rewrite;
 
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.util.TUtil;
 
-public interface LogicalPlanRewriteEngine {
-  /**
-   * Rewrite a logical plan with all query rewrite rules added to this engine.
-   *
-   * @param context The context containing query context, logical plan, and catalog.
-   * @return The rewritten plan.
-   */
-  LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException;
+import java.util.Collection;
+import java.util.List;
+
+public class BaseLogicalPlanPreprocessPhaseProvider extends LogicalPlanPreprocessPhaseProvider {
+  @Override
+  public Collection<Class<? extends LogicalPlanPreprocessPhase>> getPhases() {
+    List phases = TUtil.newList(
+        BaseSchemaBuildPhase.class
+    );
+    return phases;
+  }
 }

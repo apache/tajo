@@ -553,9 +553,6 @@ public class FileTablespace extends Tablespace {
               splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
             }
           }
-        } else {
-          //for zero length files
-          splits.add(makeSplit(tableName, path, 0, length));
         }
       }
       if(LOG.isDebugEnabled()){

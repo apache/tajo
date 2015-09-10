@@ -141,6 +141,10 @@ public class Stage implements EventHandler<StageEvent> {
           .addTransition(StageState.INITED, StageState.INITED,
               StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
+          .addTransition(StageState.INITED,
+              EnumSet.of(StageState.SUCCEEDED, StageState.FAILED),
+              StageEventType.SQ_STAGE_COMPLETED,
+              STAGE_COMPLETED_TRANSITION)
           .addTransition(StageState.INITED, StageState.KILL_WAIT,
               StageEventType.SQ_KILL, new KillTasksTransition())
           .addTransition(StageState.INITED, StageState.ERROR,
@@ -845,8 +849,8 @@ public class Stage implements EventHandler<StageEvent> {
                             LOG.info(stage.totalScheduledObjectsCount + " objects are scheduled");
 
                             if (stage.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
-                              stage.finalizeStage();
-                              stage.complete();
+                              stage.eventHandler.handle(
+                                  new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
                             } else {
                               if(stage.getSynchronizedState() == StageState.INITED) {
                                 stage.taskScheduler.start();
