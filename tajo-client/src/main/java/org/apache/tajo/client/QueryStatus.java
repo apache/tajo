@@ -43,6 +43,8 @@ public class QueryStatus {
     hasResult = proto.getHasResult();
     if (proto.hasErrorMessage()) {
       errorText = proto.getErrorMessage();
+    } else {
+      errorText = "unknown reason";
     }
     if (proto.hasErrorTrace()) {
       errorTrace = proto.getErrorTrace();
