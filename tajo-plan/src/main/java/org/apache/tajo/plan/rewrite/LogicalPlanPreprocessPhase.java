@@ -19,18 +19,28 @@
 package org.apache.tajo.plan.rewrite;
 
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.LogicalPlanner.PlanContext;
 import org.apache.tajo.plan.logical.LogicalNode;
 
-public interface LogicalPlanPreprocessPhase {
+public abstract class LogicalPlanPreprocessPhase {
+
+  protected final CatalogService catalog;
+  protected final ExprAnnotator annotator;
+
+  public LogicalPlanPreprocessPhase(CatalogService catalog, ExprAnnotator annotator) {
+    this.catalog = catalog;
+    this.annotator = annotator;
+  }
   /**
    * It returns the pre-process phase name. It will be used for debugging and
    * building a optimization history.
    *
    * @return The pre-process phase name
    */
-  String getName();
+  public abstract String getName();
 
   /**
    * This method checks if this pre-process phase can be applied to the given expression tree.
@@ -39,7 +49,7 @@ public interface LogicalPlanPreprocessPhase {
    * @param expr
    * @return
    */
-  boolean isEligible(PlanContext context, Expr expr);
+  public abstract boolean isEligible(PlanContext context, Expr expr);
 
   /**
    * Do a pre-process phase for an expression tree and returns it.
@@ -50,5 +60,5 @@ public interface LogicalPlanPreprocessPhase {
    * @param expr
    * @return The rewritten logical plan.
    */
-  LogicalNode process(PlanContext context, Expr expr) throws TajoException;
+  public abstract LogicalNode process(PlanContext context, Expr expr) throws TajoException;
 }

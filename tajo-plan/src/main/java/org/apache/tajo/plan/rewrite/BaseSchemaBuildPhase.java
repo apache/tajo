@@ -40,11 +40,12 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
-public class BaseSchemaBuildPhase implements LogicalPlanPreprocessPhase {
+public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
   private final Processor processor;
 
   public BaseSchemaBuildPhase(CatalogService catalog, ExprAnnotator annotator) {
+    super(catalog, annotator);
     processor = new Processor(catalog, annotator);
   }
 
