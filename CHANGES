@@ -257,6 +257,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1600: Invalid query planning for distinct group-by. (hyunsik)
+
     TAJO-1782: Check ON_ERROR_STOP flag in TSQL when error is occured. 
     (Contributed by Dongkyu Hwangbo, Committed by jihoon)
 
@@ -523,6 +525,9 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1833: Refine LogicalPlanPreprocessor to add new rules easily.
+    (jihoon)
 
     TAJO-1809: Change default value of several configurations. (jihoon)
 

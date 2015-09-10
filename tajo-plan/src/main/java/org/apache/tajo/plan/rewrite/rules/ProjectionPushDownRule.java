@@ -714,36 +714,51 @@ public class ProjectionPushDownRule extends
                              Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
 
-    // Getting grouping key names
-    final int groupingKeyNum = node.getGroupingColumns().length;
+    int groupingKeyNum = node.getGroupingColumns().length;
     LinkedHashSet<String> groupingKeyNames = null;
-    if (groupingKeyNum > 0) {
-      groupingKeyNames = Sets.newLinkedHashSet();
-      for (int i = 0; i < groupingKeyNum; i++) {
-        FieldEval fieldEval = new FieldEval(node.getGroupingColumns()[i]);
-        groupingKeyNames.add(newContext.addExpr(fieldEval));
-      }
-    }
+    String[] aggEvalNames = null;
 
-    // Getting eval names
-
-    final String [] aggEvalNames;
-    if (node.hasAggFunctions()) {
-      final int evalNum = node.getAggFunctions().length;
-      aggEvalNames = new String[evalNum];
-      for (int evalIdx = 0, targetIdx = groupingKeyNum; targetIdx < node.getTargets().length; evalIdx++, targetIdx++) {
-        Target target = node.getTargets()[targetIdx];
-        EvalNode evalNode = node.getAggFunctions()[evalIdx];
-        aggEvalNames[evalIdx] = newContext.addExpr(new Target(evalNode, target.getCanonicalName()));
+    // if this query block is distinct, this groupby node have the same target to that of its above operator.
+    // So, it does not need to add new expression to newContext.
+    if (!node.isForDistinctBlock()) {
+      // Getting grouping key names
+      if (groupingKeyNum > 0) {
+        groupingKeyNames = Sets.newLinkedHashSet();
+        for (int i = 0; i < groupingKeyNum; i++) {
+          FieldEval fieldEval = new FieldEval(node.getGroupingColumns()[i]);
+          groupingKeyNames.add(newContext.addExpr(fieldEval));
+        }
       }
-    } else {
-      aggEvalNames = null;
+
+      // Getting eval names
+      if (node.hasAggFunctions()) {
+        final int evalNum = node.getAggFunctions().length;
+        aggEvalNames = new String[evalNum];
+        for (int evalIdx = 0, targetIdx = node.getGroupingColumns().length; targetIdx < node.getTargets().length;
+             evalIdx++, targetIdx++) {
+          Target target = node.getTargets()[targetIdx];
+          EvalNode evalNode = node.getAggFunctions()[evalIdx];
+          aggEvalNames[evalIdx] = newContext.addExpr(new Target(evalNode, target.getCanonicalName()));
+        }
+      }
     }
 
     // visit a child node
     LogicalNode child = super.visitGroupBy(newContext, plan, block, node, stack);
 
     node.setInSchema(child.getOutSchema());
+    if (node.isForDistinctBlock()) { // the grouping columns should be updated according to the schema of child node.
+      node.setGroupingColumns(child.getOutSchema().toArray());
+      node.setTargets(PlannerUtil.schemaToTargets(child.getOutSchema()));
+
+      // Because it updates grouping columns and targets, it should refresh grouping key num and names.
+      groupingKeyNum = node.getGroupingColumns().length;
+      groupingKeyNames = Sets.newLinkedHashSet();
+      for (int i = 0; i < groupingKeyNum; i++) {
+        FieldEval fieldEval = new FieldEval(node.getGroupingColumns()[i]);
+        groupingKeyNames.add(newContext.addExpr(fieldEval));
+      }
+    }
 
     List<Target> targets = Lists.newArrayList();
     if (groupingKeyNum > 0 && groupingKeyNames != null) {
