@@ -30,7 +30,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.*;
 
 public class AlgebraicUtil {
-  
+
   /**
    * Transpose a given comparison expression into the expression 
    * where the variable corresponding to the target is placed 

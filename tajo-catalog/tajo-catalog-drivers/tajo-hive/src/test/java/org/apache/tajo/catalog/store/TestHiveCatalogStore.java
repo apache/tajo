@@ -479,7 +479,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
-        table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
+      table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 

@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.*;
 import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.Pair;
@@ -48,7 +49,6 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   private String tableAlias;
   private Column column;
   private boolean isHiveCatalog = false;
-  private boolean existRowCostant = false;
 
   private Stack<String> queries = new Stack();
   private List<Pair<Type, Object>> parameters = TUtil.newList();
@@ -75,14 +75,6 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   public void setIsHiveCatalog(boolean isHiveCatalog) {
     this.isHiveCatalog = isHiveCatalog;
-  }
-
-  public boolean isExistRowCostant() {
-    return existRowCostant;
-  }
-
-  public void setExistRowCostant(boolean existRowCostant) {
-    this.existRowCostant = existRowCostant;
   }
 
   public List<Pair<Type, Object>> getParameters() {
@@ -120,10 +112,10 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     if (!isHiveCatalog) {
       sb.append("?").append(" )");
       parameters.add(new Pair(Type.DATE, Date.valueOf(expr.toString())));
-      queries.push(sb.toString());
     } else {
       sb.append("\"").append(expr.toString()).append("\"");
     }
+    queries.push(sb.toString());
     return expr;
   }
 
@@ -160,11 +152,10 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       sb.append("?").append(" )");
       Timestamp timestamp = new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
       parameters.add(new Pair(Type.TIMESTAMP, timestamp));
-
-      queries.push(sb.toString());
     } else {
       sb.append("\"").append(expr.toString()).append("\"");
     }
+    queries.push(sb.toString());
 
     return expr;
   }
@@ -195,11 +186,10 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
       sb.append("?").append(" )");
       parameters.add(new Pair(Type.TIME, new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs))));
-
-      queries.push(sb.toString());
     } else {
       sb.append("\"").append(expr.toString()).append("\"");
     }
+    queries.push(sb.toString());
 
     return expr;
   }
@@ -224,7 +214,6 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
           parameters.add(new Pair(Type.INT8, Long.valueOf(expr.getValue())));
           break;
       }
-      queries.push(sb.toString());
     } else {
       switch (expr.getValueType()) {
         case String:
@@ -235,6 +224,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
           break;
       }
     }
+    queries.push(sb.toString());
 
     return expr;
   }
@@ -258,8 +248,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       sb.append(" )");
       queries.push(sb.toString());
     } else {
-      // Hive API cannot support IN clause for filter.
-      existRowCostant = true;
+      throw new UnsupportedException("IN Operator");
     }
 
     return expr;
@@ -273,11 +262,10 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       sb.append("( ").append(tableAlias).append(".").append(CatalogConstants.COL_COLUMN_NAME)
         .append(" = '").append(expr.getName()).append("'")
         .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITION_VALUE);
-
-      queries.push(sb.toString());
     } else {
       sb.append(expr.getName());
     }
+    queries.push(sb.toString());
     return expr;
   }
 
@@ -385,6 +373,8 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     if (!isHiveCatalog) {
       sb.append(")");
     }
+
+    queries.push(sb.toString());
 
     stack.pop();
     return expr;
@@ -498,6 +488,11 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     String pattern = queries.pop();
     stack.pop();
 
+    if(isHiveCatalog) {
+      if (pattern.startsWith("%") || pattern.endsWith("%")) {
+        throw new UnsupportedException("LIKE Operator with '%'");
+      }
+    }
     StringBuilder sb = new StringBuilder();
     sb.append(predicand);
 
@@ -520,6 +515,10 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   @Override
   public Expr visitSimilarToPredicate(Object ctx, Stack<Expr> stack, PatternMatchPredicate expr) throws TajoException {
+    if (isHiveCatalog) {
+      throw new UnsupportedException("SIMILAR TO Operator");
+    }
+
     stack.push(expr);
 
     visit(ctx, stack, expr.getPredicand());
@@ -545,6 +544,10 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   @Override
   public Expr visitRegexpPredicate(Object ctx, Stack<Expr> stack, PatternMatchPredicate expr) throws TajoException {
+    if (isHiveCatalog) {
+      throw new UnsupportedException("REGEXP Operator");
+    }
+
     stack.push(expr);
 
     visit(ctx, stack, expr.getPredicand());

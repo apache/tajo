@@ -27,7 +27,6 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByFilterProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -37,7 +36,6 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
-import org.apache.tajo.plan.util.PartitionFilterEvalNodeVisitor;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.util.ScanQualConverter;
@@ -131,30 +129,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     String [] splits = CatalogUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
 
-    String store = queryContext.getConf().get(CatalogConstants.STORE_CLASS);
-
     try {
       if (conjunctiveForms == null) {
         partitions = catalog.getAllPartitions(splits[0], splits[1]);
       } else {
-        // HiveCatalogStore provides list of table partitions with where clause because hive just provides api using
-        // the filter string. So, this rewriter need to differentiate HiveCatalogStore and other catalogs.
-        if (store.equals("org.apache.tajo.catalog.store.HiveCatalogStore")) {
-          PartitionsByFilterProto request = buildFilterWithHiveCatalogStore(splits[0], splits[1],
-            partitionColumns, conjunctiveForms);
-
-          if (conjunctiveForms != null && !request.getFilter().equals("")) {
-            partitions = catalog.getPartitionsByFilter(request);
-          }
-        } else {
-          // Only when exists table partitions on catalog, try to get list of table partitions.
-          if (catalog.existPartitions(splits[0], splits[1])) {
-            // If there are no filters, this don't need to build direct sql for getting table partitions.
-            PartitionsByAlgebraProto request = buildFilterWithDBStore(splits[0], splits[1], conjunctiveForms);
-            partitions = catalog.getPartitionsByAlgebra(request);
-          }
-        }
-
+        PartitionsByAlgebraProto request = buildFilterWithDBStore(splits[0], splits[1], conjunctiveForms);
+        partitions = catalog.getPartitionsByAlgebra(request);
       }
 
       // If catalog returns list of table partitions successfully, build path lists for scanning table data.
@@ -164,7 +144,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           filteredPaths[i] = new Path(partitions.get(i).getPath());
         }
       }
-    } catch (Exception e) {
+    } catch (TajoInternalError e) {
+      LOG.error(e.getMessage(), e);
       partitions = null;
     }
 
@@ -268,115 +249,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     return request.build();
-  }
-
-  /**
-   * This will build direct sql and parameters for querying partitions and partition keys in HiveCatalogStore.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20.
-   * There is no filter condition corresponding to col2.
-   *
-   * Then, the sql would be generated as following:
-   *
-   *  (col1 = \"1\" or col1 = \"100\") and col3 > 20
-   *
-   * @param databaseName
-   * @param tableName
-   * @param partitionColumns
-   * @param conjunctiveForms
-   * @return
-   */
-  public static PartitionsByFilterProto buildFilterWithHiveCatalogStore(
-    String databaseName, String tableName, Schema partitionColumns, EvalNode [] conjunctiveForms) {
-
-    PartitionsByFilterProto.Builder request = PartitionsByFilterProto.newBuilder();
-    request.setDatabaseName(databaseName);
-    request.setTableName(tableName);
-
-    PartitionFilterEvalNodeVisitor visitor = new PartitionFilterEvalNodeVisitor();
-    visitor.setIsHiveCatalog(true);
-
-    EvalNode[] filters = buildEvalNodesForAllLevels(partitionColumns, conjunctiveForms);
-
-    StringBuffer sb = new StringBuffer();
-
-    // Write join clause from second column to last column.
-    for (int i = 0; i < partitionColumns.size(); i++) {
-      Column target = partitionColumns.getColumn(i);
-
-      // Hive api doesn't support not null statement.
-      if (!(filters[i] instanceof IsNullEval)) {
-        if (sb.length() > 0) {
-          sb.append(" AND ");
-        }
-
-        visitor.setColumn(target);
-        visitor.visit(null, filters[i], new Stack<EvalNode>());
-
-        // Hive api doesn't support row constant statement;
-        if (visitor.isExistRowCostant()) {
-          return null;
-        }
-
-        sb.append(visitor.getResult());
-        visitor.clearParameters();
-      }
-    }
-    request.setFilter(sb.toString());
-
-    return request.build();
-  }
-
-  /**
-   * Build EvalNodes for all columns with a list of filter conditions.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Then, this methods will create three EvalNodes for (col1), (col2), (col3).
-   *
-   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
-   * There is no filter condition corresponding to col2.
-   * Then, the path filter conditions are corresponding to the followings:
-   *
-   * The first EvalNode: col1 = 'A'
-   * The second EvalNode: col2 IS NOT NULL
-   * The third EvalNode: col3 = 'C'
-   *
-   * 'IS NOT NULL' predicate is always true against the partition path.
-   *
-   * @param partitionColumns
-   * @param conjunctiveForms
-   * @return
-   */
-  private static EvalNode[] buildEvalNodesForAllLevels(Schema partitionColumns, EvalNode[] conjunctiveForms) {
-    EvalNode[] filters = new EvalNode[partitionColumns.size()];
-    List<EvalNode> accumulatedFilters = Lists.newArrayList();
-    Column target;
-
-    for (int i = 0; i < partitionColumns.size(); i++) {
-      target = partitionColumns.getColumn(i);
-
-      if (conjunctiveForms == null) {
-        accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
-      } else {
-        for (EvalNode expr : conjunctiveForms) {
-          if (EvalTreeUtil.findUniqueColumns(expr).contains(target)) {
-            // Accumulate one qual per level
-            accumulatedFilters.add(expr);
-          }
-        }
-
-        if (accumulatedFilters.size() < (i + 1)) {
-          accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
-        }
-      }
-      EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
-        accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
-      filters[i] = filterPerLevel;
-
-    }
-
-    return filters;
   }
 
   /**

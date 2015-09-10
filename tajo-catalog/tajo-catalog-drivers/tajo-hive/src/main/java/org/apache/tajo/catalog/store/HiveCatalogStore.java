@@ -35,8 +35,8 @@ import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.IsNullPredicate;
 import org.apache.tajo.algebra.JsonHelper;
-import org.apache.tajo.algebra.NullLiteral;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -46,18 +46,13 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.expr.IsNullEval;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
-import org.apache.tajo.plan.util.PartitionFilterEvalNodeVisitor;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.*;
 
 public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
@@ -871,21 +866,21 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request)
-    throws UndefinedTableException {
+  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 
     List<PartitionDescProto> list = null;
 
     try {
-      TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
 
-      String filter = getFilter(request.getTableName(), tableDesc.getPartition().getExpressionSchema().getFieldsList()
+      TableDescProto tableDesc = getTable(databaseName, tableName);
+
+      String filter = getFilter(databaseName, tableName, tableDesc.getPartition().getExpressionSchema().getFieldsList()
         , request.getAlgebra());
 
-      if (filter == null || filter.equals("")) {
-        throw  new UnsupportedPartitionFilterException(request.getAlgebra());
-      }
-
+      list = getPartitionsByFilterFromHiveMetaStore(databaseName, tableName, filter);
     } catch (TajoException se) {
       throw new TajoInternalError(se);
     }
@@ -893,7 +888,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     return list;
   }
 
-  private String getFilter(String tableName, List<ColumnProto> partitionColumns, String json) throws TajoException {
+  private String getFilter(String databaseName, String tableName, List<ColumnProto> partitionColumns
+      , String json) throws TajoException {
 
     Expr[] exprs = null;
 
@@ -902,36 +898,34 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       exprs = AlgebraicUtil.toConjunctiveNormalFormArray(algebra);
     }
 
-    // Write table alias for all levels
-    String tableAlias;
-
     PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
     visitor.setIsHiveCatalog(true);
 
-    Expr[] filters = AlgebraicUtil.getAccumulatedFiltersByExpr(tableName, partitionColumns, exprs);
+    Expr[] filters = AlgebraicUtil.getAccumulatedFiltersByExpr(databaseName + "." + tableName, partitionColumns, exprs);
 
     StringBuffer sb = new StringBuffer();
 
     // Write join clause from second column to last column.
     Column target;
 
+    int addedFilter = 0;
+    String result;
     for (int i = 0; i < partitionColumns.size(); i++) {
       target = new Column(partitionColumns.get(i));
 
-      if (!(filters[i] instanceof NullLiteral)) {
-        if (sb.length() > 0) {
-          sb.append(" AND ");
-        }
-
+      if (!(filters[i] instanceof IsNullPredicate)) {
         visitor.setColumn(target);
         visitor.visit(null, new Stack<Expr>(), filters[i]);
+        result = visitor.getResult();
 
-        // Hive api doesn't support row constant statement;
-        if (visitor.isExistRowCostant()) {
-          return null;
+        // If visitor build filter successfully, add filter to be used for executing hive api.
+        if (result.length() > 0) {
+          if (addedFilter > 0) {
+            sb.append(" AND ");
+          }
+          sb.append(" ( ").append(result).append(" ) ");
+          addedFilter++;
         }
-
-        sb.append(visitor.getResult());
       }
     }
 
@@ -942,32 +936,35 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+    String databaseName = request.getDatabaseName();
+    String tableName = request.getTableName();
 
+    if (!existDatabase(databaseName)) {
+      throw new UndefinedDatabaseException(tableName);
+    }
+
+    if (!existTable(databaseName, tableName)) {
+      throw new UndefinedTableException(tableName);
+    }
+
+    if (!existPartitionMethod(databaseName, tableName)) {
+      throw new UndefinedPartitionMethodException(tableName);
+    }
+
+    return getPartitionsByFilterFromHiveMetaStore(databaseName, tableName, request.getFilter());
+  }
+
+  private List<PartitionDescProto> getPartitionsByFilterFromHiveMetaStore(String databaseName, String tableName,
+                                                                         String filter) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<PartitionDescProto> partitions = null;
 
     try {
-      String databaseName = request.getDatabaseName();
-      String tableName = request.getTableName();
-
-      if (!existDatabase(databaseName)) {
-        throw new UndefinedDatabaseException(tableName);
-      }
-
-      if (!existTable(databaseName, tableName)) {
-        throw new UndefinedTableException(tableName);
-      }
-
-      if (!existPartitionMethod(databaseName, tableName)) {
-        throw new UndefinedPartitionMethodException(tableName);
-      }
-
       partitions = TUtil.newList();
-
       client = clientPool.getClient();
 
       List<Partition> hivePartitions = client.getHiveClient().listPartitionsByFilter(databaseName, tableName
-        , request.getFilter(), (short) -1);
+        , filter, (short) -1);
 
       for (Partition hivePartition : hivePartitions) {
         CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
