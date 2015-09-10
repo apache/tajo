@@ -257,6 +257,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1600: Invalid query planning for distinct group-by. (hyunsik)
+
     TAJO-1782: Check ON_ERROR_STOP flag in TSQL when error is occured. 
     (Contributed by Dongkyu Hwangbo, Committed by jihoon)
 
