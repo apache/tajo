@@ -33,13 +33,6 @@ import java.nio.charset.Charset;
  */
 public class FileUtil {
 
-  /**
-   * Read a file stored in a local file system and return the string contents.
-   *
-   * @param file File
-   * @return String contents
-   * @throws IOException
-   */
   public static String readTextFile(File file) throws IOException {
     StringBuilder fileData = new StringBuilder(1000);
     BufferedReader reader = new BufferedReader(new FileReader(file));

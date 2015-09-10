@@ -53,6 +53,7 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
@@ -261,26 +262,33 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return size;
   }
 
-  @VisibleForTesting
-  public boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, LogicalNode node, boolean left)
+  private boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, LogicalNode node, boolean left)
       throws IOException {
     String [] lineage = PlannerUtil.getRelationLineage(node);
     long volume = estimateSizeRecursive(context, lineage);
-    boolean inMemoryInnerJoinFlag = false;
+    return checkIfInMemoryInnerJoinIsPossible(context, lineage, volume, left);
+  }
+
+  @VisibleForTesting
+  public boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, String [] lineage, long tableVolume,
+                                                    boolean left) throws IOException {
+    boolean inMemoryInnerJoinFlag;
 
     QueryContext queryContext = context.getQueryContext();
 
     if (queryContext.containsKey(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT)) {
-      inMemoryInnerJoinFlag = volume <= context.getQueryContext().getLong(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT);
+      inMemoryInnerJoinFlag = tableVolume <= context.getQueryContext().getLong(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT)
+          * StorageUnit.MB;
     } else {
-      inMemoryInnerJoinFlag = volume <= context.getQueryContext().getLong(SessionVars.HASH_JOIN_SIZE_LIMIT);
+      inMemoryInnerJoinFlag = tableVolume <= context.getQueryContext().getLong(SessionVars.HASH_JOIN_SIZE_LIMIT)
+          * StorageUnit.MB;
     }
 
     LOG.info(String.format("[%s] the volume of %s relations (%s) is %s and is %sfit to main maemory.",
         context.getTaskId().toString(),
         (left ? "Left" : "Right"),
         StringUtils.join(lineage),
-        FileUtil.humanReadableByteCount(volume, false),
+        FileUtil.humanReadableByteCount(tableVolume, false),
         (inMemoryInnerJoinFlag ? "" : "not ")));
     return inMemoryInnerJoinFlag;
   }
@@ -484,9 +492,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     QueryContext queryContext = context.getQueryContext();
 
     if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = rightTableVolume <  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT);
+      hashJoin = rightTableVolume <=  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     } else {
-      hashJoin = rightTableVolume <  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT);
+      hashJoin = rightTableVolume <=  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     }
 
     if (hashJoin) {
@@ -512,9 +520,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     QueryContext queryContext = context.getQueryContext();
 
     if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = leftTableVolume <  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT);
+      hashJoin = leftTableVolume <=  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     } else {
-      hashJoin = leftTableVolume <  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT);
+      hashJoin = leftTableVolume <=  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT)* StorageUnit.MB;
     }
 
     if (hashJoin){
@@ -1015,7 +1023,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     String [] outerLineage = PlannerUtil.getRelationLineage(groupbyNode.getChild());
     long estimatedSize = estimateSizeRecursive(context, outerLineage);
-    final long threshold = context.getQueryContext().getLong(SessionVars.HASH_GROUPBY_SIZE_LIMIT);
+    final long threshold = context.getQueryContext().getLong(SessionVars.HASH_GROUPBY_SIZE_LIMIT) * StorageUnit.MB;
 
     // if the relation size is less than the threshold,
     // the hash aggregation will be used.

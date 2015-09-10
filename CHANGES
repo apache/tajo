@@ -36,6 +36,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1818: Separate sql parser into an independent maven module.
+    (hyunsik) 
+
+    TAJO-1816: Refactor SQL parser tests. (hyunsik)
+
     TAJO-1738: Improve off-heap RowBlock. (jinho)
 
     TAJO-1810: Remove QueryMasterTask cache immediately, if it stored to 
@@ -243,6 +248,25 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1821: Temporary data is not cleared after TestCatalog. (jihoon)
+
+    TAJO-1805: In the 'Execute Query' page of web UI, default database 
+    should be set as 'default'. (Contributed by Dongkyu Hwangbo, committed 
+    by hyunsik)
+
+    TAJO-1823: Can't start TajoMaster. (hyunsik)
+
+    TAJO-1820: Fix wrong case sensitivity rules of non-reserved keywords.
+    (hyunsik)
+
+    TAJO-1610: Cannot find column when the same name is used for table 
+    and database. (hyunsik)
+
+    TAJO-1800: WHERE clause is ignored with UNION. (hyunsik)
+
+    TAJO-1815: Catalog store initialization with PostgreSQL failed.
+    (Contributed by Jongyoung Park, Committed by hyunsik)
 
     TAJO-1811: Catalog server address must be set dynamically during test.
     (jihoon)
@@ -482,6 +506,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1809: Change default value of several configurations. (jihoon)
+
     TAJO-1803: Use in-memory derby as the default catalog for unit tests. 
     (jihoon)
 
@@ -551,6 +577,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1641: Add window function documentation. (jihoon)
 
     TAJO-1749: Refine JDBC exceptions to better handle exceptional 
     cases. (hyunsik)

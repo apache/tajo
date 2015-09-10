@@ -35,8 +35,12 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-@Category(IntegrationTest.class)
 public class TestCreateTable extends QueryTestCaseBase {
+
+  @Test
+  public final void testPositives() throws Exception {
+    runPositiveTests();
+  }
 
   @Test
   public final void testNegatives() throws Exception {

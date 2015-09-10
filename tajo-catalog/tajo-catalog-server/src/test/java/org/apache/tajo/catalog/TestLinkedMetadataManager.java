@@ -24,13 +24,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -150,6 +150,7 @@ public class TestLinkedMetadataManager {
 
   static CatalogServer server;
   static CatalogService catalog;
+  static String testDir;
 
   @BeforeClass
   public static void setUp() throws IOException, DuplicateTablespaceException, DuplicateDatabaseException,
@@ -157,9 +158,12 @@ public class TestLinkedMetadataManager {
     TajoConf conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
+    Pair<TajoConf, String> confAndTestDir = TestCatalog.newTajoConfForCatalogTest();
+    testDir = confAndTestDir.getSecond();
+
     server = new CatalogServer(
         Sets.newHashSet(new MockupMetadataProvider1(), new MockupMetadataProvider2()), Collections.EMPTY_LIST);
-    server.init(TestCatalog.newTajoConfForCatalogTest());
+    server.init(confAndTestDir.getFirst());
     server.start();
     catalog = new LocalCatalogWrapper(server);
 
@@ -176,6 +180,7 @@ public class TestLinkedMetadataManager {
   @AfterClass
   public static void tearDown() throws IOException {
     server.stop();
+    CommonTestingUtil.cleanupTestDir(testDir);
   }
 
   @Test

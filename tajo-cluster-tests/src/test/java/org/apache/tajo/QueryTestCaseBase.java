@@ -38,7 +38,7 @@ import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InsufficientPrivilegeException;
 import org.apache.tajo.exception.TajoException;
