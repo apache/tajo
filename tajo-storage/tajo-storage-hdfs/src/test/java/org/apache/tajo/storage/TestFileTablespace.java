@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import net.minidev.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -186,7 +187,7 @@ public class TestFileTablespace {
       }
 
       assertTrue(fs.exists(tablePath));
-      FileTablespace space = new FileTablespace("testZeroLengthSplit", fs.getUri());
+      FileTablespace space = new FileTablespace("testZeroLengthSplit", fs.getUri(), new JSONObject());
       space.init(new TajoConf(conf));
       assertEquals(fs.getUri(), space.getUri());
 
