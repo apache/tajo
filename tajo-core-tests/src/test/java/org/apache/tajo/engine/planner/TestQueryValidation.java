@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestQueryValidation extends QueryTestCaseBase {
@@ -71,8 +72,9 @@ public class TestQueryValidation extends QueryTestCaseBase {
     boolean sqlSyntaxErrorFound = false;
     try {
       executeFile("create_external_table_with_tablespace.sql");
-    } catch (SQLSyntaxError sqlSyntaxError) {
+    } catch (SQLSyntaxError error) {
       sqlSyntaxErrorFound = true;
+      assertEquals("Tablespace clause is not allowed for an external table.", error.getMessage());
     }
     assertTrue(sqlSyntaxErrorFound);
   }
@@ -82,8 +84,9 @@ public class TestQueryValidation extends QueryTestCaseBase {
     boolean sqlSyntaxErrorFound = false;
     try {
       executeFile("create_external_table_without_location.sql");
-    } catch (SQLSyntaxError sqlSyntaxError) {
+    } catch (SQLSyntaxError error) {
       sqlSyntaxErrorFound = true;
+      assertEquals("LOCATION clause must be required for an external table.", error.getMessage());
     }
     assertTrue(sqlSyntaxErrorFound);
   }
