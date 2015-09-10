@@ -69,8 +69,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       parser.setBuildParseTree(true);
 
       context = parser.sql();
-    } catch (TajoRuntimeException e) {
-      throw new SQLSyntaxError(e.getCause().getMessage());
+    } catch (SQLParseError e) {
+      throw new SQLSyntaxError(e.getMessage());
     } catch (Throwable t) {
       throw new TajoInternalError(t.getMessage());
     }
@@ -125,7 +125,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       return new SetSession(SessionVars.TIMEZONE.name(), value);
 
     } else {
-      throw new TajoInternalError(new SQLSyntaxError("Invalid session statement"));
+      throw new TajoInternalError("Invalid session statement");
     }
   }
 

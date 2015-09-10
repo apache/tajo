@@ -21,13 +21,11 @@ package org.apache.tajo.parser.sql;
 
 import org.antlr.v4.runtime.Token;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
 
 /**
  * Exception that represents a kind of SQL syntax error caused by the parser layer
  */
-public class SQLParseError extends TajoException {
+public class SQLParseError extends RuntimeException {
   private String header;
   private String errorLine;
   private int charPositionInLine;
@@ -39,7 +37,7 @@ public class SQLParseError extends TajoException {
                        int line, int charPositionInLine,
                        String msg,
                        String errorLine) {
-    super(Errors.ResultCode.SYNTAX_ERROR, msg);
+    super(msg);
     this.offendingToken = offendingToken;
     this.charPositionInLine = charPositionInLine;
     this.line = line;

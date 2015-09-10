@@ -20,7 +20,6 @@ package org.apache.tajo.parser.sql;
 
 import org.antlr.v4.runtime.*;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tajo.exception.TajoRuntimeException;
 
 public class SQLErrorListener extends BaseErrorListener {
 
@@ -36,6 +35,6 @@ public class SQLErrorListener extends BaseErrorListener {
     String errorLine = lines[line - 1];
 
     String simpleMessage = "syntax error at or near \"" + token.getText() + "\"";
-    throw new TajoRuntimeException(new SQLParseError(token, line, charPositionInLine, simpleMessage, errorLine));
+    throw new SQLParseError(token, line, charPositionInLine, simpleMessage, errorLine);
   }
 }
