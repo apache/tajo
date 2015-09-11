@@ -28,7 +28,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.TUtil;
 
 public class InfoSchemaMetadataDictionary {
-  
   private static final String DATABASE_NAME = "information_schema";
   
   private enum DEFINED_TABLES {
