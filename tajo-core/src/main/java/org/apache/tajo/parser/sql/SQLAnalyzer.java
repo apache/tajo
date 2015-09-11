@@ -1289,6 +1289,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
+      if (checkIfExist(ctx.TABLESPACE())) {
+        throw new TajoRuntimeException(new SQLSyntaxError("Tablespace clause is not allowed for an external table."));
+      }
+
       ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
       String storageType = ctx.storage_type.getText();
       createTable.setTableElements(elements);
@@ -1297,6 +1301,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (checkIfExist(ctx.LOCATION())) {
         String uri = stripQuote(ctx.uri.getText());
         createTable.setLocation(uri);
+      } else {
+        throw new TajoRuntimeException(new SQLSyntaxError("LOCATION clause must be required for an external table."));
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {
