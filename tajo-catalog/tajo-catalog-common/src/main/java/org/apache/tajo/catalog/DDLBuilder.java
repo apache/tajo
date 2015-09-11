@@ -19,8 +19,10 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.util.KeyValueSet;
 
+import java.util.List;
 import java.util.Map;
 
 public class DDLBuilder {
@@ -83,7 +85,7 @@ public class DDLBuilder {
       sb.append(sortSpec.isAscending() ? "asc" : "desc").append(" ");
       sb.append(sortSpec.isNullFirst() ? "null first" : "null last").append(", ");
     }
-    sb.replace(sb.length()-2, sb.length()-1, " )");
+    sb.replace(sb.length() - 2, sb.length() - 1, " )");
 
     sb.append(" location '").append(desc.getIndexPath()).append("';");
 
@@ -147,5 +149,44 @@ public class DDLBuilder {
       prefix = ", ";
     }
     sb.append(")");
+  }
+
+  /**
+   * Build alter table add partition statement
+   *
+   * @param table TableDesc to be build
+   * @param partition PartitionDescProto to be build
+   * @return
+   */
+  public static String buildDDLForAddPartition(TableDesc table, PartitionDescProto partition) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("ALTER TABLE ").append(CatalogUtil.denormalizeIdentifier(table.getName()))
+      .append(" ADD IF NOT EXISTS PARTITION (");
+
+
+    List<Column> colums = table.getPartitionMethod().getExpressionSchema().getAllColumns();
+
+    String[] splitPartitionName = partition.getPartitionName().split("/");
+
+    for(int i = 0; i < splitPartitionName.length; i++) {
+      String[] partitionColumnValue = splitPartitionName[i].split("=");
+      if (i > 0) {
+        sb.append(",");
+      }
+
+      switch (colums.get(i).getDataType().getType()) {
+        case TEXT:
+        case TIME:
+        case TIMESTAMP:
+        case DATE:
+          sb.append(partitionColumnValue[0]).append("='").append(partitionColumnValue[1]).append("'");
+          break;
+        default:
+          sb.append(partitionColumnValue[0]).append("=").append(partitionColumnValue[1]);
+          break;
+      }
+    }
+    sb.append(") LOCATION '").append(partition.getPath()).append("';\n");
+    return sb.toString();
   }
 }
