@@ -21,7 +21,9 @@ package org.apache.tajo.storage.jdbc;
 import com.google.common.base.Function;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.plan.expr.*;
@@ -71,20 +73,12 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
   public static class Context {
     StringBuilder sb = new StringBuilder();
 
-    public void put(String text) {
-      sb.append(" ").append(text).append(" ");
+    public void append(String text) {
+      sb.append(text).append(" ");
     }
   }
 
-  protected EvalNode visitBinaryEval(Context context, Stack<EvalNode> stack, BinaryEval binaryEval) {
-    stack.push(binaryEval);
-    visit(context, binaryEval.getLeftExpr(), stack);
-    context.sb.append(convertBinOperatorToSQLRepr(binaryEval.getType())).append(" ");
-    visit(context, binaryEval.getRightExpr(), stack);
-    stack.pop();
-    return binaryEval;
-  }
-
+  @Override
   protected EvalNode visitUnaryEval(Context context, UnaryEval unary, Stack<EvalNode> stack) {
 
     switch (unary.getType()) {
@@ -117,16 +111,32 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
     return unary;
   }
 
+  @Override
+  protected EvalNode visitBinaryEval(Context context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+    stack.push(binaryEval);
+    visit(context, binaryEval.getLeftExpr(), stack);
+    context.sb.append(convertBinOperatorToSQLRepr(binaryEval.getType())).append(" ");
+    visit(context, binaryEval.getRightExpr(), stack);
+    stack.pop();
+    return binaryEval;
+  }
+
+  @Override
+  protected EvalNode visitConst(Context context, ConstEval constant, Stack<EvalNode> stack) {
+    context.sb.append(convertDatumToSQLLiteral(constant.getValue())).append(" ");
+    return constant;
+  }
+
   protected EvalNode visitRowConstant(Context context, RowConstantEval row, Stack<EvalNode> stack) {
     StringBuilder sb = new StringBuilder("(");
     sb.append(StringUtils.join(row.getValues(), ",", new Function<Datum, String>() {
       @Override
       public String apply(Datum v) {
-        return convertLiteralToSQLRepr(v);
+        return convertDatumToSQLLiteral(v);
       }
     }));
     sb.append(")");
-    context.put(sb.toString());
+    context.append(sb.toString());
 
     return row;
   }
@@ -141,14 +151,77 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
       tableName = CatalogUtil.extractSimpleName(field.getQualifier());
     }
 
-    context.put(CatalogUtil.buildFQName(tableName, field.getColumnName()));
+    context.append(CatalogUtil.buildFQName(tableName, field.getColumnName()));
     return field;
   }
 
   @Override
-  protected EvalNode visitConst(Context context, ConstEval constant, Stack<EvalNode> stack) {
-    context.sb.append(convertLiteralToSQLRepr(constant.getValue())).append(" ");
-    return constant;
+  protected EvalNode visitBetween(Context context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
+    stack.push(evalNode);
+    visit(context, evalNode.getPredicand(), stack);
+    context.append("BETWEEN");
+    visit(context, evalNode.getBegin(), stack);
+    context.append("AND");
+    visit(context, evalNode.getEnd(), stack);
+    return evalNode;
+  }
+
+  @Override
+  protected EvalNode visitCaseWhen(Context context, CaseWhenEval evalNode, Stack<EvalNode> stack) {
+    stack.push(evalNode);
+    context.append("CASE");
+    for (CaseWhenEval.IfThenEval ifThenEval : evalNode.getIfThenEvals()) {
+      visitIfThen(context, ifThenEval, stack);
+    }
+
+    context.append("ELSE");
+    if (evalNode.hasElse()) {
+      visit(context, evalNode.getElse(), stack);
+    }
+    stack.pop();
+    context.append("END");
+    return evalNode;
+  }
+
+  @Override
+  protected EvalNode visitIfThen(Context context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
+    stack.push(evalNode);
+    context.append("WHEN");
+    visit(context, evalNode.getCondition(), stack);
+    context.append("THEN");
+    visit(context, evalNode.getResult(), stack);
+    stack.pop();
+    return evalNode;
+  }
+
+  @Override
+  protected EvalNode visitFuncCall(Context context, FunctionEval func, Stack<EvalNode> stack) {
+    // TODO - TAJO-1837 should be resolved if we support RDBMS functions better.
+
+    stack.push(func);
+
+    context.sb.append(func.getName()).append("(");
+
+    boolean first = true;
+    for (EvalNode param : func.getArgs()) {
+      if (first) {
+        first = false;
+      } else {
+        context.sb.append(",");
+      }
+
+      visit(context, param, stack);
+    }
+
+    context.sb.append(")");
+    stack.pop();
+
+    return func;
+  }
+
+  @Override
+  protected EvalNode visitSubquery(Context context, SubqueryEval evalNode, Stack<EvalNode> stack) {
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   /**
@@ -156,8 +229,11 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
    *
    * @param d Datum
    */
-  public String convertLiteralToSQLRepr(Datum d) {
+  public String convertDatumToSQLLiteral(Datum d) {
     switch (d.type()) {
+    case BOOLEAN:
+      return d.asBool() ? "TRUE" : "FALSE";
+
     case INT1:
     case INT2:
     case INT4:

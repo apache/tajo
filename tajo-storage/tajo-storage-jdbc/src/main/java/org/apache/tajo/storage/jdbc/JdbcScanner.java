@@ -240,7 +240,7 @@ public abstract class JdbcScanner implements Scanner {
 
   private ResultSetIterator executeQueryAndGetIter() {
     try {
-      LOG.info("Executed SQL Statement: " + generatedSql);
+      LOG.info("Generated SQL: " + generatedSql);
       Connection conn = DriverManager.getConnection(fragment.uri);
       Statement statement = conn.createStatement();
       ResultSet resultset = statement.executeQuery(generatedSql);

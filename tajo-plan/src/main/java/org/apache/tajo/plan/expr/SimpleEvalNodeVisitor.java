@@ -162,10 +162,6 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
     return evalNode;
   }
 
-  protected EvalNode visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {
-    return visitBinaryEval(context, stack, evalNode);
-  }
-
   ///////////////////////////////////////////////////////////////////////////////////////////////
   // Functions
   ///////////////////////////////////////////////////////////////////////////////////////////////

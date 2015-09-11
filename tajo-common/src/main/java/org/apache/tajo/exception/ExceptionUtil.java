@@ -186,7 +186,7 @@ public class ExceptionUtil {
   }
 
   public static void printStackTraceIfError(Log log, Throwable t) {
-    if (!ExceptionUtil.isManagedException(t)) {
+    if (System.getProperty("DEBUG") != null || !ExceptionUtil.isManagedException(t)) {
       ExceptionUtil.printStackTrace(log, t);
     }
   }

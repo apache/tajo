@@ -98,6 +98,20 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
+  public void testTPCH_Q3() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testTPCH_Q5() throws Exception {
+    runSimpleTests();
+  }
+
+  // Predicates --------------------------------------------------------------
+
+  @SimpleTest
+  @Test
   public void testSimpleFilter() throws Exception {
     runSimpleTests();
   }
@@ -111,6 +125,30 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @SimpleTest
   @Test
   public void testInPredicateWithLiterals() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testBetweenNumbers() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testBetweenDates() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testCaseWhenFilter() throws Exception {
+    runSimpleTests();
+  }
+
+  @SimpleTest
+  @Test
+  public void testFunctionWithinFilter() throws Exception {
     runSimpleTests();
   }
 
