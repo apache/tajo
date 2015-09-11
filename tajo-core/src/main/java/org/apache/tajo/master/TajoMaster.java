@@ -50,7 +50,6 @@ import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.metrics.ClusterResourceMetricSet;
 import org.apache.tajo.metrics.Master;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
-import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rule.EvaluationContext;
@@ -87,6 +86,8 @@ public class TajoMaster extends CompositeService {
 
   /** Class Logger */
   private static final Log LOG = LogFactory.getLog(TajoMaster.class);
+
+  public static final int SHUTDOWN_HOOK_PRIORITY = 10;
 
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
@@ -164,7 +165,7 @@ public class TajoMaster extends CompositeService {
   public void serviceInit(Configuration conf) throws Exception {
 
     this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
+    ShutdownHookManager.get().addShutdownHook(new ShutdownHook(), SHUTDOWN_HOOK_PRIORITY);
 
     context = new MasterContext(systemConf);
     clock = new SystemClock();
@@ -557,12 +558,13 @@ public class TajoMaster extends CompositeService {
             && AbstractDBStore.needShutdown(catalogServer.getStoreUri())) {
           DerbyStore.shutdown();
         }
-        RpcChannelFactory.shutdownGracefully();
+        RpcClientManager.shutdown();
       }
     }
   }
 
   public static void main(String[] args) throws Exception {
+    Thread.setDefaultUncaughtExceptionHandler(new TajoUncaughtExceptionHandler());
     StringUtils.startupShutdownMessage(TajoMaster.class, args, LOG);
 
     try {
