@@ -140,8 +140,17 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     return createExternalTable(tableName, schema, path, meta, null);
   }
 
+  @Override
   public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
+      throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException {
+    return createExternalTable(tableName, schema, path, meta, null, false);
+  }
+
+  @Override
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
+                                       final TableMeta meta, final PartitionMethodDesc partitionMethodDesc,
+                                       final boolean hasSelfDescSchema)
       throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException {
 
     final NettyClientBase client = conn.getTajoMasterConnection();
@@ -154,6 +163,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     builder.setSchema(schema.getProto());
     builder.setMeta(meta.getProto());
     builder.setPath(path.toString());
+    builder.setHasSelfDescSchema(hasSelfDescSchema);
 
     if (partitionMethodDesc != null) {
       builder.setPartition(partitionMethodDesc.getProto());

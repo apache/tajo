@@ -817,7 +817,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       pstmt.setString(4, table.getPath());
       pstmt.setString(5, table.getMeta().getStoreType());
-      pstmt.setBoolean(6, table.hasSelfDescSchema());
+      pstmt.setBoolean(6, table.getSelfDescSchema());
       pstmt.executeUpdate();
       pstmt.close();
 

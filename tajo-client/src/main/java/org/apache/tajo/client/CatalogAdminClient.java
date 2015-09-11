@@ -98,6 +98,24 @@ public interface CatalogAdminClient extends Closeable {
       throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException;
 
   /**
+   *
+   * @param tableName
+   * @param schema
+   * @param path
+   * @param meta
+   * @param partitionMethodDesc
+   * @param hasSelfDescSchema
+   * @return
+   * @throws DuplicateTableException
+   * @throws InsufficientPrivilegeException
+   * @throws UnavailableTableLocationException
+   */
+  TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
+                                       final TableMeta meta, final PartitionMethodDesc partitionMethodDesc,
+                                       final boolean hasSelfDescSchema)
+      throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException;
+
+  /**
    * Drop a table
    *
    * @param tableName The table name to be dropped. This name is case sensitive.

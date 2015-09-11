@@ -18,9 +18,11 @@
 
 package org.apache.tajo.plan.rewrite;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.LogicalPlan;
@@ -32,6 +34,8 @@ import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.graph.DirectedGraphVisitor;
+import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
 import java.util.*;
 
@@ -120,7 +124,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitLimit(ctx, stack, expr);
 
       LimitNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -130,7 +135,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitSort(ctx, stack, expr);
 
       SortNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -140,7 +146,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitHaving(ctx, stack, expr);
 
       HavingNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -150,7 +157,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitGroupBy(ctx, stack, expr);
 
       GroupbyNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -160,7 +168,9 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitJoin(ctx, stack, expr);
 
       JoinNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(SchemaUtil.merge(node.getLeftChild().getOutSchema(), node.getRightChild().getOutSchema()));
+      LogicalNode leftChild = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getLeft());
+      LogicalNode rightChild = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getRight());
+      node.setInSchema(SchemaUtil.merge(leftChild.getOutSchema(), rightChild.getOutSchema()));
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -170,7 +180,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitFilter(ctx, stack, expr);
 
       SelectionNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -180,7 +191,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitUnion(ctx, stack, expr);
 
       UnionNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getLeftChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getLeft());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -190,7 +202,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitExcept(ctx, stack, expr);
 
       ExceptNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getLeftChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getLeft());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -200,7 +213,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitIntersect(ctx, stack, expr);
 
       IntersectNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getLeftChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getLeft());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -211,7 +225,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitSimpleTableSubquery(ctx, stack, expr);
 
       TableSubQueryNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getSubQuery().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -222,7 +237,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitTableSubQuery(ctx, stack, expr);
 
       TableSubQueryNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getSubQuery().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -233,7 +249,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       CreateTableNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
 
       if (expr.hasSubQuery()) {
-        node.setInSchema(node.getChild().getOutSchema());
+        LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
+        node.setInSchema(child.getOutSchema());
         node.setOutSchema(node.getInSchema());
       }
       return node;
@@ -244,7 +261,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       super.visitInsert(ctx, stack, expr);
 
       InsertNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
-      node.setInSchema(node.getChild().getOutSchema());
+      LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
+      node.setInSchema(child.getOutSchema());
       node.setOutSchema(node.getInSchema());
       return node;
     }
@@ -258,11 +276,12 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       if (desc.hasSelfDescSchema()) {
         if (ctx.projectColumns.containsKey(getQualifiedRelationName(ctx.planContext, expr))) {
-          Schema schema = new Schema();
+          Set<Column> columns = new HashSet<>();
           for (ColumnReferenceExpr col : ctx.projectColumns.get(getQualifiedRelationName(ctx.planContext, expr))) {
-            schema.addColumn(NameResolver.resolve(plan, queryBlock, col, NameResolvingMode.RELS_ONLY));
+            columns.add(NameResolver.resolve(plan, queryBlock, col, NameResolvingMode.RELS_ONLY));
           }
-          desc.setSchema(schema);
+
+          desc.setSchema(buildSchemaFromColumnSet(columns));
           scan.init(desc);
         } else {
           // error
@@ -271,6 +290,116 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       }
 
       return scan;
+    }
+
+    /**
+     * This method creates a schema from a set of columns.
+     * For a nested column, its ancestors are guessed and added to the schema.
+     * For example, given a column 'glossary.title', the columns of (glossary RECORD (title TEXT)) will be added
+     * to the schema.
+     *
+     * @param columns a set of columns
+     * @return schema build from columns
+     */
+    private Schema buildSchemaFromColumnSet(Set<Column> columns) {
+      SchemaGraph schemaGraph = new SchemaGraph();
+      Set<ColumnVertex> rootVertexes = new HashSet<>();
+      Schema schema = new Schema();
+
+      for (Column eachColumn : columns) {
+        String simpleName = eachColumn.getSimpleName();
+        if (NestedPathUtil.isPath(simpleName)) {
+          String[] paths = simpleName.split(NestedPathUtil.PATH_DELIMITER);
+          for (int i = 0; i < paths.length-1; i++) {
+            String parentName = paths[i];
+            if (i == 0) {
+              parentName = CatalogUtil.buildFQName(eachColumn.getQualifier(), parentName);
+            }
+            // Leaf column type is TEXT; otherwise, RECORD.
+            Type childDataType = (i == paths.length-2) ? Type.TEXT : Type.RECORD;
+            ColumnVertex parentVertex = new ColumnVertex(parentName, Type.RECORD);
+            schemaGraph.addEdge(new ColumnEdge(new ColumnVertex(paths[i+1], childDataType), parentVertex));
+            if (i == 0) {
+              rootVertexes.add(parentVertex);
+            }
+          }
+        } else {
+          schema.addColumn(eachColumn);
+        }
+      }
+
+      // Build record columns
+      RecordColumnBuilder builder = new RecordColumnBuilder(schemaGraph);
+      for (ColumnVertex eachRoot : rootVertexes) {
+        schemaGraph.accept(eachRoot, builder);
+        schema.addColumn(eachRoot.column);
+      }
+
+      return schema;
+    }
+
+    private static class ColumnVertex {
+      private final String name;
+      private final Type type;
+      private Column column;
+
+      public ColumnVertex(String name, Type type) {
+        this.name = name;
+        this.type = type;
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if (o instanceof ColumnVertex) {
+          ColumnVertex other = (ColumnVertex) o;
+          return this.name.equals(other.name) &&
+              this.type.equals(other.type) &&
+              TUtil.checkEquals(this.column, other.column);
+        }
+        return false;
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hashCode(name, type, column);
+      }
+    }
+
+    private static class ColumnEdge {
+      private final ColumnVertex parent;
+      private final ColumnVertex child;
+
+      public ColumnEdge(ColumnVertex child, ColumnVertex parent) {
+        this.child = child;
+        this.parent = parent;
+      }
+    }
+
+    private static class SchemaGraph extends SimpleDirectedGraph<ColumnVertex, ColumnEdge> {
+      public void addEdge(ColumnEdge edge) {
+        this.addEdge(edge.child, edge.parent, edge);
+      }
+    }
+
+    private static class RecordColumnBuilder implements DirectedGraphVisitor<ColumnVertex> {
+      private final SchemaGraph graph;
+
+      public RecordColumnBuilder(SchemaGraph graph) {
+        this.graph = graph;
+      }
+
+      @Override
+      public void visit(Stack<ColumnVertex> stack, ColumnVertex schemaVertex) {
+        if (graph.isLeaf(schemaVertex)) {
+          schemaVertex.column = new Column(schemaVertex.name, schemaVertex.type);
+        } else {
+          Schema schema = new Schema();
+          for (ColumnVertex eachChild : graph.getChilds(schemaVertex)) {
+            schema.addColumn(eachChild.column);
+          }
+          schemaVertex.column = new Column(schemaVertex.name, new TypeDesc(schema));
+        }
+      }
     }
   }
 }

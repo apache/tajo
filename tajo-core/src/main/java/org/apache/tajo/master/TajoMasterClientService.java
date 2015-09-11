@@ -893,6 +893,7 @@ public class TajoMasterClientService extends AbstractService {
             path.toUri(),
             true,
             partitionDesc,
+            request.getHasSelfDescSchema(),
             false
         );
 

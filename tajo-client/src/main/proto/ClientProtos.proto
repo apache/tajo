@@ -194,6 +194,7 @@ message CreateTableRequest {
   required TableProto meta = 4;
   required string path = 5;
   optional PartitionMethodProto partition = 6;
+  required bool hasSelfDescSchema = 7;
 }
 
 message DropTableRequest {

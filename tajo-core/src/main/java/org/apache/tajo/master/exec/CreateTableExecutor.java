@@ -72,6 +72,7 @@ public class CreateTableExecutor {
         createTable.getUri(),
         createTable.isExternal(),
         createTable.getPartitionMethod(),
+        createTable.hasSelfDescSchema(),
         ifNotExists);
   }
 
@@ -83,6 +84,7 @@ public class CreateTableExecutor {
                           @Nullable URI uri,
                           boolean isExternal,
                           @Nullable PartitionMethodDesc partitionDesc,
+                          boolean hasSelfDescSchema,
                           boolean ifNotExists) throws IOException, TajoException {
 
     Pair<String, String> separatedNames = getQualifiedName(queryContext.getCurrentDatabase(), tableName);
@@ -100,7 +102,7 @@ public class CreateTableExecutor {
 
     TableDesc desc;
     URI tableUri = isExternal ? uri : tableSpace.getTableUri(databaseName, simpleTableName);
-    desc = new TableDesc(qualifiedName, schema, meta, tableUri, isExternal);
+    desc = new TableDesc(qualifiedName, schema, meta, tableUri, isExternal, hasSelfDescSchema);
 
     if (partitionDesc != null) {
       desc.setPartitionMethod(partitionDesc);

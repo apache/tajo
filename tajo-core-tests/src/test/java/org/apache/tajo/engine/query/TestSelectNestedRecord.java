@@ -133,7 +133,16 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
     executeString(String.format("create external table self_desc_table1 using json location '%s'",
         getDataSetFile("sample2")));
 
-    ResultSet res = executeString("select glossary.title from self_desc_table1");
+    ResultSet res = executeString("select glossary.title, glossary.\"GlossDiv\".title, glossary.\"GlossDiv\".null_expected, glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"SortAs\", glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"Abbrev\" from self_desc_table1");
+    System.out.println(resultSetToString(res));
+  }
+
+  @Test
+  public final void testSelfDescTable2() throws Exception {
+    executeString(String.format("create external table self_desc_table1 using json location '%s'",
+        getDataSetFile("sample2")));
+
+    ResultSet res = executeString("select glossary.title, glossary.\"GlossDiv\".title, glossary.\"GlossDiv\".null_expected, glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"SortAs\" from self_desc_table1 where glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"Abbrev\" = 'ISO 8879:1986'");
     System.out.println(resultSetToString(res));
   }
 }
