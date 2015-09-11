@@ -115,6 +115,45 @@ public class TestTajoJdbcNegative extends QueryTestCaseBase {
   }
 
   @Test
+  public void testSyntaxErrorOnExecuteUpdate() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    try (Statement stmt = conn.createStatement()) {
+      stmt.executeUpdate("CREATE TABLE \n1table123u8sd ( name RECORD(last TEXT, first TEXT) )");
+      fail("Must be failed");
+    } catch (SQLException s) {
+      assertEquals(toSQLState(ResultCode.SYNTAX_ERROR), s.getSQLState());
+      assertEquals(
+          "ERROR: syntax error at or near \"1\"\n" +
+          "LINE 2: 1table123u8sd ( name RECORD(last TEXT, first TEXT) )\n" +
+          "        ^", s.getMessage());
+    }
+  }
+
+  @Test
+  public void testSyntaxErrorOnExecuteQuery() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    try (Statement stmt = conn.createStatement()) {
+      try (ResultSet result = stmt.executeQuery("SELECT\n*\nFROM_ LINEITEM")) {
+        fail("Must be failed");
+      } catch (SQLException s) {
+        assertEquals(toSQLState(ResultCode.SYNTAX_ERROR), s.getSQLState());
+        assertEquals(
+            "ERROR: syntax error at or near \"from_\"\n" +
+            "LINE 3: FROM_ LINEITEM\n" +
+            "        ^^^^^", s.getMessage());
+      }
+    }
+  }
+
+  @Test
   public void testImmediateException() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         DEFAULT_DATABASE_NAME);
