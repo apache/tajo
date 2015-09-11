@@ -19,11 +19,16 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 
 public class TestQueryValidation extends QueryTestCaseBase {
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void testInsertWithWrongTargetColumn() throws Exception {
@@ -61,5 +66,21 @@ public class TestQueryValidation extends QueryTestCaseBase {
   public void testUnsupportedStoreType() throws IOException {
     // See TAJO-1249
     assertInvalidSQLFromFile("invalid_store_format.sql");
+  }
+
+  @Test
+  public void testCreateExternalTableWithTablespace() throws Exception {
+    exception.expect(SQLSyntaxError.class);
+    exception.expectMessage("Tablespace clause is not allowed for an external table.");
+
+    executeFile("create_external_table_with_tablespace.sql");
+  }
+
+  @Test
+  public void testCreateExternalTableWithoutLocation() throws Exception {
+    exception.expect(SQLSyntaxError.class);
+    exception.expectMessage("LOCATION clause must be required for an external table.");
+
+    executeFile("create_external_table_without_location.sql");
   }
 }

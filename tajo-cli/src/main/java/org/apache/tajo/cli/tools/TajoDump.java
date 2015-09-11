@@ -22,7 +22,9 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
@@ -183,6 +185,18 @@ public class TajoDump {
           writer.write(DDLBuilder.buildDDLForExternalTable(table));
         } else {
           writer.write(DDLBuilder.buildDDLForBaseTable(table));
+        }
+
+        if (table.hasPartition()) {
+          writer.write("\n\n");
+          writer.write("--\n");
+          writer.write(String.format("-- Table Partitions: %s%n", tableName));
+          writer.write("--\n");
+          List<PartitionDescProto> partitionProtos = client.getAllPartitions(tableName);
+          for (PartitionDescProto eachPartitionProto : partitionProtos) {
+            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
+          }
+          writer.write("\n\n");
         }
 
         if (client.hasIndexes(tableName)) {

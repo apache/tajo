@@ -41,6 +41,10 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
    * */
   @Expose private Target [] targets;
   @Expose private boolean hasDistinct = false;
+  /**
+   * A flag to indicate if this groupby is for distinct block (i.e., SELECT DISTINCT x,y,z, ...)
+   */
+  @Expose private boolean forDistinctBlock = false;
 
   public GroupbyNode(int pid) {
     super(pid, NodeType.GROUP_BY);
@@ -68,6 +72,14 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 
   public void setDistinct(boolean distinct) {
     hasDistinct = distinct;
+  }
+
+  public final void setForDistinctBlock() {
+    forDistinctBlock = true;
+  }
+
+  public boolean isForDistinctBlock() {
+    return forDistinctBlock;
   }
 
   public boolean hasAggFunctions() {
