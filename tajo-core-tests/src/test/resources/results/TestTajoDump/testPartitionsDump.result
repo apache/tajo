@@ -1,0 +1,33 @@
+--
+-- Tajo database dump
+--
+
+
+--
+-- Database name: "TestTajoDump"
+--
+
+CREATE DATABASE IF NOT EXISTS "TestTajoDump";
+
+--
+-- Name: "TestTajoDump"."TableName3"; Type: TABLE; Storage: TEXT
+--
+CREATE TABLE "TestTajoDump"."TableName3" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN(col3 INT4, col4 INT4);
+
+--
+-- Table Partitions: TableName3
+--
+ALTER TABLE "TestTajoDump"."TableName3" ADD IF NOT EXISTS PARTITION (col3=1,col4=2) LOCATION '${partition.path1}/col3=1/col4=2';
+
+
+
+
+--
+-- Name: "TestTajoDump"."TableName4"; Type: TABLE; Storage: TEXT
+--
+CREATE TABLE "TestTajoDump"."TableName4" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN(col3 TEXT, col4 DATE);
+
+--
+-- Table Partitions: TableName4
+--
+ALTER TABLE "TestTajoDump"."TableName4" ADD IF NOT EXISTS PARTITION (col3='tajo',col4='2015-09-01') LOCATION '${partition.path2}/col3=tajo/col4=2015-09-01';

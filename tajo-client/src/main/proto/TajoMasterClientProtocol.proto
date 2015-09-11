@@ -70,6 +70,7 @@ service TajoMasterClientProtocolService {
   rpc getTableList(SessionedStringProto) returns (StringListResponse);
   rpc getTableDesc(SessionedStringProto) returns (TableResponse);
   rpc getFunctionList(SessionedStringProto) returns (FunctionListResponse);
+  rpc getPartitionsByTableName(SessionedStringProto) returns (PartitionListResponse);
 
   // Index Management APIs
   rpc getIndexWithName(SessionedStringProto) returns (IndexResponse);
