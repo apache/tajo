@@ -144,7 +144,8 @@ public class TestSQLAnalyzer {
       String expectedResult = "";
 
       try {
-        expectedResult = FileUtil.readTextFileFromResource("results/TestSQLAnalyzer/errors/" + fileName + ".result");
+        expectedResult =
+            JavaResourceUtil.readTextFromResource("results/TestSQLAnalyzer/errors/" + fileName + ".result");
       } catch (FileNotFoundException fnfe) {
       }
 
