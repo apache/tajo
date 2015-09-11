@@ -1291,12 +1291,19 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else {
         createTable.setHasSelfDesribeSchema();
       }
+
+      if (checkIfExist(ctx.TABLESPACE())) {
+        throw new TajoRuntimeException(new SQLSyntaxError("Tablespace clause is not allowed for an external table."));
+      }
+
       String storageType = ctx.storage_type.getText();
       createTable.setStorageType(storageType);
 
       if (checkIfExist(ctx.LOCATION())) {
         String uri = stripQuote(ctx.uri.getText());
         createTable.setLocation(uri);
+      } else {
+        throw new TajoRuntimeException(new SQLSyntaxError("LOCATION clause must be required for an external table."));
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {
