@@ -32,6 +32,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.net.URI;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -309,6 +310,96 @@ public class TestCatalogAgainstCaseSensitivity {
     int expected = 0;
     for (String eachTableName : catalog.getAllTableNames(databaseName)) {
       expected += catalog.getTableDesc(databaseName, eachTableName).getSchema().size();
+    }
+    assertEquals(expected, columnCount);
+  }
+
+  @Test
+  public void testTableColumnWithNestedField() throws Exception {
+    String databaseName = "TestDatabase1";
+    String tableName = "nested_Table";
+
+    Schema schema = new Schema(
+        new Column[]{
+            new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4)),
+            new Column("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4)),
+            new Column("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT)),
+    });
+
+    Schema tableSchema = new Schema();
+    tableSchema.addColumn("RecoRd1", new TypeDesc(schema));
+    tableSchema.addColumn("CoL1", CatalogUtil.newSimpleDataType(Type.INT4));
+    tableSchema.addColumn("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT));
+    tableSchema.addColumn("RecoRd2", new TypeDesc(schema));
+    tableSchema.addColumn("RecoRd3", new TypeDesc(
+        new Schema(new Column[]{
+            new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4)),
+            new Column("RecoRd1", new TypeDesc(schema)),
+        })
+    ));
+
+    TableDesc tableDesc = new TableDesc(
+        CatalogUtil.buildFQName(databaseName, tableName),
+        tableSchema,
+        CatalogUtil.newTableMeta("JSON"),
+        URI.create("hdfs://xxx.com/json_Table")
+    );
+
+    catalog.createTable(tableDesc);
+    assertTrue(catalog.existsTable(databaseName, tableName));
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Test get table desc
+    //////////////////////////////////////////////////////////////////////////////
+
+    tableSchema = catalog.getTableDesc(databaseName, tableName).getSchema();
+    assertTrue(tableSchema.contains("RecoRd1"));
+    assertTrue(tableSchema.contains(new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))));
+    assertTrue(tableSchema.contains(new Column("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT))));
+    assertTrue(tableSchema.contains("RecoRd2"));
+    assertTrue(tableSchema.contains("RecoRd3"));
+
+    schema = tableSchema.getColumn("RecoRd1").getTypeDesc().nestedRecordSchema;
+    assertTrue(schema.contains(new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))));
+    assertTrue(schema.contains(new Column("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4))));
+    assertTrue(schema.contains(new Column("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT))));
+
+    schema = tableSchema.getColumn("RecoRd2").getTypeDesc().nestedRecordSchema;
+    assertTrue(schema.contains(new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))));
+    assertTrue(schema.contains(new Column("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4))));
+    assertTrue(schema.contains(new Column("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT))));
+
+    schema = tableSchema.getColumn("RecoRd3").getTypeDesc().nestedRecordSchema;
+    assertTrue(schema.contains(new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))));
+    assertTrue(tableSchema.contains("RecoRd1"));
+
+    schema = schema.getColumn("RecoRd1").getTypeDesc().nestedRecordSchema;
+    assertTrue(schema.contains(new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))));
+    assertTrue(schema.contains(new Column("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4))));
+    assertTrue(schema.contains(new Column("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT))));
+
+    //////////////////////////////////////////////////////////////////////////////
+    // Test get all columns
+    //////////////////////////////////////////////////////////////////////////////
+
+    int columnCount = 0;
+    for (ColumnProto eachColumnProto : catalog.getAllColumns()) {
+      // TODO: nested columns must have their name properly.
+      // TODO: For example, the 'RecoRd1.CoL1' column of the above test table
+      // TODO: has name of 'TestDatabase1.nested_Table.RecoRd1.CoL1'.
+
+//      Column column = new Column(eachColumnProto);
+//      tableDesc = catalog.getTableDesc(column.getQualifier());
+//      assertTrue(column.getQualifiedName() + " must be contained in " + tableDesc.getName(),
+//          tableDesc.getLogicalSchema().contains(column));
+      columnCount++;
+    }
+
+    System.out.println("\n =============================================== \n");
+
+    int expected = 0;
+    for (String eachTableName : catalog.getAllTableNames(databaseName)) {
+      expected += catalog.getTableDesc(databaseName, eachTableName).getSchema().getAllColumns().size();
     }
     assertEquals(expected, columnCount);
   }
