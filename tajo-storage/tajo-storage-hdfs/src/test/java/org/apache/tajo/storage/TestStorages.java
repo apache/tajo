@@ -40,6 +40,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -202,6 +203,49 @@ public class TestStorages {
 
       assertEquals(tupleNum, tupleCnt);
     }
+  }
+
+  @Test
+  public void testZeroRows() throws IOException {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("score", Type.FLOAT4);
+
+    TableMeta meta = CatalogUtil.newTableMeta(storeType);
+    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
+    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+          TEST_PROJECTION_AVRO_SCHEMA);
+    }
+
+    Path tablePath = new Path(testDir, "testZeroRows.data");
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.enableStats();
+    appender.init();
+    appender.close();
+
+    TableStats stat = appender.getStats();
+    assertEquals(0, stat.getNumRows().longValue());
+
+    if(internalType || BuiltinStorages.TEXT.equals(storeType)) {
+      FileStatus fileStatus = fs.getFileStatus(tablePath);
+      assertEquals(0, fileStatus.getLen());
+    }
+
+    List<Fragment> splits = sm.getSplits("testZeroRows", meta, schema, testDir);
+    int tupleCnt = 0;
+    for (Fragment fragment : splits) {
+      Scanner scanner = sm.getScanner(meta, schema, fragment, schema);
+      scanner.init();
+      while (scanner.next() != null) {
+        tupleCnt++;
+      }
+      scanner.close();
+    }
+
+    assertEquals(0, tupleCnt);
   }
 
   @Test
