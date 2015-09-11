@@ -1,0 +1,1 @@
+CREATE EXTERNAL TABLE table1 (id int, str text, num int) using text
