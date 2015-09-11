@@ -394,9 +394,7 @@ public class TestCatalogAgainstCaseSensitivity {
 //          tableDesc.getLogicalSchema().contains(column));
       columnCount++;
     }
-
-    System.out.println("\n =============================================== \n");
-
+    
     int expected = 0;
     for (String eachTableName : catalog.getAllTableNames(databaseName)) {
       expected += catalog.getTableDesc(databaseName, eachTableName).getSchema().getAllColumns().size();
