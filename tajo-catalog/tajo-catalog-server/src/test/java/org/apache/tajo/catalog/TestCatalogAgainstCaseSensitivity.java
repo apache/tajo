@@ -145,11 +145,6 @@ public class TestCatalogAgainstCaseSensitivity {
     TableStats stats = catalog.getTableDesc("TestDatabase1", "TestTable1").getStats();
     assertEquals(10000, stats.getNumBytes().longValue());
     assertEquals(5000, stats.getNumRows().longValue());
-    // TODO: below statistics are not stored currently.
-//    assertEquals(1000, stats.getAvgRows().longValue());
-//    assertEquals(100, stats.getNumBlocks().intValue());
-//    assertEquals(40, stats.getNumShuffleOutputs().intValue());
-//    assertEquals(200, stats.getReadBytes().longValue());
   }
 
   @Test

@@ -223,6 +223,16 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
+  @Test(expected = UndefinedDatabaseException.class)
+  public void testGetPartitionsOfUndefinedDatabase() throws Exception {
+    catalog.getPartitions("undefined", "undefined");
+  }
+
+  @Test(expected = UndefinedTableException.class)
+  public void testGetPartitionsOfUndefinedTable() throws Exception {
+    catalog.getPartitions("TestDatabase1", "undefined");
+  }
+
   @Test(expected = UndefinedTableException.class)
   public void testRenameUndefinedTable() throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
