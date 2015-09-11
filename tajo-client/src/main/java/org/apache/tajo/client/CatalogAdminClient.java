@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.exception.*;
 
 import java.io.Closeable;
@@ -135,6 +136,15 @@ public interface CatalogAdminClient extends Closeable {
    * @throws UndefinedTableException
    */
   TableDesc getTableDesc(final String tableName) throws UndefinedTableException;
+
+  /**
+   * Get all partition lists of specified table.
+   *
+   * @param tableName The table name to get. This name is case sensitive.
+   * @return lists of partitions
+   */
+  List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException;
 
   List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName);
 

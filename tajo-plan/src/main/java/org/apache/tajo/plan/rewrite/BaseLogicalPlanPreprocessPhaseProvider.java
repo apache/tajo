@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,24 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.exception;
+package org.apache.tajo.plan.rewrite;
 
+import org.apache.tajo.util.TUtil;
 
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import java.util.Collection;
+import java.util.List;
 
-/**
- * Exception for SQL Syntax errors
- */
-public class SQLSyntaxError extends TajoException {
-  private static final long serialVersionUID = 5388279335175632067L;
-
-  @SuppressWarnings("unused")
-  public SQLSyntaxError(ReturnState state) {
-    super(state);
-  }
-
-  public SQLSyntaxError(String errorMessage) {
-    super(Errors.ResultCode.SYNTAX_ERROR, errorMessage);
+public class BaseLogicalPlanPreprocessPhaseProvider extends LogicalPlanPreprocessPhaseProvider {
+  @Override
+  public Collection<Class<? extends LogicalPlanPreprocessPhase>> getPhases() {
+    List phases = TUtil.newList(
+        BaseSchemaBuildPhase.class
+    );
+    return phases;
   }
 }

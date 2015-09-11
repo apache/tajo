@@ -37,7 +37,7 @@ public class BaseLogicalPlanRewriteEngine implements LogicalPlanRewriteEngine {
   private Log LOG = LogFactory.getLog(BaseLogicalPlanRewriteEngine.class);
 
   /** a map for query rewrite rules  */
-  private Map<String, LogicalPlanRewriteRule> rewriteRules = new LinkedHashMap<String, LogicalPlanRewriteRule>();
+  private Map<String, LogicalPlanRewriteRule> rewriteRules = new LinkedHashMap<>();
 
   /**
    * Add a query rewrite rule to this engine.

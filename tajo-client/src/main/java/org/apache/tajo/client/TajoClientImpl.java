@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
@@ -242,6 +243,11 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) {
     return catalogClient.getFunctions(functionName);
+  }
+
+  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException {
+    return catalogClient.getAllPartitions(tableName);
   }
 
   @Override

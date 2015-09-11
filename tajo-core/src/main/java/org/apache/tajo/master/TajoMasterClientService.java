@@ -908,7 +908,7 @@ public class TajoMasterClientService extends AbstractService {
         QueryContext queryContext = new QueryContext(conf, session);
 
         context.getGlobalEngine().getDDLExecutor().dropTable(queryContext, dropTable.getName(), false,
-            dropTable.getPurge());
+          dropTable.getPurge());
         return OK;
 
       } catch (Throwable t) {
@@ -949,6 +949,36 @@ public class TajoMasterClientService extends AbstractService {
         return FunctionListResponse.newBuilder().
             setState(returnError(t))
             .build();
+      }
+    }
+
+    @Override
+    public PartitionListResponse getPartitionsByTableName(RpcController controller, SessionedStringProto request)
+      throws ServiceException {
+
+      try {
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String databaseName;
+        String tableName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getValue();
+        }
+
+        List<PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
+        return PartitionListResponse.newBuilder()
+          .setState(OK)
+          .addAllPartition(partitions)
+          .build();
+      } catch (Throwable t) {
+        return PartitionListResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
       }
     }
 
