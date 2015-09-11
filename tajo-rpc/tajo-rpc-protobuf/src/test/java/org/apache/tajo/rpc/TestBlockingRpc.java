@@ -130,7 +130,7 @@ public class TestBlockingRpc {
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    RpcChannelFactory.shutdownGracefully();
+    RpcClientManager.shutdown();
   }
 
   public void tearDownRpcServer() throws Exception {

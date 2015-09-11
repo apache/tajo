@@ -79,13 +79,13 @@ public class TestTajoDump extends QueryTestCaseBase {
   }
 
   @Test
-  public void testDump3() throws Exception {
+  public void testDump4() throws Exception {
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeString("CREATE TABLE \"" + getCurrentDatabase() +
-          "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
+        "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
 
       executeString("CREATE INDEX test_idx on \"" + getCurrentDatabase()
-          + "\".\"TableName1\" ( \"Age\" asc null first, \"FirstName\" desc null last )");
+        + "\".\"TableName1\" ( \"Age\" asc null first, \"FirstName\" desc null last )");
 
       try {
         UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
@@ -94,12 +94,55 @@ public class TestTajoDump extends QueryTestCaseBase {
         TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
         printWriter.flush();
         printWriter.close();
+
         assertOutputResult("testDump3.result", new String(bos.toByteArray()), new String[]{"${index.path}"},
-            new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "test_idx").toString()});
+          new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "test_idx").toString()});
         bos.close();
       } finally {
         executeString("DROP INDEX test_idx");
         executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
+      }
+    }
+  }
+
+  @Test
+  public void testPartitionsDump() throws Exception {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
+      executeString("create table \"" + getCurrentDatabase() + "\".\"TableName3\""
+          + " (\"col1\" int4, \"col2\" int4) "
+          + " partition by column(\"col3\" int4, \"col4\" int4)"
+      );
+
+      executeString("ALTER TABLE \"" + getCurrentDatabase() + "\".\"TableName3\"" +
+        " ADD PARTITION (\"col3\" = 1 , \"col4\" = 2)");
+
+      executeString("create table \"" + getCurrentDatabase() + "\".\"TableName4\""
+          + " (\"col1\" int4, \"col2\" int4) "
+          + " partition by column(\"col3\" TEXT, \"col4\" date)"
+      );
+
+      executeString("ALTER TABLE \"" + getCurrentDatabase() + "\".\"TableName4\"" +
+        " ADD PARTITION (\"col3\" = 'tajo' , \"col4\" = '2015-09-01')");
+
+      try {
+        UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PrintWriter printWriter = new PrintWriter(bos);
+        TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
+        printWriter.flush();
+        printWriter.close();
+
+        String[] paramValues = new String[] {
+          TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName3").toString()
+          , TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName4").toString()
+        };
+
+        assertOutputResult("testPartitionsDump.result", new String(bos.toByteArray())
+          , new String[]{"${partition.path1}", "${partition.path2}"}, paramValues);
+        bos.close();
+      } finally {
+        executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName3\"");
+        executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName4\"");
       }
     }
   }

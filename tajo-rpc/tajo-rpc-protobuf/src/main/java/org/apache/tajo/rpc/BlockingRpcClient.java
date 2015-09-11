@@ -18,9 +18,11 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.EventLoopGroup;
 import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
@@ -35,9 +37,10 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
   private final ProxyRpcChannel rpcChannel;
   private final NettyChannelInboundHandler handler;
 
+  @VisibleForTesting
   BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
       throws NoSuchMethodException, ClassNotFoundException {
-    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false);
+    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false, NettyUtils.getDefaultEventLoopGroup());
   }
 
   /**
@@ -50,11 +53,12 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
    *                         otherwise it is request timeout on active-state
    * @param timeUnit         TimeUnit
    * @param enablePing       enable to detect remote peer hangs
+   * @param eventLoopGroup   thread pool of netty's
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit,
-                    boolean enablePing) throws ClassNotFoundException, NoSuchMethodException {
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit, boolean enablePing,
+                    EventLoopGroup eventLoopGroup) throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
 
     this.stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
@@ -63,7 +67,7 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
     init(new ProtoClientChannelInitializer(handler,
         RpcResponse.getDefaultInstance(),
         timeUnit.toNanos(timeout),
-        enablePing));
+        enablePing), eventLoopGroup);
   }
 
   @Override
