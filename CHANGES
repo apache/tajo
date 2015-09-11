@@ -36,6 +36,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1831: Add a shutdown hook manager in order to set priorities. (jinho)
+
     TAJO-1817: Improve SQL parser error message. (hyunsik)
 
     TAJO-1825: Remove zero length fragments when file length is zero. (jinho)
