@@ -36,6 +36,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1817: Improve SQL parser error message. (hyunsik)
+
     TAJO-1825: Remove zero length fragments when file length is zero. (jinho)
 
     TAJO-1828: tajo-daemon scripts should kill process after process can not 
