@@ -105,7 +105,7 @@ public class TestQueryClientExceptions {
 
   @Test(expected = QueryNotFoundException.class)
   public void testAscynFetchNextQueryResult() throws Throwable {
-    Future<TajoMemoryResultSet> future = client.asyncFetchNextQueryResult(LocalTajoTestingUtility.newQueryId(), 100);
+    Future<TajoMemoryResultSet> future = client.fetchNextQueryResultAsync(LocalTajoTestingUtility.newQueryId(), 100);
     try {
       future.get();
     } catch (ExecutionException e) {

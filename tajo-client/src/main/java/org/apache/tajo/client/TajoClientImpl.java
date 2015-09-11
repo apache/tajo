@@ -139,8 +139,8 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   @Override
-  public Future<TajoMemoryResultSet> asyncFetchNextQueryResult(QueryId queryId, int fetchRowNum) {
-    return queryClient.asyncFetchNextQueryResult(queryId, fetchRowNum);
+  public Future<TajoMemoryResultSet> fetchNextQueryResultAsync(QueryId queryId, int fetchRowNum) {
+    return queryClient.fetchNextQueryResultAsync(queryId, fetchRowNum);
   }
 
   public boolean updateQuery(final String sql) throws TajoException {

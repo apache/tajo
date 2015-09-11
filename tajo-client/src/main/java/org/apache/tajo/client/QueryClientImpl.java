@@ -330,7 +330,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public Future<TajoMemoryResultSet> asyncFetchNextQueryResult(final QueryId queryId, final int fetchRowNum) {
+  public Future<TajoMemoryResultSet> fetchNextQueryResultAsync(final QueryId queryId, final int fetchRowNum) {
 
     final SettableFuture<TajoMemoryResultSet> future = SettableFuture.create();
     executor.submit(new Runnable() {

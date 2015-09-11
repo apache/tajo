@@ -72,7 +72,7 @@ public class FetchResultSet extends TajoResultSetBase {
 
         } else {
           if(nextResultSet == null) {
-            nextResultSet = tajoClient.asyncFetchNextQueryResult(queryId, fetchRowNum);
+            nextResultSet = tajoClient.fetchNextQueryResultAsync(queryId, fetchRowNum);
           } else {
             currentResultSet = nextResultSet.get();
 
@@ -83,7 +83,7 @@ public class FetchResultSet extends TajoResultSetBase {
               finished = true;
             } else {
               // pre-fetch
-              nextResultSet = tajoClient.asyncFetchNextQueryResult(queryId, fetchRowNum);
+              nextResultSet = tajoClient.fetchNextQueryResultAsync(queryId, fetchRowNum);
             }
           }
         }

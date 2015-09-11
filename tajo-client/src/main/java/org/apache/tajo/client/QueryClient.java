@@ -107,7 +107,7 @@ public interface QueryClient extends Closeable {
 
   GetQueryResultResponse getResultResponse(QueryId queryId) throws TajoException;
 
-  Future<TajoMemoryResultSet> asyncFetchNextQueryResult(final QueryId queryId, final int fetchRowNum);
+  Future<TajoMemoryResultSet> fetchNextQueryResultAsync(final QueryId queryId, final int fetchRowNum);
 
   boolean updateQuery(final String sql) throws TajoException;
 
