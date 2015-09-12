@@ -49,8 +49,8 @@ Block Id: eb_0000000000000_0000_000007 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.supplier
- 1: type=Broadcast, tables=default.region
+ 0: type=Broadcast, tables=default.region
+ 1: type=Broadcast, tables=default.supplier
  2: type=Broadcast, tables=default.orders
 
 JOIN(11)(CROSS)

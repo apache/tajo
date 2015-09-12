@@ -71,7 +71,7 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
       super.visit(ctx, stack, expr);
     }
 
-    if (ctx.targetType == expr.getType()) {
+    if (expr != null && ctx.targetType == expr.getType()) {
       ctx.set.add(expr);
     }
 

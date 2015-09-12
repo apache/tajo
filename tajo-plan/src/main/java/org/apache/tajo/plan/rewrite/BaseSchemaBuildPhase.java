@@ -381,10 +381,10 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       LogicalNode child = visit(ctx, stack, expr.getChild());
       stack.pop();
 
-      Set<ColumnReferenceExpr> columns = ExprFinder.finds(expr.getQual(), OpType.Column);
-      for (ColumnReferenceExpr column : columns) {
-        NameRefInSelectListNormalizer.normalize(ctx, column);
-      }
+//      Set<ColumnReferenceExpr> columns = ExprFinder.finds(expr.getQual(), OpType.Column);
+//      for (ColumnReferenceExpr column : columns) {
+//        NameRefInSelectListNormalizer.normalize(ctx, column);
+//      }
 
       SelectionNode selectionNode = ctx.getPlan().createNode(SelectionNode.class);
       selectionNode.setInSchema(child.getOutSchema());
@@ -570,7 +570,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       return insertNode;
     }
 
-    static class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<PlanContext, Object> {
+    public static class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<PlanContext, Object> {
       private static final NameRefInSelectListNormalizer instance;
 
       static {

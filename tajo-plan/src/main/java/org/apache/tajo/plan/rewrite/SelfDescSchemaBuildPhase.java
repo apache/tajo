@@ -32,6 +32,7 @@ import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
+import org.apache.tajo.plan.rewrite.BaseSchemaBuildPhase.Processor.NameRefInSelectListNormalizer;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
@@ -180,6 +181,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public LogicalNode visitFilter(ProcessorContext ctx, Stack<Expr> stack, Selection expr) throws TajoException {
       Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr.getQual(), OpType.Column);
       for (ColumnReferenceExpr col : columnSet) {
+        NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
         TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
       }
 

@@ -84,6 +84,7 @@ abstract class AbstractTableDescriptor implements TableDescriptor {
         getSchemaProto()));
     tableBuilder.setMeta(getTableProto());
     tableBuilder.setStats(getTableStatsProto());
+    tableBuilder.setSelfDescSchema(false);
     return tableBuilder.build();
   }
 
