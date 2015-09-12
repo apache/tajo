@@ -161,10 +161,6 @@ public class ReturnStateUtil {
     return returnError(ResultCode.UNDEFINED_PARTITION, partitionName);
   }
 
-  public static ReturnState errPartitionNotFund(String tbName) {
-    return returnError(ResultCode.PARTITION_NOT_FOUND, tbName);
-  }
-
   public static ReturnState errUndefinedPartitionMethod(String tbName) {
     return returnError(ResultCode.UNDEFINED_PARTITION_METHOD, tbName);
   }
