@@ -2179,14 +2179,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   /**
-   * Check if list of partitios exist on catalog.
+   * Check if list of partitions exist on catalog.
    *
    *
    * @param databaseId
    * @param tableId
    * @return
    */
-  public boolean existPartitionsOnCatalog(int databaseId, int tableId) {
+  public boolean existPartitionsOnCatalog(int tableId) {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2242,7 +2242,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         throw new UndefinedPartitionMethodException(request.getTableName());
       }
 
-      if (!existPartitionsOnCatalog(databaseId, tableId)) {
+      if (!existPartitionsOnCatalog(tableId)) {
         throw new PartitionNotFoundException(request.getTableName());
       }
 
