@@ -36,9 +36,10 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
+import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.plan.util.ScanQualConverter;
+import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
@@ -241,7 +242,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     if (conjunctiveForms != null) {
       EvalNode evalNode = AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms);
-      ScanQualConverter convertor = new ScanQualConverter(databaseName + "." + tableName);
+      EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(databaseName + "." + tableName);
       convertor.visit(null, evalNode, new Stack<EvalNode>());
       request.setAlgebra(convertor.getResult().toJson());
     } else {

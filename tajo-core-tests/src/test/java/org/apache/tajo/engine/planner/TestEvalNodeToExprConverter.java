@@ -36,8 +36,8 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.util.ScanQualConverter;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -51,7 +51,7 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
 
-public class TestScanQualConverter {
+public class TestEvalNodeToExprConverter {
   private static TajoTestingCluster util;
   private static CatalogService catalog;
   private static SQLAnalyzer sqlAnalyzer;
@@ -125,7 +125,7 @@ public class TestScanQualConverter {
     LogicalNode node = plan.getRootBlock().getRoot();
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
-    ScanQualConverter convertor = new ScanQualConverter(scanNode.getTableName());
+    EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
     convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
 
     Expr resultExpr = convertor.getResult();
@@ -155,7 +155,7 @@ public class TestScanQualConverter {
     LogicalNode node = plan.getRootBlock().getRoot();
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
-    ScanQualConverter convertor = new ScanQualConverter(scanNode.getTableName());
+    EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
     convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
 
     Expr resultExpr = convertor.getResult();
@@ -184,7 +184,7 @@ public class TestScanQualConverter {
     LogicalNode node = plan.getRootBlock().getRoot();
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
-    ScanQualConverter convertor = new ScanQualConverter(scanNode.getTableName());
+    EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
     convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
 
     Expr resultExpr = convertor.getResult();
@@ -242,7 +242,7 @@ public class TestScanQualConverter {
     LogicalNode node = plan.getRootBlock().getRoot();
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
-    ScanQualConverter convertor = new ScanQualConverter(scanNode.getTableName());
+    EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
     convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
 
     Expr resultExpr = convertor.getResult();
@@ -297,7 +297,7 @@ public class TestScanQualConverter {
     LogicalNode node = plan.getRootBlock().getRoot();
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
-    ScanQualConverter convertor = new ScanQualConverter(scanNode.getTableName());
+    EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
     convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
 
     Expr resultExpr = convertor.getResult();
@@ -352,7 +352,7 @@ public class TestScanQualConverter {
     LogicalNode node = plan.getRootBlock().getRoot();
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
-    ScanQualConverter convertor = new ScanQualConverter(scanNode.getTableName());
+    EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
     convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
 
     Expr resultExpr = convertor.getResult();
