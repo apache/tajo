@@ -59,7 +59,7 @@ public class TestCatalogExceptions {
 
   @Test
   public void testCreateTablespaceWithWrongUri() throws Exception {
-    // TODO
+    // TODO: currently, wrong uri does not occur any exception.
     catalog.createTablespace("wrong", "hdfs:");
   }
 
@@ -117,7 +117,7 @@ public class TestCatalogExceptions {
 
   @Test()
   public void testCreateTableWithWrongUri() throws Exception {
-    // TODO
+    // TODO: currently, wrong uri does not occur any exception.
     String tableName = "wrongUri";
     Schema schema = new Schema();
     schema.addColumn(CatalogUtil.buildFQName(tableName, "Column"), Type.BLOB);
@@ -163,7 +163,7 @@ public class TestCatalogExceptions {
 
   @Test
   public void testAddPartitionWithWrongUri() throws Exception {
-    // TODO
+    // TODO: currently, wrong uri does not occur any exception.
     String partitionName = "DaTe=/=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 

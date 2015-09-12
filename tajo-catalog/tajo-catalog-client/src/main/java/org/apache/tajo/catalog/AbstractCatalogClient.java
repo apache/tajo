@@ -604,7 +604,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final void createIndex(final IndexDesc index) throws DuplicateIndexException {
+  public final void createIndex(final IndexDesc index)
+      throws DuplicateIndexException, UndefinedDatabaseException, UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
@@ -612,6 +613,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final ReturnState state = stub.createIndex(null, index.getProto());
 
       throwsIfThisError(state, DuplicateIndexException.class);
+      throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, UndefinedDatabaseException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {
