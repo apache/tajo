@@ -128,7 +128,7 @@ public class DDLExecutor {
   }
 
   public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode)
-      throws DuplicateIndexException {
+      throws DuplicateIndexException, UndefinedTableException, UndefinedDatabaseException {
 
     String databaseName, simpleIndexName, qualifiedIndexName;
     if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
