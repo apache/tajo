@@ -32,7 +32,7 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.t4
+ 0: type=Broadcast, tables=default.t3
 
 JOIN(5)(INNER)
   => Join Cond: default.t3.id (INT8) = ?int8_1 (INT8)

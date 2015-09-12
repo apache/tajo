@@ -50,8 +50,8 @@ Block Id: eb_0000000000000_0000_000007 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.t3
- 1: type=Broadcast, tables=default.t2
+ 0: type=Broadcast, tables=default.t2
+ 1: type=Broadcast, tables=default.t3
  2: type=Broadcast, tables=default.t4
 
 JOIN(11)(INNER)
