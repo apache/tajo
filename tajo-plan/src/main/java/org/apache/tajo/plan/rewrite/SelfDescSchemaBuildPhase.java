@@ -115,7 +115,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       ProjectionNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
       node.setInSchema(child.getOutSchema());
-      node.setOutSchema(node.getInSchema());
+//      node.setOutSchema(node.getInSchema());
 
       return node;
     }
@@ -284,7 +284,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         if (ctx.projectColumns.containsKey(getQualifiedRelationName(ctx.planContext, expr))) {
           Set<Column> columns = new HashSet<>();
           for (ColumnReferenceExpr col : ctx.projectColumns.get(getQualifiedRelationName(ctx.planContext, expr))) {
-            columns.add(NameResolver.resolve(plan, queryBlock, col, NameResolvingMode.RELS_ONLY));
+            columns.add(NameResolver.resolve(plan, queryBlock, col, NameResolvingMode.RELS_ONLY, true));
           }
 
           desc.setSchema(buildSchemaFromColumnSet(columns));

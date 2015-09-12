@@ -74,7 +74,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testTest() throws Exception {
     executeString("create table text_lineitem (l_orderkey int8, l_quantity text) as select l_orderkey, l_quantity::text from lineitem");
-    executeString("select l_orderkey, avg(l_quantity) from text_lineitem group by l_orderkey");
+    executeString("select l_orderkey, avg(l_quantity::int8) from text_lineitem group by l_orderkey");
   }
 
   @Test

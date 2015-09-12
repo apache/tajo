@@ -240,7 +240,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
               namedExpr.getAlias());
         } else if (OpType.isLiteralType(namedExpr.getExpr().getType()) && namedExpr.hasAlias()) {
           Expr constExpr = namedExpr.getExpr();
-          ConstEval constEval = (ConstEval) annotator.createEvalNode(ctx, constExpr, NameResolvingMode.RELS_ONLY);
+          ConstEval constEval = (ConstEval) annotator.createEvalNode(ctx, constExpr, NameResolvingMode.RELS_ONLY, true);
           ctx.getQueryBlock().addConstReference(namedExpr.getAlias(), constExpr, constEval);
         }
       }
@@ -327,7 +327,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       for (int i = 0; i < finalTargetNum; i++) {
         NamedExpr namedExpr = projection.getNamedExprs()[i];
-        EvalNode evalNode = annotator.createEvalNode(ctx, namedExpr.getExpr(), NameResolvingMode.SUBEXPRS_AND_RELS);
+        EvalNode evalNode = annotator.createEvalNode(ctx, namedExpr.getExpr(), NameResolvingMode.SUBEXPRS_AND_RELS, true);
 
         if (namedExpr.hasAlias()) {
           targets[i] = new Target(evalNode, namedExpr.getAlias());
@@ -587,7 +587,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
           throws TajoException {
 
         String normalized = NameResolver.resolve(ctx.getPlan(), ctx.getQueryBlock(), expr,
-            NameResolvingMode.RELS_ONLY).getQualifiedName();
+            NameResolvingMode.RELS_ONLY, true).getQualifiedName();
         expr.setName(normalized);
 
         return expr;
