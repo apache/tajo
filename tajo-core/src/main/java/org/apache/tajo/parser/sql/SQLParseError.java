@@ -22,6 +22,9 @@ package org.apache.tajo.parser.sql;
 import org.antlr.v4.runtime.Token;
 import org.apache.commons.lang.StringUtils;
 
+/**
+ * Exception that represents a kind of SQL syntax error caused by the parser layer
+ */
 public class SQLParseError extends RuntimeException {
   private String header;
   private String errorLine;
@@ -58,14 +61,10 @@ public class SQLParseError extends RuntimeException {
     return detailedMessage;
   }
 
-  public String getMessageHeader(){
-    return this.header;
-  }
-
   private String getDetailedMessageWithLocation() {
     StringBuilder sb = new StringBuilder();
     int displayLimit = 80;
-    String queryPrefix = "LINE " + line + ":" + charPositionInLine + " ";
+    String queryPrefix = "LINE " + line + ":" + " ";
     String prefixPadding = StringUtils.repeat(" ", queryPrefix.length());
     String locationString;
 
