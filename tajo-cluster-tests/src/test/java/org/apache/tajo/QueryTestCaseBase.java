@@ -913,8 +913,7 @@ public class QueryTestCaseBase {
           throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
         }
       } else {
-        // to make empty table (used to insert test)
-        fs.mkdirs(dataFilePath);
+        throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
       }
     }
     return dataFilePath;
