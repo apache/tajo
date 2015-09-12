@@ -33,6 +33,7 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
@@ -103,8 +104,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     @Override
     public LogicalNode visitProjection(ProcessorContext ctx, Stack<Expr> stack, Projection expr) throws TajoException {
       for (NamedExpr eachNamedExpr : expr.getNamedExprs()) {
-        if (eachNamedExpr.getExpr() instanceof ColumnReferenceExpr) {
-          ColumnReferenceExpr col = (ColumnReferenceExpr) eachNamedExpr.getExpr();
+        Set<ColumnReferenceExpr> columns = ExprFinder.finds(eachNamedExpr, OpType.Column);
+        for (ColumnReferenceExpr col : columns) {
           TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
         }
       }
@@ -159,7 +160,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       GroupbyNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
       node.setInSchema(child.getOutSchema());
-      node.setOutSchema(node.getInSchema());
+//      node.setOutSchema(node.getInSchema());
       return node;
     }
 
@@ -177,6 +178,11 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
     @Override
     public LogicalNode visitFilter(ProcessorContext ctx, Stack<Expr> stack, Selection expr) throws TajoException {
+      Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr.getQual(), OpType.Column);
+      for (ColumnReferenceExpr col : columnSet) {
+        TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+      }
+
       super.visitFilter(ctx, stack, expr);
 
       SelectionNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
@@ -317,8 +323,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
             }
             // Leaf column type is TEXT; otherwise, RECORD.
             Type childDataType = (i == paths.length-2) ? Type.TEXT : Type.RECORD;
-            ColumnVertex parentVertex = new ColumnVertex(parentName, Type.RECORD);
-            schemaGraph.addEdge(new ColumnEdge(new ColumnVertex(paths[i+1], childDataType), parentVertex));
+            ColumnVertex parentVertex = new ColumnVertex(parentName, StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+1), Type.RECORD);
+            schemaGraph.addEdge(new ColumnEdge(new ColumnVertex(paths[i+1], StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+2), childDataType), parentVertex));
             if (i == 0) {
               rootVertexes.add(parentVertex);
             }
@@ -339,12 +345,14 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     }
 
     private static class ColumnVertex {
+      private final String path;
       private final String name;
       private final Type type;
       private Column column;
 
-      public ColumnVertex(String name, Type type) {
+      public ColumnVertex(String name, String path, Type type) {
         this.name = name;
+        this.path = path;
         this.type = type;
       }
 
@@ -354,14 +362,14 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
           ColumnVertex other = (ColumnVertex) o;
           return this.name.equals(other.name) &&
               this.type.equals(other.type) &&
-              TUtil.checkEquals(this.column, other.column);
+              this.path.equals(other.path);
         }
         return false;
       }
 
       @Override
       public int hashCode() {
-        return Objects.hashCode(name, type, column);
+        return Objects.hashCode(name, type, path);
       }
     }
 

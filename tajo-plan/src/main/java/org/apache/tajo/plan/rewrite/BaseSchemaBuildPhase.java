@@ -34,6 +34,7 @@ import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
+import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
@@ -379,6 +380,11 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       }
       LogicalNode child = visit(ctx, stack, expr.getChild());
       stack.pop();
+
+      Set<ColumnReferenceExpr> columns = ExprFinder.finds(expr.getQual(), OpType.Column);
+      for (ColumnReferenceExpr column : columns) {
+        NameRefInSelectListNormalizer.normalize(ctx, column);
+      }
 
       SelectionNode selectionNode = ctx.getPlan().createNode(SelectionNode.class);
       selectionNode.setInSchema(child.getOutSchema());
