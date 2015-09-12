@@ -35,6 +35,7 @@ import org.apache.tajo.algebra.DataTypeExpr.MapType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.exception.SQLSyntaxError;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.parser.sql.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
@@ -52,21 +53,29 @@ import static org.apache.tajo.parser.sql.SQLParser.*;
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   public Expr parse(String sql) throws SQLSyntaxError {
-    ANTLRInputStream input = new ANTLRInputStream(sql);
-    SQLLexer lexer = new SQLLexer(input);
-    CommonTokenStream tokens = new CommonTokenStream(lexer);
+
+    final ANTLRInputStream input = new ANTLRInputStream(sql);
+    final SQLLexer lexer = new SQLLexer(input);
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(new SQLErrorListener());
+
+    final CommonTokenStream tokens = new CommonTokenStream(lexer);
+
+
+    final SQLParser parser = new SQLParser(tokens);
+    parser.removeErrorListeners();
+    parser.addErrorListener(new SQLErrorListener());
+    parser.setBuildParseTree(true);
+
     SqlContext context;
     try {
-      SQLParser parser = new SQLParser(tokens);
-      parser.setBuildParseTree(true);
-      parser.removeErrorListeners();
-
-      parser.setErrorHandler(new SQLErrorStrategy());
-      parser.addErrorListener(new SQLErrorListener());
       context = parser.sql();
     } catch (SQLParseError e) {
       throw new SQLSyntaxError(e.getMessage());
+    } catch (Throwable t) {
+      throw new TajoInternalError(t.getMessage());
     }
+
     return visitSql(context);
   }
 
@@ -118,7 +127,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       return new SetSession(SessionVars.TIMEZONE.name(), value);
 
     } else {
-      throw new TajoRuntimeException(new SQLSyntaxError("Unsupported session statement"));
+      throw new TajoInternalError("Invalid session statement");
     }
   }
 
@@ -970,7 +979,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return OpType.Minus;
 
       default:
-        throw new RuntimeException("Unknown Token Id: " + tokenId);
+        throw new TajoInternalError("unknown Token Id: " + tokenId);
     }
   }
 
@@ -1022,7 +1031,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else if (checkIfExist(matcher.REGEXP()) || checkIfExist(matcher.RLIKE())) {
         return new PatternMatchPredicate(OpType.Regexp, not, predicand, pattern);
       } else {
-        throw new TajoRuntimeException(new SQLSyntaxError("Unsupported predicate: " + matcher.getText()));
+        throw new TajoInternalError("unknown pattern matching predicate: " + matcher.getText());
       }
     } else if (checkIfExist(ctx.pattern_matcher().regex_matcher())) {
       Regex_matcherContext matcher = ctx.pattern_matcher().regex_matcher();
@@ -1035,10 +1044,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else if (checkIfExist(matcher.Not_Similar_To_Case_Insensitive())) {
         return new PatternMatchPredicate(OpType.Regexp, true, predicand, pattern, true);
       } else {
-        throw new TajoRuntimeException(new SQLSyntaxError("Unsupported predicate: " + matcher.getText()));
+        throw new TajoInternalError("Unsupported predicate: " + matcher.getText());
       }
     } else {
-      throw new TajoRuntimeException(new SQLSyntaxError("Unsupported predicate: " + ctx.pattern_matcher().getText()));
+      throw new TajoInternalError("invalid pattern matching predicate: " + ctx.pattern_matcher().getText());
     }
   }
 
@@ -1285,6 +1294,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
+      if (checkIfExist(ctx.TABLESPACE())) {
+        throw new TajoRuntimeException(new SQLSyntaxError("Tablespace clause is not allowed for an external table."));
+      }
+
       ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
       String storageType = ctx.storage_type.getText();
       createTable.setTableElements(elements);
@@ -1293,6 +1306,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (checkIfExist(ctx.LOCATION())) {
         String uri = stripQuote(ctx.uri.getText());
         createTable.setLocation(uri);
+      } else {
+        throw new TajoRuntimeException(new SQLSyntaxError("LOCATION clause must be required for an external table."));
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {
@@ -1411,7 +1426,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     } else if (checkIfExist(ctx.column_partitions())) { // For Column Partition (Hive Style)
       return new CreateTable.ColumnPartition(getDefinitions(ctx.column_partitions().table_elements()));
     } else {
-      throw new TajoRuntimeException(new SQLSyntaxError("Invalid Partition Type: " + ctx.toStringTree()));
+      throw new TajoInternalError("invalid partition type: " + ctx.toStringTree());
     }
   }
 

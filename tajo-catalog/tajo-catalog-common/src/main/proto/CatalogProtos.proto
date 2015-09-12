@@ -407,3 +407,8 @@ message IndexResponse {
   required ReturnState state = 1;
   optional IndexDescProto indexDesc = 2;
 }
+
+message PartitionListResponse {
+  required ReturnState state = 1;
+  repeated PartitionDescProto partition = 2;
+}

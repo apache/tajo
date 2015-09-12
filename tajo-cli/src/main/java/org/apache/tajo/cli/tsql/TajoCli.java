@@ -36,10 +36,10 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.DefaultTajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.ShutdownHookManager;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class TajoCli {
+  public static final int SHUTDOWN_HOOK_PRIORITY = 50;
   public static final String ERROR_PREFIX = "ERROR: ";
   public static final String KILL_PREFIX = "KILL: ";
 
@@ -374,7 +375,7 @@ public class TajoCli {
   }
 
   private void addShutdownHook() {
-    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+    ShutdownHookManager.get().addShutdownHook(new Runnable() {
       @Override
       public void run() {
         try {
@@ -383,7 +384,7 @@ public class TajoCli {
         }
         client.close();
       }
-    }));
+    }, SHUTDOWN_HOOK_PRIORITY);
   }
 
   private String updatePrompt(ParsingState state) throws ServiceException {
@@ -405,7 +406,7 @@ public class TajoCli {
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
-    
+
     try {
       while((line = reader.readLine(currentPrompt + "> ")) != null) {
         if (line.equals("")) {
@@ -427,19 +428,19 @@ public class TajoCli {
           latestState = parser.getState();
           currentPrompt = updatePrompt(latestState);
 
-          // if at least one failed
-          if (exitCode != 0) {
+          // If the ON_ERROR_STOP flag is set, Cli should stop on query failure.
+          if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
             return exitCode;
           }
         }
       }
     } catch (Exception e) {
-      System.err.println(ERROR_PREFIX + "Exception was thrown. Casued by " + e.getMessage());
-      
+      System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
+
       if (client != null) {
         client.close();
       }
-      
+
       throw e;
     }
     return 0;

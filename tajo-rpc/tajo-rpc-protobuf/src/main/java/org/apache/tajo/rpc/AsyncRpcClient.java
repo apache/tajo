@@ -18,9 +18,11 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.EventLoopGroup;
 import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
@@ -34,9 +36,10 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
   private final ProxyRpcChannel rpcChannel;
   private final NettyChannelInboundHandler handler;
 
+  @VisibleForTesting
   AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
       throws ClassNotFoundException, NoSuchMethodException {
-    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false);
+    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false, NettyUtils.getDefaultEventLoopGroup());
   }
 
   /**
@@ -49,10 +52,12 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
    *                         otherwise it is request timeout on active-state
    * @param timeUnit         TimeUnit
    * @param enablePing       enable to detect remote peer hangs
+   * @param eventLoopGroup   thread pool of netty's
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
-  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit, boolean enablePing)
+  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit, boolean enablePing,
+                 EventLoopGroup eventLoopGroup)
       throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
 
@@ -62,7 +67,7 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
     init(new ProtoClientChannelInitializer(handler,
         RpcResponse.getDefaultInstance(),
         timeUnit.toNanos(timeout),
-        enablePing));
+        enablePing), eventLoopGroup);
   }
 
   @Override

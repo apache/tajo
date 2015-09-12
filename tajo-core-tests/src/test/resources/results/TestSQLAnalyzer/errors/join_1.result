@@ -1,0 +1,3 @@
+ERROR: syntax error at or near "OUTER"
+LINE 4:   LEFTT OUTER JOIN customer ON (purc_customer_id = c_customer_id)
+                ^^^^^
