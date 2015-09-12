@@ -61,5 +61,6 @@
     "PartitionType": "LIST"
   },
   "IfNotExists": false,
+  "IsSelfDescribe": false,
   "OpType": "CreateTable"
 }

@@ -34,5 +34,6 @@
     "PartitionType": "HASH"
   },
   "IfNotExists": false,
+  "IsSelfDescribe": false,
   "OpType": "CreateTable"
 }

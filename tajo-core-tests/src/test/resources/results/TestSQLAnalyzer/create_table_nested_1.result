@@ -38,5 +38,6 @@
     }
   ],
   "IfNotExists": false,
+  "IsSelfDescribe": false,
   "OpType": "CreateTable"
 }

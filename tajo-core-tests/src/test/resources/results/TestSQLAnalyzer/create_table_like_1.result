@@ -3,5 +3,6 @@
   "TableName": "new_table",
   "IfNotExists": false,
   "LikeParentTable": "orig_name",
+  "IsSelfDescribe": false,
   "OpType": "CreateTable"
 }
