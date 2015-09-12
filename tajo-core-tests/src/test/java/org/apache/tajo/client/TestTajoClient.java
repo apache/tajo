@@ -40,6 +40,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
 import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
+import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -47,6 +48,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.powermock.reflect.Whitebox;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -770,5 +772,29 @@ public class TestTajoClient {
     assertEquals(1, taskHistories.get(0).getTotalWriteRows());
     assertEquals(1, taskHistories.get(1).getTotalReadRows());
     assertEquals(1, taskHistories.get(1).getTotalWriteRows());
+  }
+
+  @Test
+  public void testClientRPCInterference() throws Exception {
+    TajoClient client = cluster.newTajoClient();
+    TajoClient client2 = cluster.newTajoClient();
+
+
+    NettyClientBase rpcClient = Whitebox.getInternalState(client, NettyClientBase.class);
+    assertNotNull(rpcClient);
+
+    NettyClientBase rpcClient2 = Whitebox.getInternalState(client2, NettyClientBase.class);
+    assertNotNull(rpcClient);
+
+    assertNotEquals(rpcClient.getChannel().eventLoop(), rpcClient2.getChannel().eventLoop());
+
+    client.close();
+    client2.close();
+
+    rpcClient.getChannel().eventLoop().terminationFuture().sync();
+    assertTrue(rpcClient.getChannel().eventLoop().isTerminated());
+
+    rpcClient2.getChannel().eventLoop().terminationFuture().sync();
+    assertTrue(rpcClient2.getChannel().eventLoop().isTerminated());
   }
 }

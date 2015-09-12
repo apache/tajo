@@ -32,13 +32,11 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.service.HAServiceTracker;
 import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.TajoMasterInfo;
-import org.apache.tajo.util.*;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.TUtil;
 
-import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -191,7 +189,10 @@ public class HdfsServiceTracker extends HAServiceTracker {
         }
       }
     }
-    startPingChecker();
+
+    if(!isActiveMaster()) {
+      startPingChecker();
+    }
   }
 
   /**
@@ -219,7 +220,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
     Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
     try {
       lockOutput = fs.create(lockFile, false);
-      lockOutput.hsync();
       lockOutput.close();
       fs.deleteOnExit(lockFile);
       result = true;
@@ -241,7 +241,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
       out = fs.create(path, false);
 
       out.writeUTF(sb.toString());
-      out.hsync();
       out.close();
 
       fs.deleteOnExit(path);
@@ -283,7 +282,9 @@ public class HdfsServiceTracker extends HAServiceTracker {
   }
 
   @Override
-  public void delete() throws IOException {
+  public synchronized void delete() throws IOException {
+    stopped = true;
+
     if (ShutdownHookManager.get().isShutdownInProgress()) return;
 
     String fileName = masterName.replaceAll(":", "_");
@@ -291,8 +292,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
     fs.delete(new Path(activePath, fileName), false);
     fs.delete(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE), false);
     fs.delete(new Path(backupPath, fileName), false);
-
-    stopped = true;
   }
 
   @Override
@@ -366,16 +365,17 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
               // If active master is dead, this master should be active master instead of
               // previous active master.
-              if (!checkConnection(currentActiveMaster)) {
+              if (!stopped && !checkConnection(currentActiveMaster)) {
                 Path activeFile = new Path(activePath, currentActiveMaster.replaceAll(":", "_"));
                 fs.delete(activeFile, false);
+
                 Path lockFile = new Path(activePath, HAConstants.ACTIVE_LOCK_FILE);
                 fs.delete(lockFile, false);
                 register();
               }
             }
           } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error(e.getMessage(), e);
           }
         }
       }
@@ -458,19 +458,34 @@ public class HdfsServiceTracker extends HAServiceTracker {
         throw new ServiceTrackerException("Active master base path must be a directory.");
       }
 
-      FileStatus[] files = fs.listStatus(activeMasterBaseDir);
       /* wait for active master from HDFS */
       int pause = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_PAUSE_TIME);
       int maxRetry = conf.getIntVar(ConfVars.TAJO_MASTER_HA_CLIENT_RETRY_MAX_NUM);
       int retry = 0;
 
-      while (files.length < 2 && retry < maxRetry) {
+
+      Path activeMasterEntry = null;
+      FileStatus[] files = null;
+
+      loop:while (retry < maxRetry) {
+        files = fs.listStatus(activeMasterBaseDir);
+        for (FileStatus eachFile : files) {
+          //check if active file is written
+          if (!eachFile.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE) && eachFile.getLen() > 0) {
+            activeMasterEntry = eachFile.getPath();
+            break loop;
+          }
+        }
+
         try {
           this.wait(pause);
         } catch (InterruptedException e) {
           throw new ServiceTrackerException(e);
         }
-        files = fs.listStatus(activeMasterBaseDir);
+      }
+
+      if (files == null || activeMasterEntry == null) {
+        throw new ServiceTrackerException("Active master entry cannot be found in: " + activeMasterBaseDir);
       }
 
       if (files.length < 1) {
@@ -478,14 +493,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
         throw new ServiceTrackerException("No active master entry");
       } else if (files.length > 2) {
         throw new ServiceTrackerException("Three or more than active master entries.");
-      }
-
-      Path activeMasterEntry = null;
-
-      for (FileStatus eachFile : files) {
-        if (!eachFile.getPath().getName().equals(HAConstants.ACTIVE_LOCK_FILE)) {
-          activeMasterEntry = eachFile.getPath();
-        }
       }
 
       if (!fs.isFile(activeMasterEntry)) {
