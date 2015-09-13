@@ -131,9 +131,9 @@ Block Id: eb_0000000000000_0000_000010 [INTERMEDIATE]
 [q_0000000000000_0000] 10 => 11 (type=HASH_SHUFFLE, key=, num=1)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.part
- 1: type=Broadcast, tables=default.a
- 2: type=Broadcast, tables=default.c
+ 0: type=Broadcast, tables=default.a
+ 1: type=Broadcast, tables=default.c
+ 2: type=Broadcast, tables=default.part
 
 GROUP_BY(36)()
   => exprs: (sum(default.b.l_quantity (FLOAT8)))
