@@ -32,7 +32,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
-import org.apache.tajo.common.TajoDataTypes.CodecType;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
@@ -349,7 +349,7 @@ public class QueryClientImpl implements QueryClient {
   protected TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum)
       throws TajoException {
 
-    boolean compress = conn.getProperties().getBool(SessionVars.RESULT_COMPRESS);
+    boolean compress = conn.getProperties().getBool(SessionVars.COMPRESSED_RESULT_TRANSFER);
 
     final BlockingInterface stub = conn.getTMStub();
     final GetQueryResultDataRequest.Builder request = GetQueryResultDataRequest.newBuilder();

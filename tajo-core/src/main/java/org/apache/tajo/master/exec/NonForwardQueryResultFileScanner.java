@@ -32,7 +32,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import org.apache.tajo.common.TajoDataTypes.CodecType;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.physical.PartitionMergeScanExec;
 import org.apache.tajo.engine.planner.physical.ScanExec;

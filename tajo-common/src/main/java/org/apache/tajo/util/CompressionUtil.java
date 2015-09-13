@@ -18,7 +18,7 @@
 
 package org.apache.tajo.util;
 
-import org.apache.tajo.common.TajoDataTypes.CodecType;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.exception.UnsupportedException;
 import org.iq80.snappy.Snappy;
 

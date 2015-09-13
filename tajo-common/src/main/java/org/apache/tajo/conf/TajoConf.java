@@ -216,8 +216,8 @@ public class TajoConf extends Configuration {
     SHUFFLE_HASH_APPENDER_PAGE_VOLUME("tajo.shuffle.hash.appender.page.volumn-mb", 30),
     HASH_SHUFFLE_PARENT_DIRS("tajo.hash.shuffle.parent.dirs.count", 10),
 
-    // Final output Configuration --------------------------------------------------
-    FINAL_OUTPUT_FILE_FORMAT("tajo.final.output.file-format", BuiltinStorages.TEXT, Validators.javaString()),
+    // Query output Configuration --------------------------------------------------
+    QUERY_OUTPUT_DEFAULT_FILE_FORMAT("tajo.query.output.file-format", BuiltinStorages.TEXT, Validators.javaString()),
 
     // Storage Configuration --------------------------------------------------
     ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
@@ -381,7 +381,7 @@ public class TajoConf extends Configuration {
       // ResultSet ---------------------------------------------------------
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
     $RESULT_SET_BLOCK_WAIT("tajo.resultset.block.wait", true),
-    $RESULT_SET_COMPRESS("tajo.resultset.compress", false),
+    $RESULT_SET_COMPRESSION("tajo.resultset.compression", false),
     ;
 
     public final String varname;

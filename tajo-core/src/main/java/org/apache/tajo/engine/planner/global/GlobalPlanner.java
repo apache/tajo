@@ -78,7 +78,7 @@ public class GlobalPlanner {
     this.conf = conf;
     this.catalog = catalog;
     this.storeType = conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase();
-    this.finalOutputStoreType = conf.getVar(ConfVars.FINAL_OUTPUT_FILE_FORMAT).toUpperCase();
+    this.finalOutputStoreType = conf.getVar(ConfVars.QUERY_OUTPUT_DEFAULT_FILE_FORMAT).toUpperCase();
 
     Class<? extends GlobalPlanRewriteRuleProvider> clazz =
         (Class<? extends GlobalPlanRewriteRuleProvider>) conf.getClassVar(GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);

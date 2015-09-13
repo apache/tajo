@@ -49,7 +49,7 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
       this.totalRow = resultSet.getRows();
 
       try {
-        // decompress if has a codec
+        // decompress if a codec is specified
         if (resultSet.hasDecompressCodec()) {
           byte[] compressed = resultSet.getSerializedTuples().toByteArray();
           byte[] uncompressed = CompressionUtil.decompress(resultSet.getDecompressCodec(), compressed);

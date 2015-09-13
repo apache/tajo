@@ -201,34 +201,7 @@ public class SeqScanExec extends ScanExec {
       // for non-projected fields.
       Schema actualInSchema = scanner.isProjectable() ? projectedFields : inSchema;
 
-      Target[] realTargets;
-      if (plan.getTargets() == null) {
-        realTargets = PlannerUtil.schemaToTargets(outSchema);
-      } else {
-        realTargets = plan.getTargets();
-      }
-
-      //if all column is selected and there is no have expression, projection can be skipped
-      if (realTargets.length == inSchema.size()) {
-        for (int i = 0; i < inSchema.size(); i++) {
-          if (realTargets[i].getEvalTree() instanceof FieldEval) {
-            FieldEval f = realTargets[i].getEvalTree();
-            if(!f.getColumnRef().equals(inSchema.getColumn(i))) {
-              needProjection = true;
-              break;
-            }
-          } else {
-            needProjection = true;
-            break;
-          }
-        }
-      } else {
-        needProjection = true;
-      }
-
-      if(needProjection) {
-        projector = new Projector(context, actualInSchema, outSchema, plan.getTargets());
-      }
+      initializeProjector(actualInSchema);
 
       if (plan.hasQual()) {
         qual.bind(context.getEvalContext(), actualInSchema);
@@ -238,6 +211,37 @@ public class SeqScanExec extends ScanExec {
     }
 
     super.init();
+  }
+
+  protected void initializeProjector(Schema actualInSchema){
+    Target[] realTargets;
+    if (plan.getTargets() == null) {
+      realTargets = PlannerUtil.schemaToTargets(outSchema);
+    } else {
+      realTargets = plan.getTargets();
+    }
+
+    //if all column is selected and there is no have expression, projection can be skipped
+    if (realTargets.length == inSchema.size()) {
+      for (int i = 0; i < inSchema.size(); i++) {
+        if (realTargets[i].getEvalTree() instanceof FieldEval) {
+          FieldEval f = realTargets[i].getEvalTree();
+          if(!f.getColumnRef().equals(inSchema.getColumn(i))) {
+            needProjection = true;
+            break;
+          }
+        } else {
+          needProjection = true;
+          break;
+        }
+      }
+    } else {
+      needProjection = true;
+    }
+
+    if(needProjection) {
+      projector = new Projector(context, actualInSchema, outSchema, plan.getTargets());
+    }
   }
 
   @Override
