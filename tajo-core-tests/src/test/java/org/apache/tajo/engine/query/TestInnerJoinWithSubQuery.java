@@ -90,7 +90,13 @@ public class TestInnerJoinWithSubQuery extends TestJoinQuery {
 
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
+  @SimpleTest(
+      prepare = {
+          "create table small_nation as select * from nation limit 5;"
+      },
+      cleanup = {
+          "drop table small_nation purge;"
+      })
   public void testComplexJoinCondition5() throws Exception {
     runSimpleTests();
   }

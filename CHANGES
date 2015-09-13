@@ -534,6 +534,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1845: Enforcers in the master plan should be printed in a fixed 
+    order.(jihoon)
+
     TAJO-1739: Add a statement for adding partition to TajoDump. (jaehwa)
 
     TAJO-1833: Refine LogicalPlanPreprocessor to add new rules easily.
