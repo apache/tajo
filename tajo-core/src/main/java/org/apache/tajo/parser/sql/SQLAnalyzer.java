@@ -1298,7 +1298,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
         createTable.setTableElements(elements);
       } else {
-        createTable.setHasSelfDesribeSchema();
+        createTable.setHasSelfDescSchema();
       }
 
       if (checkIfExist(ctx.TABLESPACE())) {
@@ -1319,7 +1319,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
         createTable.setTableElements(elements);
       } else {
-        createTable.setHasSelfDesribeSchema();
+        createTable.setHasSelfDescSchema();
       }
 
       if (checkIfExist(ctx.TABLESPACE())) {
@@ -1335,6 +1335,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (checkIfExist(ctx.query_expression())) {
         Expr subquery = visitQuery_expression(ctx.query_expression());
         createTable.setSubQuery(subquery);
+        createTable.unsetHasSelfDescSchema();
       }
     }
 

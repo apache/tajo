@@ -40,6 +40,9 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
 
     executeString(String.format("create external table self_desc_table3 using json location '%s'",
         getDataSetFile("tweets")));
+
+    executeString(String.format("create external table github using json location '%s'",
+        getDataSetFile("github")));
   }
 
   @After
@@ -47,87 +50,126 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
     executeString("drop table self_desc_table1");
     executeString("drop table self_desc_table2");
     executeString("drop table self_desc_table3");
+    executeString("drop table github");
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testSelect() throws Exception {
-    ResultSet res = executeString("select glossary.title, glossary.\"GlossDiv\".title, glossary.\"GlossDiv\".null_expected, glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"SortAs\", glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"Abbrev\" from self_desc_table2");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testSelect2() throws Exception {
-    ResultSet res = executeString("select glossary.title, glossary.\"GlossDiv\".title, glossary.\"GlossDiv\".null_expected, glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"SortAs\" from self_desc_table2 where glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"Abbrev\" = 'ISO 8879:1986'");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testGroupby() throws Exception {
-    ResultSet res = executeString("select name.first_name, count(*) from self_desc_table1 group by name.first_name");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testGroupby2() throws Exception {
-    ResultSet res = executeString("select coordinates, avg(retweet_count::int4) from self_desc_table3 group by coordinates");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testGroupby3() throws Exception {
-    ResultSet res = executeString("select user.time_zone, sum(user.favourites_count::int8) from self_desc_table3 group by user.time_zone");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @SimpleTest
   public final void testSort() throws Exception {
-    ResultSet res = executeString("select created_at, id, user.profile_sidebar_fill_color from self_desc_table3 order by created_at");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testCrossJoin() throws Exception {
-    ResultSet res = executeString("select user.favourites_count::int8, l_linenumber, l_comment from default.lineitem, self_desc_table3");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testJoinWithSchemaFullTable() throws Exception {
-    ResultSet res = executeString("select user.favourites_count::int8, l_linenumber, l_comment from default.lineitem, self_desc_table3 where user.favourites_count::int8 = (l_orderkey - 1)");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testJoinWithSchemaFullTable2() throws Exception {
-    ResultSet res = executeString("select user.favourites_count::int8, l_linenumber, l_comment from default.lineitem, self_desc_table3, default.orders, default.supplier where user.favourites_count::int8 = (l_orderkey - 1) and l_orderkey = o_orderkey and l_linenumber = s_suppkey");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test(expected = AmbiguousColumnException.class)
   public final void testJoinWithSchemaFullTable3() throws Exception {
-    ResultSet res = executeString("select user.favourites_count::int8, l_linenumber, l_comment from default.lineitem, self_desc_table1, self_desc_table3, default.orders, default.supplier where user.favourites_count::int8 = (l_orderkey - 1) and l_orderkey = o_orderkey and l_linenumber = s_suppkey and self_desc_table3.user.favourites_count = self_desc_table1.name.first_name");
-    System.out.println(resultSetToString(res));
+    executeString("" +
+        "select " +
+        "  user.favourites_count::int8, " +
+        "  l_linenumber, " +
+        "  l_comment " +
+        "from " +
+        "  default.lineitem, " +
+        "  self_desc_table1, " +
+        "  self_desc_table3, " +
+        "  default.orders, " +
+        "  default.supplier " +
+        "where " +
+        "  user.favourites_count::int8 = (l_orderkey - 1) and " +
+        "  l_orderkey = o_orderkey and " +
+        "  l_linenumber = s_suppkey and " +
+        "  self_desc_table3.user.favourites_count = self_desc_table1.name.first_name");
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testJoinWithSchemaFullTable4() throws Exception {
-    ResultSet res = executeString("select self_desc_table3.user.favourites_count::int8, l_linenumber, l_comment from default.lineitem, self_desc_table1, self_desc_table3, default.orders, default.supplier where self_desc_table3.user.favourites_count::int8 = (l_orderkey - 1) and l_orderkey = o_orderkey and l_linenumber = s_suppkey and self_desc_table3.user.favourites_count = self_desc_table1.name.first_name");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test(expected = AmbiguousColumnException.class)
   public final void testJoinOfSelfDescTables() throws Exception {
-    ResultSet res = executeString("select user.favourites_count::int8 from self_desc_table1, self_desc_table3 where user.favourites_count = name.first_name");
+    executeString("" +
+        "select " +
+        "  user.favourites_count::int8 " +
+        "from " +
+        "  self_desc_table1, " +
+        "  self_desc_table3 " +
+        "where " +
+        "  user.favourites_count = name.first_name");
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testJoinOfSelfDescTablesWithQualifiedColumns() throws Exception {
-    ResultSet res = executeString("select self_desc_table3.user.favourites_count::int8 from self_desc_table1, self_desc_table3 where self_desc_table3.user.favourites_count = self_desc_table1.name.first_name");
-    System.out.println(resultSetToString(res));
+    runSimpleTests();
   }
 
   @Test(expected = AmbiguousColumnException.class)
   public final void testJoinWithSingleQualifiedColumn() throws Exception {
-    ResultSet res = executeString("select self_desc_table3.user.favourites_count::int8 from self_desc_table1, self_desc_table3 where self_desc_table3.user.favourites_count = name.first_name");
+    executeString("" +
+        "select " +
+        "  self_desc_table3.user.favourites_count::int8 " +
+        "from " +
+        "  self_desc_table1, " +
+        "  self_desc_table3 " +
+        "where " +
+        "  self_desc_table3.user.favourites_count = name.first_name");
   }
 }

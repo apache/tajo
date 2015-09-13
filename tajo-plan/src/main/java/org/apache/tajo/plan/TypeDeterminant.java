@@ -144,7 +144,6 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   public DataType visitColumnReference(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
       throws TajoException {
     stack.push(expr);
-//    Column column = ctx.plan.resolveColumn(ctx.queryBlock, expr);
     Column column = NameResolver.resolve(ctx.plan, ctx.queryBlock, expr, NameResolvingMode.LEGACY, true);
     stack.pop();
     return column.getDataType();

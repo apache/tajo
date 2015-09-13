@@ -24,6 +24,8 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
@@ -34,6 +36,7 @@ import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.BaseSchemaBuildPhase.Processor.NameRefInSelectListNormalizer;
 import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
@@ -41,6 +44,10 @@ import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
 import java.util.*;
 
+/**
+ * SelfDescSchemaBuildPhase builds the schema information of tables of self-describing data formats,
+ * such as JSON, Parquet, and ORC.
+ */
 public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
   private Processor processor;
@@ -104,6 +111,10 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
     @Override
     public LogicalNode visitProjection(ProcessorContext ctx, Stack<Expr> stack, Projection expr) throws TajoException {
+      if (PlannerUtil.hasAsterisk(expr.getNamedExprs())) {
+        throw new UnsupportedException("Asterisk for self-describing data formats");
+      }
+
       for (NamedExpr eachNamedExpr : expr.getNamedExprs()) {
         Set<ColumnReferenceExpr> columns = ExprFinder.finds(eachNamedExpr, OpType.Column);
         for (ColumnReferenceExpr col : columns) {
@@ -116,7 +127,6 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       ProjectionNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
       node.setInSchema(child.getOutSchema());
-//      node.setOutSchema(node.getInSchema());
 
       return node;
     }
@@ -161,7 +171,6 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       GroupbyNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getChild());
       node.setInSchema(child.getOutSchema());
-//      node.setOutSchema(node.getInSchema());
       return node;
     }
 
@@ -293,7 +302,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
           scan.init(desc);
         } else {
           // error
-          throw new RuntimeException("Error");
+          throw new TajoInternalError(
+              "Columns projected from " + getQualifiedRelationName(ctx.planContext, expr) + " is not found.");
         }
       }
 

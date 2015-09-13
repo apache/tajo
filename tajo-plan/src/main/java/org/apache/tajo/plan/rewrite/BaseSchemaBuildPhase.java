@@ -41,6 +41,13 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
+/**
+ * BaseSchemaBuildPhase builds a basic schema information of tables which have pre-defined schema.
+ * For example, tables like the below example have pre-defined schema.
+ *
+ * CREATE TABLE t1 (id int8, name text);
+ * CREATE EXTERNAL TABLE t2 (id int8, score int8, dept text);
+ */
 public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
   private final Processor processor;
@@ -179,15 +186,6 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       return newTargetExprs;
     }
 
-    private static boolean hasAsterisk(NamedExpr [] namedExprs) {
-      for (NamedExpr eachTarget : namedExprs) {
-        if (eachTarget.getExpr().getType() == OpType.Asterisk) {
-          return true;
-        }
-      }
-      return false;
-    }
-
     private static NamedExpr [] voidResolveAsteriskNamedExpr(LogicalPlanner.PlanContext context,
                                                              NamedExpr [] namedExprs) throws TajoException {
       List<NamedExpr> rewrittenTargets = TUtil.newList();
@@ -223,7 +221,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       LogicalNode child = visit(ctx, stack, expr.getChild());
 
       // Resolve the asterisk expression
-      if (hasAsterisk(expr.getNamedExprs())) {
+      if (PlannerUtil.hasAsterisk(expr.getNamedExprs())) {
         expr.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, expr.getNamedExprs()));
       }
 
@@ -321,7 +319,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       int finalTargetNum = projection.getNamedExprs().length;
       Target [] targets = new Target[finalTargetNum];
 
-      if (hasAsterisk(projection.getNamedExprs())) {
+      if (PlannerUtil.hasAsterisk(projection.getNamedExprs())) {
         projection.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, projection.getNamedExprs()));
       }
 
@@ -380,11 +378,6 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       }
       LogicalNode child = visit(ctx, stack, expr.getChild());
       stack.pop();
-
-//      Set<ColumnReferenceExpr> columns = ExprFinder.finds(expr.getQual(), OpType.Column);
-//      for (ColumnReferenceExpr column : columns) {
-//        NameRefInSelectListNormalizer.normalize(ctx, column);
-//      }
 
       SelectionNode selectionNode = ctx.getPlan().createNode(SelectionNode.class);
       selectionNode.setInSchema(child.getOutSchema());

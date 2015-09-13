@@ -62,11 +62,9 @@ public abstract class NameResolver {
   public static final Map<NameResolvingMode, NameResolver> resolverMap = Maps.newHashMap();
 
   static {
-//    resolverMap.put(NameResolvingMode.EXTENDED_RELS_ONLY, new ResolverByExtendedRels());
     resolverMap.put(NameResolvingMode.RELS_ONLY, new ResolverByRels());
     resolverMap.put(NameResolvingMode.RELS_AND_SUBEXPRS, new ResolverByRelsAndSubExprs());
     resolverMap.put(NameResolvingMode.SUBEXPRS_AND_RELS, new ResolverBySubExprsAndRels());
-//    resolverMap.put(NameResolvingMode.SUBEXPRS_AND_EXTENDED_RELS, new ResolverBySubExprsAndExtendedRels());
     resolverMap.put(NameResolvingMode.LEGACY, new ResolverByLegacy());
   }
 
@@ -273,7 +271,6 @@ public abstract class NameResolver {
         if (candidateRels.size() == 1) {
           return guessColumn(CatalogUtil.buildFQName(candidateRels.get(0).getCanonicalName(), columnName));
         } else if (candidateRels.size() > 1) {
-          // TODO: TooManySchemalessRelationsException
           throw new AmbiguousColumnException(columnName);
         }
       }
@@ -310,31 +307,6 @@ public abstract class NameResolver {
         Column found = rel.getLogicalSchema().getColumn(columnRef.getName());
         if (found != null) {
           candidates.add(found);
-        }
-      }
-    }
-
-    if (!candidates.isEmpty()) {
-      return NameResolver.ensureUniqueColumn(candidates);
-    } else {
-      return null;
-    }
-  }
-
-
-
-  static Column resolveFromAllSelfDescReslInAllBlocks(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
-      throws AmbiguousColumnException{
-    List<Column> candidates = Lists.newArrayList();
-
-    // from all relations of all query blocks
-    for (LogicalPlan.QueryBlock eachBlock : plan.getQueryBlocks()) {
-
-      for (RelationNode rel : eachBlock.getRelations()) {
-        if (describeSchemaByItself(rel)) {
-          Column col = guessColumn(CatalogUtil.buildFQName(rel.getCanonicalName(),
-              columnRef.getCanonicalName()));
-          candidates.add(col);
         }
       }
     }

@@ -549,8 +549,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     switch (ctx.columnRsvLevel) {
     case LEGACY:
-//      column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
-//      break;
     case RELS_ONLY:
     case RELS_AND_SUBEXPRS:
     case SUBEXPRS_AND_RELS:

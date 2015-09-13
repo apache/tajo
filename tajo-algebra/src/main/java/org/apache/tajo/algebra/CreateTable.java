@@ -54,7 +54,7 @@ public class CreateTable extends Expr {
   private boolean ifNotExists;
   @Expose @SerializedName("LikeParentTable")
   private String likeParentTable;
-  @Expose @SerializedName("IsSelfDescribe")
+  @Expose @SerializedName("HasSelfDescSchema")
   private boolean selfDescSchema = false;
 
   public CreateTable(final String tableName, boolean ifNotExists) {
@@ -176,8 +176,12 @@ public class CreateTable extends Expr {
     return likeParentTable;
   }
 
-  public void setHasSelfDesribeSchema() {
+  public void setHasSelfDescSchema() {
     selfDescSchema = true;
+  }
+
+  public void unsetHasSelfDescSchema() {
+    selfDescSchema = false;
   }
 
   public boolean hasSelfDescSchema() {

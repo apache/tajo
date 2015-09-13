@@ -22,9 +22,9 @@ import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.exception.AmbiguousColumnException;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
@@ -36,7 +36,10 @@ import java.util.List;
 
 public class ResolverByLegacy extends NameResolver {
   @Override
-  public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef, boolean includeSeflDescTable)
+  public Column resolve(LogicalPlan plan,
+                        LogicalPlan.QueryBlock block,
+                        ColumnReferenceExpr columnRef,
+                        boolean includeSeflDescTable)
       throws TajoException {
 
     if (columnRef.hasQualifier()) {
@@ -47,7 +50,8 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                   ColumnReferenceExpr columnRef, boolean includeSeflDescTable) throws TajoException {
+                                                   ColumnReferenceExpr columnRef, boolean includeSeflDescTable)
+      throws TajoException {
     final String qualifier;
     final String qualifiedName;
 
@@ -119,13 +123,6 @@ public class ResolverByLegacy extends NameResolver {
     found = resolveFromAllRelsInAllBlocks(plan, columnRef);
     if (found != null) {
       return found;
-    }
-
-    if (includeSeflDescTable) {
-      found = resolveFromAllSelfDescReslInAllBlocks(plan, block, columnRef);
-      if (found != null) {
-        return found;
-      }
     }
 
     throw new UndefinedColumnException(columnRef.getCanonicalName());
