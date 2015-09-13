@@ -24,15 +24,14 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.plan.serder.PlanProto.*;
-import static org.apache.tajo.plan.serder.PlanProto.GroupbyEnforce.GroupbyAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
 import static org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.*;
 import static org.apache.tajo.plan.serder.PlanProto.EnforceProperty.EnforceType;
-import static org.apache.tajo.plan.serder.PlanProto.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
+import static org.apache.tajo.plan.serder.PlanProto.GroupbyEnforce.GroupbyAlgorithm;
 
 public class Enforcer implements ProtoObject<EnforcerProto> {
   Map<EnforceType, List<EnforceProperty>> properties;
@@ -208,7 +207,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     TUtil.putToNestedList(properties, builder.getType(), builder.build());
   }
 
-  public Collection<EnforceProperty> getProperties() {
+  public List<EnforceProperty> getProperties() {
     if (proto != null) {
       return proto.getPropertiesList();
     } else {

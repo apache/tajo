@@ -48,8 +48,8 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
 [q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.supplier
- 1: type=Broadcast, tables=default.partsupp
+ 0: type=Broadcast, tables=default.partsupp
+ 1: type=Broadcast, tables=default.supplier
 
 SORT(16)
   => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
