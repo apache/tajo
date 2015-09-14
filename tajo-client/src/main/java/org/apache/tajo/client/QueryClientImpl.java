@@ -27,6 +27,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -225,7 +226,8 @@ public class QueryClientImpl implements QueryClient {
     }
   }
 
-  public ResultSet getQueryResultAndWait(QueryId queryId) throws QueryNotFoundException {
+  public ResultSet getQueryResultAndWait(QueryId queryId)
+      throws QueryNotFoundException, QueryKilledException, QueryFailedException {
 
     if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
       return createNullResultSet(queryId);
@@ -233,18 +235,19 @@ public class QueryClientImpl implements QueryClient {
 
     QueryStatus status = TajoClientUtil.waitCompletion(this, queryId);
 
-    if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+    if (status.getState() == QueryState.QUERY_SUCCEEDED) {
       if (status.hasResult()) {
         return getQueryResult(queryId);
       } else {
         return createNullResultSet(queryId);
       }
-
+    } else if (status.getState() == QueryState.QUERY_KILLED) {
+      throw new QueryKilledException();
+    } else if (status.getState() == QueryState.QUERY_FAILED) {
+      throw new QueryFailedException(status.getErrorMessage());
     } else {
-      LOG.warn("Query (" + status.getQueryId() + ") failed: " + status.getState());
-
-      //TODO throw SQLException(?)
-      return createNullResultSet(queryId);
+      throw new TajoInternalError("Illegal query status: " + status.getState().name() +
+          ", cause: " + status.getErrorMessage());
     }
   }
 
@@ -484,8 +487,8 @@ public class QueryClientImpl implements QueryClient {
     long currentTimeMillis = System.currentTimeMillis();
     long timeKillIssued = currentTimeMillis;
     while ((currentTimeMillis < timeKillIssued + 10000L)
-        && ((status.getState() != TajoProtos.QueryState.QUERY_KILLED)
-        || (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT))) {
+        && ((status.getState() != QueryState.QUERY_KILLED)
+        || (status.getState() == QueryState.QUERY_KILL_WAIT))) {
       try {
         Thread.sleep(100L);
       } catch (InterruptedException ie) {
