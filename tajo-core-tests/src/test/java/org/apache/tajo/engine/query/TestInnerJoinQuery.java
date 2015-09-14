@@ -50,7 +50,7 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInnerJoinWithThetaJoinConditionInWhere() throws Exception {
     runSimpleTests();
@@ -204,7 +204,7 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   public void testDifferentTypesJoinCondition() throws Exception {
     // select * from table20 t3 join table21 t4 on t3.id = t4.id;
     executeDDL("table1_int8_ddl.sql", "table1", "table20");
-    executeDDL("table1_int4_ddl.sql", "table1", "table21");
+    executeDDL("table1_int4_ddl.sql", "table2", "table21");
     try {
       runSimpleTests();
     } finally {

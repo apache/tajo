@@ -32,10 +32,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MasterPlan {
@@ -287,7 +284,14 @@ public class MasterPlan {
       if (block.getEnforcer().getProperties().size() > 0) {
         sb.append("\n[Enforcers]\n");
         int i = 0;
-        for (EnforceProperty enforce : block.getEnforcer().getProperties()) {
+        List<EnforceProperty> enforceProperties = block.getEnforcer().getProperties();
+        Collections.sort(enforceProperties, new Comparator<EnforceProperty>() {
+          @Override
+          public int compare(EnforceProperty o1, EnforceProperty o2) {
+            return o1.toString().compareTo(o2.toString());
+          }
+        });
+        for (EnforceProperty enforce : enforceProperties) {
           sb.append(" ").append(i++).append(": ");
           sb.append(Enforcer.toString(enforce));
           sb.append("\n");
