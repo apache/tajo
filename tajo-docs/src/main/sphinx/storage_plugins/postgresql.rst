@@ -21,7 +21,7 @@ PostgreSQL storage handler is a builtin storage handler. So, you can eaisly regi
         
         "configs": {
           "mapped_database": "tajo_db1"
-          "connection_properties: " {
+          "connection_properties": {
             "user":     "tajo",
             "password": "xxxx"
           }
