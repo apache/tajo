@@ -36,6 +36,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1340: Change the default output file format. (jinho)
+
     TAJO-1835: TajoClient::executeQueryAndGetResult should throw 
     Query(Failed|Killed)Exception. (hyunsik)
 

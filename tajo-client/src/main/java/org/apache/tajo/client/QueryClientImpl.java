@@ -18,6 +18,7 @@
 
 package org.apache.tajo.client;
 
+import com.google.common.util.concurrent.SettableFuture;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,8 +33,9 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.exception.*;
-import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 import org.apache.tajo.jdbc.FetchResultSet;
@@ -48,17 +50,21 @@ import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.exception.ExceptionUtil.throwIfError;
 import static org.apache.tajo.exception.ExceptionUtil.throwsIfThisError;
 import static org.apache.tajo.exception.ReturnStateUtil.ensureOk;
 import static org.apache.tajo.exception.ReturnStateUtil.isSuccess;
-import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 
 public class QueryClientImpl implements QueryClient {
   private static final Log LOG = LogFactory.getLog(QueryClientImpl.class);
+  private static final CodecType DEFAULT_CODEC = CodecType.SNAPPY;
+  private final ExecutorService executor;
   private final SessionConnection conn;
   private final int defaultFetchRows;
   // maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
@@ -69,6 +75,7 @@ public class QueryClientImpl implements QueryClient {
     this.defaultFetchRows = this.conn.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
         SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal);
     this.maxRows = 0;
+    this.executor = Executors.newSingleThreadExecutor();
   }
 
   @Override
@@ -93,6 +100,7 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public void close() {
+    executor.shutdown();
   }
 
   @Override
@@ -150,7 +158,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ClientProtos.SubmitQueryResponse executeQuery(final String sql) {
+  public SubmitQueryResponse executeQuery(final String sql) {
 
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(sql, false);
@@ -171,7 +179,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public ClientProtos.SubmitQueryResponse executeQueryWithJson(final String json) {
+  public SubmitQueryResponse executeQueryWithJson(final String json) {
     final BlockingInterface stub = conn.getTMStub();
     final QueryRequest request = buildQueryRequest(json, true);
 
@@ -185,7 +193,7 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public ResultSet executeQueryAndGetResult(String sql) throws TajoException {
 
-    ClientProtos.SubmitQueryResponse response = executeQuery(sql);
+    SubmitQueryResponse response = executeQuery(sql);
     throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -203,7 +211,7 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public ResultSet executeJsonQueryAndGetResult(final String json) throws TajoException {
 
-    ClientProtos.SubmitQueryResponse response = executeQueryWithJson(json);
+    SubmitQueryResponse response = executeQueryWithJson(json);
     throwIfError(response.getState());
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -325,30 +333,53 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws TajoException {
+  public Future<TajoMemoryResultSet> fetchNextQueryResultAsync(final QueryId queryId, final int fetchRowNum) {
+
+    final SettableFuture<TajoMemoryResultSet> future = SettableFuture.create();
+    executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          future.set(fetchNextQueryResult(queryId, fetchRowNum));
+        } catch (Throwable e) {
+          future.setException(e);
+        }
+      }
+    });
+    return future;
+  }
+
+  protected TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum)
+      throws TajoException {
+
+    boolean compress = conn.getProperties().getBool(SessionVars.COMPRESSED_RESULT_TRANSFER);
 
     final BlockingInterface stub = conn.getTMStub();
-    final GetQueryResultDataRequest request = GetQueryResultDataRequest.newBuilder()
-        .setSessionId(conn.sessionId)
+    final GetQueryResultDataRequest.Builder request = GetQueryResultDataRequest.newBuilder();
+    request.setSessionId(conn.sessionId)
         .setQueryId(queryId.getProto())
-        .setFetchRowNum(fetchRowNum)
-        .build();
+        .setFetchRowNum(fetchRowNum);
+    if (compress) {
+      request.setCompressCodec(DEFAULT_CODEC);
+    }
 
     GetQueryResultDataResponse response;
     try {
-      response = stub.getQueryResultData(null, request);
+      response = stub.getQueryResultData(null, request.build());
     } catch (ServiceException e) {
       throw new RuntimeException(e);
     }
 
     throwIfError(response.getState());
 
-    ClientProtos.SerializedResultSet resultSet = response.getResultSet();
-    return new TajoMemoryResultSet(queryId,
-        new Schema(resultSet.getSchema()),
-        resultSet.getSerializedTuplesList(),
-        resultSet.getSerializedTuplesCount(),
-        getClientSideSessionVars());
+    if(response.hasResultSet()) {
+      SerializedResultSet resultSet = response.getResultSet();
+      return new TajoMemoryResultSet(queryId,
+          new Schema(resultSet.getSchema()),
+          resultSet, getClientSideSessionVars());
+    } else {
+      return TajoClientUtil.createNullResultSet(queryId);
+    }
   }
 
   @Override
@@ -388,7 +419,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public List<ClientProtos.BriefQueryInfo> getRunningQueryList() {
+  public List<BriefQueryInfo> getRunningQueryList() {
 
     final BlockingInterface stmb = conn.getTMStub();
 
@@ -404,7 +435,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public List<ClientProtos.BriefQueryInfo> getFinishedQueryList() {
+  public List<BriefQueryInfo> getFinishedQueryList() {
 
     final BlockingInterface stub = conn.getTMStub();
 
@@ -420,7 +451,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public List<ClientProtos.WorkerResourceInfo> getClusterInfo() {
+  public List<WorkerResourceInfo> getClusterInfo() {
 
     final BlockingInterface stub = conn.getTMStub();
     final GetClusterInfoRequest request = GetClusterInfoRequest.newBuilder()
@@ -555,7 +586,7 @@ public class QueryClientImpl implements QueryClient {
   }
 
   private QueryIdRequest buildQueryIdRequest(QueryId queryId) {
-    return ClientProtos.QueryIdRequest.newBuilder()
+    return QueryIdRequest.newBuilder()
         .setSessionId(SessionIdProto.newBuilder().setId(getSessionId()))
         .setQueryId(queryId.getProto())
         .build();

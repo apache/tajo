@@ -23,9 +23,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.SizeOf;
-import org.apache.tajo.util.TUtil;
 
 /**
  *
@@ -290,16 +288,11 @@ public abstract class OffHeapRowWriter implements RowWriter {
     putBlob(val.asByteArray());
   }
 
-  @Override
-  public void addTuple(Tuple tuple) {
-    if (tuple instanceof UnSafeTuple) {
-      UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
-      int length = unSafeTuple.getLength();
-      ensureSize(length);
-      PlatformDependent.copyMemory(unSafeTuple.address(), address() + position(), length);
-      forward(length);
-    } else {
-      OffHeapRowBlockUtils.convert(tuple, this);
-    }
+
+  protected void addTuple(UnSafeTuple tuple) {
+    int length = tuple.getLength();
+    ensureSize(length);
+    PlatformDependent.copyMemory(tuple.address(), address() + position(), length);
+    forward(length);
   }
 }

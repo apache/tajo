@@ -218,6 +218,10 @@
       <artifactId>netty-buffer</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.iq80.snappy</groupId>
+      <artifactId>snappy</artifactId>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
