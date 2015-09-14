@@ -38,36 +38,43 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
   private final NettyChannelInboundHandler handler;
 
   @VisibleForTesting
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int connRetryNum)
       throws NoSuchMethodException, ClassNotFoundException {
-    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false, NettyUtils.getDefaultEventLoopGroup());
+    this(rpcConnectionKey, NettyUtils.getDefaultEventLoopGroup(), connRetryNum, CONNECTION_TIMEOUT_DEFAULT, false, 0, TimeUnit.NANOSECONDS);
   }
 
   /**
    * Intentionally make this method package-private, avoiding user directly
    * new an instance through this constructor.
    *
-   * @param rpcConnectionKey
-   * @param retries          retry operation number of times
-   * @param timeout          disable ping, it trigger timeout event on idle-state.
-   *                         otherwise it is request timeout on active-state
-   * @param timeUnit         TimeUnit
-   * @param enablePing       enable to detect remote peer hangs
-   * @param eventLoopGroup   thread pool of netty's
+   * @param rpcConnectionKey  RpcConnectionKey
+   * @param eventLoopGroup   Thread pool of netty's
+   *
+   * @param retryNumToConnect retry number to connect
+   * @param useIdleTimeout  Enable idle connection check
+   * @param idleTimeout if <code>connCheckEnabled</code> is true, this connection will
+   *                          check if the connectivity is available after <code>connCheckDuration</code>,
+   *                          based on <code>timeUnit</code>.
+   * @param timeUnit          TimeUnit for connCheckDuration
+   *
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit, boolean enablePing,
-                    EventLoopGroup eventLoopGroup) throws ClassNotFoundException, NoSuchMethodException {
-    super(rpcConnectionKey, retries);
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey,
+                    EventLoopGroup eventLoopGroup,
+                    int retryNumToConnect,
+                    int connTimeout,
+                    boolean useIdleTimeout, long idleTimeout, TimeUnit timeUnit)
+      throws ClassNotFoundException, NoSuchMethodException {
+    super(rpcConnectionKey, retryNumToConnect, connTimeout);
 
     this.stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
     this.rpcChannel = new ProxyRpcChannel();
     this.handler = new ClientChannelInboundHandler();
     init(new ProtoClientChannelInitializer(handler,
         RpcResponse.getDefaultInstance(),
-        timeUnit.toNanos(timeout),
-        enablePing), eventLoopGroup);
+        timeUnit.toNanos(idleTimeout),
+        useIdleTimeout), eventLoopGroup);
   }
 
   @Override

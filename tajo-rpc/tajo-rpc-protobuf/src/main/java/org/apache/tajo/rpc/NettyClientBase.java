@@ -48,20 +48,40 @@ import java.util.concurrent.TimeUnit;
 public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable {
   public final static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
+  private final RpcConnectionKey key;
+  public final static int CONNECTION_RETRY_NUM_DEFAULT = 0;
+  private final int maxRetryNumToConnect;
+  /**
+   * Connection Timeout milli seconds (default is 15 seconds)
+   */
+  private final int connTimeoutMillis;
+  public final static int CONNECTION_TIMEOUT_DEFAULT = 15 * 1000;
+
+  private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners = new ConcurrentHashMap<>();
+  private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<>();
+
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
-  private final RpcConnectionKey key;
-  private final int maxRetries;
-  private boolean enableMonitor;
+  private boolean idleTimeoutEnabled;
 
-  private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners =
-      new ConcurrentHashMap<RpcConnectionKey, ChannelEventListener>();
-  private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<Integer, T>();
+  public NettyClientBase(RpcConnectionKey rpcConnectionKey) throws ClassNotFoundException, NoSuchMethodException {
+    this(rpcConnectionKey, CONNECTION_RETRY_NUM_DEFAULT, CONNECTION_TIMEOUT_DEFAULT);
+  }
 
-  public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
+  /**
+   * Constructor of NettyClientBase
+   *
+   * @param rpcConnectionKey RpcConnectionKey
+   * @param retryNumToConnect How many number it will retry
+   *
+   * @throws ClassNotFoundException
+   * @throws NoSuchMethodException
+   */
+  public NettyClientBase(RpcConnectionKey rpcConnectionKey, int retryNumToConnect, int connTimeoutMillis)
       throws ClassNotFoundException, NoSuchMethodException {
     this.key = rpcConnectionKey;
-    this.maxRetries = numRetries;
+    this.maxRetryNumToConnect = retryNumToConnect;
+    this.connTimeoutMillis = connTimeoutMillis;
   }
 
   // should be called from sub class
@@ -75,7 +95,8 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         .option(ChannelOption.SO_REUSEADDR, true)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, RpcConstants.DEFAULT_CONNECT_TIMEOUT)
         .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
-        .option(ChannelOption.TCP_NODELAY, true);
+        .option(ChannelOption.TCP_NODELAY, true)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connTimeoutMillis);
   }
 
   public RpcClientManager.RpcConnectionKey getKey() {
@@ -132,7 +153,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
           getHandler().registerCallback(rpcRequest.getId(), callback);
         } else {
 
-          if (!future.channel().isActive() && retry < maxRetries) {
+          if (!future.channel().isActive() && retry < maxRetryNumToConnect) {
 
             /* schedule the current request for the retry */
             LOG.warn(future.cause() + " Try to reconnect :" + getKey().addr);
@@ -186,7 +207,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     ChannelFuture f = doConnect(address).awaitUninterruptibly();
 
     if (!f.isSuccess()) {
-      if (maxRetries > 0) {
+      if (maxRetryNumToConnect > 0) {
         doReconnect(address, f, ++retries);
       } else {
         throw new ConnectException(ExceptionUtils.getMessage(f.cause()));
@@ -198,7 +219,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
       throws ConnectException {
 
     for (; ; ) {
-      if (maxRetries > retries) {
+      if (maxRetryNumToConnect > retries) {
         retries++;
 
         if(getChannel().eventLoop().isShuttingDown()) {
@@ -288,7 +309,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
       MonitorClientHandler handler = ctx.pipeline().get(MonitorClientHandler.class);
       if (handler != null) {
-        enableMonitor = true;
+        idleTimeoutEnabled = true;
       }
 
       for (ChannelEventListener listener : getSubscribers()) {
@@ -386,7 +407,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 
-      if (!enableMonitor && evt instanceof IdleStateEvent) {
+      if (!idleTimeoutEnabled && evt instanceof IdleStateEvent) {
         IdleStateEvent e = (IdleStateEvent) evt;
         /* If all requests is done and event is triggered, idle channel close. */
         if (e.state() == IdleState.READER_IDLE && requests.isEmpty()) {

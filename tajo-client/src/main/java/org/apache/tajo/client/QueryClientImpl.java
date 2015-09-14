@@ -515,9 +515,8 @@ public class QueryClientImpl implements QueryClient {
           QueryMasterClientProtocol.class,
           false,
           manager.getRetries(),
-          manager.getTimeoutSeconds(),
-          TimeUnit.SECONDS,
-          false
+          false, manager.getTimeoutSeconds(),
+          TimeUnit.SECONDS
       );
 
 

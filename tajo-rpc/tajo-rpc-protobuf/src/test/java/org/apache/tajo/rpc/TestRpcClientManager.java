@@ -150,11 +150,11 @@ public class TestRpcClientManager {
     RpcClientManager manager = RpcClientManager.getInstance();
 
     try {
-      NettyClientBase client1 = manager.newClient(key, 0, 0, TimeUnit.SECONDS, false);
+      NettyClientBase client1 = manager.newClient(key, 0, false, 0, TimeUnit.SECONDS);
       assertTrue(client1.isConnected());
       assertFalse(RpcClientManager.contains(key));
 
-      NettyClientBase client2 = manager.newClient(key, 0, 0, TimeUnit.SECONDS, false);
+      NettyClientBase client2 = manager.newClient(key, 0, false, 0, TimeUnit.SECONDS);
       assertTrue(client2.isConnected());
       assertFalse(RpcClientManager.contains(key));
 

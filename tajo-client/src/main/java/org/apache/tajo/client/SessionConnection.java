@@ -19,7 +19,6 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
-import io.netty.channel.EventLoopGroup;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
@@ -38,13 +37,14 @@ import org.apache.tajo.ipc.ClientProtos.UpdateSessionVariableRequest;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.NettyUtils;
+import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -55,7 +55,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.error.Errors.ResultCode.NO_SUCH_SESSION_VARIABLE;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
@@ -65,6 +67,8 @@ import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
 public class SessionConnection implements Closeable {
 
   private final static Log LOG = LogFactory.getLog(SessionConnection.class);
+
+  private final static AtomicInteger connections = new AtomicInteger();
 
   final RpcClientManager manager;
 
@@ -80,8 +84,6 @@ public class SessionConnection implements Closeable {
   private final Map<String, String> sessionVarsCache = new HashMap<String, String>();
 
   private final ServiceTracker serviceTracker;
-
-  private final EventLoopGroup eventLoopGroup;
 
   private NettyClientBase client;
 
@@ -106,13 +108,7 @@ public class SessionConnection implements Closeable {
     this.manager.setRetries(properties.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
     this.userInfo = UserRoleInfo.getCurrentUser();
 
-    this.eventLoopGroup = NettyUtils.createEventLoopGroup(getClass().getSimpleName(), 4);
-    try {
-      this.client = getTajoMasterConnection();
-    } catch (TajoRuntimeException e) {
-      NettyUtils.shutdown(eventLoopGroup);
-      throw e;
-    }
+    this.client = getTajoMasterConnection();
   }
 
   public Map<String, String> getClientSideSessionVars() {
@@ -129,8 +125,16 @@ public class SessionConnection implements Closeable {
         RpcClientManager.cleanup(client);
 
         // Client do not closed on idle state for support high available
-        this.client = manager.newBlockingClient(getTajoMasterAddr(), TajoMasterClientProtocol.class,
-            manager.getRetries(), eventLoopGroup);
+        this.client = manager.newClient(
+            getTajoMasterAddr(),
+            TajoMasterClientProtocol.class,
+            false,
+            manager.getRetries(),
+            false, 0,
+            TimeUnit.SECONDS
+        );
+        connections.incrementAndGet();
+
       } catch (Throwable t) {
         throw new TajoRuntimeException(new ClientConnectionException(t));
       }
@@ -340,7 +344,14 @@ public class SessionConnection implements Closeable {
       // ignore
     } finally {
       RpcClientManager.cleanup(client);
-      NettyUtils.shutdown(eventLoopGroup);
+      if(connections.decrementAndGet() == 0) {
+        if (!System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
+          RpcChannelFactory.shutdownGracefully();
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("RPC connection is closed");
+          }
+        }
+      }
     }
   }
 
@@ -444,4 +455,5 @@ public class SessionConnection implements Closeable {
     }
     return builder.build();
   }
+
 }

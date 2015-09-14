@@ -74,7 +74,7 @@ public class CatalogClient extends AbstractCatalogClient {
         int retry = conf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES);
         // Client do not closed on idle state for support high available
         this.client = RpcClientManager.getInstance().newClient(getCatalogServerAddr(), CatalogProtocol.class, false,
-            retry, 0, TimeUnit.SECONDS, false);
+            retry, false, 0, TimeUnit.SECONDS);
       } catch (Exception e) {
         throw new ServiceException(e);
       }
