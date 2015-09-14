@@ -28,21 +28,22 @@ import org.apache.tajo.plan.LogicalPlan;
 
 public class ResolverByRelsAndSubExprs extends NameResolver {
   @Override
-  public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+  public Column resolve(LogicalPlan plan,
+                        LogicalPlan.QueryBlock block,
+                        ColumnReferenceExpr columnRef,
+                        boolean includeSeflDescTable)
       throws AmbiguousColumnException, AmbiguousTableException, UndefinedColumnException, UndefinedTableException {
 
-    Column column = resolveFromRelsWithinBlock(plan, block, columnRef);
-    if (column == null) {
-      column = resolveFromCurrentAndChildNode(block, columnRef);
+    Column column = resolveFromRelsWithinBlock(plan, block, columnRef, includeSeflDescTable);
+    if (column != null) {
+      return column;
     }
 
-    if (column == null) {
-      column = resolveFromAllSelfDescReslInAllBlocks(plan, block, columnRef);
+    column = resolveFromCurrentAndChildNode(block, columnRef);
+    if (column != null) {
+      return column;
     }
 
-    if (column == null) {
-      throw new UndefinedColumnException(columnRef.getCanonicalName());
-    }
-    return column;
+    throw new UndefinedColumnException(columnRef.getCanonicalName());
   }
 }

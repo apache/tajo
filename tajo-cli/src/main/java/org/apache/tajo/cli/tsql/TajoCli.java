@@ -39,6 +39,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.ShutdownHookManager;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -50,6 +51,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class TajoCli {
+  public static final int SHUTDOWN_HOOK_PRIORITY = 50;
   public static final String ERROR_PREFIX = "ERROR: ";
   public static final String KILL_PREFIX = "KILL: ";
 
@@ -373,7 +375,7 @@ public class TajoCli {
   }
 
   private void addShutdownHook() {
-    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+    ShutdownHookManager.get().addShutdownHook(new Runnable() {
       @Override
       public void run() {
         try {
@@ -382,7 +384,7 @@ public class TajoCli {
         }
         client.close();
       }
-    }));
+    }, SHUTDOWN_HOOK_PRIORITY);
   }
 
   private String updatePrompt(ParsingState state) throws ServiceException {

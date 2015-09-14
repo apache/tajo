@@ -56,8 +56,8 @@ Block Id: eb_0000000000000_0000_000007 [ROOT]
 
 [Enforcers]
  0: type=Broadcast, tables=default.ps
- 1: type=Broadcast, tables=default.s
- 2: type=Broadcast, tables=default.r
+ 1: type=Broadcast, tables=default.r
+ 2: type=Broadcast, tables=default.s
 
 JOIN(14)(INNER)
   => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)

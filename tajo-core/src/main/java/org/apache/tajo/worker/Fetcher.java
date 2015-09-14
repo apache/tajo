@@ -33,7 +33,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.pullserver.retriever.FileChunk;
-import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.rpc.NettyUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -89,7 +89,7 @@ public class Fetcher {
     if (!useLocalFile) {
       bootstrap = new Bootstrap()
           .group(
-              RpcChannelFactory.getSharedClientEventloopGroup(RpcChannelFactory.ClientChannelId.FETCHER,
+              NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER,
                   conf.getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM)))
           .channel(NioSocketChannel.class)
           .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)

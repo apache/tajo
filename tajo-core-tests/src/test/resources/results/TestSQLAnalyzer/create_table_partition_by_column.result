@@ -35,5 +35,6 @@
     "PartitionType": "COLUMN"
   },
   "IfNotExists": false,
+  "HasSelfDescSchema": false,
   "OpType": "CreateTable"
 }

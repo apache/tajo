@@ -1376,7 +1376,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static LinkedHashSet<Target> createFieldTargetsFromRelation(QueryBlock block, RelationNode relationNode,
-                                                      Set<String> newlyEvaluatedRefNames) {
+                                                                      Set<String> newlyEvaluatedRefNames) {
     LinkedHashSet<Target> targets = Sets.newLinkedHashSet();
     for (Column column : relationNode.getLogicalSchema().getAllColumns()) {
 
@@ -2006,9 +2006,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return createTableNode;
 
     } else { // if CREATE AN EMPTY TABLE
-      if (!expr.isHasSlefDescSchema()) {
+      if (!expr.hasSelfDescSchema()) {
         Schema tableSchema = convertColumnsToSchema(expr.getTableElements());
         createTableNode.setTableSchema(tableSchema);
+      } else {
+        createTableNode.setSelfDescSchema(true);
       }
 
       if (expr.isExternal()) {

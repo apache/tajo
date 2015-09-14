@@ -654,8 +654,8 @@ public class TestCreateTable extends QueryTestCaseBase {
   public final void testSelfDescTable1() throws Exception {
     executeString("create database d9;").close();
 
-    String sql = "create table d9.schemaless using json with ('compression.codec'='none') partition by column (id int8)";
-    executeString(sql).close();
+    assertTableNotExists("d9.schemaless");
+    executeQuery();
     assertTableExists("d9.schemaless");
     TableDesc desc = getClient().getTableDesc("d9.schemaless");
     assertTrue(desc.hasSelfDescSchema());

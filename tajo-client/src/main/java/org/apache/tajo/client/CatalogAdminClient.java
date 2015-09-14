@@ -99,6 +99,26 @@ public interface CatalogAdminClient extends Closeable {
       throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException;
 
   /**
+   * Crearte an external table.
+   *
+   * @param tableName The table name to be created. This name is case sensitive. This name can be qualified or not.
+   *                  If the table name is not qualified, the current database in the session will be used.
+   * @param schema The schema
+   * @param path The external table location
+   * @param meta Table meta
+   * @param partitionMethodDesc Table partition description
+   * @param hasSelfDescSchema Flag to indicate to this table has a format of selc-describing schema like JSON.
+   * @return Created table description
+   * @throws DuplicateTableException
+   * @throws InsufficientPrivilegeException
+   * @throws UnavailableTableLocationException
+   */
+  TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
+                                       final TableMeta meta, final PartitionMethodDesc partitionMethodDesc,
+                                       final boolean hasSelfDescSchema)
+      throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException;
+
+  /**
    * Drop a table
    *
    * @param tableName The table name to be dropped. This name is case sensitive.

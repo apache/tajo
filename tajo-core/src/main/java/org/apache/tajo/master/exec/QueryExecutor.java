@@ -473,6 +473,7 @@ public class QueryExecutor {
             .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(BuiltinStorages.TEXT).build())
             .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
             .setStats(stats.getProto())
+            .setSelfDescSchema(false)
             .build();
 
         responseBuilder.setTableDesc(tableDescProto);

@@ -36,7 +36,7 @@ import java.net.URI;
 
 public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Cloneable {
 	@Expose protected String tableName;                        // required
-  @Expose protected Schema schema;                           // optional for schemaless
+  @Expose protected Schema schema;                           // optional for self-describing tables
   @Expose protected TableMeta meta;                          // required
   /** uri is set if external flag is TRUE. */
   @Expose protected URI uri;                                 // optional
@@ -46,7 +46,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
   /** True if it is an external table. False if it is a managed table. */
   @Expose protected Boolean external;                        // optional
   /** True if it has a self-describing schema. False if it has pre-defined schema. */
-  @Expose protected Boolean selfDescSchema = false;          // optional
+  @Expose protected Boolean selfDescSchema = false;          // required
 
 	public TableDesc() {
 	}

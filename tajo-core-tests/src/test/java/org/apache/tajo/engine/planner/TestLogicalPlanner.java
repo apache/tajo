@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
@@ -1357,6 +1358,11 @@ public class TestLogicalPlanner {
     assertEquals(alterTableNode.getPartitionValues()[2], "11");
   }
 
+  String[] SELF_DESC = {
+      "select id, name, dept from default.self_desc_table1", // 0
+      "select name, dept from default.self_desc_table1 where id > 10",
+  };
+
   @Test
   public void testSelectFromSelfDescTable() throws Exception {
     TableDesc tableDesc = new TableDesc("default.self_desc_table1", null, CatalogUtil.newTableMeta("TEXT"),
@@ -1366,17 +1372,109 @@ public class TestLogicalPlanner {
     tableDesc = catalog.getTableDesc("default.self_desc_table1");
     assertTrue(tableDesc.hasSelfDescSchema());
 
-    QueryContext context = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
-    String sql = "select id, name, dept from default.self_desc_table1";
-    Expr expr = sqlAnalyzer.parse(sql);
+    QueryContext context = createQueryContext();
+    Expr expr = sqlAnalyzer.parse(SELF_DESC[0]);
     LogicalPlan logicalPlan = planner.createPlan(context, expr);
 
-    LogicalNode node = logicalPlan.getRootNode().getChild();
-    System.out.println(node.getPlanString());
+    LogicalNode node = logicalPlan.getRootNode();
+    assertEquals(NodeType.ROOT, node.getType());
+    LogicalRootNode root = (LogicalRootNode) node;
+    testJsonSerDerObject(root);
+    testCloneLogicalNode(root);
+
+    assertEquals(NodeType.PROJECTION, root.getChild().getType());
+    ProjectionNode projectionNode = root.getChild();
+    testJsonSerDerObject(projectionNode);
+    testCloneLogicalNode(projectionNode);
+
+    // projection column test
+    Target[] targets = projectionNode.getTargets();
+    Arrays.sort(targets, new Comparator<Target>() {
+      @Override
+      public int compare(Target o1, Target o2) {
+        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
+      }
+    });
+    assertEquals(3, targets.length);
+    assertEquals("default.self_desc_table1.dept", targets[0].getCanonicalName());
+    assertEquals("default.self_desc_table1.id", targets[1].getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets[2].getCanonicalName());
+
+    // scan column test
+    assertEquals(NodeType.SCAN, projectionNode.getChild().getType());
+    ScanNode scanNode = projectionNode.getChild();
+    targets = scanNode.getTargets();
+    Arrays.sort(targets, new Comparator<Target>() {
+      @Override
+      public int compare(Target o1, Target o2) {
+        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
+      }
+    });
+    assertEquals(3, targets.length);
+    assertEquals("default.self_desc_table1.dept", targets[0].getCanonicalName());
+    assertEquals("default.self_desc_table1.id", targets[1].getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets[2].getCanonicalName());
+
+    catalog.dropTable("default.self_desc_table1");
   }
 
   @Test
   public void testSelectWhereFromSelfDescTable() throws Exception {
+    TableDesc tableDesc = new TableDesc("default.self_desc_table1", null, CatalogUtil.newTableMeta("TEXT"),
+        CommonTestingUtil.getTestDir().toUri(), true, true);
+    catalog.createTable(tableDesc);
+    assertTrue(catalog.existsTable("default.self_desc_table1"));
+    tableDesc = catalog.getTableDesc("default.self_desc_table1");
+    assertTrue(tableDesc.hasSelfDescSchema());
 
+    QueryContext context = createQueryContext();
+    Expr expr = sqlAnalyzer.parse(SELF_DESC[1]);
+    LogicalPlan logicalPlan = planner.createPlan(context, expr);
+
+    LogicalNode node = logicalPlan.getRootNode();
+    assertEquals(NodeType.ROOT, node.getType());
+    LogicalRootNode root = (LogicalRootNode) node;
+    testJsonSerDerObject(root);
+    testCloneLogicalNode(root);
+
+    assertEquals(NodeType.PROJECTION, root.getChild().getType());
+    ProjectionNode projectionNode = root.getChild();
+    testJsonSerDerObject(projectionNode);
+    testCloneLogicalNode(projectionNode);
+
+    // projection column test
+    Target[] targets = projectionNode.getTargets();
+    Arrays.sort(targets, new Comparator<Target>() {
+      @Override
+      public int compare(Target o1, Target o2) {
+        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
+      }
+    });
+    assertEquals(2, targets.length);
+    assertEquals("default.self_desc_table1.dept", targets[0].getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets[1].getCanonicalName());
+
+    assertEquals(NodeType.SELECTION, projectionNode.getChild().getType());
+    SelectionNode selectionNode = projectionNode.getChild();
+    assertEquals(new BinaryEval(EvalType.GTH, new FieldEval("default.self_desc_table1.id", CatalogUtil.newSimpleDataType(Type.TEXT)), new ConstEval(new Int4Datum(10))),
+        selectionNode.getQual());
+
+    // scan column test
+    assertEquals(NodeType.SCAN, selectionNode.getChild().getType());
+    ScanNode scanNode = selectionNode.getChild();
+    targets = scanNode.getTargets();
+    Arrays.sort(targets, new Comparator<Target>() {
+      @Override
+      public int compare(Target o1, Target o2) {
+        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
+      }
+    });
+    assertEquals(4, targets.length);
+    assertEquals("?greaterthan", targets[0].getCanonicalName());
+    assertEquals("default.self_desc_table1.dept", targets[1].getCanonicalName());
+    assertEquals("default.self_desc_table1.id", targets[2].getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets[3].getCanonicalName());
+
+    catalog.dropTable("default.self_desc_table1");
   }
 }

@@ -215,6 +215,13 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc);
   }
 
+  @Override
+  public TableDesc createExternalTable(String tableName, Schema schema, URI path, TableMeta meta,
+                                       PartitionMethodDesc partitionMethodDesc, boolean hasSelfDescSchema)
+      throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException {
+    return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc, hasSelfDescSchema);
+  }
+
   public void dropTable(final String tableName) throws UndefinedTableException, InsufficientPrivilegeException {
     dropTable(tableName, false);
   }

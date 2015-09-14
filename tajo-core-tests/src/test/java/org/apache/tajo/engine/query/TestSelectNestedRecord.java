@@ -127,13 +127,4 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
     assertResultSet(res);
     res.close();
   }
-
-  @Test
-  public final void testSelfDescTable() throws Exception {
-    executeString(String.format("create external table self_desc_table1 using json location '%s'",
-        getDataSetFile("sample2")));
-
-    ResultSet res = executeString("select glossary.title from self_desc_table1");
-    System.out.println(resultSetToString(res));
-  }
 }
