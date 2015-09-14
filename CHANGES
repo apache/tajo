@@ -619,6 +619,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1841: Eliminate explicit diamond expressions in tajo-{algebra,rpc}
+    (hyunsik)
+
     TAJO-1826: Revert 'refining code for Parquet 1.8.1'. 
     (Contributed by Jongyoung Park, committed by hyunsik)
 
