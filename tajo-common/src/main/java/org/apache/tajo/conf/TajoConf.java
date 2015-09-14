@@ -381,7 +381,7 @@ public class TajoConf extends Configuration {
       // ResultSet ---------------------------------------------------------
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
     $RESULT_SET_BLOCK_WAIT("tajo.resultset.block.wait", true),
-    $RESULT_SET_COMPRESSION("tajo.resultset.compression", false),
+    $COMPRESSED_RESULT_TRANSFER("tajo.resultset.compression", false),
     ;
 
     public final String varname;
