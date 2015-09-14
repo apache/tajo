@@ -119,7 +119,7 @@ public class NettyRestServerTest {
       assertEquals(directory1.getOwner(), fetchedDirectory.getOwner());
       assertEquals(directory1.getGroup(), fetchedDirectory.getGroup());
 
-      GenericType<Collection<Directory>> directoryType = new GenericType<Collection<Directory>>(Collection.class);
+      GenericType<Collection<Directory>> directoryType = new GenericType<>(Collection.class);
       Collection<Directory> directories = restClient.target(directoriesUri).request().get(directoryType);
 
       assertEquals(1, directories.size());
