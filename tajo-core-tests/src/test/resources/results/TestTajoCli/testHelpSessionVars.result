@@ -42,4 +42,5 @@ Available Session Variables:
 \set ARITHABORT [true or false] - If true, a running query will be terminated when an overflow or divide-by-zero occurs.
 \set FETCH_ROWNUM [int value] - Sets the number of rows at a time from Master
 \set BLOCK_ON_RESULT [true or false] - Whether to block result set on query execution
+\set COMPRESSED_RESULT_TRANSFER [true or false] - Use compression to optimize result transmission.
 \set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled
