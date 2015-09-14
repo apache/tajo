@@ -41,11 +41,14 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.sql.*;
 import java.util.Iterator;
+import java.util.Properties;
 
 public abstract class JdbcScanner implements Scanner {
   private static final Log LOG = LogFactory.getLog(JdbcScanner.class);
 
   protected final DatabaseMetaData dbMetaData;
+  /** JDBC Connection Properties */
+  protected final Properties connProperties;
   protected final String tableName;
   protected final Schema schema;
   protected final TableMeta tableMeta;
@@ -63,17 +66,28 @@ public abstract class JdbcScanner implements Scanner {
 
   protected int recordCount = 0;
 
+  /**
+   *
+   * @param dbMetaData     DatabaseMetaData
+   * @param connProperties JDBC Connection Properties
+   * @param tableSchema    Table Schema
+   * @param tableMeta      Table Properties
+   * @param fragment       Fragment
+   */
   public JdbcScanner(final DatabaseMetaData dbMetaData,
+                     final Properties connProperties,
                      final Schema tableSchema,
                      final TableMeta tableMeta,
                      final JdbcFragment fragment) {
 
     Preconditions.checkNotNull(dbMetaData);
+    Preconditions.checkNotNull(connProperties);
     Preconditions.checkNotNull(tableSchema);
     Preconditions.checkNotNull(tableMeta);
     Preconditions.checkNotNull(fragment);
 
     this.dbMetaData = dbMetaData;
+    this.connProperties = connProperties;
     this.tableName = ConnectionInfo.fromURI(fragment.getUri()).tableName;
     this.schema = tableSchema;
     this.tableMeta = tableMeta;
@@ -241,7 +255,7 @@ public abstract class JdbcScanner implements Scanner {
   private ResultSetIterator executeQueryAndGetIter() {
     try {
       LOG.info("Generated SQL: " + generatedSql);
-      Connection conn = DriverManager.getConnection(fragment.uri);
+      Connection conn = DriverManager.getConnection(fragment.uri, connProperties);
       Statement statement = conn.createStatement();
       ResultSet resultset = statement.executeQuery(generatedSql);
       return new ResultSetIterator((resultset));

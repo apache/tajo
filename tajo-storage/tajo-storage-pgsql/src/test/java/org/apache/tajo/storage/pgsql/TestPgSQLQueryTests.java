@@ -18,10 +18,17 @@
 
 package org.apache.tajo.storage.pgsql;
 
+import com.google.common.base.Optional;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TablespaceManager;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @SuppressWarnings("unused")
@@ -170,6 +177,24 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE IF EXISTS pgtmp.offload").close();
       executeString("DROP DATABASE IF EXISTS pgtmp").close();
+    }
+  }
+
+  @SimpleTest
+  @Test
+  public void testQueryWithConnProperties() throws Exception {
+    Map<String, String> connProperties = new HashMap<>();
+    connProperties.put("user", "postgres");
+    connProperties.put("password", "");
+
+    Optional<Tablespace> old = Optional.absent();
+    try {
+      old = PgSQLTestServer.resetAllParamsAndSetConnProperties(connProperties);
+      runSimpleTests();
+    } finally {
+      if (old.isPresent()) {
+        TablespaceManager.addTableSpaceForTest(old.get());
+      }
     }
   }
 }

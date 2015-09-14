@@ -24,13 +24,15 @@ import org.apache.tajo.storage.jdbc.JdbcFragment;
 import org.apache.tajo.storage.jdbc.JdbcScanner;
 
 import java.sql.DatabaseMetaData;
+import java.util.Properties;
 
 public class PgSQLJdbcScanner extends JdbcScanner {
 
   public PgSQLJdbcScanner(DatabaseMetaData dbMetaData,
+                          Properties connProperties,
                           Schema tableSchema,
                           TableMeta tableMeta,
                           JdbcFragment fragment) {
-    super(dbMetaData, tableSchema, tableMeta, fragment);
+    super(dbMetaData, connProperties, tableSchema, tableMeta, fragment);
   }
 }

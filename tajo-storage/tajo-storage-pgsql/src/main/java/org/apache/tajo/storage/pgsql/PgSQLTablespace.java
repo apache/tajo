@@ -25,9 +25,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.storage.NullScanner;
 import org.apache.tajo.storage.Scanner;
-import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.jdbc.ConnectionInfo;
 import org.apache.tajo.storage.jdbc.JdbcFragment;
 import org.apache.tajo.storage.jdbc.JdbcTablespace;
 
@@ -39,19 +37,9 @@ import java.net.URI;
  * Postgresql Database Tablespace
  */
 public class PgSQLTablespace extends JdbcTablespace {
-  private final String database;
-
 
   public PgSQLTablespace(String name, URI uri, JSONObject config) {
     super(name, uri, config);
-
-    // mapped database name
-
-    if (config.containsKey(MAPPED_DATABASE_CONFIG_KEY)) {
-      database = this.config.getAsString(MAPPED_DATABASE_CONFIG_KEY);
-    } else {
-      database = ConnectionInfo.fromURI(uri).database();
-    }
   }
 
   public MetadataProvider getMetadataProvider() {
@@ -75,7 +63,7 @@ public class PgSQLTablespace extends JdbcTablespace {
     if (fragment.isEmpty()) {
       scanner = new NullScanner(conf, schema, meta, fragment);
     } else {
-      scanner = new PgSQLJdbcScanner(getDatabaseMetaData(), schema, meta, (JdbcFragment) fragment);
+      scanner = new PgSQLJdbcScanner(getDatabaseMetaData(), connProperties, schema, meta, (JdbcFragment) fragment);
     }
     scanner.setTarget(target.toArray());
     return scanner;

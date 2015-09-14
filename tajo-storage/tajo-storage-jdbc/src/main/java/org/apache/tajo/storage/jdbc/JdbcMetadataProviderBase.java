@@ -49,8 +49,6 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
   protected final String databaseName;
 
   protected final String jdbcUri;
-  protected final String username;
-  protected final String password;
 
   protected final Connection connection;
 
@@ -60,8 +58,6 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
 
     ConnectionInfo connInfo = ConnectionInfo.fromURI(space.getUri());
     this.jdbcUri  = space.getUri().toASCIIString();
-    this.username = connInfo.user();
-    this.password = connInfo.password();
 
     try {
       Class.forName(getJdbcDriverName()).newInstance();
@@ -71,7 +67,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
     }
 
     try {
-      connection = DriverManager.getConnection(jdbcUri, this.username, this.password);
+      connection = DriverManager.getConnection(jdbcUri, space.connProperties);
     } catch (SQLException e) {
       throw new TajoInternalError(e);
     }

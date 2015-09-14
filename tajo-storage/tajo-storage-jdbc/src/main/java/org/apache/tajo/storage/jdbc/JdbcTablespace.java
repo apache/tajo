@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.jdbc;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
@@ -35,6 +36,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.util.UriUtil;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -44,6 +46,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * JDBC Tablespace
@@ -53,18 +57,52 @@ public abstract class JdbcTablespace extends Tablespace {
 
   static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, true);
   static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
-  public static final String MAPPED_DATABASE_CONFIG_KEY = "mapped_database";
 
-  private Connection conn;
+  /**
+   * required configuration
+   */
+  public static final String CONFIG_KEY_MAPPED_DATABASE = "mapped_database";
+  /**
+   * optional configuration
+   */
+  public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
+
+  public static final String URI_PARAM_KEY_TABLE = "table";
+
+  protected Connection conn;
+  protected String database;
+  protected Properties connProperties = new Properties();
 
   public JdbcTablespace(String name, URI uri, JSONObject config) {
     super(name, uri, config);
+    setDatabase();
+    setJdbcProperties();
+  }
+
+  private void setDatabase() {
+    if (config.containsKey(CONFIG_KEY_MAPPED_DATABASE)) {
+      database = this.config.getAsString(CONFIG_KEY_MAPPED_DATABASE);
+    } else {
+      database = ConnectionInfo.fromURI(uri).database();
+    }
+  }
+
+  private void setJdbcProperties() {
+    Object connPropertiesObjects = config.get(CONFIG_KEY_CONN_PROPERTIES);
+    if (connPropertiesObjects != null) {
+      Preconditions.checkState(connPropertiesObjects instanceof JSONObject, "Invalid jdbc_properties field in configs");
+      JSONObject connProperties = (JSONObject) connPropertiesObjects;
+
+      for (Map.Entry<String, Object> entry : connProperties.entrySet()) {
+        this.connProperties.put(entry.getKey(), entry.getValue());
+      }
+    }
   }
 
   @Override
   protected void storageInit() throws IOException {
     try {
-      this.conn = DriverManager.getConnection(uri.toASCIIString());
+      this.conn = DriverManager.getConnection(uri.toASCIIString(), connProperties);
     } catch (SQLException e) {
       throw new IOException(e);
     }
@@ -77,7 +115,7 @@ public abstract class JdbcTablespace extends Tablespace {
 
   @Override
   public URI getTableUri(String databaseName, String tableName) {
-    return URI.create(getUri() + "&table=" + tableName);
+    return URI.create(UriUtil.addParam(getUri().toASCIIString(), URI_PARAM_KEY_TABLE, tableName));
   }
 
   @Override
@@ -99,10 +137,12 @@ public abstract class JdbcTablespace extends Tablespace {
 
   @Override
   public void close() {
-    try {
-      conn.close();
-    } catch (SQLException e) {
-      LOG.warn(e);
+    if (conn != null) {
+      try {
+        conn.close();
+      } catch (SQLException e) {
+        LOG.warn(e);
+      }
     }
   }
 

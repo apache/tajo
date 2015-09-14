@@ -18,21 +18,26 @@
 
 package org.apache.tajo.storage.pgsql;
 
+import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.jdbc.JdbcTablespace;
 import org.junit.Test;
+import org.postgresql.util.PSQLException;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestPgSQLJdbcTableSpace {
   static String jdbcUrl = PgSQLTestServer.getInstance().getJdbcUrlForAdmin();
@@ -69,5 +74,54 @@ public class TestPgSQLJdbcTableSpace {
     List<Fragment> fragments = space.getSplits("lineitem", table, null);
     assertNotNull(fragments);
     assertEquals(1, fragments.size());
+  }
+
+  @Test
+  public void testConnProperties() throws Exception {
+    Map<String, String> connProperties = new HashMap<>();
+    connProperties.put("user", "postgres");
+    connProperties.put("password", "");
+
+    String uri = PgSQLTestServer.getInstance().getJdbcUrl().split("\\?")[0];
+    Tablespace space = new PgSQLTablespace("t1", URI.create(uri), getJsonTablespace(connProperties));
+    try {
+      space.init(new TajoConf());
+    } finally {
+      space.close();
+    }
+  }
+
+  @Test
+  public void testConnPropertiesNegative() throws Exception {
+    Map<String, String> connProperties = new HashMap<>();
+    connProperties.put("user", "postgresX");
+    connProperties.put("password", "");
+
+    String uri = PgSQLTestServer.getInstance().getJdbcUrl().split("\\?")[0];
+    Tablespace space = new PgSQLTablespace("t1", URI.create(uri), getJsonTablespace(connProperties));
+    try {
+      space.init(new TajoConf());
+      fail("Must be failed");
+    } catch (IOException ioe) {
+      assertTrue(ioe.getCause() instanceof PSQLException);
+    } finally {
+      space.close();
+    }
+  }
+
+  public static JSONObject getJsonTablespace(Map<String, String> connProperties)
+      throws IOException {
+    String uri = PgSQLTestServer.getInstance().getJdbcUrl().split("\\?")[0];
+
+    JSONObject configElements = new JSONObject();
+    configElements.put(JdbcTablespace.CONFIG_KEY_MAPPED_DATABASE, PgSQLTestServer.DATABASE_NAME);
+
+    JSONObject connPropertiesJson = new JSONObject();
+    for (Map.Entry<String, String> entry : connProperties.entrySet()) {
+      connPropertiesJson.put(entry.getKey(), entry.getValue());
+    }
+    configElements.put(JdbcTablespace.CONFIG_KEY_CONN_PROPERTIES, connPropertiesJson);
+
+    return configElements;
   }
 }

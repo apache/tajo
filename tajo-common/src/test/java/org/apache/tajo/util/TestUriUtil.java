@@ -18,29 +18,26 @@
 
 package org.apache.tajo.util;
 
-import java.net.URI;
+import org.junit.Test;
 
-/**
- * Utility for URI representation
- */
-public class UriUtil {
-  public static String getScheme(URI uri) {
-    return getScheme(uri.toASCIIString());
+import static org.junit.Assert.assertEquals;
+
+public class TestUriUtil {
+  static final String URI0 = "http://192.168.0.1/table1";
+  static final String URI1 = "hbase:zk://192.168.0.1/table1";
+  static final String URI2 = "jdbc:postgresql://192.168.0.1/table1";
+
+  @Test
+  public void testGetScheme() throws Exception {
+    assertEquals("http", UriUtil.getScheme(URI0));
+    assertEquals("hbase:zk", UriUtil.getScheme(URI1));
+    assertEquals("jdbc:postgresql", UriUtil.getScheme(URI2));
   }
 
-  public static String getScheme(String uri) {
-    return uri.substring(0, uri.indexOf(":/"));
-  }
-
-  /**
-   * Add an query parameter to an existing URI.
-   * @param uri   an URI
-   * @param name  Parameter name
-   * @param value Parameter value
-   * @return An URI including the given parameter
-   */
-  public static String addParam(String uri, String name, String value) {
-    final String questionMarkOrAnd = uri.split("\\?").length > 1 ? "&" : "?";
-    return uri + questionMarkOrAnd + name + "=" + value;
+  @Test
+  public void testAddParam() throws Exception {
+    String userAdded = UriUtil.addParam(URI2, "user", "xxx");
+    assertEquals("jdbc:postgresql://192.168.0.1/table1?user=xxx", userAdded);
+    assertEquals("jdbc:postgresql://192.168.0.1/table1?user=xxx&pass=yyy", UriUtil.addParam(userAdded, "pass", "yyy"));
   }
 }

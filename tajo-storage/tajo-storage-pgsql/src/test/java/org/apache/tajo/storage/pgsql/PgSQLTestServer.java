@@ -18,12 +18,14 @@
 
 package org.apache.tajo.storage.pgsql;
 
+import com.google.common.base.Optional;
 import io.airlift.testing.postgresql.TestingPostgreSqlServer;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.jdbc.JdbcTablespace;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -36,7 +38,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 import java.util.Map;
 
 public class PgSQLTestServer {
@@ -50,6 +51,8 @@ public class PgSQLTestServer {
 
   public static final String SPACENAME = "pgsql_cluster";
   public static final String DATABASE_NAME = "tpch";
+  public static final String USERNAME = "testuser";
+  public static final String PASSWORD = "";
 
   private final TestingPostgreSqlServer server;
 
@@ -155,7 +158,7 @@ public class PgSQLTestServer {
 
   private void registerTablespace() throws IOException {
     JSONObject configElements = new JSONObject();
-    configElements.put(JdbcTablespace.MAPPED_DATABASE_CONFIG_KEY, DATABASE_NAME);
+    configElements.put(JdbcTablespace.CONFIG_KEY_MAPPED_DATABASE, DATABASE_NAME);
 
     PgSQLTablespace tablespace = new PgSQLTablespace(SPACENAME, URI.create(getJdbcUrlForAdmin()), configElements);
     tablespace.init(new TajoConf());
@@ -186,5 +189,23 @@ public class PgSQLTestServer {
 
   public TestingPostgreSqlServer getServer() {
     return server;
+  }
+
+  public static Optional<Tablespace> resetAllParamsAndSetConnProperties(Map<String, String> connProperties)
+      throws IOException {
+    String uri = PgSQLTestServer.getInstance().getJdbcUrl().split("\\?")[0];
+
+    JSONObject configElements = new JSONObject();
+    configElements.put(JdbcTablespace.CONFIG_KEY_MAPPED_DATABASE, PgSQLTestServer.DATABASE_NAME);
+
+    JSONObject connPropertiesJson = new JSONObject();
+    for (Map.Entry<String, String> entry : connProperties.entrySet()) {
+      connPropertiesJson.put(entry.getKey(), entry.getValue());
+    }
+    configElements.put(JdbcTablespace.CONFIG_KEY_CONN_PROPERTIES, connPropertiesJson);
+
+    PgSQLTablespace tablespace = new PgSQLTablespace(PgSQLTestServer.SPACENAME, URI.create(uri), configElements);
+    tablespace.init(new TajoConf());
+    return TablespaceManager.addTableSpaceForTest(tablespace);
   }
 }

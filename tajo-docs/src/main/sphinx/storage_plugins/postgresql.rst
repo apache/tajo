@@ -21,9 +21,20 @@ PostgreSQL storage handler is a builtin storage handler. So, you can eaisly regi
         
         "configs": {
           "mapped_database": "tajo_db1"
+          "connection_properties: " {
+            "user":     "tajo",
+            "password": "xxxx"
+          }
         }
       }
     }
   }
 
-Its configuration change add the tablespace named ``pgsql_db1`` mapped to the database ``db1`` in PostgreSQL. ``uri`` should be just a JDBC connection url. ``mapped_database`` specifies a database name shown in Tajo for the mapped database ``db1`` in PostgreSQL. The tablespace will be available after you restart a tajo cluster.
+``configs`` allows users to specific additional configurations.
+``mapped_database`` specifies a database name shown in Tajo. In the example, the database ``db1`` in PostgreSQL
+will be mapped to the database ``tajo_db1`` in Tajo.
+``connection_properties`` allows users to set JDBC connection parameters.
+Please refer to https://jdbc.postgresql.org/documentation/head/connect.html in order to know the details of
+PostgreSQL connection parameters.
+
+The storage-site.json will be effective after you restart a tajo cluster.
