@@ -132,12 +132,35 @@ public class QueryExecutor {
       execNonFromQuery(queryContext, session, sql, plan, response);
 
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
-      executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
+
+      // Checking if CTAS is already finished due to 'IF NOT EXISTS' option
+      if (checkIfCtasAlreadyDone(rootNode)) {
+        response.setState(OK);
+        response.setResultType(ResultType.NO_RESULT);
+      } else {
+        executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
+      }
     }
 
     response.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
 
     return response.build();
+  }
+
+  /**
+   * Check if CTAS is already done
+   * @param rootNode
+   * @return
+   */
+  private boolean checkIfCtasAlreadyDone(LogicalNode rootNode) {
+    if (rootNode.getChild(0).getType() == NodeType.CREATE_TABLE) {
+      CreateTableNode createTable = (CreateTableNode) rootNode.getChild(0);
+      if (createTable.isIfNotExists() && catalog.existsTable(createTable.getTableName())) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public void execSetSession(Session session, LogicalPlan plan,
