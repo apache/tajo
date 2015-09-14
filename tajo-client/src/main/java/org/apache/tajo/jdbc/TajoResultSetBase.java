@@ -106,7 +106,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private boolean getBoolean(Tuple tuple, int index) {
-    return handleNull(tuple, index) ? false : tuple.getBool(index);
+    return handleNull(tuple, index) ? false : tuple.asDatum(index).asBool();
   }
 
   @Override
@@ -120,7 +120,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private byte getByte(Tuple tuple, int index) {
-    return handleNull(tuple, index) ? 0 : tuple.getByte(index);
+    return handleNull(tuple, index) ? 0 : tuple.asDatum(index).asByte();
   }
 
   @Override
@@ -134,7 +134,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private byte[] getBytes(Tuple tuple, int index) {
-    return handleNull(tuple, index) ? null : tuple.getBytes(index);
+    return handleNull(tuple, index) ? null : tuple.asDatum(index).asByteArray();
   }
 
   @Override
@@ -148,7 +148,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private double getDouble(Tuple tuple, int index) {
-    return handleNull(tuple, index) ? 0.0d : tuple.getFloat8(index);
+    return handleNull(tuple, index) ? 0.0d : tuple.asDatum(index).asFloat8();
   }
 
   @Override
@@ -162,7 +162,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private float getFloat(Tuple tuple, int index) throws SQLException {
-    return handleNull(tuple, index) ? 0.0f : tuple.getFloat4(index);
+    return handleNull(tuple, index) ? 0.0f : tuple.asDatum(index).asFloat4();
   }
 
   @Override
@@ -176,7 +176,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private int getInt(Tuple tuple, int index) throws SQLException {
-    return handleNull(tuple, index) ? 0 : tuple.getInt4(index);
+    return handleNull(tuple, index) ? 0 : tuple.asDatum(index).asInt4();
   }
 
   @Override
@@ -190,7 +190,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private long getLong(Tuple tuple, int index) throws SQLException {
-    return handleNull(tuple, index) ? 0 : tuple.getInt8(index);
+    return handleNull(tuple, index) ? 0 : tuple.asDatum(index).asInt8();
   }
 
   @Override
@@ -232,7 +232,7 @@ public abstract class TajoResultSetBase implements ResultSet {
         return toTimestamp(tuple.getTimeDate(index), timezone);
       }
       default:
-        return tuple.getText(index);
+        return tuple.asDatum(index).asChars();
     }
   }
 
@@ -247,7 +247,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private short getShort(Tuple tuple, int index) throws SQLException {
-    return handleNull(tuple, index) ? 0 : tuple.getInt2(index);
+    return handleNull(tuple, index) ? 0 : tuple.asDatum(index).asInt2();
   }
 
   @Override
@@ -273,7 +273,7 @@ public abstract class TajoResultSetBase implements ResultSet {
       case TIMESTAMP:
         return TimestampDatum.asChars(tuple.getTimeDate(index), timezone, false);
       default :
-        return tuple.getText(index);
+        return tuple.asDatum(index).asChars();
     }
   }
 
@@ -298,7 +298,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Date getDate(Tuple tuple, TimeZone tz, int index) throws SQLException {
-    return handleNull(tuple, index) ? null : toDate(tuple.getTimeDate(index), tz);
+    return handleNull(tuple, index) ? null : toDate(tuple.asDatum(index).asTimeMeta(), tz);
   }
 
   private Date toDate(TimeMeta tm, TimeZone tz) {
@@ -329,7 +329,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Time getTime(Tuple tuple, TimeZone tz, int index) throws SQLException {
-    return handleNull(tuple, index) ? null : toTime(tuple.getTimeDate(index), tz);
+    return handleNull(tuple, index) ? null : toTime(tuple.asDatum(index).asTimeMeta(), tz);
   }
 
   private Time toTime(TimeMeta tm, TimeZone tz) {
@@ -360,7 +360,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Timestamp getTimestamp(Tuple tuple, TimeZone tz, int index) throws SQLException {
-    return handleNull(tuple, index) ? null : toTimestamp(tuple.getTimeDate(index), tz);
+    return handleNull(tuple, index) ? null : toTimestamp(tuple.asDatum(index).asTimeMeta(), tz);
   }
 
   private Timestamp toTimestamp(TimeMeta tm, TimeZone tz) {

@@ -59,7 +59,7 @@ public class WaitingResultSet extends FetchResultSet {
       QueryStatus status = TajoClientUtil.waitCompletion(tajoClient, queryId);
 
       if (status.getState() != TajoProtos.QueryState.QUERY_SUCCEEDED) {
-        throw new SQLException(status.getErrorMessage() != null ? status.getErrorMessage() : "unknown error",
+        throw new SQLException(status.getErrorMessage(),
             SQLExceptionUtil.toSQLState(ResultCode.INTERNAL_ERROR), ResultCode.INTERNAL_ERROR.getNumber());
       }
 

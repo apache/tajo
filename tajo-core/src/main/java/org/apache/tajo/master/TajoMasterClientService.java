@@ -19,7 +19,6 @@
 package org.apache.tajo.master;
 
 import com.google.common.base.Preconditions;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -62,7 +61,6 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -533,7 +531,6 @@ public class TajoMasterClientService extends AbstractService {
     public GetQueryResultDataResponse getQueryResultData(RpcController controller, GetQueryResultDataRequest request)
         throws ServiceException {
       GetQueryResultDataResponse.Builder builder = GetQueryResultDataResponse.newBuilder();
-      SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
 
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -561,29 +558,25 @@ public class TajoMasterClientService extends AbstractService {
             scanNode.init(resultTableDesc);
           }
 
-          queryResultScanner =
-              new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(), queryId, scanNode,
-                  resultTableDesc, Integer.MAX_VALUE);
+          if(request.hasCompressCodec()) {
+            queryResultScanner = new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(),
+                queryId, scanNode, resultTableDesc, Integer.MAX_VALUE, request.getCompressCodec());
+          } else {
+            queryResultScanner = new NonForwardQueryResultFileScanner(context.getConf(),
+                session.getSessionId(), queryId, scanNode, resultTableDesc, Integer.MAX_VALUE);
+          }
+
           queryResultScanner.init();
           session.addNonForwardQueryResultScanner(queryResultScanner);
         }
 
-        List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
+        SerializedResultSet resultSet = queryResultScanner.nextRowBlock(request.getFetchRowNum());
 
-        resultSetBuilder.setSchema(queryResultScanner.getLogicalSchema().getProto());
-        resultSetBuilder.addAllSerializedTuples(rows);
-
-        builder.setResultSet(resultSetBuilder.build());
+        builder.setResultSet(resultSet);
         builder.setState(OK);
-
-        LOG.info("Send result to client for " +
-            request.getSessionId().getId() + "," + queryId + ", " + rows.size() + " rows");
-
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
-
         builder.setState(returnError(t));
-        builder.setResultSet(resultSetBuilder.build()); // required field
       }
 
       return builder.build();

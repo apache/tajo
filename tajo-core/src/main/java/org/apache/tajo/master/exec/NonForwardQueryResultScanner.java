@@ -23,26 +23,30 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 
 import java.io.IOException;
 import java.util.List;
 
 public interface NonForwardQueryResultScanner {
 
-  public void close() throws Exception;
+  void close() throws Exception;
 
-  public Schema getLogicalSchema();
+  Schema getLogicalSchema();
 
-  public List<ByteString> getNextRows(int fetchRowNum) throws IOException;
+  @Deprecated
+  List<ByteString> getNextRows(int fetchRowNum) throws IOException;
 
-  public QueryId getQueryId();
+  SerializedResultSet nextRowBlock(int fetchRowNum) throws IOException;
+
+  QueryId getQueryId();
   
-  public String getSessionId();
+  String getSessionId();
   
-  public TableDesc getTableDesc();
+  TableDesc getTableDesc();
 
-  public void init() throws IOException, TajoException;
+  void init() throws IOException, TajoException;
 
-  public int getCurrentRowNumber();
+  int getCurrentRowNumber();
 
 }

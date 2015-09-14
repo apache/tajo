@@ -18,46 +18,78 @@
 
 package org.apache.tajo.jdbc;
 
-import com.google.protobuf.ByteString;
+import io.netty.buffer.Unpooled;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.tuple.memory.HeapRowBlockReader;
+import org.apache.tajo.tuple.memory.HeapTuple;
+import org.apache.tajo.tuple.memory.MemoryBlock;
+import org.apache.tajo.tuple.memory.ResizableMemoryBlock;
+import org.apache.tajo.util.CompressionUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoMemoryResultSet extends TajoResultSetBase {
-  private List<ByteString> serializedTuples;
-  private AtomicBoolean closed = new AtomicBoolean(false);
-  private RowStoreUtil.RowStoreDecoder decoder;
+  private MemoryBlock memory;
+  private RowBlockReader reader;
+  private volatile boolean closed;
 
-  public TajoMemoryResultSet(QueryId queryId, Schema schema, List<ByteString> serializedTuples, int maxRowNum,
+
+  public TajoMemoryResultSet(QueryId queryId, Schema schema, SerializedResultSet resultSet,
                              Map<String, String> clientSideSessionVars) {
     super(queryId, schema, clientSideSessionVars);
-    this.totalRow = maxRowNum;
-    this.serializedTuples = serializedTuples;
-    this.decoder = RowStoreUtil.createDecoder(schema);
+    if(resultSet != null && resultSet.getRows() > 0) {
+      this.totalRow = resultSet.getRows();
+
+      try {
+        // decompress if a codec is specified
+        if (resultSet.hasDecompressCodec()) {
+          byte[] compressed = resultSet.getSerializedTuples().toByteArray();
+          byte[] uncompressed = CompressionUtil.decompress(resultSet.getDecompressCodec(), compressed);
+          memory = new ResizableMemoryBlock(Unpooled.wrappedBuffer(uncompressed));
+        } else {
+          memory = new ResizableMemoryBlock(resultSet.getSerializedTuples().asReadOnlyByteBuffer());
+        }
+      } catch (IOException e) {
+        throw new TajoInternalError(e);
+      }
+
+      reader = new HeapRowBlockReader(memory, SchemaUtil.toDataTypes(schema), resultSet.getRows());
+    } else {
+      this.totalRow = 0;
+      this.curRow = 0;
+    }
   }
 
   @Override
   protected void init() {
     cur = null;
     curRow = 0;
+    wasNull = false;
   }
 
   @Override
-  public synchronized void close() throws SQLException {
-    if (closed.getAndSet(true)) {
+  public void close() throws SQLException {
+    if (closed) {
       return;
     }
 
+    closed = true;
     cur = null;
     curRow = -1;
-    serializedTuples = null;
+    totalRow = 0;
+    reader = null;
+    if(memory != null) {
+      memory.release();
+      memory = null;
+    }
   }
 
   @Override
@@ -68,7 +100,13 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   @Override
   protected Tuple nextTuple() throws IOException {
     if (curRow < totalRow) {
-      cur = decoder.toTuple(serializedTuples.get(curRow).toByteArray());
+
+      HeapTuple heapTuple = new HeapTuple();
+      if (reader.next(heapTuple)) {
+        cur = heapTuple;
+      } else {
+        cur = null;
+      }
       return cur;
     } else {
       return null;
@@ -76,6 +114,6 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   }
 
   public boolean hasResult() {
-    return serializedTuples.size() > 0;
+    return totalRow > 0;
   }
 }
