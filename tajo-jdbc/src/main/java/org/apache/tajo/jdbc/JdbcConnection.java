@@ -18,28 +18,25 @@
 
 package org.apache.tajo.jdbc;
 
-import com.google.protobuf.ServiceException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.client.CatalogAdminClient;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
-import org.apache.tajo.client.v2.exception.ClientConnectionException;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
 import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.KeyValueSet;
 
-import java.io.IOException;
-import java.net.ConnectException;
 import java.net.URI;
 import java.sql.*;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -106,6 +103,7 @@ public class JdbcConnection implements Connection {
       }
 
       params = new QueryStringDecoder(rawURI).getParameters();
+      properties.putAll(params);
     } catch (SQLException se) {
       throw se;
     } catch (Throwable t) { // for unexpected exceptions like ArrayIndexOutOfBoundsException.
@@ -115,7 +113,11 @@ public class JdbcConnection implements Connection {
     clientProperties = new KeyValueSet();
     if(properties != null) {
       for(Map.Entry<Object, Object> entry: properties.entrySet()) {
-        clientProperties.set(entry.getKey().toString(), entry.getValue().toString());
+        if(entry.getValue() instanceof Collection) {
+          clientProperties.set(entry.getKey().toString(), StringUtils.join((Collection) entry.getValue(), ","));
+        } else {
+          clientProperties.set(entry.getKey().toString(), entry.getValue().toString());
+        }
       }
     }
 

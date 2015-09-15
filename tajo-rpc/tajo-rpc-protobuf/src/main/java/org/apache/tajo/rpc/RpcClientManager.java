@@ -183,11 +183,13 @@ public class RpcClientManager {
   public static void close() {
     LOG.info("Closing RPC client manager");
 
-    for (NettyClientBase eachClient : clients.values()) {
-      try {
-        eachClient.close();
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
+    synchronized (clients) {
+      for (NettyClientBase eachClient : clients.values()) {
+        try {
+          eachClient.close();
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+        }
       }
     }
   }
