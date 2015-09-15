@@ -194,6 +194,91 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   }
 
   @Test
+  public void testResultSetCompression() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        TajoConstants.DEFAULT_DATABASE_NAME);
+    connUri = connUri + "?" + SessionVars.COMPRESSED_RESULT_TRANSFER.keyname() + "=true";
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    PreparedStatement stmt = null;
+    ResultSet res = null;
+    try {
+      /*
+      test data set
+      1,17.0,N
+      1,36.0,N
+      2,38.0,N
+      3,45.0,R
+      3,49.0,R
+      */
+
+      String sql =
+          "select l_orderkey, l_quantity, l_returnflag from lineitem where l_quantity > ? and l_returnflag = ?";
+
+      stmt = conn.prepareStatement(sql);
+
+      stmt.setInt(1, 20);
+      stmt.setString(2, "N");
+
+      res = stmt.executeQuery();
+
+      ResultSetMetaData rsmd = res.getMetaData();
+      assertEquals(3, rsmd.getColumnCount());
+      assertEquals("l_orderkey", rsmd.getColumnName(1));
+      assertEquals("l_quantity", rsmd.getColumnName(2));
+      assertEquals("l_returnflag", rsmd.getColumnName(3));
+
+      try {
+        int numRows = 0;
+        String[] resultData = {"136.0N", "238.0N"};
+        while (res.next()) {
+          assertEquals(resultData[numRows],
+              ("" + res.getObject(1).toString() + res.getObject(2).toString() + res.getObject(3).toString()));
+          numRows++;
+        }
+        assertEquals(2, numRows);
+      } finally {
+        res.close();
+      }
+
+      stmt.setInt(1, 20);
+      stmt.setString(2, "R");
+
+      res = stmt.executeQuery();
+
+      rsmd = res.getMetaData();
+      assertEquals(3, rsmd.getColumnCount());
+      assertEquals("l_orderkey", rsmd.getColumnName(1));
+      assertEquals("l_quantity", rsmd.getColumnName(2));
+      assertEquals("l_returnflag", rsmd.getColumnName(3));
+
+      try {
+        int numRows = 0;
+        String[] resultData = {"345.0R", "349.0R"};
+        while (res.next()) {
+          assertEquals(resultData[numRows],
+              ("" + res.getObject(1).toString() + res.getObject(2).toString() + res.getObject(3).toString()));
+          numRows++;
+        }
+        assertEquals(2, numRows);
+      } finally {
+        res.close();
+      }
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+      if (stmt != null) {
+        stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
   public void testDatabaseMetaDataGetTable() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
       TajoConstants.DEFAULT_DATABASE_NAME);
@@ -584,9 +669,8 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     try {
       assertTrue("should have result set", statement.execute());
       TajoResultSetBase result = (TajoResultSetBase) statement.getResultSet();
-      Thread.sleep(1000);   // todo query master is not killed properly if it's compiling the query (use 100, if you want see)
       statement.cancel();
-
+      Thread.sleep(1000);
       QueryStatus status = client.getQueryStatus(result.getQueryId());
       assertEquals(TajoProtos.QueryState.QUERY_KILLED, status.getState());
     } finally {

@@ -58,8 +58,8 @@ Block Id: eb_0000000000000_0000_000007 [ROOT]
 
 [Enforcers]
  0: type=Broadcast, tables=default.ps
- 1: type=Broadcast, tables=default.s
- 2: type=Broadcast, tables=default.r
+ 1: type=Broadcast, tables=default.r
+ 2: type=Broadcast, tables=default.s
 
 SELECTION(12)
   => Search Cond: default.t.n_nationkey (INT4) > default.s.s_suppkey (INT4)
