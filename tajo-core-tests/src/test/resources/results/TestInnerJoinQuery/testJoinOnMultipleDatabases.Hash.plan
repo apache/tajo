@@ -66,10 +66,10 @@ Block Id: eb_0000000000000_0000_000009 [LEAF]
 [q_0000000000000_0000] 9 => 10 (type=RANGE_SHUFFLE, key=default.nation.n_name (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_name (TEXT), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=joins.supplier_
- 1: type=Broadcast, tables=joins.part_
- 2: type=Broadcast, tables=default.partsupp
- 3: type=Broadcast, tables=default.region
+ 0: type=Broadcast, tables=default.partsupp
+ 1: type=Broadcast, tables=default.region
+ 2: type=Broadcast, tables=joins.part_
+ 3: type=Broadcast, tables=joins.supplier_
 
 SORT(26)
   => Sort Keys: joins.supplier_.s_acctbal (FLOAT8) (asc),joins.supplier_.s_name (TEXT) (asc),default.nation.n_name (TEXT) (asc),joins.part_.p_partkey (INT4) (asc)

@@ -21,23 +21,24 @@
  */
 package org.apache.tajo.jdbc;
 
-import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.tuple.memory.MemoryBlock;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.util.CompressionUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,9 +46,9 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.Calendar;
-import java.util.List;
 import java.util.TimeZone;
 
 import static org.junit.Assert.*;
@@ -60,7 +61,7 @@ public class TestResultSet {
   private static FileTablespace sm;
   private static TableMeta scoreMeta;
   private static Schema scoreSchema;
-  private static List<ByteString> serializedData;
+  private static MemoryRowBlock rowBlock;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -72,13 +73,12 @@ public class TestResultSet {
     scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);
     scoreMeta = CatalogUtil.newTableMeta("TEXT");
+    rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scoreSchema));
     TableStats stats = new TableStats();
 
     Path p = new Path(sm.getTableUri("default", "score"));
     sm.getFileSystem().mkdirs(p);
     Appender appender = sm.getAppender(scoreMeta, scoreSchema, new Path(p, "score"));
-    RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(scoreSchema);
-    serializedData = Lists.newArrayList();
     appender.init();
 
     int deptSize = 100;
@@ -92,7 +92,7 @@ public class TestResultSet {
       tuple.put(1, DatumFactory.createInt4(i + 1));
       written += key.length() + Integer.SIZE;
       appender.addTuple(tuple);
-      serializedData.add(ByteString.copyFrom(encoder.toBytes(tuple)));
+      rowBlock.getWriter().addTuple(tuple);
     }
     appender.close();
     stats.setNumRows(tupleNum);
@@ -103,18 +103,67 @@ public class TestResultSet {
     desc = new TableDesc(CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score"),
         scoreSchema, scoreMeta, p.toUri());
     desc.setStats(stats);
+    assertEquals(tupleNum, rowBlock.rows());
   }
 
   @AfterClass
   public static void terminate() throws IOException {
-
+    rowBlock.release();
   }
 
   @Test
   public void testMemoryResultSet() throws Exception {
-    TajoMemoryResultSet rs = new TajoMemoryResultSet(null, desc.getSchema(),
-        serializedData, desc.getStats().getNumRows().intValue(), null);
+    SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
+    resultSetBuilder.setSchema(scoreSchema.getProto());
+    resultSetBuilder.setRows(rowBlock.rows());
 
+    MemoryBlock memoryBlock = rowBlock.getMemory();
+    ByteBuffer uncompressed = memoryBlock.getBuffer().nioBuffer(0, memoryBlock.readableBytes());
+    resultSetBuilder.setSerializedTuples(ByteString.copyFrom(uncompressed));
+    resultSetBuilder.setDecompressedLength(memoryBlock.readableBytes());
+
+    TajoMemoryResultSet rs = new TajoMemoryResultSet(null, desc.getSchema(), resultSetBuilder.build(), null);
+
+    ResultSetMetaData meta = rs.getMetaData();
+    assertNotNull(meta);
+    Schema schema = scoreSchema;
+    assertEquals(schema.size(), meta.getColumnCount());
+    for (int i = 0; i < meta.getColumnCount(); i++) {
+      assertEquals(schema.getColumn(i).getSimpleName(), meta.getColumnName(i + 1));
+      assertEquals(schema.getColumn(i).getQualifier(), meta.getTableName(i + 1));
+    }
+
+    int i = 0;
+    assertTrue(rs.isBeforeFirst());
+    for (; rs.next(); i++) {
+      assertEquals("test"+i%100, rs.getString(1));
+      assertEquals("test"+i%100, rs.getString("deptname"));
+      assertEquals(i+1, rs.getInt(2));
+      assertEquals(i+1, rs.getInt("score"));
+    }
+    assertEquals(10000, i);
+    assertTrue(rs.isAfterLast());
+  }
+
+
+  @Test
+  public void testCompressedMemoryResultSet() throws Exception {
+    SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
+    resultSetBuilder.setSchema(scoreSchema.getProto());
+    resultSetBuilder.setRows(rowBlock.rows());
+
+    MemoryBlock memoryBlock = rowBlock.getMemory();
+    byte[] uncompressedBytes = new byte[memoryBlock.readableBytes()];
+    memoryBlock.getBuffer().getBytes(0, uncompressedBytes);
+
+    // compress by snappy
+    byte[] compressedBytes = CompressionUtil.compress(CodecType.SNAPPY, uncompressedBytes);
+    resultSetBuilder.setDecompressedLength(uncompressedBytes.length);
+    resultSetBuilder.setDecompressCodec(CodecType.SNAPPY);
+    resultSetBuilder.setSerializedTuples(ByteString.copyFrom(compressedBytes));
+
+
+    TajoMemoryResultSet rs = new TajoMemoryResultSet(null, desc.getSchema(), resultSetBuilder.build(), null);
     ResultSetMetaData meta = rs.getMetaData();
     assertNotNull(meta);
     Schema schema = scoreSchema;

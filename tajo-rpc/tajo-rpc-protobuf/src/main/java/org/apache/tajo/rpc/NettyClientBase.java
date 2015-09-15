@@ -55,8 +55,8 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   private boolean enableMonitor;
 
   private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners =
-      new ConcurrentHashMap<RpcConnectionKey, ChannelEventListener>();
-  private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<Integer, T>();
+      new ConcurrentHashMap<>();
+  private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<>();
 
   public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
       throws ClassNotFoundException, NoSuchMethodException {

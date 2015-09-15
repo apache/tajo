@@ -217,6 +217,7 @@ public class SessionConnection implements Closeable {
 
     ensureOk(response.getState());
     updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+    properties.putAll(sessionVarsCache);
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 

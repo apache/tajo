@@ -29,7 +29,7 @@ import java.util.List;
 
 public class CaseWhenPredicate extends Expr {
   @Expose @SerializedName("WhenExprs")
-  private List<WhenExpr> whens = new ArrayList<WhenExpr>();
+  private List<WhenExpr> whens = new ArrayList<>();
   @Expose @SerializedName("ElseExpr")
   private Expr elseResult;
 
@@ -71,7 +71,7 @@ public class CaseWhenPredicate extends Expr {
   @Override
   public Object clone() throws CloneNotSupportedException {
     CaseWhenPredicate caseWhen = (CaseWhenPredicate) super.clone();
-    caseWhen.whens = new ArrayList<WhenExpr>();
+    caseWhen.whens = new ArrayList<>();
     for (int i = 0; i < whens.size(); i++) {
       caseWhen.whens.add((WhenExpr) whens.get(i).clone());
     }

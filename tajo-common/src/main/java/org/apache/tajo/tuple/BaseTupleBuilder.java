@@ -23,6 +23,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.memory.*;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Deallocatable;
+import org.apache.tajo.util.TUtil;
 
 public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, Deallocatable {
 
@@ -61,6 +62,16 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   @Override
   public void endRow() {
     super.endRow();
+  }
+
+  @Override
+  public void addTuple(Tuple tuple) {
+    if (tuple instanceof UnSafeTuple) {
+      UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
+      addTuple(unSafeTuple);
+    } else {
+      OffHeapRowBlockUtils.convert(tuple, this);
+    }
   }
 
   @Override
