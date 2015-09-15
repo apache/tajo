@@ -69,3 +69,7 @@ message NodeResourceProto {
   optional int32 virtual_cores = 2;
   optional int32 disks = 3;
 }
+
+enum CodecType {
+      SNAPPY = 0;
+}
