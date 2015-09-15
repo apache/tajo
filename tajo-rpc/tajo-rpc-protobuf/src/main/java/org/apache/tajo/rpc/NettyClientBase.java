@@ -39,7 +39,6 @@ import java.lang.reflect.Method;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,8 +55,8 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   private boolean enableMonitor;
 
   private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners =
-      new ConcurrentHashMap<RpcConnectionKey, ChannelEventListener>();
-  private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<Integer, T>();
+      new ConcurrentHashMap<>();
+  private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<>();
 
   public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
       throws ClassNotFoundException, NoSuchMethodException {
@@ -66,10 +65,10 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   }
 
   // should be called from sub class
-  protected void init(ChannelInitializer<Channel> initializer) {
+  protected void init(ChannelInitializer<Channel> initializer, EventLoopGroup eventLoopGroup) {
     this.bootstrap = new Bootstrap();
     this.bootstrap
-        .group(RpcChannelFactory.getSharedClientEventloopGroup())
+        .group(eventLoopGroup)
         .channel(NioSocketChannel.class)
         .handler(initializer)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -116,6 +115,11 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
    * Repeat invoke rpc request until the connection attempt succeeds or exceeded retries
    */
   protected void invoke(final RpcProtos.RpcRequest rpcRequest, final T callback, final int retry) {
+
+    if(getChannel().eventLoop().isShuttingDown()) {
+      LOG.warn("RPC is shutting down");
+      return;
+    }
 
     ChannelPromise promise = getChannel().newPromise();
     promise.addListener(new GenericFutureListener<ChannelFuture>() {
@@ -196,6 +200,11 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     for (; ; ) {
       if (maxRetries > retries) {
         retries++;
+
+        if(getChannel().eventLoop().isShuttingDown()) {
+          LOG.warn("RPC is shutting down");
+          return;
+        }
 
         LOG.warn(getErrorMessage(ExceptionUtils.getMessage(future.cause())) + "\nTry to reconnect : " + getKey().addr);
         try {

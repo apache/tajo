@@ -21,6 +21,7 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
 
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -31,7 +32,7 @@ import org.apache.tajo.util.TUtil;
  * This includes some basic information for materializing data.
  */
 public abstract class PersistentStoreNode extends UnaryNode implements Cloneable {
-  @Expose protected String storageType = "TEXT";
+  @Expose protected String storageType = BuiltinStorages.TEXT;
   @Expose protected KeyValueSet options = new KeyValueSet();
 
   protected PersistentStoreNode(int pid, NodeType nodeType) {

@@ -21,15 +21,23 @@ package org.apache.tajo.jdbc;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.client.QueryClient;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.DefaultTajoException;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class FetchResultSet extends TajoResultSetBase {
   protected QueryClient tajoClient;
   private int fetchRowNum;
   private TajoMemoryResultSet currentResultSet;
+  private Future<TajoMemoryResultSet> nextResultSet;
   private boolean finished;
   // maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
   private int maxRows;
@@ -49,35 +57,44 @@ public class FetchResultSet extends TajoResultSetBase {
     }
 
     try {
-      Tuple tuple = null;
-      if (currentResultSet != null) {
-        currentResultSet.next();
-        tuple = currentResultSet.cur;
-      }
-      if (currentResultSet == null || tuple == null) {
+      while (!finished) {
+        Tuple tuple;
         if (currentResultSet != null) {
-          currentResultSet.close();
-          currentResultSet = null;
-        }
-        currentResultSet = tajoClient.fetchNextQueryResult(queryId, fetchRowNum);
-        if (currentResultSet == null) {
-          finished = true;
-          return null;
-        }
+          currentResultSet.next();
+          tuple = currentResultSet.cur;
 
-        currentResultSet.next();
-        tuple = currentResultSet.cur;
-      }
-      if (tuple == null) {
-        if (currentResultSet != null) {
-          currentResultSet.close();
-          currentResultSet = null;
+          if (tuple == null) {
+            currentResultSet.close();
+            currentResultSet = null;
+          } else {
+            return tuple;
+          }
+
+        } else {
+          if(nextResultSet == null) {
+            nextResultSet = tajoClient.fetchNextQueryResultAsync(queryId, fetchRowNum);
+          } else {
+            currentResultSet = nextResultSet.get();
+
+            if(currentResultSet.totalRow == 0) {
+              currentResultSet.close();
+              currentResultSet = null;
+              nextResultSet = null;
+              finished = true;
+            } else {
+              // pre-fetch
+              nextResultSet = tajoClient.fetchNextQueryResultAsync(queryId, fetchRowNum);
+            }
+          }
         }
-        finished = true;
       }
-      return tuple;
-    } catch (Throwable t) {
+
+      return null;
+    } catch (ExecutionException e) {
+      Throwable t = e.getCause();
       throw new IOException(t.getMessage(), t);
+    } catch (Throwable t) {
+      throw new TajoInternalError(t);
     }
   }
 
@@ -86,6 +103,21 @@ public class FetchResultSet extends TajoResultSetBase {
     if (currentResultSet != null) {
       currentResultSet.close();
       currentResultSet = null;
+    }
+
+    if (nextResultSet != null) {
+      try {
+        nextResultSet.get(1, TimeUnit.SECONDS).close();
+      } catch (ExecutionException e) {
+        Throwable t = e.getCause();
+        if (t instanceof DefaultTajoException) {
+          throw SQLExceptionUtil.toSQLException((DefaultTajoException) t);
+        } else {
+          throw new TajoSQLException(Errors.ResultCode.INTERNAL_ERROR, t, t.getMessage());
+        }
+      } catch (Throwable t) {
+        throw new TajoSQLException(Errors.ResultCode.INTERNAL_ERROR, t, t.getMessage());
+      }
     }
     tajoClient.closeQuery(queryId);
   }

@@ -20,6 +20,8 @@ package org.apache.tajo.tuple.memory;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.TUtil;
 
 public class OffHeapRowBlockWriter extends OffHeapRowWriter {
   private RowBlock rowBlock;
@@ -59,5 +61,17 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
   @Override
   public TajoDataTypes.DataType[] dataTypes() {
     return rowBlock.getDataTypes();
+  }
+
+
+  @Override
+  public void addTuple(Tuple tuple) {
+    if (tuple instanceof UnSafeTuple) {
+      UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
+      addTuple(unSafeTuple);
+      rowBlock.setRows(rowBlock.rows() + 1);
+    } else {
+      OffHeapRowBlockUtils.convert(tuple, this);
+    }
   }
 }

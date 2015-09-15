@@ -22,6 +22,7 @@ import org.antlr.v4.runtime.*;
 import org.apache.commons.lang.StringUtils;
 
 public class SQLErrorListener extends BaseErrorListener {
+
   public void syntaxError(Recognizer<?, ?> recognizer,
                           Object offendingSymbol,
                           int line, int charPositionInLine,
@@ -33,6 +34,7 @@ public class SQLErrorListener extends BaseErrorListener {
     String[] lines = StringUtils.splitPreserveAllTokens(input, '\n');
     String errorLine = lines[line - 1];
 
-    throw new SQLParseError(token, line, charPositionInLine, msg, errorLine);
+    String simpleMessage = "syntax error at or near \"" + token.getText() + "\"";
+    throw new SQLParseError(token, line, charPositionInLine, simpleMessage, errorLine);
   }
 }

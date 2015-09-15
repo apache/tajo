@@ -22,9 +22,13 @@ package org.apache.tajo.exception;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
+/**
+ * Exception for SQL Syntax errors
+ */
 public class SQLSyntaxError extends TajoException {
   private static final long serialVersionUID = 5388279335175632067L;
 
+  @SuppressWarnings("unused")
   public SQLSyntaxError(ReturnState state) {
     super(state);
   }

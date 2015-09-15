@@ -81,11 +81,11 @@ public class TestHAServiceHDFSImpl  {
 
       verifyDataBaseAndTable(tracker);
 
-      assertEquals(2, fs.listStatus(activePath).length);
-      assertEquals(0, fs.listStatus(backupPath).length);
-
       assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
       assertTrue(fs.exists(new Path(activePath, backupMaster.getMasterName().replaceAll(":", "_"))));
+
+      assertEquals(2, fs.listStatus(activePath).length);
+      assertEquals(0, fs.listStatus(backupPath).length);
     } finally {
       backupMaster.stop();
     }

@@ -1,20 +1,20 @@
 explain
 -------------------------------
 SELECTION(6)
-  => Search Cond: default.a.r_name (TEXT) <= default.b.r_name (TEXT)
+  => Search Cond: default.a.r_name (TEXT) <= default.b.n_name (TEXT)
    JOIN(7)(INNER)
-     => Join Cond: default.a.r_regionkey (INT4) = default.b.r_regionkey (INT4)
-     => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)
-     => out schema: {(3) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)}
-     => in schema: {(4) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+     => Join Cond: default.a.r_regionkey (INT4) = default.b.n_regionkey (INT4)
+     => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.n_name (TEXT)
+     => out schema: {(3) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.n_name (TEXT)}
+     => in schema: {(4) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.n_name (TEXT), default.b.n_regionkey (INT4)}
       SCAN(0) on default.region as a
         => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4)
         => out schema: {(2) default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
         => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
-      SCAN(1) on default.region as b
-        => target list: default.b.r_name (TEXT), default.b.r_regionkey (INT4)
-        => out schema: {(2) default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
-        => in schema: {(3) default.b.r_comment (TEXT), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+      SCAN(1) on default.nation as b
+        => target list: default.b.n_name (TEXT), default.b.n_regionkey (INT4)
+        => out schema: {(2) default.b.n_name (TEXT), default.b.n_regionkey (INT4)}
+        => in schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -37,20 +37,20 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
  0: type=Broadcast, tables=default.a
 
 SELECTION(6)
-  => Search Cond: default.a.r_name (TEXT) <= default.b.r_name (TEXT)
+  => Search Cond: default.a.r_name (TEXT) <= default.b.n_name (TEXT)
    JOIN(7)(INNER)
-     => Join Cond: default.a.r_regionkey (INT4) = default.b.r_regionkey (INT4)
-     => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)
-     => out schema: {(3) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT)}
-     => in schema: {(4) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+     => Join Cond: default.a.r_regionkey (INT4) = default.b.n_regionkey (INT4)
+     => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.n_name (TEXT)
+     => out schema: {(3) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.n_name (TEXT)}
+     => in schema: {(4) default.a.r_name (TEXT), default.a.r_regionkey (INT4), default.b.n_name (TEXT), default.b.n_regionkey (INT4)}
       SCAN(0) on default.region as a
         => target list: default.a.r_name (TEXT), default.a.r_regionkey (INT4)
         => out schema: {(2) default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
         => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
-      SCAN(1) on default.region as b
-        => target list: default.b.r_name (TEXT), default.b.r_regionkey (INT4)
-        => out schema: {(2) default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
-        => in schema: {(3) default.b.r_comment (TEXT), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+      SCAN(1) on default.nation as b
+        => target list: default.b.n_name (TEXT), default.b.n_regionkey (INT4)
+        => out schema: {(2) default.b.n_name (TEXT), default.b.n_regionkey (INT4)}
+        => in schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000004 [TERMINAL]
