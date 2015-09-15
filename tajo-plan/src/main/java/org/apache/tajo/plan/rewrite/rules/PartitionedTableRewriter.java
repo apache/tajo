@@ -133,7 +133,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       if (conjunctiveForms == null) {
         partitions = catalog.getAllPartitions(splits[0], splits[1]);
       } else {
-        PartitionsByAlgebraProto request = buildFilterWithDBStore(splits[0], splits[1], conjunctiveForms);
+        PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);
       }
 
@@ -232,7 +232,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param conjunctiveForms
    * @return
    */
-  public static PartitionsByAlgebraProto buildFilterWithDBStore(
+  public static PartitionsByAlgebraProto getPartitionsAlgebraProto(
     String databaseName, String tableName, EvalNode [] conjunctiveForms) {
 
     PartitionsByAlgebraProto.Builder request = PartitionsByAlgebraProto.newBuilder();
