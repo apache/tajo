@@ -36,6 +36,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1134: start-tajo.sh should display WEB UI URL and TajoMaster RPC 
+    address. (Contributed YeonSu Han, committed by hyunsik)
+
     TAJO-1340: Change the default output file format. (jinho)
 
     TAJO-1835: TajoClient::executeQueryAndGetResult should throw 
