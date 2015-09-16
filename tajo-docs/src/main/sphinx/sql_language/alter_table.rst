@@ -102,7 +102,7 @@ You can use ``ALTER TABLE DROP PARTITION`` to drop a partition for a table. This
 Repair partition
 ========================
 
-Tajo stores a list of partitions for each table in its catalogstore. If partitions are manually added to the distributed file system, the metastore is not aware of these partitions. Running the ``ALTER TABLE REPAIR PARTITION`` statement ensures that the tables are properly populated.
+Tajo stores a list of partitions for each table in its catalog. If partitions are manually added to the distributed file system, the metastore is not aware of these partitions. Running the ``ALTER TABLE REPAIR PARTITION`` statement ensures that the tables are properly populated.
 
 *Synopsis*
 
@@ -115,3 +115,12 @@ Tajo stores a list of partitions for each table in its catalogstore. If partitio
 .. code-block:: sql
 
   ALTER TABLE student REPAIR PARTITION;
+
+.. note::
+
+  If you recover partitions in the situation that partitions just exists on catalog and it doesn't exist on file system, Tajo would not make directories on the file system and would print messages to TajoMaster log as following:
+
+  .. code-block:: sql
+
+    Partitions missing from Filesystem:<your partition name>
+
