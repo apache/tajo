@@ -90,7 +90,8 @@ public class ExprTestBase {
   public static void setUp() throws Exception {
     util = new TajoTestingCluster();
     conf = util.getConfiguration();
-    cat = util.startCatalogCluster().getCatalog();
+    util.startCatalogCluster();
+    cat = util.getCatalogService();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();

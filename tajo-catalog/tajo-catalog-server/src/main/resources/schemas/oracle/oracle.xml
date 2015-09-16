@@ -19,6 +19,7 @@
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+      * 9 - 2015-09-12: Allow external catalog store for unit testing (TAJO-1813)
       * 8 - 2015-09-02: Wrong table type problem in catalog (TAJO-1808)
       * 7 - 2015-07-30: Add a column and index for partition keys (TAJO-1346)
       * 6 - 2015-07-24: Merge the index branch into the master branch (TAJO-1300)
@@ -28,7 +29,7 @@
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-  <tns:base version="8">
+  <tns:base version="9">
     <tns:objects>
   		<tns:Object order="0" type="table" name="meta">
   			<tns:sql><![CDATA[
@@ -95,7 +96,8 @@
 					TABLE_TYPE VARCHAR2(128) NOT NULL,
 					PATH VARCHAR2(4000),
 					STORE_TYPE CHAR(16),
-					FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID)
+					FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID),
+					CONSTRAINT C_TABLE_ID_UNIQ UNIQUE (DB_ID, TABLE_NAME)
 				)]]>
 				</tns:sql>
   		</tns:Object>
@@ -135,6 +137,11 @@
 					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>
 				</tns:sql>
+			<!--
+				The constraint for guaranteeing the unique column name should be added to COLUMNS table. However, it can
+				make this table's schema complicated due to nested fields. Fortunately, columns are always converted
+				into 'schema' which has a functionality of checking duplicated column names.
+			-->
   		</tns:Object>
   		<tns:Object order="13" type="table" name="OPTIONS">
   			<tns:sql><![CDATA[
@@ -164,12 +171,13 @@
   				IS_CLUSTERED CHAR NOT NULL,
   				IS_ASCENDING CHAR NOT NULL,
   				FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
-  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
+  				CONSTRAINT C_INDEXES_UNIQ UNIQUE (DB_ID, INDEX_NAME)
 				)]]>
 				</tns:sql>
   		</tns:Object>
-  		<tns:Object order="15" type="index" name="INDEXES_IDX_TID_COLUMN_NAME" dependsOn="INDEXES">
-  			<tns:sql><![CDATA[CREATE INDEX INDEXES_IDX_TID_COLUMN_NAME on INDEXES (TID, COLUMN_NAME)]]></tns:sql>
+  		<tns:Object order="15" type="index" name="IDX_INDEXES_COLUMNS" dependsOn="INDEXES">
+			<tns:sql><![CDATA[CREATE INDEX idx_col_names ON INDEXES (DB_ID,TID,column_names)]]></tns:sql>
   		</tns:Object>
   		<tns:Object order="16" type="table" name="STATS">
   			<tns:sql><![CDATA[
@@ -199,7 +207,8 @@
 					TID INT NOT NULL,
 					PARTITION_NAME VARCHAR2(767),
 					PATH VARCHAR2(4000),
-					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
+					CONSTRAINT C_PARTITIONS_UNIQ UNIQUE (TID, PARTITION_NAME)
 				)]]>
 				</tns:sql>
   		</tns:Object>

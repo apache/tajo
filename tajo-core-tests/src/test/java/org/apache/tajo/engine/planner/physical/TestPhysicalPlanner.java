@@ -99,7 +99,7 @@ public class TestPhysicalPlanner {
     conf = util.getConfiguration();
     testDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestPhysicalPlanner");
     sm = TablespaceManager.getLocalFs();
-    catalog = util.getMiniCatalogCluster().getCatalog();
+    catalog = util.getCatalogService();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     for (FunctionDesc funcDesc : FunctionLoader.findLegacyFunctions()) {

@@ -84,8 +84,8 @@ public class CatalogServer extends AbstractService {
   private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
       List<FunctionDescProto>>();
 
-  private final LinkedMetadataManager linkedMetadataManager;
-  private final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
+  protected final LinkedMetadataManager linkedMetadataManager;
+  protected final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
   private BlockingRpcServer rpcServer;
@@ -270,7 +270,7 @@ public class CatalogServer extends AbstractService {
         return StringListResponse.newBuilder()
             .setState(OK)
             .addAllValues(linkedMetadataManager.getTablespaceNames())
-            .addAllValues(store.getAllDatabaseNames())
+            .addAllValues(store.getAllTablespaceNames())
             .build();
 
       } catch (Throwable t) {
@@ -466,10 +466,14 @@ public class CatalogServer extends AbstractService {
       String databaseName = request.getValue();
 
       if (linkedMetadataManager.existsDatabase(databaseName)) {
-        return errInsufficientPrivilege("alter a table in database '" + databaseName + "'");
+        return errInsufficientPrivilege("drop a table in database '" + databaseName + "'");
       }
 
       if (metaDictionary.isSystemDatabase(databaseName)) {
+        return errInsufficientPrivilege("drop a table in database '" + databaseName + "'");
+      }
+
+      if (databaseName.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
         return errInsufficientPrivilege("drop a table in database '" + databaseName + "'");
       }
 
@@ -812,6 +816,7 @@ public class CatalogServer extends AbstractService {
       try {
         return GetColumnsResponse
             .newBuilder()
+            .setState(OK)
             .addAllColumn(store.getAllColumns())
             .build();
 
@@ -1359,7 +1364,7 @@ public class CatalogServer extends AbstractService {
     public IndexListResponse getAllIndexes(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return IndexListResponse.newBuilder().addAllIndexDesc(store.getAllIndexes()).build();
+        return IndexListResponse.newBuilder().setState(OK).addAllIndexDesc(store.getAllIndexes()).build();
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
