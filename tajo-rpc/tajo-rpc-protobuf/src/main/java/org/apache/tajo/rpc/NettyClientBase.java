@@ -84,7 +84,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         connectionParameters.getProperty(CLIENT_CONNECTION_TIMEOUT, String.valueOf(CLIENT_CONNECTION_TIMEOUT_DEFAULT)));
 
     // Netty only takes integer value range and this is to avoid integer overflow.
-    Preconditions.checkArgument(this.connTimeoutMillis > Integer.MAX_VALUE, "Too long connection timeout");
+    Preconditions.checkArgument(this.connTimeoutMillis < Integer.MAX_VALUE, "Too long connection timeout");
   }
 
   // should be called from sub class
