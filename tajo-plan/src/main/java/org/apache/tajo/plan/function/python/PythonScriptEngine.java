@@ -45,6 +45,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -91,7 +92,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
           ScalarFuncInfo scalarFuncInfo = (ScalarFuncInfo) funcInfo;
           TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
           signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
-              returnType, createParamTypes(scalarFuncInfo.paramNum));
+                  returnType, createParamTypes(scalarFuncInfo.paramNum));
           PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
           invocation.setPython(invocationDesc);
           functionDescs.add(new FunctionDesc(signature, invocation, supplement));
@@ -100,7 +101,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
           if (isValidUdaf(aggFuncInfo)) {
             TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
             signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
-                returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
+                    returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
             PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
 
             invocation.setPythonAggregation(invocationDesc);
@@ -117,7 +118,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   private static boolean isValidUdaf(AggFuncInfo aggFuncInfo) {
     if (aggFuncInfo.className != null && aggFuncInfo.evalInfo != null && aggFuncInfo.mergeInfo != null
-      && aggFuncInfo.getPartialResultInfo != null && aggFuncInfo.getFinalResultInfo != null) {
+            && aggFuncInfo.getPartialResultInfo != null && aggFuncInfo.getFinalResultInfo != null) {
       return true;
     }
     return false;
@@ -255,9 +256,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final String PYTHON_LANGUAGE = "python";
   private static final String TAJO_UTIL_NAME = "tajo_util.py";
   private static final String CONTROLLER_NAME = "controller.py";
-  private static final String BASE_DIR = FileUtils.getTempDirectoryPath() + "/tajo-" + System.getProperty("user.name") + "/python";
-  private static final String PYTHON_CONTROLLER_JAR_PATH = "/python" + File.separator + CONTROLLER_NAME; // Relative to root of tajo jar.
-  private static final String PYTHON_TAJO_UTIL_JAR_PATH = "/python" + File.separator + TAJO_UTIL_NAME; // Relative to root of tajo jar.
+  private static final String BASE_DIR = Paths.get(FileUtils.getTempDirectoryPath()).resolve("tajo-" + System.getProperty("user.name")).resolve("python").toString();
+  private static final String PYTHON_CONTROLLER_JAR_PATH = "/python/" + CONTROLLER_NAME; // Relative to root of tajo jar.
+  private static final String PYTHON_TAJO_UTIL_JAR_PATH = "/python/" + TAJO_UTIL_NAME; // Relative to root of tajo jar.
 
   // Indexes for arguments being passed to external process
   enum COMMAND_IDX {
@@ -479,11 +480,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
    * @throws IOException
    */
   public static String getControllerPath() {
-    return BASE_DIR + File.separator + CONTROLLER_NAME;
+    return Paths.get(BASE_DIR).resolve(CONTROLLER_NAME).toString();
   }
 
   public static String getTajoUtilPath() {
-    return BASE_DIR + File.separator + TAJO_UTIL_NAME;
+    return Paths.get(BASE_DIR).resolve(TAJO_UTIL_NAME).toString();
   }
 
   /**
@@ -539,7 +540,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
       stdin.flush();
     } catch (Throwable e) {
       throwException(stderr, new RuntimeException("Failed adding input to inputQueue while executing "
-          + methodName + " with " + input, e));
+              + methodName + " with " + input, e));
     }
 
     try {
