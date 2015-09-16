@@ -81,7 +81,8 @@ public class TestFullOuterHashJoinExec {
   public void setUp() throws Exception {
     util = new TajoTestingCluster();
     util.initTestDir();
-    catalog = util.startCatalogCluster().getCatalog();
+    util.startCatalogCluster();
+    catalog = util.getCatalogService();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);

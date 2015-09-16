@@ -108,6 +108,21 @@ public class LinkedMetadataManager {
   }
 
   /**
+   * Check if the tablespace exists.
+   *
+   * @param tablespaceName
+   * @return True if the tablespace exists.
+   */
+  public boolean existsTablespace(String tablespaceName) {
+    for (MetadataProvider provider : providerMap.values()) {
+      if (provider.getTablespaceName().equals(tablespaceName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Return all database names
    *
    * @return A collection of database names
