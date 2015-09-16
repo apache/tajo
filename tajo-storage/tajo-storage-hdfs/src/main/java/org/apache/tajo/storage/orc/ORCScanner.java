@@ -172,6 +172,11 @@ public class ORCScanner extends FileScanner {
 
   @Override
   public Tuple next() throws IOException {
+    // EOF
+    if (batchSize == -1) {
+      return null;
+    }
+
     if (currentPosInBatch == batchSize) {
       getNextBatch();
 
@@ -295,6 +300,10 @@ public class ORCScanner extends FileScanner {
    */
   private void getNextBatch() throws IOException {
     batchSize = recordReader.nextBatch();
+
+    // end of file
+    if (batchSize == -1)
+      return;
 
     for (int i=0; i<targetColInfo.length; i++) {
       recordReader.readVector(targetColInfo[i].id, vectors[i]);
