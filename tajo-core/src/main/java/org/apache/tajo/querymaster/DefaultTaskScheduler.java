@@ -822,7 +822,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               int nodes = context.getMasterContext().getWorkerMap().size();
               //this part is to control the assignment of tail and remote task balancing per node
               int tailLimit = 1;
-              if (remainingScheduledObjectNum() > 0) {
+              if (remainingScheduledObjectNum() > 0 && nodes > 0) {
                 tailLimit = Math.max(remainingScheduledObjectNum() / nodes, 1);
               }
 
@@ -839,9 +839,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           // rack-local allocation
           //////////////////////////////////////////////////////////////////////
           attemptId = allocateRackTask(host);
-          if (attemptId != null && hostVolumeMapping != null) {
-            hostVolumeMapping.lastAssignedVolumeId.put(attemptId, HostVolumeMapping.REMOTE);
-          }
 
           //////////////////////////////////////////////////////////////////////
           // random node allocation
@@ -851,6 +848,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               attemptId = leafTasks.iterator().next();
               leafTasks.remove(attemptId);
             }
+          }
+
+          if (attemptId != null && hostVolumeMapping != null) {
+            hostVolumeMapping.lastAssignedVolumeId.put(attemptId, HostVolumeMapping.REMOTE);
           }
           rackAssign++;
         } else {

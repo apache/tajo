@@ -266,6 +266,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1851: Can not release a different rack task. (jinho)
+
     TAJO-1830: Fix race condition in HdfsServiceTracker. (jinho)
 
     TAJO-1727: Avoid to create external table using TableSpace. (jaehwa)
@@ -538,6 +540,10 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1824: Remove partition_keys table from information_schema. (jaehwa)
+
+    TAJO-1813: Allow external catalog store for unit testing. (jihoon)
 
     TAJO-1845: Enforcers in the master plan should be printed in a fixed 
     order. (jihoon)
