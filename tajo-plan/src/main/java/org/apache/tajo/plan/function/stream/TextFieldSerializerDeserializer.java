@@ -237,7 +237,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);
             protobufJsonFormat.merge(bytes, builder);
-            datum = factory.createDatum(builder.build());
+            datum = ProtobufDatumFactory.createDatum(builder.build());
           } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);

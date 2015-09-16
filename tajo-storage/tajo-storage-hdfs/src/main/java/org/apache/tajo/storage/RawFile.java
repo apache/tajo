@@ -338,10 +338,7 @@ public class RawFile {
             byte [] rawBytes = new byte[len];
             buffer.get(rawBytes);
 
-            ProtobufDatumFactory factory = ProtobufDatumFactory.get(columnTypes[i]);
-            Message.Builder builder = factory.newBuilder();
-            builder.mergeFrom(rawBytes);
-            outTuple.put(i, factory.createDatum(builder.build()));
+            outTuple.put(i, ProtobufDatumFactory.createDatum(columnTypes[i], rawBytes));
             break;
           }
 

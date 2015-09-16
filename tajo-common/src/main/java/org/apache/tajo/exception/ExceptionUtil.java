@@ -74,6 +74,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(AMBIGUOUS_FUNCTION, AmbiguousFunctionException.class);
 
     ADD_EXCEPTION(DATATYPE_MISMATCH, DataTypeMismatchException.class);
+    ADD_EXCEPTION(DATATYPE_MISMATCH, InvalidValueForCastException.class);
 
     ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);
     ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);
