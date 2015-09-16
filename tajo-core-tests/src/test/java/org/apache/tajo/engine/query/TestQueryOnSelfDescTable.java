@@ -26,31 +26,38 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
 
-  public TestQueryOnSelfDescTable() throws IOException, TajoException {
+  public TestQueryOnSelfDescTable() throws IOException, TajoException, SQLException {
     super();
 
     executeString(String.format("create external table self_desc_table1 using json location '%s'",
-        getDataSetFile("sample1")));
+        getDataSetFile("sample1"))).close();
 
     executeString(String.format("create external table self_desc_table2 using json location '%s'",
-        getDataSetFile("sample2")));
+        getDataSetFile("sample2"))).close();
 
     executeString(String.format("create external table self_desc_table3 using json location '%s'",
-        getDataSetFile("tweets")));
+        getDataSetFile("tweets"))).close();
 
     executeString(String.format("create external table github using json location '%s'",
-        getDataSetFile("github")));
+        getDataSetFile("github"))).close();
   }
 
   @After
-  public void teardown() throws TajoException {
-    executeString("drop table self_desc_table1");
-    executeString("drop table self_desc_table2");
-    executeString("drop table self_desc_table3");
-    executeString("drop table github");
+  public void teardown() throws TajoException, SQLException {
+    executeString("drop table self_desc_table1").close();
+    executeString("drop table self_desc_table2").close();
+    executeString("drop table self_desc_table3").close();
+    executeString("drop table github").close();
+  }
+
+  @Test
+  public final void testTest() throws Exception {
+    ResultSet res = executeString("SELECT title, name.last_name from self_desc_table1 where name.first_name = 'Arya';");
+    System.out.println(resultSetToString(res));
   }
 
   @Test
@@ -171,5 +178,14 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
         "  self_desc_table3 " +
         "where " +
         "  self_desc_table3.user.favourites_count = name.first_name");
+  }
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(queries = {
+      @QuerySpec("select * from default.lineitem where l_orderkey in (select user.favourites_count::int8 + 1 from self_desc_table3)")
+  })
+  public final void testInSubquery() throws Exception {
+    runSimpleTests();
   }
 }
