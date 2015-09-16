@@ -63,8 +63,8 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
     final long socketTimeoutMills = Long.parseLong(
         connectionParameters.getProperty(CLIENT_SOCKET_TIMEOUT, String.valueOf(CLIENT_SOCKET_TIMEOUT_DEFAULT)));
 
-    init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(),
-        TimeUnit.MILLISECONDS.toNanos(socketTimeoutMills)),eventLoopGroup);
+    init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(), socketTimeoutMills),
+        eventLoopGroup);
   }
 
   @Override
