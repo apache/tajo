@@ -166,17 +166,10 @@ public class ORCScanner extends FileScanner {
     LOG.debug("file fragment { path: " + fragment.getPath() +
       ", start offset: " + fragment.getStartKey() +
       ", length: " + fragment.getLength() + "}");
-
-    getNextBatch();
   }
 
   @Override
   public Tuple next() throws IOException {
-    // EOF
-    if (batchSize == -1) {
-      return null;
-    }
-
     if (currentPosInBatch == batchSize) {
       getNextBatch();
 
