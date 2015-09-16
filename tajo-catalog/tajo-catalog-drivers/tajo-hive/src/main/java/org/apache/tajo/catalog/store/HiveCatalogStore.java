@@ -871,12 +871,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       String tableName = request.getTableName();
 
       TableDescProto tableDesc = getTable(databaseName, tableName);
-
       String filter = getFilter(databaseName, tableName, tableDesc.getPartition().getExpressionSchema().getFieldsList()
         , request.getAlgebra());
-
       list = getPartitionsByFilterFromHiveMetaStore(databaseName, tableName, filter);
-    } catch (TajoException se) {
+    } catch (Exception se) {
       throw new TajoInternalError(se);
     }
 
@@ -971,8 +969,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
         partitions.add(builder.build());
       }
-    } catch (NoSuchObjectException e) {
-      throw new TajoInternalError(e);
     } catch (Exception e) {
       throw new TajoInternalError(e);
     } finally {

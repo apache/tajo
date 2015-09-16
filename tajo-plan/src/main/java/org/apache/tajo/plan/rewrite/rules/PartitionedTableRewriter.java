@@ -146,7 +146,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
     } catch (TajoInternalError e) {
       LOG.error(e.getMessage(), e);
-      partitions = null;
     }
 
     // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
