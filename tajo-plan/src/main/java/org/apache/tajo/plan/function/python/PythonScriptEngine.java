@@ -45,7 +45,6 @@ import org.apache.tajo.util.TUtil;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -256,7 +255,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final String PYTHON_LANGUAGE = "python";
   private static final String TAJO_UTIL_NAME = "tajo_util.py";
   private static final String CONTROLLER_NAME = "controller.py";
-  private static final String BASE_DIR = Paths.get(FileUtils.getTempDirectoryPath()).resolve("tajo-" + System.getProperty("user.name")).resolve("python").toString();
+  private static final String BASE_DIR = FileUtils.getTempDirectoryPath().toString() + File.separator + "tajo-" + System.getProperty("user.name") + File.separator + "python";
   private static final String PYTHON_CONTROLLER_JAR_PATH = "/python/" + CONTROLLER_NAME; // Relative to root of tajo jar.
   private static final String PYTHON_TAJO_UTIL_JAR_PATH = "/python/" + TAJO_UTIL_NAME; // Relative to root of tajo jar.
 
@@ -480,11 +479,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
    * @throws IOException
    */
   public static String getControllerPath() {
-    return Paths.get(BASE_DIR).resolve(CONTROLLER_NAME).toString();
+    return BASE_DIR + File.separator + CONTROLLER_NAME;
   }
 
   public static String getTajoUtilPath() {
-    return Paths.get(BASE_DIR).resolve(TAJO_UTIL_NAME).toString();
+    return BASE_DIR + File.separator + TAJO_UTIL_NAME;
   }
 
   /**
