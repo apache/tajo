@@ -1,3 +1,4 @@
+select n_name, revenue::float4 as revenue from (
 select
 	n_name,
 	sum(l_extendedprice * (1 - l_discount)) as revenue
@@ -21,3 +22,4 @@ group by
 	n_name
 order by
 	revenue desc
+) w;
