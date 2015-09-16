@@ -541,6 +541,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1824: Remove partition_keys table from information_schema. (jaehwa)
+
     TAJO-1813: Allow external catalog store for unit testing. (jihoon)
 
     TAJO-1845: Enforcers in the master plan should be printed in a fixed 
