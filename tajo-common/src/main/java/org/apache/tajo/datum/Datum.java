@@ -24,6 +24,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -66,46 +67,48 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public boolean asBool() {
-    throw new InvalidCastException(type, Type.BOOLEAN);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.BOOLEAN));
   }
 
   public byte asByte() {
-    throw new InvalidCastException(type, Type.BIT);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.BIT));
   }
 
   public char asChar() {
-    throw new InvalidCastException(type, Type.CHAR);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.CHAR));
   }
 
   public short asInt2() {
-    throw new InvalidCastException(type, Type.INT2);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.INT2));
   }
+
   public int asInt4() {
-    throw new InvalidCastException(type, Type.INT4);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.INT4));
   }
+
   public long asInt8() {
-    throw new InvalidCastException(type, Type.INT8);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.INT8));
   }
 
   public byte [] asByteArray() {
-    throw new InvalidCastException(type, Type.BLOB);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.BLOB));
   }
 
   public float asFloat4() {
-    throw new InvalidCastException(type, Type.FLOAT4);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.FLOAT4));
   }
 
   public double asFloat8() {
-    throw new InvalidCastException(type, Type.FLOAT8);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.FLOAT8));
   }
 
   public String asChars() {
-    throw new InvalidCastException(type, Type.TEXT);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.TEXT));
   }
 
   // todo remove this
   public char [] asUnicodeChars() {
-    throw new InvalidCastException(type, Type.TEXT);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.TEXT));
   }
 
   public byte[] asTextBytes() {
@@ -113,7 +116,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public TimeMeta asTimeMeta() {
-    throw new InvalidCastException(type, Type.INT8);
+    throw new TajoRuntimeException(new InvalidCastException(type, Type.INT8));
   }
 
   public boolean isNumeric() {

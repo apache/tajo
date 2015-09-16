@@ -61,7 +61,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class TestStorages {
   private TajoConf conf;
-  private static String TEST_PATH = "target/test-data/TestStorages";
 
   private static String TEST_PROJECTION_AVRO_SCHEMA =
       "{\n" +
@@ -120,6 +119,8 @@ public class TestStorages {
 
   public TestStorages(String type, boolean splitable, boolean statsable, boolean seekable, boolean internalType)
       throws IOException {
+    final String TEST_PATH = "target/test-data/TestStorages";
+
     this.storeType = type;
     this.splitable = splitable;
     this.statsable = statsable;
@@ -143,6 +144,7 @@ public class TestStorages {
         {BuiltinStorages.DRAW, false, true, true, true},
         {BuiltinStorages.RCFILE, true, true, false, false},
         {BuiltinStorages.PARQUET, false, false, false, false},
+        {BuiltinStorages.ORC, false, true, false, false},
         {BuiltinStorages.SEQUENCE_FILE, true, true, false, false},
         {BuiltinStorages.AVRO, false, false, false, false},
         {BuiltinStorages.TEXT, true, true, true, false},
@@ -1005,7 +1007,8 @@ public class TestStorages {
   public void testLessThanSchemaSize() throws IOException {
     /* Internal storage must be same with schema size */
     if (internalType || storeType.equalsIgnoreCase(BuiltinStorages.AVRO)
-        || storeType.equalsIgnoreCase(BuiltinStorages.PARQUET)) {
+        || storeType.equalsIgnoreCase(BuiltinStorages.PARQUET)
+        || storeType.equalsIgnoreCase(BuiltinStorages.ORC)) {
       return;
     }
 
