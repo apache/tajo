@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
@@ -55,7 +56,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddNewColumn() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "EFG");
     executeDDL("alter_table_add_new_column_ddl.sql", null);
-    assertColumnExists(createdNames.get(0),"cool");
+    assertColumnExists(createdNames.get(0), "cool");
   }
 
   @Test
@@ -150,9 +151,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     res.close();
     assertEquals(expectedResult, result);
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
-    assertNotNull(partitions);
-    assertEquals(partitions.size(), 4);
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
 
     Path tablePath = new Path(tableDesc.getUri());
     FileSystem fs = tablePath.getFileSystem(conf);
@@ -163,21 +162,12 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=3")));
 
     // Remove all partitions
-    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 1 , col2 = 1)");
-    res.close();
+    executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 1 , col2 = 1)").close();
+    executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 2 , col2 = 2)").close();
+    executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 2)").close();
+    executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)").close();
 
-    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 2 , col2 = 2)");
-    res.close();
-
-    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 2)");
-    res.close();
-
-    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)");
-    res.close();
-
-    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
-    assertNotNull(partitions);
-    assertEquals(partitions.size(), 0);
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 0);
 
     assertTrue(fs.exists(new Path(tableDesc.getUri())));
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=1/col2=1")));
@@ -185,36 +175,34 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=2")));
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=3")));
 
-    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
-    res.close();
-
-    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
-    assertNotNull(partitions);
-    assertEquals(partitions.size(), 4);
-
+    executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
 
     // Remove just one of existing partitions
-    res = executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)");
-    res.close();
-
-    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
-    res.close();
-
-    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
-    assertNotNull(partitions);
-    assertEquals(partitions.size(), 4);
-
+    executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)").close();
+    executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
 
     // Remove a partition directory from filesystem
     fs.delete(new Path(tablePath.toUri() + "/col1=3/col2=3"), true);
-    res = executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION");
-    res.close();
+    executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
 
-    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
-    assertNotNull(partitions);
-    assertEquals(partitions.size(), 4);
+    // Add abnormal directories
+    assertTrue(fs.mkdirs(new Path(tablePath.toUri() + "/col10=1/col20=1")));
+    assertTrue(fs.mkdirs(new Path(tablePath.toUri() + "/col1=")));
+    assertTrue(fs.mkdirs(new Path(tablePath.toUri() + "/test")));
+    assertEquals(6, fs.listStatus(new Path(tablePath.toUri())).length);
 
+    executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
 
     catalog.dropTable(tableName);
+  }
+
+  private void verifyPartitionCount(String databaseName, String tableName, int expectedCount) {
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), expectedCount);
   }
 }
