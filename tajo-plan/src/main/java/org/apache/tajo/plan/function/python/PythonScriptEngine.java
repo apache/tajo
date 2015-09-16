@@ -91,8 +91,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
         if (funcInfo instanceof ScalarFuncInfo) {
           ScalarFuncInfo scalarFuncInfo = (ScalarFuncInfo) funcInfo;
           TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
-          signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
-                  returnType, createParamTypes(scalarFuncInfo.paramNum));
+          signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName, returnType, createParamTypes(scalarFuncInfo.paramNum));
           PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
           invocation.setPython(invocationDesc);
           functionDescs.add(new FunctionDesc(signature, invocation, supplement));
@@ -100,8 +99,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
           AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
           if (isValidUdaf(aggFuncInfo)) {
             TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
-            signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
-                    returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
+            signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName, returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
             PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
 
             invocation.setPythonAggregation(invocationDesc);
@@ -117,8 +115,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   private static boolean isValidUdaf(AggFuncInfo aggFuncInfo) {
-    if (aggFuncInfo.className != null && aggFuncInfo.evalInfo != null && aggFuncInfo.mergeInfo != null
-            && aggFuncInfo.getPartialResultInfo != null && aggFuncInfo.getFinalResultInfo != null) {
+    if (aggFuncInfo.className != null && aggFuncInfo.evalInfo != null && aggFuncInfo.mergeInfo != null && aggFuncInfo.getPartialResultInfo != null && aggFuncInfo.getFinalResultInfo != null) {
       return true;
     }
     return false;
@@ -539,8 +536,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
       inputHandler.putNext(methodName, input, inSchema);
       stdin.flush();
     } catch (Throwable e) {
-      throwException(stderr, new RuntimeException("Failed adding input to inputQueue while executing "
-              + methodName + " with " + input, e));
+      throwException(stderr, new RuntimeException("Failed adding input to inputQueue while executing " + methodName + " with " + input, e));
     }
 
     try {
