@@ -61,7 +61,6 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class TestStorages {
   private TajoConf conf;
-  private static String TEST_PATH = "target/test-data/TestStorages";
 
   private static String TEST_PROJECTION_AVRO_SCHEMA =
       "{\n" +
@@ -120,6 +119,8 @@ public class TestStorages {
 
   public TestStorages(String type, boolean splitable, boolean statsable, boolean seekable, boolean internalType)
       throws IOException {
+    final String TEST_PATH = "target/test-data/TestStorages";
+
     this.storeType = type;
     this.splitable = splitable;
     this.statsable = statsable;
