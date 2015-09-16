@@ -19,18 +19,21 @@
 package org.apache.tajo.exception;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InvalidCastException extends RuntimeException {
+public class InvalidCastException extends TajoException {
 	private static final long serialVersionUID = -7689027447969916148L;
 
-	public InvalidCastException() {
+	public InvalidCastException(ReturnState state) {
+		super(state);
 	}
 
 	public InvalidCastException(TajoDataTypes.DataType src, TajoDataTypes.DataType target) {
-		super(src.getType().name() + " value cannot be casted to " + target.getType().name());
+		super(Errors.ResultCode.INVALID_CAST, src.getType().name(), target.getType().name());
 	}
 
   public InvalidCastException(TajoDataTypes.Type src, TajoDataTypes.Type target) {
-    super(src.name() + " value cannot be casted to " + target.name());
+    super(Errors.ResultCode.INVALID_CAST, src.name(), target.name());
   }
 }

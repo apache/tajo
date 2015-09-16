@@ -22,6 +22,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.MurmurHash;
 import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -47,7 +48,7 @@ public class Int8Datum extends NumericDatum {
 
   @Override
 	public boolean asBool() {
-		throw new InvalidCastException();
+		throw new TajoRuntimeException(new InvalidCastException(TajoDataTypes.Type.INT8, TajoDataTypes.Type.BOOLEAN));
 	}
 
   @Override
@@ -72,7 +73,7 @@ public class Int8Datum extends NumericDatum {
 
   @Override
 	public byte asByte() {
-		throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidCastException(TajoDataTypes.Type.INT8, TajoDataTypes.Type.BIT));
 	}
 
   @Override

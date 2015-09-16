@@ -23,6 +23,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 import org.apache.tajo.util.datetime.DateTimeFormat;
@@ -167,12 +168,12 @@ public class DateDatum extends Datum {
 
   @Override
   public float asFloat4() {
-    throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidCastException(Type.DATE, Type.FLOAT4));
   }
 
   @Override
   public double asFloat8() {
-    throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidCastException(Type.DATE, Type.FLOAT8));
   }
 
   @Override

@@ -22,6 +22,7 @@ import com.google.common.primitives.Longs;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -73,7 +74,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public int asInt4() {
-    throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidCastException(TajoDataTypes.Type.TIME, TajoDataTypes.Type.INT4));
   }
 
   @Override
@@ -83,12 +84,12 @@ public class TimeDatum extends Datum {
 
   @Override
   public float asFloat4() {
-    throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidCastException(TajoDataTypes.Type.TIME, TajoDataTypes.Type.FLOAT4));
   }
 
   @Override
   public double asFloat8() {
-    throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidCastException(TajoDataTypes.Type.TIME, TajoDataTypes.Type.FLOAT8));
   }
 
   @Override
