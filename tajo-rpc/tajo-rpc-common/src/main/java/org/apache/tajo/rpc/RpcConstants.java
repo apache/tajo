@@ -36,12 +36,12 @@ public class RpcConstants {
   /** Client connection timeout (milliseconds) */
   public static final String CLIENT_CONNECTION_TIMEOUT = "tajo.rpc.client.connection-timeout-ms";
   /** Default client connection timeout 15 seconds */
-  public final static long CLIENT_CONNECTION_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toMicros(15);
+  public final static long CLIENT_CONNECTION_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toMillis(15);
 
   /**
    * Socket timeout (milliseconds). Client connection will check if the connectivity is available after this time.
    */
   public static final String CLIENT_SOCKET_TIMEOUT = "tajo.rpc.client.socket-timeout-ms";
   /** Default socket timeout - 60 seconds */
-  public final static long CLIENT_SOCKET_TIMEOUT_DEFAULT =  TimeUnit.SECONDS.toNanos(180);
+  public final static long CLIENT_SOCKET_TIMEOUT_DEFAULT =  TimeUnit.SECONDS.toMillis(180);
 }
