@@ -37,7 +37,7 @@ CREATE TABLE
   CREATE TABLE [IF NOT EXISTS] <table_name> [(<column_name> <data_type>, ... )]
   [using <storage_type> [with (<key> = <value>, ...)]] [AS <select_statement>]
 
-  CREATE EXTERNAL TABLE [IF NOT EXISTS] <table_name> (<column_name> <data_type>, ... )
+  CREATE EXTERNAL TABLE [IF NOT EXISTS] <table_name> [(<column_name> <data_type>, ... )]
   using <storage_type> [with (<key> = <value>, ...)] LOCATION '<path>'
 
 ``IF NOT EXISTS`` allows ``CREATE [EXTERNAL] TABLE`` statement to avoid an error which occurs when the table does not exist.
@@ -56,7 +56,7 @@ If you want to add an external table that contains compressed data, you should g
   ...
   L_COMMENT text) 
 
-  USING TEXT WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec')
+  USING TEXT WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.SnappyCodec')
   LOCATION 'hdfs://localhost:9010/tajo/warehouse/lineitem_100_snappy';
 
 `compression.codec` parameter can have one of the following compression codecs:
