@@ -63,7 +63,7 @@ public class TestEvalNodeToExprConverter {
   public static void setUp() throws Exception {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
-    catalog = util.getMiniCatalogCluster().getCatalog();
+    catalog = util.getCatalogService();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
