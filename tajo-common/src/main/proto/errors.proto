@@ -93,7 +93,7 @@ enum ResultCode {
 
   // Data Exception (SQLState Class - 22)
   DIVISION_BY_ZERO                      = 451; // SQLState: 22012 - Division by zero
-
+  INVALID_VALUE_FOR_CAST                = 452; // SQLState: 22T01 - Invalid data value for cast
 
   // Section: Class 42 - Syntax Error or Access Rule Violation
   SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 501; // SQLState: 42000
@@ -147,7 +147,6 @@ enum ResultCode {
 
   // Expressions
   INVALID_EXPRESSION                    = 701;
-  INVALID_CAST                          = 702;
   INVALID_DATATYPE                      = 703;
 
   NUMERIC_OVERFLOW                      = 803;  // Numeric value overflow

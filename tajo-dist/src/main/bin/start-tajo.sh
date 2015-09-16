@@ -50,3 +50,25 @@ if [ "$TAJO_PULLSERVER_STANDALONE" = "true" ]; then
 fi
 
 "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" start worker
+
+# Display WEB UI URL and TajoMaster RPC address.
+# Getting configuration value of http address and rpc address.
+HTTP_ADDRESS=$("$bin"/tajo getconf tajo.master.info-http.address)
+RPC_ADDRESS=$("$bin"/tajo getconf tajo.master.client-rpc.address)
+HTTP_ADDRESS=(${HTTP_ADDRESS//:/ })
+RPC_ADDRESS=(${RPC_ADDRESS//:/ })
+
+if [ ${HTTP_ADDRESS[0]} = "0.0.0.0" ] ||
+[ ${HTTP_ADDRESS[0]} = "127.0.0.1" ] ||
+[ ${HTTP_ADDRESS[0]} = "localhost" ]; then
+  HTTP_ADDRESS[0]=`hostname`
+fi
+
+if [ ${RPC_ADDRESS[0]} = "0.0.0.0" ] ||
+[ ${RPC_ADDRESS[0]} = "127.0.0.1" ] ||
+[ ${RPC_ADDRESS[0]} = "localhost" ]; then
+  RPC_ADDRESS[0]=`hostname`
+fi
+
+echo "Tajo master web UI: http://${HTTP_ADDRESS[0]}:${HTTP_ADDRESS[1]}"
+echo "Tajo Client Service: ${RPC_ADDRESS[0]}:${RPC_ADDRESS[1]}"

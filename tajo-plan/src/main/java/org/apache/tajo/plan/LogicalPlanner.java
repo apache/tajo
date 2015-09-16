@@ -1406,7 +1406,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         if (desc.getStats() != null) {
           desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
         }
-      } catch (Throwable t) {
+      } catch (UnsupportedException t) {
         LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume()");
         // -1 means unknown volume size.
         desc.getStats().setNumBytes(-1);

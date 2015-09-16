@@ -78,8 +78,25 @@ public class StorageConstants {
   public static final String DEFAULT_BINARY_SERDE = "org.apache.tajo.storage.BinarySerializerDeserializer";
   public static final String DEFAULT_TEXT_SERDE = "org.apache.tajo.storage.TextSerializerDeserializer";
 
+  // ORC file properties -------------------------------------------------
   public static final String ORC_MAX_MERGE_DISTANCE = "orc.max.merge.distance";
   public static final String DEFAULT_ORC_MAX_MERGE_DISTANCE = "1048576";  // 1MB
+
+  public static final String ORC_STRIPE_SIZE = "orc.stripe.size";
+  public static final String DEFAULT_ORC_STRIPE_SIZE = "67108864"; // 64MB
+
+  public static final String ORC_COMPRESSION_KIND = "orc.compression.kind";
+  public static final String ORC_COMPRESSION_KIND_NONE = "none";
+  public static final String ORC_COMPRESSION_KIND_SNAPPY = "snappy";
+  public static final String ORC_COMPRESSION_KIND_LZO = "lzo";
+  public static final String ORC_COMPRESSION_KIND_ZIP = "zlip";
+  public static final String DEFAULT_ORC_COMPRESSION_KIND = ORC_COMPRESSION_KIND_NONE;
+
+  public static final String ORC_BUFFER_SIZE = "orc.buffer.size";
+  public static final String DEFAULT_ORC_BUFFER_SIZE = "262144"; // 256KB
+
+  public static final String ORC_ROW_INDEX_STRIDE = "orc.rowindex.stride";
+  public static final String DEFAULT_ORC_ROW_INDEX_STRIDE = "10000";
 
   // Parquet file properties -------------------------------------------------
   public static final String PARQUET_DEFAULT_BLOCK_SIZE;

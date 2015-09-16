@@ -598,12 +598,8 @@ public class Query implements EventHandler<QueryEvent> {
             simpleIndexName, createIndexNode.getIndexPath(),
             createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
             createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
-        if (catalog.createIndex(indexDesc)) {
-          LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
-        } else {
-          LOG.info("Index creation " + qualifiedIndexName + " is failed.");
-          throw new TajoInternalError("Cannot create index \"" + qualifiedIndexName + "\".");
-        }
+        catalog.createIndex(indexDesc);
+        LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
       }
     }
 

@@ -58,8 +58,9 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_PARTITION, UndefinedPartitionException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
+    ADD_EXCEPTION(UNDEFINED_INDEX_NAME, UndefinedIndexException.class);
 
-    ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTableException.class);
+    ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTablespaceException.class);
     ADD_EXCEPTION(DUPLICATE_DATABASE, DuplicateDatabaseException.class);
     // ADD_EXCEPTION(DUPLICATE_SCHEMA, );
     ADD_EXCEPTION(DUPLICATE_TABLE, DuplicateTableException.class);
@@ -73,6 +74,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(AMBIGUOUS_FUNCTION, AmbiguousFunctionException.class);
 
     ADD_EXCEPTION(DATATYPE_MISMATCH, DataTypeMismatchException.class);
+    ADD_EXCEPTION(DATATYPE_MISMATCH, InvalidValueForCastException.class);
 
     ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);
     ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);

@@ -198,7 +198,7 @@ public class CatalogUtil {
   public static String [] splitFQTableName(String qualifiedName) {
     String [] splitted = CatalogUtil.splitTableName(qualifiedName);
     if (splitted.length == 1) {
-      throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
+      throw new IllegalArgumentException("Table name is expected to be qualified, but was \""
           + qualifiedName + "\".");
     }
     return splitted;

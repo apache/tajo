@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.CatalogProtocol.*;
@@ -42,6 +43,7 @@ import java.util.List;
 
 import static org.apache.tajo.catalog.CatalogUtil.buildTableIdentifier;
 import static org.apache.tajo.error.Errors.ResultCode.*;
+import static org.apache.tajo.exception.ExceptionUtil.throwIfError;
 import static org.apache.tajo.exception.ExceptionUtil.throwsIfThisError;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
 
@@ -80,13 +82,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final void dropTablespace(final String tablespaceName) throws UndefinedTablespaceException {
+  public final void dropTablespace(final String tablespaceName)
+      throws UndefinedTablespaceException, InsufficientPrivilegeException {
 
     try {
       final BlockingInterface stub = getStub();
       final ReturnState state = stub.dropTablespace(null, ProtoUtil.convertString(tablespaceName));
 
       throwsIfThisError(state, UndefinedTablespaceException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {
@@ -196,13 +200,15 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final void dropDatabase(final String databaseName) throws UndefinedDatabaseException {
+  public final void dropDatabase(final String databaseName)
+      throws UndefinedDatabaseException, InsufficientPrivilegeException {
 
     try {
       final BlockingInterface stub = getStub();
       final ReturnState state = stub.dropDatabase(null, ProtoUtil.convertString(databaseName));
 
       throwsIfThisError(state, UndefinedDatabaseException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {
@@ -598,18 +604,18 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final boolean createIndex(final IndexDesc index) {
+  public final void createIndex(final IndexDesc index)
+      throws DuplicateIndexException, UndefinedDatabaseException, UndefinedTableException {
 
     try {
       final BlockingInterface stub = getStub();
 
       final ReturnState state = stub.createIndex(null, index.getProto());
-      if (isSuccess(state)) {
-        return true;
-      } else {
-        // TODO
-        return false;
-      }
+
+      throwsIfThisError(state, DuplicateIndexException.class);
+      throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, UndefinedDatabaseException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
@@ -745,7 +751,8 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean dropIndex(final String dbName, final String indexName) {
+  public void dropIndex(final String dbName, final String indexName)
+      throws UndefinedIndexException, UndefinedDatabaseException {
     try {
       final IndexNameProto request = IndexNameProto.newBuilder()
           .setDatabaseName(dbName)
@@ -753,8 +760,11 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .build();
 
       final BlockingInterface stub = getStub();
+      final ReturnState state = stub.dropIndex(null, request);
 
-      return isSuccess(stub.dropIndex(null, request));
+      throwsIfThisError(state, UndefinedIndexException.class);
+      throwsIfThisError(state, UndefinedDatabaseException.class);
+      ensureOk(state);
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);

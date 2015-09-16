@@ -62,7 +62,7 @@ public class TestExecutionBlockCursor {
     conf = util.getConfiguration();
     conf.set(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
 
-    catalog = util.getMiniCatalogCluster().getCatalog();
+    catalog = util.getCatalogService();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:!234/warehouse");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     TPCH tpch = new TPCH();

@@ -128,6 +128,9 @@
   </property>
 
   <property>
+  </property>
+
+  <property>
     <name>tajo.storage.scanner-handler.orc.class</name>
     <value>org.apache.tajo.storage.orc.ORCScanner</value>
   </property>
@@ -186,6 +189,11 @@
   <property>
     <name>tajo.storage.appender-handler.parquet.class</name>
     <value>org.apache.tajo.storage.parquet.ParquetAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.orc.class</name>
+    <value>org.apache.tajo.storage.orc.ORCAppender</value>
   </property>
 
   <property>

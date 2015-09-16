@@ -36,6 +36,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1134: start-tajo.sh should display WEB UI URL and TajoMaster RPC 
+    address. (Contributed YeonSu Han, committed by hyunsik)
+
     TAJO-1340: Change the default output file format. (jinho)
 
     TAJO-1835: TajoClient::executeQueryAndGetResult should throw 
@@ -265,6 +268,8 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1851: Can not release a different rack task. (jinho)
 
     TAJO-1830: Fix race condition in HdfsServiceTracker. (jinho)
 
@@ -539,6 +544,10 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1824: Remove partition_keys table from information_schema. (jaehwa)
+
+    TAJO-1813: Allow external catalog store for unit testing. (jihoon)
+
     TAJO-1845: Enforcers in the master plan should be printed in a fixed 
     order. (jihoon)
 
@@ -618,6 +627,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1465: Add ORCFileAppender to write into ORCFile table. 
+    (Contributed by Joyngyoung Park, committed by hyunsik)
 
     TAJO-1841: Eliminate explicit diamond expressions in tajo-{algebra,rpc}
     (hyunsik)

@@ -15,22 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.tajo.storage.thirdparty.orc;
 
-package org.apache.tajo.exception;
+/**
+ * Statistics for boolean columns.
+ */
+public interface BooleanColumnStatistics extends ColumnStatistics {
+  long getFalseCount();
 
-import org.apache.tajo.common.TajoDataTypes;
-
-public class InvalidCastException extends RuntimeException {
-	private static final long serialVersionUID = -7689027447969916148L;
-
-	public InvalidCastException() {
-	}
-
-	public InvalidCastException(TajoDataTypes.DataType src, TajoDataTypes.DataType target) {
-		super(src.getType().name() + " value cannot be casted to " + target.getType().name());
-	}
-
-  public InvalidCastException(TajoDataTypes.Type src, TajoDataTypes.Type target) {
-    super(src.name() + " value cannot be casted to " + target.name());
-  }
+  long getTrueCount();
 }

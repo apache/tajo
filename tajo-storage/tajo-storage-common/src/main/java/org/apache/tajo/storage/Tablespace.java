@@ -32,14 +32,15 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Tablespace manages the functions of storing and reading data.

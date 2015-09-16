@@ -160,10 +160,8 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
         break;
       }
       case PROTOBUF: {
-        ProtobufDatumFactory factory = ProtobufDatumFactory.get(column.getDataType().getCode());
-        Message.Builder builder = factory.newBuilder();
-        builder.mergeFrom(bytes, offset, length);
-        datum = factory.createDatum(builder);
+        datum = ProtobufDatumFactory.createDatum(column.getDataType().getCode(),
+            bytes, offset, length);
         break;
       }
       case INET4:

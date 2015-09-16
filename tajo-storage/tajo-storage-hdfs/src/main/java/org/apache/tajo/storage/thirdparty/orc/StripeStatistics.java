@@ -16,34 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog;
+package org.apache.tajo.storage.thirdparty.orc;
 
-import org.apache.tajo.conf.TajoConf;
+import java.util.List;
 
-import java.io.IOException;
+public class StripeStatistics {
+  private final List<OrcProto.ColumnStatistics> cs;
 
-public class MiniCatalogServer {
-  private CatalogServer catalogServers;
-  
-  public MiniCatalogServer(TajoConf conf) throws IOException {
-    catalogServers = new CatalogServer();
-    catalogServers.init(conf);
-    catalogServers.start();
+  StripeStatistics(List<OrcProto.ColumnStatistics> list) {
+    this.cs = list;
   }
 
-  public MiniCatalogServer(CatalogServer server) {
-    this.catalogServers = server;
-  }
-  
-  public void shutdown() {
-    this.catalogServers.stop();
-  }
-  
-  public CatalogServer getCatalogServer() {
-    return this.catalogServers;
-  }
-  
-  public CatalogService getCatalog() {
-    return new LocalCatalogWrapper(this.catalogServers);
+  /**
+   * Return list of column statistics
+   *
+   * @return column stats
+   */
+  public ColumnStatistics[] getColumnStatistics() {
+    ColumnStatistics[] result = new ColumnStatistics[cs.size()];
+    for (int i = 0; i < result.length; ++i) {
+      result[i] = ColumnStatisticsImpl.deserialize(cs.get(i));
+    }
+    return result;
   }
 }
