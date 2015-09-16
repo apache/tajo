@@ -25,11 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -46,6 +42,7 @@ import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.plan.LogicalPlan;
@@ -60,11 +57,14 @@ import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.memory.MemoryBlock;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +85,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   private Schema outSchema;
   private RowStoreEncoder encoder;
   private PhysicalExec physicalExec;
+  private MemoryRowBlock rowBlock;
+  private boolean eof;
   
   public NonForwardQueryResultSystemScanner(MasterContext context, LogicalPlan plan, QueryId queryId, 
       String sessionId, int maxRow) {
@@ -134,13 +136,16 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     encoder = RowStoreUtil.createEncoder(getLogicalSchema());
     
     physicalExec.init();
+    eof = false;
   }
 
   @Override
-  public void close() throws Exception {
-    tableDesc = null;
-    outSchema = null;
-    encoder = null;
+  public void close() {
+    if(rowBlock != null) {
+      rowBlock.release();
+      rowBlock = null;
+    }
+
     if (physicalExec != null) {
       try {
         physicalExec.close();
@@ -614,6 +619,58 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     }
     
     return rows;
+  }
+
+  @Override
+  public SerializedResultSet nextRowBlock(int fetchRowNum) throws IOException {
+    int rowCount = 0;
+
+    SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
+    resultSetBuilder.setSchema(getLogicalSchema().getProto());
+    resultSetBuilder.setRows(rowCount);
+    int startRow = currentRow;
+    int endRow = startRow + fetchRowNum;
+
+    if (physicalExec == null) {
+      return resultSetBuilder.build();
+    }
+
+    while (currentRow < endRow) {
+      Tuple currentTuple = physicalExec.next();
+
+      if (currentTuple == null) {
+        eof = true;
+        break;
+      } else {
+        if (rowBlock == null) {
+          rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(tableDesc.getLogicalSchema()));
+        }
+
+        rowBlock.getWriter().addTuple(currentTuple);
+        currentRow++;
+        rowCount++;
+
+        if(currentRow >= maxRow) {
+          eof = true;
+          break;
+        }
+      }
+    }
+
+    if (rowCount > 0) {
+      resultSetBuilder.setRows(rowCount);
+      MemoryBlock memoryBlock = rowBlock.getMemory();
+      ByteBuffer rows = memoryBlock.getBuffer().nioBuffer(0, memoryBlock.readableBytes());
+
+      resultSetBuilder.setDecompressedLength(rows.remaining());
+      resultSetBuilder.setSerializedTuples(ByteString.copyFrom(rows));
+      rowBlock.clear();
+    }
+
+    if (eof) {
+      close();
+    }
+    return resultSetBuilder.build();
   }
 
   @Override

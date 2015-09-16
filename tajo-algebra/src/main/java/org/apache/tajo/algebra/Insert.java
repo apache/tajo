@@ -152,7 +152,7 @@ public class Insert extends Expr {
     insert.location = location;
     insert.subquery = (Expr) subquery.clone();
     if (params != null) {
-      insert.params = new HashMap<String, String>(params);
+      insert.params = new HashMap<>(params);
     }
     return insert;
   }

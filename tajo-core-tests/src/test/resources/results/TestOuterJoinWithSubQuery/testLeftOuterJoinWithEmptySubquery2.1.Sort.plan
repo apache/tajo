@@ -46,8 +46,8 @@ Block Id: eb_0000000000000_0000_000005 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.jointable12
- 1: type=Broadcast, tables=default.b
+ 0: type=Broadcast, tables=default.b
+ 1: type=Broadcast, tables=default.jointable12
 
 JOIN(10)(LEFT_OUTER)
   => Join Cond: default.a.id (INT4) = default.b.id (INT4)

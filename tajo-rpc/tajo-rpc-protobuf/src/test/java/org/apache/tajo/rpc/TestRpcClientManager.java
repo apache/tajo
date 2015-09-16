@@ -47,7 +47,7 @@ public class TestRpcClientManager {
       final InetSocketAddress address = server.getListenAddress();
       final RpcClientManager manager = RpcClientManager.getInstance();
 
-      List<Future> tasks = new ArrayList<Future>();
+      List<Future> tasks = new ArrayList<>();
       for (int i = 0; i < parallelCount; i++) {
         tasks.add(executor.submit(new Runnable() {
               @Override

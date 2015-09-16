@@ -3,21 +3,21 @@ explain
 PROJECTION(3)
   => Targets: a_name (TEXT), b_name (TEXT)
   => out schema: {(2) a_name (TEXT), b_name (TEXT)}
-  => in  schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+  => in  schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)}
    SELECTION(6)
-     => Search Cond: default.a.r_name (TEXT) < default.b.r_name (TEXT)
+     => Search Cond: default.a.r_name (TEXT) < default.b.n_name (TEXT)
       JOIN(7)(CROSS)
-        => target list: a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)
-        => out schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
-        => in schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+        => target list: a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)
+        => out schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)}
+        => in schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)}
          SCAN(0) on default.region as a
            => target list: default.a.r_name (TEXT) as a_name, default.a.r_name (TEXT)
            => out schema: {(2) a_name (TEXT), default.a.r_name (TEXT)}
            => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
-         SCAN(1) on default.region as b
-           => target list: default.b.r_name (TEXT) as b_name, default.b.r_name (TEXT)
-           => out schema: {(2) b_name (TEXT), default.b.r_name (TEXT)}
-           => in schema: {(3) default.b.r_comment (TEXT), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+         SCAN(1) on default.nation as b
+           => target list: default.b.n_name (TEXT) as b_name, default.b.n_name (TEXT)
+           => out schema: {(2) b_name (TEXT), default.b.n_name (TEXT)}
+           => in schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -42,21 +42,21 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
 PROJECTION(3)
   => Targets: a_name (TEXT), b_name (TEXT)
   => out schema: {(2) a_name (TEXT), b_name (TEXT)}
-  => in  schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+  => in  schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)}
    SELECTION(6)
-     => Search Cond: default.a.r_name (TEXT) < default.b.r_name (TEXT)
+     => Search Cond: default.a.r_name (TEXT) < default.b.n_name (TEXT)
       JOIN(7)(CROSS)
-        => target list: a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)
-        => out schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
-        => in schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.r_name (TEXT)}
+        => target list: a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)
+        => out schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)}
+        => in schema: {(4) a_name (TEXT), b_name (TEXT), default.a.r_name (TEXT), default.b.n_name (TEXT)}
          SCAN(0) on default.region as a
            => target list: default.a.r_name (TEXT) as a_name, default.a.r_name (TEXT)
            => out schema: {(2) a_name (TEXT), default.a.r_name (TEXT)}
            => in schema: {(3) default.a.r_comment (TEXT), default.a.r_name (TEXT), default.a.r_regionkey (INT4)}
-         SCAN(1) on default.region as b
-           => target list: default.b.r_name (TEXT) as b_name, default.b.r_name (TEXT)
-           => out schema: {(2) b_name (TEXT), default.b.r_name (TEXT)}
-           => in schema: {(3) default.b.r_comment (TEXT), default.b.r_name (TEXT), default.b.r_regionkey (INT4)}
+         SCAN(1) on default.nation as b
+           => target list: default.b.n_name (TEXT) as b_name, default.b.n_name (TEXT)
+           => out schema: {(2) b_name (TEXT), default.b.n_name (TEXT)}
+           => in schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000004 [TERMINAL]

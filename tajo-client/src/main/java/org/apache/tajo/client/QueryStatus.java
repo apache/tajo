@@ -21,6 +21,7 @@ package org.apache.tajo.client;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.ipc.ClientProtos.GetQueryStatusResponse;
+import org.apache.tajo.util.VersionInfo;
 
 public class QueryStatus {
   private QueryId queryId;
@@ -43,6 +44,8 @@ public class QueryStatus {
     hasResult = proto.getHasResult();
     if (proto.hasErrorMessage()) {
       errorText = proto.getErrorMessage();
+    } else {
+      errorText = "Internal error. Please check out log files in ${tajo_install_dir}/logs files.";
     }
     if (proto.hasErrorTrace()) {
       errorTrace = proto.getErrorTrace();

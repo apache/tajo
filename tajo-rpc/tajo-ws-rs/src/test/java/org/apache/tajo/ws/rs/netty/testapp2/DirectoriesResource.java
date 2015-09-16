@@ -34,7 +34,7 @@ public class DirectoriesResource {
   public Response getAllDirectories() {
     Collection<Directory> directories = DirectoriesDao.getInstance().getDirectoryMap().values();
     GenericEntity<Collection<Directory>> dirEntities =
-        new GenericEntity<Collection<Directory>>(directories, Collection.class);
+        new GenericEntity<>(directories, Collection.class);
     return Response.ok(dirEntities).build();
   }
 

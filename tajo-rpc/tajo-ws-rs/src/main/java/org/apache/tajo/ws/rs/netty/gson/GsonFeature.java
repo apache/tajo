@@ -37,7 +37,7 @@ public class GsonFeature implements Feature {
   }
   
   public GsonFeature(Map<Type, GsonSerDerAdapter<?>> adapterMap) {
-    this.adapterMap = new HashMap<Type, GsonSerDerAdapter<?>>(adapterMap.size());
+    this.adapterMap = new HashMap<>(adapterMap.size());
     this.adapterMap.putAll(adapterMap);
   }
 

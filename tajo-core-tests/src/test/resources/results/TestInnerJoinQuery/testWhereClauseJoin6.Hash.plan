@@ -58,8 +58,8 @@ Block Id: eb_0000000000000_0000_000007 [LEAF]
 
 [Enforcers]
  0: type=Broadcast, tables=default.part
- 1: type=Broadcast, tables=default.supplier
- 2: type=Broadcast, tables=default.partsupp
+ 1: type=Broadcast, tables=default.partsupp
+ 2: type=Broadcast, tables=default.supplier
 
 SORT(21)
   => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.part.p_partkey (INT4) (asc),default.nation.n_name (TEXT) (asc)

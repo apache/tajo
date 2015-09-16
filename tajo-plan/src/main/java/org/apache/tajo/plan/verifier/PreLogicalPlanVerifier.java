@@ -168,17 +168,20 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
   }
 
-  private boolean assertRelationNoExistence(Context context, String tableName) {
+  private static String guessTableName(Context context, String givenName) {
     String qualifiedName;
-
-    if (CatalogUtil.isFQTableName(tableName)) {
-      qualifiedName = tableName;
+    if (CatalogUtil.isFQTableName(givenName)) {
+      qualifiedName = givenName;
     } else {
-      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), tableName);
+      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), givenName);
     }
-    if(qualifiedName == null) {
-      System.out.println("A");
-    }
+
+    return qualifiedName;
+  }
+
+  private boolean assertRelationNoExistence(Context context, String tableName) {
+    String qualifiedName = guessTableName(context, tableName);
+
     if (catalog.existsTable(qualifiedName)) {
       context.state.addVerification(new DuplicateTableException(qualifiedName));
       return false;

@@ -52,8 +52,8 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
 [q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.a.o_custkey (INT4), default.lineitem.l_orderkey (INT4), default.part.p_name (TEXT), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.part
- 1: type=Broadcast, tables=default.orders
+ 0: type=Broadcast, tables=default.orders
+ 1: type=Broadcast, tables=default.part
 
 SORT(18)
   => Sort Keys: default.lineitem.l_orderkey (INT4) (asc),default.a.o_custkey (INT4) (asc),default.part.p_name (TEXT) (asc)

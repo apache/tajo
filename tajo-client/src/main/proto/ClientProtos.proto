@@ -27,6 +27,7 @@ import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
+import "DataTypes.proto";
 
 message CreateSessionRequest {
   required string username = 1;
@@ -114,9 +115,11 @@ message GetQueryStatusRequest {
 }
 
 message SerializedResultSet {
-  optional SchemaProto schema = 1;
-  optional int32 bytesNum = 2;
-  repeated bytes serializedTuples = 3;
+  required SchemaProto schema = 1;
+  required int32 rows = 2;
+  optional int32 decompressedLength = 3;
+  optional CodecType decompressCodec = 4;
+  optional bytes serializedTuples = 5;
 }
 
 message SubmitQueryResponse {
@@ -161,6 +164,7 @@ message GetQueryResultDataRequest {
   required SessionIdProto sessionId = 1;
   required QueryIdProto queryId = 2;
   required int32 fetchRowNum = 3;
+  optional CodecType compressCodec = 4;
 }
 
 message GetQueryResultDataResponse {
