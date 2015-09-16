@@ -62,16 +62,16 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
 
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
-  private boolean idleTimeoutEnabled;
 
   /**
    * Constructor of NettyClientBase
    *
    * @param rpcConnectionKey RpcConnectionKey
-   * @param connectionParameters Connection Parameters
+   * @param connectionParameters Connection Parameters (see RpcConstants)
    *
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
+   * @see RpcConstants
    */
   public NettyClientBase(RpcConnectionKey rpcConnectionKey, Properties connectionParameters)
       throws ClassNotFoundException, NoSuchMethodException {
@@ -310,9 +310,6 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
       MonitorClientHandler handler = ctx.pipeline().get(MonitorClientHandler.class);
-      if (handler != null) {
-        idleTimeoutEnabled = true;
-      }
 
       for (ChannelEventListener listener : getSubscribers()) {
         listener.channelRegistered(ctx);
@@ -409,14 +406,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 
-      if (!idleTimeoutEnabled && evt instanceof IdleStateEvent) {
-        IdleStateEvent e = (IdleStateEvent) evt;
-        /* If all requests is done and event is triggered, idle channel close. */
-        if (e.state() == IdleState.READER_IDLE && requests.isEmpty()) {
-          ctx.close();
-          LOG.info("Idle connection closed successfully :" + ctx.channel());
-        }
-      } else if (evt instanceof MonitorStateEvent) {
+      if (evt instanceof MonitorStateEvent) {
         MonitorStateEvent e = (MonitorStateEvent) evt;
         if (e.state() == MonitorStateEvent.MonitorState.PING_EXPIRED) {
           exceptionCaught(ctx, new ServiceException("Server has not respond: " + ctx.channel()));

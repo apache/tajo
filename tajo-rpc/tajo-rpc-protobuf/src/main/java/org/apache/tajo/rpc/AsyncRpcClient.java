@@ -18,7 +18,6 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
 import io.netty.channel.ChannelHandler;
@@ -61,7 +60,7 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
     this.rpcChannel = new ProxyRpcChannel();
     this.handler = new ClientChannelInboundHandler();
 
-    long socketTimeoutMills = Long.parseLong(
+    final long socketTimeoutMills = Long.parseLong(
         connectionParameters.getProperty(CLIENT_SOCKET_TIMEOUT, String.valueOf(CLIENT_SOCKET_TIMEOUT_DEFAULT)));
 
     init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(),
