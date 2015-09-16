@@ -123,7 +123,7 @@ public class TestBlockingRpc {
         new RpcClientManager.RpcConnectionKey(
             RpcUtils.getConnectAddress(server.getListenAddress()),
             DummyProtocol.class, false);
-    client = manager.newClient(rpcConnectionKey, retries, true, 10, TimeUnit.SECONDS);
+    client = manager.newClient(rpcConnectionKey, retries, 1000, true, 10);
     assertTrue(client.isConnected());
     stub = client.getStub();
   }
@@ -320,8 +320,7 @@ public class TestBlockingRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, false);
 
-    BlockingRpcClient client = manager.newClient(rpcConnectionKey,
-        retries, false, 0, TimeUnit.MILLISECONDS);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 0);
     assertTrue(client.isConnected());
 
     BlockingInterface stub = client.getStub();
@@ -412,7 +411,7 @@ public class TestBlockingRpc {
   public void testStubRecovery() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
-    BlockingRpcClient client = manager.newClient(rpcConnectionKey, 1, false, 0, TimeUnit.MILLISECONDS);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, 1, 1000, false, 0);
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -443,7 +442,7 @@ public class TestBlockingRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
     //500 millis idle timeout
-    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, false, 500, TimeUnit.MILLISECONDS);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 500);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);   //timeout
@@ -464,7 +463,7 @@ public class TestBlockingRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
 
     //500 millis request timeout
-    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, true, 500, TimeUnit.MILLISECONDS);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, true, 500);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);
@@ -481,7 +480,7 @@ public class TestBlockingRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
     //500 millis idle timeout
-    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, false, 500, TimeUnit.MILLISECONDS);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 500);
     assertTrue(client.isConnected());
 
     BlockingInterface stub = client.getStub();
@@ -504,7 +503,7 @@ public class TestBlockingRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
 
     //500 millis request timeout
-    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, true, 500, TimeUnit.MILLISECONDS);
+    BlockingRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, true, 500);
     assertTrue(client.isConnected());
 
     BlockingInterface stub = client.getStub();

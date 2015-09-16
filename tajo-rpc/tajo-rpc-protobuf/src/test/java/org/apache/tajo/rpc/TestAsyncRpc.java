@@ -132,7 +132,7 @@ public class TestAsyncRpc {
     rpcConnectionKey = new RpcClientManager.RpcConnectionKey(
         RpcUtils.getConnectAddress(server.getListenAddress()),
         DummyProtocol.class, true);
-    client = manager.newClient(rpcConnectionKey, retries, true, 10, TimeUnit.SECONDS);
+    client = manager.newClient(rpcConnectionKey, retries, 1000, true, 10);
     assertTrue(client.isConnected());
     stub = client.getStub();
   }
@@ -349,8 +349,7 @@ public class TestAsyncRpc {
 
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey,
-        retries, false, 0, TimeUnit.MILLISECONDS);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 0);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();
@@ -455,7 +454,7 @@ public class TestAsyncRpc {
   public void testStubRecovery() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, 2, false, 0, TimeUnit.MILLISECONDS);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, 2, 1000, false, 0);
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -487,7 +486,7 @@ public class TestAsyncRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
     //500 millis idle timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, false, 500, TimeUnit.MILLISECONDS);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 500);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);  //timeout
@@ -508,7 +507,7 @@ public class TestAsyncRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
 
     //500 millis request timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, true, 500, TimeUnit.MILLISECONDS);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, true, 500);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);
@@ -525,7 +524,7 @@ public class TestAsyncRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
     //500 millis idle timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, false, 500, TimeUnit.MILLISECONDS);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 500);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();
@@ -551,7 +550,7 @@ public class TestAsyncRpc {
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
 
     //500 millis request timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, true, 500, TimeUnit.MILLISECONDS);
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, true, 500);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();

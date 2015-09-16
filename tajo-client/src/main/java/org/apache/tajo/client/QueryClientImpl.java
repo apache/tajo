@@ -512,12 +512,7 @@ public class QueryClientImpl implements QueryClient {
 
       qmClient = manager.newClient(
           qmAddress,
-          QueryMasterClientProtocol.class,
-          false,
-          manager.getRetries(),
-          false, manager.getTimeoutSeconds(),
-          TimeUnit.SECONDS
-      );
+          QueryMasterClientProtocol.class, false);
 
 
       conn.checkSessionAndGet(conn.getTajoMasterConnection());

@@ -34,16 +34,15 @@ import java.util.concurrent.TimeUnit;
 class ProtoClientChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
   private final ChannelHandler handler;
+  private final boolean useIdleTimeout;
   private final long timeoutTimeNanos;
-  private final boolean enablePing;
 
   public ProtoClientChannelInitializer(ChannelHandler handler, MessageLite defaultInstance,
-                                       long timeoutTimeNanos,
-                                       boolean enablePing) {
+                                       boolean useIdleTimeout, long idleTimeoutNanos) {
     this.handler = handler;
     this.defaultInstance = defaultInstance;
-    this.timeoutTimeNanos = timeoutTimeNanos;
-    this.enablePing = enablePing;
+    this.timeoutTimeNanos = idleTimeoutNanos;
+    this.useIdleTimeout = useIdleTimeout;
   }
 
   @Override
@@ -52,7 +51,7 @@ class ProtoClientChannelInitializer extends ChannelInitializer<Channel> {
     pipeline.addLast("idleStateHandler",
         new IdleStateHandler(timeoutTimeNanos, timeoutTimeNanos / 2, 0, TimeUnit.NANOSECONDS));
 
-    if (enablePing) pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
+    if (useIdleTimeout) pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
 
     pipeline.addLast("frameDecoder", new ProtobufVarint32FrameDecoder());
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));

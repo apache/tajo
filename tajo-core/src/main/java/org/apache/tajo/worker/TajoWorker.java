@@ -154,7 +154,7 @@ public class TajoWorker extends CompositeService {
 
     RpcClientManager rpcManager = RpcClientManager.getInstance();
     rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
-    rpcManager.setTimeoutSeconds(
+    rpcManager.setSocketTimeout(
         systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
 
     serviceTracker = ServiceTrackerFactory.get(systemConf);

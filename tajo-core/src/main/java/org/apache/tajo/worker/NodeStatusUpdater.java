@@ -149,8 +149,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
     RpcClientManager rpcManager = RpcClientManager.getInstance();
     rmClient = rpcManager.newClient(serviceTracker.getResourceTrackerAddress(),
-        TajoResourceTrackerProtocol.class, true, rpcManager.getRetries(),
-        false, rpcManager.getTimeoutSeconds(), TimeUnit.SECONDS);
+        TajoResourceTrackerProtocol.class, true, rpcManager.getRetries());
     return rmClient.getStub();
   }
 

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.rpc;
 
+import java.util.concurrent.TimeUnit;
+
 public class RpcConstants {
 
   public static final String PING_PACKET = "TAJO";
@@ -25,8 +27,12 @@ public class RpcConstants {
   public static final String RPC_CLIENT_TIMEOUT_SECS = "tajo.rpc.client.timeout-secs";
 
   public static final int DEFAULT_RPC_RETRIES = 3;
-  public static final int DEFAULT_RPC_TIMEOUT_SECONDS = 180;
-  public static final int DEFAULT_CONNECT_TIMEOUT = 20000;  // 20 sec
+
   public static final int DEFAULT_PAUSE = 1000; // 1 sec
   public static final int DEFAULT_FUTURE_TIMEOUT_SECONDS = 10;
+
+  /** default connection timeout 15 seconds */
+  public final static long DEFAULT_CONNECTION_TIMEOUT = TimeUnit.SECONDS.toMicros(15);
+  /** default socket timeout - 60 seconds */
+  public final static long DEFAULT_SOCKET_TIMEOUT =  TimeUnit.SECONDS.toNanos(60);
 }

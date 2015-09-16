@@ -125,14 +125,7 @@ public class SessionConnection implements Closeable {
         RpcClientManager.cleanup(client);
 
         // Client do not closed on idle state for support high available
-        this.client = manager.newClient(
-            getTajoMasterAddr(),
-            TajoMasterClientProtocol.class,
-            false,
-            manager.getRetries(),
-            false, 0,
-            TimeUnit.SECONDS
-        );
+        this.client = manager.newClient(getTajoMasterAddr(), TajoMasterClientProtocol.class, false );
         connections.incrementAndGet();
 
       } catch (Throwable t) {

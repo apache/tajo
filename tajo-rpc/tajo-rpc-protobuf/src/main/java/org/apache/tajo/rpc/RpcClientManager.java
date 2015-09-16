@@ -39,7 +39,8 @@ import java.util.concurrent.TimeUnit;
 public class RpcClientManager {
   private static final Log LOG = LogFactory.getLog(RpcClientManager.class);
 
-  private volatile int timeoutSeconds = RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS;
+  private volatile long connTimeout = RpcConstants.DEFAULT_CONNECTION_TIMEOUT;
+  private volatile long socketTimeout = RpcConstants.DEFAULT_SOCKET_TIMEOUT;
   private volatile int retries = RpcConstants.DEFAULT_RPC_RETRIES;
 
   /* entries will be removed by ConnectionCloseFutureListener */
@@ -61,26 +62,28 @@ public class RpcClientManager {
   }
 
   private <T extends NettyClientBase> T makeClient(RpcConnectionKey rpcConnectionKey,
-                                                   int connRetryNum,
-                                                   boolean useIdleTimeout, long idleTimeout, TimeUnit timeUnit)
+                                                   int retryNum,
+                                                   long connTimeout,
+                                                   boolean useSocketTimeout,
+                                                   long socketTimeout)
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
-    return makeClient(rpcConnectionKey, NettyUtils.getDefaultEventLoopGroup(), connRetryNum, useIdleTimeout,
-        idleTimeout, timeUnit);
+    return makeClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, retryNum, connTimeout, useSocketTimeout, socketTimeout);
   }
 
-  private <T extends NettyClientBase> T makeClient(RpcConnectionKey rpcConnectionKey,
-                                                   EventLoopGroup eventLoopGroup,
-                                                   int connRetryNum,
-                                                   boolean useIdleTimeout, long idleTimeout, TimeUnit timeUnit)
+  private <T extends NettyClientBase> T makeClient(EventLoopGroup eventLoopGroup,
+                                                   RpcConnectionKey rpcConnectionKey,
+                                                   int retryNum,
+                                                   long connTimeout,
+                                                   boolean useSocketTimeout, long socketTimeout)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(
-          rpcConnectionKey, connRetryNum, idleTimeout, timeUnit, useIdleTimeout, eventLoopGroup);
+      client = new AsyncRpcClient(eventLoopGroup, rpcConnectionKey, retryNum, connTimeout, useSocketTimeout,
+          socketTimeout);
 
     } else {
-      client = new BlockingRpcClient(
-          rpcConnectionKey, eventLoopGroup, connRetryNum, useIdleTimeout, idleTimeout, timeUnit);
+      client = new BlockingRpcClient(eventLoopGroup, rpcConnectionKey, retryNum, connTimeout, useSocketTimeout,
+          socketTimeout);
     }
     return (T) client;
   }
@@ -98,7 +101,7 @@ public class RpcClientManager {
     synchronized (clients) {
       client = clients.get(key);
       if (client == null) {
-        clients.put(key, client = makeClient(key, retries, true, getTimeoutSeconds(), TimeUnit.SECONDS));
+        clients.put(key, client = makeClient(key, retries, connTimeout, true, getSocketTimeout()));
       }
     }
 
@@ -129,16 +132,17 @@ public class RpcClientManager {
    * Connect a {@link NettyClientBase} to the remote {@link NettyServerBase}, and returns rpc client by protocol.
    * This client does not managed. It should close.
    */
-  public synchronized <T extends NettyClientBase> T newClient(InetSocketAddress addr,
+  public <T extends NettyClientBase> T newClient(InetSocketAddress addr,
                                                               Class<?> protocolClass,
                                                               boolean asyncMode,
-                                                              int connRetryNum,
+                                                              int retryNum,
+                                                              long connTimeout,
                                                               boolean useIdleTimeout,
-                                                              long idleTimeout,
-                                                              TimeUnit timeUnit)
+                                                              long idleTimeout)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
-    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), connRetryNum, useIdleTimeout, idleTimeout, timeUnit);
+    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), retryNum, connTimeout, useIdleTimeout,
+        idleTimeout);
   }
 
   public synchronized <T extends NettyClientBase> T newClient(InetSocketAddress addr,
@@ -147,16 +151,12 @@ public class RpcClientManager {
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
     return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode),
-        retries, true, getTimeoutSeconds(), TimeUnit.SECONDS);
+        retries, 0, true, TimeUnit.SECONDS.toMillis(getSocketTimeout()));
   }
 
   /**
    *
    * @param key                 RpcConnectionKey
-   * @param connRetryNum        Connection Retry Number
-   * @param useIdueTimeout  Idle timeout is enabled if true
-   * @param idleTimeout Idle timeout duration based on timeUnit
-   * @param timeUnit            Time unit
    * @param <T>                 Rpc Protocol Class
    * @return                    Rpc Client Class
    * @throws NoSuchMethodException
@@ -164,14 +164,14 @@ public class RpcClientManager {
    * @throws ConnectException
    */
   public synchronized <T extends NettyClientBase> T newClient(RpcConnectionKey key,
-                                                              int connRetryNum,
-                                                              boolean useIdueTimeout,
-                                                              long idleTimeout,
-                                                              TimeUnit timeUnit)
+                                                              int retryNum,
+                                                              long connTimeout,
+                                                              boolean useIdleTimeout,
+                                                              long idleTimeout)
 
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
-    T client = makeClient(key, connRetryNum, useIdueTimeout, idleTimeout, timeUnit);
+    T client = makeClient(key, retryNum, connTimeout, useIdleTimeout, idleTimeout);
     client.connect();
     assert client.isConnected();
     return client;
@@ -220,12 +220,12 @@ public class RpcClientManager {
     }
   }
 
-  public int getTimeoutSeconds() {
-    return timeoutSeconds;
+  public long getSocketTimeout() {
+    return socketTimeout;
   }
 
-  public void setTimeoutSeconds(int timeoutSeconds) {
-    this.timeoutSeconds = timeoutSeconds;
+  public void setSocketTimeout(int socketTimeout) {
+    this.socketTimeout = socketTimeout;
   }
 
   public int getRetries() {

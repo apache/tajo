@@ -18,6 +18,7 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.google.protobuf.ServiceException;
@@ -49,13 +50,10 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   public final static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
   private final RpcConnectionKey key;
-  public final static int CONNECTION_RETRY_NUM_DEFAULT = 0;
-  private final int maxRetryNumToConnect;
-  /**
-   * Connection Timeout milli seconds (default is 15 seconds)
-   */
-  private final int connTimeoutMillis;
-  public final static int CONNECTION_TIMEOUT_DEFAULT = 15 * 1000;
+  /** Number to retry for connection and RPC invocation */
+  private final int maxRetryNum;
+  /** Connection Timeout */
+  private final long connTimeoutMillis;
 
   private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners = new ConcurrentHashMap<>();
   private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<>();
@@ -64,24 +62,24 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   private volatile ChannelFuture channelFuture;
   private boolean idleTimeoutEnabled;
 
-  public NettyClientBase(RpcConnectionKey rpcConnectionKey) throws ClassNotFoundException, NoSuchMethodException {
-    this(rpcConnectionKey, CONNECTION_RETRY_NUM_DEFAULT, CONNECTION_TIMEOUT_DEFAULT);
-  }
-
   /**
    * Constructor of NettyClientBase
    *
    * @param rpcConnectionKey RpcConnectionKey
-   * @param retryNumToConnect How many number it will retry
+   * @param maxRetryNum How many number it will retry
+   * @param connTimeout Connection Timeout (milliseconds)
    *
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
-  public NettyClientBase(RpcConnectionKey rpcConnectionKey, int retryNumToConnect, int connTimeoutMillis)
-      throws ClassNotFoundException, NoSuchMethodException {
+  public NettyClientBase(RpcConnectionKey rpcConnectionKey,
+                         int maxRetryNum,
+                         long connTimeout) throws ClassNotFoundException, NoSuchMethodException {
     this.key = rpcConnectionKey;
-    this.maxRetryNumToConnect = retryNumToConnect;
-    this.connTimeoutMillis = connTimeoutMillis;
+    this.maxRetryNum = maxRetryNum;
+    this.connTimeoutMillis = connTimeout;
+    // Netty only takes integer value range and this is to avoid integer overflow.
+    Preconditions.checkArgument(this.connTimeoutMillis > Integer.MAX_VALUE, "Too long connection timeout");
   }
 
   // should be called from sub class
@@ -93,10 +91,9 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         .handler(initializer)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.SO_REUSEADDR, true)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, RpcConstants.DEFAULT_CONNECT_TIMEOUT)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) connTimeoutMillis)
         .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
-        .option(ChannelOption.TCP_NODELAY, true)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, connTimeoutMillis);
+        .option(ChannelOption.TCP_NODELAY, true);
   }
 
   public RpcClientManager.RpcConnectionKey getKey() {
@@ -153,7 +150,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
           getHandler().registerCallback(rpcRequest.getId(), callback);
         } else {
 
-          if (!future.channel().isActive() && retry < maxRetryNumToConnect) {
+          if (!future.channel().isActive() && retry < maxRetryNum) {
 
             /* schedule the current request for the retry */
             LOG.warn(future.cause() + " Try to reconnect :" + getKey().addr);
@@ -207,7 +204,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     ChannelFuture f = doConnect(address).awaitUninterruptibly();
 
     if (!f.isSuccess()) {
-      if (maxRetryNumToConnect > 0) {
+      if (maxRetryNum > 0) {
         doReconnect(address, f, ++retries);
       } else {
         throw new ConnectException(ExceptionUtils.getMessage(f.cause()));
@@ -219,7 +216,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
       throws ConnectException {
 
     for (; ; ) {
-      if (maxRetryNumToConnect > retries) {
+      if (maxRetryNum > retries) {
         retries++;
 
         if(getChannel().eventLoop().isShuttingDown()) {
