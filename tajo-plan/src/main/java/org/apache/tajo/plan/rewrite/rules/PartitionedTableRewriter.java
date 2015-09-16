@@ -136,7 +136,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);
       }
-
       // If catalog returns list of table partitions successfully, build path lists for scanning table data.
       if (partitions != null) {
         filteredPaths = new Path[partitions.size()];
