@@ -539,6 +539,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1813: Allow external catalog store for unit testing. (jihoon)
+
     TAJO-1845: Enforcers in the master plan should be printed in a fixed 
     order. (jihoon)
 

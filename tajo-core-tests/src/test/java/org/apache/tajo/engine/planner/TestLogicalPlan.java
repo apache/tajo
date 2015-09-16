@@ -40,7 +40,7 @@ public class TestLogicalPlan {
   public static void setup() throws Exception {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
-    planner = new LogicalPlanner(util.getMiniCatalogCluster().getCatalog(), TablespaceManager.getInstance());
+    planner = new LogicalPlanner(util.getCatalogService(), TablespaceManager.getInstance());
   }
 
   public static void tearDown() {
