@@ -137,7 +137,11 @@ public interface CatalogService {
    * @see TableDesc
    * @throws DuplicateTableException
    */
-  void createTable(TableDesc desc) throws DuplicateTableException, InsufficientPrivilegeException, DuplicateDatabaseException, UndefinedDatabaseException;
+  void createTable(TableDesc desc) throws
+      DuplicateTableException,
+      InsufficientPrivilegeException,
+      DuplicateDatabaseException,
+      UndefinedDatabaseException;
 
 
   /**
@@ -147,13 +151,19 @@ public interface CatalogService {
    * @throws UndefinedTableException
    * @throws InsufficientPrivilegeException
    */
-  void dropTable(String tableName) throws UndefinedTableException, InsufficientPrivilegeException, UndefinedDatabaseException;
+  void dropTable(String tableName) throws
+      UndefinedTableException,
+      InsufficientPrivilegeException,
+      UndefinedDatabaseException;
 
   boolean existsTable(String databaseName, String tableName);
 
   boolean existsTable(String tableName);
 
-  PartitionMethodDesc getPartitionMethod(String databaseName, String tableName) throws UndefinedPartitionMethodException, UndefinedTableException, UndefinedDatabaseException;
+  PartitionMethodDesc getPartitionMethod(String databaseName, String tableName) throws
+      UndefinedPartitionMethodException,
+      UndefinedTableException,
+      UndefinedDatabaseException;
 
   boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException,
       UndefinedDatabaseException;
@@ -167,9 +177,13 @@ public interface CatalogService {
   List<TablePartitionProto> getAllPartitions();
 
   void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions
-    , boolean ifNotExists) throws UndefinedTableException, DuplicatePartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException;
+    , boolean ifNotExists) throws
+      UndefinedTableException,
+      DuplicatePartitionException,
+      UndefinedPartitionMethodException,
+      UndefinedDatabaseException;
 
-  boolean createIndex(IndexDesc index);
+  void createIndex(IndexDesc index) throws DuplicateIndexException, UndefinedDatabaseException, UndefinedTableException;
 
   boolean existIndexByName(String databaseName, String indexName);
 
@@ -187,7 +201,7 @@ public interface CatalogService {
 
   Collection<IndexDesc> getAllIndexesByTable(String databaseName, String tableName);
 
-  boolean dropIndex(String databaseName, String indexName);
+  void dropIndex(String databaseName, String indexName) throws UndefinedIndexException, UndefinedDatabaseException;
 
   void createFunction(FunctionDesc funcDesc) throws DuplicateFunctionException;
 
@@ -215,8 +229,16 @@ public interface CatalogService {
    * @see AlterTableDesc
    */
   void alterTable(AlterTableDesc desc)
-      throws DuplicateColumnException, DuplicateTableException, InsufficientPrivilegeException,
-      UndefinedColumnException, UndefinedTableException, DuplicateDatabaseException, DuplicatePartitionException, UndefinedDatabaseException, UndefinedPartitionMethodException, UndefinedPartitionException;
+      throws DuplicateColumnException,
+      DuplicateTableException,
+      InsufficientPrivilegeException,
+      UndefinedColumnException,
+      UndefinedTableException,
+      DuplicateDatabaseException,
+      DuplicatePartitionException,
+      UndefinedDatabaseException,
+      UndefinedPartitionMethodException,
+      UndefinedPartitionException;
 
   void updateTableStats(UpdateTableStatsProto stats) throws UndefinedTableException, InsufficientPrivilegeException;
 }
