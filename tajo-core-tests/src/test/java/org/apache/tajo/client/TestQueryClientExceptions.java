@@ -24,10 +24,14 @@ import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
@@ -100,8 +104,13 @@ public class TestQueryClientExceptions {
   }
 
   @Test(expected = QueryNotFoundException.class)
-  public void testFetchNextQueryResult() throws TajoException {
-    client.fetchNextQueryResult(LocalTajoTestingUtility.newQueryId(), 100);
+  public void testAscynFetchNextQueryResult() throws Throwable {
+    Future<TajoMemoryResultSet> future = client.fetchNextQueryResultAsync(LocalTajoTestingUtility.newQueryId(), 100);
+    try {
+      future.get();
+    } catch (ExecutionException e) {
+      throw e.getCause();
+    }
   }
 
   @Test(expected = QueryNotFoundException.class)

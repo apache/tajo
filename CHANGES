@@ -36,6 +36,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1340: Change the default output file format. (jinho)
+
+    TAJO-1835: TajoClient::executeQueryAndGetResult should throw 
+    Query(Failed|Killed)Exception. (hyunsik)
+
     TAJO-1831: Add a shutdown hook manager in order to set priorities. (jinho)
 
     TAJO-1817: Improve SQL parser error message. (hyunsik)
@@ -260,6 +265,8 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1851: Can not release a different rack task. (jinho)
 
     TAJO-1830: Fix race condition in HdfsServiceTracker. (jinho)
 
@@ -534,6 +541,13 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1824: Remove partition_keys table from information_schema. (jaehwa)
+
+    TAJO-1813: Allow external catalog store for unit testing. (jihoon)
+
+    TAJO-1845: Enforcers in the master plan should be printed in a fixed 
+    order. (jihoon)
+
     TAJO-1739: Add a statement for adding partition to TajoDump. (jaehwa)
 
     TAJO-1833: Refine LogicalPlanPreprocessor to add new rules easily.
@@ -610,6 +624,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1841: Eliminate explicit diamond expressions in tajo-{algebra,rpc}
+    (hyunsik)
 
     TAJO-1826: Revert 'refining code for Parquet 1.8.1'. 
     (Contributed by Jongyoung Park, committed by hyunsik)

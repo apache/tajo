@@ -203,7 +203,7 @@ public class AlterTable extends Expr {
     alter.values = values;
     alter.location = location;
     if (params != null) {
-      alter.params = new HashMap<String, String>(params);
+      alter.params = new HashMap<>(params);
     }
     alter.purge = purge;
     alter.ifNotExists = ifNotExists;

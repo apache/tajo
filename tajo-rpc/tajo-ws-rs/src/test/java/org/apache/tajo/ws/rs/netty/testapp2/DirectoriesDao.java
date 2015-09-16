@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class DirectoriesDao {
   private static DirectoriesDao instance = new DirectoriesDao();
 
-  private final Map<String, Directory> directoryMap = new ConcurrentHashMap<String, Directory>();
+  private final Map<String, Directory> directoryMap = new ConcurrentHashMap<>();
 
   private DirectoriesDao() {
   }

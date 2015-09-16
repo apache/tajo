@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -209,13 +210,11 @@ public class PhysicalPlanUtil {
    */
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
     String storeType = meta.getStoreType();
-    if (storeType.equalsIgnoreCase("TEXT")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       meta.putOption(StorageConstants.TEXT_NULL, nullChar);
-    } else if (storeType.equalsIgnoreCase("TEXT")) {
-      meta.putOption(StorageConstants.TEXT_NULL, nullChar);
-    } else if (storeType.equalsIgnoreCase("RCFILE")) {
+    }  else if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
-    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
     }
   }
@@ -228,13 +227,11 @@ public class PhysicalPlanUtil {
    */
   public static boolean containsNullChar(TableMeta meta) {
     String storeType = meta.getStoreType();
-    if (storeType.equalsIgnoreCase("TEXT")) {
+    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       return meta.containsOption(StorageConstants.TEXT_NULL);
-    } else if (storeType.equalsIgnoreCase("TEXT")) {
-      return meta.containsOption(StorageConstants.TEXT_NULL);
-    } else if (storeType.equalsIgnoreCase("RCFILE")) {
+    } else if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       return meta.containsOption(StorageConstants.RCFILE_NULL);
-    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
     } else {
       return false;

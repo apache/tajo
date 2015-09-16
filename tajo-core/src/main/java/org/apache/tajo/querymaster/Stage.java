@@ -772,8 +772,8 @@ public class Stage implements EventHandler<StageEvent> {
     // if store plan (i.e., CREATE or INSERT OVERWRITE)
     String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
     if (storeType == null) {
-      // get default or store type
-      storeType = "TEXT";
+      // get final output store type (i.e., SELECT)
+      storeType = channel.getStoreType();
     }
 
     schema = channel.getSchema();

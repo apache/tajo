@@ -68,10 +68,10 @@ Block Id: eb_0000000000000_0000_000011 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.e
- 1: type=Broadcast, tables=default.b
- 2: type=Broadcast, tables=default.c
- 3: type=Broadcast, tables=default.d
+ 0: type=Broadcast, tables=default.b
+ 1: type=Broadcast, tables=default.c
+ 2: type=Broadcast, tables=default.d
+ 3: type=Broadcast, tables=default.e
  4: type=Broadcast, tables=default.f
 
 JOIN(17)(LEFT_OUTER)

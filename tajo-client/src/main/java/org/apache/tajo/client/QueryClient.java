@@ -35,6 +35,7 @@ import java.io.Closeable;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 public interface QueryClient extends Closeable {
 
@@ -106,7 +107,7 @@ public interface QueryClient extends Closeable {
 
   GetQueryResultResponse getResultResponse(QueryId queryId) throws TajoException;
 
-  TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws TajoException;
+  Future<TajoMemoryResultSet> fetchNextQueryResultAsync(final QueryId queryId, final int fetchRowNum);
 
   boolean updateQuery(final String sql) throws TajoException;
 
