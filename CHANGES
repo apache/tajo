@@ -266,6 +266,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1851: Can not release a different rack task. (jinho)
+
     TAJO-1830: Fix race condition in HdfsServiceTracker. (jinho)
 
     TAJO-1727: Avoid to create external table using TableSpace. (jaehwa)
