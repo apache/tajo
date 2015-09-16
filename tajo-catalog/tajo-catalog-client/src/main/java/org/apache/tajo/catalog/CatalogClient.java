@@ -22,15 +22,14 @@ import com.google.protobuf.ServiceException;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
+import org.apache.tajo.rpc.*;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Properties;
 
 /**
  * CatalogClient provides a client API to access the catalog server.
@@ -70,8 +69,12 @@ public class CatalogClient extends AbstractCatalogClient {
         if (client != null && client.isConnected()) return client;
         RpcClientManager.cleanup(client);
 
+        final Properties connParams = new Properties();
+        connParams.setProperty(RpcConstants.RPC_RETRY_NUM, conf.getVar(ConfVars.RPC_CLIENT_RETRY_NUM));
+
         // Client do not closed on idle state for support high available
-        this.client = RpcClientManager.getInstance().newClient(getCatalogServerAddr(), CatalogProtocol.class, false);
+        this.client = RpcClientManager.getInstance().newClient(getCatalogServerAddr(), CatalogProtocol.class,
+            false, connParams);
       } catch (Exception e) {
         throw new ServiceException(e);
       }

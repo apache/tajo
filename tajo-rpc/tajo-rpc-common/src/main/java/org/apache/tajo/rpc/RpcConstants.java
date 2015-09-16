@@ -20,19 +20,28 @@ package org.apache.tajo.rpc;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Constants for RPC
+ */
 public class RpcConstants {
 
   public static final String PING_PACKET = "TAJO";
-  public static final String RPC_CLIENT_RETRY_MAX = "tajo.rpc.client.retry.max";
-  public static final String RPC_CLIENT_TIMEOUT_SECS = "tajo.rpc.client.timeout-secs";
-
-  public static final int DEFAULT_RPC_RETRIES = 3;
-
   public static final int DEFAULT_PAUSE = 1000; // 1 sec
-  public static final int DEFAULT_FUTURE_TIMEOUT_SECONDS = 10;
+  public static final int FUTURE_TIMEOUT_SECONDS_DEFAULT = 10;
 
-  /** default connection timeout 15 seconds */
-  public final static long DEFAULT_CONNECTION_TIMEOUT = TimeUnit.SECONDS.toMicros(15);
-  /** default socket timeout - 60 seconds */
-  public final static long DEFAULT_SOCKET_TIMEOUT =  TimeUnit.SECONDS.toNanos(60);
+  /** How many times the connect will retry */
+  public static final String RPC_RETRY_NUM = "tajo.rpc.client.retry-num";
+  public static final int RPC_RETRY_NUM_DEFAULT = 3;
+
+  /** Client connection timeout (milliseconds) */
+  public static final String CLIENT_CONNECTION_TIMEOUT = "tajo.rpc.client.connection-timeout-ms";
+  /** Default client connection timeout 15 seconds */
+  public final static long CLIENT_CONNECTION_TIMEOUT_DEFAULT = TimeUnit.SECONDS.toMicros(15);
+
+  /**
+   * Socket timeout (milliseconds). Client connection will check if the connectivity is available after this time.
+   */
+  public static final String CLIENT_SOCKET_TIMEOUT = "tajo.rpc.client.socket-timeout-ms";
+  /** Default socket timeout - 60 seconds */
+  public final static long CLIENT_SOCKET_TIMEOUT_DEFAULT =  TimeUnit.SECONDS.toNanos(180);
 }

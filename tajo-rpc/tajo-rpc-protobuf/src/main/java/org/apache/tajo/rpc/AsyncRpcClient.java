@@ -23,12 +23,15 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
-import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT;
+import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT_DEFAULT;
 
 public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallback> {
 
@@ -36,11 +39,6 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
   private final ProxyRpcChannel rpcChannel;
   private final NettyChannelInboundHandler handler;
 
-  @VisibleForTesting
-  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
-      throws ClassNotFoundException, NoSuchMethodException {
-    this(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, retries, RpcConstants.DEFAULT_CONNECTION_TIMEOUT, false, 0);
-  }
 
   /**
    * Intentionally make this method package-private, avoiding user directly
@@ -48,31 +46,26 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
    *
    * @param rpcConnectionKey  RpcConnectionKey
    * @param eventLoopGroup    Thread pool of netty's
+   * @param connectionParameters Connection parameters (see RpcConstants)
    *
-   * @param retryNum          Retry number to connect
-   * @param connTimeout       Connection Timeout (milliseconds)
-   * @param useIdleTimeout    Enable idle connection check
-   * @param idleTimeout       Socket Idle timeout (milliseconds). If <code>useIdleTimeout</code> is true,
-   *                          this connection will check if the connectivity is available after
-   *                          <code>idleTimeout</code>
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
   AsyncRpcClient(EventLoopGroup eventLoopGroup,
                  RpcConnectionKey rpcConnectionKey,
-                 int retryNum,
-                 long connTimeout,
-                 boolean useIdleTimeout,
-                 long idleTimeout)
+                 Properties connectionParameters)
       throws ClassNotFoundException, NoSuchMethodException {
-    super(rpcConnectionKey, retryNum, connTimeout);
+    super(rpcConnectionKey, connectionParameters);
 
     this.stubMethod = getServiceClass().getMethod("newStub", RpcChannel.class);
     this.rpcChannel = new ProxyRpcChannel();
     this.handler = new ClientChannelInboundHandler();
 
+    long socketTimeoutMills = Long.parseLong(
+        connectionParameters.getProperty(CLIENT_SOCKET_TIMEOUT, String.valueOf(CLIENT_SOCKET_TIMEOUT_DEFAULT)));
+
     init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(),
-        useIdleTimeout, TimeUnit.MILLISECONDS.toNanos(idleTimeout)), eventLoopGroup);
+        TimeUnit.MILLISECONDS.toNanos(socketTimeoutMills)),eventLoopGroup);
   }
 
   @Override

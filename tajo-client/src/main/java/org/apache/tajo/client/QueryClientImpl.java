@@ -50,6 +50,7 @@ import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -544,10 +545,7 @@ public class QueryClientImpl implements QueryClient {
 
     try {
 
-      qmClient = manager.newClient(
-          qmAddress,
-          QueryMasterClientProtocol.class, false);
-
+      qmClient = manager.newClient(qmAddress, QueryMasterClientProtocol.class, false, new Properties());
 
       conn.checkSessionAndGet(conn.getTajoMasterConnection());
 

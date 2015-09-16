@@ -32,7 +32,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.io.Closeable;
@@ -42,9 +41,12 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+
+import static org.apache.tajo.rpc.RpcConstants.*;
 
 public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable {
   public final static Log LOG = LogFactory.getLog(NettyClientBase.class);
@@ -66,18 +68,21 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
    * Constructor of NettyClientBase
    *
    * @param rpcConnectionKey RpcConnectionKey
-   * @param maxRetryNum How many number it will retry
-   * @param connTimeout Connection Timeout (milliseconds)
+   * @param connectionParameters Connection Parameters
    *
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
-  public NettyClientBase(RpcConnectionKey rpcConnectionKey,
-                         int maxRetryNum,
-                         long connTimeout) throws ClassNotFoundException, NoSuchMethodException {
+  public NettyClientBase(RpcConnectionKey rpcConnectionKey, Properties connectionParameters)
+      throws ClassNotFoundException, NoSuchMethodException {
     this.key = rpcConnectionKey;
-    this.maxRetryNum = maxRetryNum;
-    this.connTimeoutMillis = connTimeout;
+
+    this.maxRetryNum = Integer.parseInt(
+        connectionParameters.getProperty(RPC_RETRY_NUM, String.valueOf(RPC_RETRY_NUM_DEFAULT)));
+
+    this.connTimeoutMillis = Integer.parseInt(
+        connectionParameters.getProperty(CLIENT_CONNECTION_TIMEOUT, String.valueOf(CLIENT_CONNECTION_TIMEOUT_DEFAULT)));
+
     // Netty only takes integer value range and this is to avoid integer overflow.
     Preconditions.checkArgument(this.connTimeoutMillis > Integer.MAX_VALUE, "Too long connection timeout");
   }
@@ -96,7 +101,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         .option(ChannelOption.TCP_NODELAY, true);
   }
 
-  public RpcClientManager.RpcConnectionKey getKey() {
+  public RpcConnectionKey getKey() {
     return key;
   }
 

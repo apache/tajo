@@ -33,15 +33,11 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.Properties;
 
 @ThreadSafe
 public class RpcClientManager {
   private static final Log LOG = LogFactory.getLog(RpcClientManager.class);
-
-  private volatile long connTimeout = RpcConstants.DEFAULT_CONNECTION_TIMEOUT;
-  private volatile long socketTimeout = RpcConstants.DEFAULT_SOCKET_TIMEOUT;
-  private volatile int retries = RpcConstants.DEFAULT_RPC_RETRIES;
 
   /* entries will be removed by ConnectionCloseFutureListener */
   private static final Map<RpcConnectionKey, NettyClientBase>
@@ -62,28 +58,23 @@ public class RpcClientManager {
   }
 
   private <T extends NettyClientBase> T makeClient(RpcConnectionKey rpcConnectionKey,
-                                                   int retryNum,
-                                                   long connTimeout,
-                                                   boolean useSocketTimeout,
-                                                   long socketTimeout)
+                                                   Properties connectionParameters)
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
-    return makeClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, retryNum, connTimeout, useSocketTimeout, socketTimeout);
+
+
+    return makeClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connectionParameters);
   }
 
   private <T extends NettyClientBase> T makeClient(EventLoopGroup eventLoopGroup,
                                                    RpcConnectionKey rpcConnectionKey,
-                                                   int retryNum,
-                                                   long connTimeout,
-                                                   boolean useSocketTimeout, long socketTimeout)
+                                                   Properties connectionParameters)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(eventLoopGroup, rpcConnectionKey, retryNum, connTimeout, useSocketTimeout,
-          socketTimeout);
+      client = new AsyncRpcClient(eventLoopGroup, rpcConnectionKey, connectionParameters);
 
     } else {
-      client = new BlockingRpcClient(eventLoopGroup, rpcConnectionKey, retryNum, connTimeout, useSocketTimeout,
-          socketTimeout);
+      client = new BlockingRpcClient(eventLoopGroup, rpcConnectionKey, connectionParameters);
     }
     return (T) client;
   }
@@ -93,7 +84,9 @@ public class RpcClientManager {
    * This client will be shared per protocol and address. Client is removed in shared map when a client is closed
    */
   public <T extends NettyClientBase> T getClient(InetSocketAddress addr,
-                                                 Class<?> protocolClass, boolean asyncMode)
+                                                 Class<?> protocolClass,
+                                                 boolean asyncMode,
+                                                 Properties connectionParameters)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
@@ -101,7 +94,7 @@ public class RpcClientManager {
     synchronized (clients) {
       client = clients.get(key);
       if (client == null) {
-        clients.put(key, client = makeClient(key, retries, connTimeout, true, getSocketTimeout()));
+        clients.put(key, client = makeClient(key, connectionParameters));
       }
     }
 
@@ -135,23 +128,10 @@ public class RpcClientManager {
   public <T extends NettyClientBase> T newClient(InetSocketAddress addr,
                                                               Class<?> protocolClass,
                                                               boolean asyncMode,
-                                                              int retryNum,
-                                                              long connTimeout,
-                                                              boolean useIdleTimeout,
-                                                              long idleTimeout)
+                                                              Properties connectionParameters)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
-    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), retryNum, connTimeout, useIdleTimeout,
-        idleTimeout);
-  }
-
-  public synchronized <T extends NettyClientBase> T newClient(InetSocketAddress addr,
-                                                              Class<?> protocolClass,
-                                                              boolean asyncMode)
-      throws NoSuchMethodException, ClassNotFoundException, ConnectException {
-
-    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode),
-        retries, 0, true, TimeUnit.SECONDS.toMillis(getSocketTimeout()));
+    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), connectionParameters);
   }
 
   /**
@@ -164,14 +144,23 @@ public class RpcClientManager {
    * @throws ConnectException
    */
   public synchronized <T extends NettyClientBase> T newClient(RpcConnectionKey key,
-                                                              int retryNum,
-                                                              long connTimeout,
-                                                              boolean useIdleTimeout,
-                                                              long idleTimeout)
+                                                              Properties connectionParameters)
 
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
-    T client = makeClient(key, retryNum, connTimeout, useIdleTimeout, idleTimeout);
+    T client = makeClient(key, connectionParameters);
+    client.connect();
+    assert client.isConnected();
+    return client;
+  }
+
+  public synchronized <T extends NettyClientBase> T newBlockingClient(InetSocketAddress addr,
+                                                                      Class<?> protocolClass,
+                                                                      EventLoopGroup eventLoopGroup,
+                                                                      Properties connectionParameters)
+      throws NoSuchMethodException, ClassNotFoundException, ConnectException {
+
+    T client = makeClient(eventLoopGroup, new RpcConnectionKey(addr, protocolClass, false), connectionParameters);
     client.connect();
     assert client.isConnected();
     return client;
@@ -222,61 +211,10 @@ public class RpcClientManager {
     }
   }
 
-  public long getSocketTimeout() {
-    return socketTimeout;
-  }
-
-  public void setSocketTimeout(int socketTimeout) {
-    this.socketTimeout = socketTimeout;
-  }
-
-  public int getRetries() {
-    return retries;
-  }
-
-  public void setRetries(int retries) {
-    this.retries = retries;
-  }
-
-  static class RpcConnectionKey {
-    final InetSocketAddress addr;
-    final Class<?> protocolClass;
-    final boolean asyncMode;
-
-    final String description;
-
-    public RpcConnectionKey(InetSocketAddress addr,
-                            Class<?> protocolClass, boolean asyncMode) {
-      this.addr = addr;
-      this.protocolClass = protocolClass;
-      this.asyncMode = asyncMode;
-      this.description = "[" + protocolClass + "] " + addr + "," + asyncMode;
-    }
-
-    @Override
-    public String toString() {
-      return description;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (!(obj instanceof RpcConnectionKey)) {
-        return false;
-      }
-
-      return toString().equals(obj.toString());
-    }
-
-    @Override
-    public int hashCode() {
-      return description.hashCode();
-    }
-  }
-
   static class ClientCloseFutureListener implements GenericFutureListener {
-    private RpcClientManager.RpcConnectionKey key;
+    private RpcConnectionKey key;
 
-    public ClientCloseFutureListener(RpcClientManager.RpcConnectionKey key) {
+    public ClientCloseFutureListener(RpcConnectionKey key) {
       this.key = key;
     }
 

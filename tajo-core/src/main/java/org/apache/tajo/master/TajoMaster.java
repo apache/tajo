@@ -50,7 +50,6 @@ import org.apache.tajo.metrics.ClusterResourceMetricSet;
 import org.apache.tajo.metrics.Master;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
@@ -167,22 +166,16 @@ public class TajoMaster extends CompositeService {
 
     context = new MasterContext(systemConf);
     clock = new SystemClock();
-
     RackResolver.init(systemConf);
-
-    RpcClientManager rpcManager = RpcClientManager.getInstance();
-    rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
-    rpcManager.setSocketTimeout(
-        systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
 
     initResourceManager();
 
     this.dispatcher = new AsyncDispatcher();
     addIfService(dispatcher);
 
-      // check the system directory and create if they are not created.
-      checkAndInitializeSystemDirectories();
-      diagnoseTajoMaster();
+    // check the system directory and create if they are not created.
+    checkAndInitializeSystemDirectories();
+    diagnoseTajoMaster();
 
     catalogServer = new CatalogServer(Collections.EMPTY_SET, loadFunctions());
     addIfService(catalogServer);

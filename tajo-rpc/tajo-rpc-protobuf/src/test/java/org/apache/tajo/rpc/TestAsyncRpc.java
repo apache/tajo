@@ -42,6 +42,7 @@ import java.lang.annotation.Target;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +62,7 @@ public class TestAsyncRpc {
   Interface stub;
   DummyProtocolAsyncImpl service;
   int retries;
-  RpcClientManager.RpcConnectionKey rpcConnectionKey;
+  RpcConnectionKey rpcConnectionKey;
   RpcClientManager manager = RpcClientManager.getInstance();
 
   @Retention(RetentionPolicy.RUNTIME)
@@ -129,10 +130,14 @@ public class TestAsyncRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    rpcConnectionKey = new RpcClientManager.RpcConnectionKey(
-        RpcUtils.getConnectAddress(server.getListenAddress()),
-        DummyProtocol.class, true);
-    client = manager.newClient(rpcConnectionKey, retries, 1000, true, 10);
+    rpcConnectionKey = new RpcConnectionKey(
+        RpcUtils.getConnectAddress(server.getListenAddress()), DummyProtocol.class, true);
+
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+    connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(10)));
+
+    client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
     stub = client.getStub();
   }
@@ -347,9 +352,13 @@ public class TestAsyncRpc {
     });
     serverThread.start();
 
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 0);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(address, DummyProtocol.class, true);
+
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();
@@ -376,9 +385,13 @@ public class TestAsyncRpc {
         .setMessage(MESSAGE).build();
     CallFuture<EchoMessage> future = new CallFuture<>();
 
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
-    AsyncRpcClient client = new AsyncRpcClient(rpcConnectionKey, retries);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(address, DummyProtocol.class, true);
+
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+
+    AsyncRpcClient client = new AsyncRpcClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connParams);
     try {
       client.connect();
       fail();
@@ -408,9 +421,13 @@ public class TestAsyncRpc {
     boolean expected = false;
     AsyncRpcClient client = null;
     try {
-      RpcClientManager.RpcConnectionKey rpcConnectionKey =
-          new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
-      client = new AsyncRpcClient(rpcConnectionKey, retries);
+      RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionKey(address, DummyProtocol.class, true);
+
+      Properties connParams = new Properties();
+      connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+
+      client = new AsyncRpcClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connParams);
       client.connect();
       fail();
     } catch (ConnectException e) {
@@ -428,10 +445,14 @@ public class TestAsyncRpc {
   @SetupRpcConnection(setupRpcClient = false)
   public void testUnresolvedAddress2() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(
             RpcUtils.createUnresolved(hostAndPort), DummyProtocol.class, true);
-    AsyncRpcClient client = new AsyncRpcClient(rpcConnectionKey, retries);
+
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+
+    AsyncRpcClient client = new AsyncRpcClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connParams);
     client.connect();
     try {
       assertTrue(client.isConnected());
@@ -452,9 +473,12 @@ public class TestAsyncRpc {
   @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testStubRecovery() throws Exception {
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, 2, 1000, false, 0);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(2));
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -483,10 +507,15 @@ public class TestAsyncRpc {
   @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testIdleTimeout() throws Exception {
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
-    //500 millis idle timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 500);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+
+    // 500 millis idle timeout
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+    connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);  //timeout
@@ -503,11 +532,15 @@ public class TestAsyncRpc {
   @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testPingOnIdle() throws Exception {
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
 
-    //500 millis request timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, true, 500);
+    // 500 millis idle timeout
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+    connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
 
     Thread.sleep(600);
@@ -521,10 +554,15 @@ public class TestAsyncRpc {
   @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testIdleTimeoutWithActiveRequest() throws Exception {
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
-    //500 millis idle timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, false, 500);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+
+    // 500 millis idle timeout
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+    connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();
@@ -546,11 +584,15 @@ public class TestAsyncRpc {
   @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testRequestTimeoutOnBusy() throws Exception {
-    RpcClientManager.RpcConnectionKey rpcConnectionKey =
-        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
 
-    //500 millis request timeout
-    AsyncRpcClient client = manager.newClient(rpcConnectionKey, retries, 1000, true, 500);
+    // 500 millis idle timeout
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
+    connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+
+    AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
 
     Interface stub = client.getStub();
