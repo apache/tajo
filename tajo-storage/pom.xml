@@ -38,7 +38,6 @@
     <module>tajo-storage-hdfs</module>
     <module>tajo-storage-hbase</module>
     <module>tajo-storage-jdbc</module>
-    <module>tajo-storage-pgsql</module>
   </modules>
 
   <build>
@@ -46,6 +45,11 @@
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>tajo-storage-pgsql/**</exclude>
+          </excludes>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -88,6 +92,16 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <!-- User Documentation -->
+    <profile>
+      <id>storage-pgsql</id>
+      <modules>
+        <module>tajo-storage-pgsql</module>
+      </modules>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
     </profile>
     <profile>
       <id>dist</id>
