@@ -857,7 +857,13 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     request.setTableName(tableName);
     request.setFilter("");
 
-    return getPartitionsByFilter(request.build());
+    List<PartitionDescProto> partitions = getPartitionsByFilter(request.build());
+
+    if (partitions.size() == 0) {
+      throw new TajoInternalError(new PartitionNotFoundException(tableName));
+    } else {
+      return partitions;
+    }
   }
 
   @Override
