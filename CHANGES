@@ -547,6 +547,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1682: Write ORC document. (Contributed by Jongyoung Park, 
+    Committed by jihoon)
+
     TAJO-1744: Porting bash shell scripts to Windows command shell scripts.
     (Contributed by YeonSu Han, Committed by jihoon)
 
