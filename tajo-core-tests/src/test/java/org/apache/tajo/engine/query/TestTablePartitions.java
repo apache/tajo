@@ -1541,9 +1541,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testTimeStampPartitionColumn() throws Exception {
+  public final void testTimestampPartitionColumn() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testTimeStampPartitionColumn");
+    String tableName = CatalogUtil.normalizeIdentifier("testTimestampPartitionColumn");
     String expectedResult;
 
     if (nodeType == NodeType.INSERT) {
