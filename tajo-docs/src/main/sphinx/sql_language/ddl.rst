@@ -10,8 +10,11 @@ CREATE DATABASE
 
 .. code-block:: sql
 
-  CREATE DATABASE [IF NOT EXISTS] <database_name> 
+  CREATE DATABASE [IF NOT EXISTS] <database_name>
 
+*Description*
+
+Database is the namespace in Tajo. A database can contain multiple tables which have unique name in it.
 ``IF NOT EXISTS`` allows ``CREATE DATABASE`` statement to avoid an error which occurs when the database exists.
 
 ========================
@@ -34,11 +37,17 @@ CREATE TABLE
 
 .. code-block:: sql
 
-  CREATE TABLE [IF NOT EXISTS] <table_name> [(<column_name> <data_type>, ... )]
+  CREATE TABLE [IF NOT EXISTS] <table_name> [(<column_name> <data_type>, ... )] [TABLESPACE tablespace_name]
   [using <storage_type> [with (<key> = <value>, ...)]] [AS <select_statement>]
 
   CREATE EXTERNAL TABLE [IF NOT EXISTS] <table_name> (<column_name> <data_type>, ... )
   using <storage_type> [with (<key> = <value>, ...)] LOCATION '<path>'
+
+*Description*
+
+In Tajo, there are two types of tables, `managed table` and `external table` (For more information, please refer to :doc:`/table_management/table_overview`.)
+
+Managed tables are placed on some predefined tablespaces. The ``TABLESPACE`` clause is to specify a tablespace for this table. For more information about tablespace, please refer to :doc:`/table_management/tablespaces`. For external tables, Tajo allows an arbitrary table location with the ``LOCATION`` clause.
 
 ``IF NOT EXISTS`` allows ``CREATE [EXTERNAL] TABLE`` statement to avoid an error which occurs when the table does not exist.
 
@@ -75,6 +84,8 @@ If you want to add an external table that contains compressed data, you should g
 
   DROP TABLE [IF EXISTS] <table_name> [PURGE]
 
+*Description*
+
 ``IF EXISTS`` allows ``DROP DATABASE`` statement to avoid an error which occurs when the database does not exist. ``DROP TABLE`` statement removes a table from Tajo catalog, but it does not remove the contents. If ``PURGE`` option is given, ``DROP TABLE`` statement will eliminate the entry in the catalog as well as the contents.
 
 ========================
@@ -88,6 +99,11 @@ If you want to add an external table that contains compressed data, you should g
   CREATE INDEX [ name ] ON table_name [ USING method ]
   ( { column_name | ( expression ) } [ ASC | DESC ] [ NULLS { FIRST | LAST } ] [, ...] )
   [ WHERE predicate ]
+
+*Description*
+
+Tajo supports index for fast data retrieval. Currently, index is supported for only plain ``TEXT`` formats stored on ``HDFS``.
+For more information, please refer to :doc:`/index_overview`.
 
 ------------------------
  Index method
