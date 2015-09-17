@@ -2203,10 +2203,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final int tableId = getTableId(databaseId, databaseName, tableName);
     ensurePartitionTable(tableName, tableId);
 
-    if (!existPartitionsOnCatalog(tableId)) {
-      throw new TajoInternalError(new PartitionNotFoundException(tableName));
-    }
-
     try {
       String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + " FROM "
         + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";

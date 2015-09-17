@@ -124,7 +124,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
-      tableDesc.getStats().getNumRows());
+        tableDesc.getStats().getNumRows());
 
     // Check if tajo can return list of partitions from file system in a situation that there is not partitions on
     // catalog.
@@ -139,6 +139,14 @@ public class TestTablePartitions extends QueryTestCaseBase {
     String expectedResult = "cnt\n" +
       "-------------------------------\n" +
       "5\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName + " WHERE key > 40.0");
+    result = resultSetToString(res);
+    expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "2\n";
     res.close();
     assertEquals(expectedResult, result);
 
