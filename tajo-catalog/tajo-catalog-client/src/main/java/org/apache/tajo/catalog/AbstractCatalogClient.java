@@ -435,7 +435,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final List<PartitionDescProto> getAllPartitions(final String databaseName, final String tableName) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
     try {
       final BlockingInterface stub = getStub();
       final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
@@ -444,6 +444,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+      throwsIfThisError(response.getState(), PartitionNotFoundException.class);
       ensureOk(response.getState());
       return response.getPartitionList();
 
@@ -454,7 +455,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
     try {
       final BlockingInterface stub = getStub();
       GetPartitionsResponse response = stub.getPartitionsByAlgebra(null, request);
@@ -462,6 +463,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+      throwsIfThisError(response.getState(), PartitionNotFoundException.class);
       ensureOk(response.getState());
       return response.getPartitionList();
     } catch (ServiceException e) {
@@ -472,7 +474,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
     try {
       final BlockingInterface stub = getStub();
       GetPartitionsResponse response = stub.getPartitionsByFilter(null, request);
@@ -480,6 +482,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+      throwsIfThisError(response.getState(), PartitionNotFoundException.class);
       ensureOk(response.getState());
       return response.getPartitionList();
     } catch (ServiceException e) {

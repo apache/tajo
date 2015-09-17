@@ -55,8 +55,10 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_TABLE, UndefinedTableException.class);
     ADD_EXCEPTION(UNDEFINED_COLUMN, UndefinedColumnException.class);
     ADD_EXCEPTION(UNDEFINED_FUNCTION, UndefinedFunctionException.class);
+    ADD_EXCEPTION(UNDEFINED_PARTITION_METHOD, UndefinedPartitionMethodException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION, UndefinedPartitionException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);
+    ADD_EXCEPTION(PARTITION_NOT_FOUND, PartitionNotFoundException.class);
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
     ADD_EXCEPTION(UNDEFINED_INDEX_NAME, UndefinedIndexException.class);
 

@@ -98,7 +98,7 @@ public interface CatalogStore extends Closeable {
    * @throws TajoException
    */
   List<CatalogProtos.PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException;
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException;
 
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                 String partitionName) throws UndefinedDatabaseException,
@@ -116,11 +116,11 @@ public interface CatalogStore extends Closeable {
    */
   List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException;
+    UndefinedOperatorException, PartitionNotFoundException;
 
   List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException;
+    UndefinedOperatorException, PartitionNotFoundException;
 
   List<TablePartitionProto> getAllPartitions();
 

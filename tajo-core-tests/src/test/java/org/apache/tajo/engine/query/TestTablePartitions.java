@@ -251,7 +251,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName,
-        new String[]{"key"}, desc.getStats().getNumRows());
+      new String[]{"key"}, desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
@@ -678,7 +678,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1"},
-        desc.getStats().getNumRows());
+      desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1049,7 +1049,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col2"},
-        desc.getStats().getNumRows());
+      desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1749,4 +1749,51 @@ public class TestTablePartitions extends QueryTestCaseBase {
     executeString("DROP database " + databaseName).close();
   }
 
+  @Test
+  public void testAbnormalDirectories()  throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testAbnormalDirectories");
+    if (nodeType == NodeType.INSERT) {
+      executeString(
+        "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ").close();
+      executeString(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+          "l_quantity from lineitem").close();
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
+        + " as select l_orderkey, l_partkey, l_quantity from lineitem").close();
+    }
+
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+      tableDesc.getStats().getNumRows());
+
+    // Check if tajo can return list of partitions from file system in a situation that there is not partitions on
+    // catalog.
+    String externalTableName = "testCreateExternalColumnPartitionedTable";
+
+    executeString("create external table " + externalTableName + " (col1 int4, col2 int4) " +
+      " USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN (key float8) " +
+      " location '" + tableDesc.getUri().getPath() + "'").close();
+
+    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName);
+    String result = resultSetToString(res);
+    String expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "5\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName + " WHERE key > 40.0");
+    result = resultSetToString(res);
+    expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "2\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    executeString("DROP TABLE " + externalTableName).close();
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+  }
 }

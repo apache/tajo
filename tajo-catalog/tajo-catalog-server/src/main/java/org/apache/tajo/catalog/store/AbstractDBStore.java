@@ -2191,7 +2191,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   @Override
   public List<PartitionDescProto> getAllPartitions(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedPartitionException{
+      PartitionNotFoundException {
 
     Connection conn = null;
     ResultSet res = null;
@@ -2202,6 +2202,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final int databaseId = getDatabaseId(databaseName);
     final int tableId = getTableId(databaseId, databaseName, tableName);
     ensurePartitionTable(tableName, tableId);
+
+    if (!existPartitionsOnCatalog(tableId)) {
+      throw new PartitionNotFoundException(tableName);
+    }
 
     try {
       String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + " FROM "
@@ -2278,7 +2282,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+      PartitionNotFoundException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;

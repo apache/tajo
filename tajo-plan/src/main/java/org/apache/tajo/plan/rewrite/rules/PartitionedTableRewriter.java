@@ -121,8 +121,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    */
   private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
-      throws IOException, UndefinedDatabaseException, UndefinedTableException,
-      UndefinedPartitionMethodException, UndefinedOperatorException {
+      throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+      UndefinedOperatorException, PartitionNotFoundException {
 
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
@@ -136,38 +136,61 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);
       }
-      // If catalog returns list of table partitions successfully, build path lists for scanning table data.
-      if (partitions != null) {
-        filteredPaths = new Path[partitions.size()];
-        for (int i = 0; i < partitions.size(); i++) {
-          filteredPaths[i] = new Path(partitions.get(i).getPath());
-        }
-      }
-    } catch (TajoInternalError e) {
-      LOG.error(e.getMessage(), e);
-    }
-
-    // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
-    // objects with the path-filter.
-    if (partitions == null || filteredPaths == null) {
-      PathFilter [] filters;
-      if (conjunctiveForms == null) {
-        filters = buildAllAcceptingPathFilters(partitionColumns);
-      } else {
-        filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
-      }
-
-      // loop from one to the number of partition columns
-      filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
-
-      for (int i = 1; i < partitionColumns.size(); i++) {
-        // Get all file status matched to a ith level path filter.
-        filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
-      }
+      filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+    } catch (PartitionNotFoundException pnfe) {
+      // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
+      // objects with the path-filter as following.
+      filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
     }
 
     LOG.info("Filtered directory or files: " + filteredPaths.length);
 
+    return filteredPaths;
+  }
+
+  /**
+   * Build list of partition path by PartitionDescProto which is generated from CatalogStore.
+   *
+   * @param partitions
+   * @return
+   */
+  private Path[] findFilteredPathsByPartitionDesc(List<PartitionDescProto> partitions) {
+    Path [] filteredPaths = new Path[partitions.size()];
+    for (int i = 0; i < partitions.size(); i++) {
+      filteredPaths[i] = new Path(partitions.get(i).getPath());
+    }
+    return filteredPaths;
+  }
+
+  /**
+   * Build list of partition path by filtering directories in the given table path.
+   *
+   *
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @param fs
+   * @param tablePath
+   * @return
+   * @throws IOException
+   */
+  private Path [] findFilteredPathsFromFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
+                                                  FileSystem fs, Path tablePath) throws IOException{
+    Path [] filteredPaths = null;
+    PathFilter [] filters;
+
+    if (conjunctiveForms == null) {
+      filters = buildAllAcceptingPathFilters(partitionColumns);
+    } else {
+      filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
+    }
+
+    // loop from one to the number of partition columns
+    filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
+
+    for (int i = 1; i < partitionColumns.size(); i++) {
+      // Get all file status matched to a ith level path filter.
+      filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
+    }
     return filteredPaths;
   }
 
@@ -331,7 +354,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
   public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException,
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException {
+    UndefinedOperatorException, PartitionNotFoundException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
