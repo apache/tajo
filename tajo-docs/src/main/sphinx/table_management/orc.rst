@@ -33,11 +33,11 @@ The ``WITH`` clause in the CREATE TABLE statement allows users to set those para
 
 Now, ORC file provides the following physical properties.
 
-* ``orc.max.merge.distance``: Reading property. When stripes are too closer and the distance is lower than this value, they are merged and read at once. Default is 1MB.
-* ``orc.stripe.size``: Writing property. It decides size of each stripe. Default is 64MB.
-* ``orc.compression.kind``: Writing property. The compression algorithm used to compress data. It should be one of ``none``, ``snappy``, ``zlib``. Default is ``none``.
-* ``orc.buffer.size``: Writing property. It decides size of writing buffer. Default is 256KB.
-* ``orc.rowindex.stride``: Writing property. Define the default ORC index stride in number of rows. (Stride is the number of rows an index entry represents.) Default is 10000.
+* ``orc.max.merge.distance``: When ORC file is read, if stripes are too closer and the distance is lower than this value, they are merged and read at once. Default is 1MB.
+* ``orc.stripe.size``: It decides size of each stripe. Default is 64MB.
+* ``orc.compression.kind``: It means the compression algorithm used to compress and write data. It should be one of ``none``, ``snappy``, ``zlib``. Default is ``none``.
+* ``orc.buffer.size``: It decides size of writing buffer. Default is 256KB.
+* ``orc.rowindex.stride``: Define the default ORC index stride in number of rows. (Stride is the number of rows an index entry represents.) Default is 10000.
 
 ======================================
 Compatibility Issues with Apache Hive™
