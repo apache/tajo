@@ -24,19 +24,19 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
+import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
@@ -44,11 +44,11 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
+  private CatalogService catalog;
+
   private static final Log LOG = LogFactory.getLog(PartitionedTableRewriter.class);
 
   private static final String NAME = "Partitioned Table Rewriter";
@@ -78,6 +78,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
     LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
+    this.catalog = context.getCatalog();
     rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
@@ -118,29 +119,134 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private Path [] findFilteredPaths(OverridableConf queryContext, Schema partitionColumns, EvalNode [] conjunctiveForms,
-                                    Path tablePath)
-      throws IOException {
+  private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
+                                    Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
+      throws IOException, UndefinedDatabaseException, UndefinedTableException,
+      UndefinedPartitionMethodException, UndefinedOperatorException {
 
+    Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
+    String [] splits = CatalogUtil.splitFQTableName(tableName);
+    List<PartitionDescProto> partitions = null;
 
-    PathFilter [] filters;
-    if (conjunctiveForms == null) {
-      filters = buildAllAcceptingPathFilters(partitionColumns);
-    } else {
-      filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
+    try {
+      if (conjunctiveForms == null) {
+        partitions = catalog.getAllPartitions(splits[0], splits[1]);
+      } else {
+        PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
+        partitions = catalog.getPartitionsByAlgebra(request);
+      }
+      // If catalog returns list of table partitions successfully, build path lists for scanning table data.
+      if (partitions != null) {
+        filteredPaths = new Path[partitions.size()];
+        for (int i = 0; i < partitions.size(); i++) {
+          filteredPaths[i] = new Path(partitions.get(i).getPath());
+        }
+      }
+    } catch (TajoInternalError e) {
+      LOG.error(e.getMessage(), e);
     }
 
-    // loop from one to the number of partition columns
-    Path [] filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
+    // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
+    // objects with the path-filter.
+    if (partitions == null || filteredPaths == null) {
+      PathFilter [] filters;
+      if (conjunctiveForms == null) {
+        filters = buildAllAcceptingPathFilters(partitionColumns);
+      } else {
+        filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
+      }
 
-    for (int i = 1; i < partitionColumns.size(); i++) {
-      // Get all file status matched to a ith level path filter.
-      filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
+      // loop from one to the number of partition columns
+      filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
+
+      for (int i = 1; i < partitionColumns.size(); i++) {
+        // Get all file status matched to a ith level path filter.
+        filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
+      }
     }
 
     LOG.info("Filtered directory or files: " + filteredPaths.length);
+
     return filteredPaths;
+  }
+
+  /**
+   * This will build algebra expressions for querying partitions and partition keys in CatalogStore.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
+   *
+   * Then, the algebra expression would be generated as following:
+   *
+   *  {
+   *  "LeftExpr": {
+   *    "LeftExpr": {
+   *      "Qualifier": "default.table1",
+   *      "ColumnName": "col3",
+   *      "OpType": "Column"
+   *    },
+   *    "RightExpr": {
+   *      "Value": "20.0",
+   *      "ValueType": "Unsigned_Integer",
+   *      "OpType": "Literal"
+   *    },
+   *    "OpType": "GreaterThan"
+   *  },
+   *  "RightExpr": {
+   *    "LeftExpr": {
+   *      "LeftExpr": {
+   *        "Qualifier": "default.table1",
+   *        "ColumnName": "col1",
+   *        "OpType": "Column"
+   *      },
+   *      "RightExpr": {
+   *        "Value": "1",
+   *        "ValueType": "String",
+   *        "OpType": "Literal"
+   *      },
+   *      "OpType": "Equals"
+   *    },
+   *    "RightExpr": {
+   *      "LeftExpr": {
+   *        "Qualifier": "default.table1",
+   *        "ColumnName": "col1",
+   *        "OpType": "Column"
+   *      },
+   *      "RightExpr": {
+   *        "Value": "100",
+   *        "ValueType": "String",
+   *        "OpType": "Literal"
+   *      },
+   *      "OpType": "Equals"
+   *    },
+   *    "OpType": "Or"
+   *  },
+   *  "OpType": "And"
+   *}
+   *
+   * @param databaseName
+   * @param tableName
+   * @param conjunctiveForms
+   * @return
+   */
+  public static PartitionsByAlgebraProto getPartitionsAlgebraProto(
+    String databaseName, String tableName, EvalNode [] conjunctiveForms) {
+
+    PartitionsByAlgebraProto.Builder request = PartitionsByAlgebraProto.newBuilder();
+    request.setDatabaseName(databaseName);
+    request.setTableName(tableName);
+
+    if (conjunctiveForms != null) {
+      EvalNode evalNode = AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms);
+      EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(databaseName + "." + tableName);
+      convertor.visit(null, evalNode, new Stack<EvalNode>());
+      request.setAlgebra(convertor.getResult().toJson());
+    } else {
+      request.setAlgebra("");
+    }
+
+    return request.build();
   }
 
   /**
@@ -191,6 +297,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
       filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel);
     }
+
     return filters;
   }
 
@@ -222,7 +329,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return paths;
   }
 
-  private Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException {
+  public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException,
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedOperatorException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
@@ -261,10 +370,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
-      return findFilteredPaths(queryContext, paritionValuesSchema,
+      return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema,
           indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()));
     } else { // otherwise, we will get all partition paths.
-      return findFilteredPaths(queryContext, paritionValuesSchema, null, new Path(table.getUri()));
+      return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema, null, new Path(table.getUri()));
     }
   }
 

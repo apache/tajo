@@ -97,13 +97,30 @@ public interface CatalogStore extends Closeable {
    * @return
    * @throws TajoException
    */
-  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws
-      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
+  List<CatalogProtos.PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException;
 
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
-                                                String partitionName)
-      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
-      UndefinedPartitionMethodException;
+                                                String partitionName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException;
+
+  /**
+   * PartitionedTableRewriter take a look into partition directories for rewriting filter conditions. But if there
+   * are lots of sub directories on HDFS, such as, more than 10,000 directories,
+   * it might be cause overload to NameNode. Thus, CatalogStore need to provide partition directories for specified
+   * filter conditions. This scan right partition directories on CatalogStore with where clause.
+   *
+   * @param request contains database name, table name, algebra expressions, parameter for executing PrepareStatement
+   * @return list of TablePartitionProto
+   * @throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException
+   */
+  List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedOperatorException;
+
+  List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedOperatorException;
 
   List<TablePartitionProto> getAllPartitions();
 

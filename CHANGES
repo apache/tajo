@@ -544,6 +544,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1493: Make partition pruning based on catalog informations. (jaehwa)
+
     TAJO-1824: Remove partition_keys table from information_schema. (jaehwa)
 
     TAJO-1813: Allow external catalog store for unit testing. (jihoon)
