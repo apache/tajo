@@ -19,7 +19,8 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidValueForCastException;
+import org.apache.tajo.exception.TajoRuntimeException;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -58,7 +59,7 @@ public class NullDatum extends Datum {
 
   @Override
   public boolean asBool() {
-    throw new InvalidCastException(Type.NULL_TYPE, Type.BOOLEAN);
+    throw new TajoRuntimeException(new InvalidValueForCastException(Type.NULL_TYPE, Type.BOOLEAN));
   }
 
   @Override

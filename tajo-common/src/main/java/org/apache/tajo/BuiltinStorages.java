@@ -26,6 +26,7 @@ public class BuiltinStorages {
   public static final String RCFILE = "RCFILE";
   public static final String ROW = "ROW";
   public static final String PARQUET = "PARQUET";
+  public static final String ORC = "ORC";
   public static final String SEQUENCE_FILE = "SEQUENCEFILE";
   public static final String AVRO = "AVRO";
   public static final String HBASE = "HBASE";

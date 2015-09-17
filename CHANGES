@@ -36,6 +36,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1134: start-tajo.sh should display WEB UI URL and TajoMaster RPC 
+    address. (Contributed YeonSu Han, committed by hyunsik)
+
     TAJO-1340: Change the default output file format. (jinho)
 
     TAJO-1835: TajoClient::executeQueryAndGetResult should throw 
@@ -624,6 +627,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1465: Add ORCFileAppender to write into ORCFile table. 
+    (Contributed by Joyngyoung Park, committed by hyunsik)
 
     TAJO-1841: Eliminate explicit diamond expressions in tajo-{algebra,rpc}
     (hyunsik)

@@ -39,6 +39,7 @@ public class ErrorMessages {
     ADD_MESSAGE(NOT_IMPLEMENTED, "not implemented feature: %s", 1);
     ADD_MESSAGE(FEATURE_NOT_SUPPORTED, "unsupported feature: %s", 1);
     ADD_MESSAGE(INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
+    ADD_MESSAGE(INVALID_VALUE_FOR_CAST, "%s value cannot be casted to %s", 2);
 
     // Query Management and Scheduler
     ADD_MESSAGE(QUERY_FAILED, "query has been failed due to %s", 1);

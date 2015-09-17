@@ -19,7 +19,7 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.BeforeClass;
@@ -50,7 +50,7 @@ public class TestTimestampDatum {
     assertEquals(Type.TIMESTAMP, d.type());
 	}
 
-	@Test(expected = InvalidCastException.class)
+	@Test(expected = TajoRuntimeException.class)
 	public final void testAsInt4() {
     Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
     d.asInt4();
@@ -63,13 +63,13 @@ public class TestTimestampDatum {
     assertEquals(DateTimeUtil.javaTimeToJulianTime(javaTime), d.asInt8());
 	}
 
-  @Test(expected = InvalidCastException.class)
+  @Test(expected = TajoRuntimeException.class)
 	public final void testAsFloat4() {
     Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
     d.asFloat4();
 	}
 
-  @Test(expected = InvalidCastException.class)
+  @Test(expected = TajoRuntimeException.class)
 	public final void testAsFloat8() {
     int instance = 1386577582;
     Datum d = DatumFactory.createTimestmpDatumWithUnixTime(instance);

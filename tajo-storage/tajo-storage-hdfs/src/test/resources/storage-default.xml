@@ -133,7 +133,7 @@
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>text,raw,draw,rcfile,row,parquet,sequencefile,avro</value>
+    <value>text,raw,draw,rcfile,row,parquet,orc,sequencefile,avro</value>
   </property>
 
   <property>
@@ -169,6 +169,11 @@
   <property>
     <name>tajo.storage.appender-handler.parquet.class</name>
     <value>org.apache.tajo.storage.parquet.ParquetAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.orc.class</name>
+    <value>org.apache.tajo.storage.orc.ORCAppender</value>
   </property>
 
   <property>
