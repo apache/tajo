@@ -44,5 +44,4 @@ Compatibility Issues with Apache Hive™
 ======================================
 
 At the moment, Tajo only supports flat relational tables.
-As a result, Tajo's ORC storage type does not support nested schemas.
-However, we are currently working on adding support for nested schemas and non-scalar types (`TAJO-710 <https://issues.apache.org/jira/browse/TAJO-710>`_).
+We are currently working on adding support for nested schemas and non-scalar types (`TAJO-710 <https://issues.apache.org/jira/browse/TAJO-710>`_).
