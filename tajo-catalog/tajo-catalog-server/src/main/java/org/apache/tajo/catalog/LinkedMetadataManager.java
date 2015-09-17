@@ -32,7 +32,6 @@ import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 import static com.google.common.collect.Collections2.filter;
 
@@ -163,7 +162,7 @@ public class LinkedMetadataManager {
   public Collection<String> getSchemas(@Nullable String dbName) throws UndefinedDatabaseException {
     ensureIfDBExists(dbName);
 
-    return providerMap.get(dbName).getCatalogs();
+    return providerMap.get(dbName).getSchemas();
   }
 
   /**
@@ -180,21 +179,9 @@ public class LinkedMetadataManager {
    */
   public Collection<String> getTableNames(String dbName,
                                           @Nullable final String schemaPattern,
-                                          final String tablePattern) throws UndefinedDatabaseException {
+                                          @Nullable final String tablePattern) throws UndefinedDatabaseException {
     ensureIfDBExists(dbName);
-
-    if (tablePattern == null) { // all tables in this database
-      return providerMap.get(dbName).getTables("null");
-
-    } else {
-      final Pattern pattern = Pattern.compile(tablePattern);
-      return filter(providerMap.get(dbName).getTables(schemaPattern), new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String input) {
-          return pattern.matcher(tablePattern).matches();
-        }
-      });
-    }
+    return providerMap.get(dbName).getTables(schemaPattern, tablePattern);
   }
 
   /**
@@ -232,7 +219,7 @@ public class LinkedMetadataManager {
    */
   public boolean existsTable(String dbName, String schemaName, String tableName) {
     if (providerMap.containsKey(dbName)) {
-      return providerMap.get(dbName).getTables(schemaName).contains(tableName);
+      return providerMap.get(dbName).getTables(schemaName, tableName).contains(tableName);
     }
 
     return false;
@@ -251,6 +238,6 @@ public class LinkedMetadataManager {
 
     ensureIfDBExists(dbName);
 
-    return providerMap.get(dbName).getTableDescriptor(schemaName, tbName);
+    return providerMap.get(dbName).getTableDesc(schemaName, tbName);
   }
 }

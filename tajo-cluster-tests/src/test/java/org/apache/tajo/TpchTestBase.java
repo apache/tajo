@@ -27,10 +27,10 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
@@ -76,7 +76,7 @@ public class TpchTestBase {
     File tpchTablesDir = new File(new File(CommonTestingUtil.getTestDir().toUri()), "tpch");
 
     for (int i = 0; i < names.length; i++) {
-      String str = FileUtil.readTextFileFromResource("tpch/" + names[i] + ".tbl");
+      String str = JavaResourceUtil.readTextFromResource("tpch/" + names[i] + ".tbl");
       Path tablePath = new Path(new Path(tpchTablesDir.toURI()), names[i] + ".tbl");
       FileUtil.writeTextToFile(str, tablePath);
       paths[i] = tablePath.toString();

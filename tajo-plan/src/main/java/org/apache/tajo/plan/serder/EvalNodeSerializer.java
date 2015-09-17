@@ -102,9 +102,9 @@ public class EvalNodeSerializer
   }
 
   @Override
-  public EvalNode visitUnaryEval(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, UnaryEval unary) {
+  public EvalNode visitUnaryEval(EvalTreeProtoBuilderContext context, UnaryEval unary, Stack<EvalNode> stack) {
     // visiting and registering childs
-    super.visitUnaryEval(context, stack, unary);
+    super.visitUnaryEval(context, unary, stack);
     int [] childIds = registerGetChildIds(context, unary);
 
     // building itself
@@ -183,7 +183,7 @@ public class EvalNodeSerializer
   }
 
   @Override
-  public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval field) {
+  public EvalNode visitField(EvalTreeProtoBuilderContext context, FieldEval field, Stack<EvalNode> stack) {
     PlanProto.EvalNode.Builder builder = createEvalBuilder(context, field);
     builder.setField(field.getColumnRef().getProto());
     context.treeBuilder.addNodes(builder);

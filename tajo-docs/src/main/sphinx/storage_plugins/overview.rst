@@ -1,11 +1,11 @@
 *************************************
-Storage Plugin
+Storage Plugin Overview
 *************************************
 
 Overview
 ========
 
-Tajo supports various storage systems, such as HDFS, Amazon S3, Openstack Swift, and HBase. Also, we have a plan to support RDBMS storages like Oracle, MySQL, PostgreSQL. Tajo already embeds HDFS, S3, Openstack, and HBase, and also Tajo allows users to register custom storages and data formats to Tajo cluster instances. This section describes how you register custom storages and data types.
+Tajo supports various storage systems, such as HDFS, Amazon S3, Openstack Swift, HBase, and RDBMS. Tajo already embeds HDFS, S3, Openstack, HBase, RDBMS storage plugins, and also Tajo allows users to register custom storages and data formats to Tajo cluster instances. This section describes how you register custom storages and data types.
 
 Register custom storage
 =======================

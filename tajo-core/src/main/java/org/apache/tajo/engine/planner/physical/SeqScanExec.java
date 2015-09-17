@@ -174,9 +174,6 @@ public class SeqScanExec extends ScanExec {
       scanIt = new FilterScanIterator(scanner, qual);
 
     } else {
-      if (scanner.isSelectable()) { // TODO - isSelectable should be moved to FormatProperty
-        scanner.setFilter(qual);
-      }
       scanIt = new FullScanIterator(scanner);
     }
   }
@@ -275,10 +272,17 @@ public class SeqScanExec extends ScanExec {
       this.scanner = tablespace.getScanner(
           meta,
           plan.getPhysicalSchema(),
-          fragments[0],
+          FragmentConvertor.convert(context.getConf(), fragments[0]),
           projected);
     }
 
+    if (scanner.isSelectable()) { // TODO - isSelectable should be moved to FormatProperty
+      scanner.setFilter(qual);
+    }
+
+    if (plan.hasLimit()) {
+      scanner.setLimit(plan.getLimit());
+    }
     scanner.init();
   }
 
