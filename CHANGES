@@ -269,6 +269,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1846: Python temp directory path should be selected differently based 
+    on user platform. (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
     TAJO-1851: Can not release a different rack task. (jinho)
 
     TAJO-1830: Fix race condition in HdfsServiceTracker. (jinho)
