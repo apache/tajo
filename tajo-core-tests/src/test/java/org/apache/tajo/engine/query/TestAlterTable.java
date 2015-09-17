@@ -196,7 +196,6 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
     verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
-
     catalog.dropTable(tableName);
   }
 
