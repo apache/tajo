@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.pgsql;
 
+import com.google.common.base.Optional;
 import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
@@ -111,8 +112,6 @@ public class TestPgSQLJdbcTableSpace {
 
   public static JSONObject getJsonTablespace(Map<String, String> connProperties)
       throws IOException {
-    String uri = PgSQLTestServer.getInstance().getJdbcUrl().split("\\?")[0];
-
     JSONObject configElements = new JSONObject();
     configElements.put(JdbcTablespace.CONFIG_KEY_MAPPED_DATABASE, PgSQLTestServer.DATABASE_NAME);
 
@@ -123,5 +122,16 @@ public class TestPgSQLJdbcTableSpace {
     configElements.put(JdbcTablespace.CONFIG_KEY_CONN_PROPERTIES, connPropertiesJson);
 
     return configElements;
+  }
+
+  @Test
+  public void testTemporaryTablespace() {
+    Optional<Tablespace> ts = TablespaceManager.removeTablespaceForTest("pgsql_cluster");
+    assertTrue(ts.isPresent());
+
+    Optional<Tablespace> tempTs = TablespaceManager.get(jdbcUrl);
+    assertTrue(tempTs.isPresent());
+
+    TablespaceManager.addTableSpaceForTest(ts.get());
   }
 }

@@ -319,6 +319,18 @@ public class TablespaceManager implements StorageService {
     return Optional.fromNullable(existing);
   }
 
+  @VisibleForTesting
+  public static Optional<Tablespace> removeTablespaceForTest(String name) {
+    Tablespace existing = null;
+    synchronized (SPACES_URIS_MAP) {
+      URI uri = SPACES_URIS_MAP.remove(name);
+      if (uri != null) {
+        existing = TABLE_SPACES.remove(uri);
+      }
+    }
+    return Optional.fromNullable(existing);
+  }
+
   public Iterable<String> getSupportSchemes() {
     return TABLE_SPACE_HANDLERS.keySet();
   }
@@ -345,6 +357,16 @@ public class TablespaceManager implements StorageService {
         lastOne = entry.getValue();
       }
     }
+
+    if (lastOne == null) {
+      lastOne = initializeTableSpace(UUID.randomUUID().toString(), URI.create(uri), new JSONObject());
+      try {
+        lastOne.init(systemConf);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
     return (Optional<T>) Optional.fromNullable(lastOne);
   }
 

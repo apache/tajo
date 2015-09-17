@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.Assert.assertTrue;
+
 public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @SuppressWarnings("unused")
   // This should be invoked for initializing PgSQLTestServer
