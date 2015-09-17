@@ -37,6 +37,7 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.BaseSchemaBuildPhase.Processor.NameRefInSelectListNormalizer;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
@@ -69,13 +70,66 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
   @Override
   public boolean isEligible(PlanContext context, Expr expr) throws TajoException {
-    Set<Relation> relations = ExprFinder.finds(expr, OpType.Relation);
+    Set<Relation> relations = ExprFinderIncludeSubquery.finds(expr, OpType.Relation);
     for (Relation eachRelation : relations) {
       if (catalog.getTableDesc(getQualifiedRelationName(context, eachRelation)).hasSelfDescSchema()) {
         return true;
       }
     }
     return false;
+  }
+
+  static class FinderContext<T> {
+    Set<T> set = new HashSet<>();
+    OpType targetType;
+
+    FinderContext(OpType type) {
+      this.targetType = type;
+    }
+  }
+
+  private static class ExprFinderIncludeSubquery extends SimpleAlgebraVisitor<FinderContext, Object> {
+
+    public static <T extends Expr> Set<T> finds(Expr expr, OpType type) throws TajoException {
+      FinderContext<T> context = new FinderContext<>(type);
+      ExprFinderIncludeSubquery finder = new ExprFinderIncludeSubquery();
+      finder.visit(context, new Stack<Expr>(), expr);
+      return context.set;
+    }
+
+    @Override
+    public Object visit(FinderContext ctx, Stack<Expr> stack, Expr expr) throws TajoException {
+      if (expr instanceof Selection) {
+        preHook(ctx, stack, expr);
+        visit(ctx, stack, ((Selection) expr).getQual());
+        visitUnaryOperator(ctx, stack, (UnaryOperator) expr);
+        postHook(ctx, stack, expr, null);
+      } else if (expr instanceof UnaryOperator) {
+        preHook(ctx, stack, expr);
+        visitUnaryOperator(ctx, stack, (UnaryOperator) expr);
+        postHook(ctx, stack, expr, null);
+      } else if (expr instanceof BinaryOperator) {
+        preHook(ctx, stack, expr);
+        visitBinaryOperator(ctx, stack, (BinaryOperator) expr);
+        postHook(ctx, stack, expr, null);
+      } else if (expr instanceof SimpleTableSubquery) {
+        preHook(ctx, stack, expr);
+        visit(ctx, stack, ((SimpleTableSubquery) expr).getSubQuery());
+        postHook(ctx, stack, expr, null);
+      } else if (expr instanceof TablePrimarySubQuery) {
+        preHook(ctx, stack, expr);
+        visit(ctx, stack, ((TablePrimarySubQuery) expr).getSubQuery());
+        postHook(ctx, stack, expr, null);
+      } else {
+        super.visit(ctx, stack, expr);
+      }
+
+      if (expr != null && ctx.targetType == expr.getType()) {
+        ctx.set.add(expr);
+      }
+
+      return null;
+    }
   }
 
   @Override

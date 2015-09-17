@@ -18,7 +18,10 @@
 
 package org.apache.tajo.plan.util;
 
-import org.apache.tajo.algebra.*;
+import org.apache.tajo.algebra.BinaryOperator;
+import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.algebra.OpType;
+import org.apache.tajo.algebra.UnaryOperator;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
@@ -31,8 +34,8 @@ import java.util.Stack;
 
 public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object> {
 
-  static class Context {
-    List<Expr> set = TUtil.newList();
+  static class Context<T> {
+    List<T> set = TUtil.newList();
     OpType targetType;
 
     Context(OpType type) {
@@ -45,37 +48,24 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
   }
 
   public static <T extends Expr> List<T> findsInOrder(Expr expr, OpType type) {
-    Context context = new Context(type);
+    Context<T> context = new Context<>(type);
     ExprFinder finder = new ExprFinder();
     try {
       finder.visit(context, new Stack<Expr>(), expr);
     } catch (TajoException e) {
       throw new TajoInternalError(e);
     }
-    return (List<T>) context.set;
+    return context.set;
   }
 
   public Object visit(Context ctx, Stack<Expr> stack, Expr expr) throws TajoException {
-    if (expr instanceof Selection) {
-      preHook(ctx, stack, expr);
-      visit(ctx, stack, ((Selection) expr).getQual());
-      visitUnaryOperator(ctx, stack, (UnaryOperator) expr);
-      postHook(ctx, stack, expr, null);
-    } else if (expr instanceof UnaryOperator) {
+    if (expr instanceof UnaryOperator) {
       preHook(ctx, stack, expr);
       visitUnaryOperator(ctx, stack, (UnaryOperator) expr);
       postHook(ctx, stack, expr, null);
     } else if (expr instanceof BinaryOperator) {
       preHook(ctx, stack, expr);
       visitBinaryOperator(ctx, stack, (BinaryOperator) expr);
-      postHook(ctx, stack, expr, null);
-    } else if (expr instanceof SimpleTableSubquery) {
-      preHook(ctx, stack, expr);
-      visit(ctx, stack, ((SimpleTableSubquery) expr).getSubQuery());
-      postHook(ctx, stack, expr, null);
-    } else if (expr instanceof TablePrimarySubQuery) {
-      preHook(ctx, stack, expr);
-      visit(ctx, stack, ((TablePrimarySubQuery) expr).getSubQuery());
       postHook(ctx, stack, expr, null);
     } else {
       super.visit(ctx, stack, expr);
