@@ -366,7 +366,11 @@
       <modules>
         <module>tajo-docs</module>
       </modules>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
     </profile>
+
     <profile>
       <id>apache-release</id>
       <activation>
