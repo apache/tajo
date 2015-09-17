@@ -1339,7 +1339,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ScanNode scanNode = block.getNodeFromExpr(expr);
-    updatePhysicalInfo(context, scanNode.getTableDesc());
+    updatePhysicalInfo(scanNode.getTableDesc());
 
     // Find expression which can be evaluated at this relation node.
     // Except for column references, additional expressions used in select list, where clause, order-by clauses
@@ -1398,24 +1398,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return targets;
   }
 
-  private void updatePhysicalInfo(PlanContext planContext, TableDesc desc) {
-    if (desc.getUri() != null &&
-        !desc.getMeta().getStoreType().equals("SYSTEM") &&
-        !desc.getMeta().getStoreType().equals("FAKEFILE") && // FAKEFILE is used for test
-        PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
+  private void updatePhysicalInfo(TableDesc desc) {
+
+    // FAKEFILE is used for test
+    if (!desc.getMeta().getStoreType().equals("SYSTEM") && !desc.getMeta().getStoreType().equals("FAKEFILE")) {
       try {
-        Path path = new Path(desc.getUri());
-        FileSystem fs = path.getFileSystem(planContext.queryContext.getConf());
-        FileStatus status = fs.getFileStatus(path);
-        if (desc.getStats() != null && (status.isDirectory() || status.isFile())) {
-          ContentSummary summary = fs.getContentSummary(path);
-          if (summary != null) {
-            long volume = summary.getLength();
-            desc.getStats().setNumBytes(volume);
-          }
+        if (desc.getStats() != null) {
+          desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
         }
-      } catch (Throwable t) {
-        LOG.warn(t, t);
+      } catch (UnsupportedException t) {
+        LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume()");
+        // -1 means unknown volume size.
+        desc.getStats().setNumBytes(-1);
       }
     }
   }

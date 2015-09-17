@@ -19,6 +19,7 @@
 package org.apache.tajo.master;
 
 import com.codahale.metrics.Gauge;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -58,6 +59,7 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -180,11 +182,11 @@ public class TajoMaster extends CompositeService {
     this.dispatcher = new AsyncDispatcher();
     addIfService(dispatcher);
 
-      // check the system directory and create if they are not created.
-      checkAndInitializeSystemDirectories();
-      diagnoseTajoMaster();
+    // check the system directory and create if they are not created.
+    checkAndInitializeSystemDirectories();
+    diagnoseTajoMaster();
 
-    catalogServer = new CatalogServer(Collections.EMPTY_SET, loadFunctions());
+    catalogServer = new CatalogServer(TablespaceManager.getMetadataProviders(), loadFunctions());
     addIfService(catalogServer);
     catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
@@ -407,6 +409,14 @@ public class TajoMaster extends CompositeService {
     super.serviceStop();
 
     LOG.info("Tajo Master main thread exiting");
+  }
+
+  /**
+   * This is only for unit tests.
+   */
+  @VisibleForTesting
+  public void refresh() {
+    catalogServer.refresh(TablespaceManager.getMetadataProviders());
   }
 
   public EventHandler getEventHandler() {

@@ -29,7 +29,7 @@ public class UnsupportedException extends TajoException {
   }
 
   public UnsupportedException() {
-    super(Errors.ResultCode.FEATURE_NOT_SUPPORTED, Thread.currentThread().getStackTrace()[1].getClassName());
+    super(Errors.ResultCode.FEATURE_NOT_SUPPORTED, ExceptionUtil.getExceptionPoint());
   }
 
   public UnsupportedException(String featureName) {

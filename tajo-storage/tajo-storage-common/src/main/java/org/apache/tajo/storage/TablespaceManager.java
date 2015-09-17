@@ -19,8 +19,10 @@
 package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -29,16 +31,20 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.UriUtil;
 
 import javax.annotation.Nullable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -71,11 +77,14 @@ public class TablespaceManager implements StorageService {
   protected static final Map<Class<?>, Constructor<?>> CONSTRUCTORS = Maps.newHashMap();
   protected static final Map<String, Class<? extends Tablespace>> TABLE_SPACE_HANDLERS = Maps.newHashMap();
 
-  public static final Class [] TABLESPACE_PARAM = new Class [] {String.class, URI.class};
+  public static final Class[] TABLESPACE_PARAM = new Class[]{String.class, URI.class, JSONObject.class};
+
+  public static final String TABLESPACE_SPEC_CONFIGS_KEY = "configs";
 
   static {
     instance = new TablespaceManager();
   }
+
   /**
    * Singleton instance
    */
@@ -94,7 +103,7 @@ public class TablespaceManager implements StorageService {
   }
 
   private void addLocalFsTablespace() {
-    if (TABLE_SPACES.headMap(LOCAL_FS_URI, true).firstEntry() == null) {
+    if (TABLE_SPACES.headMap(LOCAL_FS_URI, true).firstEntry() == null && TABLE_SPACE_HANDLERS.containsKey("file")) {
       String tmpName = UUID.randomUUID().toString();
       registerTableSpace(tmpName, LOCAL_FS_URI, null, false, false);
     }
@@ -124,9 +133,9 @@ public class TablespaceManager implements StorageService {
   private JSONObject loadFromConfig(String fileName) {
     String json;
     try {
-      json = FileUtil.readTextFileFromResource(fileName);
+      json = JavaResourceUtil.readTextFromResource(fileName);
     } catch (FileNotFoundException fnfe) {
-      return null;
+      return null;      
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -174,7 +183,7 @@ public class TablespaceManager implements StorageService {
     String handlerClass = (String) storageDesc.get(KEY_STORAGE_HANDLER);
 
     return new Pair<String, Class<? extends Tablespace>>(
-        storageType,(Class<? extends Tablespace>) Class.forName(handlerClass));
+        storageType, (Class<? extends Tablespace>) Class.forName(handlerClass));
   }
 
   private void loadTableSpaces(JSONObject json, boolean override) {
@@ -182,24 +191,29 @@ public class TablespaceManager implements StorageService {
 
     if (spaces != null) {
       for (Map.Entry<String, Object> entry : spaces.entrySet()) {
-        AddTableSpace(entry.getKey(), (JSONObject) entry.getValue(), override);
+        JSONObject spaceDetail = (JSONObject) entry.getValue();
+        AddTableSpace(
+            entry.getKey(),
+            URI.create(spaceDetail.getAsString("uri")),
+            Boolean.parseBoolean(spaceDetail.getAsString("default")),
+            (JSONObject) spaceDetail.get(TABLESPACE_SPEC_CONFIGS_KEY),
+            override);
       }
     }
   }
 
-  public static void AddTableSpace(String spaceName, JSONObject spaceDesc, boolean override) {
-    boolean defaultSpace = Boolean.parseBoolean(spaceDesc.getAsString("default"));
-    URI spaceUri = URI.create(spaceDesc.getAsString("uri"));
+  public static void AddTableSpace(String spaceName, URI uri, boolean isDefault, JSONObject configs, boolean override) {
 
-    if (defaultSpace) {
-      registerTableSpace(DEFAULT_TABLESPACE_NAME, spaceUri, spaceDesc, true, override);
+
+    if (isDefault) {
+      registerTableSpace(DEFAULT_TABLESPACE_NAME, uri, configs, true, override);
     }
-    registerTableSpace(spaceName, spaceUri, spaceDesc, true, override);
+    registerTableSpace(spaceName, uri, configs, true, override);
   }
 
   private static void registerTableSpace(String spaceName, URI uri, JSONObject spaceDesc,
                                          boolean visible, boolean override) {
-    Tablespace tableSpace = initializeTableSpace(spaceName, uri, visible);
+    Tablespace tableSpace = initializeTableSpace(spaceName, uri, spaceDesc);
     tableSpace.setVisible(visible);
 
     try {
@@ -261,12 +275,11 @@ public class TablespaceManager implements StorageService {
 
   public static final String KEY_SPACES = "spaces";
 
-  private static Tablespace initializeTableSpace(String spaceName, URI uri, boolean visible) {
-    Preconditions.checkNotNull(uri.getScheme(), "URI must include scheme, but it was " + uri);
-    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(uri.getScheme());
+  private static Tablespace initializeTableSpace(String spaceName, URI uri, JSONObject spaceDesc) {
+    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(UriUtil.getScheme(uri));
 
     if (clazz == null) {
-      throw new RuntimeException("There is no tablespace for " + uri.toString());
+      throw new RuntimeException("Not found Tablespace handler for " + uri.toString());
     }
 
     try {
@@ -279,7 +292,7 @@ public class TablespaceManager implements StorageService {
         CONSTRUCTORS.put(clazz, constructor);
       }
 
-      return constructor.newInstance(new Object[]{spaceName, uri});
+      return constructor.newInstance(new Object[]{spaceName, uri, spaceDesc});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -289,12 +302,18 @@ public class TablespaceManager implements StorageService {
   public static Optional<Tablespace> addTableSpaceForTest(Tablespace space) {
     Tablespace existing;
     synchronized (SPACES_URIS_MAP) {
+
+      String scheme = UriUtil.getScheme(space.getUri());
+      if (!TABLE_SPACE_HANDLERS.containsKey(scheme)) {
+        TABLE_SPACE_HANDLERS.put(scheme, space.getClass());
+      }
+
       // Remove existing one
       SPACES_URIS_MAP.remove(space.getName());
       existing = TABLE_SPACES.remove(space.getUri());
 
       // Add anotherone for test
-      registerTableSpace(space.name, space.uri, null, true, true);
+      registerTableSpace(space.name, space.uri, space.getConfig(), true, true);
     }
     // if there is an existing one, return it.
     return Optional.fromNullable(existing);
@@ -321,7 +340,7 @@ public class TablespaceManager implements StorageService {
 
     // Find the longest matched one. For example, assume that the caller tries to find /x/y/z, and
     // there are /x and /x/y. In this case, /x/y will be chosen because it is more specific.
-    for (Map.Entry<URI, Tablespace> entry: TABLE_SPACES.headMap(URI.create(uri), true).entrySet()) {
+    for (Map.Entry<URI, Tablespace> entry : TABLE_SPACES.headMap(URI.create(uri), true).entrySet()) {
       if (uri.startsWith(entry.getKey().toString())) {
         lastOne = entry.getValue();
       }
@@ -383,7 +402,28 @@ public class TablespaceManager implements StorageService {
     return space.getTableUri(databaseName, tableName);
   }
 
+  @Override
+  public long getTableVolumn(URI tableUri) throws UnsupportedException {
+    return get(tableUri).get().getTableVolume(tableUri);
+  }
+
   public static Iterable<Tablespace> getAllTablespaces() {
     return TABLE_SPACES.values();
+  }
+
+  public static Collection<MetadataProvider> getMetadataProviders() {
+    Collection<Tablespace> filteredSpace = Collections2.filter(TABLE_SPACES.values(), new Predicate<Tablespace>() {
+      @Override
+      public boolean apply(@Nullable Tablespace space) {
+        return space.getProperty().isMetadataProvided();
+      }
+    });
+
+    return Collections2.transform(filteredSpace, new Function<Tablespace, MetadataProvider>() {
+      @Override
+      public MetadataProvider apply(@Nullable Tablespace space) {
+        return space.getMetadataProvider();
+      }
+    });
   }
 }

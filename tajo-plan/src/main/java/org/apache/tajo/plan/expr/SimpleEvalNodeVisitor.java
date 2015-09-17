@@ -20,7 +20,6 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Stack;
 
@@ -36,7 +35,7 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
     EvalNode result;
 
     if (evalNode instanceof UnaryEval) {
-      result = visitUnaryEval(context, stack, (UnaryEval) evalNode);
+      result = visitUnaryEval(context, (UnaryEval) evalNode, stack);
     } else if (evalNode instanceof BinaryEval) {
       result = visitBinaryEval(context, stack, (BinaryEval) evalNode);
     } else {
@@ -50,7 +49,7 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
         result = visitRowConstant(context, (RowConstantEval) evalNode, stack);
         break;
       case FIELD:
-        result = visitField(context, stack, (FieldEval) evalNode);
+        result = visitField(context, (FieldEval) evalNode, stack);
         break;
 
 
@@ -88,7 +87,7 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
     return result;
   }
 
-  protected EvalNode visitUnaryEval(CONTEXT context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+  protected EvalNode visitUnaryEval(CONTEXT context, UnaryEval unaryEval, Stack<EvalNode> stack) {
     stack.push(unaryEval);
     visit(context, unaryEval.getChild(), stack);
     stack.pop();
@@ -126,7 +125,7 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
     return evalNode;
   }
 
-  protected EvalNode visitField(CONTEXT context, Stack<EvalNode> stack, FieldEval evalNode) {
+  protected EvalNode visitField(CONTEXT context, FieldEval evalNode, Stack<EvalNode> stack) {
     return evalNode;
   }
 
@@ -161,10 +160,6 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
     visit(context, evalNode.getResult(), stack);
     stack.pop();
     return evalNode;
-  }
-
-  protected EvalNode visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {
-    return visitBinaryEval(context, stack, evalNode);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////

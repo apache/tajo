@@ -1144,7 +1144,7 @@ public class Stage implements EventHandler<StageEvent> {
         // After calling this method, partition paths are removed from the physical plan.
         fragments = Repartitioner.getFragmentsFromPartitionedTable((FileTablespace) tablespace, scan, table);
       } else {
-        fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan);
+        fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan.getQual());
       }
 
       Stage.scheduleFragments(stage, fragments);

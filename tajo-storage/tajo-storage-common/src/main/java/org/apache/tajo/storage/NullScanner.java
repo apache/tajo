@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
@@ -73,6 +74,11 @@ public class NullScanner implements Scanner {
   }
 
   @Override
+  public void pushOperators(LogicalNode planPart) {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  @Override
   public boolean isProjectable() {
     return false;
   }
@@ -89,6 +95,11 @@ public class NullScanner implements Scanner {
 
   @Override
   public void setFilter(EvalNode filter) {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  @Override
+  public void setLimit(long num) {
     throw new TajoRuntimeException(new UnsupportedException());
   }
 

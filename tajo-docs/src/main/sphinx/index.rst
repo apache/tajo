@@ -37,7 +37,7 @@ Table of Contents:
    functions
    table_management
    table_partitioning
-   storage_plugin
+   storage_plugins
    index_overview
    backup_and_restore
    hive_integration
