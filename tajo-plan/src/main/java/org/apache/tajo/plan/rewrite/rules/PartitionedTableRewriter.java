@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -132,42 +133,71 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     try {
       if (conjunctiveForms == null) {
         partitions = catalog.getAllPartitions(splits[0], splits[1]);
+        // If there is no partition on catalog, we need to build paths by filtering file system.
+        if (partitions.isEmpty()) {
+          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+        } else {
+          filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+        }
       } else {
         PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);
-      }
-      // If catalog returns list of table partitions successfully, build path lists for scanning table data.
-      if (partitions != null) {
-        filteredPaths = new Path[partitions.size()];
-        for (int i = 0; i < partitions.size(); i++) {
-          filteredPaths[i] = new Path(partitions.get(i).getPath());
-        }
+        filteredPaths = findFilteredPathsByPartitionDesc(partitions);
       }
     } catch (TajoInternalError e) {
       LOG.error(e.getMessage(), e);
+      // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
+      // objects with the path-filter as following.
+      filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
     }
-
-    // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
-    // objects with the path-filter.
-    if (partitions == null || filteredPaths == null) {
-      PathFilter [] filters;
-      if (conjunctiveForms == null) {
-        filters = buildAllAcceptingPathFilters(partitionColumns);
-      } else {
-        filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
-      }
-
-      // loop from one to the number of partition columns
-      filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
-
-      for (int i = 1; i < partitionColumns.size(); i++) {
-        // Get all file status matched to a ith level path filter.
-        filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
-      }
-    }
-
     LOG.info("Filtered directory or files: " + filteredPaths.length);
 
+    return filteredPaths;
+  }
+
+  /**
+   * Build list of partition path by PartitionDescProto which is generated from CatalogStore.
+   *
+   * @param partitions
+   * @return
+   */
+  private Path[] findFilteredPathsByPartitionDesc(List<PartitionDescProto> partitions) {
+    Path [] filteredPaths = new Path[partitions.size()];
+    for (int i = 0; i < partitions.size(); i++) {
+      filteredPaths[i] = new Path(partitions.get(i).getPath());
+    }
+    return filteredPaths;
+  }
+
+  /**
+   * Build list of partition path by filtering directories in the given table path.
+   *
+   *
+   * @param partitionColumns
+   * @param conjunctiveForms
+   * @param fs
+   * @param tablePath
+   * @return
+   * @throws IOException
+   */
+  private Path [] findFilteredPathsFromFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
+                                                  FileSystem fs, Path tablePath) throws IOException{
+    Path [] filteredPaths = null;
+    PathFilter [] filters;
+
+    if (conjunctiveForms == null) {
+      filters = buildAllAcceptingPathFilters(partitionColumns);
+    } else {
+      filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
+    }
+
+    // loop from one to the number of partition columns
+    filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
+
+    for (int i = 1; i < partitionColumns.size(); i++) {
+      // Get all file status matched to a ith level path filter.
+      filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
+    }
     return filteredPaths;
   }
 
