@@ -33,7 +33,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
@@ -198,7 +198,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   public String readSchemaFile(String path) {
     try {
-      return FileUtil.readTextFileFromResource("schemas/" + path);
+      return JavaResourceUtil.readTextFromResource("schemas/" + path);
     } catch (IOException e) {
       throw new TajoInternalError(e);
     }

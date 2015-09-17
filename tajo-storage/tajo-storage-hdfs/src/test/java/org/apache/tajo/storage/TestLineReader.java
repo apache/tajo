@@ -38,6 +38,7 @@ import org.apache.tajo.storage.text.DelimitedLineReader;
 import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.junit.Test;
 
 import java.io.File;
@@ -213,7 +214,7 @@ public class TestLineReader {
 
   @Test
   public void testByteBufLineReaderWithoutTerminating() throws IOException {
-    String path = FileUtil.getResourcePath("dataset/testLineText.txt").getFile();
+    String path = JavaResourceUtil.getResourceURL("dataset/testLineText.txt").getFile();
     File file = new File(path);
     String data = FileUtil.readTextFile(file);
 

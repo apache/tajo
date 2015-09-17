@@ -188,12 +188,35 @@ public class ExceptionUtil {
   }
 
   public static void printStackTraceIfError(Log log, Throwable t) {
-    if (!ExceptionUtil.isManagedException(t)) {
+    if (System.getProperty("DEBUG") != null || !ExceptionUtil.isManagedException(t)) {
       ExceptionUtil.printStackTrace(log, t);
     }
   }
 
   public static UnsupportedException makeNotSupported(String feature) {
     return new UnsupportedException(feature);
+  }
+
+  /**
+   * Return the string about the exception line ; e.g.,)
+   * <code>Line 195 in JdbcTablespace.java</code>
+   *
+   * @return A string representing the line number and source file name at which the exception occurs.
+   */
+  @SuppressWarnings("unused")
+  public static String getExceptionLine() {
+    StackTraceElement stack = Thread.currentThread().getStackTrace()[3];
+    return "Line " + stack.getLineNumber() + " in " + stack.getFileName();
+  }
+
+  /**
+   * Return the string about the exception point; e.g.,)
+   * <code>org.apache.tajo.storage.mysql.JdbcTablespace::createTable</code>
+   *
+   * @return A string representing the class and method names at which the exception occurs.
+   */
+  public static String getExceptionPoint() {
+    StackTraceElement stack = Thread.currentThread().getStackTrace()[3];
+    return stack.getClassName() + "::" + stack.getMethodName();
   }
 }

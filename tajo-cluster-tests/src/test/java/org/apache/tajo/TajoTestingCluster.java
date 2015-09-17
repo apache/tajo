@@ -345,7 +345,7 @@ public class TajoTestingCluster {
 
       URI defaultTsUri = TajoConf.getWarehouseDir(c).toUri();
       FileTablespace defaultTableSpace =
-          new FileTablespace(TablespaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri);
+          new FileTablespace(TablespaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri, null);
       defaultTableSpace.init(conf);
       TablespaceManager.addTableSpaceForTest(defaultTableSpace);
 

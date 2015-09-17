@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.Tuple;
 
@@ -41,12 +42,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
   public CSVLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
-
-    targetColumnIndexes = new int[projected.length];
-    for (int i = 0; i < projected.length; i++) {
-      targetColumnIndexes[i] = schema.getColumnId(projected[i].getQualifiedName());
-    }
-    Arrays.sort(targetColumnIndexes);
+    targetColumnIndexes = PlannerUtil.getTargetIds(schema, projected);
   }
 
   @Override
