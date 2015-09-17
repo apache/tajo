@@ -6,9 +6,9 @@ ORC
 writing, and processing data.
 For more details, please refer to `ORC Files <https://cwiki.apache.org/confluence/display/Hive/LanguageManual+ORC>`_ at Hive wiki.
 
-==========================
-How to Create a ORC Table?
-==========================
+===========================
+How to Create an ORC Table?
+===========================
 
 If you are not familiar with ``CREATE TABLE`` statement, please refer to Data Definition Language :doc:`/sql_language/ddl`.
 
