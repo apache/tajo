@@ -16,21 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.exception;
+package org.apache.tajo.storage.thirdparty.orc;
 
-import org.apache.tajo.common.TajoDataTypes;
+import java.util.List;
 
-public class InvalidCastException extends RuntimeException {
-	private static final long serialVersionUID = -7689027447969916148L;
+public class StripeStatistics {
+  private final List<OrcProto.ColumnStatistics> cs;
 
-	public InvalidCastException() {
-	}
+  StripeStatistics(List<OrcProto.ColumnStatistics> list) {
+    this.cs = list;
+  }
 
-	public InvalidCastException(TajoDataTypes.DataType src, TajoDataTypes.DataType target) {
-		super(src.getType().name() + " value cannot be casted to " + target.getType().name());
-	}
-
-  public InvalidCastException(TajoDataTypes.Type src, TajoDataTypes.Type target) {
-    super(src.name() + " value cannot be casted to " + target.name());
+  /**
+   * Return list of column statistics
+   *
+   * @return column stats
+   */
+  public ColumnStatistics[] getColumnStatistics() {
+    ColumnStatistics[] result = new ColumnStatistics[cs.size()];
+    for (int i = 0; i < result.length; ++i) {
+      result[i] = ColumnStatisticsImpl.deserialize(cs.get(i));
+    }
+    return result;
   }
 }

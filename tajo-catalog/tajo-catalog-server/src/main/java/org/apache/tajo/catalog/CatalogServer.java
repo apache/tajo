@@ -962,7 +962,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, PartitionIdentifierProto request)
+    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, TableIdentifierProto request)
       throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
@@ -985,7 +985,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
 
-        List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
+        List<PartitionDescProto> partitions = store.getAllPartitions(dbName, tbName);
 
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
         for (PartitionDescProto partition : partitions) {
@@ -1025,6 +1025,90 @@ public class CatalogServer extends AbstractService {
         return GetTablePartitionsResponse.newBuilder()
             .setState(returnError(t))
             .build();
+
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public GetPartitionsResponse getPartitionsByAlgebra(RpcController controller,
+      PartitionsByAlgebraProto request) throws ServiceException {
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
+
+      try {
+        // linked meta data do not support partition.
+        // So, the request that wants to get partitions in this db will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return GetPartitionsResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
+      }
+
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+      }
+
+      rlock.lock();
+      try {
+        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+        List<PartitionDescProto> partitions = store.getPartitionsByAlgebra(request);
+        builder.addAllPartition(partitions);
+        builder.setState(OK);
+        return builder.build();
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetPartitionsResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
+
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public GetPartitionsResponse getPartitionsByFilter(RpcController controller,
+                                                 PartitionsByFilterProto request) throws ServiceException {
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
+
+      try {
+        // linked meta data do not support partition.
+        // So, the request that wants to get partitions in this db will be failed.
+        if (linkedMetadataManager.existsDatabase(dbName)) {
+          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+        }
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return GetPartitionsResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
+      }
+
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
+      }
+
+      rlock.lock();
+      try {
+        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+        List<PartitionDescProto> partitions = store.getPartitionsByFilter(request);
+        builder.addAllPartition(partitions);
+        builder.setState(OK);
+        return builder.build();
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return GetPartitionsResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
 
       } finally {
         rlock.unlock();

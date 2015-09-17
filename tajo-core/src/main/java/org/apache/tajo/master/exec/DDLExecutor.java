@@ -608,7 +608,7 @@ public class DDLExecutor {
     }
 
     // Find missing partitions from filesystem
-    List<PartitionDescProto> existingPartitions = catalog.getPartitions(databaseName, simpleTableName);
+    List<PartitionDescProto> existingPartitions = catalog.getAllPartitions(databaseName, simpleTableName);
     List<String> existingPartitionNames = TUtil.newList();
     Path existingPartitionPath = null;
 

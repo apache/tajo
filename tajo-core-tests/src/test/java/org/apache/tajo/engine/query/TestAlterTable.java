@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
@@ -26,6 +25,10 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.UndefinedPartitionException;
+import org.apache.tajo.exception.UndefinedPartitionMethodException;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -36,7 +39,6 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
-
   @Test
   public final void testAlterTableName() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "ABC");
@@ -56,7 +58,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddNewColumn() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "EFG");
     executeDDL("alter_table_add_new_column_ddl.sql", null);
-    assertColumnExists(createdNames.get(0), "cool");
+    assertColumnExists(createdNames.get(0),"cool");
   }
 
   @Test
@@ -77,8 +79,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddPartition() throws Exception {
     executeDDL("create_partitioned_table.sql", null);
 
-    String simpleTableName = "partitioned_table";
-    String tableName = CatalogUtil.buildFQName(getCurrentDatabase(), simpleTableName);
+    String tableName = CatalogUtil.buildFQName("TestAlterTable", "partitioned_table");
     assertTrue(catalog.existsTable(tableName));
 
     TableDesc retrieved = catalog.getTableDesc(tableName);
@@ -91,8 +92,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_add_partition1.sql", null);
     executeDDL("alter_table_add_partition2.sql", null);
 
-    List<CatalogProtos.PartitionDescProto> partitions =
-      catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 1);
     assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
@@ -110,7 +110,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
 
-    partitions = catalog.getPartitions(getCurrentDatabase(), simpleTableName);
+    partitions = catalog.getAllPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
     assertFalse(fs.exists(partitionPath));
@@ -200,8 +200,10 @@ public class TestAlterTable extends QueryTestCaseBase {
     catalog.dropTable(tableName);
   }
 
-  private void verifyPartitionCount(String databaseName, String tableName, int expectedCount) {
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
+  private void verifyPartitionCount(String databaseName, String tableName, int expectedCount)
+    throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedPartitionException {
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions(databaseName, tableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), expectedCount);
   }

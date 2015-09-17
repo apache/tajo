@@ -22,8 +22,9 @@ import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.MurmurHash;
 import org.apache.tajo.util.StringUtils;
 
@@ -51,12 +52,12 @@ public class TextDatum extends Datum {
 
   @Override
   public boolean asBool() {
-    throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidValueForCastException(TajoDataTypes.Type.TEXT, TajoDataTypes.Type.BOOLEAN));
   }
 
   @Override
   public byte asByte() {
-    throw new InvalidCastException();
+    throw new TajoRuntimeException(new InvalidValueForCastException(TajoDataTypes.Type.TEXT, TajoDataTypes.Type.BIT));
   }
 
   @Override
