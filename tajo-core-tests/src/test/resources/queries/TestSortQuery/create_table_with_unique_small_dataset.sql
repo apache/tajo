@@ -1,0 +1,1 @@
+create external table table3 (col1 text, col2 int4) using text with ('text.delimiter'=',') location ${table.path};

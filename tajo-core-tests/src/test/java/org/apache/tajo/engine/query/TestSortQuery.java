@@ -18,10 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -373,5 +370,19 @@ public class TestSortQuery extends QueryTestCaseBase {
   @SimpleTest()
   public final void testSubQuerySortAfterGroupMultiBlocks() throws Exception {
     runSimpleTests();
+  }
+
+  @Test
+  public final void testOutOfScope() throws Exception {
+    executeDDL("create_table_with_unique_small_dataset.sql", "table3");
+    // table has 5 files
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "5");
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
+    }
   }
 }

@@ -199,7 +199,6 @@ public class RpcClientManager {
    * After it is shutdown it is not possible to reuse it again.
    */
   public static void shutdown() {
-    close();
     NettyUtils.shutdownGracefully();
   }
 
