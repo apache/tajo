@@ -286,8 +286,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       assertTableExists("external_hbase_mapped_table");
 
-      HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
-      HConnection hconn = space.getConnection();
+      HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
       HTableInterface htable = hconn.getTable("external_hbase_table");
 
       try {
