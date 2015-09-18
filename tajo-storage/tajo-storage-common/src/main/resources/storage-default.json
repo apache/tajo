@@ -1,12 +1,20 @@
 {
   "storages": {
+    "file": {
+      "handler": "org.apache.tajo.storage.FileTablespace",
+      "default-format": "text"
+    },
+    "hbase:zk": {
+      "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
+      "default-format": "hbase"
+    },
     "hdfs": {
       "handler": "org.apache.tajo.storage.FileTablespace",
       "default-format": "text"
     },
-    "file": {
-      "handler": "org.apache.tajo.storage.FileTablespace",
-      "default-format": "text"
+    "jdbc:postgresql": {
+      "handler": "org.apache.tajo.storage.pgsql.PgSQLTablespace",
+      "default-format": "rowstore"
     },
     "s3": {
       "handler": "org.apache.tajo.storage.FileTablespace",
@@ -20,13 +28,9 @@
       "handler": "org.apache.tajo.storage.FileTablespace",
       "default-format": "text"
     },
-    "hbase:zk": {
-      "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
-      "default-format": "hbase"
-    },
-    "jdbc:postgresql": {
-      "handler": "org.apache.tajo.storage.pgsql.PgSQLTablespace",
-      "default-format": "rowstore"
+    "swift": {
+      "handler": "org.apache.tajo.storage.FileTablespace",
+      "default-format": "text"
     }
   }
 }
