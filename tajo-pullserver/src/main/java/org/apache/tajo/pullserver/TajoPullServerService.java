@@ -754,7 +754,8 @@ public class TajoPullServerService extends AbstractService {
     idxReader.close();
 
     FileChunk chunk = new FileChunk(data, startOffset, endOffset - startOffset);
-    LOG.info("Retrieve File Chunk: " + chunk);
+
+    if(LOG.isDebugEnabled()) LOG.debug("Retrieve File Chunk: " + chunk);
     return chunk;
   }
 

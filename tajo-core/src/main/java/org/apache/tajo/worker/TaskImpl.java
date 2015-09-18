@@ -571,7 +571,6 @@ public class TaskImpl implements Task {
         if (name.equals(chunk.getEbId())) {
           tablet = new FileFragment(name, new Path(chunk.getFile().getPath()), chunk.startOffset(), chunk.length());
           listTablets.add(tablet);
-          LOG.info("One local chunk is added to listTablets");
         }
       }
     }
