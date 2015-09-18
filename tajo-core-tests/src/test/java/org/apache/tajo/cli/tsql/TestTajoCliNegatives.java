@@ -79,7 +79,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
 
   @Test
   public void testConnectDatabase() throws Exception {
-    assertMetaCommandFailure("\\c unknown_db", "ERROR: database 'unknown_db' does not exist");
+    assertMetaCommandFailure("\\c unknown_db", "ERROR: database 'unknown_db' does not exist\n");
   }
 
   @Test
