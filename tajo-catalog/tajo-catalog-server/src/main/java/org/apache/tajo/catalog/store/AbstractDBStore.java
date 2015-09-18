@@ -544,12 +544,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     if (alterProto.getCommandList().size() == 1) {
       AlterTablespaceCommand command = alterProto.getCommand(0);
       if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
-        AlterTablespaceProto.SetLocation setLocation = command.getLocation();
+        final String uri = command.getLocation();
         try {
           String sql = "UPDATE " + TB_SPACES + " SET SPACE_URI=? WHERE SPACE_NAME=?";
 
           pstmt = conn.prepareStatement(sql);
-          pstmt.setString(1, setLocation.getUri());
+          pstmt.setString(1, uri);
           pstmt.setString(2, alterProto.getSpaceName());
           pstmt.executeUpdate();
         } catch (SQLException se) {

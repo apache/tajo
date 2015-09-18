@@ -38,6 +38,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1867: TajoMaster should handle the change of ${tajo.root}. (hyunsik)
+
     TAJO-1134: start-tajo.sh should display WEB UI URL and TajoMaster RPC 
     address. (Contributed YeonSu Han, committed by hyunsik)
 
@@ -273,6 +275,9 @@ Release 0.11.0 - unreleased
 
     TAJO-1846: Python temp directory path should be selected differently based 
     on user platform. (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
+    TAJO-1848: ShutdownHook in TajoMaster can throw NPE if serviceInit().
+    (hyunsik)
 
     TAJO-1851: Can not release a different rack task. (jinho)
 
