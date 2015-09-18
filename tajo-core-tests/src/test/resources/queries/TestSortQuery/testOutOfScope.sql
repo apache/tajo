@@ -1,1 +1,1 @@
-select col1, col2 from table3 order by col1 desc, col2 desc;
+select col1, col2 from testOutOfScope order by col1 desc, col2 desc;
