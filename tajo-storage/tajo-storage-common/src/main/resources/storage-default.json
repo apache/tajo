@@ -12,6 +12,14 @@
       "handler": "org.apache.tajo.storage.FileTablespace",
       "default-format": "text"
     },
+    "s3a": {
+      "handler": "org.apache.tajo.storage.FileTablespace",
+      "default-format": "text"
+    },
+    "s3n": {
+      "handler": "org.apache.tajo.storage.FileTablespace",
+      "default-format": "text"
+    },
     "hbase:zk": {
       "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
       "default-format": "hbase"
