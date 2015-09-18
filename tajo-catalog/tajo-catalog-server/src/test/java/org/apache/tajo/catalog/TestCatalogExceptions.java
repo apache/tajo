@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
-import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
@@ -37,7 +36,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.UUID;
 
 public class TestCatalogExceptions {
 
@@ -85,8 +83,7 @@ public class TestCatalogExceptions {
         addCommand(
             AlterTablespaceCommand.newBuilder().
                 setType(AlterTablespaceType.LOCATION).
-                setLocation(SetLocation.newBuilder()
-                    .setUri("hdfs:"))).build());
+                setLocation("hdfs:")).build());
   }
 
   @Test(expected = UndefinedTablespaceException.class)
@@ -96,8 +93,7 @@ public class TestCatalogExceptions {
         addCommand(
             AlterTablespaceCommand.newBuilder().
                 setType(AlterTablespaceType.LOCATION).
-                setLocation(SetLocation.newBuilder()
-                    .setUri("hdfs://zzz.com/warehouse"))).build());
+                setLocation("hdfs://zzz.com/warehouse")).build());
   }
 
   @Test(expected = DuplicateDatabaseException.class)
