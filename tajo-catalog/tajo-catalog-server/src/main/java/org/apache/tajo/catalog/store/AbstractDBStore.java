@@ -2302,17 +2302,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     List<PartitionDescProto> partitions = TUtil.newList();
     List<PartitionFilterSet> filterSets = TUtil.newList();
 
+    int databaseId = getDatabaseId(request.getDatabaseName());
+    int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
+    if (!existPartitionMethod(request.getDatabaseName(), request.getTableName())) {
+      throw new UndefinedPartitionMethodException(request.getTableName());
+    }
+
+    if (!existPartitionsOnCatalog(tableId)) {
+      throw new PartitionNotFoundException(request.getTableName());
+    }
+
     try {
-      int databaseId = getDatabaseId(request.getDatabaseName());
-      int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
-      if (!existPartitionMethod(request.getDatabaseName(), request.getTableName())) {
-        throw new UndefinedPartitionMethodException(request.getTableName());
-      }
-
-      if (!existPartitionsOnCatalog(tableId)) {
-        throw new PartitionNotFoundException(request.getTableName());
-      }
-
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
 
       selectStatement = getSelectStatementForPartitions(tableDesc.getTableName(), tableDesc.getPartition()
@@ -2411,7 +2411,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    * @throws SQLException
    */
   private String getSelectStatementForPartitions(String tableName, List<ColumnProto> partitionColumns, String json,
-    List<PartitionFilterSet> filterSets) throws TajoException, SQLException {
+    List<PartitionFilterSet> filterSets) throws TajoException {
 
     Expr[] exprs = null;
 
