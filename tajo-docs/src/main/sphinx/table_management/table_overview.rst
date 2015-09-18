@@ -15,7 +15,7 @@ Please refer to :doc:`/table_management/tablespaces` if you want to know more in
 Managed Table
 ================
 
-``CREATE TABLE`` statement with ``EXTERNAL`` keyword lets you create a table located in the warehouse directory specified by the configuration property ``tajo.warehouse.directory`` or ``${tajo.root}/warehouse`` by default. For example: 
+``CREATE TABLE`` statement lets you create a table located in the warehouse directory specified by the configuration property ``tajo.warehouse.directory`` or ``${tajo.root}/warehouse`` by default. For example:
 
 .. code-block:: sql
 

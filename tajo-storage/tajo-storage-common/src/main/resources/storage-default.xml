@@ -87,6 +87,10 @@
     <name>tajo.storage.fragment.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseFragment</value>
   </property>
+  <property>
+    <name>tajo.storage.fragment.jdbc.class</name>
+    <value>org.apache.tajo.storage.jdbc.JdbcFragment</value>
+  </property>
 
   <!--- Scanner Handler -->
   <property>
@@ -143,11 +147,11 @@
     <name>tajo.storage.scanner-handler.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseScanner</value>
   </property>
-
+  
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>text,raw,rcfile,row,parquet,sequencefile,avro,hbase</value>
+    <value>text,raw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
   </property>
 
   <property>
@@ -183,6 +187,11 @@
   <property>
     <name>tajo.storage.appender-handler.parquet.class</name>
     <value>org.apache.tajo.storage.parquet.ParquetAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.orc.class</name>
+    <value>org.apache.tajo.storage.orc.ORCAppender</value>
   </property>
 
   <property>

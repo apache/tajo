@@ -25,7 +25,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -61,7 +61,7 @@ public class TestDDLBuilder {
     TableDesc desc = new TableDesc("db1.table1", schema1, meta1, new Path("/table1").toUri());
     desc.setPartitionMethod(partitionMethod1);
     desc.setExternal(true);
-    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLForExternalTable.result"),
+    assertEquals(JavaResourceUtil.readTextFromResource("results/testDDLBuilder/testBuildDDLForExternalTable.result"),
         DDLBuilder.buildDDLForExternalTable(desc));
   }
 
@@ -87,20 +87,20 @@ public class TestDDLBuilder {
     TableDesc desc = new TableDesc("db1.TABLE2", schema2, meta1, new Path("/table1").toUri());
     desc.setPartitionMethod(partitionMethod2);
     desc.setExternal(true);
-    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLQuotedTableName1.result"),
+    assertEquals(JavaResourceUtil.readTextFromResource("results/testDDLBuilder/testBuildDDLQuotedTableName1.result"),
         DDLBuilder.buildDDLForExternalTable(desc));
 
     desc = new TableDesc("db1.TABLE1", schema2, meta1, new Path("/table1").toUri());
     desc.setPartitionMethod(partitionMethod2);
     desc.setExternal(false);
-    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLQuotedTableName2.result"),
+    assertEquals(JavaResourceUtil.readTextFromResource("results/testDDLBuilder/testBuildDDLQuotedTableName2.result"),
         DDLBuilder.buildDDLForBaseTable(desc));
   }
 
   @Test
   public void testBuildDDLForBaseTable() throws Exception {
     TableDesc desc = new TableDesc("db1.table2", schema1, meta1, new Path("/table1").toUri());
-    assertEquals(FileUtil.readTextFileFromResource("results/testDDLBuilder/testBuildDDLForBaseTable.result"),
+    assertEquals(JavaResourceUtil.readTextFromResource("results/testDDLBuilder/testBuildDDLForBaseTable.result"),
         DDLBuilder.buildDDLForBaseTable(desc));
   }
 

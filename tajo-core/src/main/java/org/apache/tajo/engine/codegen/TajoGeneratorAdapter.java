@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
-import org.apache.tajo.exception.InvalidCastException;
+import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.org.objectweb.asm.Label;
@@ -471,7 +471,7 @@ class TajoGeneratorAdapter {
         case FLOAT8: methodvisitor.visitInsn(Opcodes.I2D); break;
         case TEXT:   emitStringValueOfChar(); break;
         default:
-          throw new InvalidCastException(srcType, targetType);
+          throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
         }
       } else {
         switch (targetRawType) {
@@ -483,7 +483,7 @@ class TajoGeneratorAdapter {
         case FLOAT4: emitParseFloat4(); break;
         case FLOAT8: emitParseFloat8(); break;
         case TEXT: break;
-        default: throw new InvalidCastException(srcType, targetType);
+        default: throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
         }
       }
       break;
@@ -500,7 +500,7 @@ class TajoGeneratorAdapter {
       case FLOAT4: methodvisitor.visitInsn(Opcodes.I2F); break;
       case FLOAT8: methodvisitor.visitInsn(Opcodes.I2D); break;
       case TEXT: emitStringValueOfInt4(); break;
-      default: throw new InvalidCastException(srcType, targetType);
+      default: throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
       }
       break;
     case INT8:
@@ -513,7 +513,7 @@ class TajoGeneratorAdapter {
       case FLOAT4: methodvisitor.visitInsn(Opcodes.L2F); break;
       case FLOAT8: methodvisitor.visitInsn(Opcodes.L2D); break;
       case TEXT: emitStringValueOfInt8(); break;
-      default: throw new InvalidCastException(srcType, targetType);
+      default: throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
       }
       break;
     case FLOAT4:
@@ -526,7 +526,7 @@ class TajoGeneratorAdapter {
       case FLOAT4: return;
       case FLOAT8: methodvisitor.visitInsn(Opcodes.F2D); break;
       case TEXT: emitStringValueOfFloat4(); break;
-      default: throw new InvalidCastException(srcType, targetType);
+      default: throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
       }
       break;
     case FLOAT8:
@@ -539,7 +539,7 @@ class TajoGeneratorAdapter {
       case FLOAT4: methodvisitor.visitInsn(Opcodes.D2F); break;
       case FLOAT8: return;
       case TEXT: emitStringValueOfFloat8(); break;
-      default: throw new InvalidCastException(srcType, targetType);
+      default: throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
       }
       break;
     case TEXT:
@@ -567,10 +567,10 @@ class TajoGeneratorAdapter {
             "toJulianTime", "(L" + Type.getInternalName(String.class) + ";)J");
         break;
       }
-      default: throw new InvalidCastException(srcType, targetType);
+      default: throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
       }
       break;
-    default: throw new InvalidCastException(srcType, targetType);
+    default: throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
     }
   }
 

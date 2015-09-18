@@ -25,6 +25,7 @@ import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.LogicalNode;
 
 import java.io.IOException;
 
@@ -49,6 +50,11 @@ public abstract class AbstractScanner implements Scanner {
   }
 
   @Override
+  public void pushOperators(LogicalNode planPart) {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  @Override
   public boolean isProjectable() {
     throw new TajoRuntimeException(new NotImplementedException());
   }
@@ -66,6 +72,10 @@ public abstract class AbstractScanner implements Scanner {
   @Override
   public void setFilter(EvalNode filter) {
     throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  @Override
+  public void setLimit(long num) {
   }
 
   @Override

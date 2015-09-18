@@ -71,25 +71,6 @@ public class TestFunctionDesc {
     assertEquals(Type.INT4, desc.getReturnType().getType());
     assertArrayEquals(CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8),
         desc.getParamTypes());
-
-    CommonTestingUtil.getTestDir(TEST_PATH);
-    File save = new File(TEST_PATH + "/save.dat");
-    FileUtil.writeProto(save, desc.getProto());
-
-    FunctionDescProto proto = FunctionDescProto.getDefaultInstance();
-    proto = (FunctionDescProto) FileUtil.loadProto(save, proto);
-
-    FunctionDesc newDesc = new FunctionDesc(proto);
-
-    assertEquals("sum", newDesc.getFunctionName());
-    assertEquals(TestSum.class, newDesc.getLegacyFuncClass());
-    assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
-    assertEquals(Type.INT4, newDesc.getReturnType().getType());
-
-    assertArrayEquals(CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8),
-        newDesc.getParamTypes());
-
-    assertEquals(desc.getProto(), newDesc.getProto());
   }
   
   @Test
