@@ -69,7 +69,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     return Arrays.asList(new Object[][] {
       //type
       {NodeType.INSERT},
-//      {NodeType.CREATE_TABLE},
+      {NodeType.CREATE_TABLE},
     });
   }
 
