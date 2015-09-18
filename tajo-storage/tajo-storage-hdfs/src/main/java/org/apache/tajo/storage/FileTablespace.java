@@ -315,15 +315,21 @@ public class FileTablespace extends Tablespace {
     }
   }
 
+  protected List<FileStatus> listStatus(Path... dirs) throws IOException {
+    return listStatus(false, dirs);
+  }
+
   /**
    * List input directories.
    * Subclasses may override to, e.g., select only files matching a regular
    * expression.
    *
+   * @param check if target table is a partitioned table
+   * @param input directories
    * @return array of FileStatus objects
    * @throws IOException if zero items.
    */
-  protected List<FileStatus> listStatus(Path... dirs) throws IOException {
+  protected List<FileStatus> listStatus(boolean hasPartition, Path... dirs) throws IOException {
     List<FileStatus> result = new ArrayList<FileStatus>();
     if (dirs.length == 0) {
       throw new IOException("No input paths specified in job");
@@ -343,7 +349,20 @@ public class FileTablespace extends Tablespace {
 
       FileStatus[] matches = fs.globStatus(p, inputFilter);
       if (matches == null) {
-        errors.add(new IOException("Input path does not exist: " + p));
+        // Partition directories always would be made by list of partitions from catalog or file system. When
+        // building directories from file system, directories will exist on file system. But when building from
+        // catalog, some partition might be lost on file system. For example, users might delete some partition
+        // directories without dropping partitions. Even so, Tajo should execute a select statement if parent
+        // directory exists on file system.
+        if (hasPartition) {
+          if (fs.exists(p.getParent())) {
+            LOG.warn("Input path does not exist: " + p);
+          } else {
+            errors.add(new IOException("Input path does not exist: " + p.getParent()));
+          }
+        } else {
+          errors.add(new IOException("Input path does not exist: " + p));
+        }
       } else if (matches.length == 0) {
         errors.add(new IOException("Input Pattern " + p + " matches 0 files"));
       } else {
@@ -479,12 +498,17 @@ public class FileTablespace extends Tablespace {
     return diskIds;
   }
 
+  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
+    throws IOException {
+    return getSplits(tableName, meta, schema, false, inputs);
+  }
+
   /**
    * Generate the list of files and make them into FileSplits.
    *
    * @throws IOException
    */
-  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
+  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, boolean hasPartition, Path... inputs)
       throws IOException {
     // generate splits'
 
@@ -497,7 +521,7 @@ public class FileTablespace extends Tablespace {
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
       } else {
-        files.addAll(listStatus(p));
+        files.addAll(listStatus(hasPartition, p));
       }
 
       int previousSplitSize = splits.size();
@@ -627,7 +651,7 @@ public class FileTablespace extends Tablespace {
   public List<Fragment> getSplits(String inputSourceId,
                                   TableDesc table,
                                   @Nullable EvalNode filterCondition) throws IOException {
-    return getSplits(inputSourceId, table.getMeta(), table.getSchema(), new Path(table.getUri()));
+    return getSplits(inputSourceId, table.getMeta(), table.getSchema(), table.hasPartition(), new Path(table.getUri()));
   }
 
   @Override

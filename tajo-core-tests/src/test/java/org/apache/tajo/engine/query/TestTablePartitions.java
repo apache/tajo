@@ -69,7 +69,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     return Arrays.asList(new Object[][] {
       //type
       {NodeType.INSERT},
-      {NodeType.CREATE_TABLE},
+//      {NodeType.CREATE_TABLE},
     });
   }
 
@@ -1759,6 +1759,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public void testAbnormalDirectories()  throws Exception {
     ResultSet res = null;
+    FileSystem fs = FileSystem.get(conf);
+    Path path = null;
+
     String tableName = CatalogUtil.normalizeIdentifier("testAbnormalDirectories");
     if (nodeType == NodeType.INSERT) {
       executeString(
@@ -1773,11 +1776,11 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
       tableDesc.getStats().getNumRows());
 
-    // Check if tajo can return list of partitions from file system in a situation that there is not partitions on
-    // catalog.
+    // When partitions only exist on file system without catalog.
     String externalTableName = "testCreateExternalColumnPartitionedTable";
 
     executeString("create external table " + externalTableName + " (col1 int4, col2 int4) " +
@@ -1792,11 +1795,43 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
     assertEquals(expectedResult, result);
 
+    // Make abnormal directories
+    path = new Path(tableDesc.getUri().getPath(), "key=100.0");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().getPath(), "key=");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().getPath(), "col1=a");
+    fs.mkdirs(path);
+    assertEquals(8, fs.listStatus(path.getParent()).length);
+
     res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName + " WHERE key > 40.0");
     result = resultSetToString(res);
     expectedResult = "cnt\n" +
       "-------------------------------\n" +
       "2\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Remove existing partition directory
+    path = new Path(tableDesc.getUri().getPath(), "key=36.0");
+    fs.delete(path, true);
+
+    res = executeString("SELECT * FROM " + tableName + " ORDER BY key");
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,17.0\n" +
+      "2,2,38.0\n" +
+      "3,2,45.0\n" +
+      "3,3,49.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("SELECT COUNT(*) AS cnt FROM " + tableName + " WHERE key > 30.0");
+    result = resultSetToString(res);
+    expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "3\n";
     res.close();
     assertEquals(expectedResult, result);
 
