@@ -292,13 +292,9 @@ message AlterTablespaceProto {
     LOCATION = 0;
   }
 
-  message SetLocation {
-    required string uri = 1;
-  }
-
   message AlterTablespaceCommand {
     required AlterTablespaceType type = 1;
-    optional SetLocation location = 2;
+    optional string location = 2;
   }
 }
 

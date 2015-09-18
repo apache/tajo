@@ -374,11 +374,11 @@ public class CatalogServer extends AbstractService {
           for (AlterTablespaceCommand command : request.getCommandList()) {
             if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
               try {
-                URI uri = URI.create(command.getLocation().getUri());
+                URI uri = URI.create(command.getLocation());
                 Preconditions.checkArgument(uri.getScheme() != null);
               } catch (Exception e) {
                 throw new ServiceException("ALTER TABLESPACE's LOCATION must be a URI form (scheme:///.../), but "
-                    + command.getLocation().getUri());
+                    + command.getLocation());
               }
             }
           }
