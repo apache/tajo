@@ -10,4 +10,5 @@ Currently, Tajo provides four file formats as follows:
     text
     rcfile
     parquet
+    orc
     sequencefile

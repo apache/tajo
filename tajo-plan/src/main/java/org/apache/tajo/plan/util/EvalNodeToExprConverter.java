@@ -240,10 +240,10 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
   }
 
   @Override
-  protected EvalNode visitField(Object o, Stack<EvalNode> stack, FieldEval evalNode) {
+  protected EvalNode visitField(Object o, FieldEval evalNode, Stack<EvalNode> stack)  {
     ColumnReferenceExpr expr = new ColumnReferenceExpr(tableName, evalNode.getColumnName());
     exprs.push(expr);
-    return super.visitField(o, stack, evalNode);
+    return super.visitField(o, evalNode, stack);
   }
 
   @Override

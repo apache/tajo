@@ -87,6 +87,10 @@
     <name>tajo.storage.fragment.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseFragment</value>
   </property>
+  <property>
+    <name>tajo.storage.fragment.jdbc.class</name>
+    <value>org.apache.tajo.storage.jdbc.JdbcFragment</value>
+  </property>
 
   <!--- Scanner Handler -->
   <property>
@@ -143,7 +147,7 @@
     <name>tajo.storage.scanner-handler.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseScanner</value>
   </property>
-
+  
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>

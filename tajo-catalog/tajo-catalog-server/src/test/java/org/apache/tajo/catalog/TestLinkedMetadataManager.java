@@ -82,17 +82,17 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public Collection<String> getCatalogs() {
+    public Collection<String> getSchemas() {
       return Lists.newArrayList("cat1", "cat2");
     }
 
     @Override
-    public Collection<String> getTables(@Nullable String catalog) {
+    public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
       return Lists.newArrayList("table1", "table2");
     }
 
     @Override
-    public TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException {
+    public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table1")) {
         return TABLE1;
       } else if (tableName.equals("table2")) {
@@ -121,17 +121,17 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public Collection<String> getCatalogs() {
+    public Collection<String> getSchemas() {
       return Lists.newArrayList("cat3", "cat4");
     }
 
     @Override
-    public Collection<String> getTables(@Nullable String catalog) {
+    public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
       return Lists.newArrayList("table3", "table4");
     }
 
     @Override
-    public TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException {
+    public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table3")) {
         return TABLE3;
       } else if (tableName.equals("table4")) {

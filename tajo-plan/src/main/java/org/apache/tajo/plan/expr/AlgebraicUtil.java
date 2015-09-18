@@ -160,7 +160,7 @@ public class AlgebraicUtil {
     }
 
     @Override
-    public EvalNode visitUnaryEval(Object context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+    public EvalNode visitUnaryEval(Object context, UnaryEval unaryEval, Stack<EvalNode> stack) {
       stack.push(unaryEval);
       EvalNode child = visit(context, unaryEval.getChild(), stack);
       stack.pop();

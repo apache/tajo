@@ -6,6 +6,8 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1730: JDBC Tablespace support. (hyunsik)
+
     TAJO-1812: Timezone support in JSON file format. (hyunsik)
 
     TAJO-1486: Text file should support to skip header rows when creating 
@@ -35,6 +37,8 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1867: TajoMaster should handle the change of ${tajo.root}. (hyunsik)
 
     TAJO-1134: start-tajo.sh should display WEB UI URL and TajoMaster RPC 
     address. (Contributed YeonSu Han, committed by hyunsik)
@@ -268,6 +272,12 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1846: Python temp directory path should be selected differently based 
+    on user platform. (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
+    TAJO-1848: ShutdownHook in TajoMaster can throw NPE if serviceInit().
+    (hyunsik)
 
     TAJO-1851: Can not release a different rack task. (jinho)
 
@@ -543,6 +553,15 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1682: Write ORC document. (Contributed by Jongyoung Park, 
+    Committed by jihoon)
+
+    TAJO-1744: Porting bash shell scripts to Windows command shell scripts.
+    (Contributed by YeonSu Han, Committed by jihoon)
+
+    TAJO-1853: Add tablespace syntax to the CREATE TABLE section of DDL page. 
+    (jihoon)
 
     TAJO-1824: Remove partition_keys table from information_schema. (jaehwa)
 

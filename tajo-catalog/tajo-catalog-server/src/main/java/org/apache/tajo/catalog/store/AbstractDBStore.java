@@ -35,6 +35,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.util.FileUtil;
@@ -59,7 +60,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String catalogUri;
 
   protected final String insertPartitionSql = "INSERT INTO " + TB_PARTTIONS
-    + "(" + COL_TABLES_PK + ", PARTITION_NAME, PATH, NUM_BYTES, NUM_FILES) VALUES (?, ? , ?, ?, ?)";
+    + "(" + COL_TABLES_PK + ", PARTITION_NAME, PATH, " + COL_PARTITION_BYTES
+    + ", " + COL_PARTITION_FILES + ") VALUES (?, ? , ?, ?, ?)";
 
   protected final String insertPartitionKeysSql = "INSERT INTO " + TB_PARTTION_KEYS  + "("
     + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", "
@@ -203,7 +205,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   public String readSchemaFile(String path) {
     try {
-      return FileUtil.readTextFileFromResource("schemas/" + path);
+      return JavaResourceUtil.readTextFromResource("schemas/" + path);
     } catch (IOException e) {
       throw new TajoInternalError(e);
     }
@@ -546,12 +548,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     if (alterProto.getCommandList().size() == 1) {
       AlterTablespaceCommand command = alterProto.getCommand(0);
       if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
-        AlterTablespaceProto.SetLocation setLocation = command.getLocation();
+        final String uri = command.getLocation();
         try {
           String sql = "UPDATE " + TB_SPACES + " SET SPACE_URI=? WHERE SPACE_NAME=?";
 
           pstmt = conn.prepareStatement(sql);
-          pstmt.setString(1, setLocation.getUri());
+          pstmt.setString(1, uri);
           pstmt.setString(2, alterProto.getSpaceName());
           pstmt.executeUpdate();
         } catch (SQLException se) {
@@ -2133,7 +2135,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PartitionDescProto.Builder builder = null;
 
     try {
-      String sql = "SELECT PATH, " + COL_PARTITIONS_PK + ", NUM_BYTES, NUM_FILES FROM " + TB_PARTTIONS +
+      String sql = "SELECT PATH, " + COL_PARTITIONS_PK
+        + ", " + COL_PARTITION_BYTES + ", " + COL_PARTITION_FILES + " FROM " + TB_PARTTIONS +
         " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ";
 
       if (LOG.isDebugEnabled()) {
@@ -2151,8 +2154,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
-        builder.setNumBytes(res.getLong(COL_NUM_BYTES));
-        builder.setNumFiles(res.getLong(COL_NUM_FILES));
+        builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
+        builder.setNumFiles(res.getLong(COL_PARTITION_FILES));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
       } else {
         throw new UndefinedPartitionException(partitionName);
@@ -2212,7 +2215,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     try {
-      String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_NUM_BYTES + ", " + COL_NUM_FILES
+      String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES + ", " + COL_PARTITION_FILES
         + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
 
       if (LOG.isDebugEnabled()) {
@@ -2228,8 +2231,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder = PartitionDescProto.newBuilder();
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(res.getString("PARTITION_NAME"));
-        builder.setNumBytes(res.getLong(COL_NUM_BYTES));
-        builder.setNumFiles(res.getLong(COL_NUM_FILES));
+        builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
+        builder.setNumFiles(res.getLong(COL_PARTITION_FILES));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
         partitions.add(builder.build());
       }
@@ -2363,8 +2366,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setId(res.getInt(COL_PARTITIONS_PK));
         builder.setPartitionName(res.getString("PARTITION_NAME"));
         builder.setPath(res.getString("PATH"));
-        builder.setNumBytes(res.getLong(COL_NUM_BYTES));
-        builder.setNumFiles(res.getLong(COL_NUM_FILES));
+        builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
+        builder.setNumFiles(res.getLong(COL_PARTITION_FILES));
 
         partitions.add(builder.build());
       }
@@ -2427,7 +2430,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     StringBuffer sb = new StringBuffer();
     sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
-      .append(", A.PARTITION_NAME, A.PATH ").append(", ").append(COL_NUM_BYTES).append(", ").append(COL_NUM_FILES)
+      .append(", A.PARTITION_NAME, A.PATH ")
+      .append(", ").append(COL_PARTITION_BYTES).append(", ").append(COL_PARTITION_FILES)
       .append(" FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
       .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
       .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")

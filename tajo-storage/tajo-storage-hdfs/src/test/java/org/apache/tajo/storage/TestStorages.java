@@ -44,7 +44,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -64,36 +64,36 @@ public class TestStorages {
 
   private static String TEST_PROJECTION_AVRO_SCHEMA =
       "{\n" +
-          "  \"type\": \"record\",\n" +
-          "  \"namespace\": \"org.apache.tajo\",\n" +
-          "  \"name\": \"testProjection\",\n" +
-          "  \"fields\": [\n" +
-          "    { \"name\": \"id\", \"type\": \"int\" },\n" +
-          "    { \"name\": \"age\", \"type\": \"long\" },\n" +
-          "    { \"name\": \"score\", \"type\": \"float\" }\n" +
-          "  ]\n" +
-          "}\n";
+      "  \"type\": \"record\",\n" +
+      "  \"namespace\": \"org.apache.tajo\",\n" +
+      "  \"name\": \"testProjection\",\n" +
+      "  \"fields\": [\n" +
+      "    { \"name\": \"id\", \"type\": \"int\" },\n" +
+      "    { \"name\": \"age\", \"type\": \"long\" },\n" +
+      "    { \"name\": \"score\", \"type\": \"float\" }\n" +
+      "  ]\n" +
+      "}\n";
 
   private static String TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA =
       "{\n" +
-          "  \"type\": \"record\",\n" +
-          "  \"namespace\": \"org.apache.tajo\",\n" +
-          "  \"name\": \"testNullHandlingTypes\",\n" +
-          "  \"fields\": [\n" +
-          "    { \"name\": \"col1\", \"type\": [\"null\", \"boolean\"] },\n" +
-          "    { \"name\": \"col2\", \"type\": [\"null\", \"string\"] },\n" +
-          "    { \"name\": \"col3\", \"type\": [\"null\", \"int\"] },\n" +
-          "    { \"name\": \"col4\", \"type\": [\"null\", \"int\"] },\n" +
-          "    { \"name\": \"col5\", \"type\": [\"null\", \"long\"] },\n" +
-          "    { \"name\": \"col6\", \"type\": [\"null\", \"float\"] },\n" +
-          "    { \"name\": \"col7\", \"type\": [\"null\", \"double\"] },\n" +
-          "    { \"name\": \"col8\", \"type\": [\"null\", \"string\"] },\n" +
-          "    { \"name\": \"col9\", \"type\": [\"null\", \"bytes\"] },\n" +
-          "    { \"name\": \"col10\", \"type\": [\"null\", \"bytes\"] },\n" +
-          "    { \"name\": \"col11\", \"type\": \"null\" },\n" +
-          "    { \"name\": \"col12\", \"type\": [\"null\", \"bytes\"] }\n" +
-          "  ]\n" +
-          "}\n";
+      "  \"type\": \"record\",\n" +
+      "  \"namespace\": \"org.apache.tajo\",\n" +
+      "  \"name\": \"testNullHandlingTypes\",\n" +
+      "  \"fields\": [\n" +
+      "    { \"name\": \"col1\", \"type\": [\"null\", \"boolean\"] },\n" +
+      "    { \"name\": \"col2\", \"type\": [\"null\", \"string\"] },\n" +
+      "    { \"name\": \"col3\", \"type\": [\"null\", \"int\"] },\n" +
+      "    { \"name\": \"col4\", \"type\": [\"null\", \"int\"] },\n" +
+      "    { \"name\": \"col5\", \"type\": [\"null\", \"long\"] },\n" +
+      "    { \"name\": \"col6\", \"type\": [\"null\", \"float\"] },\n" +
+      "    { \"name\": \"col7\", \"type\": [\"null\", \"double\"] },\n" +
+      "    { \"name\": \"col8\", \"type\": [\"null\", \"string\"] },\n" +
+      "    { \"name\": \"col9\", \"type\": [\"null\", \"bytes\"] },\n" +
+      "    { \"name\": \"col10\", \"type\": [\"null\", \"bytes\"] },\n" +
+      "    { \"name\": \"col11\", \"type\": \"null\" },\n" +
+      "    { \"name\": \"col12\", \"type\": [\"null\", \"bytes\"] }\n" +
+      "  ]\n" +
+      "}\n";
 
   private static String TEST_MAX_VALUE_AVRO_SCHEMA =
       "{\n" +
@@ -392,7 +392,7 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
     if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
-      String path = FileUtil.getResourcePath("dataset/testVariousTypes.avsc").toString();
+      String path = JavaResourceUtil.getResourceURL("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
@@ -429,7 +429,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  sm.getScanner(meta, schema, fragment);
+    Scanner scanner =  sm.getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -518,7 +518,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -593,7 +593,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -662,7 +662,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -731,7 +731,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -805,7 +805,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -850,7 +850,7 @@ public class TestStorages {
 
       FileStatus status = fs.getFileStatus(tablePath);
       FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-      Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment);
+      Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
       scanner.init();
 
       Tuple retrieved;
@@ -986,7 +986,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = sm.getScanner(meta, schema, fragment);
+    Scanner scanner = sm.getScanner(meta, schema, fragment, null);
     scanner.init();
 
     Tuple retrieved;
@@ -1048,7 +1048,7 @@ public class TestStorages {
     inSchema.addColumn("col5", Type.INT8);
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, inSchema, fragment);
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, inSchema, fragment, null);
 
     Schema target = new Schema();
 

@@ -207,7 +207,7 @@ public class DDLExecutor {
       AlterTablespaceProto.AlterTablespaceCommand.Builder commandBuilder =
           AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
       commandBuilder.setType(AlterTablespaceProto.AlterTablespaceType.LOCATION);
-      commandBuilder.setLocation(AlterTablespaceProto.SetLocation.newBuilder().setUri(alterTablespace.getLocation()));
+      commandBuilder.setLocation(alterTablespace.getLocation());
       commandBuilder.build();
       builder.addCommand(commandBuilder);
     } else {

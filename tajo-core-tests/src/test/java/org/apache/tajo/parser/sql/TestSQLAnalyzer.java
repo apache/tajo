@@ -33,6 +33,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
 import org.junit.Rule;
 import org.junit.Test;
@@ -143,7 +144,8 @@ public class TestSQLAnalyzer {
       String expectedResult = "";
 
       try {
-        expectedResult = FileUtil.readTextFileFromResource("results/TestSQLAnalyzer/errors/" + fileName + ".result");
+        expectedResult =
+            JavaResourceUtil.readTextFromResource("results/TestSQLAnalyzer/errors/" + fileName + ".result");
       } catch (FileNotFoundException fnfe) {
       }
 
@@ -182,7 +184,7 @@ public class TestSQLAnalyzer {
       String fileName = null;
       try {
         fileName = pair.getFirst().split("\\.")[0];
-        expectedResult = FileUtil.readTextFileFromResource("results/TestSQLAnalyzer/" + fileName + ".result");
+        expectedResult = JavaResourceUtil.readTextFromResource("results/TestSQLAnalyzer/" + fileName + ".result");
       } catch (FileNotFoundException ioe) {
         expectedResult = "";
       } catch (Throwable t) {
