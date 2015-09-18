@@ -268,8 +268,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testBinaryMappedQuery() throws Exception {
-    //Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
-    //assertTrue(existing.isPresent());
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
 
     try {
       HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
@@ -323,7 +323,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.close();
       }
     } finally {
-      //TablespaceManager.addTableSpaceForTest(existing.get());
+      TablespaceManager.addTableSpaceForTest(existing.get());
     }
   }
 
