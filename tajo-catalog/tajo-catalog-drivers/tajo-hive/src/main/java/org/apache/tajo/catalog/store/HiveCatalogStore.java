@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.*;
 import org.apache.hadoop.hive.serde.serdeConstants;
@@ -723,6 +724,11 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       partition.setDbName(databaseName);
       partition.setTableName(tableName);
 
+      Map<String, String> params = TUtil.newHashMap();
+      params.put(StatsSetupConst.TOTAL_SIZE, Long.toString(partitionDescProto.getNumBytes()));
+      params.put(StatsSetupConst.NUM_FILES, Long.toString(partitionDescProto.getNumFiles()));
+      partition.setParameters(params);
+
       List<String> values = Lists.newArrayList();
       for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
         values.add(keyProto.getPartitionValue());
@@ -974,6 +980,16 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         String partitionName = hivePartition.getSd().getLocation().substring(startIndex+1);
         builder.setPartitionName(partitionName);
 
+        Map<String, String> params = hivePartition.getParameters();
+        if (params != null) {
+          if (params.get(StatsSetupConst.TOTAL_SIZE) != null) {
+            builder.setNumBytes(Long.parseLong(params.get(StatsSetupConst.TOTAL_SIZE)));
+          }
+          if (params.get(StatsSetupConst.NUM_FILES) != null) {
+            builder.setNumFiles(Long.parseLong(params.get(StatsSetupConst.NUM_FILES)));
+          }
+        }
+
         partitions.add(builder.build());
       }
     } catch (Exception e) {
@@ -1011,6 +1027,17 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         keyBuilder.setColumnName(columnName);
         keyBuilder.setPartitionValue(value);
         builder.addPartitionKeys(keyBuilder);
+
+        Map<String, String> params = partition.getParameters();
+        if (params != null) {
+          if (params.get(StatsSetupConst.TOTAL_SIZE) != null) {
+            builder.setNumBytes(Long.parseLong(params.get(StatsSetupConst.TOTAL_SIZE)));
+          }
+          if (params.get(StatsSetupConst.NUM_FILES) != null) {
+            builder.setNumFiles(Long.parseLong(params.get(StatsSetupConst.NUM_FILES)));
+          }
+        }
+
       }
     } catch (NoSuchObjectException e) {
       return null;

@@ -24,6 +24,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -509,6 +510,18 @@ public class Query implements EventHandler<QueryEvent> {
         if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
           List<PartitionDescProto> partitions = query.getPartitions();
           if (partitions != null) {
+            // Set contents length and file count to PartitionDescProto by listing final output directories.
+            List<PartitionDescProto> finalPartitions = TUtil.newList();
+            FileSystem fileSystem = finalOutputDir.getFileSystem(query.systemConf);
+            for (PartitionDescProto partition : partitions) {
+              PartitionDescProto.Builder builder = partition.toBuilder();
+              Path partitionPath = new Path(finalOutputDir, partition.getPath());
+              ContentSummary contentSummary = fileSystem.getContentSummary(partitionPath);
+              builder.setNumBytes(contentSummary.getLength());
+              builder.setNumFiles(contentSummary.getFileCount());
+              finalPartitions.add(builder.build());
+            }
+
             String databaseName, simpleTableName;
 
             if (CatalogUtil.isFQTableName(tableDesc.getName())) {
@@ -521,7 +534,7 @@ public class Query implements EventHandler<QueryEvent> {
             }
 
             // Store partitions to CatalogStore using alter table statement.
-            catalog.addPartitions(databaseName, simpleTableName, partitions, true);
+            catalog.addPartitions(databaseName, simpleTableName, finalPartitions, true);
             LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
           } else {
             LOG.info("Can't find partitions for adding.");

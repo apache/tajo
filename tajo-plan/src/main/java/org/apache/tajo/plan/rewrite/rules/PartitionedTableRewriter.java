@@ -48,6 +48,7 @@ import java.util.*;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private CatalogService catalog;
+  private long totalVolume;
 
   private static final Log LOG = LogFactory.getLog(PartitionedTableRewriter.class);
 
@@ -157,7 +158,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private Path[] findFilteredPathsByPartitionDesc(List<PartitionDescProto> partitions) {
     Path [] filteredPaths = new Path[partitions.size()];
     for (int i = 0; i < partitions.size(); i++) {
-      filteredPaths[i] = new Path(partitions.get(i).getPath());
+      PartitionDescProto partition = partitions.get(i);
+      filteredPaths[i] = new Path(partition.getPath());
+      totalVolume += partition.getNumBytes();
     }
     return filteredPaths;
   }
@@ -344,10 +347,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return filters;
   }
 
-  private static Path [] toPathArray(FileStatus[] fileStatuses) {
+  private Path [] toPathArray(FileStatus[] fileStatuses) {
     Path [] paths = new Path[fileStatuses.length];
-    for (int j = 0; j < fileStatuses.length; j++) {
-      paths[j] = fileStatuses[j].getPath();
+    for (int i = 0; i < fileStatuses.length; i++) {
+      FileStatus fileStatus = fileStatuses[i];
+      paths[i] = fileStatus.getPath();
+      totalVolume += fileStatus.getLen();
     }
     return paths;
   }
@@ -445,25 +450,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
   }
 
-  private void updateTableStat(OverridableConf queryContext, PartitionedTableScanNode scanNode)
-      throws TajoException {
-    if (scanNode.getInputPaths().length > 0) {
-      try {
-        FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(queryContext.getConf());
-        long totalVolume = 0;
-
-        for (Path input : scanNode.getInputPaths()) {
-          ContentSummary summary = fs.getContentSummary(input);
-          totalVolume += summary.getLength();
-          totalVolume += summary.getFileCount();
-        }
-        scanNode.getTableDesc().getStats().setNumBytes(totalVolume);
-      } catch (Throwable e) {
-        throw new TajoInternalError(e);
-      }
-    }
-  }
-
   /**
    * Take a look at a column partition path. A partition path consists
    * of a table path part and column values part. This method transforms
@@ -543,7 +529,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
         rewrittenScanNode.init(scanNode, filteredPaths);
-        updateTableStat(queryContext, rewrittenScanNode);
+        rewrittenScanNode.getTableDesc().getStats().setNumBytes(totalVolume);
 
         // if it is topmost node, set it as the rootnode of this block.
         if (stack.empty() || block.getRoot().equals(scanNode)) {

@@ -1249,6 +1249,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
   private void verifyPartitionDirectoryFromCatalog(String databaseName, String tableName,
                                                    String[] partitionColumns, Long numRows) throws Exception {
     int rowCount = 0;
+    FileSystem fs = FileSystem.get(conf);
+    Path partitionPath = null;
 
     // Get all partition column values
     StringBuilder query = new StringBuilder();
@@ -1281,6 +1283,11 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertNotNull(partitionDescProto);
       assertTrue(partitionDescProto.getPath().indexOf(tableName + "/" + partitionName.toString()) > 0);
 
+      partitionPath = new Path(partitionDescProto.getPath());
+      ContentSummary cs = fs.getContentSummary(partitionPath);
+
+      assertEquals(cs.getLength(), partitionDescProto.getNumBytes());
+      assertEquals(cs.getFileCount(), partitionDescProto.getNumFiles());
       rowCount++;
     }
 

@@ -20,6 +20,7 @@ package org.apache.tajo.master.exec;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -502,8 +503,16 @@ public class DDLExecutor {
           throw new AmbiguousPartitionDirectoryExistException(assumedDirectory.toString());
         }
 
+        long numBytes = 0L, numFiles = 0L;
+        if (fs.exists(partitionPath)) {
+          ContentSummary summary = fs.getContentSummary(partitionPath);
+          numBytes = summary.getLength();
+          numFiles = summary.getFileCount();
+        }
+
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
-            alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
+          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION,
+          numBytes, numFiles));
 
         // If the partition's path doesn't exist, this would make the directory by force.
         if (!fs.exists(partitionPath)) {

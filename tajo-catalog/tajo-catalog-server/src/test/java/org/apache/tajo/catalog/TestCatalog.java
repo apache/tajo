@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.PartitionNotFoundException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.function.Function;
@@ -37,7 +38,9 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -60,7 +63,10 @@ public class TestCatalog {
 	static CatalogServer server;
 	static CatalogService catalog;
 
-	@BeforeClass
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
+  @BeforeClass
 	public static void setUp() throws Exception {
 
     server = new MiniCatalogServer();
@@ -819,10 +825,14 @@ public class TestCatalog {
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 2);
+    assertEquals(partitions.get(0).getNumFiles(), 0L);
+    assertEquals(partitions.get(0).getNumBytes(), 0L);
 
     testDropPartition(tableName, "id=10/name=aaa");
     testDropPartition(tableName, "id=20/name=bbb");
 
+    exception.expect(PartitionNotFoundException.class);
+    exception.expectMessage("there is no partitions in 'addedtable' table");
     partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);

@@ -812,6 +812,22 @@ public class CatalogUtil {
   /**
    * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
    * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
+   * *
+   * @param tableName
+   * @param columns
+   * @param values
+   * @param location
+   * @param alterTableType
+   * @return
+   */
+  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
+                                                  String[] values, String location, AlterTableType alterTableType) {
+
+    return addOrDropPartition(tableName, columns, values, location, alterTableType, 0L, 0L);
+  }
+  /**
+   * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
+   * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
    *
    * @param tableName table name
    * @param columns partition column names
@@ -821,7 +837,8 @@ public class CatalogUtil {
    * @return AlterTableDesc
    */
   public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
-                                            String[] values, String location, AlterTableType alterTableType) {
+      String[] values, String location, AlterTableType alterTableType,
+      long numBytes, long numFiles) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
 
@@ -831,8 +848,12 @@ public class CatalogUtil {
     partitionDesc.setPartitionKeys(pair.getFirst());
     partitionDesc.setPartitionName(pair.getSecond());
 
-    if (alterTableType.equals(AlterTableType.ADD_PARTITION) && location != null) {
-      partitionDesc.setPath(location);
+    if (alterTableType.equals(AlterTableType.ADD_PARTITION)) {
+      if (location != null) {
+        partitionDesc.setPath(location);
+      }
+      partitionDesc.setNumBytes(numBytes);
+      partitionDesc.setNumFiles(numFiles);
     }
 
     alterTableDesc.setPartitionDesc(partitionDesc);
