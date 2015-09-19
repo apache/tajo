@@ -851,7 +851,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       pstmt.setString(4, table.getPath());
       pstmt.setString(5, table.getMeta().getStoreType());
-      pstmt.setBoolean(6, table.getSelfDescSchema());
+      pstmt.setBoolean(6, table.getSchema() == null);
       pstmt.executeUpdate();
       pstmt.close();
 
@@ -1699,12 +1699,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       tableBuilder.setPath(res.getString(4).trim());
       storeType = res.getString(5).trim();
-      tableBuilder.setSelfDescSchema(res.getBoolean(6));
+      boolean hasSelfDescSchema = res.getBoolean(6);
 
       res.close();
       pstmt.close();
 
-      if (!tableBuilder.getSelfDescSchema()) {
+      if (!hasSelfDescSchema) {
         //////////////////////////////////////////
         // Geting Column Descriptions
         //////////////////////////////////////////

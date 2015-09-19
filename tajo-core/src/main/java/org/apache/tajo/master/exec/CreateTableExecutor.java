@@ -24,9 +24,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.DuplicateTableException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -72,7 +75,6 @@ public class CreateTableExecutor {
         createTable.getUri(),
         createTable.isExternal(),
         createTable.getPartitionMethod(),
-        createTable.hasSelfDescSchema(),
         ifNotExists);
   }
 
@@ -84,7 +86,6 @@ public class CreateTableExecutor {
                           @Nullable URI uri,
                           boolean isExternal,
                           @Nullable PartitionMethodDesc partitionDesc,
-                          boolean hasSelfDescSchema,
                           boolean ifNotExists) throws IOException, TajoException {
 
     Pair<String, String> separatedNames = getQualifiedName(queryContext.getCurrentDatabase(), tableName);
@@ -102,7 +103,7 @@ public class CreateTableExecutor {
 
     TableDesc desc;
     URI tableUri = isExternal ? uri : tableSpace.getTableUri(databaseName, simpleTableName);
-    desc = new TableDesc(qualifiedName, schema, meta, tableUri, isExternal, hasSelfDescSchema);
+    desc = new TableDesc(qualifiedName, schema, meta, tableUri, isExternal);
 
     if (partitionDesc != null) {
       desc.setPartitionMethod(partitionDesc);

@@ -1294,11 +1294,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
-      if (checkIfExist(ctx.table_elements())) {
+      if (checkIfExist(ctx.table_elements().asterisk())) {
+        createTable.setHasSelfDescSchema();
+      } else {
         ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
         createTable.setTableElements(elements);
-      } else {
-        createTable.setHasSelfDescSchema();
       }
 
       if (checkIfExist(ctx.TABLESPACE())) {
@@ -1316,10 +1316,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {
-        ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
-        createTable.setTableElements(elements);
-      } else {
-        createTable.setHasSelfDescSchema();
+        if (checkIfExist(ctx.table_elements().asterisk())) {
+          createTable.setHasSelfDescSchema();
+        } else {
+          ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
+          createTable.setTableElements(elements);
+        }
       }
 
       if (checkIfExist(ctx.TABLESPACE())) {

@@ -658,7 +658,7 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeQuery();
     assertTableExists("d9.schemaless");
     TableDesc desc = getClient().getTableDesc("d9.schemaless");
-    assertTrue(desc.hasSelfDescSchema());
+    assertTrue(desc.hasEmptySchema());
 
     executeString("drop table d9.schemaless").close();
     executeString("drop database d9").close();
@@ -671,11 +671,11 @@ public class TestCreateTable extends QueryTestCaseBase {
     String className = getClass().getSimpleName();
     Path currentDatasetPath = new Path(datasetBasePath, className);
     Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
-    String sql = "create external table d10.schemaless using json with ('compression.codec'='none') location '" + filePath.toString() + "'";
+    String sql = "create external table d10.schemaless (*) using json with ('compression.codec'='none') location '" + filePath.toString() + "'";
     executeString(sql).close();
     assertTableExists("d10.schemaless");
     TableDesc desc = getClient().getTableDesc("d10.schemaless");
-    assertTrue(desc.hasSelfDescSchema());
+    assertTrue(desc.hasEmptySchema());
 
     executeString("drop table d10.schemaless").close();
     executeString("drop database d10").close();

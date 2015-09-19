@@ -1367,11 +1367,11 @@ public class TestLogicalPlanner {
   @Test
   public void testSelectFromSelfDescTable() throws Exception {
     TableDesc tableDesc = new TableDesc("default.self_desc_table1", null, CatalogUtil.newTableMeta("TEXT"),
-        CommonTestingUtil.getTestDir().toUri(), true, true);
+        CommonTestingUtil.getTestDir().toUri(), true);
     catalog.createTable(tableDesc);
     assertTrue(catalog.existsTable("default.self_desc_table1"));
     tableDesc = catalog.getTableDesc("default.self_desc_table1");
-    assertTrue(tableDesc.hasSelfDescSchema());
+    assertTrue(tableDesc.hasEmptySchema());
 
     QueryContext context = createQueryContext();
     Expr expr = sqlAnalyzer.parse(SELF_DESC[0]);
@@ -1422,11 +1422,11 @@ public class TestLogicalPlanner {
   @Test
   public void testSelectWhereFromSelfDescTable() throws Exception {
     TableDesc tableDesc = new TableDesc("default.self_desc_table1", null, CatalogUtil.newTableMeta("TEXT"),
-        CommonTestingUtil.getTestDir().toUri(), true, true);
+        CommonTestingUtil.getTestDir().toUri(), true);
     catalog.createTable(tableDesc);
     assertTrue(catalog.existsTable("default.self_desc_table1"));
     tableDesc = catalog.getTableDesc("default.self_desc_table1");
-    assertTrue(tableDesc.hasSelfDescSchema());
+    assertTrue(tableDesc.hasEmptySchema());
 
     QueryContext context = createQueryContext();
     Expr expr = sqlAnalyzer.parse(SELF_DESC[1]);

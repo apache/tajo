@@ -72,7 +72,8 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
   public boolean isEligible(PlanContext context, Expr expr) throws TajoException {
     Set<Relation> relations = ExprFinderIncludeSubquery.finds(expr, OpType.Relation);
     for (Relation eachRelation : relations) {
-      if (catalog.getTableDesc(getQualifiedRelationName(context, eachRelation)).hasSelfDescSchema()) {
+      TableDesc tableDesc = catalog.getTableDesc(getQualifiedRelationName(context, eachRelation));
+      if (tableDesc.hasEmptySchema()) {
         return true;
       }
     }
@@ -345,7 +346,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       ScanNode scan = queryBlock.getNodeFromExpr(expr);
       TableDesc desc = scan.getTableDesc();
 
-      if (desc.hasSelfDescSchema()) {
+      if (desc.hasEmptySchema()) {
         if (ctx.projectColumns.containsKey(getQualifiedRelationName(ctx.planContext, expr))) {
           Set<Column> columns = new HashSet<>();
           for (ColumnReferenceExpr col : ctx.projectColumns.get(getQualifiedRelationName(ctx.planContext, expr))) {
@@ -389,8 +390,17 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
             }
             // Leaf column type is TEXT; otherwise, RECORD.
             Type childDataType = (i == paths.length-2) ? Type.TEXT : Type.RECORD;
-            ColumnVertex parentVertex = new ColumnVertex(parentName, StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+1), Type.RECORD);
-            schemaGraph.addEdge(new ColumnEdge(new ColumnVertex(paths[i+1], StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+2), childDataType), parentVertex));
+            ColumnVertex parentVertex = new ColumnVertex(
+                parentName,
+                StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+1),
+                Type.RECORD);
+            schemaGraph.addEdge(
+                new ColumnEdge(
+                    new ColumnVertex(
+                        paths[i+1],
+                        StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+2), childDataType
+                    ),
+                    parentVertex));
             if (i == 0) {
               rootVertexes.add(parentVertex);
             }

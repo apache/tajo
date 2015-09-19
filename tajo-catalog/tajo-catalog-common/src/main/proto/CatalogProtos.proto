@@ -102,7 +102,6 @@ message TableDescProto {
   optional TableStatsProto stats = 6;
   optional PartitionMethodProto partition = 7;
   optional bool isExternal = 8 [default = false];
-  required bool selfDescSchema = 9;
 }
 
 message TableIdentifierProto {

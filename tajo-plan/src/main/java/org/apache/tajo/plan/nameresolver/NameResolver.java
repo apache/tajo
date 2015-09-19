@@ -280,7 +280,10 @@ public abstract class NameResolver {
   }
 
   static boolean describeSchemaByItself(RelationNode relationNode) {
-    return relationNode instanceof ScanNode && ((ScanNode) relationNode).getTableDesc().hasSelfDescSchema();
+    if (relationNode instanceof ScanNode && ((ScanNode) relationNode).getTableDesc().hasEmptySchema()) {
+      return true;
+    }
+    return false;
   }
 
   static Column guessColumn(String qualifiedName) {

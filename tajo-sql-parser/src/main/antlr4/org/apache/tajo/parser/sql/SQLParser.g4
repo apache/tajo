@@ -106,9 +106,9 @@ if_exists
   ;
 
 create_table_statement
-  : CREATE EXTERNAL TABLE (if_not_exists)? table_name (table_elements)? (TABLESPACE spacename=identifier)? USING storage_type=identifier
+  : CREATE EXTERNAL TABLE (if_not_exists)? table_name table_elements (TABLESPACE spacename=identifier)? USING storage_type=identifier
     (param_clause)? (table_partitioning_clauses)? (LOCATION uri=Character_String_Literal)?
-  | CREATE TABLE (if_not_exists)? table_name (table_elements)? (TABLESPACE spacename=identifier)? (USING storage_type=identifier)?
+  | CREATE TABLE (if_not_exists)? table_name table_elements (TABLESPACE spacename=identifier)? (USING storage_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
   | CREATE TABLE (if_not_exists)? table_name (TABLESPACE spacename=identifier)? (USING storage_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? AS query_expression
@@ -117,6 +117,7 @@ create_table_statement
 
 table_elements
   : LEFT_PAREN field_element (COMMA field_element)* RIGHT_PAREN
+  | LEFT_PAREN asterisk RIGHT_PAREN
   ;
 
 field_element
@@ -1312,7 +1313,11 @@ derived_column
   ;
 
 qualified_asterisk
-  : (tb_name=identifier DOT)? MULTIPLY
+  : (tb_name=identifier DOT)? asterisk
+  ;
+
+asterisk
+  : MULTIPLY
   ;
 
 set_qualifier

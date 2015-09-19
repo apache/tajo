@@ -33,16 +33,16 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
   public TestQueryOnSelfDescTable() throws IOException, TajoException, SQLException {
     super();
 
-    executeString(String.format("create external table self_desc_table1 using json location '%s'",
+    executeString(String.format("create external table self_desc_table1 (*) using json location '%s'",
         getDataSetFile("sample1"))).close();
 
-    executeString(String.format("create external table self_desc_table2 using json location '%s'",
+    executeString(String.format("create external table self_desc_table2 (*) using json location '%s'",
         getDataSetFile("sample2"))).close();
 
-    executeString(String.format("create external table self_desc_table3 using json location '%s'",
+    executeString(String.format("create external table self_desc_table3 (*) using json location '%s'",
         getDataSetFile("tweets"))).close();
 
-    executeString(String.format("create external table github using json location '%s'",
+    executeString(String.format("create external table github (*) using json location '%s'",
         getDataSetFile("github"))).close();
   }
 
@@ -52,12 +52,6 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
     executeString("drop table self_desc_table2").close();
     executeString("drop table self_desc_table3").close();
     executeString("drop table github").close();
-  }
-
-  @Test
-  public final void testTest() throws Exception {
-    ResultSet res = executeString("SELECT title, name.last_name from self_desc_table1 where name.first_name = 'Arya';");
-    System.out.println(resultSetToString(res));
   }
 
   @Test

@@ -194,11 +194,10 @@ message GetClusterInfoResponse {
 message CreateTableRequest {
   optional SessionIdProto sessionId = 1;
   required string name = 2;
-  required SchemaProto schema = 3;
+  optional SchemaProto schema = 3;
   required TableProto meta = 4;
   required string path = 5;
   optional PartitionMethodProto partition = 6;
-  required bool hasSelfDescSchema = 7;
 }
 
 message DropTableRequest {
