@@ -224,10 +224,10 @@
   <profiles>
     <profile>
       <!-- testing-postgresql-server only supports x86-64 -->
-      <id>64bit-intel-tests</id>
+      <id>x86_64-linux-tests</id>
       <activation>
         <os>
-          <name>x86_64</name>
+          <name>linux</name>
           <arch>x86_64</arch>
         </os>
       </activation>
@@ -248,11 +248,35 @@
     </profile>
     <profile>
       <!-- testing-postgresql-server only supports x86-64 -->
-      <id>64bit-amd-tests</id>
+      <id>amd64-linux-tests</id>
       <activation>
         <os>
-          <name>amd64</name>
+          <name>linux</name>
           <arch>amd64</arch>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration combine.self="override">
+              <systemProperties>
+                <tajo.test>TRUE</tajo.test>
+              </systemProperties>
+              <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- testing-postgresql-server only supports x86-64 -->
+      <id>x86_64-darwin-tests</id>
+      <activation>
+        <os>
+          <name>darwin</name>
+          <arch>x86_64</arch>
         </os>
       </activation>
       <build>
