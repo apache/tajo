@@ -577,10 +577,10 @@ message EnforceProperty {
     SORTED_INPUT = 0;
     OUTPUT_DISTINCT = 1;
     GROUP_BY = 2;
-    JOIN = 3;
-    SORT = 4;
-    BROADCAST = 5;
-    COLUMN_PARTITION = 6;
+    JOIN    = 3;
+    SORT              = 4;
+    BROADCAST         = 5;
+    COLUMN_PARTITION  = 6;
     DISTINCT_GROUP_BY = 7;
   }
 

@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -37,6 +38,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	@Expose protected EvalNode qual;
 	@Expose protected Target[] targets;
   @Expose protected boolean broadcastTable;
+  @Expose protected long limit = -1; // -1 means no set
 
   protected ScanNode(int pid, NodeType nodeType) {
     super(pid, nodeType);
@@ -150,6 +152,29 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	  return this.targets;
 	}
 
+  /**
+   *
+   *
+   * @return
+   */
+  public boolean hasLimit() {
+    return limit > 0;
+  }
+
+  /**
+   * How many rows will be retrieved?
+   *
+   * @return The number of rows to be retrieved
+   */
+  public long getLimit() {
+    return limit;
+  }
+
+  public void setLimit(long num) {
+    Preconditions.checkArgument(num > 0, "The number of fetch rows in limit is negative");
+    this.limit = num;
+  }
+
   public TableDesc getTableDesc() {
     return tableDesc;
   }
@@ -248,10 +273,5 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     planStr.addDetail("in schema: ").appendDetail(getInSchema().toString());
 
     return planStr;
-  }
-
-  public static boolean isScanNode(LogicalNode node) {
-    return node.getType() == NodeType.SCAN ||
-        node.getType() == NodeType.PARTITIONS_SCAN;
   }
 }

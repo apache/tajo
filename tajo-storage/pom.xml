@@ -37,6 +37,8 @@
     <module>tajo-storage-common</module>
     <module>tajo-storage-hdfs</module>
     <module>tajo-storage-hbase</module>
+    <module>tajo-storage-jdbc</module>
+    <module>tajo-storage-pgsql</module>
   </modules>
 
   <build>
@@ -87,6 +89,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>dist</id>
       <activation>

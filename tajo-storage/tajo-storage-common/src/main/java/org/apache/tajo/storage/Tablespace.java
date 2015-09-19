@@ -18,30 +18,28 @@
 
 package org.apache.tajo.storage;
 
+import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,14 +52,20 @@ public abstract class Tablespace {
 
   protected final String name;
   protected final URI uri;
+  protected final JSONObject config;
   /** this space is visible or not. */
   protected boolean visible = true;
 
   protected TajoConf conf;
 
-  public Tablespace(String name, URI uri) {
+  public Tablespace(String name, URI uri, JSONObject config) {
     this.name = name;
     this.uri = uri;
+    this.config = config;
+  }
+
+  public JSONObject getConfig() {
+    return config;
   }
 
   public void setVisible(boolean visible) {
@@ -90,15 +94,11 @@ public abstract class Tablespace {
     return visible;
   }
 
-  public abstract void setConfig(String name, String value);
-
-  public abstract void setConfigs(Map<String, String> configs);
-
   public String toString() {
     return name + "=" + uri.toString();
   }
 
-  public abstract long getTableVolume(URI uri) throws IOException;
+  public abstract long getTableVolume(URI uri) throws UnsupportedException;
 
   /**
    * if {@link StorageProperty#isArbitraryPathAllowed} is true,
@@ -114,22 +114,24 @@ public abstract class Tablespace {
   /**
    * Get Table URI
    *
-   * @param tableName
-   * @return
+   * @param databaseName Database name
+   * @param tableName Table name
+   * @return Table URI
    */
   public abstract URI getTableUri(String databaseName, String tableName);
 
   /**
    * Returns the splits that will serve as input for the scan tasks. The
    * number of splits matches the number of regions in a table.
-   * @param fragmentId The table name or previous ExecutionBlockId
+   * @param inputSourceId Input source identifier, which can be either relation name or execution block id
    * @param tableDesc The table description for the target data.
-   * @param scanNode The logical node for scanning.
+   * @param filterCondition filter condition which can prune splits if possible
    * @return The list of input fragments.
    * @throws java.io.IOException
    */
-  public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
-                                           ScanNode scanNode) throws IOException, TajoException;
+  public abstract List<Fragment> getSplits(String inputSourceId,
+                                           TableDesc tableDesc,
+                                           @Nullable EvalNode filterCondition) throws IOException, TajoException;
 
   /**
    * It returns the storage property.
@@ -181,46 +183,6 @@ public abstract class Tablespace {
   }
 
   /**
-   * Returns the splits that will serve as input for the scan tasks. The
-   * number of splits matches the number of regions in a table.
-   *
-   * @param fragmentId The table name or previous ExecutionBlockId
-   * @param tableDesc The table description for the target data.
-   * @return The list of input fragments.
-   * @throws java.io.IOException
-   */
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException, TajoException {
-    return getSplits(fragmentId, tableDesc, null);
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param fragment The fragment for scanning
-   * @param target Columns which are selected.
-   * @return Scanner instance
-   * @throws java.io.IOException
-   */
-  public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
-    return getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
-  }
-
-  /**
-   * Returns Scanner instance.
-   *
-   * @param meta The table meta
-   * @param schema The input schema
-   * @param fragment The fragment for scanning
-   * @return Scanner instance
-   * @throws java.io.IOException
-   */
-  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment) throws IOException {
-    return getScanner(meta, schema, fragment, schema);
-  }
-
-  /**
    * Returns Scanner instance.
    *
    * @param meta The table meta
@@ -230,7 +192,14 @@ public abstract class Tablespace {
    * @return Scanner instance
    * @throws java.io.IOException
    */
-  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
+  public Scanner getScanner(TableMeta meta,
+                            Schema schema,
+                            Fragment fragment,
+                            @Nullable Schema target) throws IOException {
+    if (target == null) {
+      target = schema;
+    }
+
     if (fragment.isEmpty()) {
       Scanner scanner = new NullScanner(conf, schema, meta, fragment);
       scanner.setTarget(target.toArray());
@@ -267,7 +236,7 @@ public abstract class Tablespace {
    */
   public synchronized SeekableScanner getSeekableScanner(TableMeta meta, Schema schema, FragmentProto fragment,
                                                          Schema target) throws IOException {
-    return (SeekableScanner)this.getScanner(meta, schema, fragment, target);
+    return (SeekableScanner)this.getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
   }
 
   /**
@@ -412,5 +381,14 @@ public abstract class Tablespace {
   public URI prepareStagingSpace(TajoConf conf, String queryId, OverridableConf context,
                                  TableMeta meta) throws IOException {
     throw new IOException("Staging the output result is not supported in this storage");
+  }
+
+  public MetadataProvider getMetadataProvider() {
+    throw new TajoRuntimeException(new UnsupportedException("Linked Metadata Provider for " + name));
+  }
+
+  @SuppressWarnings("unused")
+  public int markAccetablePlanPart(LogicalPlan plan) {
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 }

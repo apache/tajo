@@ -560,20 +560,6 @@ public class PlannerUtil {
     }
   }
 
-  /**
-   * fill targets with FieldEvals from a given schema
-   *
-   * @param schema  to be transformed to targets
-   * @param targets to be filled
-   */
-  public static void schemaToTargets(Schema schema, Target[] targets) {
-    FieldEval eval;
-    for (int i = 0; i < schema.size(); i++) {
-      eval = new FieldEval(schema.getColumn(i));
-      targets[i] = new Target(eval);
-    }
-  }
-
   public static Target[] schemaToTargets(Schema schema) {
     Target[] targets = new Target[schema.size()];
 
@@ -583,17 +569,6 @@ public class PlannerUtil {
       targets[i] = new Target(eval);
     }
     return targets;
-  }
-
-  public static Target[] schemaToTargetsWithGeneratedFields(Schema schema) {
-    List<Target> targets = TUtil.newList();
-
-    FieldEval eval;
-    for (int i = 0; i < schema.size(); i++) {
-      eval = new FieldEval(schema.getColumn(i));
-      targets.add(new Target(eval));
-    }
-    return targets.toArray(new Target[targets.size()]);
   }
 
   public static SortSpec[] schemaToSortSpecs(Schema schema) {
@@ -991,6 +966,25 @@ public class PlannerUtil {
       }
     }
     return inSubqueries;
+  }
+
+  /**
+   * Return a list of integers, maps input schema and projected columns.
+   * Each integer value means a column index of input schema corresponding to each project column
+   *
+   * @param inputSchema Input Schema
+   * @param targets Columns to be projected
+   * @return A list of integers, each of which is an index number of input schema corresponding
+   *         to each projected column.
+   */
+  public static int [] getTargetIds(Schema inputSchema, Column...targets) {
+    int [] targetIds = new int[targets.length];
+    for (int i = 0; i < targetIds.length; i++) {
+      targetIds[i] = inputSchema.getColumnId(targets[i].getQualifiedName());
+    }
+    Arrays.sort(targetIds);
+
+    return targetIds;
   }
 
   public static List<EvalNode> getAllEqualEvals(EvalNode qual) {

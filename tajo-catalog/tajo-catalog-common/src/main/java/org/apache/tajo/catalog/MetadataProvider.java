@@ -25,15 +25,49 @@ import java.net.URI;
 import java.util.Collection;
 
 public interface MetadataProvider {
+  /**
+   * Get a Tablespace name
+   *
+   * @return Tablespace name
+   */
   String getTablespaceName();
 
+  /**
+   * Get a tablespace URI
+   *
+   * @return Table space URI
+   */
   URI getTablespaceUri();
 
+  /**
+   * Return a database name
+   *
+   * @return Database name
+   */
   String getDatabaseName();
 
-  Collection<String> getCatalogs();
+  /**
+   * Get a list of schema names
+   * @return All schema names in this database
+   */
+  Collection<String> getSchemas();
 
-  Collection<String> getTables(@Nullable String catalog);
+  /**
+   * get Table names matched to a given patterns
+   *
+   * @param schemaPattern Schema name pattern
+   * @param tablePattern Table name pattern
+   * @return All matched table names
+   */
+  Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern);
 
-  TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException;
+  /**
+   * Get a table descriptor
+   *
+   * @param schemaName schema name
+   * @param tableName table name
+   * @return TableDesc
+   * @throws UndefinedTablespaceException
+   */
+  TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException;
 }

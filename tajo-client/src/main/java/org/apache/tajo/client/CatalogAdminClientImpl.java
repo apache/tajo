@@ -87,15 +87,15 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public void dropDatabase(final String databaseName) throws UndefinedDatabaseException {
+  public void dropDatabase(final String databaseName)
+      throws UndefinedDatabaseException, InsufficientPrivilegeException {
 
     try {
       final BlockingInterface stub = conn.getTMStub();
       final ReturnState state = stub.dropDatabase(null, conn.getSessionedString(databaseName));
 
-      if (isThisError(state, ResultCode.UNDEFINED_DATABASE)) {
-        throw new UndefinedDatabaseException(state);
-      }
+      throwsIfThisError(state, UndefinedDatabaseException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {

@@ -18,103 +18,20 @@
 
 package org.apache.tajo.util;
 
-import com.google.protobuf.Message;
 import org.apache.commons.logging.Log;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.conf.TajoConf;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.charset.Charset;
 
+/**
+ * Simple File Utilities
+ */
 public class FileUtil {
-  public static void writeProto(File file, Message proto) throws IOException {
-    FileOutputStream stream = null;
-    try {
-      stream = new FileOutputStream(file);
-      stream.write(proto.toByteArray());
-    } finally {
-      IOUtils.closeStream(stream);
-    }
-  }
-
-  public static void writeProto(OutputStream out, Message proto) throws IOException {
-    out.write(proto.toByteArray());
-  }
-
-  public static void writeProto(FileSystem fs, Path path, Message proto) throws IOException {
-    FSDataOutputStream stream = fs.create(path);
-    try {
-      stream.write(proto.toByteArray());
-    } finally {
-      IOUtils.closeStream(stream);
-    }
-  }
-
-  public static Message loadProto(File file, Message proto) throws IOException {
-    FileInputStream in = null;
-    try {
-      in = new FileInputStream(file);
-      Message.Builder builder = proto.newBuilderForType().mergeFrom(in);
-      return builder.build();
-    } finally {
-      IOUtils.closeStream(in);
-    }
-  }
-
-  public static Message loadProto(InputStream in, Message proto) throws IOException {
-    Message.Builder builder = proto.newBuilderForType().mergeFrom(in);
-    return builder.build();
-  }
-
-  public static Message loadProto(FileSystem fs,
-                                  Path path, Message proto) throws IOException {
-    FSDataInputStream in = null;
-    try {
-      in = new FSDataInputStream(fs.open(path));
-      Message.Builder builder = proto.newBuilderForType().mergeFrom(in);
-      return builder.build();
-    } finally {
-      IOUtils.closeStream(in);
-    }
-  }
-
-  public static URL getResourcePath(String resource) throws IOException {
-    return ClassLoader.getSystemResource(resource);
-  }
-
-  /**
-   * It returns a string from a text file found in classpath.
-   *
-   * @param resource Resource file name
-   * @return String contents if exists. Otherwise, it will return null.
-   * @throws IOException
-   */
-  public static String readTextFileFromResource(String resource) throws IOException {
-    InputStream stream = ClassLoader.getSystemResourceAsStream(resource);
-    if (stream != null) {
-      return readTextFromStream(stream);
-    } else {
-      throw new FileNotFoundException(resource);
-    }
-  }
-
-  public static String readTextFromStream(InputStream inputStream)
-      throws IOException {
-    try {
-      StringBuilder fileData = new StringBuilder(1000);
-      byte[] buf = new byte[1024];
-      int numRead;
-      while ((numRead = inputStream.read(buf)) != -1) {
-        String readData = new String(buf, 0, numRead, Charset.defaultCharset());
-        fileData.append(readData);
-      }
-      return fileData.toString();
-    } finally {
-      IOUtils.closeStream(inputStream);
-    }
-  }
 
   public static String readTextFile(File file) throws IOException {
     StringBuilder fileData = new StringBuilder(1000);
@@ -133,6 +50,13 @@ public class FileUtil {
     return fileData.toString();
   }
 
+  /**
+   * Write a string into a file
+   *
+   * @param text
+   * @param path File path
+   * @throws IOException
+   */
   public static void writeTextToFile(String text, Path path) throws IOException {
     FileSystem fs = path.getFileSystem(new TajoConf());
     if (!fs.exists(path.getParent())) {
@@ -141,6 +65,22 @@ public class FileUtil {
     FSDataOutputStream out = fs.create(path);
     out.write(text.getBytes());
     out.close();
+  }
+
+  public static String readTextFromStream(InputStream inputStream)
+      throws IOException {
+    try {
+      StringBuilder fileData = new StringBuilder(1000);
+      byte[] buf = new byte[1024];
+      int numRead;
+      while ((numRead = inputStream.read(buf)) != -1) {
+        String readData = new String(buf, 0, numRead, Charset.defaultCharset());
+        fileData.append(readData);
+      }
+      return fileData.toString();
+    } finally {
+      IOUtils.closeStream(inputStream);
+    }
   }
 
   public static void writeTextToStream(String text, OutputStream outputStream) throws IOException {

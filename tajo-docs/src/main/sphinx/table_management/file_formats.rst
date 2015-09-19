@@ -11,4 +11,5 @@ Currently, Tajo provides following file formats:
     json
     rcfile
     parquet
+    orc
     sequencefile
