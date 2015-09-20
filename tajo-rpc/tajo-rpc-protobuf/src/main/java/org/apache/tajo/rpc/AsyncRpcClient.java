@@ -26,11 +26,9 @@ import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT;
-import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT_DEFAULT;
+import static org.apache.tajo.rpc.RpcConstants.*;
 
 public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallback> {
 
@@ -63,8 +61,12 @@ public class AsyncRpcClient extends NettyClientBase<AsyncRpcClient.ResponseCallb
     final long socketTimeoutMills = Long.parseLong(
         connectionParameters.getProperty(CLIENT_SOCKET_TIMEOUT, String.valueOf(CLIENT_SOCKET_TIMEOUT_DEFAULT)));
 
-    init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(), socketTimeoutMills),
-        eventLoopGroup);
+    // Enable proactive hang detection
+    final boolean hangDetectionEnabled = Boolean.parseBoolean(
+        connectionParameters.getProperty(CLIENT_HANG_DETECTION, String.valueOf(CLIENT_HANG_DETECTION_DEFAULT)));
+
+    init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(), socketTimeoutMills,
+            hangDetectionEnabled), eventLoopGroup);
   }
 
   @Override

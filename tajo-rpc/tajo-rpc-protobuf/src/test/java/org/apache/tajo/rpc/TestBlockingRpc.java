@@ -123,6 +123,7 @@ public class TestBlockingRpc {
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.RPC_RETRY_NUM, "1");
     connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(10)));
+    connParams.setProperty(RpcConstants.CLIENT_HANG_DETECTION, "true");
 
     RpcConnectionKey rpcConnectionKey =
         new RpcConnectionKey(
@@ -496,6 +497,7 @@ public class TestBlockingRpc {
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.RPC_RETRY_NUM, retries + "");
     connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+    connParams.setProperty(RpcConstants.CLIENT_HANG_DETECTION, "true");
 
     BlockingRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
@@ -545,6 +547,7 @@ public class TestBlockingRpc {
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.RPC_RETRY_NUM, retries + "");
     connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+    connParams.setProperty(RpcConstants.CLIENT_HANG_DETECTION, "true");
 
     BlockingRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());

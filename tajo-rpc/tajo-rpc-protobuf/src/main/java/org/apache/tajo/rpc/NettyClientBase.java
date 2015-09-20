@@ -56,7 +56,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
   private final int maxRetryNum;
   /** Connection Timeout */
   private final long connTimeoutMillis;
-
+  private boolean enableMonitor;
   private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners = new ConcurrentHashMap<>();
   private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<>();
 
@@ -84,7 +84,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         connectionParameters.getProperty(CLIENT_CONNECTION_TIMEOUT, String.valueOf(CLIENT_CONNECTION_TIMEOUT_DEFAULT)));
 
     // Netty only takes integer value range and this is to avoid integer overflow.
-    Preconditions.checkArgument(this.connTimeoutMillis < Integer.MAX_VALUE, "Too long connection timeout");
+    Preconditions.checkArgument(this.connTimeoutMillis <= Integer.MAX_VALUE, "Too long connection timeout");
   }
 
   // should be called from sub class
@@ -310,6 +310,9 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
       MonitorClientHandler handler = ctx.pipeline().get(MonitorClientHandler.class);
+      if (handler != null) {
+        enableMonitor = true;
+      }
 
       for (ChannelEventListener listener : getSubscribers()) {
         listener.channelRegistered(ctx);
@@ -406,7 +409,14 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
 
-      if (evt instanceof MonitorStateEvent) {
+      if (!enableMonitor && evt instanceof IdleStateEvent) {
+        IdleStateEvent e = (IdleStateEvent) evt;
+        /* If all requests is done and event is triggered, idle channel close. */
+        if (e.state() == IdleState.READER_IDLE && requests.isEmpty()) {
+          ctx.close();
+          LOG.info("Idle connection closed successfully :" + ctx.channel());
+        }
+      } else if (evt instanceof MonitorStateEvent) {
         MonitorStateEvent e = (MonitorStateEvent) evt;
         if (e.state() == MonitorStateEvent.MonitorState.PING_EXPIRED) {
           exceptionCaught(ctx, new ServiceException("Server has not respond: " + ctx.channel()));
