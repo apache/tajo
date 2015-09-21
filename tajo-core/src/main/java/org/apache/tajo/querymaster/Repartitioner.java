@@ -471,7 +471,7 @@ public class Repartitioner {
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
     fragments.addAll(((FileTablespace) tsHandler).getSplits(
-        scan.getCanonicalName(), table.getMeta(), table.getSchema(), true, partitionsScan.getInputPaths()));
+        scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getInputPaths()));
     partitionsScan.setInputPaths(null);
     return fragments;
   }
