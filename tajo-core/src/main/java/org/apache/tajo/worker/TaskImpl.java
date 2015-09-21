@@ -21,7 +21,6 @@ package org.apache.tajo.worker;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -45,12 +44,15 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.logical.SortNode;
+import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty.EnforceType;
-import org.apache.tajo.plan.function.python.TajoScriptEngine;
-import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
@@ -569,7 +571,6 @@ public class TaskImpl implements Task {
         if (name.equals(chunk.getEbId())) {
           tablet = new FileFragment(name, new Path(chunk.getFile().getPath()), chunk.startOffset(), chunk.length());
           listTablets.add(tablet);
-          LOG.info("One local chunk is added to listTablets");
         }
       }
     }
@@ -670,6 +671,7 @@ public class TaskImpl implements Task {
           getLocalPathToRead(getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
 
       int i = 0;
+      int localStoreChunkCount = 0;
       File storeDir;
       File defaultStoreFile;
       FileChunk storeChunk = null;
@@ -687,23 +689,18 @@ public class TaskImpl implements Task {
 
           WorkerConnectionInfo conn = executionBlockContext.getWorkerContext().getConnectionInfo();
           if (NetUtils.isLocalAddress(address) && conn.getPullServerPort() == uri.getPort()) {
-            boolean hasError = false;
-            try {
-              LOG.info("Try to get local file chunk at local host");
-              storeChunk = getLocalStoredFileChunk(uri, systemConf);
-            } catch (Throwable t) {
-              hasError = true;
-            }
+
+            storeChunk = getLocalStoredFileChunk(uri, systemConf);
 
             // When a range request is out of range, storeChunk will be NULL. This case is normal state.
             // So, we should skip and don't need to create storeChunk.
-            if (storeChunk == null && !hasError) {
+            if (storeChunk == null || storeChunk.length() == 0) {
               continue;
             }
 
-            if (storeChunk != null && storeChunk.getFile() != null && storeChunk.startOffset() > -1
-                && hasError == false) {
+            if (storeChunk.getFile() != null && storeChunk.startOffset() > -1) {
               storeChunk.setFromRemote(false);
+              localStoreChunkCount++;
             } else {
               storeChunk = new FileChunk(defaultStoreFile, 0, -1);
               storeChunk.setFromRemote(true);
@@ -717,12 +714,16 @@ public class TaskImpl implements Task {
           // represents a complete file. Otherwise, storeChunk may represent a complete file or only a part of it
           storeChunk.setEbId(f.getName());
           Fetcher fetcher = new Fetcher(systemConf, uri, storeChunk);
-          LOG.info("Create a new Fetcher with storeChunk:" + storeChunk.toString());
           runnerList.add(fetcher);
           i++;
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Create a new Fetcher with storeChunk:" + storeChunk.toString());
+          }
         }
       }
       ctx.addFetchPhase(runnerList.size(), new File(inputDir.toString()));
+      LOG.info("Create shuffle Fetchers local:" + localStoreChunkCount +
+          ", remote:" + (runnerList.size() - localStoreChunkCount));
       return runnerList;
     } else {
       return Lists.newArrayList();
@@ -731,56 +732,42 @@ public class TaskImpl implements Task {
 
   private FileChunk getLocalStoredFileChunk(URI fetchURI, TajoConf conf) throws IOException {
     // Parse the URI
-    LOG.info("getLocalStoredFileChunk starts");
-    final Map<String, List<String>> params = new QueryStringDecoder(fetchURI.toString()).parameters();
-    final List<String> types = params.get("type");
-    final List<String> qids = params.get("qid");
+
+    // Parsing the URL into key-values
+    final Map<String, List<String>> params = TajoPullServerService.decodeParams(fetchURI.toString());
+
+    String partId = params.get("p").get(0);
+    String queryId = params.get("qid").get(0);
+    String shuffleType = params.get("type").get(0);
+    String sid =  params.get("sid").get(0);
+
     final List<String> taskIdList = params.get("ta");
-    final List<String> stageIds = params.get("sid");
-    final List<String> partIds = params.get("p");
     final List<String> offsetList = params.get("offset");
     final List<String> lengthList = params.get("length");
 
-    if (types == null || stageIds == null || qids == null || partIds == null) {
-      LOG.error("Invalid URI - Required queryId, type, stage Id, and part id");
-      return null;
-    }
-
-    if (qids.size() != 1 && types.size() != 1 || stageIds.size() != 1) {
-      LOG.error("Invalid URI - Required qids, type, taskIds, stage Id, and part id");
-      return null;
-    }
-
-    String queryId = qids.get(0);
-    String shuffleType = types.get(0);
-    String sid = stageIds.get(0);
-    String partId = partIds.get(0);
-
-    if (shuffleType.equals("r") && taskIdList == null) {
-      LOG.error("Invalid URI - For range shuffle, taskId is required");
-      return null;
-    }
-    List<String> taskIds = splitMaps(taskIdList);
-
-    FileChunk chunk;
     long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
     long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
 
-    LOG.info("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
-	+ ", taskIds=" + taskIdList);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
+          + ", taskIds=" + taskIdList);
+    }
 
     // The working directory of Tajo worker for each query, including stage
-    String queryBaseDir = queryId.toString() + "/output" + "/" + sid + "/";
+    Path queryBaseDir = TajoPullServerService.getBaseOutputDir(queryId, sid);
+    List<String> taskIds = TajoPullServerService.splitMaps(taskIdList);
 
+    FileChunk chunk;
     // If the stage requires a range shuffle
     if (shuffleType.equals("r")) {
-      String ta = taskIds.get(0);
-      if (!executionBlockContext.getLocalDirAllocator().ifExists(queryBaseDir + ta + "/output/", conf)) {
-        LOG.warn("Range shuffle - file not exist");
+
+      Path outputPath = StorageUtil.concatPath(queryBaseDir, taskIds.get(0), "output");
+      if (!executionBlockContext.getLocalDirAllocator().ifExists(outputPath.toString(), conf)) {
+        LOG.warn("Range shuffle - file not exist. " + outputPath);
         return null;
       }
       Path path = executionBlockContext.getLocalFS().makeQualified(
-	      executionBlockContext.getLocalDirAllocator().getLocalPathToRead(queryBaseDir + ta + "/output/", conf));
+	      executionBlockContext.getLocalDirAllocator().getLocalPathToRead(outputPath.toString(), conf));
       String startKey = params.get("start").get(0);
       String endKey = params.get("end").get(0);
       boolean last = params.get("final") != null;
@@ -794,14 +781,15 @@ public class TaskImpl implements Task {
 
       // If the stage requires a hash shuffle or a scattered hash shuffle
     } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
-      int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
-      String partPath = queryBaseDir + "hash-shuffle/" + partParentId + "/" + partId;
-      if (!executionBlockContext.getLocalDirAllocator().ifExists(partPath, conf)) {
+      int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), conf);
+      Path partPath = StorageUtil.concatPath(queryBaseDir, "hash-shuffle", String.valueOf(partParentId), partId);
+
+      if (!executionBlockContext.getLocalDirAllocator().ifExists(partPath.toString(), conf)) {
         LOG.warn("Hash shuffle or Scattered hash shuffle - file not exist: " + partPath);
         return null;
       }
       Path path = executionBlockContext.getLocalFS().makeQualified(
-        executionBlockContext.getLocalDirAllocator().getLocalPathToRead(partPath, conf));
+        executionBlockContext.getLocalDirAllocator().getLocalPathToRead(partPath.toString(), conf));
       File file = new File(path.toUri());
       long startPos = (offset >= 0 && length >= 0) ? offset : 0;
       long readLen = (offset >= 0 && length >= 0) ? length : file.length();
@@ -818,17 +806,6 @@ public class TaskImpl implements Task {
     }
 
     return chunk;
-  }
-
-  private List<String> splitMaps(List<String> mapq) {
-    if (null == mapq) {
-      return null;
-    }
-    final List<String> ret = new ArrayList<String>();
-    for (String s : mapq) {
-      Collections.addAll(ret, s.split(","));
-    }
-    return ret;
   }
 
   public static Path getTaskAttemptDir(TaskAttemptId quid) {
