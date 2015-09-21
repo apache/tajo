@@ -1835,6 +1835,23 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
     assertEquals(expectedResult, result);
 
+    // Sort
+    String sortedTableName = "sortedPartitionTable";
+    executeString("create table " + sortedTableName + " AS SELECT * FROM " + tableName
+        + " ORDER BY col1, col2 desc").close();
+
+    res = executeString("SELECT * FROM " + sortedTableName + " ORDER BY col1, col2 desc;");
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,17.0\n" +
+      "2,2,38.0\n" +
+      "3,3,49.0\n" +
+      "3,2,45.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    executeString("DROP TABLE " + sortedTableName).close();
     executeString("DROP TABLE " + externalTableName).close();
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
