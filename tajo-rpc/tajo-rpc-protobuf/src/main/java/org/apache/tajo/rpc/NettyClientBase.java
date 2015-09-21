@@ -196,6 +196,14 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     return this.channelFuture = bootstrap.clone().connect(address);
   }
 
+  private ConnectException makeConnectException(InetSocketAddress address, ChannelFuture future) {
+    if (future.cause() instanceof UnresolvedAddressException) {
+      return new ConnectException("Can't resolve host name: " + address.toString());
+    } else {
+      return new ConnectTimeoutException(future.cause().getMessage());
+    }
+  }
+
   public synchronized void connect() throws ConnectException {
     if (isConnected()) return;
 
@@ -212,7 +220,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
       if (maxRetryNum > 0) {
         doReconnect(address, f, ++retries);
       } else {
-        throw new ConnectException(ExceptionUtils.getMessage(f.cause()));
+        throw makeConnectException(address, f);
       }
     }
   }
@@ -241,12 +249,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         }
       } else {
         LOG.error("Max retry count has been exceeded. attempts=" + retries + " caused by: " + future.cause());
-
-        if (future.cause() instanceof UnresolvedAddressException) {
-          throw new ConnectException("Can't resolve host name: " + address.toString());
-        } else {
-          throw new ConnectTimeoutException(future.cause().getMessage());
-        }
+        throw makeConnectException(address, future);
       }
     }
   }

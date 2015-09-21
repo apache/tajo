@@ -693,47 +693,4 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     }
   }
-
-  private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException {
-    try (Socket socket = new Socket())  {
-      // Try to connect to a private address in the 10.x.y.z range.
-      // These addresses are usually not routed, so an attempt to
-      // connect to them will hang the connection attempt, which is
-      // what we want to simulate in this test.
-      socket.connect(new InetSocketAddress(host, port), connectTimeout);
-      // Abort the test if we can connect.
-      Assume.assumeTrue(false);
-    } catch (SocketTimeoutException x) {
-      // Expected timeout during connect, continue the test.
-      Assume.assumeTrue(true);
-    } catch (Throwable x) {
-      // Abort if any other exception happens.
-      Assume.assumeTrue(false);
-    }
-  }
-
-  @Test(timeout = 5000)
-  public final void testConnectTimeout() throws Exception {
-    final String host = "10.255.255.1";
-    final int port = 80;
-    int connectTimeout = 1000;
-    assumeConnectTimeout(host, port, connectTimeout);
-
-    long startTime = Long.MIN_VALUE;
-    long endTime;
-    try {
-      // artificially cause connection timeout
-      String connUri = buildConnectionUri(host, port, DEFAULT_DATABASE_NAME);
-      connUri = UriUtil.addParam(connUri, "connectTimeout", "1"); // 1 seconds
-      startTime = System.currentTimeMillis();
-      new JdbcConnection(connUri, new Properties());
-      fail("Must be failed");
-    } catch (SQLException t) {
-      endTime = System.currentTimeMillis();
-      assertEquals(t.getSQLState(), SQLExceptionUtil.toSQLState(CLIENT_CONNECTION_EXCEPTION));
-      // default is 15 seconds. So, if timeout is shorter than 1~2 seconds.
-      // We can ensure the parameter was effective.
-      assertTrue(((endTime - startTime) / 1000) < 2);
-    }
-  }
 }
