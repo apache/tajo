@@ -727,7 +727,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       Map<String, String> params = TUtil.newHashMap();
       params.put(StatsSetupConst.TOTAL_SIZE, Long.toString(partitionDescProto.getNumBytes()));
-      params.put(StatsSetupConst.NUM_FILES, Long.toString(partitionDescProto.getNumFiles()));
       partition.setParameters(params);
 
       List<String> values = Lists.newArrayList();
@@ -1003,9 +1002,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           if (params.get(StatsSetupConst.TOTAL_SIZE) != null) {
             builder.setNumBytes(Long.parseLong(params.get(StatsSetupConst.TOTAL_SIZE)));
           }
-          if (params.get(StatsSetupConst.NUM_FILES) != null) {
-            builder.setNumFiles(Long.parseLong(params.get(StatsSetupConst.NUM_FILES)));
-          }
         }
 
         partitions.add(builder.build());
@@ -1050,9 +1046,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         if (params != null) {
           if (params.get(StatsSetupConst.TOTAL_SIZE) != null) {
             builder.setNumBytes(Long.parseLong(params.get(StatsSetupConst.TOTAL_SIZE)));
-          }
-          if (params.get(StatsSetupConst.NUM_FILES) != null) {
-            builder.setNumFiles(Long.parseLong(params.get(StatsSetupConst.NUM_FILES)));
           }
         }
 

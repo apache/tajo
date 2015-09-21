@@ -58,7 +58,6 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   @Expose protected List<PartitionKeyProto> partitionKeys;
   @Expose protected String path; //optional
   @Expose private Long numBytes = null; // optional
-  @Expose private Long numFiles = null; // optional
 
   private CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
 
@@ -94,16 +93,8 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     this.numBytes = numBytes;
   }
 
-  public Long getNumFiles() {
-    return numFiles;
-  }
-
-  public void setNumFiles(Long numFiles) {
-    this.numFiles = numFiles;
-  }
-
   public int hashCode() {
-    return Objects.hashCode(partitionName, partitionKeys, path, numBytes, numFiles);
+    return Objects.hashCode(partitionName, partitionKeys, path, numBytes);
   }
 
   public boolean equals(Object o) {
@@ -113,7 +104,6 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
       eq = eq && this.partitionKeys.equals(another.partitionKeys);
       eq = eq && this.path.equals(another.path);
       eq = eq && TUtil.checkEquals(this.numBytes, another.numBytes);
-      eq = eq && TUtil.checkEquals(this.numFiles, another.numFiles);
       return eq;
     }
     return false;
@@ -140,6 +130,10 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
       builder.setPath(this.path);
     }
 
+    if(this.numBytes != null) {
+      builder.setNumBytes(this.numBytes);
+    }
+
     return builder.build();
   }
 
@@ -164,6 +158,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     desc.partitionName = partitionName;
     desc.partitionKeys = partitionKeys;
     desc.path = path;
+    desc.numBytes = numBytes;
 
     return desc;
   }

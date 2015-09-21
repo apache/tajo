@@ -824,7 +824,7 @@ public class CatalogUtil {
                                                   String[] values, @Nullable String path, AlterTableType
                                                     alterTableType) {
 
-    return addOrDropPartition(tableName, columns, values, path, alterTableType, 0L, 0L);
+    return addOrDropPartition(tableName, columns, values, path, alterTableType, 0L);
   }
   /**
    * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
@@ -835,11 +835,11 @@ public class CatalogUtil {
    * @param values partition values
    * @param path partition directory path
    * @param alterTableType ADD_PARTITION or DROP_PARTITION
+   * @param numBytes contents length
    * @return AlterTableDesc
    */
   public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
-      String[] values, @Nullable String path, AlterTableType alterTableType,
-      long numBytes, long numFiles) {
+      String[] values, @Nullable String path, AlterTableType alterTableType, long numBytes) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
 
@@ -854,7 +854,6 @@ public class CatalogUtil {
         partitionDesc.setPath(path);
       }
       partitionDesc.setNumBytes(numBytes);
-      partitionDesc.setNumFiles(numFiles);
     }
 
     alterTableDesc.setPartitionDesc(partitionDesc);

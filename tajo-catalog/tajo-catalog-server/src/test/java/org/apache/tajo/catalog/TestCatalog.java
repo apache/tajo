@@ -824,7 +824,6 @@ public class TestCatalog {
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 2);
-    assertEquals(partitions.get(0).getNumFiles(), 0L);
     assertEquals(partitions.get(0).getNumBytes(), 0L);
 
     testDropPartition(tableName, "id=10/name=aaa");

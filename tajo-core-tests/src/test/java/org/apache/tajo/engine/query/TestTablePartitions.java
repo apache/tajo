@@ -1287,7 +1287,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       ContentSummary cs = fs.getContentSummary(partitionPath);
 
       assertEquals(cs.getLength(), partitionDescProto.getNumBytes());
-      assertEquals(cs.getFileCount(), partitionDescProto.getNumFiles());
       rowCount++;
     }
 

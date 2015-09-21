@@ -550,7 +550,6 @@ public class Query implements EventHandler<QueryEvent> {
         Path partitionPath = new Path(outputDir, partition.getPath());
         ContentSummary contentSummary = fileSystem.getContentSummary(partitionPath);
         builder.setNumBytes(contentSummary.getLength());
-        builder.setNumFiles(contentSummary.getFileCount());
         finalPartitions.add(builder.build());
       }
       return finalPartitions;

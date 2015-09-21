@@ -172,7 +172,6 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   				PARTITION_VALUE VARCHAR(1024),
   				PATH VARCHAR(4096),
   				NUM_BYTES BIGINT,
-  				NUM_FILES BIGINT,
   				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
   				UNIQUE (TID, PARTITION_NAME)
 				)]]>

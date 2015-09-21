@@ -249,7 +249,6 @@ message PartitionDescProto {
   optional string path = 3;
   optional int32 id = 4;
   optional int64 numBytes = 5;
-  optional int64 numFiles = 6;
 }
 
 message PartitionKeyProto {

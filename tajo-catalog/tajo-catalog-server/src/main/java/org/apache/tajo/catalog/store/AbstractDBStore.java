@@ -61,7 +61,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   protected final String insertPartitionSql = "INSERT INTO " + TB_PARTTIONS
     + "(" + COL_TABLES_PK + ", PARTITION_NAME, PATH, " + COL_PARTITION_BYTES
-    + ", " + COL_PARTITION_FILES + ") VALUES (?, ? , ?, ?, ?)";
+    + ") VALUES (?, ? , ?, ?)";
 
   protected final String insertPartitionKeysSql = "INSERT INTO " + TB_PARTTION_KEYS  + "("
     + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", "
@@ -1384,7 +1384,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt1.setString(2, partition.getPartitionName());
       pstmt1.setString(3, partition.getPath());
       pstmt1.setLong(4, partition.getNumBytes());
-      pstmt1.setLong(5, partition.getNumFiles());
       pstmt1.executeUpdate();
 
       pstmt2 = conn.prepareStatement(insertPartitionKeysSql);
@@ -2135,8 +2134,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PartitionDescProto.Builder builder = null;
 
     try {
-      String sql = "SELECT PATH, " + COL_PARTITIONS_PK
-        + ", " + COL_PARTITION_BYTES + ", " + COL_PARTITION_FILES + " FROM " + TB_PARTTIONS +
+      String sql = "SELECT PATH, " + COL_PARTITIONS_PK  + ", " + COL_PARTITION_BYTES + " FROM " + TB_PARTTIONS +
         " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ";
 
       if (LOG.isDebugEnabled()) {
@@ -2155,7 +2153,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
         builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
-        builder.setNumFiles(res.getLong(COL_PARTITION_FILES));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
       } else {
         throw new UndefinedPartitionException(partitionName);
@@ -2215,7 +2212,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     try {
-      String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES + ", " + COL_PARTITION_FILES
+      String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES
         + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
 
       if (LOG.isDebugEnabled()) {
@@ -2232,7 +2229,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(res.getString("PARTITION_NAME"));
         builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
-        builder.setNumFiles(res.getLong(COL_PARTITION_FILES));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
         partitions.add(builder.build());
       }
@@ -2377,7 +2373,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setPartitionName(res.getString("PARTITION_NAME"));
         builder.setPath(res.getString("PATH"));
         builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
-        builder.setNumFiles(res.getLong(COL_PARTITION_FILES));
 
         partitions.add(builder.build());
       }
@@ -2440,8 +2435,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     StringBuffer sb = new StringBuffer();
     sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
-      .append(", A.PARTITION_NAME, A.PATH ")
-      .append(", ").append(COL_PARTITION_BYTES).append(", ").append(COL_PARTITION_FILES)
+      .append(", A.PARTITION_NAME, A.PATH ").append(", ").append(COL_PARTITION_BYTES)
       .append(" FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
       .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
       .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
@@ -2597,7 +2591,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt3.setString(2, partition.getPartitionName());
         pstmt3.setString(3, partition.getPath());
         pstmt3.setLong(4, partition.getNumBytes());
-        pstmt3.setLong(5, partition.getNumFiles());
         pstmt3.addBatch();
         pstmt3.clearParameters();
 

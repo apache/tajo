@@ -503,16 +503,14 @@ public class DDLExecutor {
           throw new AmbiguousPartitionDirectoryExistException(assumedDirectory.toString());
         }
 
-        long numBytes = 0L, numFiles = 0L;
+        long numBytes = 0L;
         if (fs.exists(partitionPath)) {
           ContentSummary summary = fs.getContentSummary(partitionPath);
           numBytes = summary.getLength();
-          numFiles = summary.getFileCount();
         }
 
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
-          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION,
-          numBytes, numFiles));
+          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION, numBytes));
 
         // If the partition's path doesn't exist, this would make the directory by force.
         if (!fs.exists(partitionPath)) {
