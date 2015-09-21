@@ -230,6 +230,7 @@ public class TestTajoJdbcNegative extends QueryTestCaseBase {
       // artificially cause connection timeout
       String connUri = buildConnectionUri(host, port, DEFAULT_DATABASE_NAME);
       connUri = UriUtil.addParam(connUri, "connectTimeout", "1"); // 1 seconds
+      connUri = UriUtil.addParam(connUri, "retry", "0"); // 1 seconds
       startTime = System.currentTimeMillis();
       new JdbcConnection(connUri, new Properties());
       fail("Must be failed");
