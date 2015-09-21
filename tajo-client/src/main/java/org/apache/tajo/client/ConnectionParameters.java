@@ -1,11 +1,12 @@
 package org.apache.tajo.client;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.util.Pair;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.apache.tajo.SessionVars.COMPRESSED_RESULT_TRANSFER;
 import static org.apache.tajo.SessionVars.FETCH_ROWNUM;
