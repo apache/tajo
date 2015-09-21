@@ -24,6 +24,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
 
@@ -509,50 +510,13 @@ public class AlgebraicUtil {
     Preconditions.checkNotNull(expr);
     Preconditions.checkNotNull(type);
 
-    ExprFinder finder = new ExprFinder(type);
-    finder.visit(null, new Stack<Expr>(), expr);
-
-    if (finder.getFoundExprs().size() == 0) {
+    Set<Expr> exprSet = ExprFinder.finds(expr, type);
+    if (exprSet.size() == 0) {
       return null;
+    } else {
+      Expr[] exprs = exprSet.toArray(new Expr[exprSet.size()]);
+      return (T) exprs[0];
     }
-    return (T) finder.getFoundExprs().get(0);
-  }
-
-  private static class ExprFinder extends SimpleAlgebraVisitor<Object, Expr> {
-    private List<Expr> list = new ArrayList<Expr>();
-    private final OpType[] tofind;
-    private boolean topmost = false;
-    private boolean finished = false;
-
-    public ExprFinder(OpType... type) {
-
-      this.tofind = type;
-    }
-
-    public ExprFinder(OpType[] type, boolean topmost) {
-      this(type);
-      this.topmost = topmost;
-    }
-
-    @Override
-    public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
-      if (!finished) {
-        for (OpType type : tofind) {
-          if (expr.getType() == type) {
-            list.add(expr);
-          }
-          if (topmost && list.size() > 0) {
-            finished = true;
-          }
-        }
-      }
-      return super.visit(ctx, stack, expr);
-    }
-
-    public List<Expr> getFoundExprs() {
-      return list;
-    }
-
   }
 
   public static Expr[] toConjunctiveNormalFormArray(Expr expr) {
@@ -650,10 +614,6 @@ public class AlgebraicUtil {
     }
 
     return filters;
-  }
-
-  public static Expr createSingletonExprFromCNFByExpr(Collection<Expr> cnfExprs) {
-    return createSingletonExprFromCNFByExpr(cnfExprs.toArray(new Expr[cnfExprs.size()]));
   }
 
   /**
