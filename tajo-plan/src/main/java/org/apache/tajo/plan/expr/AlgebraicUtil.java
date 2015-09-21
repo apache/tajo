@@ -535,34 +535,6 @@ public class AlgebraicUtil {
   }
 
   /**
-   * It finds unique columns from a Expr.
-   */
-  public static LinkedHashSet<ColumnReferenceExpr> findUniqueColumnReferences(Expr expr) throws TajoException {
-    UniqueColumnReferenceFinder finder = new UniqueColumnReferenceFinder();
-    finder.visit(null, new Stack<Expr>(), expr);
-    return finder.getColumnRefs();
-  }
-
-  private static class UniqueColumnReferenceFinder extends SimpleAlgebraVisitor<Object, Expr> {
-    private LinkedHashSet<ColumnReferenceExpr> columnSet = Sets.newLinkedHashSet();
-    private ColumnReferenceExpr field = null;
-
-    @Override
-    public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
-      if (expr.getType() == OpType.Column) {
-        field = (ColumnReferenceExpr) expr;
-        columnSet.add(field);
-      }
-      return super.visit(ctx, stack, expr);
-    }
-
-    public LinkedHashSet<ColumnReferenceExpr> getColumnRefs() {
-      return this.columnSet;
-    }
-
-  }
-
-  /**
    * Build Exprs for all columns with a list of filter conditions.
    *
    * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
@@ -597,7 +569,8 @@ public class AlgebraicUtil {
         accumulatedFilters.add(new IsNullPredicate(true, columnReference));
       } else {
         for (Expr expr : conjunctiveForms) {
-          if (AlgebraicUtil.findUniqueColumnReferences(expr).contains(columnReference)) {
+          Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr, OpType.Column);
+          if (columnSet.contains(columnReference)) {
             // Accumulate one qual per level
             accumulatedFilters.add(expr);
           }

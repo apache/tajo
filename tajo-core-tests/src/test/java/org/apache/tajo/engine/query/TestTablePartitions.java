@@ -1850,7 +1850,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
     assertEquals(expectedResult, result);
 
-    executeString("DROP TABLE " + sortedTableName).close();
+    executeString("DROP TABLE " + sortedTableName + " PURGE").close();
     executeString("DROP TABLE " + externalTableName).close();
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
