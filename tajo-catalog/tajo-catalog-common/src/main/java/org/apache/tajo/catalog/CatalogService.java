@@ -176,7 +176,8 @@ public interface CatalogService {
     UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException;
 
   List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException;
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    PartitionNotFoundException, UnsupportedException;
 
   List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException;

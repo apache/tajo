@@ -2292,7 +2292,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
       UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      PartitionNotFoundException {
+      PartitionNotFoundException, UnsupportedException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;

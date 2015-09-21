@@ -874,7 +874,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    PartitionNotFoundException, UnsupportedException {
 
     List<PartitionDescProto> list = null;
 
@@ -886,6 +887,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       String filter = getFilter(databaseName, tableName, tableDesc.getPartition().getExpressionSchema().getFieldsList()
         , request.getAlgebra());
       list = getPartitionsByFilterFromHiveMetaStore(databaseName, tableName, filter);
+    } catch (UnsupportedException ue) {
+      throw ue;
     } catch (Exception se) {
       throw new TajoInternalError(se);
     }

@@ -123,13 +123,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
       throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      UndefinedOperatorException, PartitionNotFoundException {
+      UndefinedOperatorException, PartitionNotFoundException, UnsupportedException {
 
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
-
     try {
       if (conjunctiveForms == null) {
         partitions = catalog.getAllPartitions(splits[0], splits[1]);
@@ -138,9 +137,15 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         partitions = catalog.getPartitionsByAlgebra(request);
       }
       filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+    } catch (UnsupportedException ue) {
+      // Partial catalog might not allow some filter conditions. For example, HiveMetastore doesn't In statement,
+      // Regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
+      LOG.warn(ue.getMessage(), ue);
+      filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
     } catch (PartitionNotFoundException pnfe) {
-      // If we should fail to build path lists with catalog, we need to path lists using getting an array of FileStatus
-      // objects with the path-filter as following.
+      // If partitions only exist on file system and it don't exist on catalog, Tajo need to build filtered path by
+      // listing hdfs directories.
+      LOG.warn(pnfe.getMessage(), pnfe);
       filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
     }
 
@@ -359,7 +364,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
   public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException,
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException, PartitionNotFoundException {
+    UndefinedOperatorException, PartitionNotFoundException, UnsupportedException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
