@@ -555,7 +555,7 @@ public class AlgebraicUtil {
    * @param conjunctiveForms
    * @return
    */
-  public static Expr[] getAccumulatedFiltersByExpr(String tableName,
+  public static Expr[] getRearrangedCNFExpressions(String tableName,
     List<CatalogProtos.ColumnProto> partitionColumns, Expr[] conjunctiveForms) throws TajoException {
     Expr[] filters = new Expr[partitionColumns.size()];
     Column target;

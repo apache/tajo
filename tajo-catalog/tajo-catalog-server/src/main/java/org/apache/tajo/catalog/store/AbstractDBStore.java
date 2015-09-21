@@ -2415,7 +2415,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
     visitor.setIsHiveCatalog(false);
 
-    Expr[] filters = AlgebraicUtil.getAccumulatedFiltersByExpr(tableName, partitionColumns, exprs);
+    Expr[] filters = AlgebraicUtil.getRearrangedCNFExpressions(tableName, partitionColumns, exprs);
 
     StringBuffer sb = new StringBuffer();
     sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)

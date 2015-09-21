@@ -914,7 +914,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
     visitor.setIsHiveCatalog(true);
 
-    Expr[] filters = AlgebraicUtil.getAccumulatedFiltersByExpr(databaseName + "." + tableName, partitionColumns, exprs);
+    Expr[] filters = AlgebraicUtil.getRearrangedCNFExpressions(databaseName + "." + tableName, partitionColumns, exprs);
 
     StringBuffer sb = new StringBuffer();
 
