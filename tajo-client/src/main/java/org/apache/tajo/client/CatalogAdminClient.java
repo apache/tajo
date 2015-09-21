@@ -144,7 +144,7 @@ public interface CatalogAdminClient extends Closeable {
    * @return lists of partitions
    */
   List<PartitionDescProto> getPartitionsOfTable(final String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException;
+    UndefinedTableException, UndefinedPartitionMethodException;
 
   List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName);
 

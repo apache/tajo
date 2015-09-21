@@ -857,31 +857,36 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<CatalogProtos.PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName)
-      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      PartitionNotFoundException {
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     PartitionsByFilterProto.Builder request = PartitionsByFilterProto.newBuilder();
     request.setDatabaseName(databaseName);
     request.setTableName(tableName);
     request.setFilter("");
 
-    List<PartitionDescProto> partitions = getPartitionsByFilter(request.build());
-    if (partitions.size() == 0) {
-      throw new PartitionNotFoundException(tableName);
-    } else {
-      return partitions;
-    }
+    return getPartitionsByFilter(request.build());
   }
 
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    PartitionNotFoundException, UnsupportedException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, UnsupportedException {
 
     List<PartitionDescProto> list = null;
 
     try {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
+
+      if (!existDatabase(databaseName)) {
+        throw new UndefinedDatabaseException(tableName);
+      }
+
+      if (!existTable(databaseName, tableName)) {
+        throw new UndefinedTableException(tableName);
+      }
+
+      if (!existPartitionMethod(databaseName, tableName)) {
+        throw new UndefinedPartitionMethodException(tableName);
+      }
 
       TableDescProto tableDesc = getTable(databaseName, tableName);
       String filter = getFilter(databaseName, tableName, tableDesc.getPartition().getExpressionSchema().getFieldsList()
@@ -943,8 +948,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request)
-      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      PartitionNotFoundException  {
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     String databaseName = request.getDatabaseName();
     String tableName = request.getTableName();
 

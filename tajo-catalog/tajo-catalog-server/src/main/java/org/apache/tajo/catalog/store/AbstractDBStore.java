@@ -2194,9 +2194,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public List<PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName)
-      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      PartitionNotFoundException {
-
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2208,7 +2206,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ensurePartitionTable(tableName, tableId);
 
     if (!existPartitionsOnCatalog(tableId)) {
-      throw new PartitionNotFoundException(tableName);
+      return TUtil.newList();
     }
 
     try {
