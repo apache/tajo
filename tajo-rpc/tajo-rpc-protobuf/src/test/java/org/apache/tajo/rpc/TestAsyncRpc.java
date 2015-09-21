@@ -136,6 +136,8 @@ public class TestAsyncRpc {
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
     connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(10)));
+    connParams.setProperty(RpcConstants.CLIENT_HANG_DETECTION, "true");
+
 
     client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
@@ -539,6 +541,7 @@ public class TestAsyncRpc {
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
     connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+    connParams.setProperty(RpcConstants.CLIENT_HANG_DETECTION, "true");
 
     AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
@@ -591,6 +594,7 @@ public class TestAsyncRpc {
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.RPC_RETRY_NUM, String.valueOf(retries));
     connParams.setProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT, String.valueOf(500));
+    connParams.setProperty(RpcConstants.CLIENT_HANG_DETECTION, "true");
 
     AsyncRpcClient client = manager.newClient(rpcConnectionKey, connParams);
     assertTrue(client.isConnected());
