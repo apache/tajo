@@ -22,19 +22,20 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 
 import java.util.Map;
+import java.util.Properties;
 
 public class ClientDelegateFactory {
 
   public static ClientDelegate newDefaultDelegate(String host,
                                                   int port,
-                                                  @Nullable Map<String, String> props)
+                                                  @Nullable Properties props)
       throws ClientUnableToConnectException {
 
     return new LegacyClientDelegate(host, port, props);
   }
 
   public static ClientDelegate newDefaultDelegate(ServiceDiscovery discovery,
-                                                  @Nullable Map<String, String> props)
+                                                  @Nullable Properties props)
       throws ClientUnableToConnectException {
 
     return new LegacyClientDelegate(discovery, props);
