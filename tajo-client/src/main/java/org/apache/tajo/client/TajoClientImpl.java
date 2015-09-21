@@ -35,6 +35,7 @@ import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -246,8 +247,15 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException {
-    return catalogClient.getAllPartitions(tableName);
+    UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
+    List<PartitionDescProto> partitions = TUtil.newList();
+    try {
+      partitions = catalogClient.getAllPartitions(tableName);
+    } catch (PartitionNotFoundException e) {
+      // If there is no partitions on catalog, catalog would throw PartitionNotFoundException. In this case,
+      // TajoClient need to return empty list;
+    }
+    return partitions;
   }
 
   @Override

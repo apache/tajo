@@ -175,8 +175,9 @@ public class TajoDump {
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {
-        TableDesc table = client.getTableDesc(CatalogUtil.buildFQName(databaseName, tableName));
-        
+        String fqName = CatalogUtil.buildFQName(databaseName, tableName);
+        TableDesc table = client.getTableDesc(fqName);
+
         if (table.getMeta().getStoreType().equalsIgnoreCase("SYSTEM")) {
           continue;
         }
@@ -186,13 +187,12 @@ public class TajoDump {
         } else {
           writer.write(DDLBuilder.buildDDLForBaseTable(table));
         }
-
         if (table.hasPartition()) {
           writer.write("\n\n");
           writer.write("--\n");
           writer.write(String.format("-- Table Partitions: %s%n", tableName));
           writer.write("--\n");
-          List<PartitionDescProto> partitionProtos = client.getAllPartitions(tableName);
+          List<PartitionDescProto> partitionProtos = client.getAllPartitions(fqName);
           for (PartitionDescProto eachPartitionProto : partitionProtos) {
             writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
           }
@@ -208,6 +208,7 @@ public class TajoDump {
         }
         writer.write("\n\n");
       } catch (Exception e) {
+        e.printStackTrace();
         // dump for each table can throw any exception. We need to skip the exception case.
         // here, the error message prints out via stderr.
         System.err.println("ERROR:" + tableName + "," + e.getMessage());

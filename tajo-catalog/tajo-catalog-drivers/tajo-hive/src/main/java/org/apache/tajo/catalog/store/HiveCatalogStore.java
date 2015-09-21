@@ -53,6 +53,7 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -967,6 +968,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
                                                                          String filter) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<PartitionDescProto> partitions = null;
+    TableDescProto tableDesc = null;
+    List<ColumnProto> parititonColumns = null;
 
     try {
       partitions = TUtil.newList();
@@ -975,13 +978,25 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<Partition> hivePartitions = client.getHiveClient().listPartitionsByFilter(databaseName, tableName
         , filter, (short) -1);
 
+      tableDesc = getTable(databaseName, tableName);
+      parititonColumns = tableDesc.getPartition().getExpressionSchema().getFieldsList();
+
+      StringBuilder partitionName = new StringBuilder();
       for (Partition hivePartition : hivePartitions) {
         CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
         builder.setPath(hivePartition.getSd().getLocation());
 
-        int startIndex = hivePartition.getSd().getLocation().indexOf(tableName) + tableName.length();
-        String partitionName = hivePartition.getSd().getLocation().substring(startIndex+1);
-        builder.setPartitionName(partitionName);
+        partitionName.delete(0, partitionName.length());
+        for (int i = 0; i < parititonColumns.size(); i++) {
+          if (i > 0) {
+            partitionName.append(File.separator);
+          }
+          partitionName.append(CatalogUtil.extractSimpleName(parititonColumns.get(i).getName()));
+          partitionName.append("=");
+          partitionName.append(hivePartition.getValues().get(i));
+        }
+
+        builder.setPartitionName(partitionName.toString());
 
         Map<String, String> params = hivePartition.getParameters();
         if (params != null) {

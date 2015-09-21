@@ -129,6 +129,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
+
     try {
       if (conjunctiveForms == null) {
         partitions = catalog.getAllPartitions(splits[0], splits[1]);
