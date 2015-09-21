@@ -204,62 +204,11 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   }
 
   /**
-   * This will build algebra expressions for querying partitions and partition keys in CatalogStore.
+   * Build algebra expressions for querying partitions and partition keys by using EvalNodeToExprConverter.
    *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
-   *
-   * Then, the algebra expression would be generated as following:
-   *
-   *  {
-   *  "LeftExpr": {
-   *    "LeftExpr": {
-   *      "Qualifier": "default.table1",
-   *      "ColumnName": "col3",
-   *      "OpType": "Column"
-   *    },
-   *    "RightExpr": {
-   *      "Value": "20.0",
-   *      "ValueType": "Unsigned_Integer",
-   *      "OpType": "Literal"
-   *    },
-   *    "OpType": "GreaterThan"
-   *  },
-   *  "RightExpr": {
-   *    "LeftExpr": {
-   *      "LeftExpr": {
-   *        "Qualifier": "default.table1",
-   *        "ColumnName": "col1",
-   *        "OpType": "Column"
-   *      },
-   *      "RightExpr": {
-   *        "Value": "1",
-   *        "ValueType": "String",
-   *        "OpType": "Literal"
-   *      },
-   *      "OpType": "Equals"
-   *    },
-   *    "RightExpr": {
-   *      "LeftExpr": {
-   *        "Qualifier": "default.table1",
-   *        "ColumnName": "col1",
-   *        "OpType": "Column"
-   *      },
-   *      "RightExpr": {
-   *        "Value": "100",
-   *        "ValueType": "String",
-   *        "OpType": "Literal"
-   *      },
-   *      "OpType": "Equals"
-   *    },
-   *    "OpType": "Or"
-   *  },
-   *  "OpType": "And"
-   *}
-   *
-   * @param databaseName
-   * @param tableName
-   * @param conjunctiveForms
+   * @param databaseName the database name
+   * @param tableName the table name
+   * @param conjunctiveForms EvalNode which contains filter conditions
    * @return
    */
   public static PartitionsByAlgebraProto getPartitionsAlgebraProto(

@@ -106,19 +106,85 @@ public interface CatalogStore extends Closeable {
     UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException;
 
   /**
-   * PartitionedTableRewriter take a look into partition directories for rewriting filter conditions. But if there
-   * are lots of sub directories on HDFS, such as, more than 10,000 directories,
-   * it might be cause overload to NameNode. Thus, CatalogStore need to provide partition directories for specified
-   * filter conditions. This scan right partition directories on CatalogStore with where clause.
+   * Get list of partitions matching specified algrbra expression.
    *
-   * @param request contains database name, table name, algebra expressions, parameter for executing PrepareStatement
-   * @return list of TablePartitionProto
-   * @throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Assume that an user want to give a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
+   *
+   * Then, the algebra expression would be written as following:
+   *
+   *  {
+   *  "LeftExpr": {
+   *    "LeftExpr": {
+   *      "Qualifier": "default.table1",
+   *      "ColumnName": "col3",
+   *      "OpType": "Column"
+   *    },
+   *    "RightExpr": {
+   *      "Value": "20.0",
+   *      "ValueType": "Unsigned_Integer",
+   *      "OpType": "Literal"
+   *    },
+   *    "OpType": "GreaterThan"
+   *  },
+   *  "RightExpr": {
+   *    "LeftExpr": {
+   *      "LeftExpr": {
+   *        "Qualifier": "default.table1",
+   *        "ColumnName": "col1",
+   *        "OpType": "Column"
+   *      },
+   *      "RightExpr": {
+   *        "Value": "1",
+   *        "ValueType": "String",
+   *        "OpType": "Literal"
+   *      },
+   *      "OpType": "Equals"
+   *    },
+   *    "RightExpr": {
+   *      "LeftExpr": {
+   *        "Qualifier": "default.table1",
+   *        "ColumnName": "col1",
+   *        "OpType": "Column"
+   *      },
+   *      "RightExpr": {
+   *        "Value": "100",
+   *        "ValueType": "String",
+   *        "OpType": "Literal"
+   *      },
+   *      "OpType": "Equals"
+   *    },
+   *    "OpType": "Or"
+   *  },
+   *  "OpType": "And"
+   * }
+   *
+   * @param request the database name, the table name, the algebra expression
+   * @return list of PartitionDescProto
+   * @throws UndefinedDatabaseException
+   * @throws UndefinedTableException
+   * @throws UndefinedPartitionMethodException
+   * @throws UndefinedOperatorException
+   * @throws PartitionNotFoundException
    */
   List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, PartitionNotFoundException, UnsupportedException;
 
+  /**
+   * Get list of partitions matching specified filter.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * An user can gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
+   *
+   * @param request the database name, the table name, the filter string
+   * @return list of PartitionDescProto
+   * @throws UndefinedDatabaseException
+   * @throws UndefinedTableException
+   * @throws UndefinedPartitionMethodException
+   * @throws UndefinedOperatorException
+   * @throws PartitionNotFoundException
+   */
   List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, PartitionNotFoundException;
