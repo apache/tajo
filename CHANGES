@@ -556,6 +556,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1872: Increase the minimum split size and add a classpath to hadoop 
+    tools. (jihoon)
+
     TAJO-1870: Enable tests of tajo-storage-pgsql module when arch type
     is 64-bit. (jinho)
 
