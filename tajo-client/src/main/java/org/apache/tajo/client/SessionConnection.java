@@ -102,10 +102,9 @@ public class SessionConnection implements Closeable {
     this.properties = properties;
 
     this.manager = RpcClientManager.getInstance();
-    this.clientConnParams = new Properties();
-    this.clientConnParams.setProperty(RpcConstants.RPC_RETRY_NUM, properties.get(RpcConstants.RPC_RETRY_NUM));
-
     this.userInfo = UserRoleInfo.getCurrentUser();
+    // update the connection parameters to RPC client from connection properties
+    this.clientConnParams = ConnectionParameters.getConnParams(properties.getAllKeyValus().entrySet());
 
     this.eventLoopGroup = NettyUtils.createEventLoopGroup(getClass().getSimpleName(), 4);
     try {
@@ -114,6 +113,8 @@ public class SessionConnection implements Closeable {
       NettyUtils.shutdown(eventLoopGroup);
       throw e;
     }
+    // update the session variables from connection parameters
+    updateSessionVariables(ConnectionParameters.getSessionVars(properties.getAllKeyValus().entrySet()));
   }
 
   public Map<String, String> getClientSideSessionVars() {
@@ -218,7 +219,6 @@ public class SessionConnection implements Closeable {
 
     ensureOk(response.getState());
     updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-    properties.putAll(sessionVarsCache);
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 

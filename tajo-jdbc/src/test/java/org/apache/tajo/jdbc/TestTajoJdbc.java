@@ -197,7 +197,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   public void testResultSetCompression() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         TajoConstants.DEFAULT_DATABASE_NAME);
-    connUri = connUri + "?" + SessionVars.COMPRESSED_RESULT_TRANSFER.keyname() + "=true";
+    connUri = connUri + "?useCompression=true";
     Connection conn = DriverManager.getConnection(connUri);
     assertTrue(conn.isValid(100));
 
