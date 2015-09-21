@@ -192,7 +192,7 @@ public class TajoDump {
           writer.write("--\n");
           writer.write(String.format("-- Table Partitions: %s%n", tableName));
           writer.write("--\n");
-          List<PartitionDescProto> partitionProtos = client.getAllPartitions(fqName);
+          List<PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
           for (PartitionDescProto eachPartitionProto : partitionProtos) {
             writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
           }

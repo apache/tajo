@@ -132,7 +132,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     try {
       if (conjunctiveForms == null) {
-        partitions = catalog.getAllPartitions(splits[0], splits[1]);
+        partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
       } else {
         PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);

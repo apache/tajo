@@ -241,7 +241,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+  public List<PartitionDescProto> getPartitionsOfTable(final String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
 
     final BlockingInterface stub = conn.getTMStub();

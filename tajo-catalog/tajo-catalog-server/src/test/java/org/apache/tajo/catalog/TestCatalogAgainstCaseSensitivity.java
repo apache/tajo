@@ -194,7 +194,7 @@ public class TestCatalogAgainstCaseSensitivity {
     // Test get partitions of a table
     //////////////////////////////////////////////////////////////////////////////
 
-    List<PartitionDescProto> partitionDescs = catalog.getAllPartitions("TestDatabase1", "TestPartition1");
+    List<PartitionDescProto> partitionDescs = catalog.getPartitionsOfTable("TestDatabase1", "TestPartition1");
     assertEquals(2, partitionDescs.size());
     Map<String, PartitionDescProto> tablePartitionMap = new HashMap<>();
     for (PartitionDescProto eachPartition : partitionDescs) {

@@ -246,11 +246,11 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.getFunctions(functionName);
   }
 
-  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+  public List<PartitionDescProto> getPartitionsOfTable(final String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
     List<PartitionDescProto> partitions = TUtil.newList();
     try {
-      partitions = catalogClient.getAllPartitions(tableName);
+      partitions = catalogClient.getPartitionsOfTable(tableName);
     } catch (PartitionNotFoundException e) {
       // If there is no partitions on catalog, catalog would throw PartitionNotFoundException. In this case,
       // TajoClient need to return empty list;

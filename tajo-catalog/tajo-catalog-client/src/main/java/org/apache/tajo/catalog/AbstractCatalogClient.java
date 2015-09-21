@@ -434,7 +434,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final List<PartitionDescProto> getAllPartitions(final String databaseName, final String tableName) throws
+  public final List<PartitionDescProto> getPartitionsOfTable(final String databaseName, final String tableName) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
     try {
       final BlockingInterface stub = getStub();

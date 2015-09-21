@@ -821,7 +821,7 @@ public class TestCatalog {
     testAddPartition(tableName, "id=10/name=aaa");
     testAddPartition(tableName, "id=20/name=bbb");
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 2);
     assertEquals(partitions.get(0).getNumFiles(), 0L);
@@ -832,7 +832,7 @@ public class TestCatalog {
 
     exception.expect(PartitionNotFoundException.class);
     exception.expectMessage("there is no partitions in 'addedtable' table");
-    partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
 

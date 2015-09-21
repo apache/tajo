@@ -97,7 +97,7 @@ public interface CatalogStore extends Closeable {
    * @return
    * @throws TajoException
    */
-  List<CatalogProtos.PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws
+  List<CatalogProtos.PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     PartitionNotFoundException, UnsupportedException;
 

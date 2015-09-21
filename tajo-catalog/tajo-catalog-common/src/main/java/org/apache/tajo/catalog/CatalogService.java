@@ -172,7 +172,7 @@ public interface CatalogService {
       throws UndefinedPartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException,
       UndefinedTableException;
 
-  List<PartitionDescProto> getAllPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
+  List<PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException;
 
   List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws

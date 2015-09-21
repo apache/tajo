@@ -95,7 +95,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_add_partition1.sql", null);
     executeDDL("alter_table_add_partition2.sql", null);
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions("TestAlterTable", "partitioned_table");
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 1);
     assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
@@ -115,7 +115,7 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     exception.expect(PartitionNotFoundException.class);
     exception.expectMessage("there is no partitions in 'partitioned_table' table");
-    partitions = catalog.getAllPartitions("TestAlterTable", "partitioned_table");
+    partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
     assertFalse(fs.exists(partitionPath));
