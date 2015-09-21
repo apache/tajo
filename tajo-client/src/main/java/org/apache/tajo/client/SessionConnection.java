@@ -40,7 +40,6 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolServ
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
@@ -104,7 +103,7 @@ public class SessionConnection implements Closeable {
     this.manager = RpcClientManager.getInstance();
     this.userInfo = UserRoleInfo.getCurrentUser();
     // update the connection parameters to RPC client from connection properties
-    this.clientConnParams = ConnectionParameters.getConnParams(properties.getAllKeyValus().entrySet());
+    this.clientConnParams = ConnectionPropertyHelper.getConnParams(properties.getAllKeyValus().entrySet());
 
     this.eventLoopGroup = NettyUtils.createEventLoopGroup(getClass().getSimpleName(), 4);
     try {
@@ -113,8 +112,9 @@ public class SessionConnection implements Closeable {
       NettyUtils.shutdown(eventLoopGroup);
       throw e;
     }
+
     // update the session variables from connection parameters
-    updateSessionVariables(ConnectionParameters.getSessionVars(properties.getAllKeyValus().entrySet()));
+    updateSessionVariables(ConnectionPropertyHelper.getSessionVars(properties.getAllKeyValus().entrySet()));
   }
 
   public Map<String, String> getClientSideSessionVars() {
@@ -363,7 +363,6 @@ public class SessionConnection implements Closeable {
       }
 
       CreateSessionResponse response = null;
-
       try {
         response = tajoMasterService.createSession(null, builder.build());
       } catch (ServiceException se) {

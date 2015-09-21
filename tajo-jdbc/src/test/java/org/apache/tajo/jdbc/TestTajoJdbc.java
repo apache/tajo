@@ -19,21 +19,32 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Maps;
+import io.netty.channel.ConnectTimeoutException;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.util.UriUtil;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.sql.*;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.error.Errors.ResultCode.CLIENT_CONNECTION_EXCEPTION;
+import static org.apache.tajo.error.Errors.ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -593,7 +604,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     try {
       if (!testingCluster.isHiveCatalogStoreRunning()) {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
-          tajoMasterAddress.getPort(), "TestTajoJdbc");
+            tajoMasterAddress.getPort(), "TestTajoJdbc");
 
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
@@ -680,6 +691,49 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       if (conn != null) {
         conn.close();
       }
+    }
+  }
+
+  private void assumeConnectTimeout(String host, int port, int connectTimeout) throws IOException {
+    try (Socket socket = new Socket())  {
+      // Try to connect to a private address in the 10.x.y.z range.
+      // These addresses are usually not routed, so an attempt to
+      // connect to them will hang the connection attempt, which is
+      // what we want to simulate in this test.
+      socket.connect(new InetSocketAddress(host, port), connectTimeout);
+      // Abort the test if we can connect.
+      Assume.assumeTrue(false);
+    } catch (SocketTimeoutException x) {
+      // Expected timeout during connect, continue the test.
+      Assume.assumeTrue(true);
+    } catch (Throwable x) {
+      // Abort if any other exception happens.
+      Assume.assumeTrue(false);
+    }
+  }
+
+  @Test(timeout = 5000)
+  public final void testConnectTimeout() throws Exception {
+    final String host = "10.255.255.1";
+    final int port = 80;
+    int connectTimeout = 1000;
+    assumeConnectTimeout(host, port, connectTimeout);
+
+    long startTime = Long.MIN_VALUE;
+    long endTime;
+    try {
+      // artificially cause connection timeout
+      String connUri = buildConnectionUri(host, port, DEFAULT_DATABASE_NAME);
+      connUri = UriUtil.addParam(connUri, "connectTimeout", "1"); // 1 seconds
+      startTime = System.currentTimeMillis();
+      new JdbcConnection(connUri, new Properties());
+      fail("Must be failed");
+    } catch (SQLException t) {
+      endTime = System.currentTimeMillis();
+      assertEquals(t.getSQLState(), SQLExceptionUtil.toSQLState(CLIENT_CONNECTION_EXCEPTION));
+      // default is 15 seconds. So, if timeout is shorter than 1~2 seconds.
+      // We can ensure the parameter was effective.
+      assertTrue(((endTime - startTime) / 1000) < 2);
     }
   }
 }

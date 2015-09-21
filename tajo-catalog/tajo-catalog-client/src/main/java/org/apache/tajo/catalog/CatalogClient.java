@@ -70,7 +70,7 @@ public class CatalogClient extends AbstractCatalogClient {
         RpcClientManager.cleanup(client);
 
         final Properties connParams = new Properties();
-        connParams.setProperty(RpcConstants.RPC_RETRY_NUM, conf.getVar(ConfVars.RPC_CLIENT_RETRY_NUM));
+        connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, conf.getVar(ConfVars.RPC_CLIENT_RETRY_NUM));
 
         // Client do not closed on idle state for support high available
         this.client = RpcClientManager.getInstance().newClient(getCatalogServerAddr(), CatalogProtocol.class,

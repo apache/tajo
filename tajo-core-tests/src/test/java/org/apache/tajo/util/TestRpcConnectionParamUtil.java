@@ -26,7 +26,7 @@ import org.junit.Test;
 import java.util.Properties;
 
 import static org.apache.tajo.rpc.RpcConstants.CLIENT_CONNECTION_TIMEOUT;
-import static org.apache.tajo.rpc.RpcConstants.RPC_RETRY_NUM;
+import static org.apache.tajo.rpc.RpcConstants.CLIENT_RETRY_NUM;
 import static org.junit.Assert.*;
 
 public class TestRpcConnectionParamUtil {
@@ -36,7 +36,7 @@ public class TestRpcConnectionParamUtil {
     TajoConf conf = new TajoConf();
     Properties defaultParams = RpcConnectionParamUtil.get(conf);
     assertEquals(
-        ConfVars.RPC_CLIENT_RETRY_NUM.defaultVal, defaultParams.getProperty(RPC_RETRY_NUM));
+        ConfVars.RPC_CLIENT_RETRY_NUM.defaultVal, defaultParams.getProperty(CLIENT_RETRY_NUM));
     assertEquals(
         ConfVars.RPC_CLIENT_CONNECTION_TIMEOUT.defaultVal, defaultParams.getProperty(CLIENT_CONNECTION_TIMEOUT));
     assertEquals(
@@ -51,7 +51,7 @@ public class TestRpcConnectionParamUtil {
     conf.setLongVar(ConfVars.RPC_CLIENT_SOCKET_TIMEOUT, (long)60 * 1000);
 
     Properties defaultParams = RpcConnectionParamUtil.get(conf);
-    assertEquals("100", defaultParams.getProperty(RPC_RETRY_NUM));
+    assertEquals("100", defaultParams.getProperty(CLIENT_RETRY_NUM));
     assertEquals(10 * 1000 + "", defaultParams.getProperty(CLIENT_CONNECTION_TIMEOUT));
     assertEquals(60 * 1000 + "", defaultParams.getProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT));
   }

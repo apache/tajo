@@ -103,9 +103,9 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.INDETERMINATE_DATATYPE,                "42P18");
 
     // Client Connection
-    SQLSTATES.put(ResultCode.CLIENT_CONNECTION_EXCEPTION,           "08001");
-    SQLSTATES.put(ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "08002");
+    SQLSTATES.put(ResultCode.CLIENT_CONNECTION_EXCEPTION,           "08000");
     SQLSTATES.put(ResultCode.CLIENT_CONNECTION_DOES_NOT_EXIST,      "08003");
+    SQLSTATES.put(ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "08006");
   }
 
   public static boolean isThisError(SQLException e, ResultCode code) {

@@ -30,8 +30,8 @@ public class RpcConstants {
   public static final int FUTURE_TIMEOUT_SECONDS_DEFAULT = 10;
 
   /** How many times the connect will retry */
-  public static final String RPC_RETRY_NUM = "tajo.rpc.client.retry-num";
-  public static final int RPC_RETRY_NUM_DEFAULT = 3;
+  public static final String CLIENT_RETRY_NUM = "tajo.rpc.client.retry-num";
+  public static final int CLIENT_RETRY_NUM_DEFAULT = 0;
 
   /** Client connection timeout (milliseconds) */
   public static final String CLIENT_CONNECTION_TIMEOUT = "tajo.rpc.client.connection-timeout-ms";

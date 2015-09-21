@@ -78,7 +78,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     this.key = rpcConnectionKey;
 
     this.maxRetryNum = Integer.parseInt(
-        connectionParameters.getProperty(RPC_RETRY_NUM, String.valueOf(RPC_RETRY_NUM_DEFAULT)));
+        connectionParameters.getProperty(CLIENT_RETRY_NUM, String.valueOf(CLIENT_RETRY_NUM_DEFAULT)));
 
     this.connTimeoutMillis = Integer.parseInt(
         connectionParameters.getProperty(CLIENT_CONNECTION_TIMEOUT, String.valueOf(CLIENT_CONNECTION_TIMEOUT_DEFAULT)));

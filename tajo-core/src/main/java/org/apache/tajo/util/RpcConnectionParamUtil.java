@@ -33,7 +33,7 @@ public class RpcConnectionParamUtil {
   static final Map<String, ConfVars> PROPERTIES_MAP = new HashMap<>();
 
   static {
-    PROPERTIES_MAP.put(RpcConstants.RPC_RETRY_NUM, ConfVars.RPC_CLIENT_RETRY_NUM);
+    PROPERTIES_MAP.put(RpcConstants.CLIENT_RETRY_NUM, ConfVars.RPC_CLIENT_RETRY_NUM);
     PROPERTIES_MAP.put(RpcConstants.CLIENT_CONNECTION_TIMEOUT, ConfVars.RPC_CLIENT_CONNECTION_TIMEOUT);
     PROPERTIES_MAP.put(RpcConstants.CLIENT_SOCKET_TIMEOUT, ConfVars.RPC_CLIENT_SOCKET_TIMEOUT);
   }

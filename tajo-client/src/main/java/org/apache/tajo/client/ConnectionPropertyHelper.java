@@ -19,17 +19,19 @@
 package org.apache.tajo.client;
 
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.util.Pair;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.SessionVars.COMPRESSED_RESULT_TRANSFER;
 import static org.apache.tajo.SessionVars.FETCH_ROWNUM;
-import static org.apache.tajo.client.ConnectionParameters.ActionType.CONNECTION_PARAM;
-import static org.apache.tajo.client.ConnectionParameters.ActionType.SESSION_UPDATE;
+import static org.apache.tajo.client.ConnectionPropertyHelper.ActionType.CONNECTION_PARAM;
+import static org.apache.tajo.client.ConnectionPropertyHelper.ActionType.SESSION_UPDATE;
 import static org.apache.tajo.rpc.RpcConstants.CLIENT_CONNECTION_TIMEOUT;
 import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT;
 
@@ -46,18 +48,33 @@ import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT;
  *       This can be used as both a brute force global query timeout and a method of detecting
  *       network problems. The timeout is specified in seconds and a value of zero means that
  *       it is disabled.</li>
+ *   <li><code>retry=int</code>Number of retry operation. Tajo JDBC driver is resilient
+ *   against some network or connection problems. It determines how many times the connection will retry.</li>
  * </ul>
  */
-public class ConnectionParameters {
+class ConnectionPropertyHelper {
 
   public static Map<String, Action> PARAMETERS = new HashMap<>();
 
   static {
     PARAMETERS.put("useCompression", new SimpleSessionAction(COMPRESSED_RESULT_TRANSFER));
     PARAMETERS.put("defaultRowFetchSize", new SimpleSessionAction(FETCH_ROWNUM));
-
-    PARAMETERS.put("connectTimeout", new SimpleConnectionParamAction(CLIENT_CONNECTION_TIMEOUT));
-    PARAMETERS.put("socketTimeout", new SimpleConnectionParamAction(CLIENT_SOCKET_TIMEOUT));
+    PARAMETERS.put("connectTimeout", new ConnectionParamAction() {
+      @Override
+      Pair<String, String> doAction(String param) {
+        int seconds = Integer.parseInt(param);
+        // convert seconds into mili seconds
+        return new Pair<>(CLIENT_CONNECTION_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(seconds)));
+      }
+    });
+    PARAMETERS.put("socketTimeout", new ConnectionParamAction() {
+      @Override
+      Pair<String, String> doAction(String param) {
+        int seconds = Integer.parseInt(param);
+        return new Pair<>(CLIENT_SOCKET_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(seconds)));
+      }
+    });
+    PARAMETERS.put("retry", new SimpleConnectionParamAction(RpcConstants.CLIENT_RETRY_NUM));
   }
 
   enum ActionType {
