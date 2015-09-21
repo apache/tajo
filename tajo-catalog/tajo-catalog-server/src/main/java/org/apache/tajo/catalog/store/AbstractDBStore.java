@@ -2257,10 +2257,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ResultSet res = null;
     PreparedStatement pstmt = null;
     boolean result = false;
+    boolean isDerbyStore = false;
+    String sql = null;
 
     try {
-      String sql = "SELECT COUNT(*) CNT FROM "
-        + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
+      if (this instanceof DerbyStore) {
+        isDerbyStore = true;
+        sql = "SELECT COUNT(*) CNT FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
+      } else {
+        sql = "SELECT * FROM " + TB_PARTTIONS + " LIMIT 1 ";
+      }
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -2272,7 +2278,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       if (res.next()) {
-        if (res.getInt("CNT") > 0) {
+        if (isDerbyStore) {
+          if (res.getInt("CNT") > 0) {
+            result = true;
+          }
+        } else {
           result = true;
         }
       }
