@@ -125,14 +125,12 @@ public class Fetcher {
 
   public FileChunk get() throws IOException {
     if (useLocalFile) {
-      LOG.info("Get pseudo fetch from local host");
       startTime = System.currentTimeMillis();
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FINISHED;
       return fileChunk;
     }
 
-    LOG.info("Get real fetch from remote host");
     this.startTime = System.currentTimeMillis();
     this.state = TajoProtos.FetcherState.FETCH_FETCHING;
     ChannelFuture future = null;
