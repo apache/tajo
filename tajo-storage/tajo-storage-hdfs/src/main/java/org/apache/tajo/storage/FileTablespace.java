@@ -315,10 +315,6 @@ public class FileTablespace extends Tablespace {
     }
   }
 
-  protected List<FileStatus> listStatus(Path... dirs) throws IOException {
-    return listStatus(false, dirs);
-  }
-
   /**
    * List input directories.
    * Subclasses may override to, e.g., select only files matching a regular
