@@ -41,6 +41,7 @@ import org.apache.tajo.util.NetUtils;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -59,12 +60,13 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
   public LegacyClientDelegate(String host, int port, Properties clientParams) {
     super(new DummyServiceTracker(NetUtils.createSocketAddr(host, port)), null,
-        new KeyValueSet(Maps.fromProperties(clientParams)));
+        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams)));
     queryClient = new QueryClientImpl(this);
   }
 
   public LegacyClientDelegate(ServiceDiscovery discovery, Properties clientParams) {
-    super(new DelegateServiceTracker(discovery), null, new KeyValueSet(Maps.fromProperties(clientParams)));
+    super(new DelegateServiceTracker(discovery), null,
+        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams)));
     queryClient = new QueryClientImpl(this);
   }
 

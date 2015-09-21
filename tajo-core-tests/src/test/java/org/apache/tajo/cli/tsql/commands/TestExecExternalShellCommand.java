@@ -34,7 +34,7 @@ public class TestExecExternalShellCommand {
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, out);
+    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, null, out);
 
     cli.executeMetaCommand("\\! echo \"this is test\"");
     String consoleResult = new String(out.toByteArray());

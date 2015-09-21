@@ -40,7 +40,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
   @BeforeClass
   public static void setUp() throws Exception {
     out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(testingCluster.getConfiguration(), new String[]{}, System.in, out);
+    tajoCli = new TajoCli(testingCluster.getConfiguration(), new String[]{}, null, System.in, out);
   }
 
   @AfterClass
