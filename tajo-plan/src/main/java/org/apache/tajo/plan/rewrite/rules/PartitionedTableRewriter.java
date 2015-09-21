@@ -133,11 +133,16 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     try {
       if (conjunctiveForms == null) {
         partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
+        if (partitions.isEmpty()) {
+          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+        } else {
+          filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+        }
       } else {
         PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
         partitions = catalog.getPartitionsByAlgebra(request);
+        filteredPaths = findFilteredPathsByPartitionDesc(partitions);
       }
-      filteredPaths = findFilteredPathsByPartitionDesc(partitions);
     } catch (UnsupportedException ue) {
       // Partial catalog might not allow some filter conditions. For example, HiveMetastore doesn't In statement,
       // Regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
