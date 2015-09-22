@@ -58,13 +58,7 @@ public abstract class FileAppender implements Appender {
         throw new IllegalArgumentException("Configuration must be an instance of TajoConf");
       }
 
-      Optional<FileTablespace> spaceResult = TablespaceManager.get(workDir.toUri());
-
-      if (!spaceResult.isPresent()) {
-        throw new IllegalStateException("No TableSpace for " + workDir.toUri());
-      }
-
-      FileTablespace space = spaceResult.get();
+      FileTablespace space = TablespaceManager.get(workDir.toUri());
       this.path = space.getAppenderFilePath(taskAttemptId, workDir);
 
     } else {

@@ -38,6 +38,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1868: Allow TablespaceManager::get to return a unregistered 
+    tablespace. (hyunsik)
+
     TAJO-1867: TajoMaster should handle the change of ${tajo.root}. (hyunsik)
 
     TAJO-1134: start-tajo.sh should display WEB UI URL and TajoMaster RPC 
