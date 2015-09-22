@@ -273,6 +273,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1871: '-DskipTests' flag does not work. (jihoon)
+
     TAJO-1869: Incorrect result when sorting table with small files. (jinho)
 
     TAJO-1846: Python temp directory path should be selected differently based 
