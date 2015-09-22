@@ -136,12 +136,7 @@ public class CreateTableExecutor {
       throws UndefinedTablespaceException {
 
     if (tableSpaceName != null) {
-      Optional<Tablespace> ts = (Optional<Tablespace>) TablespaceManager.getByName(tableSpaceName);
-      if (ts.isPresent()) {
-        return ts.get();
-      } else {
-        throw new UndefinedTablespaceException(tableSpaceName);
-      }
+      return TablespaceManager.getByName(tableSpaceName);
     } else if (tableUri != null) {
       return TablespaceManager.get(tableUri);
     } else {

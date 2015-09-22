@@ -34,6 +34,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.exception.UndefinedTablespaceHandlerException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -394,19 +395,19 @@ public class TablespaceManager implements StorageService {
    * @return
    */
   public static <T extends Tablespace> T getDefault() {
-    return (T) getByName(DEFAULT_TABLESPACE_NAME).get();
+    return (T) getByName(DEFAULT_TABLESPACE_NAME);
   }
 
   public static <T extends Tablespace> T getLocalFs() {
     return (T) get(LOCAL_FS_URI);
   }
 
-  public static Optional<? extends Tablespace> getByName(String name) {
+  public static <T extends Tablespace> T getByName(String name) {
     URI uri = SPACES_URIS_MAP.get(name);
     if (uri != null) {
-      return Optional.of(TABLE_SPACES.get(uri));
+      return (T) TABLE_SPACES.get(uri);
     } else {
-      return Optional.absent();
+      throw new TajoRuntimeException(new UndefinedTablespaceException(name));
     }
   }
 
@@ -423,7 +424,7 @@ public class TablespaceManager implements StorageService {
 
   @Override
   public URI getTableURI(@Nullable String spaceName, String databaseName, String tableName) {
-    Tablespace space = spaceName == null ? getDefault() : getByName(spaceName).get();
+    Tablespace space = spaceName == null ? getDefault() : getByName(spaceName);
     return space.getTableUri(databaseName, tableName);
   }
 

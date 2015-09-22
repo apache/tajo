@@ -415,7 +415,7 @@ public class TestCreateTable extends QueryTestCaseBase {
       }
       if(isClonedSchema(origPartMethod.getExpressionSchema(),
                         newPartMethod.getExpressionSchema()) == false) {
-	fail("Partition columns of input tables do not match");
+	      fail("Partition columns of input tables do not match");
         return false;
       }
 

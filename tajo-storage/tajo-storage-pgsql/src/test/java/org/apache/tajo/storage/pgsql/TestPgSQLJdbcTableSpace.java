@@ -45,8 +45,8 @@ public class TestPgSQLJdbcTableSpace {
 
   @Test(timeout = 1000)
   public void testTablespaceHandler() throws Exception {
-    assertTrue((TablespaceManager.getByName("pgsql_cluster").get()) instanceof PgSQLTablespace);
-    assertEquals("pgsql_cluster", (TablespaceManager.getByName("pgsql_cluster").get().getName()));
+    assertTrue((TablespaceManager.getByName("pgsql_cluster")) instanceof PgSQLTablespace);
+    assertEquals("pgsql_cluster", (TablespaceManager.getByName("pgsql_cluster").getName()));
 
     assertTrue((TablespaceManager.get(jdbcUrl)) instanceof PgSQLTablespace);
     assertTrue((TablespaceManager.get(jdbcUrl + "&table=tb1")) instanceof PgSQLTablespace);
@@ -57,19 +57,19 @@ public class TestPgSQLJdbcTableSpace {
 
   @Test(timeout = 1000, expected = TajoRuntimeException.class)
   public void testCreateTable() throws IOException, TajoException {
-    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster");
     space.createTable(null, false);
   }
 
   @Test(timeout = 1000, expected = TajoRuntimeException.class)
   public void testDropTable() throws IOException, TajoException {
-    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster");
     space.purgeTable(null);
   }
 
   @Test(timeout = 1000)
   public void testGetSplits() throws IOException, TajoException {
-    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster");
     MetadataProvider provider = space.getMetadataProvider();
     TableDesc table = provider.getTableDesc(null, "lineitem");
     List<Fragment> fragments = space.getSplits("lineitem", table, null);
