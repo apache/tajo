@@ -81,7 +81,8 @@ public abstract class NameResolver {
     return resolverMap.get(mode).resolve(plan, block, column, includeSelfDescTable);
   }
 
-  abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef, boolean includeSelfDescTable)
+  abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef,
+                          boolean includeSelfDescTable)
   throws TajoException;
 
   /**
