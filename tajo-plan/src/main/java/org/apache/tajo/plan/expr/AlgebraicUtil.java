@@ -509,12 +509,11 @@ public class AlgebraicUtil {
     Preconditions.checkNotNull(expr);
     Preconditions.checkNotNull(type);
 
-    Set<Expr> exprSet = ExprFinder.finds(expr, type);
-    if (exprSet.size() == 0) {
+    List<Expr> exprs = ExprFinder.findsInOrder(expr, type);
+    if (exprs.size() == 0) {
       return null;
     } else {
-      Expr[] exprs = exprSet.toArray(new Expr[exprSet.size()]);
-      return (T) exprs[0];
+      return (T) exprs.get(0);
     }
   }
 
@@ -529,12 +528,11 @@ public class AlgebraicUtil {
     Preconditions.checkNotNull(expr);
     Preconditions.checkNotNull(type);
 
-    Set<Expr> exprSet = ExprFinder.finds(expr, type);
-    if (exprSet.size() == 0) {
+    List<Expr> exprs = ExprFinder.findsInOrder(expr, type);
+    if (exprs.size() == 0) {
       return null;
     } else {
-      Expr[] exprs = exprSet.toArray(new Expr[exprSet.size()]);
-      return (T) exprs[exprs.length-1];
+      return (T) exprs.get(exprs.size()-1);
     }
   }
 
