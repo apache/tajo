@@ -437,7 +437,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     case PROJECTION:
       ProjectionNode projectionNode = (ProjectionNode) node;
-      cost = getCost((JoinVertex) projectionNode.getChild());
+      cost = getCost((LogicalNode) projectionNode.getChild());
       break;
 
     case JOIN:

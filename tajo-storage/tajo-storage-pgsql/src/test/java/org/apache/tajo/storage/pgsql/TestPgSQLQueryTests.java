@@ -110,6 +110,7 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
+  @Option(sort = true)
   public void testTPCH_Q5() throws Exception {
     runSimpleTests();
   }
