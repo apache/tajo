@@ -2364,8 +2364,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
         partitions.add(builder.build());
       }
-    } catch (TajoException se) {
-      throw new TajoInternalError(se);
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
@@ -2400,55 +2398,80 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    * @param partitionColumns list of partition column
    * @param json the algebra expression
    * @return the select statement and partition filter sets
-   * @throws TajoException
    */
   private Pair<String, List<PartitionFilterSet>> getSelectStatementAndPartitionFilterSet(String tableName,
-      List<ColumnProto> partitionColumns, String json) throws TajoException {
+      List<ColumnProto> partitionColumns, String json) {
 
     Pair<String, List<PartitionFilterSet>> result = null;
     Expr[] exprs = null;
-    List<PartitionFilterSet> filterSets = TUtil.newList();
 
-    if (json != null && !json.isEmpty()) {
-      Expr algebra = JsonHelper.fromJson(json, Expr.class);
-      exprs = AlgebraicUtil.toConjunctiveNormalFormArray(algebra);
-    }
+    try {
+      List<PartitionFilterSet> filterSets = TUtil.newList();
 
-    // Write table alias for all levels
-    String tableAlias;
+      if (json != null && !json.isEmpty()) {
+        Expr algebra = JsonHelper.fromJson(json, Expr.class);
+        exprs = AlgebraicUtil.toConjunctiveNormalFormArray(algebra);
+      }
 
-    PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
-    visitor.setIsHiveCatalog(false);
+      // Write table alias for all levels
+      String tableAlias;
 
-    Expr[] filters = AlgebraicUtil.getRearrangedCNFExpressions(tableName, partitionColumns, exprs);
+      PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
+      visitor.setIsHiveCatalog(false);
 
-    StringBuffer sb = new StringBuffer();
-    sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
-      .append(", A.PARTITION_NAME, A.PATH ").append(", ").append(COL_PARTITION_BYTES)
-      .append(" FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
-      .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
-      .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
-      .append("\n   SELECT T1.").append(CatalogConstants.COL_PARTITIONS_PK)
-      .append(" FROM ").append(CatalogConstants.TB_PARTTION_KEYS).append(" T1 ");
+      Expr[] filters = AlgebraicUtil.getRearrangedCNFExpressions(tableName, partitionColumns, exprs);
 
-    // Write join clause from second column to last column.
-    Column target;
+      StringBuffer sb = new StringBuffer();
+      sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
+        .append(", A.PARTITION_NAME, A.PATH ").append(", ").append(COL_PARTITION_BYTES)
+        .append(" FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
+        .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
+        .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
+        .append("\n   SELECT T1.").append(CatalogConstants.COL_PARTITIONS_PK)
+        .append(" FROM ").append(CatalogConstants.TB_PARTTION_KEYS).append(" T1 ");
 
-    for (int i = 1; i < partitionColumns.size(); i++) {
-      target = new Column(partitionColumns.get(i));
-      tableAlias = "T" + (i+1);
+      // Write join clause from second column to last column.
+      Column target;
 
+      for (int i = 1; i < partitionColumns.size(); i++) {
+        target = new Column(partitionColumns.get(i));
+        tableAlias = "T" + (i+1);
+
+        visitor.setColumn(target);
+        visitor.setTableAlias(tableAlias);
+        visitor.visit(null, new Stack<Expr>(), filters[i]);
+
+        sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
+          .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
+          .append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK)
+          .append(" AND T1.").append(CatalogConstants.COL_PARTITIONS_PK)
+          .append(" = ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITIONS_PK)
+          .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
+        sb.append(visitor.getResult());
+
+        // Set parameters for executing PrepareStament
+        PartitionFilterSet filterSet = new PartitionFilterSet();
+        filterSet.setColumnName(target.getSimpleName());
+
+        List<Pair<Type, Object>> list = TUtil.newList();
+        list.addAll(visitor.getParameters());
+        filterSet.addParameters(list);
+
+        filterSets.add(filterSet);
+        visitor.clearParameters();
+      }
+
+      // Write where clause for first column
+      target = new Column(partitionColumns.get(0));
+      tableAlias = "T1";
       visitor.setColumn(target);
       visitor.setTableAlias(tableAlias);
-      visitor.visit(null, new Stack<Expr>(), filters[i]);
+      visitor.visit(null, new Stack<Expr>(), filters[0]);
 
-      sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
-        .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
-        .append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK)
-        .append(" AND T1.").append(CatalogConstants.COL_PARTITIONS_PK)
-        .append(" = ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITIONS_PK)
-        .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-      sb.append(visitor.getResult());
+      sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
+      sb.append(visitor.getResult())
+        .append("\n )");
+      sb.append("\n ORDER BY A.PARTITION_NAME");
 
       // Set parameters for executing PrepareStament
       PartitionFilterSet filterSet = new PartitionFilterSet();
@@ -2459,32 +2482,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       filterSet.addParameters(list);
 
       filterSets.add(filterSet);
-      visitor.clearParameters();
+
+      result = new Pair<>(sb.toString(), filterSets);
+    } catch (TajoException e) {
+      throw new TajoInternalError(e);
     }
-
-    // Write where clause for first column
-    target = new Column(partitionColumns.get(0));
-    tableAlias = "T1";
-    visitor.setColumn(target);
-    visitor.setTableAlias(tableAlias);
-    visitor.visit(null, new Stack<Expr>(), filters[0]);
-
-    sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-    sb.append(visitor.getResult())
-      .append("\n )");
-    sb.append("\n ORDER BY A.PARTITION_NAME");
-
-    // Set parameters for executing PrepareStament
-    PartitionFilterSet filterSet = new PartitionFilterSet();
-    filterSet.setColumnName(target.getSimpleName());
-
-    List<Pair<Type, Object>> list = TUtil.newList();
-    list.addAll(visitor.getParameters());
-    filterSet.addParameters(list);
-
-    filterSets.add(filterSet);
-
-    result = new Pair<>(sb.toString(), filterSets);
 
     return result;
   }
