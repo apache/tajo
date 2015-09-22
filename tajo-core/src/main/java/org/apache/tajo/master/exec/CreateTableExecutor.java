@@ -132,9 +132,7 @@ public class CreateTableExecutor {
     }
   }
 
-  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri)
-      throws UndefinedTablespaceException {
-
+  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri) {
     if (tableSpaceName != null) {
       return TablespaceManager.getByName(tableSpaceName);
     } else if (tableUri != null) {

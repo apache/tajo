@@ -36,6 +36,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.UndefinedTablespaceHandlerException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
@@ -802,5 +803,11 @@ public class TestTajoClient {
   @Test(expected = UndefinedTablespaceException.class)
   public void testCreateTableOnAbsentTablespace() throws TajoException {
     client.updateQuery("CREATE TABLE testCreateTableOnAbsentTablespace (AGE INT) TABLESPACE unknown123");
+  }
+
+  @Test(expected = UndefinedTablespaceHandlerException.class)
+  public void testCreateTableWithAbsentTablespaceHandler() throws TajoException {
+    client.updateQuery(
+        "CREATE EXTERNAL TABLE testCreateTableWithAbsentTablespaceHandler (AGE INT) USING TEXT LOCATION 'hdfx://tajo'");
   }
 }
