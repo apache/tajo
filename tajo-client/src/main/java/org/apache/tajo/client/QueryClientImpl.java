@@ -353,7 +353,7 @@ public class QueryClientImpl implements QueryClient {
   protected TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum)
       throws TajoException {
 
-    boolean compress = conn.getProperties().getBool("useCompression");
+    boolean compress = conn.getProperties().getBool(ClientParameters.USE_COMPRESSION);
 
     final BlockingInterface stub = conn.getTMStub();
     final GetQueryResultDataRequest.Builder request = GetQueryResultDataRequest.newBuilder();
