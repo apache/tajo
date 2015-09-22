@@ -273,6 +273,15 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1861: TSQL should change line after printout error message during 
+    connecting other database. (jihoon)
+
+    TAJO-1873: Fix NPE in QueryExecutorServlet. (jinho)
+
+    TAJO-1871: '-DskipTests' flag does not work. (jihoon)
+
+    TAJO-1869: Incorrect result when sorting table with small files. (jinho)
+
     TAJO-1846: Python temp directory path should be selected differently based 
     on user platform. (Contributed by Dongkyu Hwangbo, Committed by jihoon)
 
@@ -553,6 +562,12 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1872: Increase the minimum split size and add a classpath to hadoop 
+    tools. (jihoon)
+
+    TAJO-1870: Enable tests of tajo-storage-pgsql module when arch type 
+    is 64-bit. (jinho)
 
     TAJO-1682: Write ORC document. (Contributed by Jongyoung Park, 
     Committed by jihoon)
