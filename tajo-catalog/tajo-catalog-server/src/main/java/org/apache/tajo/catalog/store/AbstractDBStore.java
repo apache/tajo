@@ -2288,9 +2288,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ResultSet res = null;
     int currentIndex = 1;
     String selectStatement = null;
+    Pair<String, List<PartitionFilterSet>> pair = null;
 
     List<PartitionDescProto> partitions = TUtil.newList();
-    List<PartitionFilterSet> filterSets = TUtil.newList();
+    List<PartitionFilterSet> filterSets = null;
 
     int databaseId = getDatabaseId(request.getDatabaseName());
     int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
@@ -2305,8 +2306,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
 
-      selectStatement = getSelectStatementForPartitions(tableDesc.getTableName(), tableDesc.getPartition()
-        .getExpressionSchema().getFieldsList(), request.getAlgebra(), filterSets);
+      pair = getSelectStatementAndPartitionFilterSet(tableDesc.getTableName(), tableDesc.getPartition()
+        .getExpressionSchema().getFieldsList(), request.getAlgebra());
+
+      selectStatement = pair.getFirst();
+      filterSets = pair.getSecond();
 
       conn = getConnection();
       pstmt = conn.prepareStatement(selectStatement);
@@ -2392,17 +2396,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    *    OR ( T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE = ? )
    )
    *
-   * @param partitionColumns
-   * @param json
-   * @param filterSets
-   * @return
+   * @param tableName the table name
+   * @param partitionColumns list of partition column
+   * @param json the algebra expression
+   * @return the select statement and partition filter sets
    * @throws TajoException
-   * @throws SQLException
    */
-  private String getSelectStatementForPartitions(String tableName, List<ColumnProto> partitionColumns, String json,
-    List<PartitionFilterSet> filterSets) throws TajoException {
+  private Pair<String, List<PartitionFilterSet>> getSelectStatementAndPartitionFilterSet(String tableName,
+      List<ColumnProto> partitionColumns, String json) throws TajoException {
 
+    Pair<String, List<PartitionFilterSet>> result = null;
     Expr[] exprs = null;
+    List<PartitionFilterSet> filterSets = TUtil.newList();
 
     if (json != null && !json.isEmpty()) {
       Expr algebra = JsonHelper.fromJson(json, Expr.class);
@@ -2479,7 +2484,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     filterSets.add(filterSet);
 
-    return sb.toString();
+    result = new Pair<>(sb.toString(), filterSets);
+
+    return result;
   }
 
 
