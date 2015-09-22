@@ -39,7 +39,7 @@ class CliClientParamsFactory {
   }
 
   public static Properties get(@Nullable Properties connParam) {
-    Properties copy = (Properties) connParam.clone();
+    Properties copy = connParam == null ? new Properties() : (Properties) connParam.clone();
     for (Map.Entry<String, String> entry : DEFAULT_PARAMS.entrySet()) {
       if (!copy.contains(entry.getKey())) {
         copy.setProperty(entry.getKey(), entry.getValue());
