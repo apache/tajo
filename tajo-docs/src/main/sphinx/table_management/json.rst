@@ -9,7 +9,7 @@ Tajo supports JSON as its data format. In this section, you will get an overview
 How to Create a JSON Table ?
 ============================
 
-You can create JSON tables using ``CREATE TABLE`` statement. (For more information, please refer to :doc:`/sql_language/ddl`.)
+You can create a JSON table using the ``CREATE TABLE`` statement. (For more information, please refer to :doc:`/sql_language/ddl`.)
 For example, please consider an example data as follows:
 
 .. code-block:: bash
@@ -19,7 +19,7 @@ For example, please consider an example data as follows:
   { "title" : "Assassin", "name" : { "first_name": "Arya", "last_name": "Stark"}}
   { "title" : "Dancing Master", "name" : { "first_name": "Syrio", "last_name": "Forel"}}
 
-Tajo provides two alternatives to create a table for this data. First is a traditional way to create tables. Here is an example.
+Tajo provides two ways to create a table for this data. First is a traditional way to create tables. Here is an example.
 
 .. code-block:: sql
 
@@ -36,7 +36,7 @@ Second is a simpler alternative to alleviate this problem. When you create an ex
 
 .. code-block:: sql
 
-  CREATE EXTERNAL TABLE table1 USING JSON LOCATION '/table1/table.json';
+  CREATE EXTERNAL TABLE table1 (*) USING JSON LOCATION '/table1/table.json';
 
 No matter which way you choose, you can submit any queries on this table.
 

@@ -25,7 +25,6 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
@@ -33,25 +32,25 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
   public TestQueryOnSelfDescTable() throws IOException, TajoException, SQLException {
     super();
 
-    executeString(String.format("create external table self_desc_table1 (*) using json location '%s'",
+    executeString(String.format("create external table if not exists self_desc_table1 (*) using json location '%s'",
         getDataSetFile("sample1"))).close();
 
-    executeString(String.format("create external table self_desc_table2 (*) using json location '%s'",
+    executeString(String.format("create external table if not exists self_desc_table2 (*) using json location '%s'",
         getDataSetFile("sample2"))).close();
 
-    executeString(String.format("create external table self_desc_table3 (*) using json location '%s'",
+    executeString(String.format("create external table if not exists self_desc_table3 (*) using json location '%s'",
         getDataSetFile("tweets"))).close();
 
-    executeString(String.format("create external table github (*) using json location '%s'",
+    executeString(String.format("create external table if not exists github (*) using json location '%s'",
         getDataSetFile("github"))).close();
   }
 
   @After
   public void teardown() throws TajoException, SQLException {
-    executeString("drop table self_desc_table1").close();
-    executeString("drop table self_desc_table2").close();
-    executeString("drop table self_desc_table3").close();
-    executeString("drop table github").close();
+    executeString("drop table if exists self_desc_table1").close();
+    executeString("drop table if exists self_desc_table2").close();
+    executeString("drop table if exists self_desc_table3").close();
+    executeString("drop table if exists github").close();
   }
 
   @Test

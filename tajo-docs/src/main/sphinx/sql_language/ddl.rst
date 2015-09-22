@@ -40,7 +40,7 @@ CREATE TABLE
   CREATE TABLE [IF NOT EXISTS] <table_name> [(<column_name> <data_type>, ... )] [TABLESPACE tablespace_name]
   [using <storage_type> [with (<key> = <value>, ...)]] [AS <select_statement>]
 
-  CREATE EXTERNAL TABLE [IF NOT EXISTS] <table_name> [(<column_name> <data_type>, ... )]
+  CREATE EXTERNAL TABLE [IF NOT EXISTS] <table_name> (<column_name> <data_type>, ... )
   using <storage_type> [with (<key> = <value>, ...)] LOCATION '<path>'
 
 *Description*
