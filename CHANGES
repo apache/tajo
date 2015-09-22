@@ -2,6 +2,16 @@ Tajo Change Log
 
 Release 0.12.0 - unreleased
 
+  NEW FEATURES
+
+  IMPROVEMENT
+  
+    TAJO-1768: Move Tajo into Java 8.
+
+  BUG FIXES
+
+  SUB TASKS
+
 Release 0.11.0 - unreleased
 
   NEW FEATURES
