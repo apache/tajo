@@ -202,7 +202,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   private void verifyPartitionCount(String databaseName, String tableName, int expectedCount)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedPartitionException {
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions(databaseName, tableName);
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), expectedCount);
   }
