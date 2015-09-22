@@ -273,6 +273,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1861: TSQL should change line after printout error message during 
+    connecting other database. (jihoon)
+
     TAJO-1873: Fix NPE in QueryExecutorServlet. (jinho)
 
     TAJO-1871: '-DskipTests' flag does not work. (jihoon)
