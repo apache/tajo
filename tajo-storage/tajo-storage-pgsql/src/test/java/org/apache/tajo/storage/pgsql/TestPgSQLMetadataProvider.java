@@ -39,28 +39,28 @@ public class TestPgSQLMetadataProvider {
 
   @Test
   public void testGetTablespaceName() throws Exception {
-    Tablespace tablespace = TablespaceManager.get(jdbcUrl).get();
+    Tablespace tablespace = TablespaceManager.get(jdbcUrl);
     MetadataProvider provider = tablespace.getMetadataProvider();
     assertEquals("pgsql_cluster", provider.getTablespaceName());
   }
 
   @Test
   public void testGetDatabaseName() throws Exception {
-    Tablespace tablespace = TablespaceManager.get(jdbcUrl).get();
+    Tablespace tablespace = TablespaceManager.get(jdbcUrl);
     MetadataProvider provider = tablespace.getMetadataProvider();
     assertEquals("tpch", provider.getDatabaseName());
   }
 
   @Test
   public void testGetSchemas() throws Exception {
-    Tablespace tablespace = TablespaceManager.get(jdbcUrl).get();
+    Tablespace tablespace = TablespaceManager.get(jdbcUrl);
     MetadataProvider provider = tablespace.getMetadataProvider();
     assertTrue(provider.getSchemas().isEmpty());
   }
 
   @Test
   public void testGetTables() throws Exception {
-    Tablespace tablespace = TablespaceManager.get(jdbcUrl).get();
+    Tablespace tablespace = TablespaceManager.get(jdbcUrl);
     MetadataProvider provider = tablespace.getMetadataProvider();
 
     final Set<String> expected = Sets.newHashSet(PgSQLTestServer.TPCH_TABLES);
@@ -72,7 +72,7 @@ public class TestPgSQLMetadataProvider {
 
   @Test
   public void testGetTableDescriptor() throws Exception {
-    Tablespace tablespace = TablespaceManager.get(jdbcUrl).get();
+    Tablespace tablespace = TablespaceManager.get(jdbcUrl);
     MetadataProvider provider = tablespace.getMetadataProvider();
 
     for (String tableName : PgSQLTestServer.TPCH_TABLES) {

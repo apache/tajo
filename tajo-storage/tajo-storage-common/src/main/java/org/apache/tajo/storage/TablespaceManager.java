@@ -33,6 +33,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.UndefinedTablespaceHandlerException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.JavaResourceUtil;
@@ -276,10 +279,11 @@ public class TablespaceManager implements StorageService {
   public static final String KEY_SPACES = "spaces";
 
   private static Tablespace initializeTableSpace(String spaceName, URI uri, JSONObject spaceDesc) {
-    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(UriUtil.getScheme(uri));
+    final String scheme = UriUtil.getScheme(uri);
+    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(scheme);
 
     if (clazz == null) {
-      throw new RuntimeException("Not found Tablespace handler for " + uri.toString());
+      throw new TajoRuntimeException(new UndefinedTablespaceHandlerException(scheme));
     }
 
     try {
@@ -319,6 +323,18 @@ public class TablespaceManager implements StorageService {
     return Optional.fromNullable(existing);
   }
 
+  @VisibleForTesting
+  public static Optional<Tablespace> removeTablespaceForTest(String name) {
+    Tablespace existing = null;
+    synchronized (SPACES_URIS_MAP) {
+      URI uri = SPACES_URIS_MAP.remove(name);
+      if (uri != null) {
+        existing = TABLE_SPACES.remove(uri);
+      }
+    }
+    return Optional.fromNullable(existing);
+  }
+
   public Iterable<String> getSupportSchemes() {
     return TABLE_SPACE_HANDLERS.keySet();
   }
@@ -330,10 +346,10 @@ public class TablespaceManager implements StorageService {
    * @param <T> Tablespace class type
    * @return Tablespace. If uri is null, the default tablespace will be returned.
    */
-  public static <T extends Tablespace> Optional<T> get(@Nullable String uri) {
+  public static <T extends Tablespace> T get(@Nullable String uri) {
 
     if (uri == null || uri.isEmpty()) {
-      return (Optional<T>) Optional.of(getDefault());
+      return getDefault();
     }
 
     Tablespace lastOne = null;
@@ -345,7 +361,17 @@ public class TablespaceManager implements StorageService {
         lastOne = entry.getValue();
       }
     }
-    return (Optional<T>) Optional.fromNullable(lastOne);
+
+    if (lastOne == null) {
+      lastOne = initializeTableSpace(UUID.randomUUID().toString(), URI.create(uri), new JSONObject());
+      try {
+        lastOne.init(systemConf);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    return (T) lastOne;
   }
 
   /**
@@ -355,11 +381,11 @@ public class TablespaceManager implements StorageService {
    * @param <T> Tablespace class type
    * @return Tablespace. If uri is null, the default tablespace will be returned.
    */
-  public static <T extends Tablespace> Optional<T> get(@Nullable URI uri) {
+  public static <T extends Tablespace> T get(@Nullable URI uri) {
     if (uri == null) {
-      return (Optional<T>) Optional.of(getDefault());
+      return getDefault();
     } else {
-      return (Optional<T>) get(uri.toString());
+      return (T) get(uri.toString());
     }
   }
 
@@ -369,19 +395,19 @@ public class TablespaceManager implements StorageService {
    * @return
    */
   public static <T extends Tablespace> T getDefault() {
-    return (T) getByName(DEFAULT_TABLESPACE_NAME).get();
+    return (T) getByName(DEFAULT_TABLESPACE_NAME);
   }
 
   public static <T extends Tablespace> T getLocalFs() {
-    return (T) get(LOCAL_FS_URI).get();
+    return (T) get(LOCAL_FS_URI);
   }
 
-  public static Optional<? extends Tablespace> getByName(String name) {
+  public static <T extends Tablespace> T getByName(String name) {
     URI uri = SPACES_URIS_MAP.get(name);
     if (uri != null) {
-      return Optional.of(TABLE_SPACES.get(uri));
+      return (T) TABLE_SPACES.get(uri);
     } else {
-      return Optional.absent();
+      throw new TajoRuntimeException(new UndefinedTablespaceException(name));
     }
   }
 
@@ -398,13 +424,13 @@ public class TablespaceManager implements StorageService {
 
   @Override
   public URI getTableURI(@Nullable String spaceName, String databaseName, String tableName) {
-    Tablespace space = spaceName == null ? getDefault() : getByName(spaceName).get();
+    Tablespace space = spaceName == null ? getDefault() : getByName(spaceName);
     return space.getTableUri(databaseName, tableName);
   }
 
   @Override
   public long getTableVolumn(URI tableUri) throws UnsupportedException {
-    return get(tableUri).get().getTableVolume(tableUri);
+    return get(tableUri).getTableVolume(tableUri);
   }
 
   public static Iterable<Tablespace> getAllTablespaces() {

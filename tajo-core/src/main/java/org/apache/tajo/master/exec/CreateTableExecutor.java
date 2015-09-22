@@ -132,23 +132,11 @@ public class CreateTableExecutor {
     }
   }
 
-  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri)
-      throws UndefinedTablespaceException {
-
+  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri) {
     if (tableSpaceName != null) {
-      Optional<Tablespace> ts = (Optional<Tablespace>) TablespaceManager.getByName(tableSpaceName);
-      if (ts.isPresent()) {
-        return ts.get();
-      } else {
-        throw new UndefinedTablespaceException(tableSpaceName);
-      }
+      return TablespaceManager.getByName(tableSpaceName);
     } else if (tableUri != null) {
-      Optional<Tablespace> ts = TablespaceManager.get(tableUri);
-      if (ts.isPresent()) {
-        return ts.get();
-      } else {
-        throw new UndefinedTablespaceException(tableUri.toString());
-      }
+      return TablespaceManager.get(tableUri);
     } else {
       return TablespaceManager.getDefault();
     }
