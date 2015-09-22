@@ -214,7 +214,8 @@ $HADOOP_HOME/share/hadoop/common
 $HADOOP_HOME/share/hadoop/hdfs
 $HADOOP_HOME/share/hadoop/hdfs/lib
 $HADOOP_HOME/share/hadoop/yarn
-$HADOOP_HOME/share/hadoop/mapreduce"
+$HADOOP_HOME/share/hadoop/mapreduce
+$HADOOP_HOME/share/hadoop/tools/lib"
 
 for d in $HADOOP_MODULE_DIRS; do
   CLASSPATH=${CLASSPATH}:$d/*

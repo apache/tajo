@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
@@ -410,7 +409,8 @@ public class ExternalSortExec extends SortExec {
         if (frag.getTableName().contains(INTERMEDIATE_FILE_PREFIX)) {
           localFS.delete(frag.getPath(), true);
           numDeletedFiles++;
-          LOG.info("Delete merged intermediate file: " + frag);
+
+          if(LOG.isDebugEnabled()) LOG.debug("Delete merged intermediate file: " + frag);
         }
       }
       info(LOG, numDeletedFiles + " merged intermediate files deleted");
