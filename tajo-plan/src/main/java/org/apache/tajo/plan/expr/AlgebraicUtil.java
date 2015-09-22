@@ -518,8 +518,14 @@ public class AlgebraicUtil {
     }
   }
 
+  /**
+   * Transforms an algebra expression to an array of conjunctive normal formed algebra expressions.
+   *
+   * @param expr The algebra expression to be transformed to an array of CNF-formed expressions.
+   * @return An array of CNF-formed algebra expressions
+   */
   public static Expr[] toConjunctiveNormalFormArray(Expr expr) {
-    List<Expr> list = new ArrayList<Expr>();
+    List<Expr> list = TUtil.newList();
     toConjunctiveNormalFormArrayRecursive(expr, list);
     return list.toArray(new Expr[list.size()]);
   }

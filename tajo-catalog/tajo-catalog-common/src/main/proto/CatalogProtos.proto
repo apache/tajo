@@ -265,13 +265,13 @@ message PartitionIdentifierProto {
 message PartitionsByAlgebraProto {
   required string databaseName = 1;
   required string tableName = 2;
-  required string algebra = 3;
+  required string algebra = 3; /** json object which contains algebra expressions */
 }
 
 message PartitionsByFilterProto {
   required string databaseName = 1;
   required string tableName = 2;
-  required string filter = 3;
+  required string filter = 3; /** filter condition, for example col1 = 'TAJO' and col2 = 100. */
 }
 
 message TablespaceProto {
