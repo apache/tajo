@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.proto.CatalogProtos;
