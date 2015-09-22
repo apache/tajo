@@ -35,7 +35,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.RpcConnectionParamUtil;
+import org.apache.tajo.util.RpcConnectionParamBuilder;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
@@ -71,7 +71,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     this.workerContext = workerContext;
     this.executionBlockContextMap = Maps.newHashMap();
     this.executor = executor;
-    this.rpcClientParams = RpcConnectionParamUtil.get(this.workerContext.getConf());
+    this.rpcClientParams = RpcConnectionParamBuilder.get(this.workerContext.getConf());
   }
 
   @Override

@@ -48,7 +48,7 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.RpcConnectionParamUtil;
+import org.apache.tajo.util.RpcConnectionParamBuilder;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -97,7 +97,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void init(Configuration conf) {
     tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    rpcConnParams = RpcConnectionParamUtil.get(new TajoConf());
+    rpcConnParams = RpcConnectionParamBuilder.get(new TajoConf());
 
     scheduledRequests = new ScheduledRequests();
     minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);

@@ -28,7 +28,7 @@ import java.util.Properties;
 /**
  * Helper class to get RPC Client Connection Parameters
  */
-public class RpcConnectionParamUtil {
+public class RpcConnectionParamBuilder {
 
   static final Map<String, ConfVars> PROPERTIES_MAP = new HashMap<>();
 
@@ -36,6 +36,7 @@ public class RpcConnectionParamUtil {
     PROPERTIES_MAP.put(RpcConstants.CLIENT_RETRY_NUM, ConfVars.RPC_CLIENT_RETRY_NUM);
     PROPERTIES_MAP.put(RpcConstants.CLIENT_CONNECTION_TIMEOUT, ConfVars.RPC_CLIENT_CONNECTION_TIMEOUT);
     PROPERTIES_MAP.put(RpcConstants.CLIENT_SOCKET_TIMEOUT, ConfVars.RPC_CLIENT_SOCKET_TIMEOUT);
+    PROPERTIES_MAP.put(RpcConstants.CLIENT_HANG_DETECTION, ConfVars.RPC_CLIENT_HANG_DETECTION_ENABLED);
   }
 
   public static Properties get(TajoConf conf) {

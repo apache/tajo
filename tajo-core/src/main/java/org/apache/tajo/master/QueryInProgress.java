@@ -39,7 +39,7 @@ import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.RpcConnectionParamUtil;
+import org.apache.tajo.util.RpcConnectionParamBuilder;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -91,7 +91,7 @@ public class QueryInProgress {
     queryInfo = new QueryInfo(queryId, queryContext, sql, jsonExpr);
     queryInfo.setStartTime(System.currentTimeMillis());
 
-    rpcClientParams = RpcConnectionParamUtil.get(masterContext.getConf());
+    rpcClientParams = RpcConnectionParamBuilder.get(masterContext.getConf());
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();

@@ -29,6 +29,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.ClientParameters;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -376,7 +377,9 @@ public class TestTajoCli {
 
           TajoConf tajoConf = new TajoConf();
           setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-          TajoCli tc = new TajoCli(tajoConf, new String[]{}, null, is, out);
+          Properties connParams = new Properties();
+          connParams.setProperty(ClientParameters.RETRY, "3");
+          TajoCli tc = new TajoCli(tajoConf, new String[]{}, connParams, is, out);
 
           tc.executeMetaCommand("\\set ON_ERROR_STOP false");
           assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");

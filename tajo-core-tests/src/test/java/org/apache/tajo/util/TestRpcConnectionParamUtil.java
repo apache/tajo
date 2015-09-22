@@ -34,7 +34,7 @@ public class TestRpcConnectionParamUtil {
   @Test
   public void testGetDefaults() throws Exception {
     TajoConf conf = new TajoConf();
-    Properties defaultParams = RpcConnectionParamUtil.get(conf);
+    Properties defaultParams = RpcConnectionParamBuilder.get(conf);
     assertEquals(
         ConfVars.RPC_CLIENT_RETRY_NUM.defaultVal, defaultParams.getProperty(CLIENT_RETRY_NUM));
     assertEquals(
@@ -50,7 +50,7 @@ public class TestRpcConnectionParamUtil {
     conf.setLongVar(ConfVars.RPC_CLIENT_CONNECTION_TIMEOUT, (long)(10 * 1000));
     conf.setLongVar(ConfVars.RPC_CLIENT_SOCKET_TIMEOUT, (long)60 * 1000);
 
-    Properties defaultParams = RpcConnectionParamUtil.get(conf);
+    Properties defaultParams = RpcConnectionParamBuilder.get(conf);
     assertEquals("100", defaultParams.getProperty(CLIENT_RETRY_NUM));
     assertEquals(10 * 1000 + "", defaultParams.getProperty(CLIENT_CONNECTION_TIMEOUT));
     assertEquals(60 * 1000 + "", defaultParams.getProperty(RpcConstants.CLIENT_SOCKET_TIMEOUT));

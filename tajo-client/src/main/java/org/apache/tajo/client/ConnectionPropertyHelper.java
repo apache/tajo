@@ -57,9 +57,9 @@ class ConnectionPropertyHelper {
   public static Map<String, Action> PARAMETERS = new HashMap<>();
 
   static {
-    PARAMETERS.put("useCompression", new SimpleSessionAction(COMPRESSED_RESULT_TRANSFER));
-    PARAMETERS.put("defaultRowFetchSize", new SimpleSessionAction(FETCH_ROWNUM));
-    PARAMETERS.put("connectTimeout", new ConnectionParamAction() {
+    PARAMETERS.put(ClientParameters.USE_COMPRESSION, new SimpleSessionAction(COMPRESSED_RESULT_TRANSFER));
+    PARAMETERS.put(ClientParameters.ROW_FETCH_SIZE, new SimpleSessionAction(FETCH_ROWNUM));
+    PARAMETERS.put(ClientParameters.CONNECT_TIMEOUT, new ConnectionParamAction() {
       @Override
       Pair<String, String> doAction(String param) {
         int seconds = Integer.parseInt(param);
@@ -67,14 +67,14 @@ class ConnectionPropertyHelper {
         return new Pair<>(CLIENT_CONNECTION_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(seconds)));
       }
     });
-    PARAMETERS.put("socketTimeout", new ConnectionParamAction() {
+    PARAMETERS.put(ClientParameters.SOCKET_TIMEOUT, new ConnectionParamAction() {
       @Override
       Pair<String, String> doAction(String param) {
         int seconds = Integer.parseInt(param);
         return new Pair<>(CLIENT_SOCKET_TIMEOUT, String.valueOf(TimeUnit.SECONDS.toMillis(seconds)));
       }
     });
-    PARAMETERS.put("retry", new SimpleConnectionParamAction(RpcConstants.CLIENT_RETRY_NUM));
+    PARAMETERS.put(ClientParameters.RETRY, new SimpleConnectionParamAction(RpcConstants.CLIENT_RETRY_NUM));
   }
 
   enum ActionType {

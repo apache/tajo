@@ -55,7 +55,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.RpcConnectionParamUtil;
+import org.apache.tajo.util.RpcConnectionParamBuilder;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
@@ -135,7 +135,7 @@ public class QueryMasterTask extends CompositeService {
   @Override
   public void serviceInit(Configuration conf) throws Exception {
     systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    rpcConnParams = RpcConnectionParamUtil.get(systemConf);
+    rpcConnParams = RpcConnectionParamBuilder.get(systemConf);
 
     queryTaskContext = new QueryMasterTaskContext();
 

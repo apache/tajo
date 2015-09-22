@@ -62,7 +62,7 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.RpcConnectionParamUtil;
+import org.apache.tajo.util.RpcConnectionParamBuilder;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
@@ -303,7 +303,7 @@ public class Stage implements EventHandler<StageEvent> {
     this.block = block;
     this.eventHandler = context.getEventHandler();
 
-    this.rpcClientParams = RpcConnectionParamUtil.get(context.getConf());
+    this.rpcClientParams = RpcConnectionParamBuilder.get(context.getConf());
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();

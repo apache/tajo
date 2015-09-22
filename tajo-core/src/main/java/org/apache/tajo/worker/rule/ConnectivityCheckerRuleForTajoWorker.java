@@ -26,7 +26,7 @@ import org.apache.tajo.rule.*;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
-import org.apache.tajo.util.RpcConnectionParamUtil;
+import org.apache.tajo.util.RpcConnectionParamBuilder;
 import org.apache.tajo.worker.TajoWorker;
 
 /**
@@ -42,7 +42,7 @@ public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
 
     ServiceTracker serviceTracker = ServiceTrackerFactory.get(tajoConf);
     NettyClientBase masterClient = manager.getClient(serviceTracker.getUmbilicalAddress(),
-        QueryCoordinatorProtocol.class, true, RpcConnectionParamUtil.get(tajoConf));
+        QueryCoordinatorProtocol.class, true, RpcConnectionParamBuilder.get(tajoConf));
     masterClient.getStub();
   }
 
