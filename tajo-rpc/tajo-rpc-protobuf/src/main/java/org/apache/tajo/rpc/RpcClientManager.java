@@ -58,23 +58,23 @@ public class RpcClientManager {
   }
 
   private <T extends NettyClientBase> T makeClient(RpcConnectionKey rpcConnectionKey,
-                                                   Properties connectionParameters)
+                                                   Properties rpcParams)
       throws NoSuchMethodException, ConnectException, ClassNotFoundException {
 
 
-    return makeClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connectionParameters);
+    return makeClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, rpcParams);
   }
 
   private <T extends NettyClientBase> T makeClient(EventLoopGroup eventLoopGroup,
                                                    RpcConnectionKey rpcConnectionKey,
-                                                   Properties connectionParameters)
+                                                   Properties rpcParams)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(eventLoopGroup, rpcConnectionKey, connectionParameters);
+      client = new AsyncRpcClient(eventLoopGroup, rpcConnectionKey, rpcParams);
 
     } else {
-      client = new BlockingRpcClient(eventLoopGroup, rpcConnectionKey, connectionParameters);
+      client = new BlockingRpcClient(eventLoopGroup, rpcConnectionKey, rpcParams);
     }
     return (T) client;
   }
@@ -86,7 +86,7 @@ public class RpcClientManager {
   public <T extends NettyClientBase> T getClient(InetSocketAddress addr,
                                                  Class<?> protocolClass,
                                                  boolean asyncMode,
-                                                 Properties connectionParameters)
+                                                 Properties rpcParams)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
@@ -94,7 +94,7 @@ public class RpcClientManager {
     synchronized (clients) {
       client = clients.get(key);
       if (client == null) {
-        clients.put(key, client = makeClient(key, connectionParameters));
+        clients.put(key, client = makeClient(key, rpcParams));
       }
     }
 
@@ -128,10 +128,10 @@ public class RpcClientManager {
   public <T extends NettyClientBase> T newClient(InetSocketAddress addr,
                                                               Class<?> protocolClass,
                                                               boolean asyncMode,
-                                                              Properties connectionParameters)
+                                                              Properties rpcParams)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
-    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), connectionParameters);
+    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), rpcParams);
   }
 
   /**
@@ -157,10 +157,10 @@ public class RpcClientManager {
   public synchronized <T extends NettyClientBase> T newBlockingClient(InetSocketAddress addr,
                                                                       Class<?> protocolClass,
                                                                       EventLoopGroup eventLoopGroup,
-                                                                      Properties connectionParameters)
+                                                                      Properties rpcParams)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
 
-    T client = makeClient(eventLoopGroup, new RpcConnectionKey(addr, protocolClass, false), connectionParameters);
+    T client = makeClient(eventLoopGroup, new RpcConnectionKey(addr, protocolClass, false), rpcParams);
     client.connect();
     assert client.isConnected();
     return client;

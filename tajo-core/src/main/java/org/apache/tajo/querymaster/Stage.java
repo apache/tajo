@@ -62,7 +62,7 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.RpcConnectionParamBuilder;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
@@ -89,7 +89,7 @@ public class Stage implements EventHandler<StageEvent> {
 
   private static final Log LOG = LogFactory.getLog(Stage.class);
 
-  private final Properties rpcClientParams;
+  private final Properties rpcParams;
 
   private MasterPlan masterPlan;
   private ExecutionBlock block;
@@ -303,7 +303,7 @@ public class Stage implements EventHandler<StageEvent> {
     this.block = block;
     this.eventHandler = context.getEventHandler();
 
-    this.rpcClientParams = RpcConnectionParamBuilder.get(context.getConf());
+    this.rpcParams = RpcParameterFactory.get(context.getConf());
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();
@@ -725,7 +725,7 @@ public class Stage implements EventHandler<StageEvent> {
         public void run() {
           try {
             AsyncRpcClient tajoWorkerRpc =
-                RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true, rpcClientParams);
+                RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true, rpcParams);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.stopExecutionBlock(null,
                 requestProto, NullCallback.get(PrimitiveProtos.BoolProto.class));

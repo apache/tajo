@@ -28,7 +28,7 @@ import java.util.Properties;
 /**
  * Helper class to get RPC Client Connection Parameters
  */
-public class RpcConnectionParamBuilder {
+public class RpcParameterFactory {
 
   static final Map<String, ConfVars> PROPERTIES_MAP = new HashMap<>();
 

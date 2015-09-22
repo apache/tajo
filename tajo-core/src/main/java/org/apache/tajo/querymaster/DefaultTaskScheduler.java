@@ -48,7 +48,7 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.RpcConnectionParamBuilder;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -70,7 +70,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private final TaskSchedulerContext context;
   private Stage stage;
   private TajoConf tajoConf;
-  private Properties rpcConnParams;
+  private Properties rpcParams;
 
   private Thread schedulingThread;
   private volatile boolean isStopped;
@@ -97,7 +97,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void init(Configuration conf) {
     tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    rpcConnParams = RpcConnectionParamBuilder.get(new TajoConf());
+    rpcParams = RpcParameterFactory.get(new TajoConf());
 
     scheduledRequests = new ScheduledRequests();
     minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
@@ -298,7 +298,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     ServiceTracker serviceTracker =
         context.getMasterContext().getQueryMasterContext().getWorkerContext().getServiceTracker();
     NettyClientBase tmClient = RpcClientManager.getInstance().
-        getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true, rpcConnParams);
+        getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true, rpcParams);
     QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 
     CallFuture<NodeResourceResponse> callBack = new CallFuture<NodeResourceResponse>();
@@ -891,7 +891,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           totalAttempts++;
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true,
-                rpcConnParams);
+                rpcParams);
 
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
@@ -1011,7 +1011,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           AsyncRpcClient tajoWorkerRpc;
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true,
-                rpcConnParams);
+                rpcParams);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
 

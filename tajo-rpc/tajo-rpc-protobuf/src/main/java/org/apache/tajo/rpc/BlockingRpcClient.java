@@ -44,7 +44,7 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
    *
    * @param rpcConnectionKey     RpcConnectionKey
    * @param eventLoopGroup       Thread pool of netty's
-   * @param connectionParameters Connection parameters (see RpcConstants)
+   * @param rpcParams            Rpc connection parameters (see RpcConstants)
    *
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
@@ -52,20 +52,20 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
    */
   public BlockingRpcClient(EventLoopGroup eventLoopGroup,
                            RpcConnectionKey rpcConnectionKey,
-                           Properties connectionParameters)
+                           Properties rpcParams)
       throws ClassNotFoundException, NoSuchMethodException {
-    super(rpcConnectionKey, connectionParameters);
+    super(rpcConnectionKey, rpcParams);
 
     this.stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
     this.rpcChannel = new ProxyRpcChannel();
     this.handler = new ClientChannelInboundHandler();
 
     long socketTimeoutMills = Long.parseLong(
-        connectionParameters.getProperty(CLIENT_SOCKET_TIMEOUT, String.valueOf(CLIENT_SOCKET_TIMEOUT_DEFAULT)));
+        rpcParams.getProperty(CLIENT_SOCKET_TIMEOUT, String.valueOf(CLIENT_SOCKET_TIMEOUT_DEFAULT)));
 
     // Enable proactive hang detection
     final boolean hangDetectionEnabled = Boolean.parseBoolean(
-        connectionParameters.getProperty(CLIENT_HANG_DETECTION, String.valueOf(CLIENT_HANG_DETECTION_DEFAULT)));
+        rpcParams.getProperty(CLIENT_HANG_DETECTION, String.valueOf(CLIENT_HANG_DETECTION_DEFAULT)));
 
     init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(), socketTimeoutMills,
             hangDetectionEnabled), eventLoopGroup);

@@ -55,7 +55,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.RpcConnectionParamBuilder;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
@@ -96,7 +96,7 @@ public class QueryMasterTask extends CompositeService {
 
   private TajoConf systemConf;
 
-  private Properties rpcConnParams;
+  private Properties rpcParams;
 
   private AtomicLong lastClientHeartbeat = new AtomicLong(-1);
 
@@ -135,7 +135,7 @@ public class QueryMasterTask extends CompositeService {
   @Override
   public void serviceInit(Configuration conf) throws Exception {
     systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    rpcConnParams = RpcConnectionParamBuilder.get(systemConf);
+    rpcParams = RpcParameterFactory.get(systemConf);
 
     queryTaskContext = new QueryMasterTaskContext();
 
@@ -259,7 +259,7 @@ public class QueryMasterTask extends CompositeService {
 
     try {
       tajoWorkerRpc = RpcClientManager.getInstance().getClient(workerAddress, TajoWorkerProtocol.class, true,
-          rpcConnParams);
+          rpcParams);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
       CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), callFuture);
@@ -477,7 +477,7 @@ public class QueryMasterTask extends CompositeService {
           public void run() {
             try {
               AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true,
-                  rpcConnParams);
+                  rpcParams);
               TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
               tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
             } catch (Throwable e) {

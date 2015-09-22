@@ -30,8 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.SessionVars.COMPRESSED_RESULT_TRANSFER;
 import static org.apache.tajo.SessionVars.FETCH_ROWNUM;
-import static org.apache.tajo.client.ConnectionPropertyHelper.ActionType.CONNECTION_PARAM;
-import static org.apache.tajo.client.ConnectionPropertyHelper.ActionType.SESSION_UPDATE;
+import static org.apache.tajo.client.ClientParameterHelper.ActionType.CONNECTION_PARAM;
+import static org.apache.tajo.client.ClientParameterHelper.ActionType.SESSION_UPDATE;
 import static org.apache.tajo.rpc.RpcConstants.CLIENT_CONNECTION_TIMEOUT;
 import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT;
 
@@ -52,7 +52,7 @@ import static org.apache.tajo.rpc.RpcConstants.CLIENT_SOCKET_TIMEOUT;
  *   against some network or connection problems. It determines how many times the connection will retry.</li>
  * </ul>
  */
-class ConnectionPropertyHelper {
+class ClientParameterHelper {
 
   public static Map<String, Action> PARAMETERS = new HashMap<>();
 

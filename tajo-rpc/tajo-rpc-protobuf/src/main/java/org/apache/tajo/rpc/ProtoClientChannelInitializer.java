@@ -35,7 +35,7 @@ class ProtoClientChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
   private final ChannelHandler handler;
   private final long idleTimeout;
-  private final boolean usePing;
+  private final boolean hangDetection;
 
   /**
    * Channel Pipe Initializer
@@ -49,7 +49,7 @@ class ProtoClientChannelInitializer extends ChannelInitializer<Channel> {
     this.handler = handler;
     this.defaultInstance = defaultInstance;
     this.idleTimeout = idleTimeout;
-    this.usePing = hangDetection;
+    this.hangDetection = hangDetection;
   }
 
   @Override
@@ -58,7 +58,7 @@ class ProtoClientChannelInitializer extends ChannelInitializer<Channel> {
     pipeline.addLast("idleStateHandler",
         new IdleStateHandler(idleTimeout, idleTimeout / 2, 0, TimeUnit.MILLISECONDS));
 
-    if (usePing) {
+    if (hangDetection) {
       pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
     }
     pipeline.addLast("frameDecoder", new ProtobufVarint32FrameDecoder());

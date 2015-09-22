@@ -18,7 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
-import com.facebook.presto.hive.shaded.com.google.common.collect.Maps;
+import com.google.common.collect.Maps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
@@ -176,7 +176,7 @@ public class TajoCli {
     }
   }
 
-  public TajoCli(TajoConf c, String [] args, @Nullable Properties connParams, InputStream in, OutputStream out)
+  public TajoCli(TajoConf c, String [] args, @Nullable Properties clientParams, InputStream in, OutputStream out)
       throws Exception {
 
     CommandLineParser parser = new PosixParser();
@@ -237,17 +237,17 @@ public class TajoCli {
     }
 
     // Get connection parameters
-    KeyValueSet connectionParameters =
-        new KeyValueSet(connParams == null ? new HashMap<String, String>() : Maps.fromProperties(connParams));
+    final KeyValueSet actualConnParams =
+        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams));
 
     if ((hostName == null) ^ (port == null)) {
       System.err.println(ERROR_PREFIX + "cannot find valid Tajo server address");
       throw new RuntimeException("cannot find valid Tajo server address");
     } else if (hostName != null && port != null) {
       conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, connectionParameters);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, actualConnParams);
     } else if (hostName == null && port == null) {
-      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, connectionParameters);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, actualConnParams);
     }
 
     try {

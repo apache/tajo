@@ -81,7 +81,7 @@ public class SessionConnection implements Closeable {
 
   private NettyClientBase client;
 
-  private Properties clientConnParams;
+  private Properties clientParams;
 
   private final KeyValueSet properties;
 
@@ -103,7 +103,7 @@ public class SessionConnection implements Closeable {
     this.manager = RpcClientManager.getInstance();
     this.userInfo = UserRoleInfo.getCurrentUser();
     // update the connection parameters to RPC client from connection properties
-    this.clientConnParams = ConnectionPropertyHelper.getConnParams(properties.getAllKeyValus().entrySet());
+    this.clientParams = ClientParameterHelper.getConnParams(properties.getAllKeyValus().entrySet());
 
     this.eventLoopGroup = NettyUtils.createEventLoopGroup(getClass().getSimpleName(), 4);
     try {
@@ -114,7 +114,7 @@ public class SessionConnection implements Closeable {
     }
 
     // update the session variables from connection parameters
-    updateSessionVariables(ConnectionPropertyHelper.getSessionVars(properties.getAllKeyValus().entrySet()));
+    updateSessionVariables(ClientParameterHelper.getSessionVars(properties.getAllKeyValus().entrySet()));
   }
 
   public Map<String, String> getClientSideSessionVars() {
@@ -132,7 +132,7 @@ public class SessionConnection implements Closeable {
 
         // Client do not closed on idle state for support high available
         this.client = manager.newBlockingClient(getTajoMasterAddr(), TajoMasterClientProtocol.class,
-            eventLoopGroup, clientConnParams);
+            eventLoopGroup, clientParams);
       } catch (Throwable t) {
         throw new TajoRuntimeException(new ClientConnectionException(t));
       }

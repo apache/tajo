@@ -35,7 +35,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.RpcConnectionParamBuilder;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
@@ -58,7 +58,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   private final Map<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap;
   private final Dispatcher dispatcher;
   private TaskExecutor executor;
-  private final Properties rpcClientParams;
+  private final Properties rpcParams;
 
   public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext){
     this(dispatcher, workerContext, null);
@@ -71,7 +71,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     this.workerContext = workerContext;
     this.executionBlockContextMap = Maps.newHashMap();
     this.executor = executor;
-    this.rpcClientParams = RpcConnectionParamBuilder.get(this.workerContext.getConf());
+    this.rpcParams = RpcParameterFactory.get(this.workerContext.getConf());
   }
 
   @Override
@@ -120,7 +120,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
       request.setExecutionBlockId(executionBlockId.getProto())
           .setWorker(getWorkerContext().getConnectionInfo().getProto());
 
-      client = RpcClientManager.getInstance().newClient(address, QueryMasterProtocol.class, true, rpcClientParams);
+      client = RpcClientManager.getInstance().newClient(address, QueryMasterProtocol.class, true, rpcParams);
       QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
       CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<ExecutionBlockContextResponse>();
       stub.getExecutionBlockContext(callback.getController(), request.build(), callback);

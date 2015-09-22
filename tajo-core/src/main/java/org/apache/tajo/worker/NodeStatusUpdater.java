@@ -35,7 +35,7 @@ import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
-import org.apache.tajo.util.RpcConnectionParamBuilder;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 
@@ -65,7 +65,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
   private final TajoWorker.WorkerContext workerContext;
   private AsyncRpcClient rmClient;
-  private Properties rpcClientParams;
+  private Properties rpcParams;
   private ServiceTracker serviceTracker;
   private TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService.Interface resourceTracker;
   private int queueingThreshold;
@@ -79,7 +79,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   public void serviceInit(Configuration conf) throws Exception {
 
     this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    this.rpcClientParams = RpcConnectionParamBuilder.get(this.systemConf);
+    this.rpcParams = RpcParameterFactory.get(this.systemConf);
     this.heartBeatRequestQueue = Queues.newLinkedBlockingQueue();
     this.serviceTracker = ServiceTrackerFactory.get(systemConf);
     this.workerContext.getNodeResourceManager().getDispatcher().register(NodeStatusEvent.EventType.class, this);
@@ -153,7 +153,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
     RpcClientManager rpcManager = RpcClientManager.getInstance();
     rmClient = rpcManager.newClient(serviceTracker.getResourceTrackerAddress(),
-        TajoResourceTrackerProtocol.class, true, rpcClientParams);
+        TajoResourceTrackerProtocol.class, true, rpcParams);
     return rmClient.getStub();
   }
 
