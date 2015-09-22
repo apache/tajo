@@ -130,7 +130,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     }
   }
 
-  public EvalNode visitUnaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, UnaryEval unary) {
+  public EvalNode visitUnaryEval(EvalCodeGenContext context, UnaryEval unary, Stack<EvalNode> stack) {
     stack.push(unary);
     if (unary.getType() == EvalType.CAST) {
       visitCast(context, stack, (CastEval) unary);
@@ -349,7 +349,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return cast;
   }
 
-  public EvalNode visitField(EvalCodeGenContext context, Stack<EvalNode> stack, FieldEval field) {
+  public EvalNode visitField(EvalCodeGenContext context, FieldEval field, Stack<EvalNode> stack) {
 
     if (field.getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
       context.pushNullOfThreeValuedLogic();

@@ -25,8 +25,7 @@ public class NotImplementedException extends TajoException {
   private static final long serialVersionUID = -5467580471721530536L;
 
   public NotImplementedException() {
-    super(Errors.ResultCode.NOT_IMPLEMENTED,
-        Thread.currentThread().getStackTrace()[1].getClassName());
+    super(Errors.ResultCode.NOT_IMPLEMENTED, ExceptionUtil.getExceptionPoint());
   }
 
   public NotImplementedException(ReturnState state) {

@@ -87,7 +87,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
 
     tableSpaceUri = "hbase:zk://" + hostName + ":" + zkPort;
-    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
+    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri), null);
     hBaseTablespace.init(new TajoConf(testingCluster.getHBaseUtil().getConf()));
     TablespaceManager.addTableSpaceForTest(hBaseTablespace);
   }
@@ -484,7 +484,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         new ConstEval(new TextDatum("021")));
     scanNode.setQual(evalNodeEq);
     Tablespace tablespace = TablespaceManager.getByName("cluster1").get();
-    List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
+    List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(1, fragments.size());
     assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));
     assertEquals("021" + postFix, new String(((HBaseFragment)fragments.get(0)).getStopRow()));
@@ -497,7 +497,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeA = new BinaryEval(EvalType.AND, evalNode1, evalNode2);
     scanNode.setQual(evalNodeA);
 
-    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(2, fragments.size());
     HBaseFragment fragment1 = (HBaseFragment) fragments.get(0);
     assertEquals("020", new String(fragment1.getStartRow()));
@@ -512,7 +512,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         new ConstEval(new TextDatum("075")));
     EvalNode evalNodeB = new BinaryEval(EvalType.OR, evalNodeA, evalNode3);
     scanNode.setQual(evalNodeB);
-    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(3, fragments.size());
     fragment1 = (HBaseFragment) fragments.get(0);
     assertEquals("020", new String(fragment1.getStartRow()));
@@ -535,7 +535,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
     EvalNode evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
     scanNode.setQual(evalNodeD);
-    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(3, fragments.size());
 
     fragment1 = (HBaseFragment) fragments.get(0);
@@ -558,7 +558,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
     evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
     scanNode.setQual(evalNodeD);
-    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode);
+    fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(2, fragments.size());
 
     fragment1 = (HBaseFragment) fragments.get(0);

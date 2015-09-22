@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,20 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.exception;
+package org.apache.tajo.storage.pgsql;
 
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import org.apache.tajo.storage.jdbc.JdbcMetadataProviderBase;
 
-public class PartitionNotFoundException extends TajoException {
+import javax.annotation.Nullable;
+import java.util.Collection;
 
-  private static final long serialVersionUID = 277182608283894939L;
+public class PgSQLMetadataProvider extends JdbcMetadataProviderBase {
 
-  public PartitionNotFoundException(ReturnState state) {
-    super(state);
+  public PgSQLMetadataProvider(PgSQLTablespace space, String dbName) {
+    super(space, dbName);
   }
 
-  public PartitionNotFoundException(String tableName) {
-    super(ResultCode.PARTITION_NOT_FOUND, tableName);
+  @Override
+  protected String getJdbcDriverName() {
+    return "org.postgresql.Driver";
+  }
+
+  @Override
+  public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
+    return super.getTables("public", tablePattern);
   }
 }

@@ -19,6 +19,7 @@
 package org.apache.tajo.querymaster;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -113,7 +114,7 @@ public class Repartitioner {
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
         Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-        List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc);
+        List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc, null);
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
         } else {
@@ -389,8 +390,8 @@ public class Repartitioner {
 
         } else {
 
-          Collection<Fragment> scanFragments = space.getSplits(eachScan.getCanonicalName(),
-              tableDesc, eachScan);
+          Collection<Fragment> scanFragments =
+              space.getSplits(eachScan.getCanonicalName(), tableDesc, eachScan.getQual());
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
@@ -460,22 +461,24 @@ public class Repartitioner {
   /**
    * It creates a number of fragments for all partitions.
    */
-  public static List<Fragment> getFragmentsFromPartitionedTable(FileTablespace sm,
+  public static List<Fragment> getFragmentsFromPartitionedTable(Tablespace tsHandler,
                                                                           ScanNode scan,
                                                                           TableDesc table) throws IOException {
+    Preconditions.checkArgument(tsHandler instanceof FileTablespace, "tsHandler must be FileTablespace");
     if (!(scan instanceof PartitionedTableScanNode)) {
       throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
     }
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
-    fragments.addAll(sm.getSplits(
+    fragments.addAll(((FileTablespace) tsHandler).getSplits(
         scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getInputPaths()));
     partitionsScan.setInputPaths(null);
     return fragments;
   }
 
   private static void scheduleLeafTasksWithBroadcastTable(TaskSchedulerContext schedulerContext, Stage stage,
-                                                          int baseScanId, Fragment[] fragments) throws IOException {
+                                                          int baseScanId, Fragment[] fragments)
+      throws IOException, TajoException {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode[] scans = execBlock.getScanNodes();
 
@@ -499,20 +502,20 @@ public class Repartitioner {
     for (int i = 0; i < scans.length; i++) {
       ScanNode scan = scans[i];
       TableDesc desc = stage.getContext().getTableDesc(scan);
-      TableMeta meta = desc.getMeta();
 
       Collection<Fragment> scanFragments;
       Path[] partitionScanPaths = null;
 
-      FileTablespace space = (FileTablespace) TablespaceManager.get(desc.getUri()).get();
+
+      Tablespace space = TablespaceManager.get(desc.getUri()).get();
 
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
+        PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scan;
         partitionScanPaths = partitionScan.getInputPaths();
         // set null to inputPaths in getFragmentsFromPartitionedTable()
         scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
       } else {
-        scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan);
+        scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan.getQual());
       }
 
       if (scanFragments != null) {

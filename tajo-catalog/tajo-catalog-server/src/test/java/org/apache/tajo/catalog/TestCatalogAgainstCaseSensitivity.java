@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
-import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.UndefinedPartitionException;
@@ -68,16 +67,14 @@ public class TestCatalogAgainstCaseSensitivity {
         addCommand(
             AlterTablespaceCommand.newBuilder().
                 setType(AlterTablespaceType.LOCATION).
-                setLocation(SetLocation.newBuilder()
-                    .setUri("hdfs://zzz.com/warehouse"))).build());
+                setLocation("hdfs://zzz.com/warehouse")).build());
 
     catalog.alterTablespace(AlterTablespaceProto.newBuilder().
         setSpaceName("SpAcE1").
         addCommand(
             AlterTablespaceCommand.newBuilder().
                 setType(AlterTablespaceType.LOCATION).
-                setLocation(SetLocation.newBuilder()
-                    .setUri("hdfs://zzz.com/warehouse"))).build());
+                setLocation("hdfs://zzz.com/warehouse")).build());
 
     Set<TablespaceProto> tablespaceProtos = new HashSet<>();
     for (String tablespaceName : catalog.getAllTablespaceNames()) {
@@ -197,7 +194,7 @@ public class TestCatalogAgainstCaseSensitivity {
     // Test get partitions of a table
     //////////////////////////////////////////////////////////////////////////////
 
-    List<PartitionDescProto> partitionDescs = catalog.getAllPartitions("TestDatabase1", "TestPartition1");
+    List<PartitionDescProto> partitionDescs = catalog.getPartitions("TestDatabase1", "TestPartition1");
     assertEquals(2, partitionDescs.size());
     Map<String, PartitionDescProto> tablePartitionMap = new HashMap<>();
     for (PartitionDescProto eachPartition : partitionDescs) {

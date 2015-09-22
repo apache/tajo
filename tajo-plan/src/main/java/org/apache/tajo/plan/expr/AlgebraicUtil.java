@@ -18,19 +18,15 @@
 
 package org.apache.tajo.plan.expr;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
 public class AlgebraicUtil {
-
+  
   /**
    * Transpose a given comparison expression into the expression 
    * where the variable corresponding to the target is placed 
@@ -160,7 +156,7 @@ public class AlgebraicUtil {
     }
 
     @Override
-    public EvalNode visitUnaryEval(Object context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+    public EvalNode visitUnaryEval(Object context, UnaryEval unaryEval, Stack<EvalNode> stack) {
       stack.push(unaryEval);
       EvalNode child = visit(context, unaryEval.getChild(), stack);
       stack.pop();
@@ -497,190 +493,4 @@ public class AlgebraicUtil {
       return super.visitTimeLiteral(ctx, stack, expr);
     }
   }
-
-  /**
-   * Find the top expr matched to type from the given expr
-   *
-   * @param expr start expr
-   * @param type to find
-   * @return a found expr
-   */
-  public static <T extends Expr> T findTopExpr(Expr expr, OpType type) throws TajoException {
-    Preconditions.checkNotNull(expr);
-    Preconditions.checkNotNull(type);
-
-    ExprFinder finder = new ExprFinder(type);
-    finder.visit(null, new Stack<Expr>(), expr);
-
-    if (finder.getFoundExprs().size() == 0) {
-      return null;
-    }
-    return (T) finder.getFoundExprs().get(0);
-  }
-
-  private static class ExprFinder extends SimpleAlgebraVisitor<Object, Expr> {
-    private List<Expr> list = new ArrayList<Expr>();
-    private final OpType[] tofind;
-    private boolean topmost = false;
-    private boolean finished = false;
-
-    public ExprFinder(OpType... type) {
-
-      this.tofind = type;
-    }
-
-    public ExprFinder(OpType[] type, boolean topmost) {
-      this(type);
-      this.topmost = topmost;
-    }
-
-    @Override
-    public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
-      if (!finished) {
-        for (OpType type : tofind) {
-          if (expr.getType() == type) {
-            list.add(expr);
-          }
-          if (topmost && list.size() > 0) {
-            finished = true;
-          }
-        }
-      }
-      return super.visit(ctx, stack, expr);
-    }
-
-    public List<Expr> getFoundExprs() {
-      return list;
-    }
-
-  }
-
-  public static Expr[] toConjunctiveNormalFormArray(Expr expr) {
-    List<Expr> list = new ArrayList<Expr>();
-    toConjunctiveNormalFormArrayRecursive(expr, list);
-    return list.toArray(new Expr[list.size()]);
-  }
-
-  private static void toConjunctiveNormalFormArrayRecursive(Expr node, List<Expr> found) {
-    if (node.getType() == OpType.And) {
-      toConjunctiveNormalFormArrayRecursive(((BinaryOperator) node).getLeft(), found);
-      toConjunctiveNormalFormArrayRecursive(((BinaryOperator) node).getRight(), found);
-    } else {
-      found.add(node);
-    }
-  }
-
-  /**
-   * It finds unique columns from a Expr.
-   */
-  public static LinkedHashSet<ColumnReferenceExpr> findUniqueColumnReferences(Expr expr) throws TajoException {
-    UniqueColumnReferenceFinder finder = new UniqueColumnReferenceFinder();
-    finder.visit(null, new Stack<Expr>(), expr);
-    return finder.getColumnRefs();
-  }
-
-  private static class UniqueColumnReferenceFinder extends SimpleAlgebraVisitor<Object, Expr> {
-    private LinkedHashSet<ColumnReferenceExpr> columnSet = Sets.newLinkedHashSet();
-    private ColumnReferenceExpr field = null;
-
-    @Override
-    public Expr visit(Object ctx, Stack<Expr> stack, Expr expr) throws TajoException {
-      if (expr.getType() == OpType.Column) {
-        field = (ColumnReferenceExpr) expr;
-        columnSet.add(field);
-      }
-      return super.visit(ctx, stack, expr);
-    }
-
-    public LinkedHashSet<ColumnReferenceExpr> getColumnRefs() {
-      return this.columnSet;
-    }
-
-  }
-
-  /**
-   * Build Exprs for all columns with a list of filter conditions.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Then, this methods will create three Exprs for (col1), (col2), (col3).
-   *
-   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
-   * There is no filter condition corresponding to col2.
-   * Then, the path filter conditions are corresponding to the followings:
-   *
-   * The first Expr: col1 = 'A'
-   * The second Expr: col2 IS NOT NULL
-   * The third Expr: col3 = 'C'
-   *
-   * 'IS NOT NULL' predicate is always true against the partition path.
-   *
-   *
-   * @param partitionColumns
-   * @param conjunctiveForms
-   * @return
-   */
-  public static Expr[] getAccumulatedFiltersByExpr(String tableName,
-    List<CatalogProtos.ColumnProto> partitionColumns, Expr[] conjunctiveForms) throws TajoException {
-    Expr[] filters = new Expr[partitionColumns.size()];
-    Column target;
-
-    for (int i = 0; i < partitionColumns.size(); i++) {
-      List<Expr> accumulatedFilters = TUtil.newList();
-      target = new Column(partitionColumns.get(i));
-      ColumnReferenceExpr columnReference = new ColumnReferenceExpr(tableName, target.getSimpleName());
-
-      if (conjunctiveForms == null) {
-        accumulatedFilters.add(new IsNullPredicate(true, columnReference));
-      } else {
-        for (Expr expr : conjunctiveForms) {
-          if (AlgebraicUtil.findUniqueColumnReferences(expr).contains(columnReference)) {
-            // Accumulate one qual per level
-            accumulatedFilters.add(expr);
-          }
-        }
-
-        if (accumulatedFilters.size() == 0) {
-          accumulatedFilters.add(new IsNullPredicate(true, columnReference));
-        }
-      }
-
-      Expr filterPerLevel = AlgebraicUtil.createSingletonExprFromCNFByExpr(
-        accumulatedFilters.toArray(new Expr[accumulatedFilters.size()]));
-      filters[i] = filterPerLevel;
-    }
-
-    return filters;
-  }
-
-  public static Expr createSingletonExprFromCNFByExpr(Collection<Expr> cnfExprs) {
-    return createSingletonExprFromCNFByExpr(cnfExprs.toArray(new Expr[cnfExprs.size()]));
-  }
-
-  /**
-   * Convert a list of conjunctive normal forms into a singleton expression.
-   *
-   * @param cnfExprs
-   * @return The EvalNode object that merges all CNF-formed expressions.
-   */
-  public static Expr createSingletonExprFromCNFByExpr(Expr... cnfExprs) {
-    if (cnfExprs.length == 1) {
-      return cnfExprs[0];
-    }
-
-    return createSingletonExprFromCNFRecursiveByExpr(cnfExprs, 0);
-  }
-
-  private static Expr createSingletonExprFromCNFRecursiveByExpr(Expr[] exprs, int idx) {
-    if (idx >= exprs.length) {
-      throw new ArrayIndexOutOfBoundsException("index " + idx + " is exceeded the maximum length ("+
-        exprs.length+") of EvalNode");
-    }
-
-    if (idx == exprs.length - 2) {
-      return new BinaryOperator(OpType.And, exprs[idx], exprs[idx + 1]);
-    } else {
-      return new BinaryOperator(OpType.And, exprs[idx], createSingletonExprFromCNFRecursiveByExpr(exprs, idx + 1));
-    }
-  }
-
 }

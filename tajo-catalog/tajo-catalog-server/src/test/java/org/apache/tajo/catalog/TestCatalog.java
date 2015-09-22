@@ -47,7 +47,6 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
 
 public class TestCatalog {
@@ -99,7 +98,7 @@ public class TestCatalog {
     AlterTablespaceProto.AlterTablespaceCommand.Builder commandBuilder =
         AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
     commandBuilder.setType(AlterTablespaceType.LOCATION);
-    commandBuilder.setLocation(SetLocation.newBuilder().setUri("hdfs://zzz.com/warehouse"));
+    commandBuilder.setLocation("hdfs://zzz.com/warehouse");
     AlterTablespaceProto.Builder alter = AlterTablespaceProto.newBuilder();
     alter.setSpaceName("space1");
     alter.addCommand(commandBuilder.build());
@@ -122,7 +121,7 @@ public class TestCatalog {
     // ALTER TABLESPACE space1 LOCATION 'hdfs://zzz.com/warehouse';
     commandBuilder = AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
     commandBuilder.setType(AlterTablespaceType.LOCATION);
-    commandBuilder.setLocation(SetLocation.newBuilder().setUri("hdfs://www.com/warehouse"));
+    commandBuilder.setLocation("hdfs://www.com/warehouse");
     alter = AlterTablespaceProto.newBuilder();
     alter.setSpaceName("space2");
     alter.addCommand(commandBuilder.build());
@@ -816,14 +815,14 @@ public class TestCatalog {
     testAddPartition(tableName, "id=10/name=aaa");
     testAddPartition(tableName, "id=20/name=bbb");
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 2);
 
     testDropPartition(tableName, "id=10/name=aaa");
     testDropPartition(tableName, "id=20/name=bbb");
 
-    partitions = catalog.getAllPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
 

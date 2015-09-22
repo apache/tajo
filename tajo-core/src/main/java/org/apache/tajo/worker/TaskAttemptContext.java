@@ -139,7 +139,10 @@ public class TaskAttemptContext {
   
   public void setState(TaskAttemptState state) {
     this.state = state;
-    LOG.info("Query status of " + getTaskId() + " is changed to " + state);
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Query status of " + getTaskId() + " is changed to " + state);
+    }
   }
 
   public void setDataChannel(DataChannel dataChannel) {

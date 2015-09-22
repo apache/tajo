@@ -43,7 +43,7 @@ public class TestHBaseTableSpace {
   @BeforeClass
   public static void setUp() throws IOException {
     String tableSpaceUri = "hbase:zk://host1:2171";
-    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri));
+    HBaseTablespace hBaseTablespace = new HBaseTablespace("cluster1", URI.create(tableSpaceUri), null);
     hBaseTablespace.init(new TajoConf());
     TablespaceManager.addTableSpaceForTest(hBaseTablespace);
   }
@@ -74,7 +74,8 @@ public class TestHBaseTableSpace {
     scanNode.setQual(evalNodeA);
 
     HBaseTablespace storageManager = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
-    List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
+    List<Set<EvalNode>> indexEvals =
+        storageManager.findIndexablePredicateSet(scanNode.getQual(), new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());
     Pair<Datum, Datum> indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));
@@ -85,7 +86,7 @@ public class TestHBaseTableSpace {
     EvalNode evalNode3 = new BinaryEval(EvalType.EQUAL, new FieldEval(rowkeyColumn),new ConstEval(new TextDatum("075")));
     EvalNode evalNodeB = new BinaryEval(EvalType.OR, evalNodeA, evalNode3);
     scanNode.setQual(evalNodeB);
-    indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
+    indexEvals = storageManager.findIndexablePredicateSet(scanNode.getQual(), new Column[]{rowkeyColumn});
     assertEquals(2, indexEvals.size());
     indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));
     assertEquals("020", indexPredicateValue.getFirst().asChars());
@@ -101,7 +102,7 @@ public class TestHBaseTableSpace {
     EvalNode evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
     EvalNode evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
     scanNode.setQual(evalNodeD);
-    indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
+    indexEvals = storageManager.findIndexablePredicateSet(scanNode.getQual(), new Column[]{rowkeyColumn});
     assertEquals(2, indexEvals.size());
 
     indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));
@@ -120,7 +121,7 @@ public class TestHBaseTableSpace {
     evalNodeD = new BinaryEval(EvalType.AND, evalNodeC, evalNode6);
     EvalNode evalNodeE = new BinaryEval(EvalType.OR, evalNodeA, evalNodeD);
     scanNode.setQual(evalNodeE);
-    indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
+    indexEvals = storageManager.findIndexablePredicateSet(scanNode.getQual(), new Column[]{rowkeyColumn});
     assertEquals(2, indexEvals.size());
 
     indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));

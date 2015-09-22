@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
@@ -84,7 +85,7 @@ public class CatalogServer extends AbstractService {
   private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
       List<FunctionDescProto>>();
 
-  protected final LinkedMetadataManager linkedMetadataManager;
+  protected LinkedMetadataManager linkedMetadataManager;
   protected final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
@@ -102,7 +103,8 @@ public class CatalogServer extends AbstractService {
     this.builtingFuncs = new ArrayList<FunctionDesc>();
   }
 
-  public CatalogServer(Set<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs) throws IOException {
+  public CatalogServer(Collection<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs)
+      throws IOException {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
     this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
@@ -190,6 +192,15 @@ public class CatalogServer extends AbstractService {
       store.close();
     }
     super.serviceStop();
+  }
+
+  /**
+   * Refresh the linked metadata manager. This must be used for only testing.
+   * @param metadataProviders
+   */
+  @VisibleForTesting
+  public void refresh(Collection<MetadataProvider> metadataProviders) {
+    this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
   }
 
   public CatalogProtocolHandler getHandler() {
@@ -363,11 +374,11 @@ public class CatalogServer extends AbstractService {
           for (AlterTablespaceCommand command : request.getCommandList()) {
             if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
               try {
-                URI uri = URI.create(command.getLocation().getUri());
+                URI uri = URI.create(command.getLocation());
                 Preconditions.checkArgument(uri.getScheme() != null);
               } catch (Exception e) {
                 throw new ServiceException("ALTER TABLESPACE's LOCATION must be a URI form (scheme:///.../), but "
-                    + command.getLocation().getUri());
+                    + command.getLocation());
               }
             }
           }
@@ -962,7 +973,7 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, TableIdentifierProto request)
+    public GetPartitionsResponse getPartitionsByTableName(RpcController controller, PartitionIdentifierProto request)
       throws ServiceException {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
@@ -985,7 +996,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
 
-        List<PartitionDescProto> partitions = store.getAllPartitions(dbName, tbName);
+        List<PartitionDescProto> partitions = store.getPartitions(dbName, tbName);
 
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
         for (PartitionDescProto partition : partitions) {
@@ -1025,90 +1036,6 @@ public class CatalogServer extends AbstractService {
         return GetTablePartitionsResponse.newBuilder()
             .setState(returnError(t))
             .build();
-
-      } finally {
-        rlock.unlock();
-      }
-    }
-
-    @Override
-    public GetPartitionsResponse getPartitionsByAlgebra(RpcController controller,
-      PartitionsByAlgebraProto request) throws ServiceException {
-      String dbName = request.getDatabaseName();
-      String tbName = request.getTableName();
-
-      try {
-        // linked meta data do not support partition.
-        // So, the request that wants to get partitions in this db will be failed.
-        if (linkedMetadataManager.existsDatabase(dbName)) {
-          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-        }
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
-      }
-
-      if (metaDictionary.isSystemDatabase(dbName)) {
-        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-      }
-
-      rlock.lock();
-      try {
-        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        List<PartitionDescProto> partitions = store.getPartitionsByAlgebra(request);
-        builder.addAllPartition(partitions);
-        builder.setState(OK);
-        return builder.build();
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
-
-      } finally {
-        rlock.unlock();
-      }
-    }
-
-    @Override
-    public GetPartitionsResponse getPartitionsByFilter(RpcController controller,
-                                                 PartitionsByFilterProto request) throws ServiceException {
-      String dbName = request.getDatabaseName();
-      String tbName = request.getTableName();
-
-      try {
-        // linked meta data do not support partition.
-        // So, the request that wants to get partitions in this db will be failed.
-        if (linkedMetadataManager.existsDatabase(dbName)) {
-          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-        }
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
-      }
-
-      if (metaDictionary.isSystemDatabase(dbName)) {
-        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-      }
-
-      rlock.lock();
-      try {
-        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        List<PartitionDescProto> partitions = store.getPartitionsByFilter(request);
-        builder.addAllPartition(partitions);
-        builder.setState(OK);
-        return builder.build();
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
 
       } finally {
         rlock.unlock();
