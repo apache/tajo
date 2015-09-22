@@ -25,12 +25,8 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.exception.PartitionNotFoundException;
-import org.apache.tajo.exception.SQLSyntaxError;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.junit.rules.ExpectedException;
 
 import java.sql.ResultSet;
 import java.util.List;
@@ -39,9 +35,6 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestAlterTable extends QueryTestCaseBase {
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
-
   @Test
   public final void testAlterTableName() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "ABC");
@@ -113,8 +106,6 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
 
-    exception.expect(PartitionNotFoundException.class);
-    exception.expectMessage("there is no partitions in 'partitioned_table' table");
     partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
