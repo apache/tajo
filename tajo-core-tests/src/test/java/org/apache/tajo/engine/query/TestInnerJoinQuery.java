@@ -51,27 +51,6 @@ public class TestInnerJoinQuery extends TestJoinQuery {
 
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
-  @SimpleTest(queries = {
-      @QuerySpec("select n_name, r_name, n_regionkey, r_regionkey from nation, region order by n_name, r_name"),
-      // testCrossJoinWithAsterisk
-      @QuerySpec("select region.*, customer.* from region, customer"),
-      @QuerySpec("select region.*, customer.* from customer, region"),
-      @QuerySpec("select * from customer, region"),
-      @QuerySpec("select length(r_comment) as len, *, c_custkey*10 from customer, region order by len,r_regionkey,r_name")
-  })
-  public final void testCrossJoin() throws Exception {
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
-  @SimpleTest()
-  public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest()
   public final void testInnerJoinWithThetaJoinConditionInWhere() throws Exception {
     runSimpleTests();
@@ -171,13 +150,6 @@ public class TestInnerJoinQuery extends TestJoinQuery {
 
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
-  public final void testCrossJoinWithEmptyTable1() throws Exception {
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest(prepare = {
       "CREATE DATABASE JOINS",
       "CREATE TABLE JOINS.part_ as SELECT * FROM part",
@@ -232,7 +204,7 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   public void testDifferentTypesJoinCondition() throws Exception {
     // select * from table20 t3 join table21 t4 on t3.id = t4.id;
     executeDDL("table1_int8_ddl.sql", "table1", "table20");
-    executeDDL("table1_int4_ddl.sql", "table1", "table21");
+    executeDDL("table1_int4_ddl.sql", "table2", "table21");
     try {
       runSimpleTests();
     } finally {
@@ -284,45 +256,6 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest()
   public final void testNaturalJoin() throws Exception {
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
-  public void testCrossJoinAndCaseWhen() throws Exception {
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
-  public void testCrossJoinWithAsterisk1() throws Exception {
-    // select region.*, customer.* from region, customer;
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
-  public void testCrossJoinWithAsterisk2() throws Exception {
-    // select region.*, customer.* from customer, region;
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
-  public void testCrossJoinWithAsterisk3() throws Exception {
-    // select * from customer, region
-    runSimpleTests();
-  }
-
-  @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
-  @SimpleTest()
-  public void testCrossJoinWithAsterisk4() throws Exception {
-    // select length(r_regionkey), *, c_custkey*10 from customer, region
     runSimpleTests();
   }
 

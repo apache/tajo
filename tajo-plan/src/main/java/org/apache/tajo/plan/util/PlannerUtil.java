@@ -28,7 +28,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UndefinedTableException;
-import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
@@ -41,7 +40,6 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.io.IOException;
 import java.util.*;
 
 public class PlannerUtil {
@@ -121,7 +119,7 @@ public class PlannerUtil {
         PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
     boolean noComplexComputation = false;
-    boolean prefixPartitionWhere = false;
+    boolean partitionWhere = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
       if (scanNode == null) {
@@ -156,33 +154,18 @@ public class PlannerUtil {
         }
       }
 
-      /**
-       * TODO: Remove isExternal check after resolving the following issues
-       * - TAJO-1416: INSERT INTO EXTERNAL PARTITIONED TABLE
-       * - TAJO-1441: INSERT INTO MANAGED PARTITIONED TABLE
-       */
-      if (!noWhere && scanNode.getTableDesc().isExternal() && scanNode.getTableDesc().getPartitionMethod() != null) {
+      if (!noWhere && scanNode.getTableDesc().hasPartition()) {
         EvalNode node = ((SelectionNode) plan.getRootBlock().getNode(NodeType.SELECTION)).getQual();
         Schema partSchema = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema();
         if (EvalTreeUtil.checkIfPartitionSelection(node, partSchema)) {
-          prefixPartitionWhere = true;
-          boolean isPrefix = true;
-          for (Column c : partSchema.getRootColumns()) {
-            String value = EvalTreeUtil.getPartitionValue(node, c.getSimpleName());
-            if (isPrefix && value == null)
-              isPrefix = false;
-            else if (!isPrefix && value != null) {
-              prefixPartitionWhere = false;
-              break;
-            }
-          }
+          partitionWhere = true;
         }
       }
     }
 
     return !checkIfDDLPlan(rootNode) &&
         (simpleOperator && noComplexComputation && isOneQueryBlock &&
-            noOrderBy && noGroupBy && (noWhere || prefixPartitionWhere) && noJoin && singleRelation);
+            noOrderBy && noGroupBy && (noWhere || partitionWhere) && noJoin && singleRelation);
   }
   
   /**
@@ -306,10 +289,10 @@ public class PlannerUtil {
       } else if (binaryParent.getRightChild().deepEquals(child)) {
         binaryParent.setRightChild(grandChild);
       } else {
-        throw new IllegalStateException("ERROR: both logical node must be parent and child nodes");
+        throw new TajoInternalError("both logical node must be parent and child nodes");
       }
     } else {
-      throw new InvalidQueryException("Unexpected logical plan: " + parent);
+      throw new TajoInternalError("unexpected logical plan: " + parent);
     }
     return child;
   }
@@ -577,20 +560,6 @@ public class PlannerUtil {
     }
   }
 
-  /**
-   * fill targets with FieldEvals from a given schema
-   *
-   * @param schema  to be transformed to targets
-   * @param targets to be filled
-   */
-  public static void schemaToTargets(Schema schema, Target[] targets) {
-    FieldEval eval;
-    for (int i = 0; i < schema.size(); i++) {
-      eval = new FieldEval(schema.getColumn(i));
-      targets[i] = new Target(eval);
-    }
-  }
-
   public static Target[] schemaToTargets(Schema schema) {
     Target[] targets = new Target[schema.size()];
 
@@ -600,17 +569,6 @@ public class PlannerUtil {
       targets[i] = new Target(eval);
     }
     return targets;
-  }
-
-  public static Target[] schemaToTargetsWithGeneratedFields(Schema schema) {
-    List<Target> targets = TUtil.newList();
-
-    FieldEval eval;
-    for (int i = 0; i < schema.size(); i++) {
-      eval = new FieldEval(schema.getColumn(i));
-      targets.add(new Target(eval));
-    }
-    return targets.toArray(new Target[targets.size()]);
   }
 
   public static SortSpec[] schemaToSortSpecs(Schema schema) {
@@ -1008,5 +966,30 @@ public class PlannerUtil {
       }
     }
     return inSubqueries;
+  }
+
+  /**
+   * Return a list of integers, maps input schema and projected columns.
+   * Each integer value means a column index of input schema corresponding to each project column
+   *
+   * @param inputSchema Input Schema
+   * @param targets Columns to be projected
+   * @return A list of integers, each of which is an index number of input schema corresponding
+   *         to each projected column.
+   */
+  public static int [] getTargetIds(Schema inputSchema, Column...targets) {
+    int [] targetIds = new int[targets.length];
+    for (int i = 0; i < targetIds.length; i++) {
+      targetIds[i] = inputSchema.getColumnId(targets[i].getQualifiedName());
+    }
+    Arrays.sort(targetIds);
+
+    return targetIds;
+  }
+
+  public static List<EvalNode> getAllEqualEvals(EvalNode qual) {
+    EvalTreeUtil.EvalFinder finder = new EvalTreeUtil.EvalFinder(EvalType.EQUAL);
+    finder.visit(null, qual, new Stack<EvalNode>());
+    return finder.getEvalNodes();
   }
 }

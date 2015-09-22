@@ -111,7 +111,7 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
     }
 
     @Override
-    protected EvalNode visitUnaryEval(Object context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+    protected EvalNode visitUnaryEval(Object context, UnaryEval unaryEval, Stack<EvalNode> stack) {
       stack.push(unaryEval);
       EvalNode child = unaryEval.getChild();
       visit(context, child, stack);

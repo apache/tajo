@@ -20,15 +20,17 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
@@ -61,7 +63,7 @@ public class TestExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 100000;
+  private final int numTuple = 1000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -70,7 +72,8 @@ public class TestExternalSortExec {
   public void setUp() throws Exception {
     this.conf = new TajoConf();
     util = new TajoTestingCluster();
-    catalog = util.startCatalogCluster().getCatalog();
+    util.startCatalogCluster();
+    catalog = util.getCatalogService();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
@@ -117,10 +120,14 @@ public class TestExternalSortExec {
 
   @Test
   public final void testNext() throws IOException, TajoException {
+    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, 1024*1024);
+
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
         LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
@@ -140,10 +147,7 @@ public class TestExternalSortExec {
 
       extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
       proj.setChild(extSort);
-    } else {
-      extSort = proj.getChild();
     }
-    extSort.setSortBufferBytesNum(1024*1024);
 
     Tuple tuple;
     Tuple preVal = null;
@@ -183,5 +187,6 @@ public class TestExternalSortExec {
     assertEquals(numTuple, cnt);
     exec.close();
     System.out.println("Sort Time: " + (end - start) + " msc");
+    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);
   }
 }

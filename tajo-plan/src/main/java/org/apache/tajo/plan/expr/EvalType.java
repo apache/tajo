@@ -21,10 +21,11 @@ package org.apache.tajo.plan.expr;
 public enum EvalType {
   // Unary expression
   NOT(NotEval.class, "!"),
+  SIGNED(SignedEval.class),
 
   // Binary expression
-  AND(BinaryEval.class),
-  OR(BinaryEval.class),
+  AND(BinaryEval.class, "AND"),
+  OR(BinaryEval.class, "OR"),
   EQUAL(BinaryEval.class, "="),
   IS_NULL(IsNullEval.class),
   NOT_EQUAL(BinaryEval.class, "<>"),
@@ -49,19 +50,18 @@ public enum EvalType {
   FUNCTION(GeneralFunctionEval.class),
 
   // String operator or pattern matching predicates
-  LIKE(LikePredicateEval.class),
-  SIMILAR_TO(SimilarToPredicateEval.class),
-  REGEX(RegexPredicateEval.class),
+  LIKE(LikePredicateEval.class, "LIKE"),
+  SIMILAR_TO(SimilarToPredicateEval.class, "SIMILAR TO"),
+  REGEX(RegexPredicateEval.class, "REGEX"),
   CONCATENATE(BinaryEval.class, "||"),
 
   // Other predicates
   BETWEEN(BetweenPredicateEval.class),
   CASE(CaseWhenEval.class),
   IF_THEN(CaseWhenEval.IfThenEval.class),
-  IN(InEval.class),
+  IN(InEval.class, "IN"),
 
   // Value or Reference
-  SIGNED(SignedEval.class),
   CAST(CastEval.class),
   ROW_CONSTANT(RowConstantEval.class),
   FIELD(FieldEval.class),

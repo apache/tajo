@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.LogicalNode;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -58,6 +59,12 @@ public interface Scanner extends SchemaObject, Closeable {
    */
   void close() throws IOException;
 
+  /**
+   * Push a plan part into scanner. It will be used in future issues.
+   *
+   * @param planPart
+   */
+  void pushOperators(LogicalNode planPart);
 
   /**
    * It returns if the projection is executed in the underlying scanner layer.
@@ -95,6 +102,15 @@ public interface Scanner extends SchemaObject, Closeable {
    * TODO - to be changed Object type
    */
   void setFilter(EvalNode filter);
+
+
+  /**
+   * This method does not guarantee that the scanner will retrieve the specified number of rows.
+   * This information is used for a hint.
+   *
+   * @param num The number of rows to be retrieved.
+   */
+  void setLimit(long num);
 
   /**
    * It returns if the file is splittable.

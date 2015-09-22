@@ -23,14 +23,12 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
@@ -39,14 +37,11 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.jdbc.FetchResultSet;
-import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -80,9 +75,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testCreateColumnPartitionedTable() throws Exception {
-    ResultSet res = null;
+    ResultSet res;
     String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTable");
-
+    ClientProtos.SubmitQueryResponse response;
     if (nodeType == NodeType.INSERT) {
       res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
@@ -92,16 +87,22 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
       assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
 
-      res = testBase.execute(
-        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
-          "l_quantity from lineitem");
+      response = client.executeQuery(
+          "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+              "l_quantity from lineitem");
     } else {
-      res = testBase.execute(
-        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
-          + " as select l_orderkey, l_partkey, l_quantity from lineitem");
+      response = client.executeQuery(
+          "create table " + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
+              + " as select l_orderkey, l_partkey, l_quantity from lineitem");
     }
 
-    MasterPlan plan = getQueryPlan(res);
+    QueryId queryId = new QueryId(response.getQueryId());
+    testingCluster.waitForQuerySubmitted(queryId, 10);
+    QueryMasterTask queryMasterTask = testingCluster.getQueryMasterTask(queryId);
+    assertNotNull(queryMasterTask);
+    TajoClientUtil.waitCompletion(client, queryId);
+
+    MasterPlan plan = queryMasterTask.getQuery().getPlan();
     ExecutionBlock rootEB = plan.getRoot();
 
     assertEquals(1, plan.getChildCount(rootEB.getId()));
@@ -123,15 +124,15 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
-      tableDesc.getStats().getNumRows());
+        tableDesc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
-    res.close();
   }
 
   @Test
   public final void testCreateColumnPartitionedTableWithJoin() throws Exception {
-    ResultSet res = null;
+    ResultSet res;
+    ClientProtos.SubmitQueryResponse response;
     String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithJoin");
 
     if (nodeType == NodeType.INSERT) {
@@ -143,18 +144,23 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
       assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
 
-      res = testBase.execute(
-        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
-          "l_quantity from lineitem join orders on l_orderkey = o_orderkey");
+      response = client.executeQuery(
+          "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+              "l_quantity from lineitem join orders on l_orderkey = o_orderkey");
 
     } else {
-      res = testBase.execute("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) "
-        + " AS select l_orderkey, l_partkey, l_quantity from lineitem join orders on l_orderkey = o_orderkey");
+      response = client.executeQuery("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) "
+          + " AS select l_orderkey, l_partkey, l_quantity from lineitem join orders on l_orderkey = o_orderkey");
     }
 
-    MasterPlan plan = getQueryPlan(res);
-    ExecutionBlock rootEB = plan.getRoot();
+    QueryId queryId = new QueryId(response.getQueryId());
+    testingCluster.waitForQuerySubmitted(queryId, 10);
+    QueryMasterTask queryMasterTask = testingCluster.getQueryMasterTask(queryId);
+    assertNotNull(queryMasterTask);
+    TajoClientUtil.waitCompletion(client, queryId);
 
+    MasterPlan plan = queryMasterTask.getQuery().getPlan();
+    ExecutionBlock rootEB = plan.getRoot();
     assertEquals(1, plan.getChildCount(rootEB.getId()));
 
     ExecutionBlock insertEB = plan.getChild(rootEB.getId(), 0);
@@ -176,7 +182,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       tableDesc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
-    res.close();
   }
 
   @Test
@@ -203,7 +208,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
-      tableDesc.getStats().getNumRows());
+        tableDesc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -246,7 +251,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName,
-      new String[]{"key"}, desc.getStats().getNumRows());
+        new String[]{"key"}, desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
@@ -666,7 +671,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1"},
-      desc.getStats().getNumRows());
+        desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -725,7 +730,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2"},
-      desc.getStats().getNumRows());
+        desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1037,7 +1042,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col2"},
-      desc.getStats().getNumRows());
+        desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1071,25 +1076,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
-  }
-
-  private MasterPlan getQueryPlan(ResultSet res) {
-    QueryId queryId;
-    if (res instanceof TajoMemoryResultSet) {
-      queryId = ((TajoMemoryResultSet) res).getQueryId();
-    } else {
-      queryId = ((FetchResultSet) res).getQueryId();
-    }
-
-    for (TajoWorker eachWorker : testingCluster.getTajoWorkers()) {
-      QueryMasterTask queryMasterTask = eachWorker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
-      if (queryMasterTask != null) {
-        return queryMasterTask.getQuery().getPlan();
-      }
-    }
-
-    fail("Can't find query from workers" + queryId);
-    return null;
   }
 
   @Test
@@ -1296,6 +1282,47 @@ public class TestTablePartitions extends QueryTestCaseBase {
     // Check row count.
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(numRows, new Long(rowCount));
+    }
+  }
+
+  @Test
+  public final void testDuplicatedPartitions() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testDuplicatedPartitions");
+
+    try {
+      executeString("CREATE TABLE lineitem2 as select * from lineitem").close();
+
+      // Execute UNION ALL statement for creating multiple output files.
+      if (nodeType == NodeType.INSERT) {
+        executeString(
+          "create table " + tableName + " (col1 int4, col2 int4) partition by column(key text) ").close();
+
+        executeString(
+          "insert overwrite into " + tableName
+            + " select a.l_orderkey, a.l_partkey, a.l_returnflag from lineitem a union all"
+            + " select b.l_orderkey, b.l_partkey, b.l_returnflag from lineitem2 b"
+        ).close();
+      } else {
+        executeString(
+          "create table " + tableName + "(col1 int4, col2 int4) partition by column(key text) as "
+            + " select a.l_orderkey, a.l_partkey, a.l_returnflag from lineitem a union all"
+            + " select b.l_orderkey, b.l_partkey, b.l_returnflag from lineitem2 b"
+        ).close();
+      }
+
+      // If duplicated partitions had been removed, partitions just will contain 'KEY=N' partition and 'KEY=R'
+      // partition. In previous Query and Stage, duplicated partitions were not deleted because they had been in List.
+      // If you want to verify duplicated partitions, you need to use List instead of Set with DerbyStore.
+      List<PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, tableName);
+      assertEquals(2, partitions.size());
+
+      PartitionDescProto firstPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=N");
+      assertNotNull(firstPartition);
+      PartitionDescProto secondPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=R");
+      assertNotNull(secondPartition);
+    } finally {
+      executeString("DROP TABLE lineitem2 PURGE");
+      executeString("DROP TABLE " + tableName + " PURGE");
     }
   }
 }

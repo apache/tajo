@@ -292,13 +292,9 @@ message AlterTablespaceProto {
     LOCATION = 0;
   }
 
-  message SetLocation {
-    required string uri = 1;
-  }
-
   message AlterTablespaceCommand {
     required AlterTablespaceType type = 1;
-    optional SetLocation location = 2;
+    optional string location = 2;
   }
 }
 
@@ -310,6 +306,7 @@ message AlterTableDescProto {
   required AlterTableType alterTableType = 5;
   optional PartitionDescProto partitionDesc = 6;
   optional KeyValueSetProto params = 7;
+  optional string newTablePath = 8;
 }
 
 message AlterColumnProto {
@@ -405,4 +402,9 @@ message IndexListResponse {
 message IndexResponse {
   required ReturnState state = 1;
   optional IndexDescProto indexDesc = 2;
+}
+
+message PartitionListResponse {
+  required ReturnState state = 1;
+  repeated PartitionDescProto partition = 2;
 }

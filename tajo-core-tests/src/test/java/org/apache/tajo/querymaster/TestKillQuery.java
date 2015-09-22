@@ -25,12 +25,11 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.tajo.*;
 import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
 import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
@@ -52,7 +51,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,14 +73,12 @@ public class TestKillQuery {
     cluster.startMiniClusterInLocal(1);
     conf = cluster.getConfiguration();
     client = cluster.newTajoClient();
-    File file = TPCH.getDataFile("lineitem");
     client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
-        + "using text location 'file://" + file.getAbsolutePath() + "'");
+        + "using text location '" + TpchTestBase.getInstance().getPath("lineitem") + "'");
     assertTrue(client.existTable("default.lineitem"));
 
-    file = TPCH.getDataFile("customer");
     client.executeQueryAndGetResult("create external table default.customer (c_custkey int, c_name text) "
-        + "using text location 'file://" + file.getAbsolutePath() + "'");
+        + "using text location '" + TpchTestBase.getInstance().getPath("customer") + "'");
     assertTrue(client.existTable("default.customer"));
   }
 

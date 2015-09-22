@@ -34,7 +34,7 @@ import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
@@ -91,7 +91,7 @@ public class ExprTestBase {
     util = new TajoTestingCluster();
     conf = util.getConfiguration();
     util.startCatalogCluster();
-    cat = util.getMiniCatalogCluster().getCatalog();
+    cat = util.getCatalogService();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
@@ -129,7 +129,6 @@ public class ExprTestBase {
    * @param query a query for execution
    * @param condition this parameter means whether it is for success case or is not for failure case.
    * @return
-   * @throws PlanningException
    */
   private static Target[] getRawTargets(QueryContext context, String query, boolean condition)
       throws TajoException, InvalidStatementException {

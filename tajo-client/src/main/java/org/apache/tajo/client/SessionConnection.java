@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+import io.netty.channel.EventLoopGroup;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
@@ -26,24 +27,24 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.exception.ExceptionUtil;
-import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.client.v2.exception.ClientConnectionException;
+import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.NoSuchSessionVariableException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.ClientProtos.UpdateSessionVariableRequest;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
 import org.apache.tajo.service.ServiceTracker;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -54,22 +55,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.error.Errors.ResultCode.NO_SUCH_SESSION_VARIABLE;
-import static org.apache.tajo.error.Errors.ResultCode.UNDEFINED_DATABASE;
 import static org.apache.tajo.exception.ReturnStateUtil.*;
-import static org.apache.tajo.exception.SQLExceptionUtil.toSQLException;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionResponse;
 
 public class SessionConnection implements Closeable {
 
   private final static Log LOG = LogFactory.getLog(SessionConnection.class);
-
-  private final static AtomicInteger connections = new AtomicInteger();
 
   final RpcClientManager manager;
 
@@ -85,6 +80,8 @@ public class SessionConnection implements Closeable {
   private final Map<String, String> sessionVarsCache = new HashMap<String, String>();
 
   private final ServiceTracker serviceTracker;
+
+  private final EventLoopGroup eventLoopGroup;
 
   private NettyClientBase client;
 
@@ -109,7 +106,13 @@ public class SessionConnection implements Closeable {
     this.manager.setRetries(properties.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
     this.userInfo = UserRoleInfo.getCurrentUser();
 
-    this.client = getTajoMasterConnection();
+    this.eventLoopGroup = NettyUtils.createEventLoopGroup(getClass().getSimpleName(), 4);
+    try {
+      this.client = getTajoMasterConnection();
+    } catch (TajoRuntimeException e) {
+      NettyUtils.shutdown(eventLoopGroup);
+      throw e;
+    }
   }
 
   public Map<String, String> getClientSideSessionVars() {
@@ -126,18 +129,10 @@ public class SessionConnection implements Closeable {
         RpcClientManager.cleanup(client);
 
         // Client do not closed on idle state for support high available
-        this.client = manager.newClient(
-            getTajoMasterAddr(),
-            TajoMasterClientProtocol.class,
-            false,
-            manager.getRetries(),
-            0,
-            TimeUnit.SECONDS,
-            false);
-        connections.incrementAndGet();
-
+        this.client = manager.newBlockingClient(getTajoMasterAddr(), TajoMasterClientProtocol.class,
+            manager.getRetries(), eventLoopGroup);
       } catch (Throwable t) {
-        throw new ClientConnectionException(t);
+        throw new TajoRuntimeException(new ClientConnectionException(t));
       }
 
       return client;
@@ -222,6 +217,7 @@ public class SessionConnection implements Closeable {
 
     ensureOk(response.getState());
     updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+    properties.putAll(sessionVarsCache);
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
@@ -345,14 +341,7 @@ public class SessionConnection implements Closeable {
       // ignore
     } finally {
       RpcClientManager.cleanup(client);
-      if(connections.decrementAndGet() == 0) {
-        if (!System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equals(CommonTestingUtil.TAJO_TEST_TRUE)) {
-          RpcChannelFactory.shutdownGracefully();
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("RPC connection is closed");
-          }
-        }
-      }
+      NettyUtils.shutdown(eventLoopGroup);
     }
   }
 
@@ -388,7 +377,7 @@ public class SessionConnection implements Closeable {
           LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
         }
       } else {
-        throw new InvalidClientSessionException(sessionId.getId());
+        throw new TajoRuntimeException(response.getState());
       }
     }
   }
@@ -456,5 +445,4 @@ public class SessionConnection implements Closeable {
     }
     return builder.build();
   }
-
 }

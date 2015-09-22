@@ -31,7 +31,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
@@ -90,7 +90,7 @@ public class TestEvalTreeUtil {
   public static void setUp() throws Exception {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
-    catalog = util.getMiniCatalogCluster().getCatalog();
+    catalog = util.getCatalogService();
     for (FunctionDesc funcDesc : FunctionLoader.findLegacyFunctions()) {
       catalog.createFunction(funcDesc);
     }

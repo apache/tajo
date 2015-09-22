@@ -43,6 +43,11 @@ public class TajoException extends Exception implements DefaultTajoException {
     this.code = code;
   }
 
+  public TajoException(ResultCode code, Throwable t, String ... args) {
+    super(ErrorMessages.getMessage(code, args), t);
+    this.code = code;
+  }
+
   public TajoException(ResultCode code, String ... args) {
     super(ErrorMessages.getMessage(code, args));
     this.code = code;

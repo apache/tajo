@@ -39,7 +39,7 @@ public class BlockingRpcServer extends NettyServerBase {
   public BlockingRpcServer(final Class<?> protocol,
                            final Object instance,
                            final InetSocketAddress bindAddress,
-                           final int workerNum)
+                           final int threads)
       throws Exception {
 
     super(protocol.getSimpleName(), bindAddress);
@@ -55,7 +55,7 @@ public class BlockingRpcServer extends NettyServerBase {
     this.service = (BlockingService) method.invoke(null, instance);
     this.initializer = new ProtoServerChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
 
-    super.init(this.initializer, workerNum);
+    super.init(this.initializer, threads);
   }
 
   @ChannelHandler.Sharable

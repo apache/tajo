@@ -408,6 +408,7 @@ public class TestXMLCatalogSchemaManager {
     manager.createBaseSchema(conn);
     
     assertThat(manager.checkExistence(conn, DatabaseObjectType.TABLE, "TESTTABLE1"), is(true));
+    assertThat(manager.checkExistence(conn, DatabaseObjectType.TABLE, "testtable2"), is(true));
     assertThat(manager.checkExistence(conn, DatabaseObjectType.TABLE, "TESTTABLE3"), is(false));
     assertThat(manager.checkExistence(conn, DatabaseObjectType.INDEX, "testtable1", "TESTINDEX1"), is(true));
     assertThat(manager.checkExistence(conn, DatabaseObjectType.TRIGGER, "TESTTRIGGER1"), is(true));

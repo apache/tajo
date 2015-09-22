@@ -85,7 +85,7 @@ public class HashShuffleAppenderManager {
           fs.mkdirs(dataFile.getParent());
         }
 
-        FileTablespace space = (FileTablespace) TablespaceManager.get(dataFile.toUri()).get();
+        FileTablespace space = (FileTablespace) TablespaceManager.get(dataFile.toUri());
         FileAppender appender = (FileAppender) space.getAppender(meta, outSchema, dataFile);
         appender.enableStats();
         appender.init();

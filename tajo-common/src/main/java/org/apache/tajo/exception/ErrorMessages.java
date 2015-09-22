@@ -39,6 +39,7 @@ public class ErrorMessages {
     ADD_MESSAGE(NOT_IMPLEMENTED, "not implemented feature: %s", 1);
     ADD_MESSAGE(FEATURE_NOT_SUPPORTED, "unsupported feature: %s", 1);
     ADD_MESSAGE(INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
+    ADD_MESSAGE(INVALID_VALUE_FOR_CAST, "%s value cannot be casted to %s", 2);
 
     // Query Management and Scheduler
     ADD_MESSAGE(QUERY_FAILED, "query has been failed due to %s", 1);
@@ -71,6 +72,7 @@ public class ErrorMessages {
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_TABLE, "index ''%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_COLUMNS, "index does not exist for '%s' columns of '%s' table", 2);
     ADD_MESSAGE(UNDEFINED_INDEX_NAME, "index name '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_TABLESPACE_HANDLER, "No tablespace handler for URI scheme '%s'", 1);
 
     ADD_MESSAGE(DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
     ADD_MESSAGE(DUPLICATE_DATABASE, "database '%s' already exists", 1);
@@ -96,6 +98,8 @@ public class ErrorMessages {
     ADD_MESSAGE(CAT_UPGRADE_REQUIRED, "catalog must be upgraded");
     ADD_MESSAGE(CAT_CANNOT_CONNECT, "cannot connect metadata store '%s': %s", 2);
 
+    ADD_MESSAGE(CAT_UNSUPPORTED_CATALOG_STORE, "unsupported catalog store: %s", 1);
+
     ADD_MESSAGE(LMD_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     // Storage and Data Format
@@ -108,9 +112,15 @@ public class ErrorMessages {
     ADD_MESSAGE(AMBIGUOUS_PARTITION_DIRECTORY, "There is a directory which is assumed to be a partitioned directory" +
       " : '%s'", 1);
 
+    ADD_MESSAGE(TOO_LARGE_INPUT_FOR_CROSS_JOIN, "Cross join of large tables is not allowed: (%s). " +
+        "To execute cross join, please increase BROADCAST_CROSS_JOIN_THRESHOLD " +
+        "which is currently set to %s.", 2);
+    ADD_MESSAGE(INVALID_INPUTS_FOR_CROSS_JOIN, "At least one of both inputs for the cross join must be a simple " +
+        "relation.");
 
-    ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "Client connection to '%s' has error: %s", 2);
+    ADD_MESSAGE(CLIENT_CONNECTION_EXCEPTION, "%s", 1);
     ADD_MESSAGE(CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "Client is unable to establish connection to '%s'", 1);
+    ADD_MESSAGE(CLIENT_CONNECTION_DOES_NOT_EXIST, "This connection has been closed.");
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat) {
@@ -162,7 +172,9 @@ public class ErrorMessages {
         }
 
       } else {
-        throw new TajoInternalError("Argument mismatch: code=" + code.name() + ", args=" + concat(args));
+        throw new TajoInternalError(
+            "Error message arguments are invalid: code=" + code.name() + ", args=" + concat(args) +
+                ". Please report this bug to https://issues.apache.org/jira/browse/TAJO.");
       }
     }
   }

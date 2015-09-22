@@ -35,7 +35,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.io.*;
@@ -356,6 +359,41 @@ public class TestTajoCli {
   public void testStopWhenError() throws Exception {
     tajoCli.executeMetaCommand("\\set ON_ERROR_STOP true");
     verifyStopWhenError();
+  }
+
+  @Test
+  public void testRunWhenError() throws Exception {
+    Thread t = new Thread() {
+      public void run() {
+        try {
+          PipedOutputStream po = new PipedOutputStream();
+          InputStream is = new PipedInputStream(po);
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+          TajoConf tajoConf = new TajoConf();
+          setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+          TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
+
+          tc.executeMetaCommand("\\set ON_ERROR_STOP false");
+          assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
+
+          po.write(new String("asdf;\nqwe;\nzxcv;\n").getBytes());
+
+          tc.runShell();
+        } catch (Exception e) {
+          throw new RuntimeException("Cannot run thread in testRunWhenError", e);
+        }
+      }
+    };
+
+    t.start();
+    Thread.sleep(1000);
+    if(!t.isAlive()) {
+      fail("TSQL should be alive");
+    } else {
+      t.interrupt();
+      t.join();
+    }
   }
 
   @Test

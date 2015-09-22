@@ -1,0 +1,31 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "ADD_PARTITION",
+  "Columns": [
+    {
+      "ColumnName": "col1",
+      "OpType": "Column"
+    },
+    {
+      "ColumnName": "col2",
+      "OpType": "Column"
+    }
+  ],
+  "Values": [
+    {
+      "Value": "1",
+      "ValueType": "Unsigned_Integer",
+      "OpType": "Literal"
+    },
+    {
+      "Value": "2",
+      "ValueType": "Unsigned_Integer",
+      "OpType": "Literal"
+    }
+  ],
+  "location": "hdfs://xxx.com/warehouse/table1/col1\u003d1/col2\u003d2",
+  "IsPurge": false,
+  "IfNotExists": false,
+  "IfExists": false,
+  "OpType": "AlterTable"
+}

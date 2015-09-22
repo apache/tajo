@@ -79,7 +79,7 @@ public class NettyServerBase {
       listener.onBeforeInit(this);
     }
     
-    bootstrap = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
+    bootstrap = NettyUtils.createServerBootstrap(serviceName, workerNum);
 
     this.initializer = initializer;
     bootstrap

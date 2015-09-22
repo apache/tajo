@@ -27,7 +27,7 @@ public class TestApplication1 extends Application {
   private final Set<Class<?>> classes;
 
   public TestApplication1() {
-    classes = new HashSet<Class<?>>();
+    classes = new HashSet<>();
     classes.add(TestResource1.class);
   }
 

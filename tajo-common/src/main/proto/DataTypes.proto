@@ -60,6 +60,7 @@ enum Type {
   BLOB = 45;
 
   RECORD = 51; // nested structure type
+  MAP    = 52; // map type
 
   ANY = 61; // Any type
   UDT = 62; // user-defined function
@@ -113,3 +114,4 @@ message DataType {
    */
   optional int32 num_nested_fields = 4;
 }
+

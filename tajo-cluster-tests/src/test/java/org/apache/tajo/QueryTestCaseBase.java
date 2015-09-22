@@ -19,6 +19,7 @@
 package org.apache.tajo;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
@@ -37,10 +38,13 @@ import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.InsufficientPrivilegeException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.jdbc.FetchResultSet;
+import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -161,23 +165,18 @@ public class QueryTestCaseBase {
   protected static LogicalPlanVerifier postVerifier;
 
   /** the base path of dataset directories */
-  protected static final Path datasetBasePath;
+  protected static Path datasetBasePath;
   /** the base path of query directories */
-  protected static final Path queryBasePath;
+  protected static Path queryBasePath;
   /** the base path of result directories */
-  protected static final Path resultBasePath;
+  protected static Path resultBasePath;
 
   static {
     testBase = TpchTestBase.getInstance();
     testingCluster = testBase.getTestingCluster();
     conf = testBase.getTestingCluster().getConfiguration();
     catalog = testBase.getTestingCluster().getMaster().getCatalog();
-    URL datasetBaseURL = ClassLoader.getSystemResource("dataset");
-    datasetBasePath = new Path(datasetBaseURL.toString());
-    URL queryBaseURL = ClassLoader.getSystemResource("queries");
-    queryBasePath = new Path(queryBaseURL.toString());
-    URL resultBaseURL = ClassLoader.getSystemResource("results");
-    resultBasePath = new Path(resultBaseURL.toString());
+
 
     GlobalEngine engine = testingCluster.getMaster().getContext().getGlobalEngine();
     sqlParser = engine.getAnalyzer();
@@ -206,8 +205,17 @@ public class QueryTestCaseBase {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    conf = testBase.getTestingCluster().getConfiguration();
     client = testBase.getTestingCluster().newTajoClient();
+
+    URL datasetBaseURL = ClassLoader.getSystemResource("dataset");
+    Preconditions.checkNotNull(datasetBaseURL, "dataset directory is absent.");
+    datasetBasePath = new Path(datasetBaseURL.toString());
+    URL queryBaseURL = ClassLoader.getSystemResource("queries");
+    Preconditions.checkNotNull(queryBaseURL, "queries directory is absent.");
+    queryBasePath = new Path(queryBaseURL.toString());
+    URL resultBaseURL = ClassLoader.getSystemResource("results");
+    Preconditions.checkNotNull(resultBaseURL, "results directory is absent.");
+    resultBasePath = new Path(resultBaseURL.toString());
   }
 
   @AfterClass
@@ -220,11 +228,19 @@ public class QueryTestCaseBase {
     // if the current database is "default", shouldn't drop it.
     if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
       for (String tableName : catalog.getAllTableNames(currentDatabase)) {
-        client.updateQuery("DROP TABLE IF EXISTS " + tableName);
+        try {
+          client.updateQuery("DROP TABLE IF EXISTS " + tableName);
+        } catch (InsufficientPrivilegeException i) {
+          LOG.warn("relation '" + tableName + "' is read only.");
+        }
       }
 
       client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME);
-      client.dropDatabase(currentDatabase);
+      try {
+        client.dropDatabase(currentDatabase);
+      } catch (InsufficientPrivilegeException e) {
+        LOG.warn("database '" + currentDatabase + "' is read only.");
+      }
     }
     client.close();
   }
@@ -577,8 +593,8 @@ public class QueryTestCaseBase {
 
         // plan test
         if (prefix.length() > 0) {
-          String planResultName = methodName + (fromFile ? "" : "" + (i + 1)) +
-              ((option.parameterized() && testParameter != null) ? "" + testParameter : "") + ".plan";
+          String planResultName = methodName + (fromFile ? "" : "." + (i + 1)) +
+              ((option.parameterized() && testParameter != null) ? "." + testParameter : "") + ".plan";
           Path resultPath = StorageUtil.concatPath(currentResultPath, planResultName);
           if (currentResultFS.exists(resultPath)) {
             assertEquals("Plan Verification for: " + (i + 1) + " th test",
@@ -595,7 +611,7 @@ public class QueryTestCaseBase {
         ResultSet result = client.executeQueryAndGetResult(spec.value());
 
         // result test
-        String fileName = methodName + (fromFile ? "" : "" + (i + 1)) + ".result";
+        String fileName = methodName + (fromFile ? "" : "." + (i + 1)) + ".result";
         Path resultPath = StorageUtil.concatPath(currentResultPath, fileName);
         if (currentResultFS.exists(resultPath)) {
           assertEquals("Result Verification for: " + (i + 1) + " th test",
@@ -855,7 +871,7 @@ public class QueryTestCaseBase {
   }
 
   private Collection<Path> getNegativeQueryFiles() throws IOException {
-    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "nagative");
+    Path positiveQueryDir = StorageUtil.concatPath(currentQueryPath, "negative");
     FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
 
     if (!fs.exists(positiveQueryDir)) {
@@ -976,7 +992,8 @@ public class QueryTestCaseBase {
       if (expr.getType() == OpType.CreateTable) {
         CreateTable createTable = (CreateTable) expr;
         String tableName = createTable.getTableName();
-        assertTrue("Table [" + tableName + "] creation is failed.", client.updateQuery(parsedResult.getHistoryStatement()));
+        assertTrue("Table [" + tableName + "] creation is failed.",
+            client.updateQuery(parsedResult.getHistoryStatement()));
 
         TableDesc createdTable = client.getTableDesc(tableName);
         String createdTableName = createdTable.getName();
@@ -1125,5 +1142,15 @@ public class QueryTestCaseBase {
       }
     }
     return result;
+  }
+
+  public static QueryId getQueryId(ResultSet resultSet) {
+    if (resultSet instanceof TajoMemoryResultSet) {
+      return ((TajoMemoryResultSet) resultSet).getQueryId();
+    } else if (resultSet instanceof FetchResultSet) {
+      return ((FetchResultSet) resultSet).getQueryId();
+    } else {
+      throw new IllegalArgumentException(resultSet.toString());
+    }
   }
 }

@@ -18,18 +18,18 @@
 
 package org.apache.tajo.catalog.store;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.exception.*;
 
 import java.io.Closeable;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 
 public interface CatalogStore extends Closeable {
+  String getUri();
+
   /*************************** Tablespace ******************************/
   void createTablespace(String spaceName, String spaceUri) throws DuplicateTablespaceException;
 
@@ -71,7 +71,7 @@ public interface CatalogStore extends Closeable {
 
   void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws UndefinedDatabaseException,
       DuplicateTableException, DuplicateColumnException, DuplicatePartitionException, UndefinedPartitionException,
-      UndefinedTableException, UndefinedColumnException, UndefinedPartitionMethodException;
+      UndefinedTableException, UndefinedColumnException, UndefinedPartitionMethodException, AmbiguousTableException;
 
   List<TableDescriptorProto> getAllTables();
 

@@ -30,16 +30,20 @@ public class StorageProperty {
   private final boolean writable;
   /** if this storage allows use of artibrary paths */
   private final boolean absolutePathAllowed;
+  /** if this storage provides metadata provider */
+  private final boolean metadataProvided;
 
   public StorageProperty(String defaultFormat,
                          boolean movable,
                          boolean writable,
-                         boolean absolutePathAllowed) {
+                         boolean absolutePathAllowed,
+                         boolean metadataProvided) {
 
     this.defaultFormat = defaultFormat;
     this.movable = movable;
     this.writable = writable;
     this.absolutePathAllowed = absolutePathAllowed;
+    this.metadataProvided = metadataProvided;
   }
 
   /**
@@ -75,5 +79,14 @@ public class StorageProperty {
    */
   public boolean isArbitraryPathAllowed() {
     return this.absolutePathAllowed;
+  }
+
+  /**
+   * Is metadata provided?
+   *
+   * @return True if this storage provides linked metadata.
+   */
+  public boolean isMetadataProvided() {
+    return this.metadataProvided;
   }
 }

@@ -160,17 +160,28 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return true;
   }
 
-  private boolean assertRelationNoExistence(Context context, String tableName) {
-    String qualifiedName;
+  private void assertRelationSchema(Context context, CreateTable createTable) {
+    for (ColumnDefinition colDef : createTable.getTableElements()) {
+      if (colDef.isMapType()) {
+        context.state.addVerification(new UnsupportedException("map type"));
+      }
+    }
+  }
 
-    if (CatalogUtil.isFQTableName(tableName)) {
-      qualifiedName = tableName;
+  private static String guessTableName(Context context, String givenName) {
+    String qualifiedName;
+    if (CatalogUtil.isFQTableName(givenName)) {
+      qualifiedName = givenName;
     } else {
-      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), tableName);
+      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), givenName);
     }
-    if(qualifiedName == null) {
-      System.out.println("A");
-    }
+
+    return qualifiedName;
+  }
+
+  private boolean assertRelationNoExistence(Context context, String tableName) {
+    String qualifiedName = guessTableName(context, tableName);
+
     if (catalog.existsTable(qualifiedName)) {
       context.state.addVerification(new DuplicateTableException(qualifiedName));
       return false;
@@ -231,12 +242,19 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   @Override
   public Expr visitCreateTable(Context context, Stack<Expr> stack, CreateTable expr) throws TajoException {
     super.visitCreateTable(context, stack, expr);
+
     if (!expr.isIfNotExists()) {
       assertRelationNoExistence(context, expr.getTableName());
     }
+
+    if (expr.hasTableElements()) {
+      assertRelationSchema(context, expr);
+    }
+
     if (expr.hasStorageType()) {
       assertSupportedStoreType(context.state, expr.getStorageType());
     }
+
     return expr;
   }
 

@@ -19,6 +19,7 @@
 package org.apache.tajo.master;
 
 import com.codahale.metrics.Gauge;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -27,27 +28,31 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
+import org.apache.tajo.algebra.AlterTablespace;
 import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
-import org.apache.tajo.exception.DuplicateDatabaseException;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
+import org.apache.tajo.catalog.store.AbstractDBStore;
+import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.exception.DuplicateTablespaceException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.metrics.ClusterResourceMetricSet;
 import org.apache.tajo.metrics.Master;
-import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rule.EvaluationContext;
@@ -57,6 +62,7 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
@@ -83,6 +89,8 @@ public class TajoMaster extends CompositeService {
 
   /** Class Logger */
   private static final Log LOG = LogFactory.getLog(TajoMaster.class);
+
+  public static final int SHUTDOWN_HOOK_PRIORITY = 10;
 
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
@@ -160,7 +168,7 @@ public class TajoMaster extends CompositeService {
   public void serviceInit(Configuration conf) throws Exception {
 
     this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
+    ShutdownHookManager.get().addShutdownHook(new ShutdownHook(), SHUTDOWN_HOOK_PRIORITY);
 
     context = new MasterContext(systemConf);
     clock = new SystemClock();
@@ -177,11 +185,11 @@ public class TajoMaster extends CompositeService {
     this.dispatcher = new AsyncDispatcher();
     addIfService(dispatcher);
 
-      // check the system directory and create if they are not created.
-      checkAndInitializeSystemDirectories();
-      diagnoseTajoMaster();
+    // check the system directory and create if they are not created.
+    checkAndInitializeSystemDirectories();
+    diagnoseTajoMaster();
 
-    catalogServer = new CatalogServer(Collections.EMPTY_SET, loadFunctions());
+    catalogServer = new CatalogServer(TablespaceManager.getMetadataProviders(), loadFunctions());
     addIfService(catalogServer);
     catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
@@ -202,6 +210,8 @@ public class TajoMaster extends CompositeService {
 
     restServer = new TajoRestService(context);
     addIfService(restServer);
+
+    PythonScriptEngine.initPythonScriptEngineFiles();
     
     // Try to start up all services in TajoMaster.
     // If anyone is failed, the master prints out the errors and immediately should shutdowns
@@ -375,7 +385,39 @@ public class TajoMaster extends CompositeService {
   private void checkBaseTBSpaceAndDatabase()
       throws IOException, DuplicateDatabaseException, DuplicateTablespaceException {
 
-    if (!catalog.existTablespace(DEFAULT_TABLESPACE_NAME)) {
+    if (catalog.existTablespace(DEFAULT_TABLESPACE_NAME)) { // if default tablespace already exists
+
+      CatalogProtos.TablespaceProto tablespace = null;
+      try {
+        tablespace = catalog.getTablespace(DEFAULT_TABLESPACE_NAME);
+      } catch (UndefinedTablespaceException e) {
+        throw new TajoInternalError(e);
+      }
+
+      // if warehouse directory and the location of default tablespace are different from each other
+      if (!tablespace.getUri().equals(context.getConf().getVar(ConfVars.WAREHOUSE_DIR))) {
+        AlterTablespaceCommand.Builder alterCommand =
+            AlterTablespaceCommand.newBuilder()
+                .setType(AlterTablespaceProto.AlterTablespaceType.LOCATION)
+                .setLocation(context.getConf().getVar(ConfVars.WAREHOUSE_DIR));
+
+        AlterTablespaceProto alterTablespace = AlterTablespaceProto.newBuilder()
+            .setSpaceName(DEFAULT_TABLESPACE_NAME)
+            .addCommand(alterCommand).build();
+
+        // update the location of default tablespace
+        try {
+          catalog.alterTablespace(alterTablespace);
+        } catch (TajoException e) {
+          throw new TajoInternalError(e);
+        }
+
+        LOG.warn(
+            "The location of default tablespace has been changed. " +
+            "You may not accept existing managed tables stored in the previous default tablespace");
+      }
+
+    } else if (!catalog.existTablespace(DEFAULT_TABLESPACE_NAME)) { // if the default tablespace does not exists
       catalog.createTablespace(DEFAULT_TABLESPACE_NAME, context.getConf().getVar(ConfVars.WAREHOUSE_DIR));
     } else {
       LOG.info(String.format("Default tablespace (%s) is already prepared.", DEFAULT_TABLESPACE_NAME));
@@ -396,14 +438,20 @@ public class TajoMaster extends CompositeService {
 
     if (webServer != null) webServer.stop();
 
-    IOUtils.cleanup(LOG, catalogServer);
-
     if (systemMetrics != null) systemMetrics.stop();
 
     if (pauseMonitor != null) pauseMonitor.stop();
     super.serviceStop();
 
     LOG.info("Tajo Master main thread exiting");
+  }
+
+  /**
+   * This is only for unit tests.
+   */
+  @VisibleForTesting
+  public void refresh() {
+    catalogServer.refresh(TablespaceManager.getMetadataProviders());
   }
 
   public EventHandler getEventHandler() {
@@ -539,12 +587,20 @@ public class TajoMaster extends CompositeService {
         LOG.info("TajoMaster received SIGINT Signal");
         LOG.info("============================================");
         stop();
-        RpcChannelFactory.shutdownGracefully();
+
+        // If embedded derby is used as catalog, shutdown it.
+        if (catalogServer != null &&
+            catalogServer.getStoreClassName().equals("org.apache.tajo.catalog.store.DerbyStore")
+            && AbstractDBStore.needShutdown(catalogServer.getStoreUri())) {
+          DerbyStore.shutdown();
+        }
+        RpcClientManager.shutdown();
       }
     }
   }
 
   public static void main(String[] args) throws Exception {
+    Thread.setDefaultUncaughtExceptionHandler(new TajoUncaughtExceptionHandler());
     StringUtils.startupShutdownMessage(TajoMaster.class, args, LOG);
 
     try {

@@ -35,8 +35,17 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-@Category(IntegrationTest.class)
 public class TestCreateTable extends QueryTestCaseBase {
+
+  @Test
+  public final void testPositives() throws Exception {
+    runPositiveTests();
+  }
+
+  @Test
+  public final void testNegatives() throws Exception {
+    runNegativeTests();
+  }
 
   @Test
   public final void testVariousTypes() throws Exception {
@@ -406,7 +415,7 @@ public class TestCreateTable extends QueryTestCaseBase {
       }
       if(isClonedSchema(origPartMethod.getExpressionSchema(),
                         newPartMethod.getExpressionSchema()) == false) {
-	fail("Partition columns of input tables do not match");
+	      fail("Partition columns of input tables do not match");
         return false;
       }
 

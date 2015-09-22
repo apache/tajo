@@ -21,16 +21,14 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
-import org.apache.tajo.exception.DuplicateColumnException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.DuplicateColumnException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.StringUtils;
@@ -39,7 +37,6 @@ import org.apache.tajo.util.TUtil;
 import java.util.*;
 
 public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
-  private static final Log LOG = LogFactory.getLog(Schema.class);
 
 	@Expose protected List<Column> fields = null;
 	@Expose protected Map<String, Integer> fieldsByQualifiedName = null;

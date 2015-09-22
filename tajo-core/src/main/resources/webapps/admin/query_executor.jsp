@@ -300,7 +300,7 @@ function getPage() {
     <%
 	for (String databaseName : master.getCatalog().getAllDatabaseNames()) {
 	%>
-	  <option value="<%=databaseName%>"><%=databaseName%></option>
+	  <option value="<%=databaseName%>" <%= (databaseName.equals("default"))?"selected":"" %> ><%=databaseName%></option>
 	<%
 	}
 	%>

@@ -128,7 +128,7 @@ public class DDLExecutor {
   }
 
   public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode)
-      throws DuplicateIndexException {
+      throws DuplicateIndexException, UndefinedTableException, UndefinedDatabaseException {
 
     String databaseName, simpleIndexName, qualifiedIndexName;
     if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
@@ -155,17 +155,12 @@ public class DDLExecutor {
         simpleIndexName, createIndexNode.getIndexPath(),
         createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
         createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
-
-    if (catalog.createIndex(indexDesc)) {
-      LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
-    } else {
-      LOG.info("Index creation " + qualifiedIndexName + " is failed.");
-      throw new TajoInternalError("Cannot create index \"" + qualifiedIndexName + "\".");
-    }
+    catalog.createIndex(indexDesc);
+    LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
   }
 
   public void dropIndex(final QueryContext queryContext, final DropIndexNode dropIndexNode)
-      throws UndefinedIndexException {
+      throws UndefinedIndexException, UndefinedDatabaseException {
 
     String databaseName, simpleIndexName;
     if (CatalogUtil.isFQTableName(dropIndexNode.getIndexName())) {
@@ -182,11 +177,7 @@ public class DDLExecutor {
     }
 
     IndexDesc desc = catalog.getIndexByName(databaseName, simpleIndexName);
-
-    if (!catalog.dropIndex(databaseName, simpleIndexName)) {
-      LOG.info("Cannot drop index \"" + simpleIndexName + "\".");
-      throw new TajoInternalError("Cannot drop index \"" + simpleIndexName + "\".");
-    }
+    catalog.dropIndex(databaseName, simpleIndexName);
 
     Path indexPath = new Path(desc.getIndexPath());
     try {
@@ -215,7 +206,7 @@ public class DDLExecutor {
       AlterTablespaceProto.AlterTablespaceCommand.Builder commandBuilder =
           AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
       commandBuilder.setType(AlterTablespaceProto.AlterTablespaceType.LOCATION);
-      commandBuilder.setLocation(AlterTablespaceProto.SetLocation.newBuilder().setUri(alterTablespace.getLocation()));
+      commandBuilder.setLocation(alterTablespace.getLocation());
       commandBuilder.build();
       builder.addCommand(commandBuilder);
     } else {
@@ -251,11 +242,12 @@ public class DDLExecutor {
       }
     }
 
-    catalog.createDatabase(databaseName, tablespaceName);
     String normalized = databaseName;
     Path databaseDir = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR), normalized);
     FileSystem fs = databaseDir.getFileSystem(context.getConf());
     fs.mkdirs(databaseDir);
+    catalog.createDatabase(databaseName, tablespaceName);
+    LOG.info("database \"" + databaseName + "\" created.");
   }
 
   public void dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists)
@@ -319,7 +311,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        TablespaceManager.get(tableDesc.getUri()).get().purgeTable(tableDesc);
+        TablespaceManager.get(tableDesc.getUri()).purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());
       }
@@ -363,7 +355,7 @@ public class DDLExecutor {
             new UnsupportedException("table truncation on an external table '" + eachTableName + "'"));
       }
 
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+      Tablespace space = TablespaceManager.get(tableDesc.getUri());
 
       if (space instanceof FileTablespace) {
         tableDescList.add(tableDesc);
@@ -439,10 +431,11 @@ public class DDLExecutor {
         throw new DuplicateTableException(alterTable.getNewTableName());
       }
 
+      Path newPath = null;
       if (!desc.isExternal()) { // if the table is the managed table
         Path oldPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
             databaseName, simpleTableName);
-        Path newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
+        newPath = StorageUtil.concatPath(context.getConf().getVar(TajoConf.ConfVars.WAREHOUSE_DIR),
             databaseName, alterTable.getNewTableName());
         FileSystem fs = oldPath.getFileSystem(context.getConf());
 
@@ -456,7 +449,7 @@ public class DDLExecutor {
         fs.rename(oldPath, newPath);
       }
       catalog.alterTable(CatalogUtil.renameTable(qualifiedName, alterTable.getNewTableName(),
-          AlterTableType.RENAME_TABLE));
+          AlterTableType.RENAME_TABLE, newPath));
       break;
     case RENAME_COLUMN:
       if (ensureColumnExistance(qualifiedName, alterTable.getNewColumnName())) {
@@ -550,7 +543,7 @@ public class DDLExecutor {
 
       break;
     default:
-      //TODO
+      throw new InternalError("alterTable cannot handle such query: \n" + alterTable.toJson());
     }
   }
 

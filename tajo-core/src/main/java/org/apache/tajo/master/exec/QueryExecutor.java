@@ -24,20 +24,24 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.*;
+import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.DuplicateIndexException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.InsertRowsExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.DuplicateIndexException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse.ResultType;
@@ -48,7 +52,6 @@ import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -57,14 +60,16 @@ import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.tuple.memory.MemoryBlock;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -129,12 +134,35 @@ public class QueryExecutor {
       execNonFromQuery(queryContext, session, sql, plan, response);
 
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
-      executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
+
+      // Checking if CTAS is already finished due to 'IF NOT EXISTS' option
+      if (checkIfCtasAlreadyDone(rootNode)) {
+        response.setState(OK);
+        response.setResultType(ResultType.NO_RESULT);
+      } else {
+        executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
+      }
     }
 
     response.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
 
     return response.build();
+  }
+
+  /**
+   * Check if CTAS is already done
+   * @param rootNode
+   * @return
+   */
+  private boolean checkIfCtasAlreadyDone(LogicalNode rootNode) {
+    if (rootNode.getChild(0).getType() == NodeType.CREATE_TABLE) {
+      CreateTableNode createTable = (CreateTableNode) rootNode.getChild(0);
+      if (createTable.isIfNotExists() && catalog.existsTable(createTable.getTableName())) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public void execSetSession(Session session, LogicalPlan plan,
@@ -191,21 +219,27 @@ public class QueryExecutor {
 
     Schema schema = new Schema();
     schema.addColumn("explain", TajoDataTypes.Type.TEXT);
-    RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
 
     SerializedResultSet.Builder serializedResBuilder = SerializedResultSet.newBuilder();
-
-    VTuple tuple = new VTuple(1);
+    MemoryRowBlock rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema));
     String[] lines = explainStr.split("\n");
-    int bytesNum = 0;
-    for (String line : lines) {
-      tuple.put(0, DatumFactory.createText(line));
-      byte [] encodedData = encoder.toBytes(tuple);
-      bytesNum += encodedData.length;
-      serializedResBuilder.addSerializedTuples(ByteString.copyFrom(encodedData));
+    try {
+      for (String line : lines) {
+        rowBlock.getWriter().startRow();
+        rowBlock.getWriter().putText(line);
+        rowBlock.getWriter().endRow();
+      }
+      MemoryBlock memoryBlock = rowBlock.getMemory();
+      ByteBuffer uncompressed = memoryBlock.getBuffer().nioBuffer(0, memoryBlock.readableBytes());
+      int uncompressedLength = uncompressed.remaining();
+
+      serializedResBuilder.setDecompressedLength(uncompressedLength);
+      serializedResBuilder.setSerializedTuples(ByteString.copyFrom(uncompressed));
+      serializedResBuilder.setSchema(schema.getProto());
+      serializedResBuilder.setRows(rowBlock.rows());
+    } finally {
+      rowBlock.release();
     }
-    serializedResBuilder.setSchema(schema.getProto());
-    serializedResBuilder.setBytesNum(bytesNum);
 
     QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
         (LogicalRootNode) plan.getRootBlock().getRoot());
@@ -247,19 +281,17 @@ public class QueryExecutor {
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
                               SubmitQueryResponse.Builder response) throws Exception {
     ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
-    if (scanNode == null) {
+    TableDesc desc = scanNode.getTableDesc();
+
+    if (desc.hasPartition()) {
       scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
     }
-    TableDesc desc = scanNode.getTableDesc();
-    // Keep info for partition-column-only queries
-    SelectionNode selectionNode = plan.getRootBlock().getNode(NodeType.SELECTION);
-    if (desc.isExternal() && desc.hasPartition() && selectionNode != null) {
-      scanNode.setQual(selectionNode.getQual());
-    }
+
     int maxRow = Integer.MAX_VALUE;
     if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
       maxRow = (int) limitNode.getFetchFirstNum();
+      scanNode.setLimit(maxRow);
     }
     if (desc.getStats().getNumRows() == 0) {
       desc.getStats().setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
@@ -288,7 +320,7 @@ public class QueryExecutor {
     EvalContext evalContext = new EvalContext();
     Target[] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
-      throw new PlanningException("No targets");
+      throw new TajoInternalError("no targets");
     }
     try {
       // start script executor
@@ -305,12 +337,23 @@ public class QueryExecutor {
         insertRowValues(queryContext, insertNode, responseBuilder);
       } else {
         Schema schema = PlannerUtil.targetToSchema(targets);
-        RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
-        byte[] serializedBytes = encoder.toBytes(outTuple);
         SerializedResultSet.Builder serializedResBuilder = SerializedResultSet.newBuilder();
-        serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
-        serializedResBuilder.setSchema(schema.getProto());
-        serializedResBuilder.setBytesNum(serializedBytes.length);
+        MemoryRowBlock rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema));
+
+        try {
+          rowBlock.getWriter().addTuple(outTuple);
+
+          MemoryBlock memoryBlock = rowBlock.getMemory();
+          ByteBuffer uncompressed = memoryBlock.getBuffer().nioBuffer(0, memoryBlock.readableBytes());
+          int uncompressedLength = uncompressed.remaining();
+
+          serializedResBuilder.setDecompressedLength(uncompressedLength);
+          serializedResBuilder.setSerializedTuples(ByteString.copyFrom(uncompressed));
+          serializedResBuilder.setSchema(schema.getProto());
+          serializedResBuilder.setRows(rowBlock.rows());
+        } finally {
+          rowBlock.release();
+        }
 
         QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
             (LogicalRootNode) plan.getRootBlock().getRoot());
@@ -415,7 +458,7 @@ public class QueryExecutor {
       String queryId = nodeUniqName + "_" + System.currentTimeMillis();
 
       URI finalOutputUri = insertNode.getUri();
-      Tablespace space = TablespaceManager.get(finalOutputUri).get();
+      Tablespace space = TablespaceManager.get(finalOutputUri);
       TableMeta tableMeta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
       tableMeta.putOption(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
 
@@ -495,19 +538,7 @@ public class QueryExecutor {
                                       SubmitQueryResponse.Builder responseBuilder) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
-    if (tableDesc != null) {
-
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
-      FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
-
-      if (!formatProperty.isInsertable()) {
-        throw new VerifyException(
-            String.format("%s tablespace does not allow INSERT operation.", tableDesc.getUri().toString()));
-      }
-
-      space.prepareTable(rootNode.getChild());
-    }
+    prepareForCreateTableOrInsert(catalog, plan);
 
     hookManager.doHooks(queryContext, plan);
 
@@ -525,6 +556,24 @@ public class QueryExecutor {
     responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
     LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
         " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+  }
+
+  private void prepareForCreateTableOrInsert(CatalogService catalog, LogicalPlan plan)
+      throws TajoException, IOException {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
+    if (tableDesc != null) {
+
+      Tablespace space = TablespaceManager.get(tableDesc.getUri());
+      FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
+
+      if (!formatProperty.isInsertable()) {
+        throw new UnsupportedException (
+            String.format("INSERT operation on %s tablespace", tableDesc.getUri().toString()));
+      }
+
+      space.prepareTable(rootNode.getChild());
+    }
   }
 
   private void checkIndexExistence(final QueryContext queryContext, final CreateIndexNode createIndexNode)
@@ -554,7 +603,7 @@ public class QueryExecutor {
     TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
 
     if (tableDesc != null) {
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+      Tablespace space = TablespaceManager.get(tableDesc.getUri());
       space.rewritePlan(context, plan);
     }
 

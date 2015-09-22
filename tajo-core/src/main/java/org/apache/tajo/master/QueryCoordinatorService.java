@@ -26,15 +26,13 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.QueryCoordinatorProtocolService;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.rm.NodeStatus;
 import org.apache.tajo.master.scheduler.event.ResourceReserveSchedulerEvent;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.ProtoUtil;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -128,7 +126,7 @@ public class QueryCoordinatorService extends AbstractService {
      */
     @Override
     public void getAllWorkers(RpcController controller, PrimitiveProtos.NullProto request,
-                                     RpcCallback<WorkerConnectionsResponse> done) {
+                              RpcCallback<WorkerConnectionsResponse> done) {
 
       WorkerConnectionsResponse.Builder builder = WorkerConnectionsResponse.newBuilder();
       Collection<NodeStatus> nodeStatuses = context.getResourceManager().getRMContext().getNodes().values();

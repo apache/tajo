@@ -56,8 +56,8 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
 [q_0000000000000_0000] 3 => 5 (type=RANGE_SHUFFLE, key=default.n1.n_nationkey (INT4), default.n2.n_name (TEXT), num=32)
 
 [Enforcers]
- 0: type=Broadcast, tables=default.nation
- 1: type=Broadcast, tables=default.n1
+ 0: type=Broadcast, tables=default.n1
+ 1: type=Broadcast, tables=default.nation
 
 SORT(18)
   => Sort Keys: default.n1.n_nationkey (INT4) (asc),default.n2.n_name (TEXT) (asc)

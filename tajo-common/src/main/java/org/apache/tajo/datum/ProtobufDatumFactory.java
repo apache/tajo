@@ -21,6 +21,7 @@ package org.apache.tajo.datum;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.protobuf.GeneratedMessage;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
@@ -60,12 +61,28 @@ public class ProtobufDatumFactory {
     return (T) builder;
   }
 
-  public ProtobufDatum createDatum(Message.Builder builder) {
+  public static ProtobufDatum createDatum(Message.Builder builder) {
     return createDatum(builder.build());
   }
 
-  public ProtobufDatum createDatum(Message message) {
+  public static ProtobufDatum createDatum(Message message) {
     return new ProtobufDatum(message);
+  }
+
+  public static ProtobufDatum createDatum(String className, byte [] bytes, int offset, int length)
+      throws InvalidProtocolBufferException {
+    ProtobufDatumFactory factory = get(className);
+    Message.Builder builder = factory.newBuilder();
+    builder.mergeFrom(bytes, offset, length);
+    return createDatum(builder);
+  }
+
+  public static Datum createDatum(DataType type, byte[] bytes)
+      throws InvalidProtocolBufferException {
+    ProtobufDatumFactory factory = get(type);
+    Message.Builder builder = factory.newBuilder();
+    builder.mergeFrom(bytes);
+    return createDatum(builder);
   }
 
   public static ProtobufDatumFactory get(DataType dataType) {
@@ -88,4 +105,5 @@ public class ProtobufDatumFactory {
   public static String toJson(Message message) {
     return protobufFormatter.printToString(message);
   }
+
 }

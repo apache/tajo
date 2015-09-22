@@ -68,32 +68,32 @@ import "stacktrace.proto";
 enum ResultCode {
   // Class
   // 00 - Successful Completion
-  OK                            = 0;
+  OK                                    = 0;
 
-  WARNING                       = 100; // Warning
+  WARNING                               = 100; // Warning
 
   // General Errors
-  INTERNAL_ERROR                = 201; // Error caused by internal bugs (See also TajoInternalException.java)
-  NOT_IMPLEMENTED               = 202; // Planned, but not implemented yet.
-  FEATURE_NOT_SUPPORTED         = 203; // SQLState: 0A000 - Unsupported feature (usually for unreasonable feature)
-  INVALID_RPC_CALL              = 204; // When invalid RPC call is invoked (e.g., wrong message and absent fields)
+  INTERNAL_ERROR                        = 201; // SQLState: XX000 - Error caused by internal bugs (See TajoInternalException)
+  NOT_IMPLEMENTED                       = 202; // SQLState: 0A000 - Not implemented yet, but planned.
+  FEATURE_NOT_SUPPORTED                 = 203; // SQLState: 0A000 - Unsupported feature (usually for unreasonable feature)
+  INVALID_RPC_CALL                      = 204; // SQLState: 08P01 - When invalid RPC call is invoked (e.g., wrong message and absent fields)
 
   // Query Management and Scheduler
-  QUERY_FAILED                  = 301; // SQLState: ? - Query failed
-  QUERY_KILLED                  = 302; // SQLState: ? - Query killed
-  QUERY_TIMEOUT                 = 303; // SQLState: ? - Timeout for the query
-  QUERY_NOT_FOUND               = 304; // No such query in TajoMaster
-  NO_DATA                       = 305; // No data due to query fail or error
-  INCOMPLETE_QUERY              = 306; // It occurs when a client requests something of a completed query.
+  QUERY_FAILED                          = 301; // SQLState: 61T01 - Query failed
+  QUERY_KILLED                          = 302; // SQLState: 61T02 - Query killed
+  QUERY_TIMEOUT                         = 303; // SQLState: 61T03 - Timeout for the query
+  QUERY_NOT_FOUND                       = 304; // SQLState: 61T04 - No such query in TajoMaster
+  NO_DATA                               = 305; // SQLState: 61T05 - No data due to query fail or error
+  INCOMPLETE_QUERY                      = 306; // SQLState: 61T06 - It occurs when a client requests something of a completed query.
 
   // Session
-  INVALID_SESSION               = 401; // Session already was invalid
-  NO_SUCH_SESSION_VARIABLE      = 402; // Session variable not found
-  INVALID_SESSION_VARIABLE      = 403; // Session variable is invalid (type mismatch or out of range)
+  INVALID_SESSION                       = 401; // SQLState: 62T01 - Session already was invalid
+  NO_SUCH_SESSION_VARIABLE              = 402; // SQLState: 62T01 - Session variable not found
+  INVALID_SESSION_VARIABLE              = 403; // SQLState: 62T01 - Session variable is invalid (type mismatch or out of range)
 
   // Data Exception (SQLState Class - 22)
-  DIVISION_BY_ZERO              = 451; // SQLState: 22012 - Division by zero
-
+  DIVISION_BY_ZERO                      = 451; // SQLState: 22012 - Division by zero
+  INVALID_VALUE_FOR_CAST                = 452; // SQLState: 22T01 - Invalid data value for cast
 
   // Section: Class 42 - Syntax Error or Access Rule Violation
   SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 501; // SQLState: 42000
@@ -101,9 +101,9 @@ enum ResultCode {
   INSUFFICIENT_PRIVILEGE                = 503; // SQLState: 42501
 
   UNDEFINED_TABLESPACE                  = 511; // ?
-  UNDEFINED_DATABASE                    = 512; // ?
-  UNDEFINED_SCHEMA                      = 513; // ?
-  UNDEFINED_TABLE                       = 514; // ?
+  UNDEFINED_DATABASE                    = 512; // SQLState: 42T01
+  UNDEFINED_SCHEMA                      = 513; // SQLState:
+  UNDEFINED_TABLE                       = 514; // SQLState: 42P01
   UNDEFINED_COLUMN                      = 515; // SQLState: 42703
   UNDEFINED_FUNCTION                    = 516; // SQLState: 42883
   UNDEFINED_INDEX_FOR_TABLE             = 517; // ?
@@ -113,6 +113,7 @@ enum ResultCode {
   UNDEFINED_PARTITION_METHOD            = 521; // ?
   UNDEFINED_OPERATOR                    = 522; // SQLState: 42883 (=UNDEFINED_FUNCTION)
   UNDEFINED_PARTITION_KEY               = 523; // ?
+  UNDEFINED_TABLESPACE_HANDLER          = 524; // SQLState: 42T11 - No Tablespace Handler for the URI scheme
 
   DUPLICATE_TABLESPACE                  = 531;
   DUPLICATE_DATABASE                    = 532; // SQLState: 42P04
@@ -121,10 +122,10 @@ enum ResultCode {
   DUPLICATE_COLUMN                      = 535; // SQLState: 42701
   DUPLICATE_ALIAS                       = 536; // SQLState: 42712
   DUPLICATE_FUNCTION                    = 537; // SQLState: 42723
-  DUPLICATE_INDEX                       = 538; // SQLState: ?
-  DUPLICATE_PARTITION                   = 539; // SQLState: ?
+  DUPLICATE_INDEX                       = 538; // SQLState: 42T07
+  DUPLICATE_PARTITION                   = 539; // SQLState: 42T08
 
-  AMBIGUOUS_TABLE                       = 541; // ?
+  AMBIGUOUS_TABLE                       = 541; // SQLState: 42P09
   AMBIGUOUS_COLUMN                      = 542; // SQLState: 42702;
   AMBIGUOUS_FUNCTION                    = 543; // SQLState: 42725;
   AMBIGUOUS_PARTITION_DIRECTORY         = 544; // ?
@@ -147,7 +148,6 @@ enum ResultCode {
 
   // Expressions
   INVALID_EXPRESSION                    = 701;
-  INVALID_CAST                          = 702;
   INVALID_DATATYPE                      = 703;
 
   NUMERIC_OVERFLOW                      = 803;  // Numeric value overflow
@@ -156,6 +156,9 @@ enum ResultCode {
   // Meta Catalog
   CAT_UPGRADE_REQUIRED                  = 901;  // Migration
   CAT_CANNOT_CONNECT                    = 902;  // Cannot connect metadata server
+
+  // Catalog store
+  CAT_UNSUPPORTED_CATALOG_STORE         = 905; // Unsupported type of catalog store
 
   // Linked Metadata (LMD)
   LMD_NO_MATCHED_DATATYPE               = 910;  // No matched data type between Tajo and connector
@@ -167,31 +170,34 @@ enum ResultCode {
   INVALID_TABLE_PROPERTY                = 1004; // SQLState: ? - Invalid Table Property
   MISSING_TABLE_PROPERTY                = 1005; // SQLState: ? - Missing table property
 
-
+  // Client Connection
   CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error
   CLIENT_UNABLE_TO_ESTABLISH_CONNECTION = 1102; // SQLState: 08001 -
-  CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1103; // SQLState: ?
+  CLIENT_CONNECTION_DOES_NOT_EXIST      = 1103; // SQLState: 08003 - Client connection has been closed.
+  CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1104; // SQLState: ?
 
   // 53 - Invalid Operand or Inconsistent Specification
-  INSUFFICIENT_RESOURCE         = 53000;
-  DISK_FULL                     = 53100;
-  OUT_OF_MEMORY                 = 53200;
+  INSUFFICIENT_RESOURCE           = 53000;
+  DISK_FULL                       = 53100;
+  OUT_OF_MEMORY                   = 53200;
 
   // 54 - SQL or Product Limit Exceeded
-  PROGRAM_LIMIT_EXCEEDED        = 54000;
-  STATEMENT_TOO_COMPLEX         = 54001;
-  STRING_CONSTANT_TOOL_LONG     = 54002;
+  PROGRAM_LIMIT_EXCEEDED          = 54000;
+  STATEMENT_TOO_COMPLEX           = 54001;
+  STRING_CONSTANT_TOOL_LONG       = 54002;
+  TOO_LARGE_INPUT_FOR_CROSS_JOIN  = 54003;
+  INVALID_INPUTS_FOR_CROSS_JOIN   = 54004;
 
-  TOO_MANY_TABLES               = 54004;
-  TOO_MANY_COLUMNS              = 54011;
-  TOO_MANY_ARGUMENTS            = 54023;
+  TOO_MANY_TABLES                 = 54006;
+  TOO_MANY_COLUMNS                = 54011;
+  TOO_MANY_ARGUMENTS              = 54023;
 
   // 55 - Object Not in Prerequisite State
   // 56 - Miscellaneous SQL or Product Error
   // 57 - Resource Not Available or Operator Intervention
 
   // 58 - System Error
-  IO_ERROR                      = 58030;
+  IO_ERROR                        = 58030;
 
 
   // underlying system errors based on errno.h.

@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.ThreadSafe;
+import org.apache.tajo.exception.TajoInternalError;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -72,8 +73,8 @@ public class FragmentConvertor {
         CONSTRUCTOR_CACHE.put(clazz, constructor);
       }
       result = constructor.newInstance(new Object[]{fragment.getContents()});
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    } catch (Throwable e) {
+      throw new TajoInternalError(e);
     }
 
     return result;

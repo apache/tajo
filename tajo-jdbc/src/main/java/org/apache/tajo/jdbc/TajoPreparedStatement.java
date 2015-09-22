@@ -61,7 +61,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
 
   @Override
   public void clearParameters() throws SQLException {
-    checkConnection("Can't clear parameters");
+    checkConnection();
     this.parameters.clear();
   }
 
@@ -83,7 +83,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
   }
 
   protected TajoResultSetBase executeImmediate(String sql) throws SQLException {
-    checkConnection("Can't execute");
+    checkConnection();
 
     try {
       if (sql.contains("?")) {
@@ -152,7 +152,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
 
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
-    checkConnection("Can't get metadata");
+    checkConnection();
     if(resultSet != null) {
       return resultSet.getMetaData();
     } else {
@@ -223,7 +223,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
 
   @Override
   public void setBoolean(int parameterIndex, boolean x) throws SQLException {
-    checkConnection("Can't set parameters");
+    checkConnection();
     this.parameters.put(parameterIndex, "" + x);
   }
 
@@ -281,25 +281,25 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
 
   @Override
   public void setDouble(int parameterIndex, double x) throws SQLException {
-    checkConnection("Can't set parameters");
+    checkConnection();
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setFloat(int parameterIndex, float x) throws SQLException {
-    checkConnection("Can't set parameters");
+    checkConnection();
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setInt(int parameterIndex, int x) throws SQLException {
-    checkConnection("Can't set parameters");
+    checkConnection();
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setLong(int parameterIndex, long x) throws SQLException {
-    checkConnection("Can't set parameters");
+    checkConnection();
     this.parameters.put(parameterIndex,"" + x);
   }
 
@@ -378,13 +378,13 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
 
   @Override
   public void setShort(int parameterIndex, short x) throws SQLException {
-    checkConnection("Can't set parameters");
+    checkConnection();
     this.parameters.put(parameterIndex,"" + x);
   }
 
   @Override
   public void setString(int parameterIndex, String x) throws SQLException {
-    checkConnection("Can't set parameters");
+    checkConnection();
      x=x.replace("'", "\\'");
      this.parameters.put(parameterIndex,"'" + x +"'");
   }

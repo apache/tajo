@@ -87,15 +87,15 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public void dropDatabase(final String databaseName) throws UndefinedDatabaseException {
+  public void dropDatabase(final String databaseName)
+      throws UndefinedDatabaseException, InsufficientPrivilegeException {
 
     try {
       final BlockingInterface stub = conn.getTMStub();
       final ReturnState state = stub.dropDatabase(null, conn.getSessionedString(databaseName));
 
-      if (isThisError(state, ResultCode.UNDEFINED_DATABASE)) {
-        throw new UndefinedDatabaseException(state);
-      }
+      throwsIfThisError(state, UndefinedDatabaseException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {
@@ -238,6 +238,28 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
     ensureOk(res.getState());
     return CatalogUtil.newTableDesc(res.getTable());
+  }
+
+  @Override
+  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException {
+
+    final BlockingInterface stub = conn.getTMStub();
+
+    PartitionListResponse response;
+    try {
+      response = stub.getPartitionsByTableName(null,
+        conn.getSessionedString(tableName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
+    throwsIfThisError(response.getState(), UndefinedTableException.class);
+    throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+
+    ensureOk(response.getState());
+    return response.getPartitionList();
   }
 
   @Override

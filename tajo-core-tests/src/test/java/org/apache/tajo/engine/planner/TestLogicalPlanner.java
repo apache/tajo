@@ -38,7 +38,7 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalOptimizer;
@@ -78,7 +78,7 @@ public class TestLogicalPlanner {
   public static void setUp() throws Exception {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
-    catalog = util.getMiniCatalogCluster().getCatalog();
+    catalog = util.getCatalogService();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 

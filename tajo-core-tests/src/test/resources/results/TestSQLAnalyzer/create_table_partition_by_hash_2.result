@@ -1,0 +1,38 @@
+{
+  "IsExternal": false,
+  "TableName": "sales",
+  "Attributes": [
+    {
+      "ColumnDefName": "col1",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "col2",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    }
+  ],
+  "PartitionMethodDesc": {
+    "Columns": [
+      {
+        "ColumnName": "col1",
+        "OpType": "Column"
+      }
+    ],
+    "Specifiers": [
+      {
+        "PartitionSpecName": "part1"
+      },
+      {
+        "PartitionSpecName": "part2"
+      },
+      {
+        "PartitionSpecName": "part3"
+      }
+    ],
+    "PartitionType": "HASH"
+  },
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}

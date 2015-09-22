@@ -124,7 +124,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIME:
         if (hasTimezone) {
-          bytes = TimeDatum.asChars(tuple.getTimeDate(columnIndex), timezone, true).getBytes(Bytes.UTF8_CHARSET);
+          bytes = TimeDatum.asChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
         } else {
           bytes = tuple.getTextBytes(columnIndex);
         }
@@ -133,7 +133,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIMESTAMP:
         if (hasTimezone) {
-          bytes = TimestampDatum.asChars(tuple.getTimeDate(columnIndex), timezone, true).getBytes(Bytes.UTF8_CHARSET);
+          bytes = TimestampDatum.asChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
         } else {
           bytes = tuple.getTextBytes(columnIndex);
         }
@@ -244,7 +244,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
             byte[] bytes = new byte[buf.readableBytes()];
             buf.readBytes(bytes);
             protobufJsonFormat.merge(bytes, builder);
-            datum = factory.createDatum(builder.build());
+            datum = ProtobufDatumFactory.createDatum(builder.build());
           } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);

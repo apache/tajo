@@ -25,7 +25,7 @@ public interface LogicalPlanRewriteEngine {
   /**
    * Rewrite a logical plan with all query rewrite rules added to this engine.
    *
-   * @param plan The plan to be rewritten with all query rewrite rule.
+   * @param context The context containing query context, logical plan, and catalog.
    * @return The rewritten plan.
    */
   LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException;

@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -28,9 +29,10 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
@@ -63,7 +65,7 @@ public class TestProgressExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 100000;
+  private final int numTuple = 5000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -73,7 +75,8 @@ public class TestProgressExternalSortExec {
   public void setUp() throws Exception {
     this.conf = new TajoConf();
     util = new TajoTestingCluster();
-    catalog = util.startCatalogCluster().getCatalog();
+    util.startCatalogCluster();
+    catalog = util.getCatalogService();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
@@ -123,19 +126,23 @@ public class TestProgressExternalSortExec {
 
   @Test
   public void testExternalSortExecProgressWithMemTableScanner() throws Exception {
-    testProgress(testDataStats.getNumBytes().intValue() * 20);    //multiply 20 for memory fit
+    testProgress(testDataStats.getNumBytes() * 20);    //multiply 20 for memory fit
   }
 
   @Test
   public void testExternalSortExecProgressWithPairWiseMerger() throws Exception {
-    testProgress(testDataStats.getNumBytes().intValue());
+    testProgress(testDataStats.getNumBytes());
   }
 
-  private void testProgress(int sortBufferBytesNum) throws Exception {
+  private void testProgress(long sortBufferBytesNum) throws Exception {
+    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, sortBufferBytesNum);
+
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
         LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
@@ -153,11 +160,7 @@ public class TestProgressExternalSortExec {
       SeqScanExec scan = sortExec.getChild();
 
       ExternalSortExec extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
-
-      extSort.setSortBufferBytesNum(sortBufferBytesNum);
       proj.setChild(extSort);
-    } else {
-      ((ExternalSortExec)proj.getChild()).setSortBufferBytesNum(sortBufferBytesNum);
     }
 
     Tuple tuple;
@@ -175,12 +178,13 @@ public class TestProgressExternalSortExec {
     while ((tuple = exec.next()) != null) {
       if (cnt == 0) {
         initProgress = exec.getProgress();
+        System.out.println(initProgress);
         assertTrue(initProgress > 0.5f && initProgress < 1.0f);
       }
 
       if (cnt == testDataStats.getNumRows() / 2) {
         float progress = exec.getProgress();
-
+        System.out.println(progress);
         assertTrue(progress > initProgress);
       }
       curVal = tuple;
@@ -225,5 +229,7 @@ public class TestProgressExternalSortExec {
     assertEquals(cnt, testDataStats.getNumRows().longValue());
     assertEquals(cnt, tableStats.getNumRows().longValue());
     assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getReadBytes().longValue());
+
+    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);
   }
 }

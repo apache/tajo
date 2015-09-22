@@ -38,6 +38,7 @@ import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanTestRuleProvider;
+import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.rewrite.LogicalPlanTestRuleProvider;
 import org.apache.tajo.querymaster.Query;
@@ -49,8 +50,8 @@ import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.io.File;
@@ -70,7 +71,7 @@ public class TajoTestingCluster {
 	private TajoConf conf;
   private FileSystem defaultFS;
   private MiniDFSCluster dfsCluster;
-	private MiniCatalogServer catalogServer;
+	private CatalogServer catalogServer;
   private HBaseTestClusterUtil hbaseUtil;
 
   private TajoMaster tajoMaster;
@@ -152,10 +153,13 @@ public class TajoTestingCluster {
     conf.setIntVar(ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
 
     // Memory cache termination
-    conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
+    conf.setIntVar(ConfVars.HISTORY_QUERY_CACHE_SIZE, 10);
 
     // Python function path
     conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
+
+    // Query output file
+    conf.setVar(ConfVars.QUERY_OUTPUT_DEFAULT_FILE_FORMAT, BuiltinStorages.DRAW);
 
     /* Since Travis CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
@@ -288,33 +292,33 @@ public class TajoTestingCluster {
   ////////////////////////////////////////////////////////
   // Catalog Section
   ////////////////////////////////////////////////////////
-  public MiniCatalogServer startCatalogCluster() throws Exception {
+  public CatalogServer startCatalogCluster() throws Exception {
     if(isCatalogServerRunning) throw new IOException("Catalog Cluster already running");
 
-    TajoConf c = getConfiguration();
-
-    conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-    conf.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + clusterTestBuildDir.getAbsolutePath() + "/db");
+    CatalogTestingUtil.configureCatalog(conf, clusterTestBuildDir.getAbsolutePath());
     LOG.info("Apache Derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
-    catalogServer = new MiniCatalogServer(conf);
-    CatalogServer catServer = catalogServer.getCatalogServer();
-    InetSocketAddress sockAddr = catServer.getBindAddress();
-    c.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.normalizeInetSocketAddress(sockAddr));
+    catalogServer = new CatalogServer();
+    catalogServer.init(conf);
+    catalogServer.start();
     isCatalogServerRunning = true;
     return this.catalogServer;
   }
 
   public void shutdownCatalogCluster() {
     if (catalogServer != null) {
-      this.catalogServer.shutdown();
+      this.catalogServer.stop();
     }
     isCatalogServerRunning = false;
   }
 
-  public MiniCatalogServer getMiniCatalogCluster() {
+  public CatalogServer getMiniCatalogCluster() {
     return this.catalogServer;
+  }
+
+  public CatalogService getCatalogService() {
+    return new LocalCatalogWrapper(catalogServer);
   }
 
   public boolean isHiveCatalogStoreRunning() {
@@ -325,8 +329,8 @@ public class TajoTestingCluster {
   // Tajo Cluster Section
   ////////////////////////////////////////////////////////
   private void startMiniTajoCluster(File testBuildDir,
-                                               final int numSlaves,
-                                               boolean local) throws Exception {
+                                    final int numSlaves,
+                                    boolean local) throws Exception {
     TajoConf c = getConfiguration();
     c.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS, "localhost:0");
@@ -335,15 +339,13 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.WORKER_TEMPORAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
     c.setIntVar(ConfVars.REST_SERVICE_PORT, 0);
 
-    LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
-
     if (!local) {
       String tajoRootDir = getMiniDFSCluster().getFileSystem().getUri().toString() + "/tajo";
       c.setVar(ConfVars.ROOT_DIR, tajoRootDir);
 
       URI defaultTsUri = TajoConf.getWarehouseDir(c).toUri();
       FileTablespace defaultTableSpace =
-          new FileTablespace(TablespaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri);
+          new FileTablespace(TablespaceManager.DEFAULT_TABLESPACE_NAME, defaultTsUri, null);
       defaultTableSpace.init(conf);
       TablespaceManager.addTableSpaceForTest(defaultTableSpace);
 
@@ -352,6 +354,8 @@ public class TajoTestingCluster {
     }
 
     setupCatalogForTesting(c, testBuildDir);
+
+    LOG.info("derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
 
     tajoMaster = new TajoMaster();
     tajoMaster.init(c);
@@ -386,7 +390,7 @@ public class TajoTestingCluster {
     LOG.info("====================================================================================");
   }
 
-  private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException {
+  private void setupCatalogForTesting(TajoConf c, File testBuildDir) throws IOException, UnsupportedCatalogStore {
     final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
     boolean hiveCatalogClassExists = false;
     try {
@@ -416,8 +420,7 @@ public class TajoTestingCluster {
         throw new IOException(cnfe);
       }
     } else { // for derby
-      c.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
-      c.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + testBuildDir.getAbsolutePath() + "/db");
+      CatalogTestingUtil.configureCatalog(conf, testBuildDir.getAbsolutePath());
     }
     c.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
   }
@@ -774,5 +777,16 @@ public class TajoTestingCluster {
       }
     }
     return qmt;
+  }
+
+  public QueryHistory getQueryHistory(QueryId queryId) throws IOException {
+    QueryHistory queryHistory = null;
+    for (TajoWorker worker : getTajoWorkers()) {
+      queryHistory = worker.getWorkerContext().getQueryMaster().getQueryHistory(queryId);
+      if (queryHistory != null) {
+        break;
+      }
+    }
+    return queryHistory;
   }
 }
