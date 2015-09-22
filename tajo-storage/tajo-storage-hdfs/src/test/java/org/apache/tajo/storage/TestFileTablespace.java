@@ -282,7 +282,7 @@ public class TestFileTablespace {
       existingTs = TablespaceManager.addTableSpaceForTest(distTablespace);
 
       /* Distributed FileSystem */
-      space = (FileTablespace) TablespaceManager.get(uri).get();
+      space = (FileTablespace) TablespaceManager.get(uri);
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
 
       space = (FileTablespace) TablespaceManager.getByName("testGetFileTablespace").get();

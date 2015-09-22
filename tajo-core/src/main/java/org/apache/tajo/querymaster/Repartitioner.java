@@ -113,7 +113,7 @@ public class Repartitioner {
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
-        Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+        Tablespace space = TablespaceManager.get(tableDesc.getUri());
         List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc, null);
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
@@ -378,7 +378,7 @@ public class Repartitioner {
 
         Path[] partitionScanPaths = null;
         TableDesc tableDesc = masterContext.getTableDesc(eachScan);
-        Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+        Tablespace space = TablespaceManager.get(tableDesc.getUri());
 
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
 
@@ -507,7 +507,7 @@ public class Repartitioner {
       Path[] partitionScanPaths = null;
 
 
-      Tablespace space = TablespaceManager.get(desc.getUri()).get();
+      Tablespace space = TablespaceManager.get(desc.getUri());
 
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scan;

@@ -33,6 +33,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedTablespaceHandlerException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.JavaResourceUtil;
@@ -276,10 +278,11 @@ public class TablespaceManager implements StorageService {
   public static final String KEY_SPACES = "spaces";
 
   private static Tablespace initializeTableSpace(String spaceName, URI uri, JSONObject spaceDesc) {
-    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(UriUtil.getScheme(uri));
+    final String scheme = UriUtil.getScheme(uri);
+    Class<? extends Tablespace> clazz = TABLE_SPACE_HANDLERS.get(scheme);
 
     if (clazz == null) {
-      throw new RuntimeException("Not found Tablespace handler for " + uri.toString());
+      throw new TajoRuntimeException(new UndefinedTablespaceHandlerException(scheme));
     }
 
     try {
@@ -342,10 +345,10 @@ public class TablespaceManager implements StorageService {
    * @param <T> Tablespace class type
    * @return Tablespace. If uri is null, the default tablespace will be returned.
    */
-  public static <T extends Tablespace> Optional<T> get(@Nullable String uri) {
+  public static <T extends Tablespace> T get(@Nullable String uri) {
 
     if (uri == null || uri.isEmpty()) {
-      return (Optional<T>) Optional.of(getDefault());
+      return getDefault();
     }
 
     Tablespace lastOne = null;
@@ -367,7 +370,7 @@ public class TablespaceManager implements StorageService {
       }
     }
 
-    return (Optional<T>) Optional.fromNullable(lastOne);
+    return (T) lastOne;
   }
 
   /**
@@ -377,11 +380,11 @@ public class TablespaceManager implements StorageService {
    * @param <T> Tablespace class type
    * @return Tablespace. If uri is null, the default tablespace will be returned.
    */
-  public static <T extends Tablespace> Optional<T> get(@Nullable URI uri) {
+  public static <T extends Tablespace> T get(@Nullable URI uri) {
     if (uri == null) {
-      return (Optional<T>) Optional.of(getDefault());
+      return getDefault();
     } else {
-      return (Optional<T>) get(uri.toString());
+      return (T) get(uri.toString());
     }
   }
 
@@ -395,7 +398,7 @@ public class TablespaceManager implements StorageService {
   }
 
   public static <T extends Tablespace> T getLocalFs() {
-    return (T) get(LOCAL_FS_URI).get();
+    return (T) get(LOCAL_FS_URI);
   }
 
   public static Optional<? extends Tablespace> getByName(String name) {
@@ -426,7 +429,7 @@ public class TablespaceManager implements StorageService {
 
   @Override
   public long getTableVolumn(URI tableUri) throws UnsupportedException {
-    return get(tableUri).get().getTableVolume(tableUri);
+    return get(tableUri).getTableVolume(tableUri);
   }
 
   public static Iterable<Tablespace> getAllTablespaces() {

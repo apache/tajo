@@ -322,7 +322,7 @@ public class QueryMasterTask extends CompositeService {
       optimizer.optimize(queryContext, plan);
 
       // when a given uri is null, TablespaceManager.get will return the default tablespace.
-      space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
       space.rewritePlan(queryContext, plan);
 
       initStagingDir();
@@ -379,7 +379,7 @@ public class QueryMasterTask extends CompositeService {
     URI stagingDir;
 
     try {
-      Tablespace tablespace = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      Tablespace tablespace = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
       TableDesc desc = PlannerUtil.getOutputTableDesc(plan);
 
       FormatProperty formatProperty = tablespace.getFormatProperty(desc.getMeta());

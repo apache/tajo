@@ -48,11 +48,11 @@ public class TestPgSQLJdbcTableSpace {
     assertTrue((TablespaceManager.getByName("pgsql_cluster").get()) instanceof PgSQLTablespace);
     assertEquals("pgsql_cluster", (TablespaceManager.getByName("pgsql_cluster").get().getName()));
 
-    assertTrue((TablespaceManager.get(jdbcUrl).get()) instanceof PgSQLTablespace);
-    assertTrue((TablespaceManager.get(jdbcUrl + "&table=tb1").get()) instanceof PgSQLTablespace);
+    assertTrue((TablespaceManager.get(jdbcUrl)) instanceof PgSQLTablespace);
+    assertTrue((TablespaceManager.get(jdbcUrl + "&table=tb1")) instanceof PgSQLTablespace);
 
-    assertEquals(jdbcUrl, TablespaceManager.get(jdbcUrl).get().getUri().toASCIIString());
-    assertTrue(TablespaceManager.get(jdbcUrl).get().getMetadataProvider() instanceof PgSQLMetadataProvider);
+    assertEquals(jdbcUrl, TablespaceManager.get(jdbcUrl).getUri().toASCIIString());
+    assertTrue(TablespaceManager.get(jdbcUrl).getMetadataProvider() instanceof PgSQLMetadataProvider);
   }
 
   @Test(timeout = 1000, expected = TajoRuntimeException.class)
@@ -129,8 +129,8 @@ public class TestPgSQLJdbcTableSpace {
     Optional<Tablespace> ts = TablespaceManager.removeTablespaceForTest("pgsql_cluster");
     assertTrue(ts.isPresent());
 
-    Optional<Tablespace> tempTs = TablespaceManager.get(jdbcUrl);
-    assertTrue(tempTs.isPresent());
+    Tablespace tempTs = TablespaceManager.get(jdbcUrl);
+    assertNotNull(tempTs);
 
     TablespaceManager.addTableSpaceForTest(ts.get());
   }

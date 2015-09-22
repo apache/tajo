@@ -59,7 +59,7 @@ public class TestHBaseTableSpace {
   @Test
   public void testTablespaceHandler() throws Exception {
     assertTrue((TablespaceManager.getByName("cluster1").get()) instanceof HBaseTablespace);
-    assertTrue((TablespaceManager.get(URI.create("hbase:zk://host1:2171")).get())
+    assertTrue((TablespaceManager.get(URI.create("hbase:zk://host1:2171")))
         instanceof HBaseTablespace);
   }
 

@@ -59,6 +59,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
     ADD_EXCEPTION(UNDEFINED_INDEX_NAME, UndefinedIndexException.class);
+    ADD_EXCEPTION(UNDEFINED_TABLESPACE_HANDLER, UndefinedTablespaceHandlerException.class);
 
     ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTablespaceException.class);
     ADD_EXCEPTION(DUPLICATE_DATABASE, DuplicateDatabaseException.class);
