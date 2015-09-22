@@ -1048,39 +1048,32 @@ public class CatalogServer extends AbstractService {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
-      try {
-        // linked meta data do not support partition.
-        // So, the request that wants to get partitions in this db will be failed.
-        if (linkedMetadataManager.existsDatabase(dbName)) {
-          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-        }
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
+      // linked meta data do not support partition.
+      // So, the request that wants to get partitions in this db will be failed.
+      if (linkedMetadataManager.existsDatabase(dbName)) {
+        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
       }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
         return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-      }
+      } else {
+        rlock.lock();
+        try {
+          GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+          List<PartitionDescProto> partitions = store.getPartitionsByAlgebra(request);
+          builder.addAllPartition(partitions);
+          builder.setState(OK);
+          return builder.build();
+        } catch (Throwable t) {
+          printStackTraceIfError(LOG, t);
 
-      rlock.lock();
-      try {
-        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        List<PartitionDescProto> partitions = store.getPartitionsByAlgebra(request);
-        builder.addAllPartition(partitions);
-        builder.setState(OK);
-        return builder.build();
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
+          return GetPartitionsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
 
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
-
-      } finally {
-        rlock.unlock();
+        } finally {
+          rlock.unlock();
+        }
       }
     }
 
@@ -1090,39 +1083,32 @@ public class CatalogServer extends AbstractService {
       String dbName = request.getDatabaseName();
       String tbName = request.getTableName();
 
-      try {
-        // linked meta data do not support partition.
-        // So, the request that wants to get partitions in this db will be failed.
-        if (linkedMetadataManager.existsDatabase(dbName)) {
-          return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-        }
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
+      // linked meta data do not support partition.
+      // So, the request that wants to get partitions in this db will be failed.
+      if (linkedMetadataManager.existsDatabase(dbName)) {
+        return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
       }
 
       if (metaDictionary.isSystemDatabase(dbName)) {
         return GetPartitionsResponse.newBuilder().setState(errUndefinedPartitionMethod(tbName)).build();
-      }
+      } else {
+        rlock.lock();
+        try {
+          GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
+          List<PartitionDescProto> partitions = store.getPartitionsByFilter(request);
+          builder.addAllPartition(partitions);
+          builder.setState(OK);
+          return builder.build();
+        } catch (Throwable t) {
+          printStackTraceIfError(LOG, t);
 
-      rlock.lock();
-      try {
-        GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        List<PartitionDescProto> partitions = store.getPartitionsByFilter(request);
-        builder.addAllPartition(partitions);
-        builder.setState(OK);
-        return builder.build();
-      } catch (Throwable t) {
-        printStackTraceIfError(LOG, t);
+          return GetPartitionsResponse.newBuilder()
+            .setState(returnError(t))
+            .build();
 
-        return GetPartitionsResponse.newBuilder()
-          .setState(returnError(t))
-          .build();
-
-      } finally {
-        rlock.unlock();
+        } finally {
+          rlock.unlock();
+        }
       }
     }
 
