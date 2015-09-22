@@ -35,10 +35,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.ExecutionBlockErrorEvent;
 
@@ -213,21 +213,12 @@ public class ExecutionBlockContext {
   }
 
   public static Path getBaseOutputDir(ExecutionBlockId executionBlockId) {
-    Path workDir =
-        StorageUtil.concatPath(
-            executionBlockId.getQueryId().toString(),
-            "output",
-            String.valueOf(executionBlockId.getId()));
-    return workDir;
+    return TajoPullServerService.getBaseOutputDir(
+        executionBlockId.getQueryId().toString(), String.valueOf(executionBlockId.getId()));
   }
 
   public static Path getBaseInputDir(ExecutionBlockId executionBlockId) {
-    Path workDir =
-        StorageUtil.concatPath(
-            executionBlockId.getQueryId().toString(),
-            "in",
-            executionBlockId.toString());
-    return workDir;
+    return TajoPullServerService.getBaseInputDir(executionBlockId.getQueryId().toString(), executionBlockId.toString());
   }
 
   public ExecutionBlockId getExecutionBlockId() {

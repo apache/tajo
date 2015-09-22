@@ -29,6 +29,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.service.BaseServiceTracker;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.TUtil;
@@ -221,7 +222,7 @@ public class TajoConf extends Configuration {
 
     // Storage Configuration --------------------------------------------------
     ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
-    MINIMUM_SPLIT_SIZE("tajo.min.split.size", (long) 1),
+    MINIMUM_SPLIT_SIZE("tajo.min.split.size", 32 * StorageUnit.MB, Validators.min("1")),
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true, Validators.bool()),
 
