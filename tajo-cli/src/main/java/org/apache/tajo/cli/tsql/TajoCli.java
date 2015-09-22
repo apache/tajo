@@ -237,8 +237,8 @@ public class TajoCli {
     }
 
     // Get connection parameters
-    final KeyValueSet actualConnParams =
-        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams));
+    Properties defaultConnParams = CliClientParamsFactory.get(clientParams);
+    final KeyValueSet actualConnParams = new KeyValueSet(Maps.fromProperties(defaultConnParams));
 
     if ((hostName == null) ^ (port == null)) {
       System.err.println(ERROR_PREFIX + "cannot find valid Tajo server address");
