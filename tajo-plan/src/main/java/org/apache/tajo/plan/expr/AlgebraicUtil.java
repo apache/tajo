@@ -519,6 +519,26 @@ public class AlgebraicUtil {
   }
 
   /**
+   * Find the most bottom expr matched to type from the given expr
+   *
+   * @param expr start expr
+   * @param type to find
+   * @return a found expr
+   */
+  public static <T extends Expr> T findMostBottomExpr(Expr expr, OpType type) throws TajoException {
+    Preconditions.checkNotNull(expr);
+    Preconditions.checkNotNull(type);
+
+    Set<Expr> exprSet = ExprFinder.finds(expr, type);
+    if (exprSet.size() == 0) {
+      return null;
+    } else {
+      Expr[] exprs = exprSet.toArray(new Expr[exprSet.size()]);
+      return (T) exprs[exprs.length-1];
+    }
+  }
+
+  /**
    * Transforms an algebra expression to an array of conjunctive normal formed algebra expressions.
    *
    * @param expr The algebra expression to be transformed to an array of CNF-formed expressions.

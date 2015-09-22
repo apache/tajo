@@ -329,7 +329,7 @@ public class TestEvalNodeToExprConverter {
     assertEquals("default.lineitem", resultRight.getQualifier());
     assertEquals("l_tax", resultRight.getName());
 
-    BinaryOperator greaterThan = AlgebraicUtil.findTopExpr(resultExpr, OpType.GreaterThan);
+    BinaryOperator greaterThan = AlgebraicUtil.findMostBottomExpr(resultExpr, OpType.GreaterThan);
     assertNotNull(greaterThan);
 
     assertEquals(greaterThan.getLeft(), caseWhen);
