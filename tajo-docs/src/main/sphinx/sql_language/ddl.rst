@@ -45,11 +45,11 @@ CREATE TABLE
 
 *Description*
 
-In Tajo, there are two types of tables, `managed table` and `external table` (For more information, please refer to :doc:`/table_management/table_overview`.)
+In Tajo, there are two types of tables, `managed table` and `external table`.
+Managed tables are placed on some predefined tablespaces. The ``TABLESPACE`` clause is to specify a tablespace for this table. For external tables, Tajo allows an arbitrary table location with the ``LOCATION`` clause.
+For more information about tables and tablespace, please refer to :doc:`/table_management/table_overview` and :doc:`/table_management/tablespaces`.
 
-Managed tables are placed on some predefined tablespaces. The ``TABLESPACE`` clause is to specify a tablespace for this table. For more information about tablespace, please refer to :doc:`/table_management/tablespaces`. For external tables, Tajo allows an arbitrary table location with the ``LOCATION`` clause.
-
-``column_list`` is a sequence of the column name and its type like ``<column_name> <data_type>, ...``. Additionally, the `asterisk (*)` is allowed for external table when its data format is `JSON`. For more information, please refer to :doc:`/table_management/json`.
+``column_list`` is a sequence of the column name and its type like ``<column_name> <data_type>, ...``. Additionally, the `asterisk (*)` is allowed for external tables when their data format is `JSON`. You can find more details at :doc:`/table_management/json`.
 
 ``IF NOT EXISTS`` allows ``CREATE [EXTERNAL] TABLE`` statement to avoid an error which occurs when the table does not exist.
 
