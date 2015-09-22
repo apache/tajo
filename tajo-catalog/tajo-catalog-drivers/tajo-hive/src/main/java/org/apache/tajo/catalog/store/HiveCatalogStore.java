@@ -938,6 +938,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           }
           sb.append(" ( ").append(result).append(" ) ");
           addedFilter++;
+        } else {
+          throw new TajoInternalError("Fail to make filter condition from algebra expression : " + filters[i].toJson());
         }
       }
     }
