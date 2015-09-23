@@ -183,26 +183,6 @@ public interface CatalogStore extends Closeable {
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, UnsupportedException;
 
-  /**
-   * Get list of partitions matching specified filter.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Assume that an user want to give a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
-   *
-   * Then, the filter string would be written as following:
-   *   (col1 ='1' or col1 = '100') and col3 > 20
-   *
-   * @param request the database name, the table name, the filter string
-   * @return list of PartitionDescProto
-   * @throws UndefinedDatabaseException
-   * @throws UndefinedTableException
-   * @throws UndefinedPartitionMethodException
-   * @throws UndefinedOperatorException
-   */
-  List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException;
-
   List<TablePartitionProto> getAllPartitions();
 
   void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions

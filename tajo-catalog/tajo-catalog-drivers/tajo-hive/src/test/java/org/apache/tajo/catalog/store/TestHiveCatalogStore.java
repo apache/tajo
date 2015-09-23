@@ -275,25 +275,6 @@ public class TestHiveCatalogStore {
     partitionNames.add("n_nationkey=50/n_date=20150802");
     testAddPartitions(table1.getUri(), NATION, partitionNames);
 
-    CatalogProtos.PartitionsByFilterProto.Builder FilterRequest = CatalogProtos
-      .PartitionsByFilterProto.newBuilder();
-
-    FilterRequest.setDatabaseName(DB_NAME);
-    FilterRequest.setTableName(NATION);
-    FilterRequest.setFilter("n_nationkey = 10 or n_nationkey = 20");
-
-    List<CatalogProtos.PartitionDescProto> tablePartitions = store.getPartitionsByFilter(FilterRequest.build());
-    assertEquals(tablePartitions.size(), 4);
-
-    FilterRequest = CatalogProtos.PartitionsByFilterProto.newBuilder();
-    FilterRequest.setDatabaseName(DB_NAME);
-    FilterRequest.setTableName(NATION);
-
-    FilterRequest.setFilter("n_nationkey = 10 and n_date = \"20150101\"");
-
-    tablePartitions = store.getPartitionsByFilter(FilterRequest.build());
-    assertEquals(tablePartitions.size(), 1);
-
     testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
     testDropPartition(NATION, "n_nationkey=10/n_date=20150102");
     testDropPartition(NATION, "n_nationkey=20/n_date=20150101");

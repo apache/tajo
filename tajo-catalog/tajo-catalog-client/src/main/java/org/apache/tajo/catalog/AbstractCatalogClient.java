@@ -496,23 +496,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
-    try {
-      final BlockingInterface stub = getStub();
-      GetPartitionsResponse response = stub.getPartitionsByFilter(null, request);
-
-      throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
-      throwsIfThisError(response.getState(), UndefinedTableException.class);
-      throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
-      ensureOk(response.getState());
-      return response.getPartitionList();
-    } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
-      return null;
-    }
-  }
-  @Override
   public List<TablePartitionProto> getAllPartitions() {
     try {
       final BlockingInterface stub = getStub();

@@ -182,9 +182,6 @@ public interface CatalogService {
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UnsupportedException;
 
-  List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
-
   List<TablePartitionProto> getAllPartitions();
 
   void addPartitions(String databaseName, String tableName, List<PartitionDescProto> partitions

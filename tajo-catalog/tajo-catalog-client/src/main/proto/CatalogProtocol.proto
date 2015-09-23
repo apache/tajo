@@ -126,7 +126,6 @@ service CatalogProtocolService {
   rpc getAllPartitions(NullProto) returns (GetTablePartitionsResponse);
   rpc addPartitions(AddPartitionsProto) returns (ReturnState);
   rpc getPartitionsByAlgebra(PartitionsByAlgebraProto) returns (GetPartitionsResponse);
-  rpc getPartitionsByFilter(PartitionsByFilterProto) returns (GetPartitionsResponse);
 
   rpc createIndex(IndexDescProto) returns (ReturnState);
   rpc dropIndex(IndexNameProto) returns (ReturnState);

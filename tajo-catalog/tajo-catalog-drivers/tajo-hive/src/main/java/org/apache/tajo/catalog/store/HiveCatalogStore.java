@@ -884,12 +884,27 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public List<CatalogProtos.PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
-    PartitionsByFilterProto.Builder request = PartitionsByFilterProto.newBuilder();
-    request.setDatabaseName(databaseName);
-    request.setTableName(tableName);
-    request.setFilter("");
+    List<PartitionDescProto> list = null;
 
-    return getPartitionsByFilter(request.build());
+    try {
+      if (!existDatabase(databaseName)) {
+        throw new UndefinedDatabaseException(tableName);
+      }
+
+      if (!existTable(databaseName, tableName)) {
+        throw new UndefinedTableException(tableName);
+      }
+
+      if (!existPartitionMethod(databaseName, tableName)) {
+        throw new UndefinedPartitionMethodException(tableName);
+      }
+
+      list = getPartitionsFromHiveMetaStore(databaseName, tableName, "");
+    } catch (Exception se) {
+      throw new TajoInternalError(se);
+    }
+
+    return list;
   }
 
   @Override
@@ -917,7 +932,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       TableDescProto tableDesc = getTable(databaseName, tableName);
       String filter = getFilter(databaseName, tableName, tableDesc.getPartition().getExpressionSchema().getFieldsList()
         , request.getAlgebra());
-      list = getPartitionsByFilterFromHiveMetaStore(databaseName, tableName, filter);
+      list = getPartitionsFromHiveMetaStore(databaseName, tableName, filter);
     } catch (UnsupportedException ue) {
       throw ue;
     } catch (Exception se) {
@@ -971,29 +986,22 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     return sb.toString();
   }
 
-
-  @Override
-  public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request)
-      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
-    String databaseName = request.getDatabaseName();
-    String tableName = request.getTableName();
-
-    if (!existDatabase(databaseName)) {
-      throw new UndefinedDatabaseException(tableName);
-    }
-
-    if (!existTable(databaseName, tableName)) {
-      throw new UndefinedTableException(tableName);
-    }
-
-    if (!existPartitionMethod(databaseName, tableName)) {
-      throw new UndefinedPartitionMethodException(tableName);
-    }
-
-    return getPartitionsByFilterFromHiveMetaStore(databaseName, tableName, request.getFilter());
-  }
-
-  private List<PartitionDescProto> getPartitionsByFilterFromHiveMetaStore(String databaseName, String tableName,
+  /**
+   * Get list of partitions matching specified filter.
+   *
+   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
+   * Assume that an user want to give a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
+   *
+   * Then, the filter string would be written as following:
+   *   (col1 =\"1\" or col1 = \"100\") and col3 > 20
+   *
+   *
+   * @param databaseName
+   * @param tableName
+   * @param filter
+   * @return
+   */
+  private List<PartitionDescProto> getPartitionsFromHiveMetaStore(String databaseName, String tableName,
                                                                          String filter) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     List<PartitionDescProto> partitions = null;
