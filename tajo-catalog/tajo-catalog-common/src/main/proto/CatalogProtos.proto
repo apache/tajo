@@ -98,7 +98,7 @@ message TableDescProto {
   required string table_name = 2;
   optional string path = 3;
   required TableProto meta = 4;
-  required SchemaProto schema = 5;
+  optional SchemaProto schema = 5;
   optional TableStatsProto stats = 6;
   optional PartitionMethodProto partition = 7;
   optional bool isExternal = 8 [default = false];

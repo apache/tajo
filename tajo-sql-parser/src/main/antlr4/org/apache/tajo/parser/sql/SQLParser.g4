@@ -117,6 +117,7 @@ create_table_statement
 
 table_elements
   : LEFT_PAREN field_element (COMMA field_element)* RIGHT_PAREN
+  | LEFT_PAREN asterisk RIGHT_PAREN
   ;
 
 field_element
@@ -1312,7 +1313,11 @@ derived_column
   ;
 
 qualified_asterisk
-  : (tb_name=identifier DOT)? MULTIPLY
+  : (tb_name=identifier DOT)? asterisk
+  ;
+
+asterisk
+  : MULTIPLY
   ;
 
 set_qualifier

@@ -244,7 +244,7 @@ message PersistentStoreNode {
 message StoreTableNodeSpec { // required PersistentStoreNode
   optional string tableName = 1; // 'INSERT INTO LOCATION' does not require 'table name'.
   optional string uri = 2;
-  required SchemaProto table_schema = 3;
+  optional SchemaProto table_schema = 3; // optional for self-describing formats
   optional PartitionMethodProto partitionMethod = 4;
 }
 
