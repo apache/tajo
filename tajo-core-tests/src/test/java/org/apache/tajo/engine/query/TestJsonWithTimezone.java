@@ -62,7 +62,7 @@ public class TestJsonWithTimezone extends QueryTestCaseBase {
     // Table - timezone = GMT+9
     // Client - GMT+9 through TajoClient API
 
-    Map<String,String> sessionVars = new HashMap<String, String>();
+    Map<String,String> sessionVars = new HashMap<>();
     sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
     getClient().updateSessionVariables(sessionVars);
 

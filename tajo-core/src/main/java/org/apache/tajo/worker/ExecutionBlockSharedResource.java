@@ -96,7 +96,7 @@ public class ExecutionBlockSharedResource {
   public EvalNode getPreCompiledEval(Schema schema, EvalNode eval) {
     if (codeGenEnabled) {
 
-      Pair<Schema, EvalNode> key = new Pair<Schema, EvalNode>(schema, eval);
+      Pair<Schema, EvalNode> key = new Pair<>(schema, eval);
       if (compilationContext.getPrecompiedEvals().containsKey(key)) {
         return compilationContext.getPrecompiedEvals().get(key);
       } else {

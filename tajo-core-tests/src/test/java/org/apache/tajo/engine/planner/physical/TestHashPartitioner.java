@@ -102,7 +102,7 @@ public class TestHashPartitioner {
     for (int index = 0; index <  testNumPartitions.length; index++) {
       Partitioner p = new HashPartitioner(new int[]{0, 1, 2}, testNumPartitions[index]);
 
-      Set<Integer> ids = new TreeSet<Integer>();
+      Set<Integer> ids = new TreeSet<>();
       for (int i = 0; i < data.length; i++) {
         Tuple tuple = new VTuple(
             new Datum[]{new TextDatum(data[i][0]), new TextDatum(data[i][1]), new TextDatum(data[i][2])});

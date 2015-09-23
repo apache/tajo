@@ -103,7 +103,7 @@ public abstract class TajoMetricsScheduledReporter extends TajoMetricsReporter i
     filterList.addMetricFilter(new GroupNameMetricsFilter(metricsName));
 
     String regexpFilterKey = metricsPropertyKey + "regexp.";
-    Set<String> regexpExpressions = new HashSet<String>();
+    Set<String> regexpExpressions = new HashSet<>();
 
     for(Map.Entry<String, String> entry: metricsProperties.entrySet()) {
       String key = entry.getKey();

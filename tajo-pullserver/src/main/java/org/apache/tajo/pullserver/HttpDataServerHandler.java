@@ -47,7 +47,7 @@ public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpR
   private final static Log LOG = LogFactory.getLog(HttpDataServerHandler.class);
 
   Map<ExecutionBlockId, DataRetriever> retrievers =
-      new ConcurrentHashMap<ExecutionBlockId, DataRetriever>();
+          new ConcurrentHashMap<>();
   private String userName;
   private String appId;
 
@@ -219,7 +219,7 @@ public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpR
       return null;
     }
 
-    final List<String> ret = new ArrayList<String>();
+    final List<String> ret = new ArrayList<>();
     for (String qid : qids) {
       Collections.addAll(ret, qid.split(","));
     }

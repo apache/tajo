@@ -145,7 +145,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   }
 
   public void setColumnStats(List<ColumnStats> columnStatses) {
-    this.columnStatses = new ArrayList<ColumnStats>(columnStatses);
+    this.columnStatses = new ArrayList<>(columnStatses);
   }
 
   public void addColumnStat(ColumnStats columnStats) {
@@ -183,7 +183,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     stat.avgRows = avgRows != null ? avgRows : null;
     stat.readBytes = readBytes != null ? readBytes : null;
 
-    stat.columnStatses = new ArrayList<ColumnStats>(this.columnStatses);
+    stat.columnStatses = new ArrayList<>(this.columnStatses);
 
     return stat;
   }

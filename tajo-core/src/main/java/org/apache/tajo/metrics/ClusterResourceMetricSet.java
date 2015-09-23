@@ -37,7 +37,7 @@ public class ClusterResourceMetricSet implements MetricSet {
 
   @Override
   public Map<String, Metric> getMetrics() {
-    Map<String, Metric> metricsMap = new HashMap<String, Metric>();
+    Map<String, Metric> metricsMap = new HashMap<>();
 
     metricsMap.put(Cluster.TOTAL_NODES.name(), new Gauge<Integer>() {
       @Override

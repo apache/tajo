@@ -26,11 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
   private MasterPlan masterPlan;
-  private ArrayList<ExecutionBlock> orderedBlocks = new ArrayList<ExecutionBlock>();
+  private ArrayList<ExecutionBlock> orderedBlocks = new ArrayList<>();
 
-  private List<BuildOrderItem> executionOrderedBlocks = new ArrayList<BuildOrderItem>();
-  private List<BuildOrderItem> notOrderedSiblingBlocks = new ArrayList<BuildOrderItem>();
-  private Map<ExecutionBlockId, AtomicInteger> orderRequiredChildCountMap = new HashMap<ExecutionBlockId, AtomicInteger>();
+  private List<BuildOrderItem> executionOrderedBlocks = new ArrayList<>();
+  private List<BuildOrderItem> notOrderedSiblingBlocks = new ArrayList<>();
+  private Map<ExecutionBlockId, AtomicInteger> orderRequiredChildCountMap = new HashMap<>();
 
   public ExecutionBlockCursor(MasterPlan plan) {
     this(plan, false);
@@ -149,7 +149,7 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
   }
 
   private void preExecutionOrder(BuildOrderItem current) {
-    Stack<BuildOrderItem> stack = new Stack<BuildOrderItem>();
+    Stack<BuildOrderItem> stack = new Stack<>();
     if (!masterPlan.isLeaf(current.eb.getId())) {
       List<ExecutionBlock> children = masterPlan.getChilds(current.eb);
       orderRequiredChildCountMap.put(current.eb.getId(), new AtomicInteger(children.size()));
@@ -172,7 +172,7 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
   class BuildOrderItem {
     ExecutionBlock eb;
     ExecutionBlock parentEB;
-    List<ExecutionBlockId> siblings = new ArrayList<ExecutionBlockId>();
+    List<ExecutionBlockId> siblings = new ArrayList<>();
 
     BuildOrderItem(ExecutionBlock parentEB, ExecutionBlock eb) {
       this.parentEB = parentEB;

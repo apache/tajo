@@ -256,14 +256,14 @@ public class BSTIndex implements IndexMethod {
       private TreeMap<Tuple, LinkedList<Long>> map;
 
       public KeyOffsetCollector(TupleComparator comparator) {
-        map = new TreeMap<Tuple, LinkedList<Long>>(comparator);
+        map = new TreeMap<>(comparator);
       }
 
       public void put(final Tuple key, final long offset) {
         if (map.containsKey(key)) {
           map.get(key).add(offset);
         } else {
-          LinkedList<Long> list = new LinkedList<Long>();
+          LinkedList<Long> list = new LinkedList<>();
           list.add(offset);
           map.put(key, list);
         }

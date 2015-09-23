@@ -43,14 +43,14 @@ public final class CodecPool {
    * construction/destruction of (possibly native) decompression codecs.
    */
   private static final Map<Class<Compressor>, List<Compressor>> COMPRESSOR_POOL =
-      new HashMap<Class<Compressor>, List<Compressor>>();
+          new HashMap<>();
 
   /**
    * A global decompressor pool used to save the expensive
    * construction/destruction of (possibly native) decompression codecs.
    */
   private static final Map<Class<Decompressor>, List<Decompressor>> DECOMPRESSOR_POOL =
-      new HashMap<Class<Decompressor>, List<Decompressor>>();
+          new HashMap<>();
 
   private static <T> T borrow(Map<Class<T>, List<T>> pool,
       Class<? extends T> codecClass) {

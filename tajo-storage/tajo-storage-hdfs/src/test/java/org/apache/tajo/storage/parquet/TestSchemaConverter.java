@@ -64,7 +64,7 @@ public class TestSchemaConverter {
       "}\n";
 
   private Schema createAllTypesSchema() {
-    List<Column> columns = new ArrayList<Column>();
+    List<Column> columns = new ArrayList<>();
     columns.add(new Column("myboolean", Type.BOOLEAN));
     columns.add(new Column("mybit", Type.BIT));
     columns.add(new Column("mychar", Type.CHAR));
@@ -84,7 +84,7 @@ public class TestSchemaConverter {
   }
 
   private Schema createAllTypesConvertedSchema() {
-    List<Column> columns = new ArrayList<Column>();
+    List<Column> columns = new ArrayList<>();
     columns.add(new Column("myboolean", Type.BOOLEAN));
     columns.add(new Column("myint", Type.INT4));
     columns.add(new Column("mylong", Type.INT8));

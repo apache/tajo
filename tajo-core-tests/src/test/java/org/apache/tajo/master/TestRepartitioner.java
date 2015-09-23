@@ -54,7 +54,7 @@ public class TestRepartitioner {
     ExecutionBlockId sid = new ExecutionBlockId(q1, 2);
     int numPartition = 10;
 
-    Map<Integer, List<IntermediateEntry>> intermediateEntries = new HashMap<Integer, List<IntermediateEntry>>();
+    Map<Integer, List<IntermediateEntry>> intermediateEntries = new HashMap<>();
     for (int i = 0; i < numPartition; i++) {
       intermediateEntries.put(i, new ArrayList<IntermediateEntry>());
     }
@@ -67,7 +67,7 @@ public class TestRepartitioner {
     }
 
     Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> hashEntries =
-        new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
+            new HashMap<>();
 
     for (Map.Entry<Integer, List<IntermediateEntry>> eachEntry: intermediateEntries.entrySet()) {
       FetchImpl fetch = new FetchImpl(new Task.PullHost(hostName, port), ShuffleType.HASH_SHUFFLE,
@@ -79,7 +79,7 @@ public class TestRepartitioner {
       fetch = new FetchImpl(proto);
       assertEquals(proto, fetch.getProto());
 
-      Map<ExecutionBlockId, List<IntermediateEntry>> ebEntries = new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+      Map<ExecutionBlockId, List<IntermediateEntry>> ebEntries = new HashMap<>();
       ebEntries.put(sid, eachEntry.getValue());
 
       hashEntries.put(eachEntry.getKey(), ebEntries);
@@ -172,12 +172,12 @@ public class TestRepartitioner {
   @Test
   public void testMergeIntermediates() {
     //Test Merge
-    List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
+    List<IntermediateEntry> intermediateEntries = new ArrayList<>();
 
     int[] pageLengths = {10 * 1024 * 1024, 10 * 1024 * 1024, 10 * 1024 * 1024, 5 * 1024 * 1024};   //35 MB
     long expectedTotalLength = 0;
     for (int i = 0; i < 20; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      List<Pair<Long, Integer>> pages = new ArrayList<>();
       long offset = 0;
       for (int j = 0; j < pageLengths.length; j++) {
         pages.add(new Pair(offset, pageLengths[j]));
@@ -222,7 +222,7 @@ public class TestRepartitioner {
 
   @Test
   public void testSplitIntermediates() {
-    List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
+    List<IntermediateEntry> intermediateEntries = new ArrayList<>();
 
     int[] pageLengths = new int[20];  //195MB
     for (int i = 0 ; i < pageLengths.length; i++) {
@@ -235,7 +235,7 @@ public class TestRepartitioner {
 
     long expectedTotalLength = 0;
     for (int i = 0; i < 20; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      List<Pair<Long, Integer>> pages = new ArrayList<>();
       long offset = 0;
       for (int j = 0; j < pageLengths.length; j++) {
         pages.add(new Pair(offset, pageLengths[j]));
@@ -256,7 +256,7 @@ public class TestRepartitioner {
     int index = 0;
     int numZeroPosFetcher = 0;
     long totalLength = 0;
-    Set<String> uniqPullHost = new HashSet<String>();
+    Set<String> uniqPullHost = new HashSet<>();
 
     for (List<FetchImpl> eachFetchList: fetches) {
       long length = 0;
@@ -365,9 +365,9 @@ public class TestRepartitioner {
         {844591486, 5523957}
     };
 
-    List<IntermediateEntry> entries = new ArrayList<IntermediateEntry>();
+    List<IntermediateEntry> entries = new ArrayList<>();
     for (int i = 0; i < 2; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      List<Pair<Long, Integer>> pages = new ArrayList<>();
       for (int j = 0; j < pageDatas.length; j++) {
         pages.add(new Pair(pageDatas[j][0], (int) (pageDatas[j][1])));
       }
@@ -409,7 +409,7 @@ public class TestRepartitioner {
 
   @Test
   public void testSplitIntermediatesWithUniqueHost() {
-    List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
+    List<IntermediateEntry> intermediateEntries = new ArrayList<>();
 
     int[] pageLengths = new int[20];  //195MB
     for (int i = 0 ; i < pageLengths.length; i++) {
@@ -424,7 +424,7 @@ public class TestRepartitioner {
     Task.PullHost pullHost = new Task.PullHost("host", 0);
 
     for (int i = 0; i < 20; i++) {
-      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      List<Pair<Long, Integer>> pages = new ArrayList<>();
       long offset = 0;
       for (int j = 0; j < pageLengths.length; j++) {
         pages.add(new Pair(offset, pageLengths[j]));
@@ -454,7 +454,7 @@ public class TestRepartitioner {
     int index = 0;
     int numZeroPosFetcher = 0;
     long totalLength = 0;
-    Set<String> uniqPullHost = new HashSet<String>();
+    Set<String> uniqPullHost = new HashSet<>();
 
     for (List<FetchImpl> eachFetchList: fetches) {
       long length = 0;

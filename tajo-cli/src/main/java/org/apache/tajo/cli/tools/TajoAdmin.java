@@ -226,12 +226,12 @@ public class TajoAdmin {
 
     int runningQueryMasterTasks = 0;
 
-    List<WorkerResourceInfo> liveWorkers = new ArrayList<WorkerResourceInfo>();
-    List<WorkerResourceInfo> deadWorkers = new ArrayList<WorkerResourceInfo>();
-    List<WorkerResourceInfo> decommissionWorkers = new ArrayList<WorkerResourceInfo>();
+    List<WorkerResourceInfo> liveWorkers = new ArrayList<>();
+    List<WorkerResourceInfo> deadWorkers = new ArrayList<>();
+    List<WorkerResourceInfo> decommissionWorkers = new ArrayList<>();
 
-    List<WorkerResourceInfo> liveQueryMasters = new ArrayList<WorkerResourceInfo>();
-    List<WorkerResourceInfo> deadQueryMasters = new ArrayList<WorkerResourceInfo>();
+    List<WorkerResourceInfo> liveQueryMasters = new ArrayList<>();
+    List<WorkerResourceInfo> deadQueryMasters = new ArrayList<>();
 
     for (WorkerResourceInfo eachWorker : workerList) {
       if(eachWorker.getWorkerStatus().equals(WorkerStatus.RUNNING.toString())) {

@@ -71,7 +71,7 @@ public class QueryExecutorServlet extends HttpServlet {
 
   //queryRunnerId -> QueryRunner
   //TODO We must handle the session.
-  private transient final Map<String, QueryRunner> queryRunners = new HashMap<String, QueryRunner>();
+  private transient final Map<String, QueryRunner> queryRunners = new HashMap<>();
 
   private transient TajoConf tajoConf;
   private transient TajoClient tajoClient;
@@ -105,7 +105,7 @@ public class QueryExecutorServlet extends HttpServlet {
   public void service(HttpServletRequest request,
                       HttpServletResponse response) throws ServletException, IOException {
     String action = request.getParameter("action");
-    Map<String, Object> returnValue = new HashMap<String, Object>();
+    Map<String, Object> returnValue = new HashMap<>();
     try {
       if(tajoClient == null) {
         errorResponse(response, "TajoClient not initialized");
@@ -241,7 +241,7 @@ public class QueryExecutorServlet extends HttpServlet {
   }
 
   private void errorResponse(HttpServletResponse response, String message) throws IOException {
-    Map<String, Object> errorMessage = new HashMap<String, Object>();
+    Map<String, Object> errorMessage = new HashMap<>();
     errorMessage.put("success", "false");
     errorMessage.put("errorMessage", message);
     writeHttpResponse(response, errorMessage);
@@ -261,7 +261,7 @@ public class QueryExecutorServlet extends HttpServlet {
     public void run() {
       List<QueryRunner> queryRunnerList;
       synchronized(queryRunners) {
-        queryRunnerList = new ArrayList<QueryRunner>(queryRunners.values());
+        queryRunnerList = new ArrayList<>(queryRunners.values());
         for(QueryRunner eachQueryRunner: queryRunnerList) {
           if(!eachQueryRunner.running.get() &&
               (System.currentTimeMillis() - eachQueryRunner.finishTime > 180 * 1000)) {
@@ -291,7 +291,7 @@ public class QueryExecutorServlet extends HttpServlet {
 
     AtomicInteger progress = new AtomicInteger(0);
 
-    List<String> columnNames = new ArrayList<String>();
+    List<String> columnNames = new ArrayList<>();
 
     List<List<Object>> queryResult;
 
@@ -499,7 +499,7 @@ public class QueryExecutorServlet extends HttpServlet {
       for(int i = 0; i < numOfColumns; i++) {
         columnNames.add(rsmd.getColumnName(i + 1));
       }
-      queryResult = new ArrayList<List<Object>>();
+      queryResult = new ArrayList<>();
 
       if(sizeLimit < resultRows) {
         numOfRows = (long)((float)(resultRows) * ((float)sizeLimit / (float) resultRows));
@@ -512,7 +512,7 @@ public class QueryExecutorServlet extends HttpServlet {
         if(rowCount > numOfRows) {
           break;
         }
-        List<Object> row = new ArrayList<Object>();
+        List<Object> row = new ArrayList<>();
         for(int i = 0; i < numOfColumns; i++) {
           row.add(String.valueOf(res.getObject(i + 1)));
         }

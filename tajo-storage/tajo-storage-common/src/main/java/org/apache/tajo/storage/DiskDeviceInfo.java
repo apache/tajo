@@ -25,7 +25,7 @@ public class DiskDeviceInfo {
 	private int id;
 	private String name;
 	
-	private List<DiskMountInfo> mountInfos = new ArrayList<DiskMountInfo>();
+	private List<DiskMountInfo> mountInfos = new ArrayList<>();
 
 	public DiskDeviceInfo(int id) {
 		this.id = id;

@@ -393,7 +393,7 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getId());
 
-        Collection<QueryInProgress> queries = new ArrayList<QueryInProgress>(context.getQueryJobManager().getSubmittedQueries());
+        Collection<QueryInProgress> queries = new ArrayList<>(context.getQueryJobManager().getSubmittedQueries());
         queries.addAll(context.getQueryJobManager().getRunningQueries());
         BriefQueryInfo.Builder infoBuilder = BriefQueryInfo.newBuilder();
 
@@ -666,7 +666,7 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
 
-        List<NodeStatus> nodeStatusList = new ArrayList<NodeStatus>(context.getResourceManager().getRMContext().getNodes().values());
+        List<NodeStatus> nodeStatusList = new ArrayList<>(context.getResourceManager().getRMContext().getNodes().values());
         Collections.sort(nodeStatusList);
 
         WorkerResourceInfo.Builder workerBuilder = WorkerResourceInfo.newBuilder();
@@ -931,7 +931,7 @@ public class TajoMasterClientService extends AbstractService {
         String functionName = request.getValue();
         Collection<FunctionDesc> functions = catalog.getFunctions();
 
-        List<CatalogProtos.FunctionDescProto> functionProtos = new ArrayList<CatalogProtos.FunctionDescProto>();
+        List<CatalogProtos.FunctionDescProto> functionProtos = new ArrayList<>();
 
         for (FunctionDesc eachFunction: functions) {
           if (functionName == null || functionName.isEmpty()) {

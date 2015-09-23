@@ -69,7 +69,7 @@ public class TajoStructObjectInspector extends StructObjectInspector {
   }
 
   TajoStructObjectInspector(Schema schema) {
-    structFields = new ArrayList<TajoStructField>(schema.size());
+    structFields = new ArrayList<>(schema.size());
 
     for (Column c: schema.getRootColumns()) {
       try {

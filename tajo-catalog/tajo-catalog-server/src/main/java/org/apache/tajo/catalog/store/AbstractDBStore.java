@@ -432,7 +432,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet resultSet = null;
 
-    List<String> tablespaceNames = new ArrayList<String>();
+    List<String> tablespaceNames = new ArrayList<>();
 
     try {
       String sql = "SELECT SPACE_NAME FROM " + TB_SPACES;
@@ -683,7 +683,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet resultSet = null;
 
-    List<String> databaseNames = new ArrayList<String>();
+    List<String> databaseNames = new ArrayList<>();
 
     try {
       String sql = "SELECT DB_NAME FROM " + TB_DATABASES;
@@ -713,7 +713,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<DatabaseProto> databases = new ArrayList<DatabaseProto>();
+    List<DatabaseProto> databases = new ArrayList<>();
 
     try {
       String sql = "SELECT DB_ID, DB_NAME, SPACE_ID FROM " + TB_DATABASES;
@@ -1819,7 +1819,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    List<String> tables = new ArrayList<String>();
+    List<String> tables = new ArrayList<>();
 
     try {
 
@@ -1852,7 +1852,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<TableDescriptorProto> tables = new ArrayList<TableDescriptorProto>();
+    List<TableDescriptorProto> tables = new ArrayList<>();
 
     try {
       String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.STORE_TYPE, " +
@@ -1901,7 +1901,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<TableOptionProto> options = new ArrayList<TableOptionProto>();
+    List<TableOptionProto> options = new ArrayList<>();
 
     try {
       String sql = "SELECT tid, key_, value_ FROM " + TB_OPTIONS;
@@ -1936,7 +1936,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<TableStatsProto> stats = new ArrayList<TableStatsProto>();
+    List<TableStatsProto> stats = new ArrayList<>();
 
     try {
       String sql = "SELECT tid, num_rows, num_bytes FROM " + TB_STATISTICS;
@@ -1968,7 +1968,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<ColumnProto> columns = new ArrayList<ColumnProto>();
+    List<ColumnProto> columns = new ArrayList<>();
 
     try {
       String sql =
@@ -2203,7 +2203,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ResultSet res = null;
     PreparedStatement pstmt = null;
     PartitionDescProto.Builder builder = null;
-    List<PartitionDescProto> partitions = new ArrayList<PartitionDescProto>();
+    List<PartitionDescProto> partitions = new ArrayList<>();
 
     final int databaseId = getDatabaseId(databaseName);
     final int tableId = getTableId(databaseId, databaseName, tableName);
@@ -2499,7 +2499,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Statement stmt = null;
     ResultSet resultSet = null;
 
-    List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
+    List<TablePartitionProto> partitions = new ArrayList<>();
 
     try {
       String sql = "SELECT " + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", PARTITION_NAME, " +
@@ -2993,7 +2993,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     ResultSet res = null;
     PreparedStatement pstmt = null;
-    final List<String> indexNames = new ArrayList<String>();
+    final List<String> indexNames = new ArrayList<>();
 
     try {
       final int databaseId = getDatabaseId(databaseName);

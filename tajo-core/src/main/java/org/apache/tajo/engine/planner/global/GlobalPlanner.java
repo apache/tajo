@@ -1277,7 +1277,7 @@ public class GlobalPlanner {
       ExecutionBlock currentBlock = context.execBlockMap.remove(child.getPID());
 
       if (child.getType() == NodeType.UNION) {
-        List<TableSubQueryNode> addedTableSubQueries = new ArrayList<TableSubQueryNode>();
+        List<TableSubQueryNode> addedTableSubQueries = new ArrayList<>();
         TableSubQueryNode leftMostSubQueryNode = null;
         for (ExecutionBlock childBlock : context.plan.getChilds(currentBlock.getId())) {
           TableSubQueryNode copy = PlannerUtil.clone(plan, node);

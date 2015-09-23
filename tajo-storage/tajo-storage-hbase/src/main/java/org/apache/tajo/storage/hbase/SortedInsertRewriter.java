@@ -58,7 +58,7 @@ public class SortedInsertRewriter implements LogicalPlanRewriteRule {
   public static Column[] getIndexColumns(Schema tableSchema, KeyValueSet tableProperty)
       throws IOException, TajoException {
 
-    List<Column> indexColumns = new ArrayList<Column>();
+    List<Column> indexColumns = new ArrayList<>();
 
     ColumnMapping columnMapping = new ColumnMapping(tableSchema, tableProperty);
 

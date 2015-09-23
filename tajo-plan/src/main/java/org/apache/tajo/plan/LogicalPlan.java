@@ -64,11 +64,11 @@ public class LogicalPlan {
   private Integer noNameColumnId = 0;
 
   /** a map from between a block name to a block plan */
-  private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<String, QueryBlock>();
-  private Map<Integer, LogicalNode> nodeMap = new HashMap<Integer, LogicalNode>();
-  private Map<Integer, QueryBlock> queryBlockByPID = new HashMap<Integer, QueryBlock>();
+  private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<>();
+  private Map<Integer, LogicalNode> nodeMap = new HashMap<>();
+  private Map<Integer, QueryBlock> queryBlockByPID = new HashMap<>();
   private Map<String, String> exprToBlockNameMap = TUtil.newHashMap();
-  private SimpleDirectedGraph<String, BlockEdge> queryBlockGraph = new SimpleDirectedGraph<String, BlockEdge>();
+  private SimpleDirectedGraph<String, BlockEdge> queryBlockGraph = new SimpleDirectedGraph<>();
 
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
@@ -266,7 +266,7 @@ public class LogicalPlan {
 
   public void removeBlock(QueryBlock block) {
     queryBlocks.remove(block.getName());
-    List<Integer> tobeRemoved = new ArrayList<Integer>();
+    List<Integer> tobeRemoved = new ArrayList<>();
     for (Map.Entry<Integer, QueryBlock> entry : queryBlockByPID.entrySet()) {
       tobeRemoved.add(entry.getKey());
     }
@@ -335,7 +335,7 @@ public class LogicalPlan {
       }
     }
     DirectedGraphCursor<String, BlockEdge> cursor =
-        new DirectedGraphCursor<String, BlockEdge>(queryBlockGraph, getRootBlock().getName());
+            new DirectedGraphCursor<>(queryBlockGraph, getRootBlock().getName());
     while(cursor.hasNext()) {
       QueryBlock block = getBlock(cursor.nextBlock());
       if (block.getPlanHistory().size() > 0) {

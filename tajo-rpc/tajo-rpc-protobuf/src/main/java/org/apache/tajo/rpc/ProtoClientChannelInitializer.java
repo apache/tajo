@@ -34,26 +34,33 @@ import java.util.concurrent.TimeUnit;
 class ProtoClientChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
   private final ChannelHandler handler;
-  private final long timeoutTimeNanos;
-  private final boolean enablePing;
+  private final long idleTimeout;
+  private final boolean hangDetection;
 
+  /**
+   * Channel Pipe Initializer
+   *
+   * @param handler          Channel Handler
+   * @param defaultInstance  Default Rpc Proto instance
+   * @param idleTimeout      Idle timeout (milliseconds)
+   */
   public ProtoClientChannelInitializer(ChannelHandler handler, MessageLite defaultInstance,
-                                       long timeoutTimeNanos,
-                                       boolean enablePing) {
+                                       long idleTimeout, boolean hangDetection) {
     this.handler = handler;
     this.defaultInstance = defaultInstance;
-    this.timeoutTimeNanos = timeoutTimeNanos;
-    this.enablePing = enablePing;
+    this.idleTimeout = idleTimeout;
+    this.hangDetection = hangDetection;
   }
 
   @Override
   protected void initChannel(Channel channel) throws Exception {
     ChannelPipeline pipeline = channel.pipeline();
     pipeline.addLast("idleStateHandler",
-        new IdleStateHandler(timeoutTimeNanos, timeoutTimeNanos / 2, 0, TimeUnit.NANOSECONDS));
+        new IdleStateHandler(idleTimeout, idleTimeout / 2, 0, TimeUnit.MILLISECONDS));
 
-    if (enablePing) pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
-
+    if (hangDetection) {
+      pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
+    }
     pipeline.addLast("frameDecoder", new ProtobufVarint32FrameDecoder());
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
     pipeline.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender());

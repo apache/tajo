@@ -18,6 +18,7 @@
 
 package org.apache.tajo.client.v2;
 
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractFuture;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
@@ -40,8 +41,10 @@ import org.apache.tajo.util.NetUtils;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -55,13 +58,15 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
   private QueryClientImpl queryClient;
   private final ExecutorService executor = Executors.newFixedThreadPool(8);
 
-  public LegacyClientDelegate(String host, int port, Map<String, String> props) {
-    super(new DummyServiceTracker(NetUtils.createSocketAddr(host, port)), null, new KeyValueSet(props));
+  public LegacyClientDelegate(String host, int port, Properties clientParams) {
+    super(new DummyServiceTracker(NetUtils.createSocketAddr(host, port)), null,
+        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams)));
     queryClient = new QueryClientImpl(this);
   }
 
-  public LegacyClientDelegate(ServiceDiscovery discovery, Map<String, String> props) {
-    super(new DelegateServiceTracker(discovery), null, new KeyValueSet(props));
+  public LegacyClientDelegate(ServiceDiscovery discovery, Properties clientParams) {
+    super(new DelegateServiceTracker(discovery), null,
+        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams)));
     queryClient = new QueryClientImpl(this);
   }
 

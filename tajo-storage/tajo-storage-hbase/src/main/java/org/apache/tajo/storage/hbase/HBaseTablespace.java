@@ -79,7 +79,7 @@ public class HBaseTablespace extends Tablespace {
 
   private final static SortedInsertRewriter REWRITE_RULE = new SortedInsertRewriter();
 
-  private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
+  private Map<HConnectionKey, HConnection> connMap = new HashMap<>();
 
   public HBaseTablespace(String spaceName, URI uri, JSONObject config) {
     super(spaceName, uri, config);
@@ -176,7 +176,7 @@ public class HBaseTablespace extends Tablespace {
               "External table should be a existed table.");
         }
         HTableDescriptor hTableDescriptor = hAdmin.getTableDescriptor(hTableName);
-        Set<String> tableColumnFamilies = new HashSet<String>();
+        Set<String> tableColumnFamilies = new HashSet<>();
         for (HColumnDescriptor eachColumn : hTableDescriptor.getColumnFamilies()) {
           tableColumnFamilies.add(eachColumn.getNameAsString());
         }
@@ -278,7 +278,7 @@ public class HBaseTablespace extends Tablespace {
             hbaseTableName);
       }
 
-      SortedSet<String> splitKeySet = new TreeSet<String>();
+      SortedSet<String> splitKeySet = new TreeSet<>();
       BufferedReader reader = null;
       try {
         reader = new BufferedReader(new InputStreamReader(fs.open(path)));
@@ -437,7 +437,7 @@ public class HBaseTablespace extends Tablespace {
         if (null == regLoc) {
           throw new IOException("Expecting at least one region.");
         }
-        List<Fragment> fragments = new ArrayList<Fragment>(1);
+        List<Fragment> fragments = new ArrayList<>(1);
         Fragment fragment = new HBaseFragment(
             tableDesc.getUri(),
             inputSourceId, htable.getName().getNameAsString(),
@@ -453,8 +453,8 @@ public class HBaseTablespace extends Tablespace {
 
       if (indexPredications != null && !indexPredications.isEmpty()) {
         // indexPredications is Disjunctive set
-        startRows = new ArrayList<byte[]>();
-        stopRows = new ArrayList<byte[]>();
+        startRows = new ArrayList<>();
+        stopRows = new ArrayList<>();
         for (IndexPredication indexPredication: indexPredications) {
           byte[] startRow;
           byte[] stopRow;
@@ -477,10 +477,10 @@ public class HBaseTablespace extends Tablespace {
       }
 
       hAdmin =  new HBaseAdmin(hbaseConf);
-      Map<ServerName, ServerLoad> serverLoadMap = new HashMap<ServerName, ServerLoad>();
+      Map<ServerName, ServerLoad> serverLoadMap = new HashMap<>();
 
       // region startkey -> HBaseFragment
-      Map<byte[], HBaseFragment> fragmentMap = new HashMap<byte[], HBaseFragment>();
+      Map<byte[], HBaseFragment> fragmentMap = new HashMap<>();
       for (int i = 0; i < keys.getFirst().length; i++) {
         HRegionLocation location = htable.getRegionLocation(keys.getFirst()[i], false);
 
@@ -549,7 +549,7 @@ public class HBaseTablespace extends Tablespace {
         }
       }
 
-      List<HBaseFragment> fragments = new ArrayList<HBaseFragment>(fragmentMap.values());
+      List<HBaseFragment> fragments = new ArrayList<>(fragmentMap.values());
       Collections.sort(fragments);
       if (!fragments.isEmpty()) {
         fragments.get(fragments.size() - 1).setLast(true);
@@ -622,7 +622,7 @@ public class HBaseTablespace extends Tablespace {
     private String username;
 
     HConnectionKey(Configuration conf) {
-      Map<String, String> m = new HashMap<String, String>();
+      Map<String, String> m = new HashMap<>();
       if (conf != null) {
         for (String property : CONNECTION_PROPERTIES) {
           String value = conf.get(property);
@@ -712,7 +712,7 @@ public class HBaseTablespace extends Tablespace {
                                                      @Nullable EvalNode filterCondition)
       throws IOException, MissingTablePropertyException, InvalidTablePropertyException {
 
-    List<IndexPredication> indexPredications = new ArrayList<IndexPredication>();
+    List<IndexPredication> indexPredications = new ArrayList<>();
     Column[] indexableColumns = getIndexableColumns(tableDesc);
     if (indexableColumns != null && indexableColumns.length == 1) {
       // Currently supports only single index column.
@@ -735,7 +735,7 @@ public class HBaseTablespace extends Tablespace {
 
   public List<Set<EvalNode>> findIndexablePredicateSet(@Nullable EvalNode qual,
                                                        Column[] indexableColumns) throws IOException {
-    List<Set<EvalNode>> indexablePredicateList = new ArrayList<Set<EvalNode>>();
+    List<Set<EvalNode>> indexablePredicateList = new ArrayList<>();
 
     // if a query statement has a search condition, try to find indexable predicates
     if (indexableColumns != null && qual != null) {
@@ -885,7 +885,7 @@ public class HBaseTablespace extends Tablespace {
           new String(new char[]{columnMapping.getRowKeyDelimiter(), Character.MAX_VALUE}));
     }
     if (startDatum != null || endDatum != null) {
-      return new Pair<Datum, Datum>(startDatum, endDatum);
+      return new Pair<>(startDatum, endDatum);
     } else {
       return null;
     }
@@ -955,7 +955,7 @@ public class HBaseTablespace extends Tablespace {
         if (endKeys.length == 1) {
           return new TupleRange[]{dataRange};
         }
-        List<TupleRange> tupleRanges = new ArrayList<TupleRange>(endKeys.length);
+        List<TupleRange> tupleRanges = new ArrayList<>(endKeys.length);
 
         TupleComparator comparator = new BaseTupleComparator(inputSchema, sortSpecs);
         Tuple previousTuple = dataRange.getStart();

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 public class RegexpMetricsFilter implements MetricFilter {
-  List<Pattern> filterPatterns = new ArrayList<Pattern>();
+  List<Pattern> filterPatterns = new ArrayList<>();
 
   public RegexpMetricsFilter(Collection<String> filterExpressions) {
     for(String eachExpression: filterExpressions) {

@@ -35,6 +35,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
@@ -42,11 +43,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import static org.apache.tajo.ResourceProtos.ExecutionBlockListProto;
-import static org.apache.tajo.ResourceProtos.ExecutionBlockContextRequest;
-import static org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
+import static org.apache.tajo.ResourceProtos.*;
 
 /**
  * A TaskManager is responsible for managing executionBlock resource and tasks.
@@ -58,6 +58,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   private final Map<ExecutionBlockId, ExecutionBlockContext> executionBlockContextMap;
   private final Dispatcher dispatcher;
   private TaskExecutor executor;
+  private final Properties rpcParams;
 
   public TaskManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext){
     this(dispatcher, workerContext, null);
@@ -70,6 +71,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
     this.workerContext = workerContext;
     this.executionBlockContextMap = Maps.newHashMap();
     this.executor = executor;
+    this.rpcParams = RpcParameterFactory.get(this.workerContext.getConf());
   }
 
   @Override
@@ -118,13 +120,13 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
       request.setExecutionBlockId(executionBlockId.getProto())
           .setWorker(getWorkerContext().getConnectionInfo().getProto());
 
-      client = RpcClientManager.getInstance().newClient(address, QueryMasterProtocol.class, true);
+      client = RpcClientManager.getInstance().newClient(address, QueryMasterProtocol.class, true, rpcParams);
       QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-      CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<ExecutionBlockContextResponse>();
+      CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<>();
       stub.getExecutionBlockContext(callback.getController(), request.build(), callback);
 
       ExecutionBlockContextResponse contextProto =
-          callback.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+          callback.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
       ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), contextProto, client);
 
       context.init();

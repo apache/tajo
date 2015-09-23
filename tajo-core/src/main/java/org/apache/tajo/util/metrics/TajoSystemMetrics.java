@@ -45,7 +45,7 @@ public class TajoSystemMetrics extends TajoMetrics {
 
   private String hostAndPort;
 
-  private List<TajoMetricsScheduledReporter> metricsReporters = new ArrayList<TajoMetricsScheduledReporter>();
+  private List<TajoMetricsScheduledReporter> metricsReporters = new ArrayList<>();
 
   private boolean inited = false;
 
@@ -126,7 +126,7 @@ public class TajoSystemMetrics extends TajoMetrics {
 
   private void setMetricsReporter(String groupName) {
     // reporter name -> class name
-    Map<String, String> reporters = new HashMap<String, String>();
+    Map<String, String> reporters = new HashMap<>();
 
     List<String> reporterNames = metricsProps.getList(groupName + ".reporters");
     if(reporterNames.isEmpty()) {
@@ -134,7 +134,7 @@ public class TajoSystemMetrics extends TajoMetrics {
       return;
     }
 
-    Map<String, String> allReporterProperties = new HashMap<String, String>();
+    Map<String, String> allReporterProperties = new HashMap<>();
 
     Iterator<String> keys = metricsProps.getKeys();
     while (keys.hasNext()) {
@@ -191,7 +191,7 @@ public class TajoSystemMetrics extends TajoMetrics {
   }
 
   private Map<String, String> findMetircsProperties(Map<String, String> allReporterProperties, String findKey) {
-    Map<String, String> metricsProperties = new HashMap<String, String>();
+    Map<String, String> metricsProperties = new HashMap<>();
 
     for (Map.Entry<String, String> entry: allReporterProperties.entrySet()) {
       String eachKey = entry.getKey();

@@ -365,7 +365,7 @@ public class TaskImpl implements Task {
     Collection<String> inputs = Lists.newArrayList(context.getInputTables());
 
     // Get all broadcasted tables
-    Set<String> broadcastTableNames = new HashSet<String>();
+    Set<String> broadcastTableNames = new HashSet<>();
     List<EnforceProperty> broadcasts = context.getEnforcer().getEnforceProperties(EnforceType.BROADCAST);
     if (broadcasts != null) {
       for (EnforceProperty eachBroadcast : broadcasts) {
@@ -553,7 +553,7 @@ public class TaskImpl implements Task {
     FileSystem fs = FileSystem.get(c);
     Path tablePath = new Path(file.getAbsolutePath());
 
-    List<FileFragment> listTablets = new ArrayList<FileFragment>();
+    List<FileFragment> listTablets = new ArrayList<>();
     FileFragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);

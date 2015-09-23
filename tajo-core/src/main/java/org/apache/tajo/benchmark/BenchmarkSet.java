@@ -41,9 +41,9 @@ import java.util.Map;
 
 public abstract class BenchmarkSet {
   protected TajoClient tajo;
-  protected Map<String, Schema> schemas = new HashMap<String, Schema>();
-  protected Map<String, Schema> outSchemas = new HashMap<String, Schema>();
-  protected Map<String, String> queries = new HashMap<String, String>();
+  protected Map<String, Schema> schemas = new HashMap<>();
+  protected Map<String, Schema> outSchemas = new HashMap<>();
+  protected Map<String, String> queries = new HashMap<>();
   protected String dataDir;
 
   public void init(TajoConf conf, String dataDir) throws SQLException {

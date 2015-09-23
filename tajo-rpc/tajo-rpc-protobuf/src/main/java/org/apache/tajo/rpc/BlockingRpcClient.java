@@ -18,18 +18,19 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
-import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.tajo.rpc.RpcConstants.*;
 
 public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCallFuture> {
 
@@ -37,37 +38,37 @@ public class BlockingRpcClient extends NettyClientBase<BlockingRpcClient.ProtoCa
   private final ProxyRpcChannel rpcChannel;
   private final NettyChannelInboundHandler handler;
 
-  @VisibleForTesting
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
-      throws NoSuchMethodException, ClassNotFoundException {
-    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false, NettyUtils.getDefaultEventLoopGroup());
-  }
-
   /**
    * Intentionally make this method package-private, avoiding user directly
    * new an instance through this constructor.
    *
-   * @param rpcConnectionKey
-   * @param retries          retry operation number of times
-   * @param timeout          disable ping, it trigger timeout event on idle-state.
-   *                         otherwise it is request timeout on active-state
-   * @param timeUnit         TimeUnit
-   * @param enablePing       enable to detect remote peer hangs
-   * @param eventLoopGroup   thread pool of netty's
+   * @param rpcConnectionKey     RpcConnectionKey
+   * @param eventLoopGroup       Thread pool of netty's
+   * @param rpcParams            Rpc connection parameters (see RpcConstants)
+   *
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
+   * @see RpcConstants
    */
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit, boolean enablePing,
-                    EventLoopGroup eventLoopGroup) throws ClassNotFoundException, NoSuchMethodException {
-    super(rpcConnectionKey, retries);
+  public BlockingRpcClient(EventLoopGroup eventLoopGroup,
+                           RpcConnectionKey rpcConnectionKey,
+                           Properties rpcParams)
+      throws ClassNotFoundException, NoSuchMethodException {
+    super(rpcConnectionKey, rpcParams);
 
     this.stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
     this.rpcChannel = new ProxyRpcChannel();
     this.handler = new ClientChannelInboundHandler();
-    init(new ProtoClientChannelInitializer(handler,
-        RpcResponse.getDefaultInstance(),
-        timeUnit.toNanos(timeout),
-        enablePing), eventLoopGroup);
+
+    long socketTimeoutMills = Long.parseLong(
+        rpcParams.getProperty(CLIENT_SOCKET_TIMEOUT, String.valueOf(CLIENT_SOCKET_TIMEOUT_DEFAULT)));
+
+    // Enable proactive hang detection
+    final boolean hangDetectionEnabled = Boolean.parseBoolean(
+        rpcParams.getProperty(CLIENT_HANG_DETECTION, String.valueOf(CLIENT_HANG_DETECTION_DEFAULT)));
+
+    init(new ProtoClientChannelInitializer(handler, RpcResponse.getDefaultInstance(), socketTimeoutMills,
+            hangDetectionEnabled), eventLoopGroup);
   }
 
   @Override

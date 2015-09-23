@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 public class JerseyResourceDelegateContext {
 
   private final ConcurrentMap<JerseyResourceDelegateContextKey<?>, Object> contextMap =
-      new ConcurrentHashMap<JerseyResourceDelegateContextKey<?>, Object>();
+          new ConcurrentHashMap<>();
   
   /**
    * Add value to Context. If value exists, it will overwrite.

@@ -2,6 +2,16 @@ Tajo Change Log
 
 Release 0.12.0 - unreleased
 
+  NEW FEATURES
+
+  IMPROVEMENT
+  
+    TAJO-1768: Move Tajo into Java 8.
+
+  BUG FIXES
+
+  SUB TASKS
+
 Release 0.11.0 - unreleased
 
   NEW FEATURES
@@ -40,6 +50,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1860: Refactor Rpc clients to take Connection Parameters. (hyunsik)
+ 
     TAJO-1868: Allow TablespaceManager::get to return a unregistered 
     tablespace. (hyunsik)
 
@@ -666,6 +678,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1844: Eliminate explicit diamond expressions. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
     TAJO-1465: Add ORCFileAppender to write into ORCFile table. 
     (Contributed by Joyngyoung Park, committed by hyunsik)

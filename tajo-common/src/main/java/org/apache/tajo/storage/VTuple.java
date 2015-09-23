@@ -68,7 +68,7 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public void put(int fieldId, Tuple tuple) {
+  public void insertTuple(int fieldId, Tuple tuple) {
     this.put(fieldId, tuple.asDatum(fieldId));
   }
 

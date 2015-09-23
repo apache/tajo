@@ -50,7 +50,7 @@ public class DescFunctionCommand extends TajoShellCommand {
     }
 
     List<CatalogProtos.FunctionDescProto> functions =
-        new ArrayList<CatalogProtos.FunctionDescProto>(client.getFunctions(functionName));
+            new ArrayList<>(client.getFunctions(functionName));
 
     Collections.sort(functions, new FunctionUtil.FunctionDescProtoComparator());
 
@@ -87,7 +87,7 @@ public class DescFunctionCommand extends TajoShellCommand {
 
     if (printDetail && !functions.isEmpty()) {
       Map<String, CatalogProtos.FunctionDescProto> functionMap =
-          new HashMap<String, CatalogProtos.FunctionDescProto>();
+              new HashMap<>();
 
       for (CatalogProtos.FunctionDescProto eachFunction: functions) {
         if (!functionMap.containsKey(eachFunction.getSupplement().getShortDescription())) {

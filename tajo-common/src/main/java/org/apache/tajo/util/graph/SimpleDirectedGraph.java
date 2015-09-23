@@ -153,7 +153,7 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
 
   @Override
   public List<V> getChilds(V v) {
-    List<V> childBlocks = new ArrayList<V>();
+    List<V> childBlocks = new ArrayList<>();
     if (reversedEdges.containsKey(v)) {
       for (Map.Entry<V, E> entry: reversedEdges.get(v).entrySet()) {
         childBlocks.add(entry.getKey());
@@ -190,7 +190,7 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
 
   @Override
   public List<V> getParents(V block) {
-    List<V> childBlocks = new ArrayList<V>();
+    List<V> childBlocks = new ArrayList<>();
     if (directedEdges.containsKey(block)) {
       for (Map.Entry<V, E> entry: directedEdges.get(block).entrySet()) {
         childBlocks.add(entry.getKey());
@@ -220,7 +220,7 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
 
   @Override
   public void accept(V source, DirectedGraphVisitor<V> visitor) {
-    Stack<V> stack = new Stack<V>();
+    Stack<V> stack = new Stack<>();
     visitRecursive(stack, source, visitor);
   }
 
@@ -267,7 +267,7 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   }
 
   private class QueryGraphTopologyStringBuilder implements DirectedGraphVisitor<V> {
-    Stack<DepthString> depthString = new Stack<DepthString>();
+    Stack<DepthString> depthString = new Stack<>();
 
     @Override
     public void visit(Stack<V> stack, V vertex) {

@@ -510,7 +510,7 @@ public class QueryExecutor {
       } else { // If INSERT INTO LOCATION
 
         // Empty TableDesc
-        List<CatalogProtos.ColumnProto> columns = new ArrayList<CatalogProtos.ColumnProto>();
+        List<CatalogProtos.ColumnProto> columns = new ArrayList<>();
         CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
             .setTableName(nodeUniqName)
             .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(BuiltinStorages.TEXT).build())

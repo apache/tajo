@@ -157,7 +157,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getTablespaces(Schema outSchema) {
     List<TablespaceProto> tablespaces = masterContext.getCatalog().getAllTablespaces();
-    List<Tuple> tuples = new ArrayList<Tuple>(tablespaces.size());
+    List<Tuple> tuples = new ArrayList<>(tablespaces.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
@@ -192,7 +192,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getDatabases(Schema outSchema) {
     List<DatabaseProto> databases = masterContext.getCatalog().getAllDatabases();
-    List<Tuple> tuples = new ArrayList<Tuple>(databases.size());
+    List<Tuple> tuples = new ArrayList<>(databases.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
@@ -222,7 +222,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getTables(Schema outSchema) {
     List<TableDescriptorProto> tables = masterContext.getCatalog().getAllTables();
-    List<Tuple> tuples = new ArrayList<Tuple>(tables.size());
+    List<Tuple> tuples = new ArrayList<>(tables.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
@@ -258,7 +258,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getColumns(Schema outSchema) {
     List<ColumnProto> columnsList = masterContext.getCatalog().getAllColumns();
-    List<Tuple> tuples = new ArrayList<Tuple>(columnsList.size());
+    List<Tuple> tuples = new ArrayList<>(columnsList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
     int columnId = 1, prevtid = -1, tid = 0;
@@ -306,7 +306,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
 
   private List<Tuple> getIndexes(Schema outSchema) {
     List<IndexDescProto> indexList = masterContext.getCatalog().getAllIndexes();
-    List<Tuple> tuples = new ArrayList<Tuple>(indexList.size());
+    List<Tuple> tuples = new ArrayList<>(indexList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
@@ -337,7 +337,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getAllTableOptions(Schema outSchema) {
     List<TableOptionProto> optionList = masterContext.getCatalog().getAllTableOptions();
-    List<Tuple> tuples = new ArrayList<Tuple>(optionList.size());
+    List<Tuple> tuples = new ArrayList<>(optionList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
@@ -364,7 +364,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getAllTableStats(Schema outSchema) {
     List<TableStatsProto> statList = masterContext.getCatalog().getAllTableStats();
-    List<Tuple> tuples = new ArrayList<Tuple>(statList.size());
+    List<Tuple> tuples = new ArrayList<>(statList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
@@ -391,7 +391,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getAllPartitions(Schema outSchema) {
     List<TablePartitionProto> partitionList = masterContext.getCatalog().getAllPartitions();
-    List<Tuple> tuples = new ArrayList<Tuple>(partitionList.size());
+    List<Tuple> tuples = new ArrayList<>(partitionList.size());
     List<Column> columns = outSchema.getRootColumns();
     Tuple aTuple;
 
@@ -521,15 +521,15 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   private List<Tuple> getClusterInfo(Schema outSchema) {
     Map<Integer, NodeStatus> workerMap = masterContext.getResourceManager().getNodes();
     List<Tuple> tuples;
-    List<NodeStatus> queryMasterList = new ArrayList<NodeStatus>();
-    List<NodeStatus> nodeStatusList = new ArrayList<NodeStatus>();
+    List<NodeStatus> queryMasterList = new ArrayList<>();
+    List<NodeStatus> nodeStatusList = new ArrayList<>();
     
     for (NodeStatus aNodeStatus : workerMap.values()) {
       queryMasterList.add(aNodeStatus);
       nodeStatusList.add(aNodeStatus);
     }
     
-    tuples = new ArrayList<Tuple>(queryMasterList.size() + nodeStatusList.size());
+    tuples = new ArrayList<>(queryMasterList.size() + nodeStatusList.size());
     for (NodeStatus queryMaster: queryMasterList) {
       tuples.add(getQueryMasterTuple(outSchema, queryMaster));
     }
@@ -591,7 +591,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
 
   @Override
   public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
-    List<ByteString> rows = new ArrayList<ByteString>();
+    List<ByteString> rows = new ArrayList<>();
     int startRow = currentRow;
     int endRow = startRow + fetchRowNum;
     

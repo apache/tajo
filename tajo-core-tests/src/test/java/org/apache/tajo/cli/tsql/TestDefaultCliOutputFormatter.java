@@ -66,7 +66,7 @@ public class TestDefaultCliOutputFormatter {
   public void setUp() throws Exception {
     conf = cluster.getConfiguration();
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(conf, new String[]{}, System.in, out);
+    tajoCli = new TajoCli(conf, new String[]{}, null, System.in, out);
     cliContext = tajoCli.getContext();
   }
 
@@ -144,7 +144,7 @@ public class TestDefaultCliOutputFormatter {
     stats.setNumRows(numRows);
     tableDesc.setStats(stats);
 
-    final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
+    final List<MetaDataTuple> resultTables = new ArrayList<>();
 
     String expectedOutput = "col1,  col2,  col3\n";
     expectedOutput += "-------------------------------\n";

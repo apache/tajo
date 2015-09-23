@@ -148,7 +148,7 @@ public class ORCScanner extends FileScanner {
       vectors[i] = createOrcVector(targetColInfo[i].type);
     }
 
-    Set<Integer> columnSet = new HashSet<Integer>();
+    Set<Integer> columnSet = new HashSet<>();
     for (ColumnInfo colInfo: targetColInfo) {
       columnSet.add(colInfo.id);
     }

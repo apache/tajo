@@ -37,7 +37,7 @@ public class TestIndexScan extends QueryTestCaseBase {
 
   public TestIndexScan() throws ServiceException, SQLException, NoSuchSessionVariableException {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
-    Map<String,String> sessionVars = new HashMap<String, String>();
+    Map<String,String> sessionVars = new HashMap<>();
     sessionVars.put(SessionVars.INDEX_ENABLED.keyname(), "true");
     sessionVars.put(SessionVars.INDEX_SELECTIVITY_THRESHOLD.keyname(), "0.01f");
     client.updateSessionVariables(sessionVars);

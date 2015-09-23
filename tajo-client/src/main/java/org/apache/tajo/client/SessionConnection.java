@@ -40,7 +40,6 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolServ
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringResponse;
@@ -51,10 +50,7 @@ import org.apache.tajo.util.ProtoUtil;
 import java.io.Closeable;
 import java.net.InetSocketAddress;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.error.Errors.ResultCode.NO_SUCH_SESSION_VARIABLE;
@@ -77,13 +73,15 @@ public class SessionConnection implements Closeable {
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /** session variable cache */
-  private final Map<String, String> sessionVarsCache = new HashMap<String, String>();
+  private final Map<String, String> sessionVarsCache = new HashMap<>();
 
   private final ServiceTracker serviceTracker;
 
   private final EventLoopGroup eventLoopGroup;
 
   private NettyClientBase client;
+
+  private Properties clientParams;
 
   private final KeyValueSet properties;
 
@@ -103,8 +101,9 @@ public class SessionConnection implements Closeable {
     this.properties = properties;
 
     this.manager = RpcClientManager.getInstance();
-    this.manager.setRetries(properties.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
     this.userInfo = UserRoleInfo.getCurrentUser();
+    // update the connection parameters to RPC client from connection properties
+    this.clientParams = ClientParameterHelper.getConnParams(properties.getAllKeyValus().entrySet());
 
     this.eventLoopGroup = NettyUtils.createEventLoopGroup(getClass().getSimpleName(), 4);
     try {
@@ -113,6 +112,9 @@ public class SessionConnection implements Closeable {
       NettyUtils.shutdown(eventLoopGroup);
       throw e;
     }
+
+    // update the session variables from connection parameters
+    updateSessionVariables(ClientParameterHelper.getSessionVars(properties.getAllKeyValus().entrySet()));
   }
 
   public Map<String, String> getClientSideSessionVars() {
@@ -130,7 +132,7 @@ public class SessionConnection implements Closeable {
 
         // Client do not closed on idle state for support high available
         this.client = manager.newBlockingClient(getTajoMasterAddr(), TajoMasterClientProtocol.class,
-            manager.getRetries(), eventLoopGroup);
+            eventLoopGroup, clientParams);
       } catch (Throwable t) {
         throw new TajoRuntimeException(new ClientConnectionException(t));
       }
@@ -217,7 +219,6 @@ public class SessionConnection implements Closeable {
 
     ensureOk(response.getState());
     updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
-    properties.putAll(sessionVarsCache);
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
@@ -362,7 +363,6 @@ public class SessionConnection implements Closeable {
       }
 
       CreateSessionResponse response = null;
-
       try {
         response = tajoMasterService.createSession(null, builder.build());
       } catch (ServiceException se) {

@@ -50,7 +50,7 @@ public class TestTableCache {
 
     final int parallelCount = 30;
     ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
-    List<Future<CacheHolder<Long>>> tasks = new ArrayList<Future<CacheHolder<Long>>>();
+    List<Future<CacheHolder<Long>>> tasks = new ArrayList<>();
     for (int i = 0; i < parallelCount; i++) {
       tasks.add(executor.submit(createTask(key, resource)));
     }

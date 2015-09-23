@@ -332,7 +332,7 @@ public class DDLExecutor {
     String databaseName;
     String simpleTableName;
 
-    List<TableDesc> tableDescList = new ArrayList<TableDesc>();
+    List<TableDesc> tableDescList = new ArrayList<>();
     for (String eachTableName : tableNames) {
       if (CatalogUtil.isFQTableName(eachTableName)) {
         String[] split = CatalogUtil.splitFQTableName(eachTableName);

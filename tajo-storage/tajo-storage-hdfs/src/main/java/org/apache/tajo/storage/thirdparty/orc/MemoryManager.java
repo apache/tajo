@@ -52,7 +52,7 @@ class MemoryManager {
   private static final int ROWS_BETWEEN_CHECKS = 5000;
   private final long totalMemoryPool;
   private final Map<Path, WriterInfo> writerList =
-      new HashMap<Path, WriterInfo>();
+          new HashMap<>();
   private long totalAllocation = 0;
   private double currentScale = 1;
   private int rowsAddedSinceCheck = 0;

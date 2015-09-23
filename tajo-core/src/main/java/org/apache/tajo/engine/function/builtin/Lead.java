@@ -85,7 +85,7 @@ public abstract class Lead extends AggFunction<Datum> {
   }
 
   private static class LeadContext implements FunctionContext {
-    LinkedList<Datum> leadBuffer = new LinkedList<Datum>();
+    LinkedList<Datum> leadBuffer = new LinkedList<>();
     int leadNum = -1;
     Datum defaultDatum = null;
   }

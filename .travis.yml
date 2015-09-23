@@ -19,7 +19,7 @@ git:
   depth: 150
 
 jdk:
-  - oraclejdk7
+  - oraclejdk8
 
 env: PATH=$PATH:$HOME/local/bin
 

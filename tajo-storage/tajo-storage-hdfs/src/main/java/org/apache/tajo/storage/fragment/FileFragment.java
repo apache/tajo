@@ -217,7 +217,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
     if(diskIds != null) {
-      List<Integer> idList = new ArrayList<Integer>();
+      List<Integer> idList = new ArrayList<>();
       for(int eachId: diskIds) {
         idList.add(eachId);
       }

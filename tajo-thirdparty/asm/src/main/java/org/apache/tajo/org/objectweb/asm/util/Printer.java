@@ -145,7 +145,7 @@ public abstract class Printer {
     protected Printer(final int api) {
         this.api = api;
         this.buf = new StringBuffer();
-        this.text = new ArrayList<Object>();
+        this.text = new ArrayList<>();
     }
 
     /**

@@ -19,21 +19,32 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Maps;
+import io.netty.channel.ConnectTimeoutException;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.error.Errors;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.util.UriUtil;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.sql.*;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.error.Errors.ResultCode.CLIENT_CONNECTION_EXCEPTION;
+import static org.apache.tajo.error.Errors.ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -197,7 +208,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   public void testResultSetCompression() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         TajoConstants.DEFAULT_DATABASE_NAME);
-    connUri = connUri + "?" + SessionVars.COMPRESSED_RESULT_TRANSFER.keyname() + "=true";
+    connUri = connUri + "?useCompression=true";
     Connection conn = DriverManager.getConnection(connUri);
     assertTrue(conn.isValid(100));
 
@@ -296,9 +307,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       int numCols = rsmd.getColumnCount();
       assertEquals(5, numCols);
 
-      Set<String> retrivedViaJavaAPI = new HashSet<String>(client.getTableList("default"));
+      Set<String> retrivedViaJavaAPI = new HashSet<>(client.getTableList("default"));
 
-      Set<String> retrievedViaJDBC = new HashSet<String>();
+      Set<String> retrievedViaJDBC = new HashSet<>();
       while (rs.next()) {
         retrievedViaJDBC.add(rs.getString("TABLE_NAME"));
       }
@@ -593,7 +604,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     try {
       if (!testingCluster.isHiveCatalogStoreRunning()) {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
-          tajoMasterAddress.getPort(), "TestTajoJdbc");
+            tajoMasterAddress.getPort(), "TestTajoJdbc");
 
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));

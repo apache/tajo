@@ -93,7 +93,7 @@ public class XMLCatalogSchemaManager {
       throw new TajoInternalError("Schema files are not loaded yet.");
     }
     
-    List<DatabaseObject> failedObjects = new ArrayList<DatabaseObject>();
+    List<DatabaseObject> failedObjects = new ArrayList<>();
     Statement stmt = null;
     
     try {
@@ -304,7 +304,7 @@ public class XMLCatalogSchemaManager {
       throw new TajoInternalError("Database schema files are not loaded.");
     }
     
-    final List<SchemaPatch> candidatePatches = new ArrayList<SchemaPatch>();
+    final List<SchemaPatch> candidatePatches = new ArrayList<>();
     Statement stmt;
     
     for (SchemaPatch patch: this.catalogStore.getPatches()) {
@@ -392,7 +392,7 @@ public class XMLCatalogSchemaManager {
       throws URISyntaxException, IOException {
     String[] files;
     String[] tempFiles;
-    List<String> filesList = new ArrayList<String>();
+    List<String> filesList = new ArrayList<>();
     File dirFile = new File(dirURL.toURI());
     
     tempFiles = dirFile.list(filter);
@@ -418,7 +418,7 @@ public class XMLCatalogSchemaManager {
 
     URL jarFileURL = new URL(spec.substring(0, seperator));
     JarFile jarFile = new JarFile(jarFileURL.toURI().getPath());
-    Set<String> filesSet = new HashSet<String>();
+    Set<String> filesSet = new HashSet<>();
     
     try {
       Enumeration<JarEntry> entries = jarFile.entries();
@@ -486,7 +486,7 @@ public class XMLCatalogSchemaManager {
   
   protected void loadFromXmlFiles() throws IOException, XMLStreamException, URISyntaxException {
     XMLInputFactory xmlIf = XMLInputFactory.newInstance();
-    final List<StoreObject> storeObjects = new ArrayList<StoreObject>();
+    final List<StoreObject> storeObjects = new ArrayList<>();
     
     xmlIf.setProperty(XMLInputFactory.IS_COALESCING, Boolean.TRUE);
     
@@ -545,7 +545,7 @@ public class XMLCatalogSchemaManager {
   
   private class StoreObjectsMerger {
     
-    private final List<StoreObject> storeObjects = new ArrayList<StoreObject>();
+    private final List<StoreObject> storeObjects = new ArrayList<>();
     private final StoreObject targetStore = new StoreObject();
     
     public StoreObjectsMerger(List<StoreObject> schemaObjects) {
@@ -579,7 +579,7 @@ public class XMLCatalogSchemaManager {
     private List<DatabaseObject> createListAndFillNull(int maxIdx) {
       DatabaseObject[] objects = new DatabaseObject[maxIdx];
       Arrays.fill(objects, null);
-      return new ArrayList<DatabaseObject>(Arrays.asList(objects));
+      return new ArrayList<>(Arrays.asList(objects));
     }
     
     protected List<DatabaseObject> mergeDatabaseObjects(List<DatabaseObject> objects) {
@@ -590,8 +590,8 @@ public class XMLCatalogSchemaManager {
       }
       
       final List<DatabaseObject> orderedObjects = createListAndFillNull(maxIdx);
-      final List<DatabaseObject> unorderedObjects = new ArrayList<DatabaseObject>();
-      final List<DatabaseObject> mergedObjects = new ArrayList<DatabaseObject>();
+      final List<DatabaseObject> unorderedObjects = new ArrayList<>();
+      final List<DatabaseObject> mergedObjects = new ArrayList<>();
       
       for (DatabaseObject object: objects) {
         if (object.getOrder() > -1) {
@@ -648,7 +648,7 @@ public class XMLCatalogSchemaManager {
     }
     
     protected void mergePatches(List<SchemaPatch> patches) {
-      final List<DatabaseObject> objects = new ArrayList<DatabaseObject>();
+      final List<DatabaseObject> objects = new ArrayList<>();
       
       Collections.sort(patches);
       
@@ -656,7 +656,7 @@ public class XMLCatalogSchemaManager {
         validatePatch(patches, patch);
         
         objects.clear();
-        List<DatabaseObject> tempObjects = new ArrayList<DatabaseObject>();
+        List<DatabaseObject> tempObjects = new ArrayList<>();
         tempObjects.addAll(patch.getObjects());
         patch.clearObjects();
         patch.addObjects(mergeDatabaseObjects(tempObjects));        

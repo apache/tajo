@@ -85,9 +85,9 @@ public class AvroScanner extends FileScanner {
     avroSchema = AvroUtil.getAvroSchema(meta, conf);
     avroFields = avroSchema.getFields();
 
-    DatumReader<GenericRecord> datumReader = new GenericDatumReader<GenericRecord>(avroSchema);
+    DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(avroSchema);
     SeekableInput input = new FsInput(fragment.getPath(), conf);
-    dataFileReader = new DataFileReader<GenericRecord>(input, datumReader);
+    dataFileReader = new DataFileReader<>(input, datumReader);
     super.init();
   }
 

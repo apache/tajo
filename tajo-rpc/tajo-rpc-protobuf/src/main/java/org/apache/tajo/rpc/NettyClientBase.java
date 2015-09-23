@@ -18,6 +18,7 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.google.protobuf.ServiceException;
@@ -31,7 +32,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.io.Closeable;
@@ -41,27 +41,50 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.tajo.rpc.RpcConstants.*;
+
 public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable {
   public final static Log LOG = LogFactory.getLog(NettyClientBase.class);
 
-  private Bootstrap bootstrap;
-  private volatile ChannelFuture channelFuture;
   private final RpcConnectionKey key;
-  private final int maxRetries;
+  /** Number to retry for connection and RPC invocation */
+  private final int maxRetryNum;
+  /** Connection Timeout */
+  private final long connTimeoutMillis;
   private boolean enableMonitor;
-
-  private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners =
-      new ConcurrentHashMap<>();
+  private final ConcurrentMap<RpcConnectionKey, ChannelEventListener> channelEventListeners = new ConcurrentHashMap<>();
   private final ConcurrentMap<Integer, T> requests = new ConcurrentHashMap<>();
 
-  public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
+  private Bootstrap bootstrap;
+  private volatile ChannelFuture channelFuture;
+
+  /**
+   * Constructor of NettyClientBase
+   *
+   * @param rpcConnectionKey RpcConnectionKey
+   * @param rpcParams        Rpc connection parameters (see RpcConstants)
+   *
+   * @throws ClassNotFoundException
+   * @throws NoSuchMethodException
+   * @see RpcConstants
+   */
+  public NettyClientBase(RpcConnectionKey rpcConnectionKey, Properties rpcParams)
       throws ClassNotFoundException, NoSuchMethodException {
     this.key = rpcConnectionKey;
-    this.maxRetries = numRetries;
+
+    this.maxRetryNum = Integer.parseInt(
+        rpcParams.getProperty(CLIENT_RETRY_NUM, String.valueOf(CLIENT_RETRY_NUM_DEFAULT)));
+
+    this.connTimeoutMillis = Integer.parseInt(
+        rpcParams.getProperty(CLIENT_CONNECTION_TIMEOUT, String.valueOf(CLIENT_CONNECTION_TIMEOUT_DEFAULT)));
+
+    // Netty only takes integer value range and this is to avoid integer overflow.
+    Preconditions.checkArgument(this.connTimeoutMillis <= Integer.MAX_VALUE, "Too long connection timeout");
   }
 
   // should be called from sub class
@@ -73,12 +96,12 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         .handler(initializer)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.SO_REUSEADDR, true)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, RpcConstants.DEFAULT_CONNECT_TIMEOUT)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) connTimeoutMillis)
         .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
         .option(ChannelOption.TCP_NODELAY, true);
   }
 
-  public RpcClientManager.RpcConnectionKey getKey() {
+  public RpcConnectionKey getKey() {
     return key;
   }
 
@@ -132,7 +155,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
           getHandler().registerCallback(rpcRequest.getId(), callback);
         } else {
 
-          if (!future.channel().isActive() && retry < maxRetries) {
+          if (!future.channel().isActive() && retry < maxRetryNum) {
 
             /* schedule the current request for the retry */
             LOG.warn(future.cause() + " Try to reconnect :" + getKey().addr);
@@ -173,6 +196,14 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     return this.channelFuture = bootstrap.clone().connect(address);
   }
 
+  private ConnectException makeConnectException(InetSocketAddress address, ChannelFuture future) {
+    if (future.cause() instanceof UnresolvedAddressException) {
+      return new ConnectException("Can't resolve host name: " + address.toString());
+    } else {
+      return new ConnectTimeoutException(future.cause().getMessage());
+    }
+  }
+
   public synchronized void connect() throws ConnectException {
     if (isConnected()) return;
 
@@ -186,10 +217,10 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
     ChannelFuture f = doConnect(address).awaitUninterruptibly();
 
     if (!f.isSuccess()) {
-      if (maxRetries > 0) {
+      if (maxRetryNum > 0) {
         doReconnect(address, f, ++retries);
       } else {
-        throw new ConnectException(ExceptionUtils.getMessage(f.cause()));
+        throw makeConnectException(address, f);
       }
     }
   }
@@ -198,7 +229,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
       throws ConnectException {
 
     for (; ; ) {
-      if (maxRetries > retries) {
+      if (maxRetryNum > retries) {
         retries++;
 
         if(getChannel().eventLoop().isShuttingDown()) {
@@ -218,12 +249,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         }
       } else {
         LOG.error("Max retry count has been exceeded. attempts=" + retries + " caused by: " + future.cause());
-
-        if (future.cause() instanceof UnresolvedAddressException) {
-          throw new ConnectException("Can't resolve host name: " + address.toString());
-        } else {
-          throw new ConnectTimeoutException(future.cause().getMessage());
-        }
+        throw makeConnectException(address, future);
       }
     }
   }

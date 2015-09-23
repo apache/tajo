@@ -48,7 +48,7 @@ public class SetCommand extends TajoShellCommand {
   }
 
   private void updateSessionVariable(String key, String val) throws NoSuchSessionVariableException {
-    Map<String, String> variables = new HashMap<String, String>();
+    Map<String, String> variables = new HashMap<>();
     variables.put(key, val);
     client.updateSessionVariables(variables);
   }

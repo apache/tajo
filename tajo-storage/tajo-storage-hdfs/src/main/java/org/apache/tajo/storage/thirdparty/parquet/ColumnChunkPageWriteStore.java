@@ -56,7 +56,7 @@ class ColumnChunkPageWriteStore implements PageWriteStore {
     private long totalValueCount;
     private int pageCount;
 
-    private Set<Encoding> encodings = new HashSet<Encoding>();
+    private Set<Encoding> encodings = new HashSet<>();
 
     private Statistics totalStatistics;
 
@@ -138,7 +138,7 @@ class ColumnChunkPageWriteStore implements PageWriteStore {
         writer.writeDictionaryPage(dictionaryPage);
         encodings.add(dictionaryPage.getEncoding());
       }
-      writer.writeDataPages(BytesInput.from(buf), uncompressedLength, compressedLength, totalStatistics, new ArrayList<Encoding>(encodings));
+      writer.writeDataPages(BytesInput.from(buf), uncompressedLength, compressedLength, totalStatistics, new ArrayList<>(encodings));
       writer.endColumn();
       if (DEBUG) {
         LOG.debug(
@@ -176,7 +176,7 @@ class ColumnChunkPageWriteStore implements PageWriteStore {
     }
   }
 
-  private final Map<ColumnDescriptor, ColumnChunkPageWriter> writers = new HashMap<ColumnDescriptor, ColumnChunkPageWriter>();
+  private final Map<ColumnDescriptor, ColumnChunkPageWriter> writers = new HashMap<>();
   private final MessageType schema;
   private final BytesCompressor compressor;
   private final int initialSize;
