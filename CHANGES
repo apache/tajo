@@ -6,7 +6,10 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
   
-    TAJO-1768: Move Tajo into Java 8.
+    TAJO-1883: Keep tajo-client and its dependent modules to be 1.7 target.
+    (hyunsik)
+
+    TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
 
