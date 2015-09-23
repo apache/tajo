@@ -535,8 +535,7 @@ public class DDLExecutor {
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
             alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
 
-        // When dropping partition on a table, the data in the table will NOT be deleted from the file system.
-        // But if PURGE is specified, the partition data will be deleted.
+        // When dropping a partition on a table, its data will NOT be deleted if the 'PURGE' option is not specified.
         if (alterTable.isPurge()) {
           deletePartitionPath(partitionDescProto);
         }
@@ -614,8 +613,8 @@ public class DDLExecutor {
     for(PartitionDescProto existingPartition : existingPartitions) {
       existingPartitionPath = new Path(existingPartition.getPath());
       existingPartitionNames.add(existingPartition.getPartitionName());
-      if (!fs.exists(existingPartitionPath)) {
-        LOG.warn("Partitions missing from Filesystem:" + existingPartition.getPartitionName());
+      if (!fs.exists(existingPartitionPath) && LOG.isDebugEnabled()) {
+        LOG.debug("Partitions missing from Filesystem:" + existingPartition.getPartitionName());
       }
     }
 
@@ -624,16 +623,21 @@ public class DDLExecutor {
     for(Path filteredPath : filteredPaths) {
       PartitionDescProto targetPartition = getPartitionDesc(simpleTableName, filteredPath);
       if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
-        LOG.info("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+        }
         targetPartitions.add(targetPartition);
       }
     }
 
     catalog.addPartitions(databaseName, simpleTableName, targetPartitions, true);
 
-    for(PartitionDescProto targetPartition: targetPartitions) {
-      LOG.info("Repair: Added partition to CatalogStore " + tableName + ":" + targetPartition.getPartitionName());
+    if (LOG.isDebugEnabled()) {
+      for(PartitionDescProto targetPartition: targetPartitions) {
+        LOG.debug("Repair: Added partition to CatalogStore " + tableName + ":" + targetPartition.getPartitionName());
+      }
     }
+
     LOG.info("Total added partitions to CatalogStore: " + targetPartitions.size());
   }
 
