@@ -52,7 +52,6 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 
