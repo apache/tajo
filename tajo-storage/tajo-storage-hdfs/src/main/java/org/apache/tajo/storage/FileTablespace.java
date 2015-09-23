@@ -342,18 +342,18 @@ public class FileTablespace extends Tablespace {
       Path p = dirs[i];
 
       FileStatus[] matches = fs.globStatus(p, inputFilter);
-      if (matches != null) {
-        if (matches.length == 0) {
-          errors.add(new IOException("Input Pattern " + p + " matches 0 files"));
-        } else {
-          for (FileStatus globStat : matches) {
-            if (globStat.isDirectory()) {
-              for (FileStatus stat : fs.listStatus(globStat.getPath(), inputFilter)) {
-                result.add(stat);
-              }
-            } else {
-              result.add(globStat);
+      if (matches == null) {
+        LOG.warn("Input path does not exist: " + p);
+      } else if (matches.length == 0) {
+        LOG.warn("Input Pattern " + p + " matches 0 files");
+      } else {
+        for (FileStatus globStat : matches) {
+          if (globStat.isDirectory()) {
+            for (FileStatus stat : fs.listStatus(globStat.getPath(), inputFilter)) {
+              result.add(stat);
             }
+          } else {
+            result.add(globStat);
           }
         }
       }
