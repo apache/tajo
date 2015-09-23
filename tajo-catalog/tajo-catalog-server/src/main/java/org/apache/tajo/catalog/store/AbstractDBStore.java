@@ -2246,8 +2246,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    * Check if list of partitions exist on catalog.
    *
    *
-   * @param databaseId
-   * @param tableId
+   * @param tableId  Table id
    * @return
    */
   public boolean existPartitionsOnCatalog(int tableId) {
