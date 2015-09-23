@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.verifier;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
@@ -249,6 +250,24 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
     if (expr.hasTableElements()) {
       assertRelationSchema(context, expr);
+    } else {
+      if (expr.getStorageType() != null) {
+        if (expr.hasSelfDescSchema()) {
+          // TODO: support other types like Parquet and ORC.
+          if (!expr.getStorageType().equalsIgnoreCase(BuiltinStorages.JSON)) {
+            if (expr.getStorageType().equalsIgnoreCase(BuiltinStorages.PARQUET) ||
+                expr.getStorageType().equalsIgnoreCase(BuiltinStorages.ORC)) {
+              throw new NotImplementedException(expr.getStorageType());
+            } else {
+              throw new UnsupportedException(expr.getStorageType());
+            }
+          }
+        } else {
+          if (expr.getLikeParentTableName() == null && expr.getSubQuery() == null) {
+            throw new TajoInternalError(expr.getTableName() + " does not have pre-defined or self-describing schema");
+          }
+        }
+      }
     }
 
     if (expr.hasStorageType()) {

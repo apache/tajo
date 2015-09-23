@@ -992,4 +992,13 @@ public class PlannerUtil {
     finder.visit(null, qual, new Stack<EvalNode>());
     return finder.getEvalNodes();
   }
+
+  public static boolean hasAsterisk(NamedExpr [] namedExprs) {
+    for (NamedExpr eachTarget : namedExprs) {
+      if (eachTarget.getExpr().getType() == OpType.Asterisk) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

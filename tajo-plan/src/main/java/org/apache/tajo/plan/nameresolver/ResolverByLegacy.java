@@ -22,9 +22,9 @@ import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.exception.AmbiguousColumnException;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
@@ -36,26 +36,30 @@ import java.util.List;
 
 public class ResolverByLegacy extends NameResolver {
   @Override
-  public Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+  public Column resolve(LogicalPlan plan,
+                        LogicalPlan.QueryBlock block,
+                        ColumnReferenceExpr columnRef,
+                        boolean includeSeflDescTable)
       throws TajoException {
 
     if (columnRef.hasQualifier()) {
-      return resolveColumnWithQualifier(plan, block, columnRef);
+      return resolveColumnWithQualifier(plan, block, columnRef, includeSeflDescTable);
     } else {
-      return resolveColumnWithoutQualifier(plan, block, columnRef);
+      return resolveColumnWithoutQualifier(plan, block, columnRef, includeSeflDescTable);
     }
   }
 
   private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                   ColumnReferenceExpr columnRef) throws TajoException {
+                                                   ColumnReferenceExpr columnRef, boolean includeSeflDescTable)
+      throws TajoException {
     final String qualifier;
     final String qualifiedName;
 
-    Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
+    Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef, includeSeflDescTable);
     qualifier = normalized.getFirst();
     qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
 
-    Column found = resolveFromRelsWithinBlock(plan, block, columnRef);
+    Column found = resolveFromRelsWithinBlock(plan, block, columnRef, includeSeflDescTable);
     if (found == null) {
       throw new UndefinedColumnException(columnRef.getCanonicalName());
     }
@@ -84,7 +88,7 @@ public class ResolverByLegacy extends NameResolver {
       List<Column> candidates = TUtil.newList();
       if (block.getNamedExprsManager().isAliased(qualifiedName)) {
         String alias = block.getNamedExprsManager().getAlias(qualifiedName);
-        found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolvingMode.LEGACY);
+        found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolvingMode.LEGACY, includeSeflDescTable);
         if (found != null) {
           candidates.add(found);
         }
@@ -98,10 +102,10 @@ public class ResolverByLegacy extends NameResolver {
   }
 
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                     ColumnReferenceExpr columnRef)
+                                              ColumnReferenceExpr columnRef, boolean includeSeflDescTable)
       throws AmbiguousColumnException, UndefinedColumnException {
 
-    Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName());
+    Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName(), includeSeflDescTable);
     if (found != null) {
       return found;
     }

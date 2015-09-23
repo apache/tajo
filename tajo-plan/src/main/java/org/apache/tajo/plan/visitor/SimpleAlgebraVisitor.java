@@ -30,6 +30,9 @@ import java.util.Stack;
 public abstract class SimpleAlgebraVisitor<CONTEXT, RESULT> extends BaseAlgebraVisitor<CONTEXT, RESULT> {
 
   public RESULT visit(CONTEXT ctx, Stack<Expr> stack, Expr expr) throws TajoException {
+    if (expr == null) {
+      return null;
+    }
     RESULT result = null;
     if (expr instanceof UnaryOperator) {
       preHook(ctx, stack, expr);

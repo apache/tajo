@@ -915,7 +915,7 @@ public class QueryTestCaseBase {
     return resultPath;
   }
 
-  private Path getDataSetFile(String fileName) throws IOException {
+  protected Path getDataSetFile(String fileName) throws IOException {
     Path dataFilePath = StorageUtil.concatPath(currentDatasetPath, fileName);
     FileSystem fs = currentDatasetPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     if (!fs.exists(dataFilePath)) {
@@ -923,10 +923,10 @@ public class QueryTestCaseBase {
         dataFilePath = StorageUtil.concatPath(namedDatasetPath, fileName);
         fs = namedDatasetPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
         if (!fs.exists(dataFilePath)) {
-          throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+          throw new IOException("Cannot find " + fileName + " at " + currentDatasetPath);
         }
       } else {
-        throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+        throw new IOException("Cannot find " + fileName + " at " + currentDatasetPath);
       }
     }
     return dataFilePath;

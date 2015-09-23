@@ -28,5 +28,6 @@
     "PartitionType": "HASH"
   },
   "IfNotExists": false,
+  "HasSelfDescSchema": false,
   "OpType": "CreateTable"
 }

@@ -2,8 +2,8 @@
 TEXT
 ****
 
-A character-separated values plain-text file represents a tabular data set consisting of rows and columns.
-Each row is a plan-text line. A line is usually broken by a character line feed ``\n`` or carriage-return ``\r``.
+A character-separated values plain text file represents a tabular data set consisting of rows and columns.
+Each row is a plain text line. A line is usually broken by a character line feed ``\n`` or carriage-return ``\r``.
 The line feed ``\n`` is the default delimiter in Tajo. Each record consists of multiple fields, separated by
 some other character or string, most commonly a literal vertical bar ``|``, comma ``,`` or tab ``\t``.
 The vertical bar is used as the default field delimiter in Tajo.
@@ -72,8 +72,8 @@ Custom (De)serializer
 =====================
 
 The *TEXT* format not only provides reading and writing interfaces for text data but also allows users to process custom
-plan-text file formats with user-defined (De)serializer classes.
-For example, with custom (de)serializers, Tajo can process JSON file formats or any specialized plan-text file formats.
+plain text file formats with user-defined (De)serializer classes.
+With custom (de)serializers, Tajo can process any text files no matter which the internal structure is.
 
 In order to specify a custom (De)serializer, set a physical property ``text.serde``.
 The property value should be a fully qualified class name.
