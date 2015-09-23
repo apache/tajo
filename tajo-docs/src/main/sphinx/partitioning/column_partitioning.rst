@@ -11,7 +11,7 @@ How to Create a Column Partitioned Table
 You can create a partitioned table by using the ``PARTITION BY`` clause. For a column partitioned table, you should use
 the ``PARTITION BY COLUMN`` clause with partition keys.
 
-For example, assume there is a table ``student`` composed of the following schema.
+For example, assume a table with the following schema.
 
 .. code-block:: sql
 
