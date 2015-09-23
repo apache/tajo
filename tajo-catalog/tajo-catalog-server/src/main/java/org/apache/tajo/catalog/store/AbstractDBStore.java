@@ -2285,7 +2285,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
       UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      PartitionNotFoundException, UnsupportedException {
+      UnsupportedException {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
@@ -2300,10 +2300,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
     if (!existPartitionMethod(request.getDatabaseName(), request.getTableName())) {
       throw new UndefinedPartitionMethodException(request.getTableName());
-    }
-
-    if (!existPartitionsOnCatalog(tableId)) {
-      throw new PartitionNotFoundException(request.getTableName());
     }
 
     try {

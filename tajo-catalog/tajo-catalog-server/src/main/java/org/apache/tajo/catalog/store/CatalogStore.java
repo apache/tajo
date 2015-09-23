@@ -165,11 +165,10 @@ public interface CatalogStore extends Closeable {
    * @throws UndefinedTableException
    * @throws UndefinedPartitionMethodException
    * @throws UndefinedOperatorException
-   * @throws PartitionNotFoundException
    */
   List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException, PartitionNotFoundException, UnsupportedException;
+    UndefinedOperatorException, UnsupportedException;
 
   /**
    * Get list of partitions matching specified filter.
@@ -186,11 +185,10 @@ public interface CatalogStore extends Closeable {
    * @throws UndefinedTableException
    * @throws UndefinedPartitionMethodException
    * @throws UndefinedOperatorException
-   * @throws PartitionNotFoundException
    */
   List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException, PartitionNotFoundException;
+    UndefinedOperatorException;
 
   List<TablePartitionProto> getAllPartitions();
 

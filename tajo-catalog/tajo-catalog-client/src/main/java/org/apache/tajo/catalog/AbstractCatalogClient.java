@@ -455,7 +455,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   @Override
   public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    PartitionNotFoundException, UnsupportedException {
+    UnsupportedException {
     try {
       final BlockingInterface stub = getStub();
       GetPartitionsResponse response = stub.getPartitionsByAlgebra(null, request);
@@ -463,7 +463,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
-      throwsIfThisError(response.getState(), PartitionNotFoundException.class);
       throwsIfThisError(response.getState(), UnsupportedException.class);
       ensureOk(response.getState());
       return response.getPartitionList();
@@ -475,7 +474,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public List<PartitionDescProto> getPartitionsByFilter(PartitionsByFilterProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException, PartitionNotFoundException {
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
     try {
       final BlockingInterface stub = getStub();
       GetPartitionsResponse response = stub.getPartitionsByFilter(null, request);
@@ -483,7 +482,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
       throwsIfThisError(response.getState(), UndefinedTableException.class);
       throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
-      throwsIfThisError(response.getState(), PartitionNotFoundException.class);
       ensureOk(response.getState());
       return response.getPartitionList();
     } catch (ServiceException e) {

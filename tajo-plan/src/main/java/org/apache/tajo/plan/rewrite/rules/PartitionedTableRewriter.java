@@ -123,7 +123,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
       throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      UndefinedOperatorException, PartitionNotFoundException, UnsupportedException {
+      UndefinedOperatorException, UnsupportedException {
 
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
@@ -147,11 +147,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       // Partial catalog might not allow some filter conditions. For example, HiveMetastore doesn't In statement,
       // Regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
       LOG.warn(ue.getMessage());
-      filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-    } catch (PartitionNotFoundException pnfe) {
-      // If partitions only exist on file system and it don't exist on catalog, Tajo need to build filtered path by
-      // listing hdfs directories.
-      LOG.warn(pnfe.getMessage());
       filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
     }
 
@@ -319,7 +314,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
   public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException,
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException, PartitionNotFoundException, UnsupportedException {
+    UndefinedOperatorException, UnsupportedException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
