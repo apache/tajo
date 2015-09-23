@@ -155,7 +155,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     LOG.info("Filtered directory or files: " + filteredPaths.length);
-
     return filteredPaths;
   }
 
