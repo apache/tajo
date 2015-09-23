@@ -25,6 +25,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import java.sql.SQLException;
 import java.util.Map;
 
+import static org.apache.tajo.error.Errors.ResultCode.INVALID_VALUE_FOR_CAST;
 import static org.apache.tajo.exception.ReturnStateUtil.isError;
 
 public class SQLExceptionUtil {
@@ -55,7 +56,7 @@ public class SQLExceptionUtil {
 
     // Data Exception (SQLState Class - 22)
     SQLSTATES.put(ResultCode.DIVISION_BY_ZERO,                      "22012");
-
+    SQLSTATES.put(ResultCode.INVALID_VALUE_FOR_CAST,                "22T01");
 
     // Section: Class 42 - Syntax Error or Access Rule Violation
     SQLSTATES.put(ResultCode.SYNTAX_ERROR,                          "42601");
@@ -71,6 +72,7 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_METHOD,            "42T06");
     SQLSTATES.put(ResultCode.UNDEFINED_OPERATOR,                    "42883"); // == UNDEFINED_FUNCTION
     SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_KEY,               "42T07");
+    SQLSTATES.put(ResultCode.UNDEFINED_TABLESPACE_HANDLER,          "42T11");
 
     SQLSTATES.put(ResultCode.DUPLICATE_TABLESPACE,                  "42T08");
     SQLSTATES.put(ResultCode.DUPLICATE_DATABASE,                    "42P04");

@@ -34,6 +34,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <parquet.version>1.5.0</parquet.version>
+    <parquet.format.version>2.1.0</parquet.format.version>
   </properties>
 
   <repositories>
@@ -128,6 +130,7 @@
                 <argument>--proto_path=../../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/StorageFragmentProtos.proto</argument>
+                <argument>src/main/proto/orc_proto.proto</argument>
               </arguments>
             </configuration>
             <goals>
@@ -335,9 +338,19 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.apache.parquet</groupId>
+      <groupId>com.twitter</groupId>
+      <artifactId>parquet-column</artifactId>
+      <version>${parquet.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.twitter</groupId>
       <artifactId>parquet-hadoop</artifactId>
-      <version>1.8.1</version>
+      <version>${parquet.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.twitter</groupId>
+      <artifactId>parquet-format</artifactId>
+      <version>${parquet.format.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

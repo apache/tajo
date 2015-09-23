@@ -58,8 +58,10 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_PARTITION, UndefinedPartitionException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
+    ADD_EXCEPTION(UNDEFINED_INDEX_NAME, UndefinedIndexException.class);
+    ADD_EXCEPTION(UNDEFINED_TABLESPACE_HANDLER, UndefinedTablespaceHandlerException.class);
 
-    ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTableException.class);
+    ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTablespaceException.class);
     ADD_EXCEPTION(DUPLICATE_DATABASE, DuplicateDatabaseException.class);
     // ADD_EXCEPTION(DUPLICATE_SCHEMA, );
     ADD_EXCEPTION(DUPLICATE_TABLE, DuplicateTableException.class);
@@ -73,6 +75,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(AMBIGUOUS_FUNCTION, AmbiguousFunctionException.class);
 
     ADD_EXCEPTION(DATATYPE_MISMATCH, DataTypeMismatchException.class);
+    ADD_EXCEPTION(DATATYPE_MISMATCH, InvalidValueForCastException.class);
 
     ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);
     ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);
@@ -186,12 +189,35 @@ public class ExceptionUtil {
   }
 
   public static void printStackTraceIfError(Log log, Throwable t) {
-    if (!ExceptionUtil.isManagedException(t)) {
+    if (System.getProperty("DEBUG") != null || !ExceptionUtil.isManagedException(t)) {
       ExceptionUtil.printStackTrace(log, t);
     }
   }
 
   public static UnsupportedException makeNotSupported(String feature) {
     return new UnsupportedException(feature);
+  }
+
+  /**
+   * Return the string about the exception line ; e.g.,)
+   * <code>Line 195 in JdbcTablespace.java</code>
+   *
+   * @return A string representing the line number and source file name at which the exception occurs.
+   */
+  @SuppressWarnings("unused")
+  public static String getExceptionLine() {
+    StackTraceElement stack = Thread.currentThread().getStackTrace()[3];
+    return "Line " + stack.getLineNumber() + " in " + stack.getFileName();
+  }
+
+  /**
+   * Return the string about the exception point; e.g.,)
+   * <code>org.apache.tajo.storage.mysql.JdbcTablespace::createTable</code>
+   *
+   * @return A string representing the class and method names at which the exception occurs.
+   */
+  public static String getExceptionPoint() {
+    StackTraceElement stack = Thread.currentThread().getStackTrace()[3];
+    return stack.getClassName() + "::" + stack.getMethodName();
   }
 }

@@ -90,14 +90,16 @@ public enum SessionVars implements ConfigKey {
 
   // for distributed query strategies
   BROADCAST_NON_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD,
-      "restriction for the total bytes of broadcasted table for non-cross join", DEFAULT, Long.class,
+      "restriction for the total size of broadcasted table for non-cross join (kb)", DEFAULT, Long.class,
       Validators.min("0")),
   BROADCAST_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD,
-      "restriction for the total bytes of broadcasted table for cross join", DEFAULT, Long.class, Validators.min("0")),
+      "restriction for the total size of broadcasted table for cross join (kb)", DEFAULT, Long.class,
+      Validators.min("0")),
 
   JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size (mb) ", DEFAULT,
       Integer.class, Validators.min("1")),
-  SORT_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_SORT_TASK_VOLUME, "sort task input size (mb)", DEFAULT),
+  SORT_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_SORT_TASK_VOLUME, "sort task input size (mb)", DEFAULT,
+      Integer.class, Validators.min("1")),
   GROUPBY_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_GROUPBY_TASK_VOLUME, "group by task input size (mb)", DEFAULT),
 
   JOIN_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME, "shuffle output size for join (mb)", DEFAULT,
@@ -147,6 +149,8 @@ public enum SessionVars implements ConfigKey {
       Integer.class, Validators.min("0")),
   BLOCK_ON_RESULT(ConfVars.$RESULT_SET_BLOCK_WAIT, "Whether to block result set on query execution", DEFAULT,
       Boolean.class, Validators.bool()),
+  COMPRESSED_RESULT_TRANSFER(ConfVars.$COMPRESSED_RESULT_TRANSFER, "Use compression to optimize result transmission.",
+      CLI_SIDE_VAR, Boolean.class, Validators.bool()),
 
   //-------------------------------------------------------------------------------
   // Only for Unit Testing

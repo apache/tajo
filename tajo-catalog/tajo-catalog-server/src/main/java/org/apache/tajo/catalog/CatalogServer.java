@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
@@ -84,8 +85,8 @@ public class CatalogServer extends AbstractService {
   private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
       List<FunctionDescProto>>();
 
-  private final LinkedMetadataManager linkedMetadataManager;
-  private final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
+  protected LinkedMetadataManager linkedMetadataManager;
+  protected final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
   private BlockingRpcServer rpcServer;
@@ -102,7 +103,8 @@ public class CatalogServer extends AbstractService {
     this.builtingFuncs = new ArrayList<FunctionDesc>();
   }
 
-  public CatalogServer(Set<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs) throws IOException {
+  public CatalogServer(Collection<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs)
+      throws IOException {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
     this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
@@ -192,6 +194,15 @@ public class CatalogServer extends AbstractService {
     super.serviceStop();
   }
 
+  /**
+   * Refresh the linked metadata manager. This must be used for only testing.
+   * @param metadataProviders
+   */
+  @VisibleForTesting
+  public void refresh(Collection<MetadataProvider> metadataProviders) {
+    this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
+  }
+
   public CatalogProtocolHandler getHandler() {
     return this.handler;
   }
@@ -270,7 +281,7 @@ public class CatalogServer extends AbstractService {
         return StringListResponse.newBuilder()
             .setState(OK)
             .addAllValues(linkedMetadataManager.getTablespaceNames())
-            .addAllValues(store.getAllDatabaseNames())
+            .addAllValues(store.getAllTablespaceNames())
             .build();
 
       } catch (Throwable t) {
@@ -363,11 +374,11 @@ public class CatalogServer extends AbstractService {
           for (AlterTablespaceCommand command : request.getCommandList()) {
             if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
               try {
-                URI uri = URI.create(command.getLocation().getUri());
+                URI uri = URI.create(command.getLocation());
                 Preconditions.checkArgument(uri.getScheme() != null);
               } catch (Exception e) {
                 throw new ServiceException("ALTER TABLESPACE's LOCATION must be a URI form (scheme:///.../), but "
-                    + command.getLocation().getUri());
+                    + command.getLocation());
               }
             }
           }
@@ -466,10 +477,14 @@ public class CatalogServer extends AbstractService {
       String databaseName = request.getValue();
 
       if (linkedMetadataManager.existsDatabase(databaseName)) {
-        return errInsufficientPrivilege("alter a table in database '" + databaseName + "'");
+        return errInsufficientPrivilege("drop a table in database '" + databaseName + "'");
       }
 
       if (metaDictionary.isSystemDatabase(databaseName)) {
+        return errInsufficientPrivilege("drop a table in database '" + databaseName + "'");
+      }
+
+      if (databaseName.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
         return errInsufficientPrivilege("drop a table in database '" + databaseName + "'");
       }
 
@@ -812,6 +827,7 @@ public class CatalogServer extends AbstractService {
       try {
         return GetColumnsResponse
             .newBuilder()
+            .setState(OK)
             .addAllColumn(store.getAllColumns())
             .build();
 
@@ -1275,7 +1291,7 @@ public class CatalogServer extends AbstractService {
     public IndexListResponse getAllIndexes(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return IndexListResponse.newBuilder().addAllIndexDesc(store.getAllIndexes()).build();
+        return IndexListResponse.newBuilder().setState(OK).addAllIndexDesc(store.getAllIndexes()).build();
 
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);

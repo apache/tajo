@@ -37,7 +37,7 @@ import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -60,9 +60,9 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "true");
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
-        "" + (5 * 1024));
+        "" + 5);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
-        "" + (2 * 1024));
+        "" + 2);
 
     testingCluster.setAllTajoDaemonConfValue(
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
@@ -79,19 +79,19 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
     if (joinOption.indexOf("Hash") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
-          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(256 * 1048576));
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(256));
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-          String.valueOf(256 * 1048576));
+          String.valueOf(256));
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-          String.valueOf(256 * 1048576));
+          String.valueOf(256));
     }
     if (joinOption.indexOf("Sort") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
           ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(1));
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-          String.valueOf(1));
+          String.valueOf(0));
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-          String.valueOf(1));
+          String.valueOf(0));
     }
   }
 
@@ -248,7 +248,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     TableMeta tableMeta = table.getMeta();
     Schema schema = table.getLogicalSchema();
 
-    String[] rows = FileUtil.readTextFileFromResource("tpch/" + tableName + ".tbl").split("\n");
+    String[] rows = JavaResourceUtil.readTextFromResource("tpch/" + tableName + ".tbl").split("\n");
 
     assertTrue(rows.length > 0);
 

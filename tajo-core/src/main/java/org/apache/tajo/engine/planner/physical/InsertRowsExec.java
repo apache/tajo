@@ -65,7 +65,7 @@ public class InsertRowsExec extends UnaryPhysicalExec {
     sumStats = new TableStats();
 
     StoreTableNode storeTableNode = (StoreTableNode) plan;
-    appender = TablespaceManager.get(storeTableNode.getUri()).get().getAppenderForInsertRow(
+    appender = TablespaceManager.get(storeTableNode.getUri()).getAppenderForInsertRow(
         context.getQueryContext(),
         context.getTaskId(), meta, storeTableNode.getTableSchema(), context.getOutputPath());
     appender.enableStats();

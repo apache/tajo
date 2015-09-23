@@ -139,7 +139,7 @@ public class TestAsyncRpc {
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    RpcChannelFactory.shutdownGracefully();
+    RpcClientManager.shutdown();
   }
 
   public void tearDownRpcServer() throws Exception {
@@ -214,7 +214,7 @@ public class TestAsyncRpc {
   public void testCallFuture() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
     stub.delay(future.getController(), echoMessage, future);
 
     assertFalse(future.isDone());
@@ -225,7 +225,7 @@ public class TestAsyncRpc {
   @Test
   public void testCallFutureTimeout() throws Exception {
     boolean timeout = false;
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
     EchoMessage echoMessage = EchoMessage.newBuilder().setMessage(MESSAGE).build();
     try {
       stub.delay(future.getController(), echoMessage, future);
@@ -242,7 +242,7 @@ public class TestAsyncRpc {
   public void testThrowException() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
     stub.throwException(future.getController(), echoMessage, future);
 
     assertFalse(future.isDone());
@@ -262,7 +262,7 @@ public class TestAsyncRpc {
   public void testThrowException2() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
     stub.throwException(null, echoMessage, future);
 
     assertFalse(future.isDone());
@@ -277,7 +277,7 @@ public class TestAsyncRpc {
   public void testServerShutdown1() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
 
     tearDownRpcServer();
 
@@ -299,7 +299,7 @@ public class TestAsyncRpc {
   public void testServerShutdown2() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
 
     tearDownRpcServer();
 
@@ -329,7 +329,7 @@ public class TestAsyncRpc {
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
 
     //lazy startup
     Thread serverThread = new Thread(new Runnable() {
@@ -375,7 +375,7 @@ public class TestAsyncRpc {
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
 
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
@@ -439,7 +439,7 @@ public class TestAsyncRpc {
       Interface stub = client.getStub();
       EchoMessage echoMessage = EchoMessage.newBuilder()
           .setMessage(MESSAGE).build();
-      CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+      CallFuture<EchoMessage> future = new CallFuture<>();
       stub.echo(future.getController(), echoMessage, future);
 
       assertFalse(future.isDone());
@@ -469,7 +469,7 @@ public class TestAsyncRpc {
 
     for (int i = 0; i < repeat; i++) {
       try {
-        CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+        CallFuture<EchoMessage> future = new CallFuture<>();
         stub.echo(future.getController(), echoMessage, future);
         assertEquals(echoMessage, future.get());
         assertTrue(future.isDone());
@@ -531,7 +531,7 @@ public class TestAsyncRpc {
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
     stub.delay(future.getController(), echoMessage, future); //3 sec delay
     assertTrue(client.isConnected());
 
@@ -557,7 +557,7 @@ public class TestAsyncRpc {
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
-    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    CallFuture<EchoMessage> future = new CallFuture<>();
     stub.busy(future.getController(), echoMessage, future); //30 sec delay
     assertFalse(future.isDone());
 

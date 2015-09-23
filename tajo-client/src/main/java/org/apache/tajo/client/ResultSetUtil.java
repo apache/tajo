@@ -43,8 +43,7 @@ public class ResultSetUtil {
     while (res.next()) {
       for (int i = 1; i <= numOfColumns; i++) {
         if (i > 1) sb.append(",  ");
-        String columnValue = res.getObject(i).toString();
-        sb.append(columnValue);
+        sb.append(String.valueOf(res.getObject(i)));
       }
       sb.append("\n");
     }

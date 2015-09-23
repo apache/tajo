@@ -58,12 +58,9 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.retriever.FileChunk;
-import org.apache.tajo.rpc.RpcChannelFactory;
-import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.rpc.NettyUtils;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 
 import java.io.*;
@@ -190,7 +187,7 @@ public class TajoPullServerService extends AbstractService {
       int workerNum = conf.getInt("tajo.shuffle.rpc.server.worker-thread-num",
           Runtime.getRuntime().availableProcessors() * 2);
 
-      selector = RpcChannelFactory.createServerChannelFactory("TajoPullServerService", workerNum)
+      selector = NettyUtils.createServerBootstrap("TajoPullServerService", workerNum)
                    .option(ChannelOption.TCP_NODELAY, true)
                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                    .childOption(ChannelOption.TCP_NODELAY, true);
@@ -432,17 +429,6 @@ public class TajoPullServerService extends AbstractService {
       lDirAlloc.getAllLocalPathsToRead(".", conf);
     }
 
-    private List<String> splitMaps(List<String> mapq) {
-      if (null == mapq) {
-        return null;
-      }
-      final List<String> ret = new ArrayList<String>();
-      for (String s : mapq) {
-        Collections.addAll(ret, s.split(","));
-      }
-      return ret;
-    }
-
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
       accepted.add(ctx.channel());
@@ -461,37 +447,30 @@ public class TajoPullServerService extends AbstractService {
 
       ProcessingStatus processingStatus = new ProcessingStatus(request.getUri().toString());
       processingStatusMap.put(request.getUri().toString(), processingStatus);
+
       // Parsing the URL into key-values
-      final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
-      final List<String> types = params.get("type");
-      final List<String> qids = params.get("qid");
+      Map<String, List<String>> params = null;
+      try {
+        params = decodeParams(request.getUri());
+      } catch (Throwable e) {
+        sendError(ctx, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
+      }
+
+      String partId = params.get("p").get(0);
+      String queryId = params.get("qid").get(0);
+      String shuffleType = params.get("type").get(0);
+      String sid =  params.get("sid").get(0);
+
       final List<String> taskIdList = params.get("ta");
-      final List<String> subQueryIds = params.get("sid");
-      final List<String> partIds = params.get("p");
       final List<String> offsetList = params.get("offset");
       final List<String> lengthList = params.get("length");
-
-      if (types == null || subQueryIds == null || qids == null || partIds == null) {
-        sendError(ctx, "Required queryId, type, subquery Id, and part id", HttpResponseStatus.BAD_REQUEST);
-        return;
-      }
-
-      if (qids.size() != 1 && types.size() != 1 || subQueryIds.size() != 1) {
-        sendError(ctx, "Required qids, type, taskIds, subquery Id, and part id", HttpResponseStatus.BAD_REQUEST);
-        return;
-      }
-
-      String partId = partIds.get(0);
-      String queryId = qids.get(0);
-      String shuffleType = types.get(0);
-      String sid = subQueryIds.get(0);
 
       long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
       long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
 
       List<String> taskIds = splitMaps(taskIdList);
 
-      String queryBaseDir = queryId.toString() + "/output";
+      Path queryBaseDir = getBaseOutputDir(queryId, sid);
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
@@ -505,15 +484,13 @@ public class TajoPullServerService extends AbstractService {
 
       // if a stage requires a range shuffle
       if (shuffleType.equals("r")) {
-        String ta = taskIds.get(0);
-        String pathString = queryBaseDir + "/" + sid + "/" + ta + "/output/";
-        if (!lDirAlloc.ifExists(pathString, conf)) {
-          LOG.warn(pathString + "does not exist.");
+        Path outputPath = StorageUtil.concatPath(queryBaseDir, taskIds.get(0), "output");
+        if (!lDirAlloc.ifExists(outputPath.toString(), conf)) {
+          LOG.warn(outputPath + "does not exist.");
           sendError(ctx, HttpResponseStatus.NO_CONTENT);
           return;
         }
-        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta
-            + "/output/", conf));
+        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(outputPath.toString(), conf));
         String startKey = params.get("start").get(0);
         String endKey = params.get("end").get(0);
         boolean last = params.get("final") != null;
@@ -533,14 +510,14 @@ public class TajoPullServerService extends AbstractService {
         // if a stage requires a hash shuffle or a scattered hash shuffle
       } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
         int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), conf);
-        String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
-        if (!lDirAlloc.ifExists(partPath, conf)) {
+        Path partPath = StorageUtil.concatPath(queryBaseDir, "hash-shuffle", String.valueOf(partParentId), partId);
+        if (!lDirAlloc.ifExists(partPath.toString(), conf)) {
           LOG.warn("Partition shuffle file not exists: " + partPath);
           sendError(ctx, HttpResponseStatus.NO_CONTENT);
           return;
         }
 
-        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath, conf));
+        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath.toString(), conf));
 
         File file = new File(path.toUri());
         long startPos = (offset >= 0 && length >= 0) ? offset : 0;
@@ -683,8 +660,9 @@ public class TajoPullServerService extends AbstractService {
     Schema keySchema = idxReader.getKeySchema();
     TupleComparator comparator = idxReader.getComparator();
 
-    LOG.info("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", "
-        + idxReader.getLastKey());
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() + ")");
+    }
 
     File data = new File(URI.create(outDir.toUri() + "/output"));
     byte [] startBytes = Base64.decodeBase64(startKey);
@@ -776,7 +754,55 @@ public class TajoPullServerService extends AbstractService {
     idxReader.close();
 
     FileChunk chunk = new FileChunk(data, startOffset, endOffset - startOffset);
-    LOG.info("Retrieve File Chunk: " + chunk);
+
+    if(LOG.isDebugEnabled()) LOG.debug("Retrieve File Chunk: " + chunk);
     return chunk;
+  }
+
+  public static List<String> splitMaps(List<String> mapq) {
+    if (null == mapq) {
+      return null;
+    }
+    final List<String> ret = new ArrayList<String>();
+    for (String s : mapq) {
+      Collections.addAll(ret, s.split(","));
+    }
+    return ret;
+  }
+
+  public static Map<String, List<String>> decodeParams(String uri) {
+    final Map<String, List<String>> params = new QueryStringDecoder(uri).parameters();
+    final List<String> types = params.get("type");
+    final List<String> qids = params.get("qid");
+    final List<String> ebIds = params.get("sid");
+    final List<String> partIds = params.get("p");
+
+    if (types == null || ebIds == null || qids == null || partIds == null) {
+      throw new IllegalArgumentException("invalid params. required :" + params);
+    }
+
+    if (qids.size() != 1 && types.size() != 1 || ebIds.size() != 1) {
+      throw new IllegalArgumentException("invalid params. required :" + params);
+    }
+
+    return params;
+  }
+
+  public static Path getBaseOutputDir(String queryId, String executionBlockSequenceId) {
+    Path workDir =
+        StorageUtil.concatPath(
+            queryId,
+            "output",
+            executionBlockSequenceId);
+    return workDir;
+  }
+
+  public static Path getBaseInputDir(String queryId, String executionBlockId) {
+    Path workDir =
+        StorageUtil.concatPath(
+            queryId,
+            "in",
+            executionBlockId);
+    return workDir;
   }
 }

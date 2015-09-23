@@ -22,14 +22,9 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.hadoop.fs.Path;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -41,7 +36,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 public class TestLinkedMetadataManager {
@@ -88,17 +82,17 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public Collection<String> getCatalogs() {
+    public Collection<String> getSchemas() {
       return Lists.newArrayList("cat1", "cat2");
     }
 
     @Override
-    public Collection<String> getTables(@Nullable String catalog) {
+    public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
       return Lists.newArrayList("table1", "table2");
     }
 
     @Override
-    public TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException {
+    public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table1")) {
         return TABLE1;
       } else if (tableName.equals("table2")) {
@@ -127,17 +121,17 @@ public class TestLinkedMetadataManager {
     }
 
     @Override
-    public Collection<String> getCatalogs() {
+    public Collection<String> getSchemas() {
       return Lists.newArrayList("cat3", "cat4");
     }
 
     @Override
-    public Collection<String> getTables(@Nullable String catalog) {
+    public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
       return Lists.newArrayList("table3", "table4");
     }
 
     @Override
-    public TableDesc getTableDescriptor(String catalogName, String tableName) throws UndefinedTablespaceException {
+    public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
       if (tableName.equals("table3")) {
         return TABLE3;
       } else if (tableName.equals("table4")) {
@@ -154,23 +148,9 @@ public class TestLinkedMetadataManager {
   @BeforeClass
   public static void setUp() throws IOException, DuplicateTablespaceException, DuplicateDatabaseException,
       UnsupportedCatalogStore {
-    TajoConf conf = new TajoConf();
-    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
-
-    server = new CatalogServer(
+    server = new MiniCatalogServer(
         Sets.newHashSet(new MockupMetadataProvider1(), new MockupMetadataProvider2()), Collections.EMPTY_LIST);
-    server.init(TestCatalog.newTajoConfForCatalogTest());
-    server.start();
     catalog = new LocalCatalogWrapper(server);
-
-    Path defaultTableSpace = CommonTestingUtil.getTestDir();
-
-    if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
-      catalog.createTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME, defaultTableSpace.toUri().toString());
-    }
-    if (!catalog.existDatabase(DEFAULT_DATABASE_NAME)) {
-      catalog.createDatabase(DEFAULT_DATABASE_NAME, TajoConstants.DEFAULT_TABLESPACE_NAME);
-    }
   }
 
   @AfterClass

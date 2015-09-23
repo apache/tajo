@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
+import net.minidev.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -128,7 +129,7 @@ public class TestFileTablespace {
       }
 
       assertTrue(fs.exists(tablePath));
-      FileTablespace space = new FileTablespace("testGetSplit", fs.getUri());
+      FileTablespace space = new FileTablespace("testGetSplit", fs.getUri(), null);
       space.init(new TajoConf(conf));
       assertEquals(fs.getUri(), space.getUri());
 
@@ -151,6 +152,55 @@ public class TestFileTablespace {
       assertEquals(testCount / 2, splits.size());
       assertEquals(1, splits.get(0).getHosts().length);
       assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
+      fs.close();
+    } finally {
+      cluster.shutdown(true);
+    }
+  }
+
+  @Test
+  public void testZeroLengthSplit() throws Exception {
+    final Configuration conf = new HdfsConfiguration();
+    String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+
+    final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
+        .numDataNodes(1).build();
+    cluster.waitClusterUp();
+    TajoConf tajoConf = new TajoConf(conf);
+    tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
+
+    int testCount = 10;
+    Path tablePath = new Path("/testZeroLengthSplit");
+    try {
+      DistributedFileSystem fs = cluster.getFileSystem();
+
+      // Create test partitions
+      List<Path> partitions = Lists.newArrayList();
+      for (int i =0; i < testCount; i++){
+        Path tmpFile = new Path(tablePath, String.valueOf(i));
+
+        //creates zero length file
+        DFSTestUtil.createFile(fs, new Path(tmpFile, "tmpfile.dat"), 0, (short) 2, 0xDEADDEADl);
+        partitions.add(tmpFile);
+      }
+
+      assertTrue(fs.exists(tablePath));
+      FileTablespace space = new FileTablespace("testZeroLengthSplit", fs.getUri(), new JSONObject());
+      space.init(new TajoConf(conf));
+      assertEquals(fs.getUri(), space.getUri());
+
+      Schema schema = new Schema();
+      schema.addColumn("id", Type.INT4);
+      schema.addColumn("age",Type.INT4);
+      schema.addColumn("name",Type.TEXT);
+      TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+
+      List<Fragment> splits = Lists.newArrayList();
+      // Get FileFragments in partition batch
+      splits.addAll(space.getSplits("data", meta, schema, partitions.toArray(new Path[partitions.size()])));
+      assertEquals(0, splits.size());
       fs.close();
     } finally {
       cluster.shutdown(true);
@@ -184,7 +234,7 @@ public class TestFileTablespace {
       }
       assertTrue(fs.exists(tablePath));
 
-      FileTablespace sm = new FileTablespace("testGetSplitWithBlockStorageLocationsBatching", fs.getUri());
+      FileTablespace sm = new FileTablespace("testGetSplitWithBlockStorageLocationsBatching", fs.getUri(), null);
       sm.init(new TajoConf(conf));
 
       assertEquals(fs.getUri(), sm.getUri());
@@ -227,15 +277,15 @@ public class TestFileTablespace {
       FileTablespace space = TablespaceManager.getLocalFs();
       assertEquals(localFs.getUri(), space.getFileSystem().getUri());
 
-      FileTablespace distTablespace = new FileTablespace("testGetFileTablespace", uri);
+      FileTablespace distTablespace = new FileTablespace("testGetFileTablespace", uri, null);
       distTablespace.init(conf);
       existingTs = TablespaceManager.addTableSpaceForTest(distTablespace);
 
       /* Distributed FileSystem */
-      space = (FileTablespace) TablespaceManager.get(uri).get();
+      space = (FileTablespace) TablespaceManager.get(uri);
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
 
-      space = (FileTablespace) TablespaceManager.getByName("testGetFileTablespace").get();
+      space = (FileTablespace) TablespaceManager.getByName("testGetFileTablespace");
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
 
     } finally {

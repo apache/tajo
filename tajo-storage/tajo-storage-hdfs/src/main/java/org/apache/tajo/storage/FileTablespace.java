@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -34,15 +35,18 @@ import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.TUtil;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.text.NumberFormat;
@@ -94,7 +98,7 @@ public class FileTablespace extends Tablespace {
         }
       };
 
-  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true);
+  private static final StorageProperty FileStorageProperties = new StorageProperty("TEXT", true, true, true, false);
   private static final FormatProperty GeneralFileProperties = new FormatProperty(true, false, true);
 
   protected FileSystem fs;
@@ -103,8 +107,8 @@ public class FileTablespace extends Tablespace {
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
 
-  public FileTablespace(String spaceName, URI uri) {
-    super(spaceName, uri);
+  public FileTablespace(String spaceName, URI uri, JSONObject config) {
+    super(spaceName, uri, config);
   }
 
   @Override
@@ -123,21 +127,14 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public void setConfig(String name, String value) {
-    conf.set(name, value);
-  }
-
-  @Override
-  public void setConfigs(Map<String, String> configs) {
-    for (Map.Entry<String, String> c : configs.entrySet()) {
-      conf.set(c.getKey(), c.getValue());
-    }
-  }
-
-  @Override
-  public long getTableVolume(URI uri) throws IOException {
+  public long getTableVolume(URI uri) throws UnsupportedException {
     Path path = new Path(uri);
-    ContentSummary summary = fs.getContentSummary(path);
+    ContentSummary summary;
+    try {
+      summary = fs.getContentSummary(path);
+    } catch (IOException e) {
+      throw new TajoInternalError(e);
+    }
     return summary.getLength();
   }
 
@@ -155,7 +152,7 @@ public class FileTablespace extends Tablespace {
   public Scanner getFileScanner(TableMeta meta, Schema schema, Path path, FileStatus status)
       throws IOException {
     Fragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
-    return getScanner(meta, schema, fragment);
+    return getScanner(meta, schema, fragment, null);
   }
 
   public FileSystem getFileSystem() {
@@ -556,9 +553,6 @@ public class FileTablespace extends Tablespace {
               splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
             }
           }
-        } else {
-          //for zero length files
-          splits.add(makeSplit(tableName, path, 0, length));
         }
       }
       if(LOG.isDebugEnabled()){
@@ -630,8 +624,10 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public List<Fragment> getSplits(String tableName, TableDesc table, ScanNode scanNode) throws IOException {
-    return getSplits(tableName, table.getMeta(), table.getSchema(), new Path(table.getUri()));
+  public List<Fragment> getSplits(String inputSourceId,
+                                  TableDesc table,
+                                  @Nullable EvalNode filterCondition) throws IOException {
+    return getSplits(inputSourceId, table.getMeta(), table.getSchema(), new Path(table.getUri()));
   }
 
   @Override
@@ -724,12 +720,7 @@ public class FileTablespace extends Tablespace {
       // for temporarily written in the storage directory
       stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
     } else {
-      Optional<Tablespace> spaceResult = TablespaceManager.get(outputPath);
-      if (!spaceResult.isPresent()) {
-        throw new IOException("No registered Tablespace for " + outputPath);
-      }
-
-      Tablespace space = spaceResult.get();
+      Tablespace space = TablespaceManager.get(outputPath);
       if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
         // If this space allows move operation, the staging directory will be underneath the final output table uri.
         stagingDir = fs.makeQualified(StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId));

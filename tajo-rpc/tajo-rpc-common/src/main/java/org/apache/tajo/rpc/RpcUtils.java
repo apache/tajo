@@ -70,7 +70,7 @@ public class RpcUtils {
   // non-blocking lock which passes only a ticket before cleared or removed
   public static class Scrutineer<T> {
 
-    private final AtomicReference<T> reference = new AtomicReference<T>();
+    private final AtomicReference<T> reference = new AtomicReference<>();
 
     public T expire() {
       return reference.getAndSet(null);

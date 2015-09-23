@@ -87,15 +87,15 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public void dropDatabase(final String databaseName) throws UndefinedDatabaseException {
+  public void dropDatabase(final String databaseName)
+      throws UndefinedDatabaseException, InsufficientPrivilegeException {
 
     try {
       final BlockingInterface stub = conn.getTMStub();
       final ReturnState state = stub.dropDatabase(null, conn.getSessionedString(databaseName));
 
-      if (isThisError(state, ResultCode.UNDEFINED_DATABASE)) {
-        throw new UndefinedDatabaseException(state);
-      }
+      throwsIfThisError(state, UndefinedDatabaseException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {
@@ -135,12 +135,13 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public TableDesc createExternalTable(String tableName, Schema schema, URI path, TableMeta meta)
+  public TableDesc createExternalTable(String tableName, @Nullable Schema schema, URI path, TableMeta meta)
       throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException {
     return createExternalTable(tableName, schema, path, meta, null);
   }
 
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
+  @Override
+  public TableDesc createExternalTable(final String tableName, @Nullable final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException {
 
@@ -151,7 +152,9 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     final ClientProtos.CreateTableRequest.Builder builder = ClientProtos.CreateTableRequest.newBuilder();
     builder.setSessionId(conn.sessionId);
     builder.setName(tableName);
-    builder.setSchema(schema.getProto());
+    if (schema != null) {
+      builder.setSchema(schema.getProto());
+    }
     builder.setMeta(meta.getProto());
     builder.setPath(path.toString());
 
@@ -238,6 +241,28 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
     ensureOk(res.getState());
     return CatalogUtil.newTableDesc(res.getTable());
+  }
+
+  @Override
+  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException {
+
+    final BlockingInterface stub = conn.getTMStub();
+
+    PartitionListResponse response;
+    try {
+      response = stub.getPartitionsByTableName(null,
+        conn.getSessionedString(tableName));
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+
+    throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
+    throwsIfThisError(response.getState(), UndefinedTableException.class);
+    throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
+
+    ensureOk(response.getState());
+    return response.getPartitionList();
   }
 
   @Override

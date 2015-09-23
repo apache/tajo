@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util;
 
+import com.google.common.base.Function;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -405,7 +406,17 @@ public class StringUtils {
    * @return A joined string
    */
   public static String join(Object[] objects) {
-    return join(objects, ", ", 0, objects.length);
+    return join(objects, ", ");
+  }
+
+  /**
+   * Concatenate all objects' string with the delimiter ", "
+   *
+   * @param objects Iterable objects
+   * @return A joined string
+   */
+  public static String join(Object[] objects, String delimiter) {
+    return join(objects, delimiter, 0, objects.length);
   }
 
   /**
@@ -430,6 +441,28 @@ public class StringUtils {
    * @return A joined string
    */
   public static String join(Object[] objects, String delimiter, int startIndex, int length) {
+    return join(objects, delimiter, startIndex, length, new Function<Object, String>() {
+      @Override
+      public String apply(Object input) {
+        return input.toString();
+      }
+    });
+  }
+
+
+  /**
+   * Concatenate all objects' string with a delimiter string
+   *
+   * @param objects object array
+   * @param delimiter Delimiter string
+   * @param f convert from a type to string
+   * @return A joined string
+   */
+  public static <T> String join(T [] objects, String delimiter, Function<T, String> f) {
+    return join(objects, delimiter, 0, objects.length, f);
+  }
+
+  public static <T> String join(T [] objects, String delimiter, int startIndex, int length, Function<T, String> f) {
     boolean first = true;
     StringBuilder sb = new StringBuilder();
     int endIndex = startIndex + length;
@@ -440,7 +473,7 @@ public class StringUtils {
         sb.append(delimiter);
       }
 
-      sb.append(objects[i].toString());
+      sb.append(f.apply(objects[i]));
     }
 
     return sb.toString();

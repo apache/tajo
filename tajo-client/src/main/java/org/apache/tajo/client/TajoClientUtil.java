@@ -33,7 +33,6 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 public class TajoClientUtil {
 
@@ -101,16 +100,15 @@ public class TajoClientUtil {
       ClientProtos.SerializedResultSet serializedResultSet = response.getResultSet();
       return new TajoMemoryResultSet(new QueryId(response.getQueryId()),
           new Schema(serializedResultSet.getSchema()),
-          serializedResultSet.getSerializedTuplesList(),
-          response.getMaxRowNum(),
+          serializedResultSet,
           client.getClientSideSessionVars());
     }
   }
 
   public static final ResultSet NULL_RESULT_SET =
-      new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, 0, null);
+      new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, null);
 
-  public static ResultSet createNullResultSet(QueryId queryId) {
-    return new TajoMemoryResultSet(queryId, new Schema(), null, 0, null);
+  public static TajoMemoryResultSet createNullResultSet(QueryId queryId) {
+    return new TajoMemoryResultSet(queryId, new Schema(), null, null);
   }
 }

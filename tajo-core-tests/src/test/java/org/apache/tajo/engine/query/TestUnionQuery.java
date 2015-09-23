@@ -690,4 +690,11 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public void testComplexUnion2() throws Exception {
     runSimpleTests();
   }
+
+  @Test
+  @Option(withExplain =  true, sort = true)
+  @SimpleTest
+  public void testUnionAndFilter() throws Exception {
+    runSimpleTests();
+  }
 }

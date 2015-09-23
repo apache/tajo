@@ -71,15 +71,12 @@ public class TestRowFile {
 
     TableMeta meta = CatalogUtil.newTableMeta("ROWFILE");
 
-    FileTablespace sm = (FileTablespace) TablespaceManager.get(cluster.getDefaultFileSystem().getUri()).get();
+    FileTablespace sm = (FileTablespace) TablespaceManager.get(cluster.getDefaultFileSystem().getUri());
 
     Path tablePath = new Path("/test");
-    Path metaPath = new Path(tablePath, ".meta");
     Path dataPath = new Path(tablePath, "test.tbl");
     FileSystem fs = sm.getFileSystem();
     fs.mkdirs(tablePath);
-
-    FileUtil.writeProto(fs, metaPath, meta.getProto());
 
     Appender appender = sm.getAppender(meta, schema, dataPath);
     appender.enableStats();
@@ -105,14 +102,11 @@ public class TestRowFile {
     assertEquals(tupleNum, stat.getNumRows().longValue());
 
     FileStatus file = fs.getFileStatus(dataPath);
-    TableProto proto = (TableProto) FileUtil.loadProto(
-        cluster.getDefaultFileSystem(), metaPath, TableProto.getDefaultInstance());
-    meta = new TableMeta(proto);
     FileFragment fragment = new FileFragment("test.tbl", dataPath, 0, file.getLen());
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
-    Scanner scanner = sm.getScanner(meta, schema, fragment);
+    Scanner scanner = sm.getScanner(meta, schema, fragment, null);
     scanner.init();
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;

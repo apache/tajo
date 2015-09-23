@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.verifier;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
@@ -168,17 +169,20 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
   }
 
-  private boolean assertRelationNoExistence(Context context, String tableName) {
+  private static String guessTableName(Context context, String givenName) {
     String qualifiedName;
-
-    if (CatalogUtil.isFQTableName(tableName)) {
-      qualifiedName = tableName;
+    if (CatalogUtil.isFQTableName(givenName)) {
+      qualifiedName = givenName;
     } else {
-      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), tableName);
+      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), givenName);
     }
-    if(qualifiedName == null) {
-      System.out.println("A");
-    }
+
+    return qualifiedName;
+  }
+
+  private boolean assertRelationNoExistence(Context context, String tableName) {
+    String qualifiedName = guessTableName(context, tableName);
+
     if (catalog.existsTable(qualifiedName)) {
       context.state.addVerification(new DuplicateTableException(qualifiedName));
       return false;
@@ -246,6 +250,24 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
     if (expr.hasTableElements()) {
       assertRelationSchema(context, expr);
+    } else {
+      if (expr.getStorageType() != null) {
+        if (expr.hasSelfDescSchema()) {
+          // TODO: support other types like Parquet and ORC.
+          if (!expr.getStorageType().equalsIgnoreCase(BuiltinStorages.JSON)) {
+            if (expr.getStorageType().equalsIgnoreCase(BuiltinStorages.PARQUET) ||
+                expr.getStorageType().equalsIgnoreCase(BuiltinStorages.ORC)) {
+              throw new NotImplementedException(expr.getStorageType());
+            } else {
+              throw new UnsupportedException(expr.getStorageType());
+            }
+          }
+        } else {
+          if (expr.getLikeParentTableName() == null && expr.getSubQuery() == null) {
+            throw new TajoInternalError(expr.getTableName() + " does not have pre-defined or self-describing schema");
+          }
+        }
+      }
     }
 
     if (expr.hasStorageType()) {

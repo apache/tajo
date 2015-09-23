@@ -79,7 +79,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
 
   @Test
   public void testConnectDatabase() throws Exception {
-    assertMetaCommandFailure("\\c unknown_db", "ERROR: database 'unknown_db' does not exist");
+    assertMetaCommandFailure("\\c unknown_db", "ERROR: database 'unknown_db' does not exist\n");
   }
 
   @Test
@@ -132,6 +132,6 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
   public void testQueryFailure() throws Exception {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
     assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem" ,
-        "ERROR: No error message\n");
+        "ERROR: Internal error. Please check out log files in ${tajo_install_dir}/logs files.\n");
   }
 }

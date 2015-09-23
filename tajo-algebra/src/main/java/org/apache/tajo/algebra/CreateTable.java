@@ -54,6 +54,8 @@ public class CreateTable extends Expr {
   private boolean ifNotExists;
   @Expose @SerializedName("LikeParentTable")
   private String likeParentTable;
+  @Expose @SerializedName("HasSelfDescSchema")
+  private boolean selfDescSchema = false;
 
   public CreateTable(final String tableName, boolean ifNotExists) {
     super(OpType.CreateTable);
@@ -174,6 +176,18 @@ public class CreateTable extends Expr {
     return likeParentTable;
   }
 
+  public void setHasSelfDescSchema() {
+    selfDescSchema = true;
+  }
+
+  public void unsetHasSelfDescSchema() {
+    selfDescSchema = false;
+  }
+
+  public boolean hasSelfDescSchema() {
+    return selfDescSchema;
+  }
+
 
   @Override
   public int hashCode() {
@@ -211,7 +225,7 @@ public class CreateTable extends Expr {
     createTable.location = location;
     createTable.subquery = subquery;
     if (params != null) {
-      createTable.params = new HashMap<String, String>(params);
+      createTable.params = new HashMap<>(params);
     }
     if (partition != null) {
       createTable.partition = (PartitionMethodDescExpr) partition.clone();
@@ -330,7 +344,7 @@ public class CreateTable extends Expr {
         }
       }
       if (specifiers != null) {
-        range.specifiers = new ArrayList<RangePartitionSpecifier>();
+        range.specifiers = new ArrayList<>();
         for (int i = 0; i < specifiers.size(); i++) {
           range.specifiers.add(specifiers.get(i));
         }
@@ -404,7 +418,7 @@ public class CreateTable extends Expr {
       }
       hash.quantity = quantity;
       if (specifiers != null) {
-        hash.specifiers = new ArrayList<PartitionSpecifier>();
+        hash.specifiers = new ArrayList<>();
         for (PartitionSpecifier specifier : specifiers) {
           hash.specifiers.add(specifier);
         }
@@ -457,7 +471,7 @@ public class CreateTable extends Expr {
         }
       }
       if (specifiers != null) {
-        listPartition.specifiers = new ArrayList<ListPartitionSpecifier>();
+        listPartition.specifiers = new ArrayList<>();
         for (ListPartitionSpecifier specifier : specifiers) {
           listPartition.specifiers.add(specifier);
         }

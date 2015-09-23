@@ -19,6 +19,7 @@
 package org.apache.tajo.rpc;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.logging.CommonsLoggerFactory;
@@ -64,12 +65,22 @@ public class RpcClientManager {
                                                    long timeout,
                                                    TimeUnit timeUnit,
                                                    boolean enablePing)
+      throws NoSuchMethodException, ConnectException, ClassNotFoundException {
+    return makeClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing, NettyUtils.getDefaultEventLoopGroup());
+  }
+
+  private <T extends NettyClientBase> T makeClient(RpcConnectionKey rpcConnectionKey,
+                                                   int retries,
+                                                   long timeout,
+                                                   TimeUnit timeUnit,
+                                                   boolean enablePing,
+                                                   EventLoopGroup eventLoopGroup)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing);
+      client = new AsyncRpcClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing, eventLoopGroup);
     } else {
-      client = new BlockingRpcClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing);
+      client = new BlockingRpcClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing, eventLoopGroup);
     }
     return (T) client;
   }
@@ -152,6 +163,19 @@ public class RpcClientManager {
     return client;
   }
 
+  public synchronized <T extends NettyClientBase> T newBlockingClient(InetSocketAddress addr,
+                                                                      Class<?> protocolClass,
+                                                                      int retries,
+                                                                      EventLoopGroup eventLoopGroup)
+      throws NoSuchMethodException, ClassNotFoundException, ConnectException {
+
+    T client = makeClient(new RpcConnectionKey(addr, protocolClass, false),
+        retries, 0, TimeUnit.SECONDS, false, eventLoopGroup);
+    client.connect();
+    assert client.isConnected();
+    return client;
+  }
+
   /**
    * Request to close this clients
    * After it is closed, it is removed from clients map.
@@ -159,11 +183,13 @@ public class RpcClientManager {
   public static void close() {
     LOG.info("Closing RPC client manager");
 
-    for (NettyClientBase eachClient : clients.values()) {
-      try {
-        eachClient.close();
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
+    synchronized (clients) {
+      for (NettyClientBase eachClient : clients.values()) {
+        try {
+          eachClient.close();
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+        }
       }
     }
   }
@@ -173,8 +199,7 @@ public class RpcClientManager {
    * After it is shutdown it is not possible to reuse it again.
    */
   public static void shutdown() {
-    close();
-    RpcChannelFactory.shutdownGracefully();
+    NettyUtils.shutdownGracefully();
   }
 
   protected static boolean contains(RpcConnectionKey key) {

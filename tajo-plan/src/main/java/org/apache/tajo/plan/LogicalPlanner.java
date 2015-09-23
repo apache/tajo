@@ -126,6 +126,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return queryBlock;
     }
 
+    public LogicalPlan getPlan() {
+      return plan;
+    }
+
     public OverridableConf getQueryContext() {
       return queryContext;
     }
@@ -160,7 +164,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     PlanContext context = new PlanContext(queryContext, plan, rootBlock, evalOptimizer, debug);
-    preprocessor.visit(context, new Stack<Expr>(), expr);
+    preprocessor.process(context, expr);
     plan.resetGeneratedId();
     LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
 
@@ -323,18 +327,40 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
-    Schema outSchema = projectionNode.getOutSchema();
-    GroupbyNode dupRemoval = context.plan.createNode(GroupbyNode.class);
-    dupRemoval.setChild(child);
-    dupRemoval.setInSchema(projectionNode.getInSchema());
-    dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
-    dupRemoval.setGroupingColumns(outSchema.toArray());
+    if (child.getType() == NodeType.SORT) {
+      SortNode sortNode = (SortNode) child;
 
-    block.registerNode(dupRemoval);
-    postHook(context, stack, null, dupRemoval);
+      GroupbyNode dupRemoval = context.plan.createNode(GroupbyNode.class);
+      dupRemoval.setForDistinctBlock();
+      dupRemoval.setChild(sortNode.getChild());
+      dupRemoval.setInSchema(sortNode.getInSchema());
+      dupRemoval.setTargets(PlannerUtil.schemaToTargets(sortNode.getInSchema()));
+      dupRemoval.setGroupingColumns(sortNode.getInSchema().toArray());
 
-    projectionNode.setChild(dupRemoval);
-    projectionNode.setInSchema(dupRemoval.getOutSchema());
+      block.registerNode(dupRemoval);
+      postHook(context, stack, null, dupRemoval);
+
+      sortNode.setChild(dupRemoval);
+      sortNode.setInSchema(dupRemoval.getOutSchema());
+      sortNode.setOutSchema(dupRemoval.getOutSchema());
+      projectionNode.setInSchema(sortNode.getOutSchema());
+      projectionNode.setChild(sortNode);
+
+    } else {
+      Schema outSchema = projectionNode.getOutSchema();
+      GroupbyNode dupRemoval = context.plan.createNode(GroupbyNode.class);
+      dupRemoval.setForDistinctBlock();
+      dupRemoval.setChild(child);
+      dupRemoval.setInSchema(projectionNode.getInSchema());
+      dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
+      dupRemoval.setGroupingColumns(outSchema.toArray());
+
+      block.registerNode(dupRemoval);
+      postHook(context, stack, null, dupRemoval);
+
+      projectionNode.setChild(dupRemoval);
+      projectionNode.setInSchema(dupRemoval.getOutSchema());
+    }
   }
 
   private Pair<String [], ExprNormalizer.WindowSpecReferences []> doProjectionPrephase(PlanContext context,
@@ -1313,7 +1339,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ScanNode scanNode = block.getNodeFromExpr(expr);
-    updatePhysicalInfo(context, scanNode.getTableDesc());
+    updatePhysicalInfo(scanNode.getTableDesc());
 
     // Find expression which can be evaluated at this relation node.
     // Except for column references, additional expressions used in select list, where clause, order-by clauses
@@ -1350,7 +1376,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static LinkedHashSet<Target> createFieldTargetsFromRelation(QueryBlock block, RelationNode relationNode,
-                                                      Set<String> newlyEvaluatedRefNames) {
+                                                                      Set<String> newlyEvaluatedRefNames) {
     LinkedHashSet<Target> targets = Sets.newLinkedHashSet();
     for (Column column : relationNode.getLogicalSchema().getAllColumns()) {
 
@@ -1372,24 +1398,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return targets;
   }
 
-  private void updatePhysicalInfo(PlanContext planContext, TableDesc desc) {
-    if (desc.getUri() != null &&
-        !desc.getMeta().getStoreType().equals("SYSTEM") &&
-        !desc.getMeta().getStoreType().equals("FAKEFILE") && // FAKEFILE is used for test
-        PlannerUtil.isFileStorageType(desc.getMeta().getStoreType())) {
+  private void updatePhysicalInfo(TableDesc desc) {
+
+    // FAKEFILE is used for test
+    if (!desc.getMeta().getStoreType().equals("SYSTEM") && !desc.getMeta().getStoreType().equals("FAKEFILE")) {
       try {
-        Path path = new Path(desc.getUri());
-        FileSystem fs = path.getFileSystem(planContext.queryContext.getConf());
-        FileStatus status = fs.getFileStatus(path);
-        if (desc.getStats() != null && (status.isDirectory() || status.isFile())) {
-          ContentSummary summary = fs.getContentSummary(path);
-          if (summary != null) {
-            long volume = summary.getLength();
-            desc.getStats().setNumBytes(volume);
-          }
+        if (desc.getStats() != null) {
+          desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
         }
-      } catch (Throwable t) {
-        LOG.warn(t, t);
+      } catch (UnsupportedException t) {
+        LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume()");
+        // -1 means unknown volume size.
+        desc.getStats().setNumBytes(-1);
       }
     }
   }
@@ -1980,8 +2000,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return createTableNode;
 
     } else { // if CREATE AN EMPTY TABLE
-      Schema tableSchema = convertColumnsToSchema(expr.getTableElements());
-      createTableNode.setTableSchema(tableSchema);
+      if (!expr.hasSelfDescSchema()) {
+        Schema tableSchema = convertColumnsToSchema(expr.getTableElements());
+        createTableNode.setTableSchema(tableSchema);
+      } else {
+        createTableNode.setSelfDescSchema(true);
+      }
 
       if (expr.isExternal()) {
         createTableNode.setExternal(true);

@@ -47,7 +47,7 @@ public class HBasePutAppender extends AbstractHBaseAppender {
   public void init() throws IOException {
     super.init();
 
-    HBaseTablespace space = (HBaseTablespace) TablespaceManager.get(uri).get();
+    HBaseTablespace space = (HBaseTablespace) TablespaceManager.get(uri);
     HConnection hconn = space.getConnection();
     htable = hconn.getTable(columnMapping.getHbaseTableName());
     htable.setAutoFlushTo(false);

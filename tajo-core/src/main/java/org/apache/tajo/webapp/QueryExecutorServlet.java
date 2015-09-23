@@ -514,7 +514,7 @@ public class QueryExecutorServlet extends HttpServlet {
         }
         List<Object> row = new ArrayList<Object>();
         for(int i = 0; i < numOfColumns; i++) {
-          row.add(res.getObject(i + 1).toString());
+          row.add(String.valueOf(res.getObject(i + 1)));
         }
         queryResult.add(row);
         rowCount++;

@@ -39,6 +39,7 @@ public class ErrorMessages {
     ADD_MESSAGE(NOT_IMPLEMENTED, "not implemented feature: %s", 1);
     ADD_MESSAGE(FEATURE_NOT_SUPPORTED, "unsupported feature: %s", 1);
     ADD_MESSAGE(INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
+    ADD_MESSAGE(INVALID_VALUE_FOR_CAST, "%s value cannot be casted to %s", 2);
 
     // Query Management and Scheduler
     ADD_MESSAGE(QUERY_FAILED, "query has been failed due to %s", 1);
@@ -71,6 +72,7 @@ public class ErrorMessages {
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_TABLE, "index ''%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_COLUMNS, "index does not exist for '%s' columns of '%s' table", 2);
     ADD_MESSAGE(UNDEFINED_INDEX_NAME, "index name '%s' does not exist", 1);
+    ADD_MESSAGE(UNDEFINED_TABLESPACE_HANDLER, "No tablespace handler for URI scheme '%s'", 1);
 
     ADD_MESSAGE(DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
     ADD_MESSAGE(DUPLICATE_DATABASE, "database '%s' already exists", 1);

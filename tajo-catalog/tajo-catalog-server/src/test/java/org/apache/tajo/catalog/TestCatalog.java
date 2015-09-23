@@ -27,14 +27,10 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
-import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedFunctionException;
-import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -43,7 +39,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -52,52 +47,23 @@ import java.util.*;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
 
 public class TestCatalog {
   static final String FieldName1="f1";
 	static final String FieldName2="f2";
-	static final String FieldName3="f3";	
+	static final String FieldName3="f3";
 
 	Schema schema1;
 	
 	static CatalogServer server;
 	static CatalogService catalog;
 
-  public static TajoConf newTajoConfForCatalogTest() throws IOException, UnsupportedCatalogStore {
-    return CatalogTestingUtil.configureCatalog(new TajoConf(), setupClusterTestBuildDir().getAbsolutePath());
-  }
-
-  public static File setupClusterTestBuildDir() throws IOException {
-    String randomStr = UUID.randomUUID().toString();
-    String dirStr = CommonTestingUtil.getTestDir(randomStr).toString();
-    File dir = new File(dirStr).getAbsoluteFile();
-    // Have it cleaned up on exit
-    dir.deleteOnExit();
-    return dir;
-  }
-
 	@BeforeClass
 	public static void setUp() throws Exception {
 
-
-    Path defaultTableSpace = CommonTestingUtil.getTestDir();
-
-	  server = new CatalogServer();
-    server.init(newTajoConfForCatalogTest());
-    server.start();
+    server = new MiniCatalogServer();
     catalog = new LocalCatalogWrapper(server);
-    if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
-      catalog.createTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME, defaultTableSpace.toUri().toString());
-    }
-    if (!catalog.existDatabase(DEFAULT_DATABASE_NAME)) {
-      catalog.createDatabase(DEFAULT_DATABASE_NAME, TajoConstants.DEFAULT_TABLESPACE_NAME);
-    }
-
-    for(String table : catalog.getAllTableNames(DEFAULT_DATABASE_NAME)) {
-      catalog.dropTable(table);
-    }
 	}
 
 	@AfterClass
@@ -132,7 +98,7 @@ public class TestCatalog {
     AlterTablespaceProto.AlterTablespaceCommand.Builder commandBuilder =
         AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
     commandBuilder.setType(AlterTablespaceType.LOCATION);
-    commandBuilder.setLocation(SetLocation.newBuilder().setUri("hdfs://zzz.com/warehouse"));
+    commandBuilder.setLocation("hdfs://zzz.com/warehouse");
     AlterTablespaceProto.Builder alter = AlterTablespaceProto.newBuilder();
     alter.setSpaceName("space1");
     alter.addCommand(commandBuilder.build());
@@ -155,7 +121,7 @@ public class TestCatalog {
     // ALTER TABLESPACE space1 LOCATION 'hdfs://zzz.com/warehouse';
     commandBuilder = AlterTablespaceProto.AlterTablespaceCommand.newBuilder();
     commandBuilder.setType(AlterTablespaceType.LOCATION);
-    commandBuilder.setLocation(SetLocation.newBuilder().setUri("hdfs://www.com/warehouse"));
+    commandBuilder.setLocation("hdfs://www.com/warehouse");
     alter = AlterTablespaceProto.newBuilder();
     alter.setSpaceName("space2");
     alter.addCommand(commandBuilder.build());
@@ -182,20 +148,6 @@ public class TestCatalog {
     catalog.createDatabase("testCreateAndDropDatabases", TajoConstants.DEFAULT_TABLESPACE_NAME);
     assertTrue(catalog.existDatabase("testCreateAndDropDatabases"));
     catalog.dropDatabase("testCreateAndDropDatabases");
-  }
-  
-  @Test
-  public void testCreateAndDropDatabaseWithCharacterSensitivity() throws Exception {
-    assertFalse(catalog.existDatabase("TestDatabase1"));
-    assertFalse(catalog.existDatabase("testDatabase1"));
-    catalog.createDatabase("TestDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME);
-    assertTrue(catalog.existDatabase("TestDatabase1"));
-    assertFalse(catalog.existDatabase("testDatabase1"));
-    catalog.createDatabase("testDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME);
-    assertTrue(catalog.existDatabase("TestDatabase1"));
-    assertTrue(catalog.existDatabase("testDatabase1"));
-    catalog.dropDatabase("TestDatabase1");
-    catalog.dropDatabase("testDatabase1");
   }
 
   @Test
@@ -273,43 +225,6 @@ public class TestCatalog {
 
     catalog.dropDatabase("tmpdb2");
     assertFalse(catalog.existDatabase("tmpdb2"));
-  }
-  
-  @Test
-  public void testCreateAndDropTableWithCharacterSensivity() throws Exception {
-    String databaseName = "TestDatabase1";
-    catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME);
-    assertTrue(catalog.existDatabase(databaseName));
-    
-    String tableName = "TestTable1";
-    Schema schema = new Schema();
-    schema.addColumn("Column", Type.BLOB);
-    schema.addColumn("column", Type.INT4);
-    schema.addColumn("cOlumn", Type.INT8);
-    Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
-    TableDesc table = new TableDesc(
-        CatalogUtil.buildFQName(databaseName, tableName),
-        schema,
-        new TableMeta("TEXT", new KeyValueSet()),
-        path.toUri(), true);
-    
-    catalog.createTable(table);
-    
-    tableName = "testTable1";
-    schema = new Schema();
-    schema.addColumn("Column", Type.BLOB);
-    schema.addColumn("column", Type.INT4);
-    schema.addColumn("cOlumn", Type.INT8);
-    path = new Path(CommonTestingUtil.getTestDir(), tableName);
-    table = new TableDesc(
-        CatalogUtil.buildFQName(databaseName, tableName),
-        schema,
-        new TableMeta("TEXT", new KeyValueSet()),
-        path.toUri(), true);
-    
-    catalog.createTable(table);
-    
-    catalog.dropDatabase(databaseName);
   }
 
   static String dbPrefix = "db_";
@@ -920,32 +835,13 @@ public class TestCatalog {
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setPartitionName(partitionName);
-
-    String[] partitionNames = partitionName.split("/");
-
-    List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
-    for(int i = 0; i < partitionNames.length; i++) {
-      String columnName = partitionNames[i].split("=")[0];
-      String partitionValue = partitionNames[i].split("=")[1];
-
-      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
-      builder.setColumnName(partitionValue);
-      builder.setPartitionValue(columnName);
-      partitionKeyList.add(builder.build());
-    }
-
-    partitionDesc.setPartitionKeys(partitionKeyList);
-
-    partitionDesc.setPath("hdfs://xxx.com/warehouse/" + partitionName);
-
-    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setPartitionDesc(CatalogTestingUtil.buildPartitionDesc(partitionName));
 
     catalog.alterTable(alterTableDesc);
 
-    CatalogProtos.PartitionDescProto resultDesc = catalog.getPartition(DEFAULT_DATABASE_NAME,
-      "addedtable", partitionName);
+    String [] split = CatalogUtil.splitFQTableName(tableName);
+
+    CatalogProtos.PartitionDescProto resultDesc = catalog.getPartition(split[0], split[1], partitionName);
 
     assertNotNull(resultDesc);
     assertEquals(resultDesc.getPartitionName(), partitionName);
@@ -953,7 +849,6 @@ public class TestCatalog {
 
     assertEquals(resultDesc.getPartitionKeysCount(), 2);
   }
-
 
   private void testDropPartition(String tableName, String partitionName) throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();

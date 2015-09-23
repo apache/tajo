@@ -18,12 +18,14 @@
 
 package org.apache.tajo.storage.orc;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
@@ -46,6 +48,7 @@ import org.joda.time.DateTimeZone;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TimeZone;
 
 /**
  * OrcScanner for reading ORC files
@@ -152,17 +155,17 @@ public class ORCScanner extends FileScanner {
 
     orcReader = new OrcReader(orcDataSource, new OrcMetadataReader());
 
+    TimeZone timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+      TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+
     // TODO: make OrcPredicate useful
-    // TODO: TimeZone should be from conf
-    // TODO: it might be splittable
+    // presto-orc uses joda timezone, so it needs to be converted.
     recordReader = orcReader.createRecordReader(columnSet, OrcPredicate.TRUE,
-        fragment.getStartKey(), fragment.getLength(), DateTimeZone.getDefault());
+        fragment.getStartKey(), fragment.getLength(), DateTimeZone.forTimeZone(timezone));
 
     LOG.debug("file fragment { path: " + fragment.getPath() +
       ", start offset: " + fragment.getStartKey() +
       ", length: " + fragment.getLength() + "}");
-
-    getNextBatch();
   }
 
   @Override
@@ -243,6 +246,18 @@ public class ORCScanner extends FileScanner {
 
         return DatumFactory.createBlob(((SliceVector) vector).vector[currentPosInBatch].getBytes());
 
+      case PROTOBUF:
+        try {
+          if (((SliceVector) vector).vector[currentPosInBatch] == null)
+            return NullDatum.get();
+
+          return ProtobufDatumFactory.createDatum(type,
+            ((SliceVector) vector).vector[currentPosInBatch].getBytes());
+        } catch (InvalidProtocolBufferException e) {
+          LOG.error("ERROR", e);
+          return NullDatum.get();
+        }
+
       case TIMESTAMP:
         if (((LongVector) vector).isNull[currentPosInBatch])
           return NullDatum.get();
@@ -278,6 +293,10 @@ public class ORCScanner extends FileScanner {
    */
   private void getNextBatch() throws IOException {
     batchSize = recordReader.nextBatch();
+
+    // end of file
+    if (batchSize == -1)
+      return;
 
     for (int i=0; i<targetColInfo.length; i++) {
       recordReader.readVector(targetColInfo[i].id, vectors[i]);

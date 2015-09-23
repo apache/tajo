@@ -198,7 +198,7 @@ public class CatalogUtil {
   public static String [] splitFQTableName(String qualifiedName) {
     String [] splitted = CatalogUtil.splitTableName(qualifiedName);
     if (splitted.length == 1) {
-      throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
+      throw new IllegalArgumentException("Table name is expected to be qualified, but was \""
           + qualifiedName + "\".");
     }
     return splitted;
@@ -873,7 +873,11 @@ public class CatalogUtil {
     return pair;
   }
 
-  /* It is the relationship graph of type conversions. */
+  /*
+   * It is the relationship graph of type conversions.
+   * It contains tuples, each of which (LHS type, RHS type, Result type).
+   */
+
   public static final Map<Type, Map<Type, Type>> OPERATION_CASTING_MAP = Maps.newHashMap();
 
   static {
@@ -929,9 +933,16 @@ public class CatalogUtil {
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.TEXT, Type.TEXT);
 
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.TIMESTAMP, Type.TIMESTAMP);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.TEXT, Type.TEXT);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.VARCHAR, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.VARCHAR, Type.TIMESTAMP, Type.TIMESTAMP);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.VARCHAR, Type.TEXT, Type.TEXT);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.VARCHAR, Type.VARCHAR, Type.TEXT);
+
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.TIMESTAMP, Type.TIMESTAMP);
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.TEXT, Type.TEXT);
-    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.TEXT, Type.TEXT);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.VARCHAR, Type.TEXT);
 
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIME, Type.TIME, Type.TIME);
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.DATE, Type.DATE, Type.DATE);

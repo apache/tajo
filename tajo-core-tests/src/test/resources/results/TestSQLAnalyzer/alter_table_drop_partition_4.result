@@ -1,0 +1,21 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "DROP_PARTITION",
+  "Columns": [
+    {
+      "ColumnName": "col1",
+      "OpType": "Column"
+    }
+  ],
+  "Values": [
+    {
+      "Value": "TAJO",
+      "ValueType": "String",
+      "OpType": "Literal"
+    }
+  ],
+  "IsPurge": true,
+  "IfNotExists": false,
+  "IfExists": true,
+  "OpType": "AlterTable"
+}

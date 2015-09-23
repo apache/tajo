@@ -93,12 +93,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
         lastFileName = new Path(lastFileName + "_" + suffixId);
       }
 
-      Optional<FileTablespace> spaceRes = TablespaceManager.get(lastFileName.toUri());
-      if (!spaceRes.isPresent())  {
-        throw new IllegalStateException("No Tablespace for " + lastFileName.toUri());
-      }
-
-      FileTablespace space = spaceRes.get();
+      FileTablespace space = TablespaceManager.get(lastFileName.toUri());
       appender = space.getAppender(meta, appenderSchema, lastFileName);
 
       if (suffixId > 0) {
@@ -107,7 +102,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
       }
     } else {
       Path stagingDir = context.getQueryContext().getStagingDir();
-      appender = TablespaceManager.get(stagingDir.toUri()).get().getAppender(
+      appender = TablespaceManager.get(stagingDir.toUri()).getAppender(
           context.getQueryContext(),
           context.getTaskId(),
           meta,

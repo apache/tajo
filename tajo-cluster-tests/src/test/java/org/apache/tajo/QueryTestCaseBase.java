@@ -19,6 +19,7 @@
 package org.apache.tajo;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
@@ -37,8 +38,9 @@ import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.InsufficientPrivilegeException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.jdbc.FetchResultSet;
@@ -206,10 +208,13 @@ public class QueryTestCaseBase {
     client = testBase.getTestingCluster().newTajoClient();
 
     URL datasetBaseURL = ClassLoader.getSystemResource("dataset");
+    Preconditions.checkNotNull(datasetBaseURL, "dataset directory is absent.");
     datasetBasePath = new Path(datasetBaseURL.toString());
     URL queryBaseURL = ClassLoader.getSystemResource("queries");
+    Preconditions.checkNotNull(queryBaseURL, "queries directory is absent.");
     queryBasePath = new Path(queryBaseURL.toString());
     URL resultBaseURL = ClassLoader.getSystemResource("results");
+    Preconditions.checkNotNull(resultBaseURL, "results directory is absent.");
     resultBasePath = new Path(resultBaseURL.toString());
   }
 
@@ -223,11 +228,19 @@ public class QueryTestCaseBase {
     // if the current database is "default", shouldn't drop it.
     if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
       for (String tableName : catalog.getAllTableNames(currentDatabase)) {
-        client.updateQuery("DROP TABLE IF EXISTS " + tableName);
+        try {
+          client.updateQuery("DROP TABLE IF EXISTS " + tableName);
+        } catch (InsufficientPrivilegeException i) {
+          LOG.warn("relation '" + tableName + "' is read only.");
+        }
       }
 
       client.selectDatabase(TajoConstants.DEFAULT_DATABASE_NAME);
-      client.dropDatabase(currentDatabase);
+      try {
+        client.dropDatabase(currentDatabase);
+      } catch (InsufficientPrivilegeException e) {
+        LOG.warn("database '" + currentDatabase + "' is read only.");
+      }
     }
     client.close();
   }
@@ -902,7 +915,7 @@ public class QueryTestCaseBase {
     return resultPath;
   }
 
-  private Path getDataSetFile(String fileName) throws IOException {
+  protected Path getDataSetFile(String fileName) throws IOException {
     Path dataFilePath = StorageUtil.concatPath(currentDatasetPath, fileName);
     FileSystem fs = currentDatasetPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     if (!fs.exists(dataFilePath)) {
@@ -910,10 +923,10 @@ public class QueryTestCaseBase {
         dataFilePath = StorageUtil.concatPath(namedDatasetPath, fileName);
         fs = namedDatasetPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
         if (!fs.exists(dataFilePath)) {
-          throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+          throw new IOException("Cannot find " + fileName + " at " + currentDatasetPath);
         }
       } else {
-        throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+        throw new IOException("Cannot find " + fileName + " at " + currentDatasetPath);
       }
     }
     return dataFilePath;
