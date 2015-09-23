@@ -105,7 +105,7 @@ public class DatabasesResource {
       MasterContext masterContext = context.get(masterContextKey);
       
       Collection<String> databaseNames = masterContext.getCatalog().getAllDatabaseNames();
-      Map<String, Collection<String>> databaseNamesMap = new HashMap<String, Collection<String>>();
+      Map<String, Collection<String>> databaseNamesMap = new HashMap<>();
       databaseNamesMap.put(databasesKeyName, databaseNames);
       return Response.ok(databaseNamesMap).build();
     }

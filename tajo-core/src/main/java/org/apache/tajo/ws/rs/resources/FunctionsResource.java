@@ -89,8 +89,8 @@ public class FunctionsResource {
       
       Collection<FunctionDesc> functionDescriptors = masterContext.getCatalog().getFunctions();
       if (functionDescriptors.size() > 0) {
-        List<FunctionSignature> functionSignature = 
-            new ArrayList<FunctionSignature>(functionDescriptors.size());
+        List<FunctionSignature> functionSignature =
+                new ArrayList<>(functionDescriptors.size());
         for (FunctionDesc functionDesc : functionDescriptors) {
           functionSignature.add(functionDesc.getSignature());
         }

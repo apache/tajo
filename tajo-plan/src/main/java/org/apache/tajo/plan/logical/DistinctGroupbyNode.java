@@ -122,7 +122,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     }
 
     if (subGroupbyPlan != null) {
-      cloneNode.subGroupbyPlan = new ArrayList<GroupbyNode>();
+      cloneNode.subGroupbyPlan = new ArrayList<>();
       for (GroupbyNode eachNode: subGroupbyPlan) {
         GroupbyNode groupbyNode = (GroupbyNode)eachNode.clone();
         groupbyNode.setPID(-1);
@@ -243,7 +243,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   }
 
   public Column[] getFirstStageShuffleKeyColumns() {
-    List<Column> shuffleKeyColumns = new ArrayList<Column>();
+    List<Column> shuffleKeyColumns = new ArrayList<>();
     shuffleKeyColumns.add(getOutSchema().getColumn(0));   //distinctseq column
     if (groupingColumns != null) {
       for (Column eachColumn: groupingColumns) {

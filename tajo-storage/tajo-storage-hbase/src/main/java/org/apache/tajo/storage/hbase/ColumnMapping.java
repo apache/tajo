@@ -170,7 +170,7 @@ public class ColumnMapping {
   }
 
   public List<String> getColumnFamilyNames() {
-    List<String> cfNames = new ArrayList<String>();
+    List<String> cfNames = new ArrayList<>();
 
     for (byte[][] eachCfName: mappingColumns) {
       if (eachCfName != null && eachCfName.length > 0 && eachCfName[0] != null) {

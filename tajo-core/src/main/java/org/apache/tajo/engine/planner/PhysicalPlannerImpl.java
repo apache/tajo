@@ -1095,7 +1095,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
     //2 phase: seq, groupby columns, distinct1 keys, distinct2 keys,
     //3 phase: groupby columns, seq, distinct1 keys, distinct2 keys,
-    List<SortSpec> sortSpecs = new ArrayList<SortSpec>();
+    List<SortSpec> sortSpecs = new ArrayList<>();
     if (phase == 2) {
       sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
     }

@@ -86,7 +86,7 @@ public class Query implements EventHandler<QueryEvent> {
   private int killedStagesCount = 0;
   private int failedStagesCount = 0;
   private int erroredStagesCount = 0;
-  private final List<String> diagnostics = new ArrayList<String>();
+  private final List<String> diagnostics = new ArrayList<>();
 
   // Internal Variables
   private final Lock readLock;
@@ -248,7 +248,7 @@ public class Query implements EventHandler<QueryEvent> {
       return 1.0f;
     } else {
       int idx = 0;
-      List<Stage> tempStages = new ArrayList<Stage>();
+      List<Stage> tempStages = new ArrayList<>();
       synchronized(stages) {
         tempStages.addAll(stages.values());
       }
@@ -301,7 +301,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   private List<StageHistory> makeStageHistories() {
-    List<StageHistory> stageHistories = new ArrayList<StageHistory>();
+    List<StageHistory> stageHistories = new ArrayList<>();
     for(Stage eachStage : getStages()) {
       stageHistories.add(eachStage.getStageHistory());
     }
@@ -318,7 +318,7 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setLogicalPlan(plan.getLogicalPlan().toString());
     queryHistory.setDistributedPlan(plan.toString());
 
-    List<String[]> sessionVariables = new ArrayList<String[]>();
+    List<String[]> sessionVariables = new ArrayList<>();
     for(Map.Entry<String,String> entry: plan.getContext().getAllKeyValus().entrySet()) {
       if (SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey()))) {
         sessionVariables.add(new String[]{entry.getKey(), entry.getValue()});

@@ -106,7 +106,7 @@ public class HdfsOrcDataSource
     Iterable<DiskRange> mergedRanges = mergeAdjacentDiskRanges(diskRanges.values(), maxMergeDistance);
 
     // read ranges
-    Map<DiskRange, byte[]> buffers = new LinkedHashMap<DiskRange, byte[]>();
+    Map<DiskRange, byte[]> buffers = new LinkedHashMap<>();
     for (DiskRange mergedRange : mergedRanges) {
       // read full range in one request
       byte[] buffer = new byte[mergedRange.getLength()];

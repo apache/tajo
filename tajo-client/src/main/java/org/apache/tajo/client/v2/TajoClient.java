@@ -29,6 +29,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.util.Map;
+import java.util.Properties;
 
 public class TajoClient implements Closeable {
   private static Log LOG = LogFactory.getLog(TajoClient.class);
@@ -52,11 +53,11 @@ public class TajoClient implements Closeable {
   /**
    * Initialize TajoClient with a hostname and default port 26002.
    *
-   * @param host       Hostname to connect
-   * @param properties Connection properties
+   * @param host         Hostname to connect
+   * @param clientParams Client connection parameters
    */
-  public TajoClient(String host, Map<String, String> properties) throws ClientUnableToConnectException {
-    delegate = ClientDelegateFactory.newDefaultDelegate(host, DEFAULT_PORT, properties);
+  public TajoClient(String host, Properties clientParams) throws ClientUnableToConnectException {
+    delegate = ClientDelegateFactory.newDefaultDelegate(host, DEFAULT_PORT, clientParams);
   }
 
   /**
@@ -72,12 +73,12 @@ public class TajoClient implements Closeable {
   /**
    * Initialize TajoClient with a hostname and port
    *
-   * @param host       Hostname to connect
-   * @param port       Port number to connect
-   * @param properties Connection properties
+   * @param host           Hostname to connect
+   * @param port           Port number to connect
+   * @param clientParams   Client connection parameters
    */
-  public TajoClient(String host, int port, Map<String, String> properties) throws ClientUnableToConnectException {
-    delegate = ClientDelegateFactory.newDefaultDelegate(host, port, properties);
+  public TajoClient(String host, int port, Properties clientParams) throws ClientUnableToConnectException {
+    delegate = ClientDelegateFactory.newDefaultDelegate(host, port, clientParams);
   }
 
   /**
@@ -92,11 +93,11 @@ public class TajoClient implements Closeable {
   /**
    * Initialize TajoClient via service discovery protocol
    *
-   * @param discovery Service discovery
-   * @param properties Connection properties
+   * @param discovery    Service discovery
+   * @param clientParams Client connection parameters
    */
-  public TajoClient(ServiceDiscovery discovery, Map<String, String> properties) throws ClientUnableToConnectException {
-    delegate = ClientDelegateFactory.newDefaultDelegate(discovery, properties);
+  public TajoClient(ServiceDiscovery discovery, Properties clientParams) throws ClientUnableToConnectException {
+    delegate = ClientDelegateFactory.newDefaultDelegate(discovery, clientParams);
   }
 
   /**

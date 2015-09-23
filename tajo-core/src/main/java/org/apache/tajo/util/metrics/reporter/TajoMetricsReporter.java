@@ -32,10 +32,10 @@ public abstract class TajoMetricsReporter {
                               SortedMap<String, Timer> timers);
 
   public <T> Map<String, Map<String, T>> findMetricsItemGroup(SortedMap<String, T> metricsMap) {
-    Map<String, Map<String, T>> metricsGroup = new HashMap<String, Map<String, T>>();
+    Map<String, Map<String, T>> metricsGroup = new HashMap<>();
 
     String previousGroup = null;
-    Map<String, T> groupItems = new HashMap<String, T>();
+    Map<String, T> groupItems = new HashMap<>();
 
     for (Map.Entry<String, T> entry : metricsMap.entrySet()) {
       String key = entry.getKey();
@@ -66,7 +66,7 @@ public abstract class TajoMetricsReporter {
 
       if (previousGroup != null && !previousGroup.equals(groupName)) {
         metricsGroup.put(previousGroup, groupItems);
-        groupItems = new HashMap<String, T>();
+        groupItems = new HashMap<>();
       }
       groupItems.put(itemName, entry.getValue());
       previousGroup = groupName;

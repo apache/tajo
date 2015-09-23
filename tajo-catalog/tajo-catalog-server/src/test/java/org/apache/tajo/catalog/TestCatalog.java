@@ -152,7 +152,7 @@ public class TestCatalog {
 
   @Test
   public void testCreateAndDropManyDatabases() throws Exception {
-    List<String> createdDatabases = new ArrayList<String>();
+    List<String> createdDatabases = new ArrayList<>();
     InfoSchemaMetadataDictionary dictionary = new InfoSchemaMetadataDictionary();
     String namePrefix = "database_";
     final int NUM = 10;
@@ -235,7 +235,7 @@ public class TestCatalog {
 
   private Map<String, List<String>> createBaseDatabaseAndTables() throws IOException, TajoException {
 
-    Map<String, List<String>> createdDatabaseAndTablesMap = new HashMap<String, List<String>>();
+    Map<String, List<String>> createdDatabaseAndTablesMap = new HashMap<>();
 
     // add and divide all tables to multiple databases in a round robin manner
     for (int tableId = 0; tableId < TOTAL_TABLE_NUM; tableId++) {
@@ -274,7 +274,7 @@ public class TestCatalog {
     Map<String, List<String>> createdTablesMap = createBaseDatabaseAndTables();
 
     // Each time we drop one database, check all databases and their tables.
-    Iterator<String> it = new ArrayList<String>(createdTablesMap.keySet()).iterator();
+    Iterator<String> it = new ArrayList<>(createdTablesMap.keySet()).iterator();
     while(it.hasNext()) {
       // drop one database
       String databaseName = it.next();

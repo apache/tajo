@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 public class TestJSPUtil {
   @Test
   public void testSortTask() throws Exception {
-    List<Task> tasks = new ArrayList<Task>();
+    List<Task> tasks = new ArrayList<>();
 
     Configuration conf = new TajoConf();
 
@@ -84,7 +84,7 @@ public class TestJSPUtil {
 
   @Test
   public void testGetPageNavigationList() {
-    List<String> originList = new ArrayList<String>();
+    List<String> originList = new ArrayList<>();
 
     for (int i = 0; i < 35; i++) {
       originList.add("Data" + (i + 1));

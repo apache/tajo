@@ -75,7 +75,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   }
 
   private static void compileIfAbsent(CompilationContext context, Schema schema, EvalNode eval) {
-    Pair<Schema, EvalNode> key = new Pair<Schema, EvalNode>(schema, eval);
+    Pair<Schema, EvalNode> key = new Pair<>(schema, eval);
     if (!context.compiledEval.containsKey(key)) {
       try {
         EvalNode compiled = context.compiler.compile(schema, eval);

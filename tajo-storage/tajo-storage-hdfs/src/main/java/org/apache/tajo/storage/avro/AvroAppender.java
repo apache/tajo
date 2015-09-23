@@ -80,8 +80,8 @@ public class AvroAppender extends FileAppender {
     avroFields = avroSchema.getFields();
 
     DatumWriter<GenericRecord> datumWriter =
-        new GenericDatumWriter<GenericRecord>(avroSchema);
-    dataFileWriter = new DataFileWriter<GenericRecord>(datumWriter);
+            new GenericDatumWriter<>(avroSchema);
+    dataFileWriter = new DataFileWriter<>(datumWriter);
     dataFileWriter.create(avroSchema, outputStream);
 
     if (enabledStats) {

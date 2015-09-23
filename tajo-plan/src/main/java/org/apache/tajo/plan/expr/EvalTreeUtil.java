@@ -408,7 +408,7 @@ public class EvalTreeUtil {
   }
   
   public static class AllColumnRefFinder implements EvalNodeVisitor {
-    private List<Column> colList = new ArrayList<Column>();
+    private List<Column> colList = new ArrayList<>();
     private FieldEval field = null;
     
     @Override

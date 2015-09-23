@@ -35,7 +35,7 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
   private final int maximum;
   private final MasterPlan masterPlan;
   private final List<Deque<ExecutionBlock>> executable;
-  private final Set<ExecutionBlockId> executed = new HashSet<ExecutionBlockId>();
+  private final Set<ExecutionBlockId> executed = new HashSet<>();
 
   public ParallelExecutionQueue(MasterPlan masterPlan, int maximum) {
     this.masterPlan = masterPlan;
@@ -44,7 +44,7 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
   }
 
   private List<Deque<ExecutionBlock>> toStacks(ExecutionBlock root) {
-    List<Deque<ExecutionBlock>> stacks = new ArrayList<Deque<ExecutionBlock>>();
+    List<Deque<ExecutionBlock>> stacks = new ArrayList<>();
     toStacks(root, stacks, new ArrayList<ExecutionBlock>());
     return stacks;
   }
@@ -54,7 +54,7 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
                         List<ExecutionBlock> stack) {
     stack.add(current);
     if (masterPlan.isLeaf(current.getId())) {
-      queues.add(new ArrayDeque<ExecutionBlock>(stack));
+      queues.add(new ArrayDeque<>(stack));
     } else {
       List<ExecutionBlock> children = masterPlan.getChilds(current);
       for (int i = 0; i < children.size(); i++) {
@@ -75,7 +75,7 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
   @Override
   public synchronized ExecutionBlock[] first() {
     int max = Math.min(maximum, executable.size());
-    List<ExecutionBlock> result = new ArrayList<ExecutionBlock>();
+    List<ExecutionBlock> result = new ArrayList<>();
     for (Deque<ExecutionBlock> queue : executable) {
       if (result.size() < max && isExecutableNow(queue.peekLast())) {
         result.add(queue.removeLast());
@@ -106,7 +106,7 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
     List<ExecutionBlock> dependents = masterPlan.getChilds(current);
     if (parent != null && masterPlan.getChannel(current.getId(), parent.getId()).needShuffle()) {
       // add all children of sibling for partitioning
-      dependents = new ArrayList<ExecutionBlock>();
+      dependents = new ArrayList<>();
       for (ExecutionBlock sibling : masterPlan.getChilds(parent)) {
         dependents.addAll(masterPlan.getChilds(sibling));
       }

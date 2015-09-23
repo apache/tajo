@@ -345,7 +345,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     // If grouping group is not empty
     if (ctx.grouping_element_list().grouping_element().get(0).empty_grouping_set() == null) {
       int elementSize = ctx.grouping_element_list().grouping_element().size();
-      ArrayList<GroupElement> groups = new ArrayList<GroupElement>(elementSize + 1);
+      ArrayList<GroupElement> groups = new ArrayList<>(elementSize + 1);
       ArrayList<Expr> ordinaryExprs = null;
       int groupSize = 1;
       groups.add(null);
@@ -355,7 +355,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             ctx.grouping_element_list().grouping_element().get(i);
         if (element.ordinary_grouping_set() != null) {
           if (ordinaryExprs == null) {
-            ordinaryExprs = new ArrayList<Expr>();
+            ordinaryExprs = new ArrayList<>();
           }
           Collections.addAll(ordinaryExprs, getRowValuePredicandsFromOrdinaryGroupingSet(element.ordinary_grouping_set()));
         } else if (element.rollup_list() != null) {
@@ -636,7 +636,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   private Expr[] getRowValuePredicandsFromOrdinaryGroupingSetList(Ordinary_grouping_set_listContext ctx) {
-    ArrayList<Expr> rowValuePredicands = new ArrayList<Expr>();
+    ArrayList<Expr> rowValuePredicands = new ArrayList<>();
     for (int i = 0; i < ctx.ordinary_grouping_set().size(); i++) {
       Collections.addAll(rowValuePredicands, getRowValuePredicandsFromOrdinaryGroupingSet(ctx.ordinary_grouping_set(i)));
     }
@@ -644,7 +644,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   private Expr[] getRowValuePredicandsFromOrdinaryGroupingSet(Ordinary_grouping_setContext ctx) {
-    ArrayList<Expr> rowValuePredicands = new ArrayList<Expr>();
+    ArrayList<Expr> rowValuePredicands = new ArrayList<>();
     if (ctx.row_value_predicand() != null) {
       rowValuePredicands.add(visitRow_value_predicand(ctx.row_value_predicand()));
     }
@@ -1294,13 +1294,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
+      if (checkIfExist(ctx.table_elements().asterisk())) {
+        createTable.setHasSelfDescSchema();
+      } else {
+        ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
+        createTable.setTableElements(elements);
+      }
+
       if (checkIfExist(ctx.TABLESPACE())) {
         throw new TajoRuntimeException(new SQLSyntaxError("Tablespace clause is not allowed for an external table."));
       }
 
-      ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
       String storageType = ctx.storage_type.getText();
-      createTable.setTableElements(elements);
       createTable.setStorageType(storageType);
 
       if (checkIfExist(ctx.LOCATION())) {
@@ -1311,8 +1316,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {
-        ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
-        createTable.setTableElements(elements);
+        if (checkIfExist(ctx.table_elements().asterisk())) {
+          createTable.setHasSelfDescSchema();
+        } else {
+          ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
+          createTable.setTableElements(elements);
+        }
       }
 
       if (checkIfExist(ctx.TABLESPACE())) {
@@ -1328,6 +1337,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (checkIfExist(ctx.query_expression())) {
         Expr subquery = visitQuery_expression(ctx.query_expression());
         createTable.setSubQuery(subquery);
+        createTable.unsetHasSelfDescSchema();
       }
     }
 
@@ -1347,7 +1357,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitTruncate_table_statement(@NotNull Truncate_table_statementContext ctx) {
     List<Table_nameContext> tableNameContexts = ctx.table_name();
-    List<String> tableNames = new ArrayList<String>();
+    List<String> tableNames = new ArrayList<>();
 
     for (Table_nameContext eachTableNameContext: tableNameContexts) {
       tableNames.add(buildIdentifierChain(eachTableNameContext.identifier()));
@@ -1678,7 +1688,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
 
   private Map<String, String> getParams(Param_clauseContext ctx) {
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (int i = 0; i < ctx.param().size(); i++) {
       params.put(stripQuote(ctx.param(i).key.getText()), stripQuote(ctx.param(i).value.getText()));
     }
@@ -1687,7 +1697,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   public Map<String, String> escapeTableMeta(Map<String, String> map) {
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (Map.Entry<String, String> entry : map.entrySet()) {
       if (entry.getKey().equals(StorageConstants.TEXT_DELIMITER)) {
         params.put(StorageConstants.TEXT_DELIMITER, StringUtils.unicodeEscapedDelimiter(entry.getValue()));
@@ -1919,7 +1929,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   private Map<String, String> getProperties(Property_listContext ctx) {
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new HashMap<>();
     for (int i = 0; i < ctx.property().size(); i++) {
       params.put(stripQuote(ctx.property(i).key.getText()), stripQuote(ctx.property(i).value.getText()));
     }

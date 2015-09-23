@@ -34,8 +34,8 @@ import java.util.Stack;
 
 public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object> {
 
-  static class Context {
-    List<Expr> set = TUtil.newList();
+  static class Context<T> {
+    List<T> set = TUtil.newList();
     OpType targetType;
 
     Context(OpType type) {
@@ -44,18 +44,18 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
   }
 
   public static <T extends Expr> Set<T> finds(Expr expr, OpType type) {
-    return (Set<T>) new HashSet<Expr>(findsInOrder(expr, type));
+    return (Set<T>) new HashSet<>(findsInOrder(expr, type));
   }
 
   public static <T extends Expr> List<T> findsInOrder(Expr expr, OpType type) {
-    Context context = new Context(type);
+    Context<T> context = new Context<>(type);
     ExprFinder finder = new ExprFinder();
     try {
       finder.visit(context, new Stack<Expr>(), expr);
     } catch (TajoException e) {
       throw new TajoInternalError(e);
     }
-    return (List<T>) context.set;
+    return context.set;
   }
 
   public Object visit(Context ctx, Stack<Expr> stack, Expr expr) throws TajoException {
@@ -71,7 +71,7 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
       super.visit(ctx, stack, expr);
     }
 
-    if (ctx.targetType == expr.getType()) {
+    if (expr != null && ctx.targetType == expr.getType()) {
       ctx.set.add(expr);
     }
 

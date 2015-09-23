@@ -45,6 +45,7 @@ import org.apache.tajo.master.event.QueryStopEvent;
 import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.HistoryWriter.WriterFuture;
 import org.apache.tajo.util.history.HistoryWriter.WriterHolder;
@@ -52,10 +53,7 @@ import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -91,6 +89,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private RpcClientManager manager;
 
+  private Properties rpcClientParams;
+
   private ExecutorService eventExecutor;
 
   private ExecutorService singleEventExecutor;
@@ -105,6 +105,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     this.manager = RpcClientManager.getInstance();
+    this.rpcClientParams = RpcParameterFactory.get(this.systemConf);
 
     querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
     queryMasterContext = new QueryMasterContext(systemConf);
@@ -171,20 +172,21 @@ public class QueryMaster extends CompositeService implements EventHandler {
       // update master address in worker context.
 
       ServiceTracker serviceTracker = workerContext.getServiceTracker();
-      rpc = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+      rpc = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true,
+          rpcClientParams);
       QueryCoordinatorProtocolService masterService = rpc.getStub();
 
-      CallFuture<WorkerConnectionsResponse> callBack = new CallFuture<WorkerConnectionsResponse>();
+      CallFuture<WorkerConnectionsResponse> callBack = new CallFuture<>();
       masterService.getAllWorkers(callBack.getController(),
           PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
 
       WorkerConnectionsResponse connectionsProto =
-          callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+          callBack.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
       return connectionsProto.getWorkerList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
-    return new ArrayList<TajoProtos.WorkerConnectionInfoProto>();
+    return new ArrayList<>();
   }
 
   @Override
@@ -289,16 +291,16 @@ public class QueryMaster extends CompositeService implements EventHandler {
       queryMasterTasks.remove(queryId);
 
       TajoHeartbeatRequest queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
-      CallFuture<TajoHeartbeatResponse> future = new CallFuture<TajoHeartbeatResponse>();
+      CallFuture<TajoHeartbeatResponse> future = new CallFuture<>();
 
       NettyClientBase tmClient;
       try {
         tmClient = manager.getClient(workerContext.getServiceTracker().getUmbilicalAddress(),
-            QueryCoordinatorProtocol.class, true);
+            QueryCoordinatorProtocol.class, true, rpcClientParams);
 
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
-        future.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        future.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
       }  catch (Exception e) {
         //this function will be closed in new thread.
         //When tajo do stop cluster, tajo master maybe throw closed connection exception
@@ -395,7 +397,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public void run() {
       LOG.info("Start QueryMaster heartbeat thread");
       while(!isStopped) {
-        List<QueryMasterTask> tempTasks = new ArrayList<QueryMasterTask>();
+        List<QueryMasterTask> tempTasks = new ArrayList<>();
         tempTasks.addAll(queryMasterTasks.values());
 
         for(QueryMasterTask eachTask: tempTasks) {
@@ -404,7 +406,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
             ServiceTracker serviceTracker = queryMasterContext.getWorkerContext().getServiceTracker();
             tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(),
-                QueryCoordinatorProtocol.class, true);
+                QueryCoordinatorProtocol.class, true, rpcClientParams);
             QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 
             TajoHeartbeatRequest queryHeartbeat = buildTajoHeartBeat(eachTask);
@@ -437,7 +439,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
         } catch (InterruptedException e) {
           break;
         }
-        List<QueryMasterTask> tempTasks = new ArrayList<QueryMasterTask>();
+        List<QueryMasterTask> tempTasks = new ArrayList<>();
         tempTasks.addAll(queryMasterTasks.values());
 
         for(QueryMasterTask eachTask: tempTasks) {

@@ -172,9 +172,9 @@ enum ResultCode {
 
   // Client Connection
   CLIENT_CONNECTION_EXCEPTION           = 1101; // SQLState: 08000 - Client connection error
-  CLIENT_UNABLE_TO_ESTABLISH_CONNECTION = 1102; // SQLState: 08001 -
   CLIENT_CONNECTION_DOES_NOT_EXIST      = 1103; // SQLState: 08003 - Client connection has been closed.
-  CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1104; // SQLState: ?
+  CLIENT_UNABLE_TO_ESTABLISH_CONNECTION = 1102; // SQLState: 08006 - Client connection failure
+  CLIENT_PROTOCOL_PROTOCOL_VIOLATION    = 1104; // SQLState: 08P01 - Protocol violation
 
   // 53 - Invalid Operand or Inconsistent Specification
   INSUFFICIENT_RESOURCE           = 53000;

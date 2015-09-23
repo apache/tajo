@@ -99,7 +99,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
   private final float paddingTolerance;
   // the streams that make up the current stripe
   private final Map<StreamName, BufferedStream> streams =
-    new TreeMap<StreamName, BufferedStream>();
+          new TreeMap<>();
 
   private FSDataOutputStream rawWriter = null;
   // the compressed metadata information outStream
@@ -114,9 +114,9 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
   private int rowsInIndex = 0;
   private int stripesAtLastFlush = -1;
   private final List<OrcProto.StripeInformation> stripes =
-    new ArrayList<OrcProto.StripeInformation>();
+          new ArrayList<>();
   private final Map<String, ByteString> userMetadata =
-    new TreeMap<String, ByteString>();
+          new TreeMap<>();
   private final TreeWriter treeWriter;
   private final boolean buildIndex;
   private final MemoryManager memoryManager;
@@ -343,7 +343,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
    */
   private class BufferedStream implements OutStream.OutputReceiver {
     private final OutStream outStream;
-    private final List<ByteBuffer> output = new ArrayList<ByteBuffer>();
+    private final List<ByteBuffer> output = new ArrayList<>();
 
     BufferedStream(String name, int bufferSize,
                    CompressionCodec codec) throws IOException {
@@ -1150,9 +1150,9 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     private final PositionedOutputStream directStreamOutput;
     private final IntegerWriter directLengthOutput;
     private final List<RowIndexEntry> savedRowIndex =
-        new ArrayList<RowIndexEntry>();
+            new ArrayList<>();
     private final boolean buildIndex;
-    private final List<Long> rowIndexValueCount = new ArrayList<Long>();
+    private final List<Long> rowIndexValueCount = new ArrayList<>();
     // If the number of keys in a dictionary is greater than this fraction of
     //the total number of non-null rows, turn off dictionary encoding
     private final float dictionaryKeySizeThreshold;

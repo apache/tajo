@@ -16,6 +16,8 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1832: Well support for self-describing data formats. (jihoon)
+
     TAJO-1730: JDBC Tablespace support. (hyunsik)
 
     TAJO-1812: Timezone support in JSON file format. (hyunsik)
@@ -48,6 +50,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1860: Refactor Rpc clients to take Connection Parameters. (hyunsik)
+ 
     TAJO-1868: Allow TablespaceManager::get to return a unregistered 
     tablespace. (hyunsik)
 
@@ -674,6 +678,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1844: Eliminate explicit diamond expressions. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
     TAJO-1465: Add ORCFileAppender to write into ORCFile table. 
     (Contributed by Joyngyoung Park, committed by hyunsik)

@@ -40,7 +40,7 @@ import java.util.Map;
 public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
 
   private final ComparableTuple partKey;
-  private final Map<ComparableTuple, Appender> appenderMap = new HashMap<ComparableTuple, Appender>();
+  private final Map<ComparableTuple, Appender> appenderMap = new HashMap<>();
 
   public HashBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
       throws IOException {
@@ -82,7 +82,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
       getAppender(partKey, tuple).addTuple(tuple);
     }
 
-    List<TableStats> statSet = new ArrayList<TableStats>();
+    List<TableStats> statSet = new ArrayList<>();
     for (Appender app : appenderMap.values()) {
       app.flush();
       app.close();

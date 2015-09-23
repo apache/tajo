@@ -122,12 +122,12 @@ public class JoinGraphContext {
   }
 
   public JoinEdge cacheEdge(JoinEdge edge) {
-    edgeCache.put(new Pair<JoinVertex, JoinVertex>(edge.getLeftVertex(), edge.getRightVertex()), edge);
+    edgeCache.put(new Pair<>(edge.getLeftVertex(), edge.getRightVertex()), edge);
     return edge;
   }
 
   public JoinEdge getCachedOrNewJoinEdge(JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
-    Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>(left, right);
+    Pair<JoinVertex,JoinVertex> cacheKey = new Pair<>(left, right);
     if (edgeCache.containsKey(cacheKey)) {
       return (JoinEdge) edgeCache.get(cacheKey);
     } else {

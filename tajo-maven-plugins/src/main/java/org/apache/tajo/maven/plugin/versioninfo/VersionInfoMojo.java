@@ -115,7 +115,7 @@ public class VersionInfoMojo extends AbstractMojo {
   private SCM determineSCM() throws Exception {
     Exec exec = new Exec(this);
     SCM scm = SCM.NONE;
-    scmOut = new ArrayList<String>();
+    scmOut = new ArrayList<>();
     int ret = exec.run(Arrays.asList(svnCommand, "info"), scmOut);
     if (ret == 0) {
       scm = SCM.SVN;

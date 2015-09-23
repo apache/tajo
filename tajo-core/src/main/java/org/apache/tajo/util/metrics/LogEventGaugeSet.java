@@ -29,7 +29,7 @@ public class LogEventGaugeSet implements MetricSet {
 
   @Override
   public Map<String, Metric> getMetrics() {
-    final Map<String, Metric> gauges = new HashMap<String, Metric>();
+    final Map<String, Metric> gauges = new HashMap<>();
 
     gauges.put("Fatal", new Gauge<Long>() {
       @Override

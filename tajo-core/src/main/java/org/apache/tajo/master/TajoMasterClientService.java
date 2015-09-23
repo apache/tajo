@@ -393,7 +393,7 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getId());
 
-        Collection<QueryInProgress> queries = new ArrayList<QueryInProgress>(context.getQueryJobManager().getSubmittedQueries());
+        Collection<QueryInProgress> queries = new ArrayList<>(context.getQueryJobManager().getSubmittedQueries());
         queries.addAll(context.getQueryJobManager().getRunningQueries());
         BriefQueryInfo.Builder infoBuilder = BriefQueryInfo.newBuilder();
 
@@ -666,7 +666,7 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
 
-        List<NodeStatus> nodeStatusList = new ArrayList<NodeStatus>(context.getResourceManager().getRMContext().getNodes().values());
+        List<NodeStatus> nodeStatusList = new ArrayList<>(context.getResourceManager().getRMContext().getNodes().values());
         Collections.sort(nodeStatusList);
 
         WorkerResourceInfo.Builder workerBuilder = WorkerResourceInfo.newBuilder();
@@ -870,7 +870,11 @@ public class TajoMasterClientService extends AbstractService {
           throw new UnavailableTableLocationException(path.toString(), "no such a directory");
         }
 
-        Schema schema = new Schema(request.getSchema());
+        Schema schema = null;
+        if (request.hasSchema()) {
+          schema = new Schema(request.getSchema());
+        }
+
         TableMeta meta = new TableMeta(request.getMeta());
         PartitionMethodDesc partitionDesc = null;
         if (request.hasPartition()) {
@@ -908,7 +912,7 @@ public class TajoMasterClientService extends AbstractService {
         QueryContext queryContext = new QueryContext(conf, session);
 
         context.getGlobalEngine().getDDLExecutor().dropTable(queryContext, dropTable.getName(), false,
-          dropTable.getPurge());
+            dropTable.getPurge());
         return OK;
 
       } catch (Throwable t) {
@@ -927,7 +931,7 @@ public class TajoMasterClientService extends AbstractService {
         String functionName = request.getValue();
         Collection<FunctionDesc> functions = catalog.getFunctions();
 
-        List<CatalogProtos.FunctionDescProto> functionProtos = new ArrayList<CatalogProtos.FunctionDescProto>();
+        List<CatalogProtos.FunctionDescProto> functionProtos = new ArrayList<>();
 
         for (FunctionDesc eachFunction: functions) {
           if (functionName == null || functionName.isEmpty()) {

@@ -61,9 +61,9 @@ public class HistoryWriter extends AbstractService {
   public static final String HISTORY_FILE_POSTFIX = ".hist";
 
   private final LinkedBlockingQueue<WriterFuture<WriterHolder>>
-      historyQueue = new LinkedBlockingQueue<WriterFuture<WriterHolder>>();
+      historyQueue = new LinkedBlockingQueue<>();
   // key: yyyyMMddHH
-  private Map<String, WriterHolder> taskWriters = new HashMap<String, WriterHolder>();
+  private Map<String, WriterHolder> taskWriters = new HashMap<>();
 
   // For TajoMaster's query list
   private WriterHolder querySummaryWriter = null;
@@ -131,7 +131,7 @@ public class HistoryWriter extends AbstractService {
 
   /* asynchronously append to history file */
   public WriterFuture<WriterHolder> appendHistory(History history) {
-    WriterFuture<WriterHolder> future = new WriterFuture<WriterHolder>(history);
+    WriterFuture<WriterHolder> future = new WriterFuture<>(history);
     historyQueue.add(future);
     return future;
   }
@@ -255,7 +255,7 @@ public class HistoryWriter extends AbstractService {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.HOUR_OF_DAY, -2);
         String closeTargetTime = df.format(cal.getTime());
-        List<String> closingTargets = new ArrayList<String>();
+        List<String> closingTargets = new ArrayList<>();
 
         for (String eachWriterTime : taskWriters.keySet()) {
           if (eachWriterTime.compareTo(closeTargetTime) <= 0) {

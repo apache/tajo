@@ -789,7 +789,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     DecimalFormat df = new DecimalFormat("000");
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
@@ -845,7 +845,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
@@ -903,7 +903,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     DecimalFormat df = new DecimalFormat("000");
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
@@ -963,7 +963,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     schema.addColumn("id2", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
     DecimalFormat df = new DecimalFormat("000");
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
     }
@@ -1018,7 +1018,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
@@ -1076,7 +1076,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     schema.addColumn("col2_key", Type.TEXT);
     schema.addColumn("col2_value", Type.TEXT);
     schema.addColumn("col3", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 20; i >= 0; i--) {
       for (int j = 0; j < 3; j++) {
         datas.add(i + "|ck-" + j + "|value-" + j + "|col3-" + i);
@@ -1163,7 +1163,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }

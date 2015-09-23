@@ -49,7 +49,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public TestGroupByQuery(String groupByOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
 
-    Map<String, String> variables = new HashMap<String, String>();
+    Map<String, String> variables = new HashMap<>();
     if (groupByOption.equals("MultiLevel")) {
       variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
     } else {
@@ -698,14 +698,14 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     schema.addColumn("col1", Type.TEXT);
     schema.addColumn("col2", Type.TEXT);
 
-    List<String> data = new ArrayList<String>();
+    List<String> data = new ArrayList<>();
     int totalBytes = 0;
     Random rand = new Random(System.currentTimeMillis());
     String col1Prefix = "Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1" +
         "Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1" +
         "Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1Column-1";
 
-    Set<Integer> uniqKeys = new HashSet<Integer>();
+    Set<Integer> uniqKeys = new HashSet<>();
     while(true) {
       int col1RandomValue = rand.nextInt(1000000);
       uniqKeys.add(col1RandomValue);

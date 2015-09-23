@@ -73,11 +73,11 @@ public class TestLogicalPlan {
     assertTrue(graph.isLeaf(new1.getName()));
     assertTrue(graph.isLeaf(new2.getName()));
 
-    Set<LogicalPlan.QueryBlock> result = new HashSet<LogicalPlan.QueryBlock>();
+    Set<LogicalPlan.QueryBlock> result = new HashSet<>();
     result.add(new1);
     result.add(new2);
 
-    Set<LogicalPlan.QueryBlock> childs = new HashSet<LogicalPlan.QueryBlock>(plan.getChildBlocks(root));
+    Set<LogicalPlan.QueryBlock> childs = new HashSet<>(plan.getChildBlocks(root));
     assertEquals(result, childs);
 
     assertEquals(root, plan.getParentBlock(new1));

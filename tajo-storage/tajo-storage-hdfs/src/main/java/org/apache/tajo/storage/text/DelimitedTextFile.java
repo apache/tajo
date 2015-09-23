@@ -66,7 +66,7 @@ public class DelimitedTextFile {
 
   /** it caches line serde classes. */
   private static final Map<String, Class<? extends TextLineSerDe>> serdeClassCache =
-      new ConcurrentHashMap<String, Class<? extends TextLineSerDe>>();
+          new ConcurrentHashMap<>();
 
   /**
    * By default, DelimitedTextFileScanner uses CSVLineSerder. If a table property 'text.serde.class' is given,

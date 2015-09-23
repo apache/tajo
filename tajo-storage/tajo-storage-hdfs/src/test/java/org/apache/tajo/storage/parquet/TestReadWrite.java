@@ -52,7 +52,7 @@ public class TestReadWrite {
   }
 
   private Schema createAllTypesSchema() {
-    List<Column> columns = new ArrayList<Column>();
+    List<Column> columns = new ArrayList<>();
     columns.add(new Column("myboolean", Type.BOOLEAN));
     columns.add(new Column("mybit", Type.BIT));
     columns.add(new Column("mychar", Type.CHAR));

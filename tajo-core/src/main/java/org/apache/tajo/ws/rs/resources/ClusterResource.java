@@ -100,13 +100,13 @@ public class ClusterResource {
       MasterContext masterContext = context.get(masterContextKey);
       
       Map<Integer, NodeStatus> workerMap = masterContext.getResourceManager().getNodes();
-      List<WorkerResponse> workerList = new ArrayList<WorkerResponse>();
+      List<WorkerResponse> workerList = new ArrayList<>();
       
       for (NodeStatus nodeStatus : workerMap.values()) {
         workerList.add(new WorkerResponse(nodeStatus));
       }
       
-      Map<String, List<WorkerResponse>> workerResponseMap = new HashMap<String, List<WorkerResponse>>();
+      Map<String, List<WorkerResponse>> workerResponseMap = new HashMap<>();
       workerResponseMap.put(workersName, workerList);
       
       return Response.ok(workerResponseMap).build();

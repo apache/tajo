@@ -145,8 +145,8 @@ public class QueryResource {
         return ResourcesUtil.createBadRequestResponse(LOG, state + " is not a valid query state.");
       }
       
-      Map<String, List<QueryInfo>> queriesMap = new HashMap<String, List<QueryInfo>>();
-      List<QueryInfo> queriesInfo = new ArrayList<QueryInfo>();
+      Map<String, List<QueryInfo>> queriesMap = new HashMap<>();
+      List<QueryInfo> queriesInfo = new ArrayList<>();
       
       QueryManager queryManager = masterContext.getQueryJobManager();
       for (QueryInProgress queryInProgress: queryManager.getSubmittedQueries()) {
@@ -172,7 +172,7 @@ public class QueryResource {
     }
     
     private List<QueryInfo> selectQueriesInfoByState(List<QueryInfo> queriesInfo, TajoProtos.QueryState state) {
-      List<QueryInfo> resultQueriesInfo = new ArrayList<QueryInfo>(queriesInfo.size()/2);
+      List<QueryInfo> resultQueriesInfo = new ArrayList<>(queriesInfo.size() / 2);
       
       for (QueryInfo queryInfo: queriesInfo) {
         if (state.equals(queryInfo.getQueryState())) {
@@ -184,7 +184,7 @@ public class QueryResource {
     }
     
     private List<QueryInfo> selectQueriesInfoByTime(List<QueryInfo> queriesInfo, long startTime, long endTime) {
-      List<QueryInfo> resultQueriesInfo = new ArrayList<QueryInfo>(queriesInfo.size()/2);
+      List<QueryInfo> resultQueriesInfo = new ArrayList<>(queriesInfo.size() / 2);
       
       for (QueryInfo queryInfo: queriesInfo) {
         if (queryInfo.getStartTime() > startTime) {

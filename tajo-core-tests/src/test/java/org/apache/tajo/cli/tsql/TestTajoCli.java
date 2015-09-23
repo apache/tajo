@@ -29,9 +29,11 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.ClientParameters;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
@@ -43,6 +45,7 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
+import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -74,7 +77,9 @@ public class TestTajoCli {
   @Before
   public void setUp() throws Exception {
     out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(cluster.getConfiguration(), new String[]{}, System.in, out);
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, "3");
+    tajoCli = new TajoCli(cluster.getConfiguration(), new String[]{}, connParams, System.in, out);
   }
 
   @After
@@ -155,7 +160,7 @@ public class TestTajoCli {
     assertEquals("tajo.executor.join.inner.in-memory-table-num=256", confValues[1]);
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    TajoCli testCli = new TajoCli(tajoConf, args, System.in, System.out);
+    TajoCli testCli = new TajoCli(tajoConf, args, null, System.in, System.out);
     try {
       assertEquals("false", testCli.getContext().get(SessionVars.CLI_PAGING_ENABLED));
       assertEquals("256", testCli.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
@@ -321,7 +326,7 @@ public class TestTajoCli {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out);
     try {
       tajoCli.executeMetaCommand("\\getconf tajo.rootdir");
 
@@ -338,7 +343,7 @@ public class TestTajoCli {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out);
     tajoCli.executeMetaCommand("\\admin -showmasters");
 
     String consoleResult = new String(out.toByteArray());
@@ -372,7 +377,9 @@ public class TestTajoCli {
 
           TajoConf tajoConf = new TajoConf();
           setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-          TajoCli tc = new TajoCli(tajoConf, new String[]{}, is, out);
+          Properties connParams = new Properties();
+          connParams.setProperty(ClientParameters.RETRY, "3");
+          TajoCli tc = new TajoCli(tajoConf, new String[]{}, connParams, is, out);
 
           tc.executeMetaCommand("\\set ON_ERROR_STOP false");
           assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
@@ -452,7 +459,7 @@ public class TestTajoCli {
       assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
 
       InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
-      cli = new TajoCli(cluster.getConfiguration(), new String[]{}, testInput, out);
+      cli = new TajoCli(cluster.getConfiguration(), new String[]{}, null, testInput, out);
       setVar(cli, SessionVars.CLI_PAGE_ROWS, "2");
       setVar(cli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 

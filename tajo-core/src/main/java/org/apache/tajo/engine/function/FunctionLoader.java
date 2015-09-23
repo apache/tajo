@@ -229,7 +229,7 @@ public class FunctionLoader {
    * @return A list of FunctionDescs
    */
   public static List<FunctionDesc> findLegacyFunctions() {
-    List<FunctionDesc> sqlFuncs = new ArrayList<FunctionDesc>();
+    List<FunctionDesc> sqlFuncs = new ArrayList<>();
 
     Set<Class> functionClasses = ClassUtil.findClasses(Function.class, "org.apache.tajo.engine.function");
 

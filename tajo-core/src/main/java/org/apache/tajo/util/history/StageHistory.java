@@ -236,7 +236,7 @@ public class StageHistory implements GsonObject {
 
   public static List<TaskHistory> fromJsonTasks(String json) {
     if (json == null || json.trim().isEmpty()) {
-      return new ArrayList<TaskHistory>();
+      return new ArrayList<>();
     }
     return CoreGsonHelper.getInstance().fromJson(json, new TypeToken<List<TaskHistory>>() {
     }.getType());

@@ -128,7 +128,7 @@ public class ErrorMessages {
   }
 
   private static void ADD_MESSAGE(ResultCode code, String msgFormat, int argNum) {
-    MESSAGES.put(code, new Pair<String, Integer>(msgFormat, argNum));
+    MESSAGES.put(code, new Pair<>(msgFormat, argNum));
   }
 
   public static String getInternalErrorMessage() {

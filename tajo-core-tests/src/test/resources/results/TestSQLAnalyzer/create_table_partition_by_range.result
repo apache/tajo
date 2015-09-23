@@ -51,5 +51,6 @@
     "PartitionType": "RANGE"
   },
   "IfNotExists": false,
+  "HasSelfDescSchema": false,
   "OpType": "CreateTable"
 }

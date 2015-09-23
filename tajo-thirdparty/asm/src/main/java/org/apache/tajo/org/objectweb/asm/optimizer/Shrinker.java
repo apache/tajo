@@ -58,7 +58,7 @@ import org.apache.tajo.org.objectweb.asm.commons.SimpleRemapper;
  */
 public class Shrinker {
 
-    static final HashMap<String, String> MAPPING = new HashMap<String, String>();
+    static final HashMap<String, String> MAPPING = new HashMap<>();
 
     public static void main(final String[] args) throws IOException {
         Properties properties = new Properties();
@@ -71,7 +71,7 @@ public class Shrinker {
             MAPPING.put((String) entry.getKey(), (String) entry.getValue());
         }
 
-        final Set<String> unused = new HashSet<String>(MAPPING.keySet());
+        final Set<String> unused = new HashSet<>(MAPPING.keySet());
 
         File f = new File(args[n - 1]);
         File d = new File(args[n]);
@@ -111,7 +111,7 @@ public class Shrinker {
             ClassOptimizer co = new ClassOptimizer(ccc, remapper);
             cr.accept(co, ClassReader.SKIP_DEBUG);
 
-            Set<Constant> constants = new TreeSet<Constant>(
+            Set<Constant> constants = new TreeSet<>(
                     new ConstantComparator());
             constants.addAll(cp.values());
 

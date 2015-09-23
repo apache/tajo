@@ -50,7 +50,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
       FunctionType funcType, DataType retType, @NotNull DataType [] params) {
     this.signature = new FunctionSignature(funcType, signature.toLowerCase(), retType, params);
     this.invocation = new FunctionInvocation();
-    this.invocation.setLegacy(new ClassBaseInvocationDesc<Function>(clazz));
+    this.invocation.setLegacy(new ClassBaseInvocationDesc<>(clazz));
     this.supplement = new FunctionSupplement();
   }
 
