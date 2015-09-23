@@ -131,13 +131,13 @@ public class DDLBuilder {
         }
       });
 
-      StringUtils.join(entries, ", ", new Function<Entry<String, String>, String>() {
+      sb.append(StringUtils.join(entries, ", ", new Function<Entry<String, String>, String>() {
 
         @Override
         public String apply(Entry<String, String> e) {
           return "'" + e.getKey() + "'='" + e.getValue() + "'";
         }
-      });
+      }));
 
       sb.append(")");
     }
