@@ -168,6 +168,9 @@ public interface CatalogService {
   boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException,
       UndefinedDatabaseException;
 
+  boolean existPartitions(String databaseName, String tableName) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
+
   PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
       throws UndefinedPartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException,
       UndefinedTableException;

@@ -57,6 +57,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_FUNCTION, UndefinedFunctionException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION_METHOD, UndefinedPartitionMethodException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION, UndefinedPartitionException.class);
+    ADD_EXCEPTION(UNDEFINED_PARTITIONS, UndefinedPartitionsException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
     ADD_EXCEPTION(UNDEFINED_INDEX_NAME, UndefinedIndexException.class);

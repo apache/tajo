@@ -35,6 +35,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
@@ -44,6 +45,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.rpc.BlockingRpcServer;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
@@ -919,6 +921,38 @@ public class CatalogServer extends AbstractService {
 
       } finally {
         rlock.unlock();
+      }
+    }
+
+    @Override
+    public ReturnState existsPartitions(RpcController controller, TableIdentifierProto request) throws
+      ServiceException {
+
+      String dbName = request.getDatabaseName();
+      String tbName = request.getTableName();
+
+      // linked meta data do not support partition.
+      // So, the request that wants to get partitions in this db will be failed.
+      if (linkedMetadataManager.existsDatabase(dbName)) {
+        return errUndefinedPartitionMethod(tbName);
+      }
+
+      if (metaDictionary.isSystemDatabase(dbName)) {
+        return errUndefinedPartitionMethod(tbName);
+      } else {
+        rlock.lock();
+        try {
+          if (store.existPartitions(dbName, tbName)) {
+            return OK;
+          } else {
+            return errUndefinedPartitions(tbName);
+          }
+        } catch (Throwable t) {
+          printStackTraceIfError(LOG, t);
+          return returnError(t);
+        } finally {
+          rlock.unlock();
+        }
       }
     }
 

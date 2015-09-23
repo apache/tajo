@@ -2209,10 +2209,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final int tableId = getTableId(databaseId, databaseName, tableName);
     ensurePartitionTable(tableName, tableId);
 
-    if (!existPartitionsOnCatalog(tableId)) {
-      return TUtil.newList();
-    }
-
     try {
       String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES
         + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
@@ -2242,21 +2238,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return partitions;
   }
 
-  /**
-   * Check if list of partitions exist on catalog.
-   *
-   *
-   * @param tableId  Table id
-   * @return
-   */
-  public boolean existPartitionsOnCatalog(int tableId) {
+  @Override
+  public boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException {
+
+    String sql = null;
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
     boolean result = false;
 
+    final int databaseId = getDatabaseId(databaseName);
+    final int tableId = getTableId(databaseId, databaseName, tableName);
+    ensurePartitionTable(tableName, tableId);
+
     try {
-      String sql = "SELECT * FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
+      if (this instanceof DerbyStore) {
+        sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? FETCH FIRST ROW ONLY ";
+      } else {
+        sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? LIMIT 1 ";
+      }
+
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }

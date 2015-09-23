@@ -407,6 +407,29 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
+  public boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException {
+
+    try {
+      final BlockingInterface stub = getStub();
+      final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
+      final ReturnState state = stub.existsPartitions(null, request);
+
+      if (isThisError(state, UNDEFINED_PARTITIONS)) {
+        return false;
+      }
+      throwsIfThisError(state, UndefinedDatabaseException.class);
+      throwsIfThisError(state, UndefinedTableException.class);
+      throwsIfThisError(state, UndefinedPartitionMethodException.class);
+      ensureOk(state);
+      return true;
+
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
   public final PartitionDescProto getPartition(final String databaseName, final String tableName,
                                                final String partitionName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,

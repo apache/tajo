@@ -139,13 +139,17 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           filteredPaths = findFilteredPathsByPartitionDesc(partitions);
         }
       } else {
-        PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
-        partitions = catalog.getPartitionsByAlgebra(request);
-        filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+        if (catalog.existPartitions(splits[0], splits[1])) {
+          PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
+          partitions = catalog.getPartitionsByAlgebra(request);
+          filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+        } else {
+          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+        }
       }
     } catch (UnsupportedException ue) {
       // Partial catalog might not allow some filter conditions. For example, HiveMetastore doesn't In statement,
-      // Regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
+      // regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
       LOG.warn(ue.getMessage());
       filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
     }

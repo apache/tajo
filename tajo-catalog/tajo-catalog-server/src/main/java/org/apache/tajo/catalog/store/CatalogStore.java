@@ -92,6 +92,19 @@ public interface CatalogStore extends Closeable {
 
   /************************** PARTITIONS *****************************/
   /**
+   * Check if list of partitions exist on catalog.
+   *
+   * @param databaseName
+   * @param tableName
+   * @return
+   * @throws UndefinedDatabaseException
+   * @throws UndefinedTableException
+   * @throws UndefinedPartitionMethodException
+   */
+  boolean existPartitions(String databaseName, String tableName) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
+
+  /**
    * Get all partitions of a table
    * @param tableName the table name
    * @return
