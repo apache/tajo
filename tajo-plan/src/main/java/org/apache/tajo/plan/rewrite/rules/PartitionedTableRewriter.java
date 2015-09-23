@@ -110,6 +110,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
   }
 
+  private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
+                                    Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
+    throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UndefinedOperatorException, UnsupportedException {
+    return findFilteredPaths(queryContext, tableName, partitionColumns, conjunctiveForms, tablePath, null);
+  }
+
   /**
    * It assumes that each conjunctive form corresponds to one column.
    *
@@ -121,7 +128,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @throws IOException
    */
   private Path [] findFilteredPaths(OverridableConf queryContext, String tableName,
-                                    Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
+      Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath, ScanNode scanNode)
       throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException, UnsupportedException {
 
@@ -151,7 +158,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       // Partial catalog might not allow some filter conditions. For example, HiveMetastore doesn't In statement,
       // regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
       LOG.warn(ue.getMessage());
-      filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+      partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
+      if (partitions.isEmpty()) {
+        filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+      } else {
+        filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+      }
+      scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
     }
 
     LOG.info("Filtered directory or files: " + filteredPaths.length);
@@ -357,7 +370,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
       return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema,
-          indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()));
+        indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()), scanNode);
     } else { // otherwise, we will get all partition paths.
       return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema, null, new Path(table.getUri()));
     }
