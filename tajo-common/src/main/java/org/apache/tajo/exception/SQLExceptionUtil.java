@@ -72,6 +72,7 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_METHOD,            "42T06");
     SQLSTATES.put(ResultCode.UNDEFINED_OPERATOR,                    "42883"); // == UNDEFINED_FUNCTION
     SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_KEY,               "42T07");
+    SQLSTATES.put(ResultCode.UNDEFINED_TABLESPACE_HANDLER,          "42T11");
 
     SQLSTATES.put(ResultCode.DUPLICATE_TABLESPACE,                  "42T08");
     SQLSTATES.put(ResultCode.DUPLICATE_DATABASE,                    "42P04");

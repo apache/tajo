@@ -720,12 +720,7 @@ public class FileTablespace extends Tablespace {
       // for temporarily written in the storage directory
       stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
     } else {
-      Optional<Tablespace> spaceResult = TablespaceManager.get(outputPath);
-      if (!spaceResult.isPresent()) {
-        throw new IOException("No registered Tablespace for " + outputPath);
-      }
-
-      Tablespace space = spaceResult.get();
+      Tablespace space = TablespaceManager.get(outputPath);
       if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
         // If this space allows move operation, the staging directory will be underneath the final output table uri.
         stagingDir = fs.makeQualified(StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId));

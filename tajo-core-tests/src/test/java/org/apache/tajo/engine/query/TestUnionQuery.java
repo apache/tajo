@@ -692,7 +692,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   }
 
   @Test
-  @Option(withExplain =  true)
+  @Option(withExplain =  true, sort = true)
   @SimpleTest
   public void testUnionAndFilter() throws Exception {
     runSimpleTests();

@@ -415,7 +415,7 @@ public class TestCreateTable extends QueryTestCaseBase {
       }
       if(isClonedSchema(origPartMethod.getExpressionSchema(),
                         newPartMethod.getExpressionSchema()) == false) {
-	fail("Partition columns of input tables do not match");
+	      fail("Partition columns of input tables do not match");
         return false;
       }
 
@@ -648,5 +648,36 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     executeString("DROP TABLE D9.nested_table2");
     executeString("DROP DATABASE D9").close();
+  }
+
+  @Test
+  public final void testSelfDescTable1() throws Exception {
+    executeString("create database d9;").close();
+
+    assertTableNotExists("d9.schemaless");
+    executeQuery();
+    assertTableExists("d9.schemaless");
+    TableDesc desc = getClient().getTableDesc("d9.schemaless");
+    assertTrue(desc.hasEmptySchema());
+
+    executeString("drop table d9.schemaless").close();
+    executeString("drop database d9").close();
+  }
+
+  @Test
+  public final void testSelfDescTable2() throws Exception {
+    executeString("create database d10;").close();
+
+    String className = getClass().getSimpleName();
+    Path currentDatasetPath = new Path(datasetBasePath, className);
+    Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
+    String sql = "create external table d10.schemaless (*) using json with ('compression.codec'='none') location '" + filePath.toString() + "'";
+    executeString(sql).close();
+    assertTableExists("d10.schemaless");
+    TableDesc desc = getClient().getTableDesc("d10.schemaless");
+    assertTrue(desc.hasEmptySchema());
+
+    executeString("drop table d10.schemaless").close();
+    executeString("drop database d10").close();
   }
 }

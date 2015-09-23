@@ -470,7 +470,7 @@ public class Query implements EventHandler<QueryEvent> {
       QueryContext context = query.context.getQueryContext();
 
       if (lastStage != null && context.hasOutputTableUri()) {
-        Tablespace space = TablespaceManager.get(context.getOutputTableUri()).get();
+        Tablespace space = TablespaceManager.get(context.getOutputTableUri());
         try {
           LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
           space.rollbackTable(rootNode.getChild());
@@ -493,7 +493,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         // If there is not tabledesc, it is a select query without insert or ctas.
         // In this case, we should use default tablespace.
-        Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+        Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
 
         Path finalOutputDir = space.commitTable(
             query.context.getQueryContext(),

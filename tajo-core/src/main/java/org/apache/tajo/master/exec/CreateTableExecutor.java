@@ -24,9 +24,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.DuplicateTableException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -78,7 +81,7 @@ public class CreateTableExecutor {
   public TableDesc create(QueryContext queryContext,
                           String tableName,
                           @Nullable String tableSpaceName,
-                          Schema schema,
+                          @Nullable Schema schema,
                           TableMeta meta,
                           @Nullable URI uri,
                           boolean isExternal,
@@ -132,23 +135,11 @@ public class CreateTableExecutor {
     }
   }
 
-  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri)
-      throws UndefinedTablespaceException {
-
+  private Tablespace getTablespaceHandler(@Nullable String tableSpaceName, @Nullable URI tableUri) {
     if (tableSpaceName != null) {
-      Optional<Tablespace> ts = (Optional<Tablespace>) TablespaceManager.getByName(tableSpaceName);
-      if (ts.isPresent()) {
-        return ts.get();
-      } else {
-        throw new UndefinedTablespaceException(tableSpaceName);
-      }
+      return TablespaceManager.getByName(tableSpaceName);
     } else if (tableUri != null) {
-      Optional<Tablespace> ts = TablespaceManager.get(tableUri);
-      if (ts.isPresent()) {
-        return ts.get();
-      } else {
-        throw new UndefinedTablespaceException(tableUri.toString());
-      }
+      return TablespaceManager.get(tableUri);
     } else {
       return TablespaceManager.getDefault();
     }

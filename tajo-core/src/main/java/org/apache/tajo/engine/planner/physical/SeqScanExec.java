@@ -268,7 +268,7 @@ public class SeqScanExec extends ScanExec {
 
     } else {
 
-      Tablespace tablespace = TablespaceManager.get(table.getUri()).get();
+      Tablespace tablespace = TablespaceManager.get(table.getUri());
       this.scanner = tablespace.getScanner(
           meta,
           plan.getPhysicalSchema(),

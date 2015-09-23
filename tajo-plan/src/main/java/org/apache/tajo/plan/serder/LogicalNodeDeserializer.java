@@ -510,13 +510,15 @@ public class LogicalNodeDeserializer {
       createTable.setPartitionMethod(new PartitionMethodDesc(storeTableNodeSpec.getPartitionMethod()));
     }
 
-    createTable.setTableSchema(convertSchema(storeTableNodeSpec.getTableSchema()));
+    if (storeTableNodeSpec.hasTableSchema()) {
+      createTable.setTableSchema(convertSchema(storeTableNodeSpec.getTableSchema()));
+    }
 
     if (createTableNodeSpec.hasTablespaceName()) {
      createTable.setTableSpaceName(createTableNodeSpec.getTablespaceName());
     }
     createTable.setExternal(createTableNodeSpec.getExternal());
-    if (createTableNodeSpec.getExternal() && storeTableNodeSpec.hasUri()) {
+    if (storeTableNodeSpec.hasUri()) {
       createTable.setUri(URI.create(storeTableNodeSpec.getUri()));
     }
     createTable.setIfNotExists(createTableNodeSpec.getIfNotExists());

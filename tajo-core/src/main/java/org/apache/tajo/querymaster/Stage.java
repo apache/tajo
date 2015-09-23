@@ -1132,7 +1132,7 @@ public class Stage implements EventHandler<StageEvent> {
       TableDesc table = stage.context.getTableDesc(scan);
 
       Collection<Fragment> fragments;
-      Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri()).get();
+      Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri());
 
       // Depending on scanner node's type, it creates fragments. If scan is for
       // a partitioned table, It will creates lots fragments for all partitions.

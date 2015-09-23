@@ -6,6 +6,8 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1832: Well support for self-describing data formats. (jihoon)
+
     TAJO-1730: JDBC Tablespace support. (hyunsik)
 
     TAJO-1812: Timezone support in JSON file format. (hyunsik)
@@ -37,6 +39,9 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1868: Allow TablespaceManager::get to return a unregistered 
+    tablespace. (hyunsik)
 
     TAJO-1867: TajoMaster should handle the change of ${tajo.root}. (hyunsik)
 

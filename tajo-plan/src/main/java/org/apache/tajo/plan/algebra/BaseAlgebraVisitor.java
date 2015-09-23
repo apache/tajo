@@ -508,6 +508,7 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
   // Insert or Update Section
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  @Override
   public RESULT visitInsert(CONTEXT ctx, Stack<Expr> stack, Insert expr) throws TajoException {
     stack.push(expr);
     RESULT child = visit(ctx, stack, expr.getSubQuery());
