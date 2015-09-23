@@ -40,6 +40,13 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
+/**
+ * BaseSchemaBuildPhase builds a basic schema information of tables which have pre-defined schema.
+ * For example, tables like the below example have pre-defined schema.
+ *
+ * CREATE TABLE t1 (id int8, name text);
+ * CREATE EXTERNAL TABLE t2 (id int8, score int8, dept text);
+ */
 public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
   private final Processor processor;
@@ -178,15 +185,6 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       return newTargetExprs;
     }
 
-    private static boolean hasAsterisk(NamedExpr [] namedExprs) {
-      for (NamedExpr eachTarget : namedExprs) {
-        if (eachTarget.getExpr().getType() == OpType.Asterisk) {
-          return true;
-        }
-      }
-      return false;
-    }
-
     private static NamedExpr [] voidResolveAsteriskNamedExpr(LogicalPlanner.PlanContext context,
                                                              NamedExpr [] namedExprs) throws TajoException {
       List<NamedExpr> rewrittenTargets = TUtil.newList();
@@ -222,7 +220,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       LogicalNode child = visit(ctx, stack, expr.getChild());
 
       // Resolve the asterisk expression
-      if (hasAsterisk(expr.getNamedExprs())) {
+      if (PlannerUtil.hasAsterisk(expr.getNamedExprs())) {
         expr.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, expr.getNamedExprs()));
       }
 
@@ -239,7 +237,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
               namedExpr.getAlias());
         } else if (OpType.isLiteralType(namedExpr.getExpr().getType()) && namedExpr.hasAlias()) {
           Expr constExpr = namedExpr.getExpr();
-          ConstEval constEval = (ConstEval) annotator.createEvalNode(ctx, constExpr, NameResolvingMode.RELS_ONLY);
+          ConstEval constEval = (ConstEval) annotator.createEvalNode(ctx, constExpr, NameResolvingMode.RELS_ONLY, true);
           ctx.getQueryBlock().addConstReference(namedExpr.getAlias(), constExpr, constEval);
         }
       }
@@ -320,13 +318,13 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       int finalTargetNum = projection.getNamedExprs().length;
       Target [] targets = new Target[finalTargetNum];
 
-      if (hasAsterisk(projection.getNamedExprs())) {
+      if (PlannerUtil.hasAsterisk(projection.getNamedExprs())) {
         projection.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, projection.getNamedExprs()));
       }
 
       for (int i = 0; i < finalTargetNum; i++) {
         NamedExpr namedExpr = projection.getNamedExprs()[i];
-        EvalNode evalNode = annotator.createEvalNode(ctx, namedExpr.getExpr(), NameResolvingMode.SUBEXPRS_AND_RELS);
+        EvalNode evalNode = annotator.createEvalNode(ctx, namedExpr.getExpr(), NameResolvingMode.SUBEXPRS_AND_RELS, true);
 
         if (namedExpr.hasAlias()) {
           targets[i] = new Target(evalNode, namedExpr.getAlias());
@@ -564,7 +562,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       return insertNode;
     }
 
-    static class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<PlanContext, Object> {
+    public static class NameRefInSelectListNormalizer extends SimpleAlgebraVisitor<PlanContext, Object> {
       private static final NameRefInSelectListNormalizer instance;
 
       static {
@@ -581,7 +579,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
           throws TajoException {
 
         String normalized = NameResolver.resolve(ctx.getPlan(), ctx.getQueryBlock(), expr,
-            NameResolvingMode.RELS_ONLY).getQualifiedName();
+            NameResolvingMode.RELS_ONLY, true).getQualifiedName();
         expr.setName(normalized);
 
         return expr;

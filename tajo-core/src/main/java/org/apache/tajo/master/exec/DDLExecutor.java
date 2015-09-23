@@ -312,7 +312,7 @@ public class DDLExecutor {
 
     if (purge) {
       try {
-        TablespaceManager.get(tableDesc.getUri()).get().purgeTable(tableDesc);
+        TablespaceManager.get(tableDesc.getUri()).purgeTable(tableDesc);
       } catch (IOException e) {
         throw new InternalError(e.getMessage());
       }
@@ -356,7 +356,7 @@ public class DDLExecutor {
             new UnsupportedException("table truncation on an external table '" + eachTableName + "'"));
       }
 
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+      Tablespace space = TablespaceManager.get(tableDesc.getUri());
 
       if (space instanceof FileTablespace) {
         tableDescList.add(tableDesc);

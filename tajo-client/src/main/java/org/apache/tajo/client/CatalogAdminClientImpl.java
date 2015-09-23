@@ -135,12 +135,13 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public TableDesc createExternalTable(String tableName, Schema schema, URI path, TableMeta meta)
+  public TableDesc createExternalTable(String tableName, @Nullable Schema schema, URI path, TableMeta meta)
       throws DuplicateTableException, UnavailableTableLocationException, InsufficientPrivilegeException {
     return createExternalTable(tableName, schema, path, meta, null);
   }
 
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
+  @Override
+  public TableDesc createExternalTable(final String tableName, @Nullable final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws DuplicateTableException, InsufficientPrivilegeException, UnavailableTableLocationException {
 
@@ -151,7 +152,9 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     final ClientProtos.CreateTableRequest.Builder builder = ClientProtos.CreateTableRequest.newBuilder();
     builder.setSessionId(conn.sessionId);
     builder.setName(tableName);
-    builder.setSchema(schema.getProto());
+    if (schema != null) {
+      builder.setSchema(schema.getProto());
+    }
     builder.setMeta(meta.getProto());
     builder.setPath(path.toString());
 

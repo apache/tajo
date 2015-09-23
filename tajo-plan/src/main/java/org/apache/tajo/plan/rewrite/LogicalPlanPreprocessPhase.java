@@ -49,7 +49,7 @@ public abstract class LogicalPlanPreprocessPhase {
    * @param expr
    * @return
    */
-  public abstract boolean isEligible(PlanContext context, Expr expr);
+  public abstract boolean isEligible(PlanContext context, Expr expr) throws TajoException;
 
   /**
    * Do a pre-process phase for an expression tree and returns it.

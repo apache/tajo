@@ -458,7 +458,7 @@ public class QueryExecutor {
       String queryId = nodeUniqName + "_" + System.currentTimeMillis();
 
       URI finalOutputUri = insertNode.getUri();
-      Tablespace space = TablespaceManager.get(finalOutputUri).get();
+      Tablespace space = TablespaceManager.get(finalOutputUri);
       TableMeta tableMeta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
       tableMeta.putOption(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
 
@@ -564,7 +564,7 @@ public class QueryExecutor {
     TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, plan.getRootBlock().getRoot());
     if (tableDesc != null) {
 
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+      Tablespace space = TablespaceManager.get(tableDesc.getUri());
       FormatProperty formatProperty = space.getFormatProperty(tableDesc.getMeta());
 
       if (!formatProperty.isInsertable()) {
@@ -603,7 +603,7 @@ public class QueryExecutor {
     TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
 
     if (tableDesc != null) {
-      Tablespace space = TablespaceManager.get(tableDesc.getUri()).get();
+      Tablespace space = TablespaceManager.get(tableDesc.getUri());
       space.rewritePlan(context, plan);
     }
 

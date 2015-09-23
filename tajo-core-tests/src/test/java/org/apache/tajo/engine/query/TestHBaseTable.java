@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
@@ -151,15 +152,22 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateNotExistsExternalHBaseTable() throws Exception {
-    String sql = String.format(
-        "CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b') " +
-            "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
+
     try {
-      executeString(sql).close();
-      fail("External table should be a existed table.");
-    } catch (Throwable e) {
-      assertTrue(e.getMessage().indexOf("External table should be a existed table.") >= 0);
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
+              "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b') " +
+              "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      try {
+        executeString(sql).close();
+        fail("External table should be a existed table.");
+      } catch (Throwable e) {
+        assertTrue(e.getMessage().indexOf("External table should be a existed table.") >= 0);
+      }
+    } finally {
+      TablespaceManager.addTableSpaceForTest(existing.get());
     }
   }
 
@@ -177,195 +185,229 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateExternalHBaseTable() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table_not_purge"));
-    hTableDesc.addFamily(new HColumnDescriptor("col1"));
-    hTableDesc.addFamily(new HColumnDescriptor("col2"));
-    hTableDesc.addFamily(new HColumnDescriptor("col3"));
-    testingCluster.getHBaseUtil().createTable(hTableDesc);
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
 
-    String sql = String.format(
-        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b') " +
-        "LOCATION '%s/external_hbase_table'", tableSpaceUri);
-    executeString(sql).close();
-
-    assertTableExists("external_hbase_mapped_table");
-
-    executeString("DROP TABLE external_hbase_mapped_table").close();
-
-    HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     try {
-      assertTrue(hAdmin.tableExists("external_hbase_table_not_purge"));
-      hAdmin.disableTable("external_hbase_table_not_purge");
-      hAdmin.deleteTable("external_hbase_table_not_purge");
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table_not_purge"));
+      hTableDesc.addFamily(new HColumnDescriptor("col1"));
+      hTableDesc.addFamily(new HColumnDescriptor("col2"));
+      hTableDesc.addFamily(new HColumnDescriptor("col3"));
+      testingCluster.getHBaseUtil().createTable(hTableDesc);
+
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+              "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b') " +
+              "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      executeString(sql).close();
+
+      assertTableExists("external_hbase_mapped_table");
+
+      executeString("DROP TABLE external_hbase_mapped_table").close();
+
+      HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
+      try {
+        assertTrue(hAdmin.tableExists("external_hbase_table_not_purge"));
+        hAdmin.disableTable("external_hbase_table_not_purge");
+        hAdmin.deleteTable("external_hbase_table_not_purge");
+      } finally {
+        hAdmin.close();
+      }
+
     } finally {
-      hAdmin.close();
+      TablespaceManager.addTableSpaceForTest(existing.get());
     }
+
   }
 
   @Test
   public void testSimpleSelectQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
-    hTableDesc.addFamily(new HColumnDescriptor("col1"));
-    hTableDesc.addFamily(new HColumnDescriptor("col2"));
-    hTableDesc.addFamily(new HColumnDescriptor("col3"));
-    testingCluster.getHBaseUtil().createTable(hTableDesc);
-
-    String sql = String.format(
-        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b') " +
-        "LOCATION '%s/external_hbase_table'", tableSpaceUri);
-    executeString(sql).close();
-
-    assertTableExists("external_hbase_mapped_table");
-
-    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
-    HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("external_hbase_table");
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
 
     try {
-      for (int i = 0; i < 100; i++) {
-        Put put = new Put(String.valueOf(i).getBytes());
-        put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
-        put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-        put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
-        put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
-        put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-        htable.put(put);
-      }
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
+      hTableDesc.addFamily(new HColumnDescriptor("col1"));
+      hTableDesc.addFamily(new HColumnDescriptor("col2"));
+      hTableDesc.addFamily(new HColumnDescriptor("col3"));
+      testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-      ResultSet res = executeString("select * from external_hbase_mapped_table where rk > '20'");
-      assertResultSet(res);
-      cleanupQuery(res);
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+              "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b') " +
+              "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      executeString(sql).close();
+
+      assertTableExists("external_hbase_mapped_table");
+
+      HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
+      HTableInterface htable = hconn.getTable("external_hbase_table");
+
+      try {
+        for (int i = 0; i < 100; i++) {
+          Put put = new Put(String.valueOf(i).getBytes());
+          put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
+          put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+          put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
+          put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
+          put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+          htable.put(put);
+        }
+
+        ResultSet res = executeString("select * from external_hbase_mapped_table where rk > '20'");
+        assertResultSet(res);
+        cleanupQuery(res);
+      } finally {
+        executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
+        htable.close();
+      }
     } finally {
-      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-      htable.close();
+      TablespaceManager.addTableSpaceForTest(existing.get());
     }
   }
 
   @Test
   public void testBinaryMappedQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
-    hTableDesc.addFamily(new HColumnDescriptor("col1"));
-    hTableDesc.addFamily(new HColumnDescriptor("col2"));
-    hTableDesc.addFamily(new HColumnDescriptor("col3"));
-    testingCluster.getHBaseUtil().createTable(hTableDesc);
-
-    String sql = String.format(
-        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk int8, col1 text, col2 text, col3 int4)\n " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key#b,col1:a,col2:,col3:b#b') " +
-        "LOCATION '%s/external_hbase_table'", tableSpaceUri);
-    executeString(sql).close();
-
-    assertTableExists("external_hbase_mapped_table");
-
-    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
-    HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("external_hbase_table");
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
 
     try {
-      for (int i = 0; i < 100; i++) {
-        Put put = new Put(Bytes.toBytes((long) i));
-        put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
-        put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-        put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
-        put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
-        put.add("col3".getBytes(), "b".getBytes(), Bytes.toBytes(i));
-        htable.put(put);
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
+      hTableDesc.addFamily(new HColumnDescriptor("col1"));
+      hTableDesc.addFamily(new HColumnDescriptor("col2"));
+      hTableDesc.addFamily(new HColumnDescriptor("col3"));
+      testingCluster.getHBaseUtil().createTable(hTableDesc);
+
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk int8, col1 text, col2 text, col3 int4)\n " +
+              "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key#b,col1:a,col2:,col3:b#b') " +
+              "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      executeString(sql).close();
+
+      assertTableExists("external_hbase_mapped_table");
+
+      HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
+      HTableInterface htable = hconn.getTable("external_hbase_table");
+
+      try {
+        for (int i = 0; i < 100; i++) {
+          Put put = new Put(Bytes.toBytes((long) i));
+          put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
+          put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+          put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
+          put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
+          put.add("col3".getBytes(), "b".getBytes(), Bytes.toBytes(i));
+          htable.put(put);
+        }
+
+        ResultSet res = executeString("select * from external_hbase_mapped_table where rk > 20");
+        assertResultSet(res);
+        res.close();
+
+        //Projection
+        res = executeString("select col3, col2, rk from external_hbase_mapped_table where rk > 95");
+
+        String expected = "col3,col2,rk\n" +
+            "-------------------------------\n" +
+            "96,{\"k1\":\"k1-96\", \"k2\":\"k2-96\"},96\n" +
+            "97,{\"k1\":\"k1-97\", \"k2\":\"k2-97\"},97\n" +
+            "98,{\"k1\":\"k1-98\", \"k2\":\"k2-98\"},98\n" +
+            "99,{\"k1\":\"k1-99\", \"k2\":\"k2-99\"},99\n";
+
+        assertEquals(expected, resultSetToString(res));
+        res.close();
+
+      } finally {
+        executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
+        htable.close();
       }
-
-      ResultSet res = executeString("select * from external_hbase_mapped_table where rk > 20");
-      assertResultSet(res);
-      res.close();
-
-      //Projection
-      res = executeString("select col3, col2, rk from external_hbase_mapped_table where rk > 95");
-
-      String expected = "col3,col2,rk\n" +
-          "-------------------------------\n" +
-          "96,{\"k1\":\"k1-96\", \"k2\":\"k2-96\"},96\n" +
-          "97,{\"k1\":\"k1-97\", \"k2\":\"k2-97\"},97\n" +
-          "98,{\"k1\":\"k1-98\", \"k2\":\"k2-98\"},98\n" +
-          "99,{\"k1\":\"k1-99\", \"k2\":\"k2-99\"},99\n";
-
-      assertEquals(expected, resultSetToString(res));
-      res.close();
-
     } finally {
-      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-      htable.close();
+      TablespaceManager.addTableSpaceForTest(existing.get());
     }
   }
 
   @Test
   public void testColumnKeyValueSelectQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
-    hTableDesc.addFamily(new HColumnDescriptor("col2"));
-    hTableDesc.addFamily(new HColumnDescriptor("col3"));
-    testingCluster.getHBaseUtil().createTable(hTableDesc);
-
-    String sql = String.format(
-        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, col2_key text, col2_value text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
-        "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
-    executeString(sql).close();
-
-    assertTableExists("external_hbase_mapped_table");
-
-    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
-    HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("external_hbase_table");
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
 
     try {
-      for (int i = 0; i < 10; i++) {
-        Put put = new Put(Bytes.toBytes("rk-" + i));
-        for (int j = 0; j < 5; j++) {
-          put.add("col2".getBytes(), ("key-" + j).getBytes(), Bytes.toBytes("value-" + j));
-        }
-        put.add("col3".getBytes(), "".getBytes(), ("col3-value-" + i).getBytes());
-        htable.put(put);
-      }
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
+      hTableDesc.addFamily(new HColumnDescriptor("col2"));
+      hTableDesc.addFamily(new HColumnDescriptor("col3"));
+      testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-      ResultSet res = executeString("select * from external_hbase_mapped_table where rk1 >= 'rk-0'");
-      assertResultSet(res);
-      cleanupQuery(res);
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, col2_key text, col2_value text, col3 text) " +
+              "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
+              "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      executeString(sql).close();
+
+      assertTableExists("external_hbase_mapped_table");
+
+      HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
+      HTableInterface htable = hconn.getTable("external_hbase_table");
+
+      try {
+        for (int i = 0; i < 10; i++) {
+          Put put = new Put(Bytes.toBytes("rk-" + i));
+          for (int j = 0; j < 5; j++) {
+            put.add("col2".getBytes(), ("key-" + j).getBytes(), Bytes.toBytes("value-" + j));
+          }
+          put.add("col3".getBytes(), "".getBytes(), ("col3-value-" + i).getBytes());
+          htable.put(put);
+        }
+
+        ResultSet res = executeString("select * from external_hbase_mapped_table where rk1 >= 'rk-0'");
+        assertResultSet(res);
+        cleanupQuery(res);
+      } finally {
+        executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
+        htable.close();
+      }
     } finally {
-      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-      htable.close();
+      TablespaceManager.addTableSpaceForTest(existing.get());
     }
   }
 
   @Test
   public void testRowFieldSelectQuery() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
-    hTableDesc.addFamily(new HColumnDescriptor("col3"));
-    testingCluster.getHBaseUtil().createTable(hTableDesc);
-
-    String sql = String.format(
-        "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, rk2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'='0:key,1:key,col3:a', " +
-        "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
-    executeString(sql).close();
-
-    assertTableExists("external_hbase_mapped_table");
-
-    HBaseTablespace space = (HBaseTablespace) TablespaceManager.getByName("cluster1").get();
-    HConnection hconn = space.getConnection();
-    HTableInterface htable = hconn.getTable("external_hbase_table");
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
 
     try {
-      for (int i = 0; i < 100; i++) {
-        Put put = new Put(("field1-" + i + "_field2-" + i).getBytes());
-        put.add("col3".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
-        htable.put(put);
-      }
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
+      hTableDesc.addFamily(new HColumnDescriptor("col3"));
+      testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-      ResultSet res = executeString("select * from external_hbase_mapped_table where rk1 > 'field1-20'");
-      assertResultSet(res);
-      cleanupQuery(res);
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, rk2 text, col3 text) " +
+              "USING hbase WITH ('table'='external_hbase_table', 'columns'='0:key,1:key,col3:a', " +
+              "'hbase.rowkey.delimiter'='_') LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      executeString(sql).close();
+
+      assertTableExists("external_hbase_mapped_table");
+
+
+      HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
+      HTableInterface htable = hconn.getTable("external_hbase_table");
+
+      try {
+        for (int i = 0; i < 100; i++) {
+          Put put = new Put(("field1-" + i + "_field2-" + i).getBytes());
+          put.add("col3".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
+          htable.put(put);
+        }
+
+        ResultSet res = executeString("select * from external_hbase_mapped_table where rk1 > 'field1-20'");
+        assertResultSet(res);
+        cleanupQuery(res);
+      } finally {
+        executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
+        htable.close();
+      }
     } finally {
-      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-      htable.close();
+      TablespaceManager.addTableSpaceForTest(existing.get());
     }
   }
 
@@ -483,7 +525,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     EvalNode evalNodeEq = new BinaryEval(EvalType.EQUAL, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
         new ConstEval(new TextDatum("021")));
     scanNode.setQual(evalNodeEq);
-    Tablespace tablespace = TablespaceManager.getByName("cluster1").get();
+    Tablespace tablespace = TablespaceManager.getByName("cluster1");
     List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(1, fragments.size());
     assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));

@@ -2,12 +2,13 @@
 File Formats
 *************************************
 
-Currently, Tajo provides four file formats as follows:
+Currently, Tajo provides following file formats:
 
 .. toctree::
     :maxdepth: 1
 
     text
+    json
     rcfile
     parquet
     orc

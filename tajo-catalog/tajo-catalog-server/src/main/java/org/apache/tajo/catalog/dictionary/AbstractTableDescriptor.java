@@ -19,12 +19,7 @@
 package org.apache.tajo.catalog.dictionary;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 abstract class AbstractTableDescriptor implements TableDescriptor {

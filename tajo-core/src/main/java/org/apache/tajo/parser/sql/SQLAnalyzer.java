@@ -1294,13 +1294,18 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
+      if (checkIfExist(ctx.table_elements().asterisk())) {
+        createTable.setHasSelfDescSchema();
+      } else {
+        ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
+        createTable.setTableElements(elements);
+      }
+
       if (checkIfExist(ctx.TABLESPACE())) {
         throw new TajoRuntimeException(new SQLSyntaxError("Tablespace clause is not allowed for an external table."));
       }
 
-      ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
       String storageType = ctx.storage_type.getText();
-      createTable.setTableElements(elements);
       createTable.setStorageType(storageType);
 
       if (checkIfExist(ctx.LOCATION())) {
@@ -1311,8 +1316,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     } else {
       if (checkIfExist(ctx.table_elements())) {
-        ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
-        createTable.setTableElements(elements);
+        if (checkIfExist(ctx.table_elements().asterisk())) {
+          createTable.setHasSelfDescSchema();
+        } else {
+          ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
+          createTable.setTableElements(elements);
+        }
       }
 
       if (checkIfExist(ctx.TABLESPACE())) {
@@ -1328,6 +1337,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (checkIfExist(ctx.query_expression())) {
         Expr subquery = visitQuery_expression(ctx.query_expression());
         createTable.setSubQuery(subquery);
+        createTable.unsetHasSelfDescSchema();
       }
     }
 
