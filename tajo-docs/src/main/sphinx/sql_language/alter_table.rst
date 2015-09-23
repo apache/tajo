@@ -112,9 +112,5 @@ Tajo stores a list of partitions for each table in its catalog. If partitions ar
 
 .. note::
 
-  If you recover partitions in the situation that partitions just exists on catalog and it doesn't exist on file system, Tajo would not make directories on the file system and would print messages to TajoMaster log with log4 debug level as following:
-
-  .. code-block:: sql
-
-    Partitions missing from Filesystem:<your partition name>
+  Even though an information of a partition is stored in the catalog, Tajo does not recover it when its partition directory doesn't exist in the file system.
 
