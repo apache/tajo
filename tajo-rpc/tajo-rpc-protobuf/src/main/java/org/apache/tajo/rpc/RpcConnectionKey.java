@@ -16,27 +16,41 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client.v2;
+package org.apache.tajo.rpc;
 
-import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
+import java.net.InetSocketAddress;
 
-import java.util.Properties;
+public class RpcConnectionKey {
+  final InetSocketAddress addr;
+  final Class<?> protocolClass;
+  final boolean asyncMode;
 
-public class ClientDelegateFactory {
+  final String description;
 
-  public static ClientDelegate newDefaultDelegate(String host,
-                                                  int port,
-                                                  @Nullable Properties clientParams)
-      throws ClientUnableToConnectException {
-
-    return new LegacyClientDelegate(host, port, clientParams);
+  public RpcConnectionKey(InetSocketAddress addr,
+                          Class<?> protocolClass, boolean asyncMode) {
+    this.addr = addr;
+    this.protocolClass = protocolClass;
+    this.asyncMode = asyncMode;
+    this.description = "[" + protocolClass + "] " + addr + "," + asyncMode;
   }
 
-  public static ClientDelegate newDefaultDelegate(ServiceDiscovery discovery,
-                                                  @Nullable Properties clientParams)
-      throws ClientUnableToConnectException {
+  @Override
+  public String toString() {
+    return description;
+  }
 
-    return new LegacyClientDelegate(discovery, clientParams);
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof RpcConnectionKey)) {
+      return false;
+    }
+
+    return toString().equals(obj.toString());
+  }
+
+  @Override
+  public int hashCode() {
+    return description.hashCode();
   }
 }
