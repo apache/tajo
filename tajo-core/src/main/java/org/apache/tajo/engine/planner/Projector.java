@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
