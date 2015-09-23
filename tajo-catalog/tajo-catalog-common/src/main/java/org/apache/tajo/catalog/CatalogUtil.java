@@ -820,10 +820,8 @@ public class CatalogUtil {
    * @param alterTableType
    * @return
    */
-  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
-                                                  String[] values, @Nullable String path, AlterTableType
-                                                    alterTableType) {
-
+  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns, String[] values, @Nullable
+    String path, AlterTableType alterTableType) {
     return addOrDropPartition(tableName, columns, values, path, alterTableType, 0L);
   }
   /**
@@ -838,8 +836,9 @@ public class CatalogUtil {
    * @param numBytes contents length
    * @return AlterTableDesc
    */
-  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
-      String[] values, @Nullable String path, AlterTableType alterTableType, long numBytes) {
+  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns, String[] values,
+    @Nullable String path, AlterTableType alterTableType, long numBytes) {
+
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
 
