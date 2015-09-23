@@ -88,7 +88,7 @@ public class LinkedMetadataManager {
       return Optional.absent();
     } else {
       MetadataProvider found = filtered.iterator().next();
-      return Optional.of(new Pair<String, URI>(found.getTablespaceName(), found.getTablespaceUri()));
+      return Optional.of(new Pair<>(found.getTablespaceName(), found.getTablespaceUri()));
     }
   }
 
@@ -101,7 +101,7 @@ public class LinkedMetadataManager {
   public Collection<Pair<String, URI>> getTablespaces() {
     ImmutableList.Builder<Pair<String, URI>> builder = ImmutableList.builder();
     for (MetadataProvider p : providerMap.values()) {
-      builder.add(new Pair<String, URI>(p.getDatabaseName(), p.getTablespaceUri()));
+      builder.add(new Pair<>(p.getDatabaseName(), p.getTablespaceUri()));
     }
     return builder.build();
   }

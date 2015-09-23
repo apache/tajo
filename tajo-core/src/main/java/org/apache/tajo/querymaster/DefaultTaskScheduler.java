@@ -282,7 +282,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
 
   protected LinkedList<TaskRequestEvent> createTaskRequest(final int incompleteTaskNum) throws Exception {
-    LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
+    LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<>();
 
     //If scheduled tasks is long-term task, cluster resource can be the worst load balance.
     //This part is to throttle the maximum required container per request
@@ -297,7 +297,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
     QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 
-    CallFuture<NodeResourceResponse> callBack = new CallFuture<NodeResourceResponse>();
+    CallFuture<NodeResourceResponse> callBack = new CallFuture<>();
     NodeResourceRequest.Builder request = NodeResourceRequest.newBuilder();
     request.setCapacity(NodeResources.createResource(minTaskMemory, isLeaf ? 1 : 0).getProto())
         .setNumContainers(requestContainerNum)
@@ -376,7 +376,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
      * These disk volumes are kept in an order of ascending order of the volume id.
      * In other words, the head volume ids are likely to -1, meaning no given volume id.
      */
-    private SortedMap<Integer, Integer> diskVolumeLoads = new TreeMap<Integer, Integer>();
+    private SortedMap<Integer, Integer> diskVolumeLoads = new TreeMap<>();
     /** The total number of remain tasks in this host */
     private AtomicInteger remainTasksNum = new AtomicInteger(0);
     public static final int REMOTE = -2;
@@ -391,7 +391,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       synchronized (unassignedTaskForEachVolume){
         LinkedHashSet<TaskAttempt> list = unassignedTaskForEachVolume.get(volumeId);
         if (list == null) {
-          list = new LinkedHashSet<TaskAttempt>();
+          list = new LinkedHashSet<>();
           unassignedTaskForEachVolume.put(volumeId, list);
         }
         list.add(attemptId);
@@ -649,7 +649,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
         HashSet<TaskAttemptId> list = leafTasksRackMapping.get(hostVolumeMapping.getRack());
         if (list == null) {
-          list = new HashSet<TaskAttemptId>();
+          list = new HashSet<>();
           leafTasksRackMapping.put(hostVolumeMapping.getRack(), list);
         }
 
@@ -757,7 +757,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
     public void assignToLeafTasks(LinkedList<TaskRequestEvent> taskRequests) {
       Collections.shuffle(taskRequests);
-      LinkedList<TaskRequestEvent> remoteTaskRequests = new LinkedList<TaskRequestEvent>();
+      LinkedList<TaskRequestEvent> remoteTaskRequests = new LinkedList<>();
       String queryMasterHostAndPort = context.getMasterContext().getQueryMasterContext().getWorkerContext().
           getConnectionInfo().getHostAndQMPort();
 
@@ -858,7 +858,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           Task task = stage.getTask(attemptId.getTaskId());
           TaskRequest taskAssign = new TaskRequestImpl(
               attemptId,
-              new ArrayList<FragmentProto>(task.getAllFragments()),
+                  new ArrayList<>(task.getAllFragments()),
               "",
               false,
               LogicalNodeSerializer.serialize(task.getLogicalPlan()),
@@ -883,7 +883,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
 
           AsyncRpcClient tajoWorkerRpc = null;
-          CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
+          CallFuture<BatchAllocationResponse> callFuture = new CallFuture<>();
           totalAttempts++;
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
@@ -997,7 +997,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           requestProto.setExecutionBlockId(attemptId.getTaskId().getExecutionBlockId().getProto());
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId, connectionInfo));
 
-          CallFuture<BatchAllocationResponse> callFuture = new CallFuture<BatchAllocationResponse>();
+          CallFuture<BatchAllocationResponse> callFuture = new CallFuture<>();
 
           InetSocketAddress addr = stage.getAssignedWorkerMap().get(connectionInfo.getId());
           if (addr == null) addr = new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());

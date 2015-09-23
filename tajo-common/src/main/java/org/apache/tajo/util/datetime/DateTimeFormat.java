@@ -469,7 +469,7 @@ public class DateTimeFormat {
 
   static final KeyWord[] DCH_keywords = new KeyWord[DCH_keywordValues.length];
 
-  static Map<Character, Integer> DCH_index = new HashMap<Character, Integer>();
+  static Map<Character, Integer> DCH_index = new HashMap<>();
 
   static {
     int index = 0;
@@ -546,7 +546,7 @@ public class DateTimeFormat {
     int yysz;			/* is it YY or YYYY ? */
     int clock;		/* 12 or 24 hour clock? */
   }
-  static Map<String, FormatNode[]> formatNodeCache = new HashMap<String, FormatNode[]>();
+  static Map<String, FormatNode[]> formatNodeCache = new HashMap<>();
 
  /**
   * ----------

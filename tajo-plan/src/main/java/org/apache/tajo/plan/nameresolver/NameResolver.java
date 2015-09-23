@@ -398,7 +398,7 @@ public abstract class NameResolver {
       columnName += NestedPathUtil.PATH_DELIMITER + columnRef.getName();
     }
 
-    return new Pair<String, String>(qualifier, columnName);
+    return new Pair<>(qualifier, columnName);
   }
 
   static Column ensureUniqueColumn(List<Column> candidates) throws AmbiguousColumnException {

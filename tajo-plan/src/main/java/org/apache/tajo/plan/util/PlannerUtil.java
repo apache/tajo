@@ -494,7 +494,7 @@ public class PlannerUtil {
   }
 
   private static class LogicalNodeFinder implements LogicalNodeVisitor {
-    private List<LogicalNode> list = new ArrayList<LogicalNode>();
+    private List<LogicalNode> list = new ArrayList<>();
     private final NodeType[] tofind;
     private boolean topmost = false;
     private boolean finished = false;
@@ -532,7 +532,7 @@ public class PlannerUtil {
   }
 
   private static class ParentNodeFinder implements LogicalNodeVisitor {
-    private List<LogicalNode> list = new ArrayList<LogicalNode>();
+    private List<LogicalNode> list = new ArrayList<>();
     private NodeType tofind;
 
     public ParentNodeFinder(NodeType type) {

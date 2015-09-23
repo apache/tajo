@@ -45,7 +45,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private ShuffleFileWriteNode plan;
   private final TableMeta meta;
   private Partitioner partitioner;
-  private Map<Integer, HashShuffleAppender> appenderMap = new HashMap<Integer, HashShuffleAppender>();
+  private Map<Integer, HashShuffleAppender> appenderMap = new HashMap<>();
   private final int numShuffleOutputs;
   private final int [] shuffleKeyIds;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
@@ -89,7 +89,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     return appender;
   }
 
-  Map<Integer, TupleList> partitionTuples = new HashMap<Integer, TupleList>();
+  Map<Integer, TupleList> partitionTuples = new HashMap<>();
   long writtenBytes = 0L;
 
   @Override

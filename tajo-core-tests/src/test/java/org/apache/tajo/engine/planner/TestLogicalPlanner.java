@@ -864,7 +864,7 @@ public class TestLogicalPlanner {
   }
 
   private static class TestVisitor implements LogicalNodeVisitor {
-    Stack<LogicalNode> stack = new Stack<LogicalNode>();
+    Stack<LogicalNode> stack = new Stack<>();
     @Override
     public void visit(LogicalNode node) {
       stack.push(node);

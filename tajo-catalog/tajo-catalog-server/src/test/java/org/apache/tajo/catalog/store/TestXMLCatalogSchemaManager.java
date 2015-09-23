@@ -152,7 +152,7 @@ public class TestXMLCatalogSchemaManager {
   }
   
   private <T> Matcher<Iterable<? extends T>> hasItem(Matcher<? extends T> matcher) {
-    return new CollectionMatcher<T>(matcher);
+    return new CollectionMatcher<>(matcher);
   }
   
   @BeforeClass
@@ -193,7 +193,7 @@ public class TestXMLCatalogSchemaManager {
   
   protected <T> BaseMatcher<T> hasItemInResultSet(final String expected, final String columnName) {
     return new BaseMatcher<T>() {
-      private final List<String> results = new ArrayList<String>();
+      private final List<String> results = new ArrayList<>();
 
       @Override
       public boolean matches(Object item) {

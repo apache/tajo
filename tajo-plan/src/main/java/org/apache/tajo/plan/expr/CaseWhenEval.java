@@ -158,7 +158,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   @Override
   public Object clone() throws CloneNotSupportedException {
     CaseWhenEval caseWhenEval = (CaseWhenEval) super.clone();
-    caseWhenEval.whens = new ArrayList<IfThenEval>();
+    caseWhenEval.whens = new ArrayList<>();
     for (IfThenEval ifThenEval : whens) {
       caseWhenEval.whens.add((IfThenEval) ifThenEval.clone());
     }

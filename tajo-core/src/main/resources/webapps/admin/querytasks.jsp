@@ -76,7 +76,7 @@
 
   Collection<NodeStatus> allWorkers = master.getContext().getResourceManager().getNodes().values();
 
-  Map<String, NodeStatus> nodeMap = new HashMap<String, NodeStatus>();
+  Map<String, NodeStatus> nodeMap = new HashMap<>();
   if(allWorkers != null) {
     for(NodeStatus eachWorker: allWorkers) {
       nodeMap.put(eachWorker.getConnectionInfo().getHostAndPeerRpcPort(), eachWorker);
@@ -189,7 +189,7 @@
     <input type="hidden" name="startTime" value="<%=startTime%>"/>
   </form>
 <%
-  List<TaskHistory> filteredTasks = new ArrayList<TaskHistory>();
+  List<TaskHistory> filteredTasks = new ArrayList<>();
   for(TaskHistory eachTask: allTasks) {
     if (!"ALL".equals(status)) {
       if (!status.equals(eachTask.getState().toString())) {

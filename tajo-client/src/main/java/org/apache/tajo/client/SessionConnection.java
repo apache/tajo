@@ -77,7 +77,7 @@ public class SessionConnection implements Closeable {
   private final AtomicBoolean closed = new AtomicBoolean(false);
 
   /** session variable cache */
-  private final Map<String, String> sessionVarsCache = new HashMap<String, String>();
+  private final Map<String, String> sessionVarsCache = new HashMap<>();
 
   private final ServiceTracker serviceTracker;
 

@@ -36,7 +36,7 @@ public class SchemaPatch implements Comparable<SchemaPatch> {
   private int nextVersion;
   @XmlElementWrapper(name="objects",namespace="http://tajo.apache.org/catalogstore")
   @XmlElement(name="Object",namespace="http://tajo.apache.org/catalogstore")
-  private final List<DatabaseObject> objects = new ArrayList<DatabaseObject>();
+  private final List<DatabaseObject> objects = new ArrayList<>();
 
   public int getPriorVersion() {
     return priorVersion;

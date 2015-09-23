@@ -170,7 +170,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     private static List<NamedExpr> resolveAsterisk(LogicalPlanner.PlanContext ctx, QualifiedAsteriskExpr asteriskExpr)
         throws TajoException {
       Column[] columns = getColumns(ctx, asteriskExpr);
-      List<NamedExpr> newTargetExprs = new ArrayList<NamedExpr>(columns.length);
+      List<NamedExpr> newTargetExprs = new ArrayList<>(columns.length);
       int i;
       for (i = 0; i < columns.length; i++) {
         newTargetExprs.add(new NamedExpr(new ColumnReferenceExpr(columns[i].getQualifier(), columns[i].getSimpleName())));

@@ -75,14 +75,14 @@ public class SimpleParser {
 
   public static List<ParsedResult> parseScript(String str) throws InvalidStatementException {
     SimpleParser parser = new SimpleParser();
-    List<ParsedResult> parsedResults = new ArrayList<ParsedResult>();
+    List<ParsedResult> parsedResults = new ArrayList<>();
     parsedResults.addAll(parser.parseLines(str));
     parsedResults.addAll(parser.EOF());
     return parsedResults;
   }
 
   public List<ParsedResult> parseLines(String str) throws InvalidStatementException {
-    List<ParsedResult> statements = new ArrayList<ParsedResult>();
+    List<ParsedResult> statements = new ArrayList<>();
     int lineStartIdx;
     int idx = 0;
     char [] chars = str.toCharArray();
@@ -330,7 +330,7 @@ public class SimpleParser {
    * @throws InvalidStatementException
    */
   private List<ParsedResult> doProcessEndOfStatement(boolean endOfFile) throws InvalidStatementException {
-    List<ParsedResult> parsedResults = new ArrayList<ParsedResult>();
+    List<ParsedResult> parsedResults = new ArrayList<>();
     String errorMessage = "";
     if (endOfFile) {
       if (state == ParsingState.META) {

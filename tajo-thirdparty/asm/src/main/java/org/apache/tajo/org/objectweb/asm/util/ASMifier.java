@@ -794,7 +794,7 @@ public class ASMifier extends Printer {
         buf.append("// ATTRIBUTE ").append(attr.type).append('\n');
         if (attr instanceof ASMifiable) {
             if (labelNames == null) {
-                labelNames = new HashMap<Label, String>();
+                labelNames = new HashMap<>();
             }
             buf.append("{\n");
             ((ASMifiable) attr).asmify(buf, "attr", labelNames);
@@ -1127,7 +1127,7 @@ public class ASMifier extends Printer {
      */
     protected void declareLabel(final Label l) {
         if (labelNames == null) {
-            labelNames = new HashMap<Label, String>();
+            labelNames = new HashMap<>();
         }
         String name = labelNames.get(l);
         if (name == null) {

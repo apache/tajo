@@ -46,7 +46,7 @@
 
   Query query = queryMasterTask.getQuery();
 
-  Map<ExecutionBlockId, Stage> stageMap = new HashMap<ExecutionBlockId, Stage>();
+  Map<ExecutionBlockId, Stage> stageMap = new HashMap<>();
 
   for(Stage eachStage : query.getStages()) {
     stageMap.put(eachStage.getId(), eachStage);
@@ -102,7 +102,7 @@
   String curIdStr = null;
   int x=35, y=1;
   int pos;
-  List<StageInfo> stageInfos = new ArrayList<StageInfo>();
+  List<StageInfo> stageInfos = new ArrayList<>();
 
   stageInfos.add(new StageInfo(masterPlan.getRoot(), null, null, x, y, 0));
 

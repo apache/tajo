@@ -37,7 +37,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
   /**
    * save the SQL parameters {paramLoc:paramValue}
    */
-  private final HashMap<Integer, String> parameters=new HashMap<Integer, String>();
+  private final HashMap<Integer, String> parameters= new HashMap<>();
 
   /**
    * keep the current ResultRet update count

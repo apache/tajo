@@ -153,7 +153,7 @@ public class QueryManager extends CompositeService {
         result.addAll(historyCache.values());
       }
       int fromIndex = (page - 1) * size;
-      return new LinkedList<QueryInfo>(result).subList(fromIndex, fromIndex + size);
+      return new LinkedList<>(result).subList(fromIndex, fromIndex + size);
     } else {
       try {
         return this.masterContext.getHistoryReader().getQueriesInHistory(page, size);
@@ -164,7 +164,7 @@ public class QueryManager extends CompositeService {
         synchronized (historyCache) {
           result.addAll(historyCache.values());
         }
-        return new LinkedList<QueryInfo>(result);
+        return new LinkedList<>(result);
       }
     }
   }

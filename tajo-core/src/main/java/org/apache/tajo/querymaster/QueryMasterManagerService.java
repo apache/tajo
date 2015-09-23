@@ -245,7 +245,7 @@ public class QueryMasterManagerService extends CompositeService
   public void allocateQueryMaster(RpcController controller,
                                AllocationResourceProto request,
                                RpcCallback<PrimitiveProtos.BoolProto> done) {
-    CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+    CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<>();
     workerContext.getNodeResourceManager().handle(new QMResourceAllocateEvent(request, callFuture));
 
     try {

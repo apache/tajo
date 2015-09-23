@@ -37,7 +37,7 @@ public class BaseSchema implements Comparable<BaseSchema> {
   private String schemaName;
   @XmlElementWrapper(name="objects",namespace="http://tajo.apache.org/catalogstore")
   @XmlElement(name="Object",namespace="http://tajo.apache.org/catalogstore")
-  private final List<DatabaseObject> objects = new ArrayList<DatabaseObject>();
+  private final List<DatabaseObject> objects = new ArrayList<>();
   
   public int getVersion() {
     return version;

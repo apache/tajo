@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class HiveCatalogStoreClientPool {
   private static final Logger LOG = Logger.getLogger(HiveCatalogStoreClientPool.class);
   private final ConcurrentLinkedQueue<HiveCatalogStoreClient> clientPool =
-      new ConcurrentLinkedQueue<HiveCatalogStoreClient>();
+          new ConcurrentLinkedQueue<>();
   private AtomicBoolean poolClosed = new AtomicBoolean(false);
   private HiveConf hiveConf;
 

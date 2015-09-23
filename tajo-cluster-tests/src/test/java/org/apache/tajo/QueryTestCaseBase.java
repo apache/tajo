@@ -188,7 +188,7 @@ public class QueryTestCaseBase {
 
   /** It transiently contains created tables for the running test class. */
   private static String currentDatabase;
-  private static Set<String> createdTableGlobalSet = new HashSet<String>();
+  private static Set<String> createdTableGlobalSet = new HashSet<>();
   // queries and results directory corresponding to subclass class.
   protected Path currentQueryPath;
   protected Path namedQueryPath;
@@ -826,7 +826,7 @@ public class QueryTestCaseBase {
     }
     sb.append("\n-------------------------------\n");
 
-    List<String> results = new ArrayList<String>();
+    List<String> results = new ArrayList<>();
     while (resultSet.next()) {
       StringBuilder line = new StringBuilder();
       for (int i = 1; i <= numOfColumns; i++) {
@@ -982,7 +982,7 @@ public class QueryTestCaseBase {
     String compiled = compileTemplate(template, dataFilePath, args);
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(compiled);
-    List<String> createdTableNames = new ArrayList<String>();
+    List<String> createdTableNames = new ArrayList<>();
 
     for (ParsedResult parsedResult : parsedResults) {
       // parse a statement
@@ -1128,7 +1128,7 @@ public class QueryTestCaseBase {
   }
 
   private List<Path> listFiles(FileSystem fs, Path path) throws Exception {
-    List<Path> result = new ArrayList<Path>();
+    List<Path> result = new ArrayList<>();
     FileStatus[] files = fs.listStatus(path);
     if (files == null || files.length == 0) {
       return result;

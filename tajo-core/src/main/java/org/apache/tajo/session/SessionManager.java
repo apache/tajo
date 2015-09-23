@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SessionManager extends CompositeService implements EventHandler<SessionEvent> {
   private static final Log LOG = LogFactory.getLog(SessionManager.class);
 
-  public final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<String, Session>();
+  public final ConcurrentHashMap<String, Session> sessions = new ConcurrentHashMap<>();
   private final Dispatcher dispatcher;
   private SessionLivelinessMonitor sessionLivelinessMonitor;
 

@@ -59,7 +59,7 @@ public class QueryStringDecoder {
   }
   
   protected void decodeParams() throws MalformedURLException, UnsupportedEncodingException {
-    params = new HashMap<String, List<String>>();
+    params = new HashMap<>();
     String queries = getQueries();
     
     if (queries != null && !queries.isEmpty()) {
@@ -112,7 +112,7 @@ public class QueryStringDecoder {
     List<String> valueList = params.get(name);
     
     if (valueList == null) {
-      valueList = new ArrayList<String>();
+      valueList = new ArrayList<>();
       params.put(name, valueList);
     }
     

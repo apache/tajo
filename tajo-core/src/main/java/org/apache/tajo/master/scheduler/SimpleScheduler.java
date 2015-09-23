@@ -75,7 +75,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     this.masterContext = context;
     this.rmContext = rmContext;
     //Copy default array capacity from PriorityBlockingQueue.
-    this.queryQueue = new PriorityBlockingQueue<QuerySchedulingInfo>(11, COMPARATOR);
+    this.queryQueue = new PriorityBlockingQueue<>(11, COMPARATOR);
     this.queryProcessor = new Thread(new QueryProcessor());
   }
 
@@ -184,7 +184,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
       return Lists.newArrayList();
     }
 
-    LinkedList<Integer> workers = new LinkedList<Integer>();
+    LinkedList<Integer> workers = new LinkedList<>();
 
     if (request.getCandidateNodesCount() > 0) {
       workers.addAll(request.getCandidateNodesList());
@@ -197,7 +197,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
 
     // reserve resource in random workers
     if (reservedResources.size() < requiredContainers) {
-      LinkedList<Integer> randomNodes = new LinkedList<Integer>(getRMContext().getNodes().keySet());
+      LinkedList<Integer> randomNodes = new LinkedList<>(getRMContext().getNodes().keySet());
       Collections.shuffle(randomNodes);
 
       reservedResources.addAll(reserveClusterResource(

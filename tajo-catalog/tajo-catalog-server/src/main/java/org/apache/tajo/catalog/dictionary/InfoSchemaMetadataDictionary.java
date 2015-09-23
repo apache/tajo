@@ -44,8 +44,8 @@ public class InfoSchemaMetadataDictionary {
     MAX_TABLE
   }
   
-  private List<TableDescriptor> schemaInfoTableDescriptors = new ArrayList<TableDescriptor>(
-      Collections.nCopies(DEFINED_TABLES.MAX_TABLE.ordinal(), (TableDescriptor)null));
+  private List<TableDescriptor> schemaInfoTableDescriptors = new ArrayList<>(
+          Collections.nCopies(DEFINED_TABLES.MAX_TABLE.ordinal(), (TableDescriptor) null));
   
   public InfoSchemaMetadataDictionary() {
     createSystemTableDescriptors();

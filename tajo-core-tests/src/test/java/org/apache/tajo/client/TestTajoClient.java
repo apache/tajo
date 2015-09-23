@@ -694,7 +694,7 @@ public class TestTajoClient {
           "  c_custkey,\n" +
           "  orders.o_orderkey;\n";
 
-    Map<String, String> variables = new HashMap<String, String>();
+    Map<String, String> variables = new HashMap<>();
     variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
     client.updateSessionVariables(variables);
     ResultSet res = client.executeQueryAndGetResult(sql);
@@ -763,7 +763,7 @@ public class TestTajoClient {
     assertEquals(2, queryHistory.getStageHistoriesCount());
 
     List<ClientProtos.StageHistoryProto> taskHistories =
-        new ArrayList<StageHistoryProto>(queryHistory.getStageHistoriesList());
+            new ArrayList<>(queryHistory.getStageHistoriesList());
     Collections.sort(taskHistories, new Comparator<StageHistoryProto>() {
       @Override
       public int compare(ClientProtos.StageHistoryProto o1, StageHistoryProto o2) {

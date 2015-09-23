@@ -610,7 +610,7 @@ public class DateTimeConstants {
       return valueType;
     }
   }
-  public static final Map<String, DateToken> dateTokenMap = new HashMap<String, DateToken>();
+  public static final Map<String, DateToken> dateTokenMap = new HashMap<>();
 
   static {
     for (Object[] eachToken: datetktbl) {

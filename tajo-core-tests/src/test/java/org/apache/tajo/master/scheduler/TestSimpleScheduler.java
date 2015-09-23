@@ -179,7 +179,7 @@ public class TestSimpleScheduler {
     assertEquals(totalResource, scheduler.getClusterResource());
 
     QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
-    CallFuture<NodeResourceResponse> callBack = new CallFuture<NodeResourceResponse>();
+    CallFuture<NodeResourceResponse> callBack = new CallFuture<>();
     rmContext.getDispatcher().getEventHandler().handle(new ResourceReserveSchedulerEvent(
         createResourceRequest(queryId, requestNum, new ArrayList<Integer>()), callBack));
 
@@ -210,7 +210,7 @@ public class TestSimpleScheduler {
 
     QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     NodeResourceRequest requestProto = createResourceRequest(queryId, requestNum, targetWorkers);
-    CallFuture<NodeResourceResponse> callBack = new CallFuture<NodeResourceResponse>();
+    CallFuture<NodeResourceResponse> callBack = new CallFuture<>();
     rmContext.getDispatcher().getEventHandler().handle(new ResourceReserveSchedulerEvent(
         requestProto, callBack));
 

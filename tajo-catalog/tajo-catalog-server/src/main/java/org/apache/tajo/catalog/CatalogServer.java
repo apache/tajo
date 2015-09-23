@@ -82,8 +82,7 @@ public class CatalogServer extends AbstractService {
   private final Lock wlock = lock.writeLock();
 
   private CatalogStore store;
-  private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
-      List<FunctionDescProto>>();
+  private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<>();
 
   protected LinkedMetadataManager linkedMetadataManager;
   protected final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
@@ -100,7 +99,7 @@ public class CatalogServer extends AbstractService {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
     this.linkedMetadataManager = new LinkedMetadataManager(Collections.EMPTY_LIST);
-    this.builtingFuncs = new ArrayList<FunctionDesc>();
+    this.builtingFuncs = new ArrayList<>();
   }
 
   public CatalogServer(Collection<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs)

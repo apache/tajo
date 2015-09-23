@@ -44,7 +44,7 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
   }
 
   public static <T extends Expr> Set<T> finds(Expr expr, OpType type) {
-    return (Set<T>) new HashSet<Expr>(findsInOrder(expr, type));
+    return (Set<T>) new HashSet<>(findsInOrder(expr, type));
   }
 
   public static <T extends Expr> List<T> findsInOrder(Expr expr, OpType type) {

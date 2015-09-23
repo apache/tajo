@@ -251,7 +251,7 @@ public class ExecutionBlockContext {
 
     try {
       //If QueryMaster does not responding, current execution block should be stop
-      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
       getStub().fatalError(callFuture.getController(), builder.build(), callFuture);
       callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (Exception e) {
@@ -298,7 +298,7 @@ public class ExecutionBlockContext {
       if (shuffles == null) {
         reporterBuilder.addAllIntermediateEntries(intermediateEntries);
 
-        CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+        CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
         stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
         callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         return;
@@ -353,7 +353,7 @@ public class ExecutionBlockContext {
       }
     }
     try {
-      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
       stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
       callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (Throwable e) {
@@ -391,7 +391,7 @@ public class ExecutionBlockContext {
               if(tasks.size() == 0){
                 masterStub.ping(null, getExecutionBlockId().getProto(), NullCallback.get());
               } else {
-                for (Task task : new ArrayList<Task>(tasks.values())){
+                for (Task task : new ArrayList<>(tasks.values())){
 
                   if (task.getTaskContext().getState() ==
                       TajoProtos.TaskAttemptState.TA_RUNNING && task.isProgressChanged()) {

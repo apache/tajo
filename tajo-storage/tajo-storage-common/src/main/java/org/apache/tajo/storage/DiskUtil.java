@@ -68,7 +68,7 @@ public class DiskUtil {
 	}
 
 	private static List<DiskDeviceInfo> getUnixDiskDeviceInfos() {
-		List<DiskDeviceInfo> infos = new ArrayList<DiskDeviceInfo>();
+		List<DiskDeviceInfo> infos = new ArrayList<>();
 		
 		File file = new File(UNIX_DISK_DEVICE_PATH);
 		if(!file.exists()) {
@@ -82,7 +82,7 @@ public class DiskUtil {
 			String line = null;
 			
 			int count = 0;
-			Set<String> deviceNames = new TreeSet<String>();
+			Set<String> deviceNames = new TreeSet<>();
 			while((line = reader.readLine()) != null) {
 				if(count > 0 && !line.trim().isEmpty()) {
 					String[] tokens = line.trim().split(" +");
@@ -137,7 +137,7 @@ public class DiskUtil {
 		DiskDeviceInfo diskDeviceInfo = new DiskDeviceInfo(0);
 		diskDeviceInfo.setName("default");
 		
-		List<DiskDeviceInfo> infos = new ArrayList<DiskDeviceInfo>();
+		List<DiskDeviceInfo> infos = new ArrayList<>();
 		
 		infos.add(diskDeviceInfo);
 		
@@ -146,7 +146,7 @@ public class DiskUtil {
 	
 	
 	private static void setDeviceMountInfo(List<DiskDeviceInfo> deviceInfos) throws IOException {
-		Map<String, DiskDeviceInfo> deviceMap = new HashMap<String, DiskDeviceInfo>();
+		Map<String, DiskDeviceInfo> deviceMap = new HashMap<>();
 		for(DiskDeviceInfo eachDevice: deviceInfos) {
 			deviceMap.put(eachDevice.getName(), eachDevice);
 		}

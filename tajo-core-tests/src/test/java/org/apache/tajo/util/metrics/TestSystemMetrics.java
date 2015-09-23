@@ -125,7 +125,7 @@ public class TestSystemMetrics {
 
     String line;
 
-    List<String> lines = new ArrayList<String>();
+    List<String> lines = new ArrayList<>();
     while((line = reader.readLine()) != null) {
       lines.add(line);
     }

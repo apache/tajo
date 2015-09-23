@@ -105,7 +105,7 @@ public class TajoPullServerService extends AbstractService {
   public static final String PULLSERVER_SERVICEID = "tajo.pullserver";
 
   private static final Map<String,String> userRsrc =
-    new ConcurrentHashMap<String,String>();
+          new ConcurrentHashMap<>();
   private String userName;
 
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
@@ -360,7 +360,7 @@ public class TajoPullServerService extends AbstractService {
   }
 
 
-  Map<String, ProcessingStatus> processingStatusMap = new ConcurrentHashMap<String, ProcessingStatus>();
+  Map<String, ProcessingStatus> processingStatusMap = new ConcurrentHashMap<>();
 
   public void completeFileChunk(FileRegion filePart,
                                    String requestUri,
@@ -763,7 +763,7 @@ public class TajoPullServerService extends AbstractService {
     if (null == mapq) {
       return null;
     }
-    final List<String> ret = new ArrayList<String>();
+    final List<String> ret = new ArrayList<>();
     for (String s : mapq) {
       Collections.addAll(ret, s.split(","));
     }

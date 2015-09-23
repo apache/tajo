@@ -133,7 +133,7 @@ public class BSTIndexScanExec extends ScanExec {
     // the target can be an empty list.
     if (plan.hasTargets()) {
       projected = new Schema();
-      Set<Column> columnSet = new HashSet<Column>();
+      Set<Column> columnSet = new HashSet<>();
 
       if (plan.hasQual()) {
         columnSet.addAll(EvalTreeUtil.findUniqueColumns(qual));

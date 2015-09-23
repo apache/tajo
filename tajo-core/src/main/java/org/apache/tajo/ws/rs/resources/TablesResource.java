@@ -121,7 +121,7 @@ public class TablesResource {
       }
 
       Collection<String> tableNames = catalogService.getAllTableNames(databaseName);
-      Map<String, Collection<String>> tableNamesMap = new HashMap<String, Collection<String>>();
+      Map<String, Collection<String>> tableNamesMap = new HashMap<>();
       tableNamesMap.put(tablesKeyName, tableNames);
       return Response.ok(tableNamesMap).build();
     }

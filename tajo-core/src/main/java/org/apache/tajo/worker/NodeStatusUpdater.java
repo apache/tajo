@@ -162,7 +162,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
     NodeHeartbeatResponse response = null;
     try {
-      CallFuture<NodeHeartbeatResponse> callBack = new CallFuture<NodeHeartbeatResponse>();
+      CallFuture<NodeHeartbeatResponse> callBack = new CallFuture<>();
 
       resourceTracker.nodeHeartbeat(callBack.getController(), requestProto, callBack);
       response = callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);

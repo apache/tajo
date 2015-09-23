@@ -122,9 +122,9 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   private void init() {
-    this.fields = new ArrayList<Column>();
-    this.fieldsByQualifiedName = new HashMap<String, Integer>();
-    this.fieldsByName = new HashMap<String, List<Integer>>();
+    this.fields = new ArrayList<>();
+    this.fieldsByQualifiedName = new HashMap<>();
+    this.fieldsByName = new HashMap<>();
   }
 
   /**

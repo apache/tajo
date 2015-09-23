@@ -365,7 +365,7 @@ public class AlgebraicUtil {
    * @return An array of CNF-formed expressions
    */
   public static EvalNode [] toConjunctiveNormalFormArray(EvalNode expr) {
-    List<EvalNode> list = new ArrayList<EvalNode>();
+    List<EvalNode> list = new ArrayList<>();
     toConjunctiveNormalFormArrayRecursive(expr, list);
     return list.toArray(new EvalNode[list.size()]);
   }
@@ -412,7 +412,7 @@ public class AlgebraicUtil {
    * @return An array of CNF-formed expressions
    */
   public static EvalNode [] toDisjunctiveNormalFormArray(EvalNode...exprs) {
-    List<EvalNode> list = new ArrayList<EvalNode>();
+    List<EvalNode> list = new ArrayList<>();
     for (EvalNode expr : exprs) {
       toDisjunctiveNormalFormArrayRecursive(expr, list);
     }
@@ -437,7 +437,7 @@ public class AlgebraicUtil {
     }
 
     public String build() {
-      Stack<Expr> stack = new Stack<Expr>();
+      Stack<Expr> stack = new Stack<>();
       stack.push(expr);
       try {
         this.visit(null, stack, expr);

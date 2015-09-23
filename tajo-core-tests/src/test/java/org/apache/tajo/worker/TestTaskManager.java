@@ -147,7 +147,7 @@ public class TestTaskManager {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(qid, 1);
 
-    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<BatchAllocationResponse>();
+    CallFuture<BatchAllocationResponse> callFuture  = new CallFuture<>();
     BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
     requestProto.setExecutionBlockId(ebId.getProto());
 

@@ -67,7 +67,7 @@ public class MockNodeResourceManager extends NodeResourceManager {
       ExecutionBlockId ebId, int memory, int size) {
 
     Queue<TaskAllocationProto>
-        requestProtoList = new LinkedBlockingQueue<TaskAllocationProto>();
+        requestProtoList = new LinkedBlockingQueue<>();
     for (int i = 0; i < size; i++) {
 
       TaskAttemptId taskAttemptId = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(ebId, i), 0);

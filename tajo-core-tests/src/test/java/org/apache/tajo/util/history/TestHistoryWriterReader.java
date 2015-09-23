@@ -195,14 +195,14 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       QueryId queryId = QueryIdFactory.newQueryId(startTime, 1);
       queryHistory.setQueryId(queryId.toString());
       queryHistory.setLogicalPlan("LogicalPlan");
-      List<StageHistory> stages = new ArrayList<StageHistory>();
+      List<StageHistory> stages = new ArrayList<>();
       for (int i = 0; i < 3; i++) {
         ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(queryId, i);
         StageHistory stageHistory = new StageHistory();
         stageHistory.setExecutionBlockId(ebId.toString());
         stageHistory.setStartTime(startTime + i);
 
-        List<TaskHistory> taskHistories = new ArrayList<TaskHistory>();
+        List<TaskHistory> taskHistories = new ArrayList<>();
         for (int j = 0; j < 5; j++) {
           TaskHistory taskHistory = new TaskHistory();
           taskHistory.setId(QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(ebId), 1).toString());

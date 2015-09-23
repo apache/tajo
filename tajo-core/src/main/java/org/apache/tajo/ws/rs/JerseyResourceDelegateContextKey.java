@@ -26,7 +26,7 @@ import javax.ws.rs.core.GenericType;
 public class JerseyResourceDelegateContextKey<T> {
   
   private static final ConcurrentMap<String, JerseyResourceDelegateContextKey<?>> keyMap =
-      new ConcurrentHashMap<String, JerseyResourceDelegateContextKey<?>>();
+          new ConcurrentHashMap<>();
   
   private final String name;
   private final Class<T> type;
@@ -43,7 +43,7 @@ public class JerseyResourceDelegateContextKey<T> {
     
     JerseyResourceDelegateContextKey<T> key = (JerseyResourceDelegateContextKey<T>) keyMap.get(name);
     if (key == null) {
-      key = new JerseyResourceDelegateContextKey<T>(name, type);
+      key = new JerseyResourceDelegateContextKey<>(name, type);
       keyMap.putIfAbsent(name, key);
     }
     

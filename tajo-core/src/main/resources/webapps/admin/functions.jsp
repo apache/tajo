@@ -28,7 +28,7 @@
     TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
     CatalogService catalog = master.getCatalog();
 
-    List<FunctionDesc> functions = new ArrayList<FunctionDesc>(catalog.getFunctions());
+    List<FunctionDesc> functions = new ArrayList<>(catalog.getFunctions());
     Collections.sort(functions);
 %>
 

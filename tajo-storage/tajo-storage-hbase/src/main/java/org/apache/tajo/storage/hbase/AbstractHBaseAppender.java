@@ -102,7 +102,7 @@ public abstract class AbstractHBaseAppender implements Appender {
     mappingColumnFamilies = columnMapping.getMappingColumns();
 
     isRowKeyMappings = columnMapping.getIsRowKeyMappings();
-    List<Integer> rowkeyColumnIndexList = new ArrayList<Integer>();
+    List<Integer> rowkeyColumnIndexList = new ArrayList<>();
     for (int i = 0; i < isRowKeyMappings.length; i++) {
       if (isRowKeyMappings[i]) {
         rowkeyColumnIndexList.add(i);
@@ -122,7 +122,7 @@ public abstract class AbstractHBaseAppender implements Appender {
     columnKeyValueDataIndexes = new int[isColumnKeys.length];
     int index = 0;
     int numKeyValues = 0;
-    Map<String, Integer> cfNameIndexMap = new HashMap<String, Integer>();
+    Map<String, Integer> cfNameIndexMap = new HashMap<>();
     for (int i = 0; i < isColumnKeys.length; i++) {
       if (isRowKeyMappings[i]) {
         continue;

@@ -364,7 +364,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getTables(@Nullable String catalog, @Nullable String schemaPattern,
                              @Nullable String tableNamePattern, @Nullable String [] types) throws SQLException {
-    final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
+    final List<MetaDataTuple> resultTables = new ArrayList<>();
     String regtableNamePattern = convertPattern(tableNamePattern == null ? null : tableNamePattern);
 
     List<String> targetCatalogs = Lists.newArrayList();
@@ -440,7 +440,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
     databaseNames = conn.getCatalogAdminClient().getAllDatabaseNames();
 
-    List<MetaDataTuple> tuples = new ArrayList<MetaDataTuple>();
+    List<MetaDataTuple> tuples = new ArrayList<>();
     for (String databaseName : databaseNames) {
       MetaDataTuple tuple = new MetaDataTuple(1);
       tuple.put(0, new TextDatum(databaseName));
@@ -455,7 +455,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public ResultSet getTableTypes() throws SQLException {
-    List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
+    List<MetaDataTuple> columns = new ArrayList<>();
     MetaDataTuple tuple = new MetaDataTuple(2);
     tuple.put(0, new TextDatum("TABLE"));
     columns.add(tuple);
@@ -471,7 +471,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types)
       throws SQLException {
-    List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
+    List<MetaDataTuple> columns = new ArrayList<>();
 
     return new TajoMetaDataResultSet(
         Arrays.asList("TYPE_CAT", "TYPE_SCHEM", "TYPE_NAME", "CLASS_NAME", "DATA_TYPE"
@@ -490,7 +490,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
       targetCatalogs.add(catalog);
     }
 
-    List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
+    List<MetaDataTuple> columns = new ArrayList<>();
     try {
       if (targetCatalogs.isEmpty()) {
         targetCatalogs.addAll(conn.getCatalogAdminClient().getAllDatabaseNames());
@@ -641,7 +641,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public ResultSet getTypeInfo() throws SQLException {
-    List<MetaDataTuple> tuples = new ArrayList<MetaDataTuple>();
+    List<MetaDataTuple> tuples = new ArrayList<>();
     for (Datum[] eachDatums: TajoTypeUtil.getTypeInfos()) {
       MetaDataTuple tuple = new MetaDataTuple(eachDatums.length);
       for (int i = 0; i < eachDatums.length; i++) {

@@ -106,7 +106,7 @@ public class TaskAttemptContext {
         if (fragmentMap.containsKey(t.getId())) {
           fragmentMap.get(t.getId()).add(t);
         } else {
-          List<FragmentProto> frags = new ArrayList<FragmentProto>();
+          List<FragmentProto> frags = new ArrayList<>();
           frags.add(t);
           fragmentMap.put(t.getId(), frags);
         }
@@ -259,7 +259,7 @@ public class TaskAttemptContext {
       if (fragmentMap.containsKey(t.getTableName())) {
         fragmentMap.get(t.getTableName()).add(t.getProto());
       } else {
-        List<FragmentProto> frags = new ArrayList<FragmentProto>();
+        List<FragmentProto> frags = new ArrayList<>();
         frags.add(t.getProto());
         fragmentMap.put(t.getTableName(), frags);
       }
@@ -273,7 +273,7 @@ public class TaskAttemptContext {
     List<FragmentProto> tableFragments = fragmentMap.get(tableId);
 
     if (tableFragments == null) {
-      tableFragments = new ArrayList<FragmentProto>();
+      tableFragments = new ArrayList<>();
     }
 
     List<Path> paths = fragmentToPath(tableFragments);

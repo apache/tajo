@@ -34,13 +34,13 @@ public class StoreObject {
   private BaseSchema schema = new BaseSchema();
   @XmlElementWrapper(name="existQueries",namespace="http://tajo.apache.org/catalogstore")
   @XmlElement(name="existQuery",namespace="http://tajo.apache.org/catalogstore")
-  private final List<SQLObject> existQueries = new ArrayList<SQLObject>();
+  private final List<SQLObject> existQueries = new ArrayList<>();
   @XmlElementWrapper(name="dropStatements",namespace="http://tajo.apache.org/catalogstore")
   @XmlElement(name="dropStatement",namespace="http://tajo.apache.org/catalogstore")
-  private final List<SQLObject> dropStatements = new ArrayList<SQLObject>();
+  private final List<SQLObject> dropStatements = new ArrayList<>();
   @XmlElementWrapper(name="patches",namespace="http://tajo.apache.org/catalogstore")
   @XmlElement(name="patch",namespace="http://tajo.apache.org/catalogstore")
-  private final List<SchemaPatch> patches = new ArrayList<SchemaPatch>();
+  private final List<SchemaPatch> patches = new ArrayList<>();
   
   public BaseSchema getSchema() {
     return schema;

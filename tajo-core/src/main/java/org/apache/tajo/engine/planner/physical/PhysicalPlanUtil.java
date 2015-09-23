@@ -84,13 +84,13 @@ public class PhysicalPlanUtil {
       partitionDepth = tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns().size();
     }
 
-    List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
+    List<FileStatus> nonZeroLengthFiles = new ArrayList<>();
     if (fs.exists(path)) {
       getNonZeroLengthDataFiles(fs, path, nonZeroLengthFiles, fileIndex, numResultFiles,
           new AtomicInteger(0), tableDesc.hasPartition(), 0, partitionDepth);
     }
 
-    List<FileFragment> fragments = new ArrayList<FileFragment>();
+    List<FileFragment> fragments = new ArrayList<>();
 
 
     String[] previousPartitionPathNames = null;
