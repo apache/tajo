@@ -208,7 +208,6 @@ public class TajoDump {
         }
         writer.write("\n\n");
       } catch (Exception e) {
-        e.printStackTrace();
         // dump for each table can throw any exception. We need to skip the exception case.
         // here, the error message prints out via stderr.
         System.err.println("ERROR:" + tableName + "," + e.getMessage());
