@@ -123,7 +123,10 @@ public class DDLBuilder {
 
       sb.append(" WITH (");
 
-      Entry<String, String> [] entries = meta.getOptions().getAllKeyValus().entrySet().toArray(new Entry[meta.getOptions().size()]);
+      // sort table properties in an lexicographic order of the property keys.
+      Entry<String, String> [] entries = meta.getOptions().getAllKeyValus().entrySet().toArray(
+          new Entry[meta.getOptions().size()]);
+
       Arrays.sort(entries, new Comparator<Entry<String, String>>() {
         @Override
         public int compare(Entry<String, String> o1, Entry<String, String> o2) {
@@ -131,8 +134,8 @@ public class DDLBuilder {
         }
       });
 
+      // Join all properties by comma (',')
       sb.append(StringUtils.join(entries, ", ", new Function<Entry<String, String>, String>() {
-
         @Override
         public String apply(Entry<String, String> e) {
           return "'" + e.getKey() + "'='" + e.getValue() + "'";
