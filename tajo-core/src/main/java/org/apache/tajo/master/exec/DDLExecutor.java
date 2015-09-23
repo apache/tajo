@@ -615,7 +615,7 @@ public class DDLExecutor {
       existingPartitionPath = new Path(existingPartition.getPath());
       existingPartitionNames.add(existingPartition.getPartitionName());
       if (!fs.exists(existingPartitionPath)) {
-        LOG.info("Partitions missing from Filesystem:" + existingPartition.getPartitionName());
+        LOG.warn("Partitions missing from Filesystem:" + existingPartition.getPartitionName());
       }
     }
 
