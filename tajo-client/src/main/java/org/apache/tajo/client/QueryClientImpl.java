@@ -50,6 +50,7 @@ import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -352,7 +353,7 @@ public class QueryClientImpl implements QueryClient {
   protected TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum)
       throws TajoException {
 
-    boolean compress = conn.getProperties().getBool(SessionVars.COMPRESSED_RESULT_TRANSFER);
+    final boolean compress = conn.getProperties().getBool(ClientParameters.USE_COMPRESSION);
 
     final BlockingInterface stub = conn.getTMStub();
     final GetQueryResultDataRequest.Builder request = GetQueryResultDataRequest.newBuilder();
@@ -544,16 +545,7 @@ public class QueryClientImpl implements QueryClient {
 
     try {
 
-      qmClient = manager.newClient(
-          qmAddress,
-          QueryMasterClientProtocol.class,
-          false,
-          manager.getRetries(),
-          manager.getTimeoutSeconds(),
-          TimeUnit.SECONDS,
-          false
-      );
-
+      qmClient = manager.newClient(qmAddress, QueryMasterClientProtocol.class, false, new Properties());
 
       conn.checkSessionAndGet(conn.getTajoMasterConnection());
 

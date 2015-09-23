@@ -253,7 +253,7 @@ public class ExecutionBlockContext {
       //If QueryMaster does not responding, current execution block should be stop
       CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
       getStub().fatalError(callFuture.getController(), builder.build(), callFuture);
-      callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
     } catch (Exception e) {
       getWorkerContext().getTaskManager().getDispatcher().getEventHandler()
           .handle(new ExecutionBlockErrorEvent(taskAttemptId.getTaskId().getExecutionBlockId(), e));
@@ -300,7 +300,7 @@ public class ExecutionBlockContext {
 
         CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
         stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
-        callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
         return;
       }
 
@@ -355,7 +355,7 @@ public class ExecutionBlockContext {
     try {
       CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
       stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
-      callFuture.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
     } catch (Throwable e) {
       // can't send report to query master
       LOG.fatal(e.getMessage(), e);

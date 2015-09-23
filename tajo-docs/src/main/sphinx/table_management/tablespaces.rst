@@ -42,4 +42,4 @@ The following is an example for two tablespaces for hbase and hdfs:
 
 .. note::
 
-  Also, each tablespace can use different storage type. Please see :doc:`/storage_plugin` if you want to know more information about it.
+  Also, each tablespace can use different storage type. Please see :doc:`/storage_plugins` if you want to know more information about it.

@@ -40,6 +40,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1860: Refactor Rpc clients to take Connection Parameters. (hyunsik)
+ 
     TAJO-1868: Allow TablespaceManager::get to return a unregistered 
     tablespace. (hyunsik)
 
