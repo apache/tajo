@@ -44,14 +44,14 @@ public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object>
   }
 
   public static <T extends Expr> Set<T> finds(Expr expr, OpType type) {
-    return (Set<T>) new HashSet<>(findsInOrder(expr, type));
+    return new HashSet<>(findsInOrder(expr, type));
   }
 
   public static <T extends Expr> List<T> findsInOrder(Expr expr, OpType type) {
     Context<T> context = new Context<>(type);
     ExprFinder finder = new ExprFinder();
     try {
-      finder.visit(context, new Stack<Expr>(), expr);
+      finder.visit(context, new Stack<>(), expr);
     } catch (TajoException e) {
       throw new TajoInternalError(e);
     }
