@@ -110,15 +110,9 @@ Tajo stores a list of partitions for each table in its catalog. If partitions ar
 
   ALTER TABLE <table_name> REPAIR PARTITION
 
-*Examples*
-
-.. code-block:: sql
-
-  ALTER TABLE student REPAIR PARTITION;
-
 .. note::
 
-  If you recover partitions in the situation that partitions just exists on catalog and it doesn't exist on file system, Tajo would not make directories on the file system and would print messages to TajoMaster log as following:
+  If you recover partitions in the situation that partitions just exists on catalog and it doesn't exist on file system, Tajo would not make directories on the file system and would print messages to TajoMaster log with log4 debug level as following:
 
   .. code-block:: sql
 
