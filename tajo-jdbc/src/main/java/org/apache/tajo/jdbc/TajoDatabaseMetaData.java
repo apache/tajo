@@ -1256,14 +1256,14 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return iface.isInstance(this);
   }
 
+  @Override
   public boolean generatedKeyAlwaysReturned() throws SQLException {
-    // JDK 1.7
     return false;
   }
 
+  @Override
   public ResultSet getPseudoColumns(String catalog, String schemaPattern,
                                     String tableNamePattern, String columnNamePattern) throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("getPseudoColumns not supported");
   }
 }

@@ -18,12 +18,13 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Function;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.StringUtils;
 
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Consumer;
 
@@ -122,21 +123,21 @@ public class DDLBuilder {
 
       sb.append(" WITH (");
 
-      meta.getOptions().getAllKeyValus().entrySet().stream()
-          .sorted(Comparator.comparing(e -> e.getKey())) // sort them for a determined table property string.
-          .forEach(new Consumer<Entry<String, String>>() {
-            boolean first = true;
+      Entry<String, String> [] entries = meta.getOptions().getAllKeyValus().entrySet().toArray(new Entry[meta.getOptions().size()]);
+      Arrays.sort(entries, new Comparator<Entry<String, String>>() {
+        @Override
+        public int compare(Entry<String, String> o1, Entry<String, String> o2) {
+          return o1.getKey().compareTo(o2.getKey());
+        }
+      });
 
-            @Override
-            public void accept(Entry<String, String> e) {
-              if (first) {
-                first = false;
-              } else {
-                sb.append(", ");
-              }
-              sb.append("'").append(e.getKey()).append("'='").append(e.getValue()).append("'");
-            }
-          });
+      StringUtils.join(entries, ", ", new Function<Entry<String, String>, String>() {
+
+        @Override
+        public String apply(Entry<String, String> e) {
+          return "'" + e.getKey() + "'='" + e.getValue() + "'";
+        }
+      });
 
       sb.append(")");
     }

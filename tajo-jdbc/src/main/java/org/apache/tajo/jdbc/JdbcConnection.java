@@ -435,24 +435,25 @@ public class JdbcConnection implements Connection {
   }
 
   public void abort(Executor executor) throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("abort is not supported");
   }
 
+  @Override
   public int getNetworkTimeout() throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("getNetworkTimeout is not supported");
   }
 
+  @Override
   public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("setNetworkTimeout not supported");
   }
 
+  @Override
   public String getSchema() throws SQLException {
     return TajoConstants.DEFAULT_SCHEMA_NAME;
   }
 
+  @Override
   public void setSchema(String schema) throws SQLException {
     throw new SQLFeatureNotSupportedException("setSchema() is not supported yet");
   }
