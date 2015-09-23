@@ -589,10 +589,7 @@ public class DDLExecutor {
     FileSystem fs = tablePath.getFileSystem(context.getConf());
 
     PartitionMethodDesc partitionDesc = tableDesc.getPartitionMethod();
-    Schema partitionColumns = new Schema();
-    for (Column column : partitionDesc.getExpressionSchema().getRootColumns()) {
-      partitionColumns.addColumn(column);
-    }
+    Schema partitionColumns = partitionDesc.getExpressionSchema();
 
     // Get the array of path filter, accepting all partition paths.
     PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns);
