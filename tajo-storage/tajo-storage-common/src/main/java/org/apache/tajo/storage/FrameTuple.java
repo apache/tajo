@@ -96,7 +96,7 @@ public class FrameTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public void put(int fieldId, Tuple tuple) {
+  public void insertTuple(int fieldId, Tuple tuple) {
     throw new TajoRuntimeException(new UnsupportedException());
   }
 
