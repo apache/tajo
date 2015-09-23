@@ -921,7 +921,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     // Write join clause from second column to last column.
     Column target;
 
-    int addedFilter = 0;
     String result;
     for (int i = 0; i < partitionColumns.size(); i++) {
       target = new Column(partitionColumns.get(i));
@@ -933,11 +932,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
         // If visitor build filter successfully, add filter to be used for executing hive api.
         if (result.length() > 0) {
-          if (addedFilter > 0) {
+          if (sb.length() > 0) {
             sb.append(" AND ");
           }
           sb.append(" ( ").append(result).append(" ) ");
-          addedFilter++;
         } else {
           throw new TajoInternalError("Filter does not exist : " + filters[i].toJson());
         }
