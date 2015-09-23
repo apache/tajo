@@ -176,7 +176,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
           rpcClientParams);
       QueryCoordinatorProtocolService masterService = rpc.getStub();
 
-      CallFuture<WorkerConnectionsResponse> callBack = new CallFuture<WorkerConnectionsResponse>();
+      CallFuture<WorkerConnectionsResponse> callBack = new CallFuture<>();
       masterService.getAllWorkers(callBack.getController(),
           PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
 
@@ -186,7 +186,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
-    return new ArrayList<TajoProtos.WorkerConnectionInfoProto>();
+    return new ArrayList<>();
   }
 
   @Override
@@ -291,7 +291,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       queryMasterTasks.remove(queryId);
 
       TajoHeartbeatRequest queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
-      CallFuture<TajoHeartbeatResponse> future = new CallFuture<TajoHeartbeatResponse>();
+      CallFuture<TajoHeartbeatResponse> future = new CallFuture<>();
 
       NettyClientBase tmClient;
       try {
@@ -397,7 +397,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public void run() {
       LOG.info("Start QueryMaster heartbeat thread");
       while(!isStopped) {
-        List<QueryMasterTask> tempTasks = new ArrayList<QueryMasterTask>();
+        List<QueryMasterTask> tempTasks = new ArrayList<>();
         tempTasks.addAll(queryMasterTasks.values());
 
         for(QueryMasterTask eachTask: tempTasks) {
@@ -439,7 +439,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
         } catch (InterruptedException e) {
           break;
         }
-        List<QueryMasterTask> tempTasks = new ArrayList<QueryMasterTask>();
+        List<QueryMasterTask> tempTasks = new ArrayList<>();
         tempTasks.addAll(queryMasterTasks.values());
 
         for(QueryMasterTask eachTask: tempTasks) {

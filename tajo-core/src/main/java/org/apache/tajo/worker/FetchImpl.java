@@ -53,8 +53,8 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
   private long length = -1;
 
   public FetchImpl() {
-    taskIds = new ArrayList<Integer>();
-    attemptIds = new ArrayList<Integer>();
+    taskIds = new ArrayList<>();
+    attemptIds = new ArrayList<>();
   }
 
   public FetchImpl(FetchProto proto) {

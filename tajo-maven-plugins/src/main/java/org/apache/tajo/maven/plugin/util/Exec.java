@@ -88,7 +88,7 @@ public class Exec {
      */
     public OutputBufferThread(InputStream is) {
       this.setDaemon(true);
-      output = new ArrayList<String>();
+      output = new ArrayList<>();
       reader = new BufferedReader(new InputStreamReader(is));
     }
 

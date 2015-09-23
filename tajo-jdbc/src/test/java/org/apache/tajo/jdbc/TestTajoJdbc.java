@@ -307,9 +307,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       int numCols = rsmd.getColumnCount();
       assertEquals(5, numCols);
 
-      Set<String> retrivedViaJavaAPI = new HashSet<String>(client.getTableList("default"));
+      Set<String> retrivedViaJavaAPI = new HashSet<>(client.getTableList("default"));
 
-      Set<String> retrievedViaJDBC = new HashSet<String>();
+      Set<String> retrievedViaJDBC = new HashSet<>();
       while (rs.next()) {
         retrievedViaJDBC.add(rs.getString("TABLE_NAME"));
       }

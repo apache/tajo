@@ -296,7 +296,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
   protected static List<Path> getPartitionPathList(FileSystem fs, Path path) throws Exception {
     FileStatus[] files = fs.listStatus(path);
-    List<Path> paths = new ArrayList<Path>();
+    List<Path> paths = new ArrayList<>();
     if (files != null) {
       for (FileStatus eachFile: files) {
         if (eachFile.isFile()) {

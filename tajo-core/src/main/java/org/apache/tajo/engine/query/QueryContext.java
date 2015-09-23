@@ -44,7 +44,7 @@ public class QueryContext extends OverridableConf {
 
   public QueryContext(TajoConf conf, Session session) {
     super(conf, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SESSION);
-    Map<String, String> copy = new HashMap<String, String>(session.getAllVariables());
+    Map<String, String> copy = new HashMap<>(session.getAllVariables());
     // Among session variables, timezone must not be
     copy.remove("TIMEZONE");
     putAll(copy);

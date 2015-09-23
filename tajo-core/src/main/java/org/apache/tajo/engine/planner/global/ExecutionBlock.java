@@ -32,11 +32,11 @@ public class ExecutionBlock {
   private ExecutionBlockId executionBlockId;
   private LogicalNode plan = null;
   private StoreTableNode store = null;
-  private List<ScanNode> scanlist = new ArrayList<ScanNode>();
+  private List<ScanNode> scanlist = new ArrayList<>();
   private Enforcer enforcer = new Enforcer();
 
   // Actual ScanNode's ExecutionBlockId -> Delegated ScanNode's ExecutionBlockId.
-  private Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = new HashMap<ExecutionBlockId, ExecutionBlockId>();
+  private Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = new HashMap<>();
 
   private boolean hasJoinPlan;
   private boolean hasUnionPlan;
@@ -111,7 +111,7 @@ public class ExecutionBlock {
     }
 
     LogicalNode node = plan;
-    ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
+    ArrayList<LogicalNode> s = new ArrayList<>();
     s.add(node);
     while (!s.isEmpty()) {
       node = s.remove(s.size()-1);

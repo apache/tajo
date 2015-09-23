@@ -62,7 +62,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
    */
   @Override
   public WriteContext init(Configuration configuration) {
-    Map<String, String> extraMetaData = new HashMap<String, String>();
+    Map<String, String> extraMetaData = new HashMap<>();
     return new WriteContext(rootSchema, extraMetaData);
   }
 

@@ -22,7 +22,7 @@ import java.util.ArrayList;
 
 public class DirectedGraphCursor<V,E> {
   private DirectedGraph<V,E> graph;
-  private ArrayList<V> orderedVertices = new ArrayList<V>();
+  private ArrayList<V> orderedVertices = new ArrayList<>();
   private int cursor = 0;
 
   public DirectedGraphCursor(DirectedGraph<V, E> graph, V startVertex) {

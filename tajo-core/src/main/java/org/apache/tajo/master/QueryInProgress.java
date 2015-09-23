@@ -103,7 +103,7 @@ public class QueryInProgress {
     try {
       getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
       if (queryMasterRpcClient != null) {
-        CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+        CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
         queryMasterRpcClient.killQuery(callFuture.getController(), queryId.getProto(), callFuture);
         callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
       }
@@ -157,7 +157,7 @@ public class QueryInProgress {
           connectQueryMaster(connectionInfo);
         }
 
-        CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+        CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<>();
         queryMasterRpcClient.allocateQueryMaster(callFuture.getController(), allocation, callFuture);
 
         if(!callFuture.get().getValue()) return false;
@@ -220,7 +220,7 @@ public class QueryInProgress {
           .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build())
           .setAllocation(allocationResource);
 
-      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<PrimitiveProtos.NullProto>();
+      CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
       queryMasterRpcClient.executeQuery(callFuture.getController(), builder.build(), callFuture);
       callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
 

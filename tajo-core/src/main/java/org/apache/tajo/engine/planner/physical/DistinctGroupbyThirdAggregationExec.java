@@ -72,7 +72,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();
 
-    List<DistinctFinalAggregator> aggregatorList = new ArrayList<DistinctFinalAggregator>();
+    List<DistinctFinalAggregator> aggregatorList = new ArrayList<>();
     int inTupleIndex = 1 + numGroupingColumns;
     int outTupleIndex = numGroupingColumns;
     int distinctSeq = 0;
@@ -96,14 +96,14 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
     // make output schema mapping index
     resultTupleIndexes = new int[outSchema.size()];
-    Map<Column, Integer> groupbyResultTupleIndex = new HashMap<Column, Integer>();
+    Map<Column, Integer> groupbyResultTupleIndex = new HashMap<>();
     int resultTupleIndex = 0;
     for (Column eachColumn: plan.getGroupingColumns()) {
       groupbyResultTupleIndex.put(eachColumn, resultTupleIndex);
       resultTupleIndex++;
     }
     for (GroupbyNode eachGroupby : groupbyNodes) {
-      Set<Column> groupingColumnSet = new HashSet<Column>();
+      Set<Column> groupingColumnSet = new HashSet<>();
       for (Column column: eachGroupby.getGroupingColumns()) {
         groupingColumnSet.add(column);
       }

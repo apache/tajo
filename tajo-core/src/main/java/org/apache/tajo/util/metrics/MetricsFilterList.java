@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MetricsFilterList implements MetricFilter {
-  List<MetricFilter> filters = new ArrayList<MetricFilter>();
+  List<MetricFilter> filters = new ArrayList<>();
 
   public void addMetricFilter(MetricFilter filter) {
     filters.add(filter);

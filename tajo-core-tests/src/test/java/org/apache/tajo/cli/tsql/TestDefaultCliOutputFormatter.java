@@ -144,7 +144,7 @@ public class TestDefaultCliOutputFormatter {
     stats.setNumRows(numRows);
     tableDesc.setStats(stats);
 
-    final List<MetaDataTuple> resultTables = new ArrayList<MetaDataTuple>();
+    final List<MetaDataTuple> resultTables = new ArrayList<>();
 
     String expectedOutput = "col1,  col2,  col3\n";
     expectedOutput += "-------------------------------\n";

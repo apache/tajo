@@ -119,7 +119,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     // If one of both is NULL, it just returns the original types without casting.
     if (lhsType == Type.NULL_TYPE || rhsType == Type.NULL_TYPE) {
-      return new Pair<EvalNode, EvalNode>(lhs, rhs);
+      return new Pair<>(lhs, rhs);
     }
 
     Type toBeCasted = TUtil.getFromNestedMap(CatalogUtil.OPERATION_CASTING_MAP, lhsType, rhsType);
@@ -133,7 +133,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       }
     }
 
-    return new Pair<EvalNode, EvalNode>(lhs, rhs);
+    return new Pair<>(lhs, rhs);
   }
 
   /**

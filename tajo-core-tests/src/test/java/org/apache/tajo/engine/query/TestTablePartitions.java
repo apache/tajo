@@ -1091,7 +1091,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       schema.addColumn("col1", TajoDataTypes.Type.TEXT);
       schema.addColumn("col2", TajoDataTypes.Type.TEXT);
 
-      List<String> data = new ArrayList<String>();
+      List<String> data = new ArrayList<>();
       int totalBytes = 0;
       Random rand = new Random(System.currentTimeMillis());
       String col2Data = "Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2" +

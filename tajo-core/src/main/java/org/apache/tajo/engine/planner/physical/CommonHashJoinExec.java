@@ -158,7 +158,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   protected TupleMap<TupleList> buildRightToHashTableForNonCrossJoin() throws IOException {
     Tuple tuple;
-    TupleMap<TupleList> map = new TupleMap<TupleList>(100000);
+    TupleMap<TupleList> map = new TupleMap<>(100000);
     KeyProjector keyProjector = new KeyProjector(rightSchema, rightKeyList);
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {

@@ -106,7 +106,7 @@ public class QueryMasterTask extends CompositeService {
 
   private NodeResource allocation;
 
-  private final List<TaskFatalErrorReport> diagnostics = new ArrayList<TaskFatalErrorReport>();
+  private final List<TaskFatalErrorReport> diagnostics = new ArrayList<>();
 
   private final ConcurrentMap<Integer, WorkerConnectionInfo> workerMap = Maps.newConcurrentMap();
 
@@ -261,7 +261,7 @@ public class QueryMasterTask extends CompositeService {
       tajoWorkerRpc = RpcClientManager.getInstance().getClient(workerAddress, TajoWorkerProtocol.class, true,
           rpcParams);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
-      CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+      CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<>();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), callFuture);
 
       if(!callFuture.get().getValue()){

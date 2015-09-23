@@ -60,8 +60,8 @@ import org.apache.tajo.org.objectweb.asm.Opcodes;
  */
 public class JarOptimizer {
 
-    static final Set<String> API = new HashSet<String>();
-    static final Map<String, String> HIERARCHY = new HashMap<String, String>();
+    static final Set<String> API = new HashSet<>();
+    static final Map<String, String> HIERARCHY = new HashMap<>();
     static boolean nodebug = false;
 
     public static void main(final String[] args) throws IOException {

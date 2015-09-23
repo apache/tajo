@@ -89,7 +89,7 @@ public class TestTableStat {
   public void testGetProtoThreadSafe() throws Exception {
     final TableStats tableStats = new TableStats();
 
-    List<ColumnStats> columnStatsList = new ArrayList<ColumnStats>();
+    List<ColumnStats> columnStatsList = new ArrayList<>();
     for (int i = 0; i < 3; i++) {
       Column column = new Column("col_" + (i + 1), Type.TEXT);
       ColumnStats columnStats = new ColumnStats(column);

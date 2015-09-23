@@ -119,7 +119,7 @@ public class AdvancedDataRetriever implements DataRetriever {
       return null;
     }
 
-    final List<String> ret = new ArrayList<String>();
+    final List<String> ret = new ArrayList<>();
     for (String qid : qids) {
       Collections.addAll(ret, qid.split(","));
     }

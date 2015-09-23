@@ -512,7 +512,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final Collection<FunctionDesc> getFunctions() {
-    List<FunctionDesc> list = new ArrayList<FunctionDesc>();
+    List<FunctionDesc> list = new ArrayList<>();
 
     try {
       final BlockingInterface stub = getStub();

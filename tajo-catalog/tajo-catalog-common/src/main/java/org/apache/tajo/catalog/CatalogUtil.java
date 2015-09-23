@@ -234,7 +234,7 @@ public class CatalogUtil {
 
   public static Pair<String, String> separateQualifierAndName(String name) {
     Preconditions.checkArgument(isFQTableName(name), "Must be a qualified name.");
-    return new Pair<String, String>(extractQualifier(name), extractSimpleName(name));
+    return new Pair<>(extractQualifier(name), extractSimpleName(name));
   }
 
   /**
@@ -741,7 +741,7 @@ public class CatalogUtil {
     }
   }
 
-  public static final Set<String> RESERVED_KEYWORDS_SET = new HashSet<String>();
+  public static final Set<String> RESERVED_KEYWORDS_SET = new HashSet<>();
 
   static final String [] RESERVED_KEYWORDS = {
       "AS", "ALL", "AND", "ANY", "ASYMMETRIC", "ASC",
@@ -869,7 +869,7 @@ public class CatalogUtil {
       partitionKeyList.add(builder.build());
     }
 
-    pair = new Pair<List<PartitionKeyProto>, String>(partitionKeyList, sb.toString());
+    pair = new Pair<>(partitionKeyList, sb.toString());
     return pair;
   }
 

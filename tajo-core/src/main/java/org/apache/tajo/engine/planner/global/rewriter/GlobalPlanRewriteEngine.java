@@ -33,7 +33,7 @@ public class GlobalPlanRewriteEngine {
   private static final Log LOG = LogFactory.getLog(GlobalPlanRewriteEngine.class);
 
   /** a map for query rewrite rules  */
-  private final Map<String, GlobalPlanRewriteRule> rewriteRules = new LinkedHashMap<String, GlobalPlanRewriteRule>();
+  private final Map<String, GlobalPlanRewriteRule> rewriteRules = new LinkedHashMap<>();
 
   /**
    * Add a query rewrite rule to this engine.

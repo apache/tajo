@@ -669,6 +669,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1844: Eliminate explicit diamond expressions. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
     TAJO-1465: Add ORCFileAppender to write into ORCFile table. 
     (Contributed by Joyngyoung Park, committed by hyunsik)
 

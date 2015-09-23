@@ -493,7 +493,7 @@ public class TajoWorker extends CompositeService {
         for (Path path : iter) {
           PathData[] items = PathData.expandAsGlob(localFS.makeQualified(new Path(path, "*")).toString(), systemConf);
 
-          ArrayList<Path> paths = new ArrayList<Path>();
+          ArrayList<Path> paths = new ArrayList<>();
           for (PathData pd : items) {
             paths.add(pd.path);
           }

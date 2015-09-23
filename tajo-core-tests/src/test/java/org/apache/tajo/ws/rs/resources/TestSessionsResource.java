@@ -195,10 +195,10 @@ public class TestSessionsResource extends QueryTestCaseBase {
     assertNotNull(response);
     assertTrue(response.getId() != null && !response.getId().isEmpty());
 
-    Map<String, String> variablesMap = new HashMap<String, String>();
+    Map<String, String> variablesMap = new HashMap<>();
     variablesMap.put("variableA", "valueA");
     variablesMap.put("variableB", "valueB");
-    Map<String, Map<String, String>> variables = new HashMap<String, Map<String, String>>();
+    Map<String, Map<String, String>> variables = new HashMap<>();
     variables.put("variables", variablesMap);
     Response restResponse = restClient.target(sessionsURI)
         .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())
@@ -236,7 +236,7 @@ public class TestSessionsResource extends QueryTestCaseBase {
     assertNotNull(response);
     assertTrue(response.getId() != null && !response.getId().isEmpty());
 
-    Map<String, String> variablesMap = new HashMap<String, String>();
+    Map<String, String> variablesMap = new HashMap<>();
     variablesMap.put("variableA", "valueA");
     Response restResponse = restClient.target(sessionsURI)
         .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())

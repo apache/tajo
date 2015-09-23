@@ -247,13 +247,13 @@ public class HistoryReader {
   public List<TaskHistory> getTaskHistory(String queryId, String ebId, long startTime) throws IOException {
     Path queryHistoryFile = getQueryHistoryFilePath(queryId, startTime);
     if (queryHistoryFile == null) {
-      return new ArrayList<TaskHistory>();
+      return new ArrayList<>();
     }
     Path detailFile = new Path(queryHistoryFile.getParent(), ebId + HistoryWriter.HISTORY_FILE_POSTFIX);
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(detailFile, tajoConf);
 
     if (!fs.exists(detailFile)) {
-      return new ArrayList<TaskHistory>();
+      return new ArrayList<>();
     }
 
     FileStatus fileStatus = fs.getFileStatus(detailFile);

@@ -76,7 +76,7 @@ public class TestTupleSorter {
     for(int iteration = 0; iteration < ITERATION; iteration++) {
       TupleList target = new TupleList(tuples.length);
       target.addAll(Arrays.asList(Arrays.copyOf(tuples, tuples.length)));
-      Set<Integer> keys = new TreeSet<Integer>();
+      Set<Integer> keys = new TreeSet<>();
       for (int i = 0; i < MAX_SORT_KEY; i++) {
         keys.add(rnd.nextInt(schema.size()));
       }

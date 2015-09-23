@@ -41,7 +41,7 @@ public class Session implements SessionConstants, ProtoObject<SessionProto>, Clo
   private final String userName;
   private String currentDatabase;
   private final Map<String, String> sessionVariables;
-  private final Map<QueryId, NonForwardQueryResultScanner> nonForwardQueryMap = new HashMap<QueryId, NonForwardQueryResultScanner>();
+  private final Map<QueryId, NonForwardQueryResultScanner> nonForwardQueryMap = new HashMap<>();
   private LoadingCache<String, Expr> cache;
 
   // transient status
@@ -53,7 +53,7 @@ public class Session implements SessionConstants, ProtoObject<SessionProto>, Clo
     this.currentDatabase = databaseName;
     this.lastAccessTime = System.currentTimeMillis();
 
-    this.sessionVariables = new HashMap<String, String>();
+    this.sessionVariables = new HashMap<>();
     sessionVariables.put(SessionVars.SESSION_ID.keyname(), sessionId);
     sessionVariables.put(SessionVars.USERNAME.keyname(), userName);
     selectDatabase(databaseName);

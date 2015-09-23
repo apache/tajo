@@ -82,7 +82,7 @@ public class ProjectionPushDownRule extends
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;
 
-    Stack<LogicalNode> stack = new Stack<LogicalNode>();
+    Stack<LogicalNode> stack = new Stack<>();
     Context context = new Context(plan);
     visit(context, plan, topmostBlock, topmostBlock.getRoot(), stack);
 
@@ -406,17 +406,17 @@ public class ProjectionPushDownRule extends
     Set<String> requiredSet;
 
     public Context(LogicalPlan plan) {
-      requiredSet = new LinkedHashSet<String>();
+      requiredSet = new LinkedHashSet<>();
       targetListMgr = new TargetListManager(plan);
     }
 
     public Context(LogicalPlan plan, Collection<String> requiredSet) {
-      this.requiredSet = new LinkedHashSet<String>(requiredSet);
+      this.requiredSet = new LinkedHashSet<>(requiredSet);
       targetListMgr = new TargetListManager(plan);
     }
 
     public Context(Context upperContext) {
-      this.requiredSet = new LinkedHashSet<String>(upperContext.requiredSet);
+      this.requiredSet = new LinkedHashSet<>(upperContext.requiredSet);
       targetListMgr = upperContext.targetListMgr;
     }
 
@@ -567,7 +567,7 @@ public class ProjectionPushDownRule extends
     LogicalNode child = super.visitSort(newContext, plan, block, node, stack);
 
     // it rewrite sortkeys. This rewrite sets right column names and eliminates duplicated sort keys.
-    List<SortSpec> sortSpecs = new ArrayList<SortSpec>();
+    List<SortSpec> sortSpecs = new ArrayList<>();
     for (int i = 0; i < keyNames.length; i++) {
       String sortKey = keyNames[i];
       Target target = context.targetListMgr.getTarget(sortKey);
@@ -763,7 +763,7 @@ public class ProjectionPushDownRule extends
     List<Target> targets = Lists.newArrayList();
     if (groupingKeyNum > 0 && groupingKeyNames != null) {
       // Restoring grouping key columns
-      final List<Column> groupingColumns = new ArrayList<Column>();
+      final List<Column> groupingColumns = new ArrayList<>();
       for (String groupingKey : groupingKeyNames) {
         Target target = context.targetListMgr.getTarget(groupingKey);
 
@@ -1009,7 +1009,7 @@ public class ProjectionPushDownRule extends
 
     FilteredIterator(Target [] targets, Set<String> requiredReferences) {
       List<Target> filtered = TUtil.newList();
-      Map<String, Target> targetSet = new HashMap<String, Target>();
+      Map<String, Target> targetSet = new HashMap<>();
       for (Target t : targets) {
         // Only should keep an raw target instead of field reference.
         if (targetSet.containsKey(t.getCanonicalName())) {

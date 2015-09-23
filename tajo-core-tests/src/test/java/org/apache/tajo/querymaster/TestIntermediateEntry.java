@@ -31,7 +31,7 @@ public class TestIntermediateEntry {
   public void testPage() {
     Task.IntermediateEntry interm = new Task.IntermediateEntry(-1, -1, 1, null);
 
-    List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+    List<Pair<Long, Integer>> pages = new ArrayList<>();
     pages.add(new Pair(0L, 1441275));
     pages.add(new Pair(1441275L, 1447446));
     pages.add(new Pair(2888721L, 1442507));

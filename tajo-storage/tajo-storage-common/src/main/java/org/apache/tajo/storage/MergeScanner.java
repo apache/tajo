@@ -64,7 +64,7 @@ public class MergeScanner implements Scanner {
     this.meta = meta;
     this.target = target;
 
-    this.fragments = new ArrayList<Fragment>();
+    this.fragments = new ArrayList<>();
 
     long numBytes = 0;
     for (Fragment eachFileFragment: rawFragmentList) {

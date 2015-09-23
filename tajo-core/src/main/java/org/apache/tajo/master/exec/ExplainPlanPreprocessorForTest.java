@@ -50,7 +50,7 @@ public class ExplainPlanPreprocessorForTest {
 
   private static class PlanShapeFixerContext {
 
-    Stack<Integer> childNumbers = new Stack<Integer>();
+    Stack<Integer> childNumbers = new Stack<>();
     public void reset() {
       childNumbers.clear();
     }

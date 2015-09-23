@@ -59,7 +59,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private final Lock readLock;
   private final Lock writeLock;
 
-  private final List<String> diagnostics = new ArrayList<String>();
+  private final List<String> diagnostics = new ArrayList<>();
 
   private final TaskAttemptScheduleContext scheduleContext;
 
@@ -266,7 +266,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private void fillTaskStatistics(TaskCompletionReport report) {
     this.progress = 1.0f;
 
-    List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
+    List<IntermediateEntry> partitions = new ArrayList<>();
 
     if (report.getShuffleFileOutputsCount() > 0) {
       this.getTask().setShuffleFileOutputs(report.getShuffleFileOutputsList());

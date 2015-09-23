@@ -101,7 +101,7 @@ public class Stage implements EventHandler<StageEvent> {
   private EventHandler<Event> eventHandler;
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
-  private final List<String> diagnostics = new ArrayList<String>();
+  private final List<String> diagnostics = new ArrayList<>();
   private StageState stageState;
 
   private long startTime;
@@ -374,7 +374,7 @@ public class Stage implements EventHandler<StageEvent> {
       if (getState() == StageState.NEW) {
         return 0.0f;
       } else {
-        tempTasks = new ArrayList<Task>(tasks.values());
+        tempTasks = new ArrayList<>(tasks.values());
       }
     } finally {
       readLock.unlock();
@@ -435,7 +435,7 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   private List<TaskHistory> makeTaskHistories() {
-    List<TaskHistory> taskHistories = new ArrayList<TaskHistory>();
+    List<TaskHistory> taskHistories = new ArrayList<>();
 
     for(Task eachTask : getTasks()) {
       taskHistories.add(eachTask.getTaskHistory());

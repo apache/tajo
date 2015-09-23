@@ -122,7 +122,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
 
       client = RpcClientManager.getInstance().newClient(address, QueryMasterProtocol.class, true, rpcParams);
       QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-      CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<ExecutionBlockContextResponse>();
+      CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<>();
       stub.getExecutionBlockContext(callback.getController(), request.build(), callback);
 
       ExecutionBlockContextResponse contextProto =

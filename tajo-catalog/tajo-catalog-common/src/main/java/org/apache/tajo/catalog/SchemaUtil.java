@@ -133,7 +133,7 @@ public class SchemaUtil {
 
   public static ImmutableMap<String, Type> buildTypeMap(Iterable<Column> schema, String [] targetPaths) {
 
-    HashMap<String, Type> builder = new HashMap<String, Type>();
+    HashMap<String, Type> builder = new HashMap<>();
     for (Column column : schema) {
 
       // Keep types which only belong to projected paths

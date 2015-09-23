@@ -27,8 +27,8 @@ import java.util.List;
 public class PlanString {
   final StringBuilder title;
 
-  final List<String> explanations = new ArrayList<String>();
-  final List<String> details = new ArrayList<String>();
+  final List<String> explanations = new ArrayList<>();
+  final List<String> details = new ArrayList<>();
 
   StringBuilder currentExplanation;
   StringBuilder currentDetail;

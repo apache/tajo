@@ -87,7 +87,7 @@ public class HFileAppender extends AbstractHBaseAppender {
   long totalNumBytes = 0;
   ImmutableBytesWritable keyWritable = new ImmutableBytesWritable();
   boolean first = true;
-  TreeSet<KeyValue> kvSet = new TreeSet<KeyValue>(KeyValue.COMPARATOR);
+  TreeSet<KeyValue> kvSet = new TreeSet<>(KeyValue.COMPARATOR);
 
 
   @Override

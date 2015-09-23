@@ -123,9 +123,9 @@ class CodecFactory {
 
   }
 
-  private final Map<CompressionCodecName, BytesCompressor> compressors = new HashMap<CompressionCodecName, BytesCompressor>();
-  private final Map<CompressionCodecName, BytesDecompressor> decompressors = new HashMap<CompressionCodecName, BytesDecompressor>();
-  private final Map<String, CompressionCodec> codecByName = new HashMap<String, CompressionCodec>();
+  private final Map<CompressionCodecName, BytesCompressor> compressors = new HashMap<>();
+  private final Map<CompressionCodecName, BytesDecompressor> decompressors = new HashMap<>();
+  private final Map<String, CompressionCodec> codecByName = new HashMap<>();
   private final Configuration configuration;
 
   public CodecFactory(Configuration configuration) {

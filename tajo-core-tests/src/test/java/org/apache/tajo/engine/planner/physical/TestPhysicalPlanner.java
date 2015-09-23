@@ -662,7 +662,7 @@ public class TestPhysicalPlanner {
     Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);
     FileStatus [] list = fs.listStatus(queryLocalTmpDir);
 
-    List<Fragment> fragments = new ArrayList<Fragment>();
+    List<Fragment> fragments = new ArrayList<>();
     for (FileStatus status : list) {
       assertTrue(status.isDirectory());
       FileStatus [] files = fs.listStatus(status.getPath());
@@ -796,7 +796,7 @@ public class TestPhysicalPlanner {
     Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);
     FileStatus [] list = fs.listStatus(queryLocalTmpDir);
 
-    List<Fragment> fragments = new ArrayList<Fragment>();
+    List<Fragment> fragments = new ArrayList<>();
     for (FileStatus status : list) {
       assertTrue(status.isDirectory());
       FileStatus [] files = fs.listStatus(status.getPath());

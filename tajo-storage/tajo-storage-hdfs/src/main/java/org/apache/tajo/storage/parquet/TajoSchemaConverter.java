@@ -54,7 +54,7 @@ public class TajoSchemaConverter {
   }
 
   private Schema convertFields(List<Type> parquetFields) {
-    List<Column> columns = new ArrayList<Column>();
+    List<Column> columns = new ArrayList<>();
     for (int i = 0; i < parquetFields.size(); ++i) {
       Type fieldType = parquetFields.get(i);
       if (fieldType.isRepetition(Type.Repetition.REPEATED)) {
@@ -141,7 +141,7 @@ public class TajoSchemaConverter {
    * @return The resulting Parquet schema.
    */
   public MessageType convert(Schema tajoSchema) {
-    List<Type> types = new ArrayList<Type>();
+    List<Type> types = new ArrayList<>();
     for (int i = 0; i < tajoSchema.size(); ++i) {
       Column column = tajoSchema.getColumn(i);
       if (column.getDataType().getType() == TajoDataTypes.Type.NULL_TYPE) {

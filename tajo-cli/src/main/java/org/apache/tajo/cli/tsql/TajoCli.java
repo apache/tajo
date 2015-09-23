@@ -91,7 +91,7 @@ public class TajoCli {
       TajoGetConfCommand.class,
       TajoHAAdminCommand.class
   };
-  private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
+  private final Map<String, TajoShellCommand> commands = new TreeMap<>();
 
   protected static final Options options;
   private static final String HOME_DIR = System.getProperty("user.home");

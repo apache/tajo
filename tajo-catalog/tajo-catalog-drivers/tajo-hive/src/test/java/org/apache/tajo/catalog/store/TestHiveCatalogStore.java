@@ -286,7 +286,7 @@ public class TestHiveCatalogStore {
     PartitionDesc partitionDesc = new PartitionDesc();
     partitionDesc.setPartitionName(partitionName);
 
-    List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
     String[] partitionNames = partitionName.split("/");
     for(int i = 0; i < partitionNames.length; i++) {
       String[] eachPartitionName = partitionNames[i].split("=");
