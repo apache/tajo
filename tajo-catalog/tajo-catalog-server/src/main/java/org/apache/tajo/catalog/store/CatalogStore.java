@@ -175,7 +175,10 @@ public interface CatalogStore extends Closeable {
    * Get list of partitions matching specified filter.
    *
    * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * An user can gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
+   * Assume that an user want to give a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
+   *
+   * Then, the filter string would be written as following:
+   *   (col1 ='1' or col1 = '100') and col3 > 20
    *
    * @param request the database name, the table name, the filter string
    * @return list of PartitionDescProto
