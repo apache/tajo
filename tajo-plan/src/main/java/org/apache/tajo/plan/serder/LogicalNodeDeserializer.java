@@ -218,7 +218,7 @@ public class LogicalNodeDeserializer {
 
     ProjectionNode projectionNode = new ProjectionNode(protoNode.getNodeId());
     projectionNode.init(projectionProto.getDistinct(), convertTargets(context, evalContext,
-        projectionProto.getTargetsList()));
+      projectionProto.getTargetsList()));
     projectionNode.setChild(nodeMap.get(projectionProto.getChildSeq()));
     projectionNode.setInSchema(convertSchema(protoNode.getInSchema()));
     projectionNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
@@ -277,7 +277,7 @@ public class LogicalNodeDeserializer {
 
     if (windowAggProto.getWindowFunctionsCount() > 0) {
       windowAgg.setWindowFunctions(convertWindowFunccEvals(context, evalContext,
-          windowAggProto.getWindowFunctionsList()));
+        windowAggProto.getWindowFunctionsList()));
     }
 
     windowAgg.setDistinct(windowAggProto.getDistinct());
@@ -453,7 +453,7 @@ public class LogicalNodeDeserializer {
     }
 
     indexScan.set(new Schema(indexScanSpec.getKeySchema()), predicates,
-        TUtil.stringToURI(indexScanSpec.getIndexPath()));
+      TUtil.stringToURI(indexScanSpec.getIndexPath()));
 
     return indexScan;
   }
@@ -469,6 +469,7 @@ public class LogicalNodeDeserializer {
       paths[i] = new Path(partitionScanProto.getPaths(i));
     }
     partitionedScan.setInputPaths(paths);
+    partitionedScan.setPartitions(partitionScanProto.getPartitionsList());
     return partitionedScan;
   }
 
