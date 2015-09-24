@@ -30,13 +30,12 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.proto.CatalogProtos.DataFormat;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UndefinedOperatorException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -286,37 +285,37 @@ public class CatalogUtil {
     return getStoreTypeString(getStoreType(storeType));
   }
 
-  public static String getStoreTypeString(final StoreType type) {
-    if (type == StoreType.TEXTFILE) {
+  public static String getStoreTypeString(final DataFormat type) {
+    if (type == DataFormat.TEXTFILE) {
       return BuiltinStorages.TEXT;
     } else {
       return type.name();
     }
   }
 
-  public static StoreType getStoreType(final String typeStr) {
+  public static DataFormat getStoreType(final String typeStr) {
     if (typeStr.equalsIgnoreCase("CSV")) {
-      return StoreType.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
-      return StoreType.RAW;
-    } else if (typeStr.equalsIgnoreCase(StoreType.ROWFILE.name())) {
-      return StoreType.ROWFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
-      return StoreType.RCFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.ORC.name())) {
-      return StoreType.ORC;
-    } else if (typeStr.equalsIgnoreCase(StoreType.PARQUET.name())) {
-      return StoreType.PARQUET;
-    } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
-      return StoreType.SEQUENCEFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
-      return StoreType.AVRO;
+      return DataFormat.TEXTFILE;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.RAW.name())) {
+      return CatalogProtos.DataFormat.RAW;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ROWFILE.name())) {
+      return DataFormat.ROWFILE;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.RCFILE.name())) {
+      return DataFormat.RCFILE;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ORC.name())) {
+      return CatalogProtos.DataFormat.ORC;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.PARQUET.name())) {
+      return DataFormat.PARQUET;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.SEQUENCEFILE.name())) {
+      return DataFormat.SEQUENCEFILE;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.AVRO.name())) {
+      return CatalogProtos.DataFormat.AVRO;
     } else if (typeStr.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      return StoreType.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.JSON.name())) {
-      return StoreType.JSON;
-    } else if (typeStr.equalsIgnoreCase(StoreType.HBASE.name())) {
-      return StoreType.HBASE;
+      return CatalogProtos.DataFormat.TEXTFILE;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.JSON.name())) {
+      return CatalogProtos.DataFormat.JSON;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.HBASE.name())) {
+      return CatalogProtos.DataFormat.HBASE;
     } else {
       return null;
     }
@@ -980,7 +979,7 @@ public class CatalogUtil {
   /**
    * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
    *
-   * @param storeType StoreType
+   * @param storeType DataFormat
    * @return Table properties
    */
   public static KeyValueSet newDefaultProperty(String storeType) {

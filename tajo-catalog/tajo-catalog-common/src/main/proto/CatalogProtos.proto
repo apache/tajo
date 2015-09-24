@@ -25,7 +25,7 @@ option java_generate_equals_and_hash = true;
 import "DataTypes.proto";
 import "PrimitiveProtos.proto";
 
-enum StoreType {
+enum DataFormat {
   MEM = 0;
   TEXTFILE = 1;
   RAW = 2;

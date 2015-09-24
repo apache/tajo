@@ -274,7 +274,7 @@ public abstract class Tablespace {
   }
 
   /**
-   * Return the Scanner class for the StoreType that is defined in storage-default.xml.
+   * Return the Scanner class for the DataFormat that is defined in storage-default.xml.
    *
    * @param storeType store type
    * @return The Scanner class

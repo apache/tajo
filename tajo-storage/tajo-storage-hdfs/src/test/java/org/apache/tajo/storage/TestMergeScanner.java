@@ -83,7 +83,7 @@ public class TestMergeScanner {
         {"SEQUENCEFILE"},
         {"AVRO"},
         // RowFile requires Byte-buffer read support, so we omitted RowFile.
-        //{StoreType.ROWFILE},
+        //{DataFormat.ROWFILE},
     });
   }
 
