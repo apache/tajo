@@ -237,7 +237,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     private final Tuple outTuple;
     private NonDistinctHashAggregator(GroupbyNode groupbyNode) throws IOException {
 
-      nonDistinctAggrDatas = new TupleMap<FunctionContext[]>();
+      nonDistinctAggrDatas = new TupleMap<>();
 
       if (groupbyNode.hasAggFunctions()) {
         aggFunctions = groupbyNode.getAggFunctions();
@@ -318,7 +318,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
       Set<Column> groupingKeySet = TUtil.newHashSet(plan.getGroupingColumns());
 
-      List<Column> distinctGroupingKeyIndexSet = new ArrayList<Column>();
+      List<Column> distinctGroupingKeyIndexSet = new ArrayList<>();
       Column[] groupingColumns = groupbyNode.getGroupingColumns();
       for (int idx = 0; idx < groupingColumns.length; idx++) {
         Column col = groupingColumns[idx];
@@ -330,7 +330,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       distinctKeyColumns = distinctGroupingKeyIndexSet.toArray(distinctKeyColumns);
       this.dummyTuple = NullTuple.create(distinctGroupingKeyIndexSet.size());
 
-      this.distinctAggrDatas = new TupleMap<TupleSet>();
+      this.distinctAggrDatas = new TupleMap<>();
       distinctGroupbyKeyProjectors.put(nodeSequence, new KeyProjector(inSchema, distinctKeyColumns));
       this.tupleLength = distinctKeyColumns.length;
 

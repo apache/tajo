@@ -426,7 +426,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       org.apache.hadoop.hive.metastore.api.Table table = new org.apache.hadoop.hive.metastore.api.Table();
       table.setDbName(databaseName);
       table.setTableName(tableName);
-      table.setParameters(new HashMap<String, String>(tableDesc.getMeta().getOptions().getAllKeyValus()));
+      table.setParameters(new HashMap<>(tableDesc.getMeta().getOptions().getAllKeyValus()));
       // TODO: set owner
       //table.setOwner();
 
@@ -454,7 +454,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       // set column information
       List<Column> columns = tableDesc.getSchema().getRootColumns();
-      ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(columns.size());
+      ArrayList<FieldSchema> cols = new ArrayList<>(columns.size());
 
       for (Column eachField : columns) {
         cols.add(new FieldSchema(eachField.getSimpleName(),
@@ -464,7 +464,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       // set partition keys
       if (tableDesc.hasPartition() && tableDesc.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
-        List<FieldSchema> partitionKeys = new ArrayList<FieldSchema>();
+        List<FieldSchema> partitionKeys = new ArrayList<>();
         for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           partitionKeys.add(new FieldSchema(eachPartitionKey.getSimpleName(),
               HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));

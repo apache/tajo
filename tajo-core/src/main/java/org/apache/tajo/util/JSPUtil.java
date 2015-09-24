@@ -87,7 +87,7 @@ public class JSPUtil {
 
   public static List<QueryMasterTask> sortQueryMasterTask(Collection<QueryMasterTask> queryMasterTasks,
                                                           final boolean desc) {
-    List<QueryMasterTask> queryMasterTaskList = new ArrayList<QueryMasterTask>(queryMasterTasks);
+    List<QueryMasterTask> queryMasterTaskList = new ArrayList<>(queryMasterTasks);
 
     Collections.sort(queryMasterTaskList, new Comparator<QueryMasterTask>() {
 
@@ -106,7 +106,7 @@ public class JSPUtil {
 
   public static List<QueryInProgress> sortQueryInProgress(Collection<QueryInProgress> queryInProgresses,
                                                           final boolean desc) {
-    List<QueryInProgress> queryProgressList = new ArrayList<QueryInProgress>(queryInProgresses);
+    List<QueryInProgress> queryProgressList = new ArrayList<>(queryInProgresses);
 
     Collections.sort(queryProgressList, new Comparator<QueryInProgress>() {
       @Override
@@ -123,7 +123,7 @@ public class JSPUtil {
   }
 
   public static List<Stage> sortStages(Collection<Stage> stages) {
-    List<Stage> stageList = new ArrayList<Stage>(stages);
+    List<Stage> stageList = new ArrayList<>(stages);
     Collections.sort(stageList, new Comparator<Stage>() {
       @Override
       public int compare(Stage stage1, Stage stage2) {
@@ -146,7 +146,7 @@ public class JSPUtil {
   }
 
   public static List<StageHistory> sortStageHistories(Collection<StageHistory> stages) {
-    List<StageHistory> stageList = new ArrayList<StageHistory>(stages);
+    List<StageHistory> stageList = new ArrayList<>(stages);
     Collections.sort(stageList, new Comparator<StageHistory>() {
       @Override
       public int compare(StageHistory stage1, StageHistory stage2) {
@@ -380,7 +380,7 @@ public class JSPUtil {
 
   public static <T extends Object> List<T> getPageNavigationList(List<T> originList, int page, int pageSize) {
     if (originList == null) {
-      return new ArrayList<T>();
+      return new ArrayList<>();
     }
     int start = (page - 1) * pageSize;
     int end = start + pageSize;

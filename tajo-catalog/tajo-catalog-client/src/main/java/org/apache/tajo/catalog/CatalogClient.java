@@ -22,16 +22,14 @@ import com.google.protobuf.ServiceException;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
+import org.apache.tajo.rpc.*;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
+import java.util.Properties;
 
 /**
  * CatalogClient provides a client API to access the catalog server.
@@ -71,10 +69,12 @@ public class CatalogClient extends AbstractCatalogClient {
         if (client != null && client.isConnected()) return client;
         RpcClientManager.cleanup(client);
 
-        int retry = conf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES);
+        final Properties clientParams = new Properties();
+        clientParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, conf.getVar(ConfVars.RPC_CLIENT_RETRY_NUM));
+
         // Client do not closed on idle state for support high available
-        this.client = RpcClientManager.getInstance().newClient(getCatalogServerAddr(), CatalogProtocol.class, false,
-            retry, 0, TimeUnit.SECONDS, false);
+        this.client = RpcClientManager.getInstance().newClient(getCatalogServerAddr(), CatalogProtocol.class,
+            false, clientParams);
       } catch (Exception e) {
         throw new ServiceException(e);
       }

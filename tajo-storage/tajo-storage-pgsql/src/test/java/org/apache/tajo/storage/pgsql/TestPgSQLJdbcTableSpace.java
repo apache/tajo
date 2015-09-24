@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.pgsql;
 
+import com.google.common.base.Optional;
 import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
@@ -44,31 +45,31 @@ public class TestPgSQLJdbcTableSpace {
 
   @Test(timeout = 1000)
   public void testTablespaceHandler() throws Exception {
-    assertTrue((TablespaceManager.getByName("pgsql_cluster").get()) instanceof PgSQLTablespace);
-    assertEquals("pgsql_cluster", (TablespaceManager.getByName("pgsql_cluster").get().getName()));
+    assertTrue((TablespaceManager.getByName("pgsql_cluster")) instanceof PgSQLTablespace);
+    assertEquals("pgsql_cluster", (TablespaceManager.getByName("pgsql_cluster").getName()));
 
-    assertTrue((TablespaceManager.get(jdbcUrl).get()) instanceof PgSQLTablespace);
-    assertTrue((TablespaceManager.get(jdbcUrl + "&table=tb1").get()) instanceof PgSQLTablespace);
+    assertTrue((TablespaceManager.get(jdbcUrl)) instanceof PgSQLTablespace);
+    assertTrue((TablespaceManager.get(jdbcUrl + "&table=tb1")) instanceof PgSQLTablespace);
 
-    assertEquals(jdbcUrl, TablespaceManager.get(jdbcUrl).get().getUri().toASCIIString());
-    assertTrue(TablespaceManager.get(jdbcUrl).get().getMetadataProvider() instanceof PgSQLMetadataProvider);
+    assertEquals(jdbcUrl, TablespaceManager.get(jdbcUrl).getUri().toASCIIString());
+    assertTrue(TablespaceManager.get(jdbcUrl).getMetadataProvider() instanceof PgSQLMetadataProvider);
   }
 
   @Test(timeout = 1000, expected = TajoRuntimeException.class)
   public void testCreateTable() throws IOException, TajoException {
-    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster");
     space.createTable(null, false);
   }
 
   @Test(timeout = 1000, expected = TajoRuntimeException.class)
   public void testDropTable() throws IOException, TajoException {
-    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster");
     space.purgeTable(null);
   }
 
   @Test(timeout = 1000)
   public void testGetSplits() throws IOException, TajoException {
-    Tablespace space = TablespaceManager.getByName("pgsql_cluster").get();
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster");
     MetadataProvider provider = space.getMetadataProvider();
     TableDesc table = provider.getTableDesc(null, "lineitem");
     List<Fragment> fragments = space.getSplits("lineitem", table, null);
@@ -111,8 +112,6 @@ public class TestPgSQLJdbcTableSpace {
 
   public static JSONObject getJsonTablespace(Map<String, String> connProperties)
       throws IOException {
-    String uri = PgSQLTestServer.getInstance().getJdbcUrl().split("\\?")[0];
-
     JSONObject configElements = new JSONObject();
     configElements.put(JdbcTablespace.CONFIG_KEY_MAPPED_DATABASE, PgSQLTestServer.DATABASE_NAME);
 
@@ -123,5 +122,16 @@ public class TestPgSQLJdbcTableSpace {
     configElements.put(JdbcTablespace.CONFIG_KEY_CONN_PROPERTIES, connPropertiesJson);
 
     return configElements;
+  }
+
+  @Test
+  public void testTemporaryTablespace() {
+    Optional<Tablespace> ts = TablespaceManager.removeTablespaceForTest("pgsql_cluster");
+    assertTrue(ts.isPresent());
+
+    Tablespace tempTs = TablespaceManager.get(jdbcUrl);
+    assertNotNull(tempTs);
+
+    TablespaceManager.addTableSpaceForTest(ts.get());
   }
 }

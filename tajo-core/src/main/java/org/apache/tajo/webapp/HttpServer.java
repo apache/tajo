@@ -51,9 +51,9 @@ public class HttpServer {
   protected final Connector listener;
   protected final WebAppContext webAppContext;
   protected final boolean findPort;
-  protected final Map<Context, Boolean> defaultContexts = 
-      new HashMap<Context, Boolean>();
-  protected final List<String> filterNames = new ArrayList<String>();
+  protected final Map<Context, Boolean> defaultContexts =
+          new HashMap<>();
+  protected final List<String> filterNames = new ArrayList<>();
   private static final int MAX_RETRIES = 10;
   private final boolean listenerStartedExternally;
   static final String STATE_DESCRIPTION_ALIVE = " - alive";

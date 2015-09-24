@@ -56,7 +56,7 @@ public class ClientApplication extends Application {
     
     this.secureRandom = new SecureRandom();
     
-    this.queryIdToResultSetCacheIdMap = new ConcurrentHashMap<QueryId, Long>();
+    this.queryIdToResultSetCacheIdMap = new ConcurrentHashMap<>();
     this.queryResultScannerCache = CacheBuilder.newBuilder()
         .concurrencyLevel(4)
         .maximumSize(1000)
@@ -66,7 +66,7 @@ public class ClientApplication extends Application {
 
   @Override
   public Set<Class<?>> getClasses() {
-    Set<Class<?>> classes = new HashSet<Class<?>>();
+    Set<Class<?>> classes = new HashSet<>();
     
     classes.add(SessionsResource.class);
     classes.add(DatabasesResource.class);

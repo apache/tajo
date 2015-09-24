@@ -89,11 +89,11 @@ public final class ColumnProjectionUtils {
    */
   public static ArrayList<Integer> getReadColumnIDs(Configuration conf) {
     if (conf == null) {
-      return new ArrayList<Integer>(0);
+      return new ArrayList<>(0);
     }
     String skips = conf.get(READ_COLUMN_IDS_CONF_STR, "");
     String[] list = StringUtils.split(skips);
-    ArrayList<Integer> result = new ArrayList<Integer>(list.length);
+    ArrayList<Integer> result = new ArrayList<>(list.length);
     for (String element : list) {
       // it may contain duplicates, remove duplicates
       Integer toAdd = Integer.parseInt(element);

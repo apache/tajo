@@ -204,7 +204,7 @@ public class FileTablespace extends Tablespace {
     FileSystem fs = tablePath.getFileSystem(conf);
 
     long defaultBlockSize = size;
-    List<FileFragment> listTablets = new ArrayList<FileFragment>();
+    List<FileFragment> listTablets = new ArrayList<>();
     FileFragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
@@ -236,7 +236,7 @@ public class FileTablespace extends Tablespace {
     FileSystem fs = tablePath.getFileSystem(conf);
 
     long defaultBlockSize = size;
-    List<FileFragment> listTablets = new ArrayList<FileFragment>();
+    List<FileFragment> listTablets = new ArrayList<>();
     FileFragment tablet;
 
     FileStatus[] fileLists = fs.listStatus(tablePath);
@@ -324,16 +324,16 @@ public class FileTablespace extends Tablespace {
    * @throws IOException if zero items.
    */
   protected List<FileStatus> listStatus(Path... dirs) throws IOException {
-    List<FileStatus> result = new ArrayList<FileStatus>();
+    List<FileStatus> result = new ArrayList<>();
     if (dirs.length == 0) {
       throw new IOException("No input paths specified in job");
     }
 
-    List<IOException> errors = new ArrayList<IOException>();
+    List<IOException> errors = new ArrayList<>();
 
     // creates a MultiPathFilter with the hiddenFileFilter and the
     // user provided one (if any).
-    List<PathFilter> filters = new ArrayList<PathFilter>();
+    List<PathFilter> filters = new ArrayList<>();
     filters.add(hiddenFileFilter);
 
     PathFilter inputFilter = new MultiPathFilter(filters);
@@ -426,7 +426,7 @@ public class FileTablespace extends Tablespace {
   protected FileFragment makeNonSplit(String fragmentId, Path file, long start, long length,
                                       BlockLocation[] blkLocations) throws IOException {
 
-    Map<String, Integer> hostsBlockMap = new HashMap<String, Integer>();
+    Map<String, Integer> hostsBlockMap = new HashMap<>();
     for (BlockLocation blockLocation : blkLocations) {
       for (String host : blockLocation.getHosts()) {
         if (hostsBlockMap.containsKey(host)) {
@@ -437,7 +437,7 @@ public class FileTablespace extends Tablespace {
       }
     }
 
-    List<Map.Entry<String, Integer>> entries = new ArrayList<Map.Entry<String, Integer>>(hostsBlockMap.entrySet());
+    List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
     Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
 
       @Override
@@ -720,12 +720,7 @@ public class FileTablespace extends Tablespace {
       // for temporarily written in the storage directory
       stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
     } else {
-      Optional<Tablespace> spaceResult = TablespaceManager.get(outputPath);
-      if (!spaceResult.isPresent()) {
-        throw new IOException("No registered Tablespace for " + outputPath);
-      }
-
-      Tablespace space = spaceResult.get();
+      Tablespace space = TablespaceManager.get(outputPath);
       if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
         // If this space allows move operation, the staging directory will be underneath the final output table uri.
         stagingDir = fs.makeQualified(StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId));

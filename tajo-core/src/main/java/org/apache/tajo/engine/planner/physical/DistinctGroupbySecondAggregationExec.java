@@ -86,8 +86,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
 
   // Key tuples may have various lengths. The below two maps are used to cache key tuple instances.
   // Each map is a mapping of key length to key tuple.
-  private Map<Integer, Tuple> keyTupleMap = new HashMap<Integer, Tuple>();
-  private Map<Integer, Tuple> prevKeyTupleMap = new HashMap<Integer, Tuple>();
+  private Map<Integer, Tuple> keyTupleMap = new HashMap<>();
+  private Map<Integer, Tuple> prevKeyTupleMap = new HashMap<>();
 
   private Tuple prevKeyTuple = null;
   private Tuple prevTuple = null;
@@ -109,7 +109,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();
 
     // Finding distinct group by column index.
-    Set<Integer> groupingKeyIndexSet = new HashSet<Integer>();
+    Set<Integer> groupingKeyIndexSet = new HashSet<>();
     for (Column col: plan.getGroupingColumns()) {
       int keyIndex;
       if (col.hasQualifier()) {
@@ -140,7 +140,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     distinctKeyIndexes = new int[numDistinct][];
     for (GroupbyNode eachGroupby : groupbyNodes) {
       if (eachGroupby.isDistinct()) {
-        List<Integer> distinctGroupingKeyIndex = new ArrayList<Integer>();
+        List<Integer> distinctGroupingKeyIndex = new ArrayList<>();
         Column[] distinctGroupingColumns = eachGroupby.getGroupingColumns();
         for (int idx = 0; idx < distinctGroupingColumns.length; idx++) {
           Column col = distinctGroupingColumns[idx];

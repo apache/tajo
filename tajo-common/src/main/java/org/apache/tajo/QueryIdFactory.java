@@ -36,7 +36,7 @@ public class QueryIdFactory {
 
   public static final  DecimalFormat ATTEMPT_ID_FORMAT = new DecimalFormat("00");
 
-  private static Map<String, AtomicInteger> queryNexIdMap = new HashMap<String, AtomicInteger>();
+  private static Map<String, AtomicInteger> queryNexIdMap = new HashMap<>();
 
   private static AtomicInteger nextId = new AtomicInteger(0);
 

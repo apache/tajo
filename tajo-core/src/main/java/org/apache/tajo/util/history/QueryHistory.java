@@ -124,7 +124,7 @@ public class QueryHistory implements GsonObject, History {
       .setLogicalPlan(logicalPlan)
       .setDistributedPlan(distributedPlan);
 
-    List<KeyValueProto> sessionProtos = new ArrayList<KeyValueProto>();
+    List<KeyValueProto> sessionProtos = new ArrayList<>();
 
     if (sessionVariables != null) {
       KeyValueProto.Builder keyValueBuilder = KeyValueProto.newBuilder();
@@ -139,7 +139,7 @@ public class QueryHistory implements GsonObject, History {
     builder.addAllSessionVariables(sessionProtos);
 
 
-    List<StageHistoryProto> stageHistoryProtos = new ArrayList<ClientProtos.StageHistoryProto>();
+    List<StageHistoryProto> stageHistoryProtos = new ArrayList<>();
     if (stageHistories != null) {
       for (StageHistory eachStage: stageHistories) {
         stageHistoryProtos.add((eachStage.getProto()));

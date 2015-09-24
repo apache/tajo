@@ -19,6 +19,7 @@
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+      * 10 - 2015-09-22: Well support for self-describing data formats (TAJO-1832)
       * 9 - 2015-09-12: Allow external catalog store for unit testing (TAJO-1813)
       * 8 - 2015-09-02: Wrong table type problem in catalog (TAJO-1808)
       * 7 - 2015-07-30: Add a column and index for partition keys (TAJO-1346)
@@ -29,7 +30,7 @@
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-	<tns:base version="9">
+	<tns:base version="10">
 		<tns:objects>
 			<tns:Object order="0" type="table" name="META">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -67,6 +68,7 @@
   				TABLE_TYPE VARCHAR(128) NOT NULL,
   				PATH VARCHAR(4096),
   				STORE_TYPE CHAR(16),
+  				HAS_SELF_DESCRIBE_SCHEMA BOOLEAN,
   				CONSTRAINT TABLES_PK PRIMARY KEY (TID),
   				CONSTRAINT C_TABLE_ID_UNIQ UNIQUE (DB_ID, TABLE_NAME)
 				)]]>

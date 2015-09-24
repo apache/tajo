@@ -39,11 +39,11 @@
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
   List<QueryInProgress> submittedQueries =
-          new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getSubmittedQueries());
+          new ArrayList<>(master.getContext().getQueryJobManager().getSubmittedQueries());
   JSPUtil.sortQueryInProgress(submittedQueries, true);
 
   List<QueryInProgress> runningQueries =
-          new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getRunningQueries());
+          new ArrayList<>(master.getContext().getQueryJobManager().getRunningQueries());
   JSPUtil.sortQueryInProgress(runningQueries, true);
 
   int currentPage = 1;
@@ -64,7 +64,7 @@
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
   Map<Integer, NodeStatus> workers = master.getContext().getResourceManager().getNodes();
-  Map<String, Integer> portMap = new HashMap<String, Integer>();
+  Map<String, Integer> portMap = new HashMap<>();
 
   Collection<Integer> queryMasters = master.getContext().getResourceManager().getQueryMasters();
   if (queryMasters == null || queryMasters.isEmpty()) {

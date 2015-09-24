@@ -267,11 +267,11 @@ public class SessionsResource {
       String sessionId = context.get(sessionIdKey);
 
       try {
-        Map<String, Map<String, String>> variablesMap = new HashMap<String, Map<String, String>>();
+        Map<String, Map<String, String>> variablesMap = new HashMap<>();
         variablesMap.put(variablesOutputKeyName,
             masterContext.getSessionManager().getAllVariables(sessionId));
         GenericEntity<Map<String, Map<String, String>>> variablesEntity =
-            new GenericEntity<Map<String, Map<String, String>>>(variablesMap, Map.class);
+                new GenericEntity<>(variablesMap, Map.class);
         return Response.ok(variablesEntity).build();
       } catch (InvalidSessionException e) {
         LOG.error("Unable to find a session : " + sessionId);

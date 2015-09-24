@@ -32,7 +32,7 @@ public interface Tuple extends Cloneable {
 
   boolean isBlankOrNull(int fieldid);
 
-  void put(int fieldId, Tuple tuple);
+  void insertTuple(int fieldId, Tuple tuple);
 
   void put(int fieldId, Datum value);
 

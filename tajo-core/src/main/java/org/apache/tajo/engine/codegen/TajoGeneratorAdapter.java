@@ -819,7 +819,7 @@ class TajoGeneratorAdapter {
 
   private int nextVarId = 3;
 
-  private Map<String, Integer> localVariablesMap = new HashMap<String, Integer>();
+  private Map<String, Integer> localVariablesMap = new HashMap<>();
 
   public void astore(String name) {
     if (localVariablesMap.containsKey(name)) {

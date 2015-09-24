@@ -43,7 +43,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
   }
 
   public static List<String> getListFromResultSet(ResultSet resultSet, String columnName) throws SQLException {
-    List<String> list = new ArrayList<String>();
+    List<String> list = new ArrayList<>();
     while(resultSet.next()) {
       list.add(resultSet.getString(columnName));
     }
@@ -202,7 +202,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
         TajoConstants.DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
 
-    Map<String,List<String>> tables = new HashMap<String,List<String>>();
+    Map<String,List<String>> tables = new HashMap<>();
     assertDatabaseNotExists("db_1");
     executeString("CREATE DATABASE db_1");
     assertDatabaseExists("db_1");
@@ -277,7 +277,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
       // db<i>.tb<j>, i = {1,2}, 0 <= j < 2
       // db<i>.table_<j>, i = {1,2}, 0 <= j < 2
 
-      Map<String,List<String>> tables = new HashMap<String,List<String>>();
+      Map<String,List<String>> tables = new HashMap<>();
       for (int j = 1; j <= 2; j++) {
         String dbName = "db" + j;
         assertDatabaseNotExists(dbName);

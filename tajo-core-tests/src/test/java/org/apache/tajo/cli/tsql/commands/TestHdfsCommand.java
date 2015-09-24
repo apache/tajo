@@ -37,7 +37,7 @@ public class TestHdfsCommand {
 
     System.setOut(new PrintStream(out));
     System.setErr(new PrintStream(out));
-    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, out);
+    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, null, out);
 
     cli.executeMetaCommand("\\dfs -test");
     String consoleResult = new String(out.toByteArray());

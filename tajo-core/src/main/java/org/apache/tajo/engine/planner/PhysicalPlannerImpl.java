@@ -932,7 +932,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
           List<Fragment> fileFragments = TUtil.newList();
 
-          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri()).get();
+          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
             fileFragments.addAll(TUtil.newList(space.split(scanNode.getCanonicalName(), path)));
           }
@@ -1095,7 +1095,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
     //2 phase: seq, groupby columns, distinct1 keys, distinct2 keys,
     //3 phase: groupby columns, seq, distinct1 keys, distinct2 keys,
-    List<SortSpec> sortSpecs = new ArrayList<SortSpec>();
+    List<SortSpec> sortSpecs = new ArrayList<>();
     if (phase == 2) {
       sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
     }

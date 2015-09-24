@@ -55,6 +55,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
@@ -95,6 +96,8 @@ public class QueryMasterTask extends CompositeService {
 
   private TajoConf systemConf;
 
+  private Properties rpcParams;
+
   private AtomicLong lastClientHeartbeat = new AtomicLong(-1);
 
   private volatile boolean isStopped;
@@ -103,7 +106,7 @@ public class QueryMasterTask extends CompositeService {
 
   private NodeResource allocation;
 
-  private final List<TaskFatalErrorReport> diagnostics = new ArrayList<TaskFatalErrorReport>();
+  private final List<TaskFatalErrorReport> diagnostics = new ArrayList<>();
 
   private final ConcurrentMap<Integer, WorkerConnectionInfo> workerMap = Maps.newConcurrentMap();
 
@@ -131,8 +134,8 @@ public class QueryMasterTask extends CompositeService {
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-
     systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+    rpcParams = RpcParameterFactory.get(systemConf);
 
     queryTaskContext = new QueryMasterTaskContext();
 
@@ -255,9 +258,10 @@ public class QueryMasterTask extends CompositeService {
     InetSocketAddress workerAddress = getQuery().getStage(ebId).getAssignedWorkerMap().get(workerId);
 
     try {
-      tajoWorkerRpc = RpcClientManager.getInstance().getClient(workerAddress, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(workerAddress, TajoWorkerProtocol.class, true,
+          rpcParams);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
-      CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<PrimitiveProtos.BoolProto>();
+      CallFuture<PrimitiveProtos.BoolProto> callFuture = new CallFuture<>();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), callFuture);
 
       if(!callFuture.get().getValue()){
@@ -322,7 +326,7 @@ public class QueryMasterTask extends CompositeService {
       optimizer.optimize(queryContext, plan);
 
       // when a given uri is null, TablespaceManager.get will return the default tablespace.
-      space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
       space.rewritePlan(queryContext, plan);
 
       initStagingDir();
@@ -379,7 +383,7 @@ public class QueryMasterTask extends CompositeService {
     URI stagingDir;
 
     try {
-      Tablespace tablespace = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, "")).get();
+      Tablespace tablespace = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
       TableDesc desc = PlannerUtil.getOutputTableDesc(plan);
 
       FormatProperty formatProperty = tablespace.getFormatProperty(desc.getMeta());
@@ -472,7 +476,8 @@ public class QueryMasterTask extends CompositeService {
           @Override
           public void run() {
             try {
-              AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
+              AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true,
+                  rpcParams);
               TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
               tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
             } catch (Throwable e) {

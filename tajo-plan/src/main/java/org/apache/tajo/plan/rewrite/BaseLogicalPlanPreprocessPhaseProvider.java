@@ -27,7 +27,8 @@ public class BaseLogicalPlanPreprocessPhaseProvider extends LogicalPlanPreproces
   @Override
   public Collection<Class<? extends LogicalPlanPreprocessPhase>> getPhases() {
     List phases = TUtil.newList(
-        BaseSchemaBuildPhase.class
+        BaseSchemaBuildPhase.class,
+        SelfDescSchemaBuildPhase.class
     );
     return phases;
   }

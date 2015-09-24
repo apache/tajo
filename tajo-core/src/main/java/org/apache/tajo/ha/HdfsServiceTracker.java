@@ -596,7 +596,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   @Override
   public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
-    List<String> list = new ArrayList<String>();
+    List<String> list = new ArrayList<>();
 
     try {
       FileSystem fs = getFileSystem(conf);

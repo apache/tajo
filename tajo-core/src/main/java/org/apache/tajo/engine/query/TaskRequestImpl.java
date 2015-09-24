@@ -118,7 +118,7 @@ public class TaskRequestImpl implements TaskRequest {
 			return fragments;
 		}
 		if (fragments == null) {
-			fragments = new ArrayList<FragmentProto>();
+			fragments = new ArrayList<>();
 		}
 		for (int i = 0; i < p.getFragmentsCount(); i++) {
 			fragments.add(p.getFragments(i));
@@ -223,7 +223,7 @@ public class TaskRequestImpl implements TaskRequest {
       return;
     }
     TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-    this.fetches = new ArrayList<FetchImpl>();
+    this.fetches = new ArrayList<>();
     for(FetchProto fetch : p.getFetchesList()) {
       fetches.add(new FetchImpl(fetch));
     }

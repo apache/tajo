@@ -62,6 +62,7 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
@@ -88,6 +89,8 @@ public class Stage implements EventHandler<StageEvent> {
 
   private static final Log LOG = LogFactory.getLog(Stage.class);
 
+  private final Properties rpcParams;
+
   private MasterPlan masterPlan;
   private ExecutionBlock block;
   private int priority;
@@ -98,7 +101,7 @@ public class Stage implements EventHandler<StageEvent> {
   private EventHandler<Event> eventHandler;
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
-  private final List<String> diagnostics = new ArrayList<String>();
+  private final List<String> diagnostics = new ArrayList<>();
   private StageState stageState;
 
   private long startTime;
@@ -300,6 +303,8 @@ public class Stage implements EventHandler<StageEvent> {
     this.block = block;
     this.eventHandler = context.getEventHandler();
 
+    this.rpcParams = RpcParameterFactory.get(context.getConf());
+
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
@@ -369,7 +374,7 @@ public class Stage implements EventHandler<StageEvent> {
       if (getState() == StageState.NEW) {
         return 0.0f;
       } else {
-        tempTasks = new ArrayList<Task>(tasks.values());
+        tempTasks = new ArrayList<>(tasks.values());
       }
     } finally {
       readLock.unlock();
@@ -430,7 +435,7 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   private List<TaskHistory> makeTaskHistories() {
-    List<TaskHistory> taskHistories = new ArrayList<TaskHistory>();
+    List<TaskHistory> taskHistories = new ArrayList<>();
 
     for(Task eachTask : getTasks()) {
       taskHistories.add(eachTask.getTaskHistory());
@@ -720,7 +725,7 @@ public class Stage implements EventHandler<StageEvent> {
         public void run() {
           try {
             AsyncRpcClient tajoWorkerRpc =
-                RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
+                RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true, rpcParams);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.stopExecutionBlock(null,
                 requestProto, NullCallback.get(PrimitiveProtos.BoolProto.class));
@@ -1132,7 +1137,7 @@ public class Stage implements EventHandler<StageEvent> {
       TableDesc table = stage.context.getTableDesc(scan);
 
       Collection<Fragment> fragments;
-      Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri()).get();
+      Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri());
 
       // Depending on scanner node's type, it creates fragments. If scan is for
       // a partitioned table, It will creates lots fragments for all partitions.

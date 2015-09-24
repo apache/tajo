@@ -66,7 +66,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     this.workerContext = workerContext;
     this.allocatedResourceMap = Maps.newConcurrentMap();
     this.runningTasks = new AtomicInteger();
-    this.taskQueue = new LinkedBlockingQueue<Task>();
+    this.taskQueue = new LinkedBlockingQueue<>();
     this.fetcherThreadPoolList = Lists.newArrayList();
   }
 

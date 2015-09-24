@@ -91,7 +91,7 @@ public class OrcUtils {
     // schema: struct<a:int, b:float, c:map<string,int>>
     // column span map for the above struct will be
     // a => [1,1], b => [2,2], c => [3,5]
-    Map<String, List<Integer>> columnSpanMap = new HashMap<String, List<Integer>>();
+    Map<String, List<Integer>> columnSpanMap = new HashMap<>();
     if (allColumns != null) {
       String[] columns = allColumns.split(",");
       int startIdx = 0;

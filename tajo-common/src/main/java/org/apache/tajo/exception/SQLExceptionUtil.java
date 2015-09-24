@@ -72,6 +72,7 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_METHOD,            "42T06");
     SQLSTATES.put(ResultCode.UNDEFINED_OPERATOR,                    "42883"); // == UNDEFINED_FUNCTION
     SQLSTATES.put(ResultCode.UNDEFINED_PARTITION_KEY,               "42T07");
+    SQLSTATES.put(ResultCode.UNDEFINED_TABLESPACE_HANDLER,          "42T11");
 
     SQLSTATES.put(ResultCode.DUPLICATE_TABLESPACE,                  "42T08");
     SQLSTATES.put(ResultCode.DUPLICATE_DATABASE,                    "42P04");
@@ -103,9 +104,9 @@ public class SQLExceptionUtil {
     SQLSTATES.put(ResultCode.INDETERMINATE_DATATYPE,                "42P18");
 
     // Client Connection
-    SQLSTATES.put(ResultCode.CLIENT_CONNECTION_EXCEPTION,           "08001");
-    SQLSTATES.put(ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "08002");
+    SQLSTATES.put(ResultCode.CLIENT_CONNECTION_EXCEPTION,           "08000");
     SQLSTATES.put(ResultCode.CLIENT_CONNECTION_DOES_NOT_EXIST,      "08003");
+    SQLSTATES.put(ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION, "08006");
   }
 
   public static boolean isThisError(SQLException e, ResultCode code) {

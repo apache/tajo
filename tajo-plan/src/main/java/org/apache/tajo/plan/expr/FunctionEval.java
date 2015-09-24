@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
@@ -57,7 +58,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 
   protected final Tuple evalParams(Tuple tuple) {
     for (int i = 0; i < argEvals.length; i++) {
-      params.put(i, argEvals[i].eval(tuple));
+      params.put(i, (Datum)argEvals[i].eval(tuple));
     }
     return params;
   }

@@ -68,7 +68,7 @@ public final class SAXCodeAdapter extends MethodVisitor {
     public SAXCodeAdapter(final SAXAdapter sa, final int access) {
         super(Opcodes.ASM4);
         this.sa = sa;
-        this.labelNames = new HashMap<Label, String>();
+        this.labelNames = new HashMap<>();
 
         if ((access & (Opcodes.ACC_ABSTRACT | Opcodes.ACC_INTERFACE | Opcodes.ACC_NATIVE)) == 0) {
             sa.addStart("code", new AttributesImpl());

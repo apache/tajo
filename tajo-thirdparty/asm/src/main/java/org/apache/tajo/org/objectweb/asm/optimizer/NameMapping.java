@@ -56,7 +56,7 @@ public class NameMapping {
         try {
             is = new BufferedInputStream(new FileInputStream(file));
             mapping.load(is);
-            unused = new HashSet<Object>(mapping.keySet());
+            unused = new HashSet<>(mapping.keySet());
         } finally {
             if (is != null) {
                 is.close();

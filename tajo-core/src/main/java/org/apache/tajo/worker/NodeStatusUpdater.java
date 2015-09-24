@@ -35,12 +35,14 @@ import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 
 import java.net.ConnectException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -55,7 +57,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
   private final static Log LOG = LogFactory.getLog(NodeStatusUpdater.class);
 
-  private TajoConf tajoConf;
+  private TajoConf systemConf;
   private StatusUpdaterThread updaterThread;
   private volatile boolean isStopped;
   private int heartBeatInterval;
@@ -63,6 +65,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   private BlockingQueue<NodeStatusEvent> heartBeatRequestQueue;
   private final TajoWorker.WorkerContext workerContext;
   private AsyncRpcClient rmClient;
+  private Properties rpcParams;
   private ServiceTracker serviceTracker;
   private TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService.Interface resourceTracker;
   private int queueingThreshold;
@@ -75,11 +78,12 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   @Override
   public void serviceInit(Configuration conf) throws Exception {
 
-    this.tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+    this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+    this.rpcParams = RpcParameterFactory.get(this.systemConf);
     this.heartBeatRequestQueue = Queues.newLinkedBlockingQueue();
-    this.serviceTracker = ServiceTrackerFactory.get(tajoConf);
+    this.serviceTracker = ServiceTrackerFactory.get(systemConf);
     this.workerContext.getNodeResourceManager().getDispatcher().register(NodeStatusEvent.EventType.class, this);
-    this.heartBeatInterval = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_IDLE_INTERVAL);
+    this.heartBeatInterval = systemConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_IDLE_INTERVAL);
     this.updaterThread = new StatusUpdaterThread();
     this.updaterThread.setName("NodeStatusUpdater");
     super.serviceInit(conf);
@@ -89,10 +93,10 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
   public void serviceStart() throws Exception {
     DefaultResourceCalculator calculator = new DefaultResourceCalculator();
     int maxContainer = calculator.computeAvailableContainers(workerContext.getNodeResourceManager().getTotalResource(),
-        NodeResources.createResource(tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY), 1));
+        NodeResources.createResource(systemConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY), 1));
 
     // if resource changed over than 30%, send reports
-    float queueingRate = tajoConf.getFloatVar(TajoConf.ConfVars.WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE);
+    float queueingRate = systemConf.getFloatVar(TajoConf.ConfVars.WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE);
     this.queueingThreshold = Math.max((int) Math.floor(maxContainer * queueingRate), 1);
     LOG.info("Queueing threshold:" + queueingThreshold);
 
@@ -149,8 +153,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
     RpcClientManager rpcManager = RpcClientManager.getInstance();
     rmClient = rpcManager.newClient(serviceTracker.getResourceTrackerAddress(),
-        TajoResourceTrackerProtocol.class, true, rpcManager.getRetries(),
-        rpcManager.getTimeoutSeconds(), TimeUnit.SECONDS, false);
+        TajoResourceTrackerProtocol.class, true, rpcParams);
     return rmClient.getStub();
   }
 
@@ -162,10 +165,10 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
 
     NodeHeartbeatResponse response = null;
     try {
-      CallFuture<NodeHeartbeatResponse> callBack = new CallFuture<NodeHeartbeatResponse>();
+      CallFuture<NodeHeartbeatResponse> callBack = new CallFuture<>();
 
       resourceTracker.nodeHeartbeat(callBack.getController(), requestProto, callBack);
-      response = callBack.get(RpcConstants.DEFAULT_FUTURE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+      response = callBack.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
       LOG.warn(e.getMessage());
     } catch (TimeoutException te) {

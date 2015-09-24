@@ -35,6 +35,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.UndefinedTablespaceHandlerException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
@@ -692,7 +694,7 @@ public class TestTajoClient {
           "  c_custkey,\n" +
           "  orders.o_orderkey;\n";
 
-    Map<String, String> variables = new HashMap<String, String>();
+    Map<String, String> variables = new HashMap<>();
     variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
     client.updateSessionVariables(variables);
     ResultSet res = client.executeQueryAndGetResult(sql);
@@ -761,7 +763,7 @@ public class TestTajoClient {
     assertEquals(2, queryHistory.getStageHistoriesCount());
 
     List<ClientProtos.StageHistoryProto> taskHistories =
-        new ArrayList<StageHistoryProto>(queryHistory.getStageHistoriesList());
+            new ArrayList<>(queryHistory.getStageHistoriesList());
     Collections.sort(taskHistories, new Comparator<StageHistoryProto>() {
       @Override
       public int compare(ClientProtos.StageHistoryProto o1, StageHistoryProto o2) {
@@ -796,5 +798,16 @@ public class TestTajoClient {
 
     rpcClient2.getChannel().eventLoop().terminationFuture().sync();
     assertTrue(rpcClient2.getChannel().eventLoop().isTerminated());
+  }
+
+  @Test(expected = UndefinedTablespaceException.class)
+  public void testCreateTableOnAbsentTablespace() throws TajoException {
+    client.updateQuery("CREATE TABLE testCreateTableOnAbsentTablespace (AGE INT) TABLESPACE unknown123");
+  }
+
+  @Test(expected = UndefinedTablespaceHandlerException.class)
+  public void testCreateTableWithAbsentTablespaceHandler() throws TajoException {
+    client.updateQuery(
+        "CREATE EXTERNAL TABLE testCreateTableWithAbsentTablespaceHandler (AGE INT) USING TEXT LOCATION 'hdfx://tajo'");
   }
 }

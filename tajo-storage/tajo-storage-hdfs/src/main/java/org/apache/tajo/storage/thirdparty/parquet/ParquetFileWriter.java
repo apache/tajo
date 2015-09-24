@@ -64,7 +64,7 @@ public class ParquetFileWriter {
   private BlockMetaData currentBlock;
   private ColumnChunkMetaData currentColumn;
   private long currentRecordCount;
-  private List<BlockMetaData> blocks = new ArrayList<BlockMetaData>();
+  private List<BlockMetaData> blocks = new ArrayList<>();
   private long uncompressedLength;
   private long compressedLength;
   private Set<parquet.column.Encoding> currentEncodings;
@@ -181,7 +181,7 @@ public class ParquetFileWriter {
                           CompressionCodecName compressionCodecName) throws IOException {
     state = state.startColumn();
     if (DEBUG) LOG.debug(out.getPos() + ": start column: " + descriptor + " count=" + valueCount);
-    currentEncodings = new HashSet<parquet.column.Encoding>();
+    currentEncodings = new HashSet<>();
     currentChunkPath = ColumnPath.get(descriptor.getPath());
     currentChunkType = descriptor.getType();
     currentChunkCodec = compressionCodecName;
@@ -399,7 +399,7 @@ public class ParquetFileWriter {
   private static ParquetMetadata mergeFooters(Path root, List<Footer> footers) {
     String rootPath = root.toString();
     GlobalMetaData fileMetaData = null;
-    List<BlockMetaData> blocks = new ArrayList<BlockMetaData>();
+    List<BlockMetaData> blocks = new ArrayList<>();
     for (Footer footer : footers) {
       String path = footer.getFile().toString();
       if (!path.startsWith(rootPath)) {
@@ -450,8 +450,8 @@ public class ParquetFileWriter {
       FileMetaData toMerge,
       GlobalMetaData mergedMetadata) {
     MessageType schema = null;
-    Map<String, Set<String>> newKeyValues = new HashMap<String, Set<String>>();
-    Set<String> createdBy = new HashSet<String>();
+    Map<String, Set<String>> newKeyValues = new HashMap<>();
+    Set<String> createdBy = new HashSet<>();
     if (mergedMetadata != null) {
       schema = mergedMetadata.getSchema();
       newKeyValues.putAll(mergedMetadata.getKeyValueMetaData());
@@ -464,7 +464,7 @@ public class ParquetFileWriter {
     for (Entry<String, String> entry : toMerge.getKeyValueMetaData().entrySet()) {
       Set<String> values = newKeyValues.get(entry.getKey());
       if (values == null) {
-        values = new HashSet<String>();
+        values = new HashSet<>();
         newKeyValues.put(entry.getKey(), values);
       }
       values.add(entry.getValue());

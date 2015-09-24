@@ -58,11 +58,11 @@ public class ProtocMojo extends AbstractMojo {
       if (protocCommand == null || protocCommand.trim().isEmpty()) {
         protocCommand = "protoc";
       }
-      List<String> command = new ArrayList<String>();
+      List<String> command = new ArrayList<>();
       command.add(protocCommand);
       command.add("--version");
       Exec exec = new Exec(this);
-      List<String> out = new ArrayList<String>();
+      List<String> out = new ArrayList<>();
       if (exec.run(command, out) == 127) {
         getLog().error("protoc, not found at: " + protocCommand);
         throw new MojoExecutionException("protoc failure");        
@@ -85,7 +85,7 @@ public class ProtocMojo extends AbstractMojo {
             output);
         }
       }
-      command = new ArrayList<String>();
+      command = new ArrayList<>();
       command.add(protocCommand);
       command.add("--java_out=" + output.getCanonicalPath());
       if (imports != null) {
@@ -97,7 +97,7 @@ public class ProtocMojo extends AbstractMojo {
         command.add(f.getCanonicalPath());
       }
       exec = new Exec(this);
-      out = new ArrayList<String>();
+      out = new ArrayList<>();
       if (exec.run(command, out) != 0) {
         getLog().error("protoc compiler error");
         for (String s : out) {

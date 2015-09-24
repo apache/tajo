@@ -342,7 +342,7 @@ public class TestPlannerUtil {
 
     FileSystem fs = path.getFileSystem(util.getConfiguration());
 
-    List<Path> expectedFiles = new ArrayList<Path>();
+    List<Path> expectedFiles = new ArrayList<>();
     RemoteIterator<LocatedFileStatus> files = fs.listFiles(path, true);
     while (files.hasNext()) {
       LocatedFileStatus file = files.next();

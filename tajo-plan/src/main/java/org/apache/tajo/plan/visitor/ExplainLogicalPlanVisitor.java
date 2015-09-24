@@ -34,7 +34,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   public static class Context {
     public int maxDepth  = -1;
     public int depth = 0;
-    public Stack<DepthString> explains = new Stack<DepthString>();
+    public Stack<DepthString> explains = new Stack<>();
 
     public void add(int depth, PlanString planString) {
       maxDepth = Math.max(maxDepth, depth);
@@ -69,7 +69,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
   }
 
   public Context getBlockPlanStrings(@Nullable LogicalPlan plan, LogicalNode node) throws TajoException {
-    Stack<LogicalNode> stack = new Stack<LogicalNode>();
+    Stack<LogicalNode> stack = new Stack<>();
     Context explainContext = new Context();
     visit(explainContext, plan, null, node, stack);
     return explainContext;

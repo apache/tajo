@@ -32,10 +32,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MetaDataTuple implements Tuple {
-  List<Datum> values = new ArrayList<Datum>();
+  List<Datum> values = new ArrayList<>();
 
   public MetaDataTuple(int size) {
-    values = new ArrayList<Datum>(size);
+    values = new ArrayList<>(size);
     for(int i = 0; i < size; i++) {
       values.add(NullDatum.get());
     }
@@ -62,7 +62,7 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
-  public void put(int fieldId, Tuple tuple) {
+  public void insertTuple(int fieldId, Tuple tuple) {
     this.put(fieldId, tuple.asDatum(fieldId));
   }
 

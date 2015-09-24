@@ -87,7 +87,7 @@ public class LogicalOptimizer {
     rulesBeforeJoinOpt.rewrite(new LogicalPlanRewriteRuleContext(context, plan, catalog));
 
     DirectedGraphCursor<String, BlockEdge> blockCursor =
-        new DirectedGraphCursor<String, BlockEdge>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
+            new DirectedGraphCursor<>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
 
     if (context == null || context.getBool(SessionVars.TEST_JOIN_OPT_ENABLED)) {
       // default is true
@@ -121,7 +121,7 @@ public class LogicalOptimizer {
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
 
       JoinTargetCollector collector = new JoinTargetCollector();
-      Set<Target> targets = new LinkedHashSet<Target>();
+      Set<Target> targets = new LinkedHashSet<>();
       collector.visitJoin(targets, plan, block, old, new Stack<LogicalNode>());
 
       if (targets.size() == 0) {
@@ -158,9 +158,9 @@ public class LogicalOptimizer {
                                                                JoinNode newJoinNode) {
     // Gather filters from remaining join edges
     Collection<JoinEdge> joinEdges = joinGraphContext.getJoinGraph().getEdgesAll();
-    Collection<EvalNode> markAsEvaluated = new HashSet<EvalNode>(joinGraphContext.getEvaluatedJoinConditions());
+    Collection<EvalNode> markAsEvaluated = new HashSet<>(joinGraphContext.getEvaluatedJoinConditions());
     markAsEvaluated.addAll(joinGraphContext.getEvaluatedJoinFilters());
-    Set<EvalNode> remainingQuals = new HashSet<EvalNode>(joinGraphContext.getCandidateJoinFilters());
+    Set<EvalNode> remainingQuals = new HashSet<>(joinGraphContext.getCandidateJoinFilters());
     for (JoinEdge eachEdge : joinEdges) {
       for (EvalNode eachQual : eachEdge.getJoinQual()) {
         if (!markAsEvaluated.contains(eachQual)) {
@@ -438,11 +438,11 @@ public class LogicalOptimizer {
       }
 
       if (joinNode.getLeftChild() instanceof RelationNode) {
-        joinGraphContext.accumulatedCost = getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild())
-            * filterFactor;
+        joinGraphContext.accumulatedCost = getCost((RelationNode)joinNode.getLeftChild()) *
+            getCost((LogicalNode)joinNode.getRightChild())* filterFactor;
       } else {
         joinGraphContext.accumulatedCost = joinGraphContext.accumulatedCost +
-            (joinGraphContext.accumulatedCost * getCost(joinNode.getRightChild()) * filterFactor);
+            (joinGraphContext.accumulatedCost * getCost((RelationNode)joinNode.getRightChild()) * filterFactor);
       }
 
       return joinNode;

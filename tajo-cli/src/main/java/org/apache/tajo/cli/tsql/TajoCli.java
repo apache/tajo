@@ -18,6 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
+import com.google.common.collect.Maps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
@@ -26,6 +27,7 @@ import jline.console.ConsoleReader;
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
 import org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
@@ -39,16 +41,14 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ShutdownHookManager;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 public class TajoCli {
   public static final int SHUTDOWN_HOOK_PRIORITY = 50;
@@ -91,7 +91,7 @@ public class TajoCli {
       TajoGetConfCommand.class,
       TajoHAAdminCommand.class
   };
-  private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
+  private final Map<String, TajoShellCommand> commands = new TreeMap<>();
 
   protected static final Options options;
   private static final String HOME_DIR = System.getProperty("user.home");
@@ -176,7 +176,9 @@ public class TajoCli {
     }
   }
 
-  public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
+  public TajoCli(TajoConf c, String [] args, @Nullable Properties clientParams, InputStream in, OutputStream out)
+      throws Exception {
+
     CommandLineParser parser = new PosixParser();
     CommandLine cmd = parser.parse(options, args);
 
@@ -234,14 +236,18 @@ public class TajoCli {
       }
     }
 
+    // Get connection parameters
+    Properties defaultConnParams = CliClientParamsFactory.get(clientParams);
+    final KeyValueSet actualConnParams = new KeyValueSet(Maps.fromProperties(defaultConnParams));
+
     if ((hostName == null) ^ (port == null)) {
       System.err.println(ERROR_PREFIX + "cannot find valid Tajo server address");
       throw new RuntimeException("cannot find valid Tajo server address");
     } else if (hostName != null && port != null) {
       conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, actualConnParams);
     } else if (hostName == null && port == null) {
-      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, actualConnParams);
     }
 
     try {
@@ -694,7 +700,7 @@ public class TajoCli {
 
   public static void main(String [] args) throws Exception {
     TajoConf conf = new TajoConf();
-    TajoCli shell = new TajoCli(conf, args, System.in, System.out);
+    TajoCli shell = new TajoCli(conf, args, new Properties(), System.in, System.out);
     System.out.println();
     System.exit(shell.runShell());
   }

@@ -77,7 +77,7 @@ public class TajoDump {
         port = Integer.parseInt(conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
       }
     }
-    return new Pair<String, Integer>(hostName, port);
+    return new Pair<>(hostName, port);
   }
 
   public static void main(String [] args) throws ParseException, IOException, ServiceException, SQLException {
@@ -130,7 +130,7 @@ public class TajoDump {
 
     if (isDumpingAllDatabases) {
       // sort database names in an ascending lexicographic order of the names.
-      List<String> sorted = new ArrayList<String>(client.getAllDatabaseNames());
+      List<String> sorted = new ArrayList<>(client.getAllDatabaseNames());
       Collections.sort(sorted);
 
       for (String databaseName : sorted) {

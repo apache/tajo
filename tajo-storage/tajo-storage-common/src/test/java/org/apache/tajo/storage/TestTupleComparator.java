@@ -93,7 +93,7 @@ public class TestTupleComparator {
     tuple3.put(0, new Int4Datum(3));
     tuple3.put(1, new TextDatum("333"));
 
-    List<Tuple> tupleList = new ArrayList<Tuple>();
+    List<Tuple> tupleList = new ArrayList<>();
     tupleList.add(tuple1);
     tupleList.add(nullTuple);
     tupleList.add(tuple3);
@@ -133,7 +133,7 @@ public class TestTupleComparator {
     tuple3.put(0, new Int4Datum(3));
     tuple3.put(1, new TextDatum("333"));
 
-    List<Tuple> tupleList = new ArrayList<Tuple>();
+    List<Tuple> tupleList = new ArrayList<>();
     tupleList.add(tuple1);
     tupleList.add(nullTuple);
     tupleList.add(tuple3);

@@ -96,7 +96,7 @@ public class ParquetReader<T> implements Closeable {
     this.footersIterator = footers.iterator();
     globalMetaData = ParquetFileWriter.getGlobalMetaData(footers);
 
-    List<BlockMetaData> blocks = new ArrayList<BlockMetaData>();
+    List<BlockMetaData> blocks = new ArrayList<>();
     for (Footer footer : footers) {
       blocks.addAll(footer.getParquetMetadata().getBlocks());
     }
@@ -130,7 +130,7 @@ public class ParquetReader<T> implements Closeable {
     }
     if (footersIterator.hasNext()) {
       Footer footer = footersIterator.next();
-      reader = new InternalParquetRecordReader<T>(readSupport, filter);
+      reader = new InternalParquetRecordReader<>(readSupport, filter);
       reader.initialize(
           readContext.getRequestedSchema(), globalMetaData.getSchema(), footer.getParquetMetadata().getFileMetaData().getKeyValueMetaData(),
           readContext.getReadSupportMetadata(), footer.getFile(), footer.getParquetMetadata().getBlocks(), conf);

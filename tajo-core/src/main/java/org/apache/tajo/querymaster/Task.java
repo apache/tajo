@@ -191,10 +191,10 @@ public class Task implements EventHandler<TaskEvent> {
 		this.taskId = id;
     this.eventHandler = eventHandler;
     this.isLeafTask = isLeafTask;
-		scan = new ArrayList<ScanNode>();
+		scan = new ArrayList<>();
     fetchMap = Maps.newHashMap();
     fragMap = Maps.newHashMap();
-    shuffleFileOutputs = new ArrayList<ShuffleFileOutput>();
+    shuffleFileOutputs = new ArrayList<>();
     attempts = Collections.emptyMap();
     lastAttemptId = null;
     nextAttempt = -1;
@@ -269,7 +269,7 @@ public class Task implements EventHandler<TaskEvent> {
       }
     }
 
-    List<String> fragmentList = new ArrayList<String>();
+    List<String> fragmentList = new ArrayList<>();
     for (FragmentProto eachFragment : getAllFragments()) {
       try {
         Fragment fragment = FragmentConvertor.convert(systemConf, eachFragment);
@@ -281,7 +281,7 @@ public class Task implements EventHandler<TaskEvent> {
     }
     taskHistory.setFragments(fragmentList.toArray(new String[]{}));
 
-    List<String[]> fetchList = new ArrayList<String[]>();
+    List<String[]> fetchList = new ArrayList<>();
     for (Map.Entry<String, Set<FetchImpl>> e : getFetchMap().entrySet()) {
       for (FetchImpl f : e.getValue()) {
         for (URI uri : f.getSimpleURIs()){
@@ -292,7 +292,7 @@ public class Task implements EventHandler<TaskEvent> {
 
     taskHistory.setFetchs(fetchList.toArray(new String[][]{}));
 
-    List<String> dataLocationList = new ArrayList<String>();
+    List<String> dataLocationList = new ArrayList<>();
     for(DataLocation eachLocation: getDataLocations()) {
       dataLocationList.add(eachLocation.toString());
     }
@@ -305,7 +305,7 @@ public class Task implements EventHandler<TaskEvent> {
 	  this.plan = plan;
 
 	  LogicalNode node = plan;
-	  ArrayList<LogicalNode> s = new ArrayList<LogicalNode>();
+	  ArrayList<LogicalNode> s = new ArrayList<>();
 	  s.add(node);
 	  while (!s.isEmpty()) {
 	    node = s.remove(s.size()-1);
@@ -340,7 +340,7 @@ public class Task implements EventHandler<TaskEvent> {
     if (fragMap.containsKey(fragment.getTableName())) {
       fragmentProtos = fragMap.get(fragment.getTableName());
     } else {
-      fragmentProtos = new HashSet<FragmentProto>();
+      fragmentProtos = new HashSet<>();
       fragMap.put(fragment.getTableName(), fragmentProtos);
     }
     fragmentProtos.add(fragment.getProto());
@@ -381,7 +381,7 @@ public class Task implements EventHandler<TaskEvent> {
 	}
 
   public Collection<FragmentProto> getAllFragments() {
-    Set<FragmentProto> fragmentProtos = new HashSet<FragmentProto>();
+    Set<FragmentProto> fragmentProtos = new HashSet<>();
     for (Set<FragmentProto> eachFragmentSet : fragMap.values()) {
       fragmentProtos.addAll(eachFragmentSet);
     }
@@ -547,7 +547,7 @@ public class Task implements EventHandler<TaskEvent> {
 
       case 1:
         Map<TaskAttemptId, TaskAttempt> newAttempts
-            = new LinkedHashMap<TaskAttemptId, TaskAttempt>(3);
+            = new LinkedHashMap<>(3);
         newAttempts.putAll(attempts);
         attempts = newAttempts;
         attempts.put(attempt.getId(), attempt);
@@ -716,7 +716,7 @@ public class Task implements EventHandler<TaskEvent> {
   }
 
   public void setIntermediateData(Collection<IntermediateEntry> partitions) {
-    this.intermediateData = new ArrayList<IntermediateEntry>(partitions);
+    this.intermediateData = new ArrayList<>(partitions);
   }
 
   public List<IntermediateEntry> getIntermediateData() {
@@ -795,14 +795,14 @@ public class Task implements EventHandler<TaskEvent> {
       this.host = new PullHost(pullHost[0], Integer.parseInt(pullHost[1]));
       this.volume = proto.getVolume();
 
-      failureRowNums = new ArrayList<Pair<Long, Pair<Integer, Integer>>>();
+      failureRowNums = new ArrayList<>();
       for (FailureIntermediateProto eachFailure: proto.getFailuresList()) {
 
         failureRowNums.add(new Pair(eachFailure.getPagePos(),
             new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum())));
       }
 
-      pages = new ArrayList<Pair<Long, Integer>>();
+      pages = new ArrayList<>();
       for (IntermediateEntryProto.PageProto eachPage: proto.getPagesList()) {
         pages.add(new Pair(eachPage.getPos(), eachPage.getLength()));
       }
@@ -873,7 +873,7 @@ public class Task implements EventHandler<TaskEvent> {
     }
 
     public List<Pair<Long, Long>> split(long firstSplitVolume, long splitVolume) {
-      List<Pair<Long, Long>> splits = new ArrayList<Pair<Long, Long>>();
+      List<Pair<Long, Long>> splits = new ArrayList<>();
 
       if (pages == null || pages.isEmpty()) {
         return splits;

@@ -44,7 +44,7 @@ public final class NettyUtils {
   }
 
   private static final Map<GROUP, EventLoopGroup> eventLoopGroupMap =
-      new ConcurrentHashMap<GROUP, EventLoopGroup>();
+          new ConcurrentHashMap<>();
 
   private NettyUtils(){
   }

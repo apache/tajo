@@ -38,7 +38,7 @@ public class TestMetricsFilter {
 
   @Test
   public void testRegexpMetricsFilter() {
-    List<String> filterExpressions = new ArrayList<String>();
+    List<String> filterExpressions = new ArrayList<>();
     filterExpressions.add("JVM");
     filterExpressions.add("Query");
 

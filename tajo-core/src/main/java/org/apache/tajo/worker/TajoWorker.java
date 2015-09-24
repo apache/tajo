@@ -152,11 +152,6 @@ public class TajoWorker extends CompositeService {
     this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     RackResolver.init(systemConf);
 
-    RpcClientManager rpcManager = RpcClientManager.getInstance();
-    rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
-    rpcManager.setTimeoutSeconds(
-        systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
-
     serviceTracker = ServiceTrackerFactory.get(systemConf);
 
     this.workerContext = new TajoWorkerContext();
@@ -498,7 +493,7 @@ public class TajoWorker extends CompositeService {
         for (Path path : iter) {
           PathData[] items = PathData.expandAsGlob(localFS.makeQualified(new Path(path, "*")).toString(), systemConf);
 
-          ArrayList<Path> paths = new ArrayList<Path>();
+          ArrayList<Path> paths = new ArrayList<>();
           for (PathData pd : items) {
             paths.add(pd.path);
           }

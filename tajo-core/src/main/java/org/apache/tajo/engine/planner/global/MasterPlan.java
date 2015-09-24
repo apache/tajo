@@ -43,9 +43,9 @@ public class MasterPlan {
   private AtomicInteger nextId = new AtomicInteger(0);
 
   private ExecutionBlock terminalBlock;
-  private Map<ExecutionBlockId, ExecutionBlock> execBlockMap = new HashMap<ExecutionBlockId, ExecutionBlock>();
+  private Map<ExecutionBlockId, ExecutionBlock> execBlockMap = new HashMap<>();
   private SimpleDirectedGraph<ExecutionBlockId, DataChannel> execBlockGraph =
-      new SimpleDirectedGraph<ExecutionBlockId, DataChannel>();
+          new SimpleDirectedGraph<>();
 
   public ExecutionBlockId newExecutionBlockId() {
     return new ExecutionBlockId(queryId, nextId.incrementAndGet());
@@ -196,7 +196,7 @@ public class MasterPlan {
   }
 
   public List<ExecutionBlock> getChilds(ExecutionBlockId id) {
-    List<ExecutionBlock> childBlocks = new ArrayList<ExecutionBlock>();
+    List<ExecutionBlock> childBlocks = new ArrayList<>();
     for (ExecutionBlockId cid : execBlockGraph.getChilds(id)) {
       childBlocks.add(execBlockMap.get(cid));
     }

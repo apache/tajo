@@ -26,9 +26,11 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.RelationNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
@@ -68,13 +70,19 @@ public abstract class NameResolver {
 
   public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
                                NameResolvingMode mode) throws TajoException {
+    return resolve(plan, block, column, mode, false);
+  }
+
+  public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
+                               NameResolvingMode mode, boolean includeSelfDescTable) throws TajoException {
     if (!resolverMap.containsKey(mode)) {
       throw new RuntimeException("Unsupported name resolving level: " + mode.name());
     }
-    return resolverMap.get(mode).resolve(plan, block, column);
+    return resolverMap.get(mode).resolve(plan, block, column, includeSelfDescTable);
   }
 
-  abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
+  abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef,
+                          boolean includeSelfDescTable)
   throws TajoException;
 
   /**
@@ -143,7 +151,7 @@ public abstract class NameResolver {
    * @return The found column
    */
   static Column resolveFromRelsWithinBlock(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                           ColumnReferenceExpr columnRef)
+                                           ColumnReferenceExpr columnRef, boolean includeSeflDescTable)
       throws AmbiguousColumnException, AmbiguousTableException, UndefinedColumnException, UndefinedTableException {
     String qualifier;
     String canonicalName;
@@ -151,7 +159,7 @@ public abstract class NameResolver {
     if (columnRef.hasQualifier()) {
       Pair<String, String> normalized;
       try {
-        normalized = lookupQualifierAndCanonicalName(block, columnRef);
+        normalized = lookupQualifierAndCanonicalName(block, columnRef, includeSeflDescTable);
       } catch (UndefinedColumnException udce) {
         // is it correlated subquery?
         // if the search column is not found at the current block, find it at all ancestors of the block.
@@ -178,22 +186,28 @@ public abstract class NameResolver {
         throw new UndefinedTableException(qualifier);
       }
 
-      // Please consider a query case:
-      // select lineitem.l_orderkey from lineitem a order by lineitem.l_orderkey;
-      //
-      // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still should be available.
-      // The below code makes it possible. Otherwise, it cannot find any match in the relation schema.
-      if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
-        canonicalName =
-            CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
-      }
+      Column column;
+      if (includeSeflDescTable && describeSchemaByItself(relationOp)) {
+        column = guessColumn(CatalogUtil.buildFQName(normalized.getFirst(), normalized.getSecond()));
 
-      Schema schema = relationOp.getLogicalSchema();
-      Column column = schema.getColumn(canonicalName);
+      } else {
+        // Please consider a query case:
+        // select lineitem.l_orderkey from lineitem a order by lineitem.l_orderkey;
+        //
+        // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still should be available.
+        // The below code makes it possible. Otherwise, it cannot find any match in the relation schema.
+        if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
+          canonicalName =
+              CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
+        }
+
+        Schema schema = relationOp.getLogicalSchema();
+        column = schema.getColumn(canonicalName);
+      }
 
       return column;
     } else {
-      return lookupColumnFromAllRelsInBlock(block, columnRef.getName());
+      return lookupColumnFromAllRelsInBlock(block, columnRef.getName(), includeSeflDescTable);
     }
   }
 
@@ -231,7 +245,7 @@ public abstract class NameResolver {
    * @return The found column
    */
   static Column lookupColumnFromAllRelsInBlock(LogicalPlan.QueryBlock block,
-                                               String columnName) throws AmbiguousColumnException {
+                                               String columnName, boolean includeSelfDescTable) throws AmbiguousColumnException {
     Preconditions.checkArgument(CatalogUtil.isSimpleIdentifier(columnName));
 
     List<Column> candidates = TUtil.newList();
@@ -248,8 +262,34 @@ public abstract class NameResolver {
     if (!candidates.isEmpty()) {
       return ensureUniqueColumn(candidates);
     } else {
+      if (includeSelfDescTable) {
+        List<RelationNode> candidateRels = TUtil.newList();
+        for (RelationNode rel : block.getRelations()) {
+          if (describeSchemaByItself(rel)) {
+            candidateRels.add(rel);
+          }
+        }
+        if (candidateRels.size() == 1) {
+          return guessColumn(CatalogUtil.buildFQName(candidateRels.get(0).getCanonicalName(), columnName));
+        } else if (candidateRels.size() > 1) {
+          throw new AmbiguousColumnException(columnName);
+        }
+      }
+
       return null;
     }
+  }
+
+  static boolean describeSchemaByItself(RelationNode relationNode) {
+    if (relationNode instanceof ScanNode && ((ScanNode) relationNode).getTableDesc().hasEmptySchema()) {
+      return true;
+    }
+    return false;
+  }
+
+  static Column guessColumn(String qualifiedName) {
+    // TODO: other data types must be supported.
+    return new Column(qualifiedName, Type.TEXT);
   }
 
   /**
@@ -319,7 +359,7 @@ public abstract class NameResolver {
    * @return A pair of normalized qualifier and column name
    */
   static Pair<String, String> lookupQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
-                                                              ColumnReferenceExpr columnRef)
+                                                              ColumnReferenceExpr columnRef, boolean includeSeflDescTable)
       throws AmbiguousColumnException, AmbiguousTableException, UndefinedColumnException {
 
     Preconditions.checkArgument(columnRef.hasQualifier(), "ColumnReferenceExpr must be qualified.");
@@ -374,13 +414,30 @@ public abstract class NameResolver {
 
     // throw exception if no column cannot be founded or two or more than columns are founded
     if (guessedRelations.size() == 0) {
-      throw new UndefinedColumnException(columnRef.getCanonicalName());
+      if (includeSeflDescTable) {
+        // check self-describing relations
+        for (RelationNode rel : block.getRelations()) {
+          if (describeSchemaByItself(rel)) {
+            columnNamePosition = 0;
+            guessedRelations.add(rel);
+          }
+        }
+
+        if (guessedRelations.size() > 1) {
+          throw new AmbiguousColumnException(columnRef.getCanonicalName());
+        } else if (guessedRelations.size() == 0) {
+          throw new UndefinedColumnException(columnRef.getCanonicalName());
+        }
+      } else {
+        throw new UndefinedColumnException(columnRef.getCanonicalName());
+      }
+
     } else if (guessedRelations.size() > 1) {
       throw new AmbiguousColumnException(columnRef.getCanonicalName());
     }
 
     String qualifier = guessedRelations.iterator().next().getCanonicalName();
-    String columnName = "";
+    String columnName;
 
     if (columnNamePosition >= qualifierParts.length) { // if there is no column in qualifierParts
       columnName = columnRef.getName();
@@ -398,7 +455,7 @@ public abstract class NameResolver {
       columnName += NestedPathUtil.PATH_DELIMITER + columnRef.getName();
     }
 
-    return new Pair<String, String>(qualifier, columnName);
+    return new Pair<>(qualifier, columnName);
   }
 
   static Column ensureUniqueColumn(List<Column> candidates) throws AmbiguousColumnException {

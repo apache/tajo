@@ -91,9 +91,9 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
     Expr baseExpr; // outmost expressions, which can includes one or more references of the results of aggregation
                    // function.
-    List<NamedExpr> aggExprs = new ArrayList<NamedExpr>(); // aggregation functions
-    List<NamedExpr> scalarExprs = new ArrayList<NamedExpr>(); // scalar expressions which can be referred
-    List<NamedExpr> windowAggExprs = new ArrayList<NamedExpr>(); // window expressions which can be referred
+    List<NamedExpr> aggExprs = new ArrayList<>(); // aggregation functions
+    List<NamedExpr> scalarExprs = new ArrayList<>(); // scalar expressions which can be referred
+    List<NamedExpr> windowAggExprs = new ArrayList<>(); // window expressions which can be referred
     Set<WindowSpecReferences> windowSpecs = Sets.newLinkedHashSet();
 
     public ExprNormalizedResult(LogicalPlanner.PlanContext context, boolean tryBinaryCommonTermsElimination) {
@@ -118,7 +118,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   public ExprNormalizedResult normalize(LogicalPlanner.PlanContext context, Expr expr, boolean subexprElimination)
       throws TajoException {
     ExprNormalizedResult exprNormalizedResult = new ExprNormalizedResult(context, subexprElimination);
-    Stack<Expr> stack = new Stack<Expr>();
+    Stack<Expr> stack = new Stack<>();
     stack.push(expr);
     visit(exprNormalizedResult, new Stack<Expr>(), expr);
     exprNormalizedResult.baseExpr = stack.pop();

@@ -79,7 +79,7 @@ public class DummyServiceTracker implements ServiceTracker {
 
   @Override
   public List<String> getMasters(TajoConf conf) throws ServiceTrackerException {
-    return new ArrayList<String>();
+    return new ArrayList<>();
   }
 
   @Override

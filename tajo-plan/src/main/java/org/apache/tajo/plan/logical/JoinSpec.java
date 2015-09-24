@@ -39,7 +39,7 @@ public class JoinSpec implements Cloneable {
   }
 
   private JoinType type = null;
-  private Set<EvalNode> predicates = new TreeSet<EvalNode>(new EvalNodeComparator());
+  private Set<EvalNode> predicates = new TreeSet<>(new EvalNodeComparator());
 
   public JoinSpec() {
 

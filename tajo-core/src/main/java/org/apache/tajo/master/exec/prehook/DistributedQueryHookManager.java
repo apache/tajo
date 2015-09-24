@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DistributedQueryHookManager {
-  private List<DistributedQueryHook> hooks = new ArrayList<DistributedQueryHook>();
+  private List<DistributedQueryHook> hooks = new ArrayList<>();
 
   public void addHook(DistributedQueryHook hook) {
     hooks.add(hook);
