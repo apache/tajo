@@ -20,28 +20,35 @@ package org.apache.tajo.master.exec;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -502,8 +509,14 @@ public class DDLExecutor {
           throw new AmbiguousPartitionDirectoryExistException(assumedDirectory.toString());
         }
 
+        long numBytes = 0L;
+        if (fs.exists(partitionPath)) {
+          ContentSummary summary = fs.getContentSummary(partitionPath);
+          numBytes = summary.getLength();
+        }
+
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
-            alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
+          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION, numBytes));
 
         // If the partition's path doesn't exist, this would make the directory by force.
         if (!fs.exists(partitionPath)) {
@@ -529,23 +542,137 @@ public class DDLExecutor {
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
             alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.DROP_PARTITION));
 
-        // When dropping partition on an managed table, the data will be delete from file system.
-        if (!desc.isExternal()) {
+        // When dropping a partition on a table, its data will NOT be deleted if the 'PURGE' option is not specified.
+        if (alterTable.isPurge()) {
           deletePartitionPath(partitionDescProto);
-        } else {
-          // When dropping partition on an external table, the data in the table will NOT be deleted from the file
-          // system. But if PURGE is specified, the partition data will be deleted.
-          if (alterTable.isPurge()) {
-            deletePartitionPath(partitionDescProto);
-          }
         }
       }
-
+      break;
+    case REPAIR_PARTITION:
+      repairPartition(context, queryContext, alterTable);
       break;
     default:
       throw new InternalError("alterTable cannot handle such query: \n" + alterTable.toJson());
     }
   }
+
+  /**
+   * Run ALTER TABLE table_name REPAIR TABLE  statement.
+   * This will recovery all partitions which exists on table directory.
+   *
+   *
+   * @param context
+   * @param queryContext
+   * @param alterTable
+   * @throws IOException
+   */
+  public void repairPartition(TajoMaster.MasterContext context, final QueryContext queryContext,
+                         final AlterTableNode alterTable) throws IOException, TajoException {
+    final CatalogService catalog = context.getCatalog();
+    final String tableName = alterTable.getTableName();
+
+    String databaseName;
+    String simpleTableName;
+    if (CatalogUtil.isFQTableName(tableName)) {
+      String[] split = CatalogUtil.splitFQTableName(tableName);
+      databaseName = split[0];
+      simpleTableName = split[1];
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleTableName = tableName;
+    }
+
+    if (!catalog.existsTable(databaseName, simpleTableName)) {
+      throw new UndefinedTableException(alterTable.getTableName());
+    }
+
+    TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
+
+    if(tableDesc.getPartitionMethod() == null) {
+      throw new UndefinedPartitionMethodException(simpleTableName);
+    }
+
+    Path tablePath = new Path(tableDesc.getUri());
+    FileSystem fs = tablePath.getFileSystem(context.getConf());
+
+    PartitionMethodDesc partitionDesc = tableDesc.getPartitionMethod();
+    Schema partitionColumns = partitionDesc.getExpressionSchema();
+
+    // Get the array of path filter, accepting all partition paths.
+    PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns);
+
+    // loop from one to the number of partition columns
+    Path [] filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
+
+    // Get all file status matched to a ith level path filter.
+    for (int i = 1; i < partitionColumns.size(); i++) {
+      filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
+    }
+
+    // Find missing partitions from filesystem
+    List<PartitionDescProto> existingPartitions = catalog.getPartitionsOfTable(databaseName, simpleTableName);
+    List<String> existingPartitionNames = TUtil.newList();
+    Path existingPartitionPath = null;
+
+    for(PartitionDescProto existingPartition : existingPartitions) {
+      existingPartitionPath = new Path(existingPartition.getPath());
+      existingPartitionNames.add(existingPartition.getPartitionName());
+      if (!fs.exists(existingPartitionPath) && LOG.isDebugEnabled()) {
+        LOG.debug("Partitions missing from Filesystem:" + existingPartition.getPartitionName());
+      }
+    }
+
+    // Find missing partitions from CatalogStore
+    List<PartitionDescProto> targetPartitions = TUtil.newList();
+    for(Path filteredPath : filteredPaths) {
+      PartitionDescProto targetPartition = getPartitionDesc(simpleTableName, filteredPath);
+      if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+        }
+        targetPartitions.add(targetPartition);
+      }
+    }
+
+    catalog.addPartitions(databaseName, simpleTableName, targetPartitions, true);
+
+    if (LOG.isDebugEnabled()) {
+      for(PartitionDescProto targetPartition: targetPartitions) {
+        LOG.debug("Repair: Added partition to CatalogStore " + tableName + ":" + targetPartition.getPartitionName());
+      }
+    }
+
+    LOG.info("Total added partitions to CatalogStore: " + targetPartitions.size());
+  }
+
+  private PartitionDescProto getPartitionDesc(String tableName, Path path) throws IOException {
+    String partitionPath = path.toString();
+
+    String partitionName = StringUtils.unescapePathName(partitionPath);
+    int startIndex = partitionPath.indexOf(tableName);
+    partitionName = partitionName.substring(startIndex + tableName.length() + 1, partitionPath.length());
+
+    CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
+    builder.setPartitionName(partitionName);
+
+    String[] partitionKeyPairs = partitionName.split("/");
+
+    for(int i = 0; i < partitionKeyPairs.length; i++) {
+      String partitionKeyPair = partitionKeyPairs[i];
+      String[] split = partitionKeyPair.split("=");
+
+      PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
+      keyBuilder.setColumnName(split[0]);
+      keyBuilder.setPartitionValue(split[1]);
+
+      builder.addPartitionKeys(keyBuilder.build());
+    }
+
+    builder.setPath(partitionPath);
+
+    return builder.build();
+  }
+
 
   private void deletePartitionPath(CatalogProtos.PartitionDescProto partitionDescProto) throws IOException {
     Path partitionPath = new Path(partitionDescProto.getPath());
@@ -578,5 +705,14 @@ public class DDLExecutor {
   private boolean ensureColumnExistance(String tableName, String columnName) throws UndefinedTableException {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
     return tableDesc.getSchema().containsByName(columnName);
+  }
+
+  private Path [] toPathArray(FileStatus[] fileStatuses) {
+    Path [] paths = new Path[fileStatuses.length];
+    for (int i = 0; i < fileStatuses.length; i++) {
+      FileStatus fileStatus = fileStatuses[i];
+      paths[i] = fileStatus.getPath();
+    }
+    return paths;
   }
 }

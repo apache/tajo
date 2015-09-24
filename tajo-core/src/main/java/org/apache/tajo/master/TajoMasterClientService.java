@@ -974,7 +974,7 @@ public class TajoMasterClientService extends AbstractService {
           tableName = request.getValue();
         }
 
-        List<PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
+        List<PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
         return PartitionListResponse.newBuilder()
           .setState(OK)
           .addAllPartition(partitions)

@@ -6,11 +6,17 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
   
-    TAJO-1768: Move Tajo into Java 8.
+    TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
 
+    TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
+
   SUB TASKS
+
+    TAJO-1844: Eliminate explicit diamond expressions. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
 
 Release 0.11.0 - unreleased
 
@@ -680,6 +686,10 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1493: Make partition pruning based on catalog informations. (jaehwa)
+
+    TAJO-1673: Implement recover partitions. (jaehwa)
 
     TAJO-1844: Eliminate explicit diamond expressions. 
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)

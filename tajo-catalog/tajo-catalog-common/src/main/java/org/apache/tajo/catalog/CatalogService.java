@@ -168,11 +168,19 @@ public interface CatalogService {
   boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException,
       UndefinedDatabaseException;
 
+  boolean existPartitions(String databaseName, String tableName) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
+
   PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
       throws UndefinedPartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException,
       UndefinedTableException;
 
-  List<PartitionDescProto> getPartitions(String databaseName, String tableName);
+  List<PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException;
+
+  List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UnsupportedException;
 
   List<TablePartitionProto> getAllPartitions();
 
