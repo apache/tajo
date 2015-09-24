@@ -172,7 +172,7 @@ public class HBaseTablespace extends Tablespace {
           throw new MissingTablePropertyException(HBaseStorageConstants.META_COLUMNS_KEY, hbaseTableName);
         }
         if (!hAdmin.tableExists(hTableName)) {
-          throw new UnavailableTableLocation(hbaseTableName, "the table does not exist");
+          throw new UnavailableTableLocationException(hbaseTableName, "the table does not exist");
         }
         HTableDescriptor hTableDescriptor = hAdmin.getTableDescriptor(hTableName);
         Set<String> tableColumnFamilies = new HashSet<>();
