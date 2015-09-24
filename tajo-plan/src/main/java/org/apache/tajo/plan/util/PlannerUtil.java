@@ -118,13 +118,14 @@ public class PlannerUtil {
         (plan.getRootBlock().hasNode(NodeType.SCAN) || plan.getRootBlock().hasNode(NodeType.PARTITIONS_SCAN)) &&
         PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
-    boolean noComplexComputation = false;
+    // boolean noComplexComputation = false;
     boolean partitionWhere = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
       if (scanNode == null) {
         scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
       }
+      /*
       if (scanNode.hasTargets()) {
         // If the number of columns in the select clause is s different from table schema,
         // This query is not a simple query.
@@ -139,6 +140,7 @@ public class PlannerUtil {
             return false;
           }
         }
+
         noComplexComputation = true;
         for (int i = 0; i < scanNode.getTargets().length; i++) {
           noComplexComputation =
@@ -152,7 +154,7 @@ public class PlannerUtil {
             return noComplexComputation;
           }
         }
-      }
+      }*/
 
       if (!noWhere && scanNode.getTableDesc().hasPartition()) {
         EvalNode node = ((SelectionNode) plan.getRootBlock().getNode(NodeType.SELECTION)).getQual();
@@ -164,7 +166,7 @@ public class PlannerUtil {
     }
 
     return !checkIfDDLPlan(rootNode) &&
-        (simpleOperator && noComplexComputation && isOneQueryBlock &&
+        (simpleOperator && isOneQueryBlock &&
             noOrderBy && noGroupBy && (noWhere || partitionWhere) && noJoin && singleRelation);
   }
   

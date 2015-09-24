@@ -91,9 +91,9 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.sessionId = sessionId;
     this.queryId = queryId;
     this.scanNode = scanNode;
-    this.tableDesc = tableDesc;
+    this.tableDesc = scanNode.getTableDesc();
     this.maxRow = maxRow;
-    this.rowEncoder = RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
+    this.rowEncoder = RowStoreUtil.createEncoder(scanNode.getOutSchema());
     this.codecType = codecType;
   }
 
@@ -213,7 +213,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   public SerializedResultSet nextRowBlock(int fetchRowNum) throws IOException {
     try {
       final SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
-      resultSetBuilder.setSchema(getLogicalSchema().getProto());
+      resultSetBuilder.setSchema(scanNode.getOutSchema().getProto());
       resultSetBuilder.setRows(0);
 
       if (isStopped) return resultSetBuilder.build();
@@ -261,7 +261,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private Future<MemoryRowBlock> fetchNextRowBlock(final int fetchRowNum) throws IOException {
     final SettableFuture<MemoryRowBlock> future = SettableFuture.create();
     if (rowBlock == null) {
-      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(tableDesc.getLogicalSchema()));
+      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scanNode.getOutSchema()));
     }
 
     if (scanExec == null) {
@@ -310,6 +310,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
 
   @Override
   public Schema getLogicalSchema() {
-    return tableDesc.getLogicalSchema();
+    return scanNode.getOutSchema();
   }
 }
