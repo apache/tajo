@@ -1329,8 +1329,33 @@ public class TestLogicalPlanner {
 
     QueryContext qc = new QueryContext(util.getConfiguration(), session);
 
+    // Disable the alter table add partition statement temporarily at TAJO-1887
     // Testing alter table add partition
-    Expr expr = sqlAnalyzer.parse(ALTER_PARTITIONS[0]);
+//    Expr expr = sqlAnalyzer.parse(ALTER_PARTITIONS[0]);
+//    LogicalPlan rootNode = planner.createPlan(qc, expr);
+//    LogicalNode plan = rootNode.getRootBlock().getRoot();
+//    testJsonSerDerObject(plan);
+//    assertEquals(NodeType.ROOT, plan.getType());
+//    LogicalRootNode root = (LogicalRootNode) plan;
+//    assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
+//
+//    AlterTableNode alterTableNode = root.getChild();
+//
+//    assertEquals(alterTableNode.getAlterTableOpType(), AlterTableOpType.ADD_PARTITION);
+//
+//    assertEquals(alterTableNode.getPartitionColumns().length, 2);
+//    assertEquals(alterTableNode.getPartitionValues().length, 2);
+//
+//    assertEquals(alterTableNode.getPartitionColumns()[0], "col1");
+//    assertEquals(alterTableNode.getPartitionColumns()[1], "col2");
+//
+//    assertEquals(alterTableNode.getPartitionValues()[0], "1");
+//    assertEquals(alterTableNode.getPartitionValues()[1], "2");
+//
+//    assertEquals(alterTableNode.getLocation(), "hdfs://xxx.com/warehouse/partitioned_table/col1=1/col2=2");
+
+    // Testing alter table drop partition
+    Expr expr = sqlAnalyzer.parse(ALTER_PARTITIONS[1]);
     LogicalPlan rootNode = planner.createPlan(qc, expr);
     LogicalNode plan = rootNode.getRootBlock().getRoot();
     testJsonSerDerObject(plan);
@@ -1339,30 +1364,6 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
 
     AlterTableNode alterTableNode = root.getChild();
-
-    assertEquals(alterTableNode.getAlterTableOpType(), AlterTableOpType.ADD_PARTITION);
-
-    assertEquals(alterTableNode.getPartitionColumns().length, 2);
-    assertEquals(alterTableNode.getPartitionValues().length, 2);
-
-    assertEquals(alterTableNode.getPartitionColumns()[0], "col1");
-    assertEquals(alterTableNode.getPartitionColumns()[1], "col2");
-
-    assertEquals(alterTableNode.getPartitionValues()[0], "1");
-    assertEquals(alterTableNode.getPartitionValues()[1], "2");
-
-    assertEquals(alterTableNode.getLocation(), "hdfs://xxx.com/warehouse/partitioned_table/col1=1/col2=2");
-
-    // Testing alter table drop partition
-    expr = sqlAnalyzer.parse(ALTER_PARTITIONS[1]);
-    rootNode = planner.createPlan(qc, expr);
-    plan = rootNode.getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
-    assertEquals(NodeType.ROOT, plan.getType());
-    root = (LogicalRootNode) plan;
-    assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
-
-    alterTableNode = root.getChild();
 
     assertEquals(alterTableNode.getAlterTableOpType(), AlterTableOpType.DROP_PARTITION);
 
