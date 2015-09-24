@@ -657,8 +657,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     String sql = "SELECT DB_ID, DB_NAME, SPACE_ID FROM " + TB_DATABASES;
 
-    try (Connection conn = getConnection();
-         Statement stmt = conn.createStatement();
+    try (Statement stmt = getConnection().createStatement();
          ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         DatabaseProto.Builder builder = DatabaseProto.newBuilder();
