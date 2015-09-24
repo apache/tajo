@@ -1,0 +1,8 @@
+{
+  "OldTableName": "table1",
+  "AlterTableType": "REPAIR_PARTITION",
+  "IsPurge": false,
+  "IfNotExists": false,
+  "IfExists": false,
+  "OpType": "AlterTable"
+}

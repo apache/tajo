@@ -572,6 +572,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1673: Implement recover partitions. (jaehwa)
+
     TAJO-1872: Increase the minimum split size and add a classpath to hadoop 
     tools. (jihoon)
 

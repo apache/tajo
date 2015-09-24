@@ -650,6 +650,9 @@ public class LogicalNodeDeserializer {
       alterTable.setPurge(alterPartition.getPurge());
       alterTable.setIfExists(alterPartition.getIfExists());
       break;
+    case REPAIR_PARTITION:
+      alterTable.setTableName(alterTableProto.getTableName());
+      break;
     default:
       throw new TajoRuntimeException(
           new NotImplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name()));
