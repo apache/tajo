@@ -31,6 +31,7 @@
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
 <%@ page import="org.apache.tajo.engine.planner.global.MasterPlan" %>
 <%@ page import="org.apache.tajo.engine.planner.global.DataChannel" %>
+<%@ page import="org.apache.tajo.util.TUtil" %>
 
 <%
   QueryId queryId = TajoIdUtils.parseQueryId(request.getParameter("queryId"));
@@ -46,7 +47,7 @@
 
   Query query = queryMasterTask.getQuery();
 
-  Map<ExecutionBlockId, Stage> stageMap = new HashMap<>();
+  Map<ExecutionBlockId, Stage> stageMap = TUtil.newHashMap();
 
   for(Stage eachStage : query.getStages()) {
     stageMap.put(eachStage.getId(), eachStage);
@@ -102,7 +103,7 @@
   String curIdStr = null;
   int x=35, y=1;
   int pos;
-  List<StageInfo> stageInfos = new ArrayList<>();
+  List<StageInfo> stageInfos = TUtil.newList();
 
   stageInfos.add(new StageInfo(masterPlan.getRoot(), null, null, x, y, 0));
 

@@ -122,6 +122,10 @@ public class TUtil {
     return result;
   }
 
+  public static <T> Set<T> newTreeSet() {
+    return new TreeSet<T>();
+  }
+
   public static <T> Set<T> newHashSet() {
     return new HashSet<T>();
   }

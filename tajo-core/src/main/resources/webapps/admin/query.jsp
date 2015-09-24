@@ -30,6 +30,7 @@
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.master.QueryInfo" %>
 <%@ page import="java.net.InetSocketAddress" %>
+<%@ page import="org.apache.tajo.util.TUtil" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -39,11 +40,11 @@
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
   List<QueryInProgress> submittedQueries =
-          new ArrayList<>(master.getContext().getQueryJobManager().getSubmittedQueries());
+    TUtil.newList(master.getContext().getQueryJobManager().getSubmittedQueries());
   JSPUtil.sortQueryInProgress(submittedQueries, true);
 
   List<QueryInProgress> runningQueries =
-          new ArrayList<>(master.getContext().getQueryJobManager().getRunningQueries());
+          new ArrayList<QueryInProgress>(master.getContext().getQueryJobManager().getRunningQueries());
   JSPUtil.sortQueryInProgress(runningQueries, true);
 
   int currentPage = 1;
@@ -64,7 +65,7 @@
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
   Map<Integer, NodeStatus> workers = master.getContext().getResourceManager().getNodes();
-  Map<String, Integer> portMap = new HashMap<>();
+  Map<String, Integer> portMap = TUtil.newHashMap();
 
   Collection<Integer> queryMasters = master.getContext().getResourceManager().getQueryMasters();
   if (queryMasters == null || queryMasters.isEmpty()) {

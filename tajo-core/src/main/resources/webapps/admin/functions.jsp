@@ -24,11 +24,12 @@
 <%@ page import="org.apache.tajo.master.*" %>
 <%@ page import="org.apache.tajo.catalog.*" %>
 <%@ page import="org.apache.hadoop.http.HtmlQuoting" %>
+<%@ page import="org.apache.tajo.util.TUtil" %>
 <%
     TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
     CatalogService catalog = master.getCatalog();
 
-    List<FunctionDesc> functions = new ArrayList<>(catalog.getFunctions());
+    List<FunctionDesc> functions = TUtil.newList(catalog.getFunctions());
     Collections.sort(functions);
 %>
 
