@@ -154,10 +154,6 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-catalog-server</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-storage-common</artifactId>
     </dependency>
     <dependency>
@@ -193,6 +189,13 @@
       <artifactId>tajo-cluster-tests</artifactId>
       <type>test-jar</type>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-catalog-server</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
+      <version>${parent.version}</version>
     </dependency>
 
     <dependency>

@@ -1081,15 +1081,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       addNewColumn(tableId, alterTableDescProto.getAddColumn());
       break;
     case ADD_PARTITION:
-      partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
-      try {
-        // check if it exists
-        getPartition(databaseName, tableName, partitionName);
-        throw new DuplicatePartitionException(partitionName);
-      } catch (UndefinedPartitionException e) {
-      }
-      addPartition(tableId, alterTableDescProto.getPartitionDesc());
-      break;
+      // Disable the alter table add partition statement temporarily at TAJO-1887
+//      partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
+//      try {
+//        // check if it exists
+//        getPartition(databaseName, tableName, partitionName);
+//        throw new DuplicatePartitionException(partitionName);
+//      } catch (UndefinedPartitionException e) {
+//      }
+//      addPartition(tableId, alterTableDescProto.getPartitionDesc());
+//      break;
+      throw new UnsupportedOperationException();
     case DROP_PARTITION:
       partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
       partitionDesc = getPartition(databaseName, tableName, partitionName);

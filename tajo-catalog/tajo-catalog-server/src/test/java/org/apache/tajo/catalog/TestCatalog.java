@@ -928,13 +928,18 @@ public class TestCatalog {
   }
 
   private void testAddPartition(String tableName, String partitionName) throws Exception {
-    AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(tableName);
-    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-
-    alterTableDesc.setPartitionDesc(CatalogTestingUtil.buildPartitionDesc(partitionName));
-
-    catalog.alterTable(alterTableDesc);
+    // Disable the alter table add partition statement temporarily at TAJO-1887
+//    AlterTableDesc alterTableDesc = new AlterTableDesc();
+//    alterTableDesc.setTableName(tableName);
+//    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+//
+//    alterTableDesc.setPartitionDesc(CatalogTestingUtil.buildPartitionDesc(partitionName));
+//
+//    catalog.alterTable(alterTableDesc);
+    String[] splits = tableName.split("\\.");
+    List partitions = TUtil.newList();
+    partitions.add(CatalogTestingUtil.buildPartitionDescProto(partitionName));
+    catalog.addPartitions(splits[0], splits[1], partitions, true);
 
     String [] split = CatalogUtil.splitFQTableName(tableName);
 

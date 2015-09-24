@@ -1,1 +1,0 @@
-ALTER TABLE table1 ADD PARTITION (col1 = 'TAJO' )

@@ -1910,12 +1910,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
       alterTable.setColumns(columns);
       alterTable.setValues(values);
-      if (ctx.LOCATION() != null) {
-        String path = stripQuote(ctx.path.getText());
-        alterTable.setLocation(path);
-      }
+      // Disable the alter table add partition statement temporarily at TAJO-1887
+//      if (ctx.LOCATION() != null) {
+//        String path = stripQuote(ctx.path.getText());
+//        alterTable.setLocation(path);
+//      }
+//      alterTable.setIfNotExists(checkIfExist(ctx.if_not_exists()));
+
       alterTable.setPurge(checkIfExist(ctx.PURGE()));
-      alterTable.setIfNotExists(checkIfExist(ctx.if_not_exists()));
       alterTable.setIfExists(checkIfExist(ctx.if_exists()));
     }
 
