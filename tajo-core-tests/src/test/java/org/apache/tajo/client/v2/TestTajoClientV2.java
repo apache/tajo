@@ -259,13 +259,13 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
 
   @Test(expected = QueryFailedException.class)
   public void testFailedExecuteQuery() throws TajoException {
-    clientv2.executeQuery("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem");
+    clientv2.executeQuery("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem where l_orderkey > 0");
   }
 
   @Test(expected = QueryFailedException.class)
   public void testFailedExecuteQueryAsync() throws Throwable {
     QueryFuture future = clientv2.executeQueryAsync(
-            "select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem");
+            "select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem where l_orderkey > 0");
     try {
       future.get();
     } catch (ExecutionException e) {
