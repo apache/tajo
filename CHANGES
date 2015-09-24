@@ -572,9 +572,7 @@ Release 0.11.0 - unreleased
   
   TASKS
 
-    TAJO-1673: Implement recover partitions. (jaehwa)
-
-    TAJO-1872: Increase the minimum split size and add a classpath to hadoop 
+    TAJO-1872: Increase the minimum split size and add a classpath to hadoop
     tools. (jihoon)
 
     TAJO-1870: Enable tests of tajo-storage-pgsql module when arch type
@@ -673,7 +671,11 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
-    TAJO-1465: Add ORCFileAppender to write into ORCFile table. 
+    TAJO-1493: Make partition pruning based on catalog informations. (jaehwa)
+
+    TAJO-1673: Implement recover partitions. (jaehwa)
+
+    TAJO-1465: Add ORCFileAppender to write into ORCFile table.
     (Contributed by Joyngyoung Park, committed by hyunsik)
 
     TAJO-1841: Eliminate explicit diamond expressions in tajo-{algebra,rpc}

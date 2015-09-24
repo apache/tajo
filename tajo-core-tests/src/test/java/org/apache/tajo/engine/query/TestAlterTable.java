@@ -92,7 +92,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_add_partition1.sql", null);
     executeDDL("alter_table_add_partition2.sql", null);
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 1);
     assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
@@ -110,7 +110,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
 
-    partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
+    partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
     assertFalse(fs.exists(partitionPath));
@@ -202,7 +202,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   private void verifyPartitionCount(String databaseName, String tableName, int expectedCount)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedPartitionException {
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), expectedCount);
   }
