@@ -280,6 +280,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1884: Add missing jetty-util dependency. (jinho)
+
     TAJO-1861: TSQL should change line after printout error message during 
     connecting other database. (jihoon)
 
