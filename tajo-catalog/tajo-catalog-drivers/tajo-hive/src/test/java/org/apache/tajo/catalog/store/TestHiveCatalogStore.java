@@ -275,6 +275,8 @@ public class TestHiveCatalogStore {
     partitionNames.add("n_nationkey=50/n_date=20150802");
     testAddPartitions(table1.getUri(), NATION, partitionNames);
 
+    testGetPartitionsByAlgebra(DB_NAME, NATION);
+
     testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
     testDropPartition(NATION, "n_nationkey=10/n_date=20150102");
     testDropPartition(NATION, "n_nationkey=20/n_date=20150101");
@@ -291,6 +293,87 @@ public class TestHiveCatalogStore {
     store.dropTable(DB_NAME, NATION);
   }
 
+  private void testGetPartitionsByAlgebra(String databaseName, String tableName) throws Exception {
+    String qfTableName = databaseName + "." + tableName;
+
+    // Equals Operator
+    CatalogProtos.PartitionsByAlgebraProto.Builder request = CatalogProtos.PartitionsByAlgebraProto.newBuilder();
+    request.setDatabaseName(databaseName);
+    request.setTableName(tableName);
+
+    String algebra = "{\n" +
+      "  \"LeftExpr\": {\n" +
+      "    \"LeftExpr\": {\n" +
+      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
+      "      \"ColumnName\": \"n_nationkey\",\n" +
+      "      \"OpType\": \"Column\"\n" +
+      "    },\n" +
+      "    \"RightExpr\": {\n" +
+      "      \"Value\": \"10\",\n" +
+      "      \"ValueType\": \"Unsigned_Integer\",\n" +
+      "      \"OpType\": \"Literal\"\n" +
+      "    },\n" +
+      "    \"OpType\": \"Equals\"\n" +
+      "  },\n" +
+      "  \"RightExpr\": {\n" +
+      "    \"LeftExpr\": {\n" +
+      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
+      "      \"ColumnName\": \"n_date\",\n" +
+      "      \"OpType\": \"Column\"\n" +
+      "    },\n" +
+      "    \"RightExpr\": {\n" +
+      "      \"Value\": \"20150101\",\n" +
+      "      \"ValueType\": \"String\",\n" +
+      "      \"OpType\": \"Literal\"\n" +
+      "    },\n" +
+      "    \"OpType\": \"Equals\"\n" +
+      "  },\n" +
+      "  \"OpType\": \"And\"\n" +
+      "}";
+
+    request.setAlgebra(algebra);
+
+    List<CatalogProtos.PartitionDescProto> partitions = store.getPartitionsByAlgebra(request.build());
+    assertNotNull(partitions);
+    assertEquals(1, partitions.size());
+
+    // OR
+    algebra = "{\n" +
+      "  \"LeftExpr\": {\n" +
+      "    \"LeftExpr\": {\n" +
+      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
+      "      \"ColumnName\": \"n_nationkey\",\n" +
+      "      \"OpType\": \"Column\"\n" +
+      "    },\n" +
+      "    \"RightExpr\": {\n" +
+      "      \"Value\": \"20\",\n" +
+      "      \"ValueType\": \"Unsigned_Integer\",\n" +
+      "      \"OpType\": \"Literal\"\n" +
+      "    },\n" +
+      "    \"OpType\": \"Equals\"\n" +
+      "  },\n" +
+      "  \"RightExpr\": {\n" +
+      "    \"LeftExpr\": {\n" +
+      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
+      "      \"ColumnName\": \"n_nationkey\",\n" +
+      "      \"OpType\": \"Column\"\n" +
+      "    },\n" +
+      "    \"RightExpr\": {\n" +
+      "      \"Value\": \"30\",\n" +
+      "      \"ValueType\": \"Unsigned_Integer\",\n" +
+      "      \"OpType\": \"Literal\"\n" +
+      "    },\n" +
+      "    \"OpType\": \"Equals\"\n" +
+      "  },\n" +
+      "  \"OpType\": \"Or\"\n" +
+      "}";
+
+    request.setAlgebra(algebra);
+
+    partitions = store.getPartitionsByAlgebra(request.build());
+    assertNotNull(partitions);
+    assertEquals(4, partitions.size());
+  }
 
   private void testAddPartition(URI uri, String tableName, String partitionName) throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
