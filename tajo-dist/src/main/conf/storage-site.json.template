@@ -1,0 +1,16 @@
+{
+  "spaces": {
+    "hbase-cluster1": {
+      "uri": "hbase://quorum1:port,quorum2:port/",
+      "description:" "HBase Tablespace Example"
+    }
+  },
+
+  "storages": {
+    "hbase": {
+      "handler": "org.apache.tajo.storage.hbase.HBaseTablespace",
+      "default-format": "hbase",
+      "description:" "HBase Storage Plugin Example"
+    }
+  }
+}
