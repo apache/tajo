@@ -296,6 +296,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1884: Add missing jetty-util dependency. (jinho)
+
     TAJO-1861: TSQL should change line after printout error message during 
     connecting other database. (jihoon)
 
@@ -684,6 +686,11 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1673: Implement recover partitions. (jaehwa)
+
+    TAJO-1844: Eliminate explicit diamond expressions. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
     TAJO-1465: Add ORCFileAppender to write into ORCFile table. 
     (Contributed by Joyngyoung Park, committed by hyunsik)
