@@ -245,7 +245,12 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public LogicalNode visitFilter(ProcessorContext ctx, Stack<Expr> stack, Selection expr) throws TajoException {
       Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr.getQual(), OpType.Column);
       for (ColumnReferenceExpr col : columnSet) {
-        NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
+        if (!ctx.planContext.getQueryBlock().isAliasedName(col.getName())) {
+          NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
+        } else {
+          col.setQualifier(CatalogUtil.extractQualifier(
+              ctx.planContext.getQueryBlock().getOriginalName(col.getName())));
+        }
         TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
       }
 
