@@ -27,7 +27,7 @@ public class UnavailableTableLocation extends TajoException {
     super(e);
   }
 
-  public UnavailableTableLocation(String location) {
-    super(Errors.ResultCode.UNAVAILABLE_TABLE_LOCATION, location);
+  public UnavailableTableLocation(String location, String cause) {
+    super(Errors.ResultCode.UNAVAILABLE_TABLE_LOCATION, location, cause);
   }
 }
