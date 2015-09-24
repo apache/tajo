@@ -301,11 +301,16 @@ public class QueryExecutor {
       scanNode.setLimit(maxRow);
     }
 
+    // get the estimated number of rows
+    long estimatedRowNum;
     if (table.getStats().getNumRows() == 0) {
-      resultDesc.getStats().setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
+      estimatedRowNum = TajoConstants.UNKNOWN_ROW_NUMBER;
     } else {
-      resultDesc.getStats().setNumRows(table.getStats().getNumRows());
+      estimatedRowNum = table.getStats().getNumRows();
     }
+    estimatedRowNum = Math.min(estimatedRowNum, maxRow);
+    resultDesc.getStats().setNumRows(estimatedRowNum);
+
 
     final QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
         plan.getRootBlock().getRoot());
