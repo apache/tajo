@@ -307,13 +307,13 @@ public class QueryExecutor {
       resultDesc.getStats().setNumRows(table.getStats().getNumRows());
     }
 
-    QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
+    final QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
         plan.getRootBlock().getRoot());
 
-    NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultFileScanner(
-        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, table, maxRow);
-
+    final NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultFileScanner(
+        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, maxRow);
     queryResultScanner.init();
+
     session.addNonForwardQueryResultScanner(queryResultScanner);
 
     response.setState(OK);

@@ -38,6 +38,7 @@ import org.apache.tajo.engine.planner.physical.PartitionMergeScanExec;
 import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.Repartitioner;
@@ -81,12 +82,12 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private Future<MemoryRowBlock> nextFetch;
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-                                          TableDesc tableDesc, int maxRow) throws IOException {
-    this(tajoConf, sessionId, queryId, scanNode, tableDesc, maxRow, null);
+                                          int maxRow) throws IOException {
+    this(tajoConf, sessionId, queryId, scanNode, maxRow, null);
   }
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-      TableDesc tableDesc, int maxRow, CodecType codecType) throws IOException {
+      int maxRow, CodecType codecType) throws IOException {
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
     this.queryId = queryId;
@@ -251,7 +252,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       }
       return resultSetBuilder.build();
     } catch (Throwable t) {
-      throw new IOException(t.getMessage(), t);
+      throw new TajoInternalError(t.getCause());
     }
   }
 
@@ -300,8 +301,8 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
           }
 
           future.set(rowBlock);
-        } catch (IOException e) {
-          future.setException(e);
+        } catch (Throwable t) {
+          future.setException(t);
         }
       }
     });
