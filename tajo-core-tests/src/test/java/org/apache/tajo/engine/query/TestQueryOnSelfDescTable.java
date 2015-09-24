@@ -69,6 +69,27 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
 
   @Test
   @Option(sort = true)
+  @SimpleTest(
+      queries = @QuerySpec("" +
+          "select title1, title2, null_expected, sortas, abbrev from (\n" +
+          "select\n" +
+          "  glossary.title title1,\n" +
+          "  glossary.\"GlossDiv\".title title2,\n" +
+          "  glossary.\"GlossDiv\".null_expected null_expected,\n" +
+          "  glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"SortAs\" sortas,\n" +
+          "  glossary.\"GlossDiv\".\"GlossList\".\"GlossEntry\".\"Abbrev\" abbrev\n" +
+          "from\n" +
+          "  self_desc_table2\n" +
+          "  where glossary.title is not null" +
+          ") t"
+      )
+  )
+  public final void testTableSubquery() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(sort = true)
   @SimpleTest
   public final void testGroupby() throws Exception {
     runSimpleTests();
