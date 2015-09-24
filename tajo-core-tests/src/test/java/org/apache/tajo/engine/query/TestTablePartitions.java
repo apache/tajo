@@ -1833,28 +1833,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
     assertEquals(expectedResult, result);
 
-    // Invalid directory name
-    executeString("alter table " + tableName + " add partition (key = 70.0)"
-      + " location '" + tableDesc.getUri().toString() + "/tajo1'").close();
-
-    executeString("INSERT INTO LOCATION '" + tableDesc.getUri().toString() + "/tajo1'"
-      + " SELECT col1, col2 FROM " + sortedTableName);
-
-    res = executeString("SELECT * FROM " + tableName + " ORDER BY col1, col2 desc, key desc;");
-    result = resultSetToString(res);
-    expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
-      "1,1,70.0\n" +
-      "1,1,17.0\n" +
-      "2,2,70.0\n" +
-      "2,2,38.0\n" +
-      "3,3,70.0\n" +
-      "3,3,49.0\n" +
-      "3,2,70.0\n" +
-      "3,2,45.0\n";
-    res.close();
-    assertEquals(expectedResult, result);
-
     executeString("DROP TABLE " + sortedTableName + " PURGE").close();
     executeString("DROP TABLE " + externalTableName).close();
     executeString("DROP TABLE " + tableName + " PURGE").close();
