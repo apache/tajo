@@ -1222,6 +1222,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   private void addNewColumn(int tableId, CatalogProtos.ColumnProto columnProto) throws DuplicateColumnException {
 
+    Connection conn;
     PreparedStatement pstmt = null;
     ResultSet resultSet = null;
 
@@ -1234,7 +1235,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final String columnCountSql =
         "SELECT MAX(ORDINAL_POSITION) AS POSITION FROM " + TB_COLUMNS + " WHERE TID = ?";
 
-    try (Connection conn = getConnection()) {
+    try {
+      conn = getConnection();
       pstmt = conn.prepareStatement(existColumnSql);
       pstmt.setInt(1, tableId);
       pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
