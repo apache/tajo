@@ -296,6 +296,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1827: JSON parsing error at storage-site.json while tajo master
+    starts up. (jaehwa)
+
     TAJO-1884: Add missing jetty-util dependency. (jinho)
 
     TAJO-1861: TSQL should change line after printout error message during 
