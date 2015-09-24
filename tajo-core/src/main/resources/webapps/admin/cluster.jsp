@@ -39,17 +39,17 @@
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
   Map<Integer, NodeStatus> nodes = master.getContext().getResourceManager().getNodes();
-  List<Integer> wokerKeys = new ArrayList<>(nodes.keySet());
+  List<Integer> wokerKeys = TUtil.newList(nodes.keySet());
   Collections.sort(wokerKeys);
 
   int runningQueryMasterTasks = 0;
 
-  Set<NodeStatus> liveNodes = new TreeSet<>();
-  Set<NodeStatus> deadNodes = new TreeSet<>();
-  Set<NodeStatus> decommissionNodes = new TreeSet<>();
+  Set<NodeStatus> liveNodes = TUtil.newTreeSet();
+  Set<NodeStatus> deadNodes = TUtil.newTreeSet();
+  Set<NodeStatus> decommissionNodes = TUtil.newTreeSet();
 
-  Set<NodeStatus> liveQueryMasters = new TreeSet<>();
-  Set<NodeStatus> deadQueryMasters = new TreeSet<>();
+  Set<NodeStatus> liveQueryMasters = TUtil.newTreeSet();
+  Set<NodeStatus> deadQueryMasters = TUtil.newTreeSet();
 
   for(NodeStatus eachNode: nodes.values()) {
     liveQueryMasters.add(eachNode);

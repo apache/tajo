@@ -64,7 +64,7 @@
   List<TajoProtos.WorkerConnectionInfoProto> allWorkers = tajoWorker.getWorkerContext()
             .getQueryMasterManagerService().getQueryMaster().getAllWorker();
 
-  Map<Integer, TajoProtos.WorkerConnectionInfoProto> workerMap = new HashMap<>();
+  Map<Integer, TajoProtos.WorkerConnectionInfoProto> workerMap = TUtil.newHashMap();
   if(allWorkers != null) {
     for(TajoProtos.WorkerConnectionInfoProto eachWorker: allWorkers) {
       workerMap.put(eachWorker.getId(), eachWorker);
@@ -204,7 +204,7 @@
     <input type="hidden" name="sortOrder" value="<%=sortOrder%>"/>
   </form>
 <%
-  List<Task> filteredTask = new ArrayList<>();
+  List<Task> filteredTask = TUtil.newList();
   for(Task eachTask : allTasks) {
     if (!"ALL".equals(status)) {
       if (!status.equals(eachTask.getLastAttemptStatus().toString())) {
