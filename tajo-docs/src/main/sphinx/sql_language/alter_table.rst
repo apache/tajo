@@ -96,4 +96,21 @@ You can use ``ALTER TABLE ADD PARTITION`` to add partitions to a table. The loca
   ALTER TABLE table1 DROP PARTITION (col1 = '2015' , col2 = '01', col3 = '11' )
   ALTER TABLE table1 DROP PARTITION (col1 = 'TAJO' ) PURGE
 
-You can use ``ALTER TABLE DROP PARTITION`` to drop a partition for a table. This removes the data for a managed table and this doesn't remove the data for an external table. But if ``PURGE`` is specified for an external table, the partition data will be removed. The metadata is completely lost in all cases. An error is thrown if the partition for the table doesn't exists. You can use ``IF EXISTS`` to skip the error.
+You can use ``ALTER TABLE DROP PARTITION`` to drop a partition for a table. This doesn't remove the data for a table. But if ``PURGE`` is specified, the partition data will be removed. The metadata is completely lost in all cases. An error is thrown if the partition for the table doesn't exist. You can use ``IF EXISTS`` to skip the error.
+
+========================
+REPAIR PARTITION
+========================
+
+Tajo stores a list of partitions for each table in its catalog. If partitions are manually added to the distributed file system, the metastore is not aware of these partitions. Running the ``ALTER TABLE REPAIR PARTITION`` statement ensures that the tables are properly populated.
+
+*Synopsis*
+
+.. code-block:: sql
+
+  ALTER TABLE <table_name> REPAIR PARTITION
+
+.. note::
+
+  Even though an information of a partition is stored in the catalog, Tajo does not recover it when its partition directory doesn't exist in the file system.
+
