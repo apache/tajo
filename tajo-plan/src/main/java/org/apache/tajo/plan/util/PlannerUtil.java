@@ -123,7 +123,6 @@ public class PlannerUtil {
         (plan.getRootBlock().hasNode(NodeType.SCAN) || plan.getRootBlock().hasNode(NodeType.PARTITIONS_SCAN)) &&
         PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
-    // boolean noComplexComputation = false;
     boolean partitionWhere = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
