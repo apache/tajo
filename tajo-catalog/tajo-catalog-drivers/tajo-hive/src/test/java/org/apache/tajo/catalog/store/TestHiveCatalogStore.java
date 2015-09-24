@@ -261,12 +261,22 @@ public class TestHiveCatalogStore {
       assertEquals(partitionSchema.getColumn(i).getSimpleName(), partitionSchema1.getColumn(i).getSimpleName());
     }
 
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150101");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150102");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150101");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150102");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150101");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150102");
+    // Disable the alter table add partition statement temporarily at TAJO-1887
+//    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150101");
+//    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150102");
+//    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150101");
+//    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150102");
+//    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150101");
+//    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150102");
+    List targetPartitions = TUtil.newList();
+    String tablePath = table1.getUri().toString();
+    targetPartitions.add(CatalogUtil.buildPartitionDescProto("n_nationkey=10/n_date=20150101", tablePath));
+    targetPartitions.add(CatalogUtil.buildPartitionDescProto("n_nationkey=10/n_date=20150102", tablePath));
+    targetPartitions.add(CatalogUtil.buildPartitionDescProto("n_nationkey=20/n_date=20150101", tablePath));
+    targetPartitions.add(CatalogUtil.buildPartitionDescProto("n_nationkey=20/n_date=20150102", tablePath));
+    targetPartitions.add(CatalogUtil.buildPartitionDescProto("n_nationkey=30/n_date=20150101", tablePath));
+    targetPartitions.add(CatalogUtil.buildPartitionDescProto("n_nationkey=30/n_date=20150102", tablePath));
+    store.addPartitions(DB_NAME, NATION, targetPartitions, true);
 
     List<String> partitionNames = TUtil.newList();
     partitionNames.add("n_nationkey=40/n_date=20150801");

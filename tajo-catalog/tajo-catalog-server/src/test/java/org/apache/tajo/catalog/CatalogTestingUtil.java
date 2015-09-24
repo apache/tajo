@@ -139,55 +139,6 @@ public class CatalogTestingUtil {
     }
   }
 
-  public static PartitionDesc buildPartitionDesc(String partitionName) {
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setPartitionName(partitionName);
-
-    String[] partitionNames = partitionName.split("/");
-    partitionDesc.setPartitionKeys(buildPartitionKeyProtos(partitionNames));
-    partitionDesc.setPath("hdfs://xxx.com/warehouse/" + partitionName);
-    return partitionDesc;
-  }
-
-  public static PartitionDescProto buildPartitionDescProto(String partitionName) {
-    return buildPartitionDescProto(partitionName, "hdfs://xxx.com/warehouse");
-  }
-
-  public static PartitionDescProto buildPartitionDescProto(String partitionName, String tablePath) {
-    PartitionDescProto.Builder partitionDescProto = PartitionDescProto.newBuilder();
-    partitionDescProto.setPartitionName(partitionName);
-
-    String[] partitionNames = partitionName.split("/");
-    partitionDescProto.addAllPartitionKeys(buildPartitionKeyProtos(partitionNames));
-    partitionDescProto.setPath(tablePath + File.separator + partitionName);
-    return partitionDescProto.build();
-  }
-
-  private static List<PartitionKeyProto> buildPartitionKeyProtos(String[] partitionNames) {
-    List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
-    for(int i = 0; i < partitionNames.length; i++) {
-      String [] splits = partitionNames[i].split("=");
-      String columnName = "", partitionValue = "";
-      if (splits.length == 2) {
-        columnName = splits[0];
-        partitionValue = splits[1];
-      } else if (splits.length == 1) {
-        if (partitionNames[i].charAt(0) == '=') {
-          partitionValue = splits[0];
-        } else {
-          columnName = "";
-        }
-      }
-
-      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
-      builder.setColumnName(columnName);
-      builder.setPartitionValue(partitionValue);
-      partitionKeyList.add(builder.build());
-    }
-
-    return partitionKeyList;
-  }
-
   public static void prepareBaseData(CatalogService catalog, String testDir) throws Exception {
     catalog.createTablespace("space1", "hdfs://xxx.com/warehouse");
     catalog.createTablespace("SpAcE1", "hdfs://xxx.com/warehouse");

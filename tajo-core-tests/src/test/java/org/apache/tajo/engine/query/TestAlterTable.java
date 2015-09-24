@@ -22,7 +22,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogTestingUtil;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -95,7 +94,7 @@ public class TestAlterTable extends QueryTestCaseBase {
 //    executeDDL("alter_table_add_partition1.sql", null);
 //    executeDDL("alter_table_add_partition2.sql", null);
     List targetPartitions = TUtil.newList();
-    targetPartitions.add(CatalogTestingUtil.buildPartitionDescProto("col3=1/col4=2", retrieved.getUri().toString()));
+    targetPartitions.add(CatalogUtil.buildPartitionDescProto("col3=1/col4=2", retrieved.getUri().toString()));
     catalog.addPartitions("TestAlterTable", "partitioned_table", targetPartitions, true);
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");

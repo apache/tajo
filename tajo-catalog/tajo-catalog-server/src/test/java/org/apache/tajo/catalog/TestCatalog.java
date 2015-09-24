@@ -39,6 +39,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -813,8 +814,8 @@ public class TestCatalog {
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
-    testAddPartition(tableName, "id=10/name=aaa");
-    testAddPartition(tableName, "id=20/name=bbb");
+    testAddPartition(tableName, "id=10/name=aaa", retrieved.getUri().toString());
+    testAddPartition(tableName, "id=20/name=bbb", retrieved.getUri().toString());
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, simpleTableName);
     assertNotNull(partitions);
@@ -927,7 +928,7 @@ public class TestCatalog {
     assertEquals(2, partitions.size());
   }
 
-  private void testAddPartition(String tableName, String partitionName) throws Exception {
+  private void testAddPartition(String tableName, String partitionName, String tablePath) throws Exception {
     // Disable the alter table add partition statement temporarily at TAJO-1887
 //    AlterTableDesc alterTableDesc = new AlterTableDesc();
 //    alterTableDesc.setTableName(tableName);
@@ -938,7 +939,7 @@ public class TestCatalog {
 //    catalog.alterTable(alterTableDesc);
     String[] splits = tableName.split("\\.");
     List partitions = TUtil.newList();
-    partitions.add(CatalogTestingUtil.buildPartitionDescProto(partitionName));
+    partitions.add(CatalogUtil.buildPartitionDescProto(partitionName, tablePath));
     catalog.addPartitions(splits[0], splits[1], partitions, true);
 
     String [] split = CatalogUtil.splitFQTableName(tableName);
@@ -947,7 +948,7 @@ public class TestCatalog {
 
     assertNotNull(resultDesc);
     assertEquals(resultDesc.getPartitionName(), partitionName);
-    assertEquals(resultDesc.getPath(), "hdfs://xxx.com/warehouse/" + partitionName);
+    assertEquals(resultDesc.getPath(), tablePath + File.separator + partitionName);
 
     assertEquals(resultDesc.getPartitionKeysCount(), 2);
   }

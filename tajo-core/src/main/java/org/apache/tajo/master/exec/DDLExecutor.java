@@ -477,54 +477,55 @@ public class DDLExecutor {
           .SET_PROPERTY));
       break;
     case ADD_PARTITION:
-      pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
-      ensureColumnPartitionKeys(qualifiedName, alterTable.getPartitionColumns());
-
-      // checking a duplicated partition
-      boolean duplicatedPartition = true;
-      try {
-        catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
-      } catch (UndefinedPartitionException e) {
-        duplicatedPartition = false;
-      }
-
-      if (duplicatedPartition && !alterTable.isIfNotExists()) {
-        throw new DuplicatePartitionException(pair.getSecond());
-      } else if (!duplicatedPartition) {
-        if (alterTable.getLocation() != null) {
-          partitionPath = new Path(alterTable.getLocation());
-        } else {
-          // If location is not specified, the partition's location will be set using the table location.
-          partitionPath = new Path(desc.getUri().toString(), pair.getSecond());
-          alterTable.setLocation(partitionPath.toString());
-        }
-
-        FileSystem fs = partitionPath.getFileSystem(context.getConf());
-
-        // If there is a directory which was assumed to be a partitioned directory and users don't input another
-        // location, this will throw exception.
-        Path assumedDirectory = new Path(desc.getUri().toString(), pair.getSecond());
-
-        if (fs.exists(assumedDirectory) && !assumedDirectory.equals(partitionPath)) {
-          throw new AmbiguousPartitionDirectoryExistException(assumedDirectory.toString());
-        }
-
-        long numBytes = 0L;
-        if (fs.exists(partitionPath)) {
-          ContentSummary summary = fs.getContentSummary(partitionPath);
-          numBytes = summary.getLength();
-        }
-
-        catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
-          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION, numBytes));
-
-        // If the partition's path doesn't exist, this would make the directory by force.
-        if (!fs.exists(partitionPath)) {
-          fs.mkdirs(partitionPath);
-        }
-      }
-
-      break;
+//      pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
+//      ensureColumnPartitionKeys(qualifiedName, alterTable.getPartitionColumns());
+//
+//      // checking a duplicated partition
+//      boolean duplicatedPartition = true;
+//      try {
+//        catalog.getPartition(databaseName, simpleTableName, pair.getSecond());
+//      } catch (UndefinedPartitionException e) {
+//        duplicatedPartition = false;
+//      }
+//
+//      if (duplicatedPartition && !alterTable.isIfNotExists()) {
+//        throw new DuplicatePartitionException(pair.getSecond());
+//      } else if (!duplicatedPartition) {
+//        if (alterTable.getLocation() != null) {
+//          partitionPath = new Path(alterTable.getLocation());
+//        } else {
+//          // If location is not specified, the partition's location will be set using the table location.
+//          partitionPath = new Path(desc.getUri().toString(), pair.getSecond());
+//          alterTable.setLocation(partitionPath.toString());
+//        }
+//
+//        FileSystem fs = partitionPath.getFileSystem(context.getConf());
+//
+//        // If there is a directory which was assumed to be a partitioned directory and users don't input another
+//        // location, this will throw exception.
+//        Path assumedDirectory = new Path(desc.getUri().toString(), pair.getSecond());
+//
+//        if (fs.exists(assumedDirectory) && !assumedDirectory.equals(partitionPath)) {
+//          throw new AmbiguousPartitionDirectoryExistException(assumedDirectory.toString());
+//        }
+//
+//        long numBytes = 0L;
+//        if (fs.exists(partitionPath)) {
+//          ContentSummary summary = fs.getContentSummary(partitionPath);
+//          numBytes = summary.getLength();
+//        }
+//
+//        catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
+//          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION, numBytes));
+//
+//        // If the partition's path doesn't exist, this would make the directory by force.
+//        if (!fs.exists(partitionPath)) {
+//          fs.mkdirs(partitionPath);
+//        }
+//      }
+//
+//      break;
+      throw new TajoRuntimeException(new UnsupportedException("ADD PARTITION"));
     case DROP_PARTITION:
       ensureColumnPartitionKeys(qualifiedName, alterTable.getPartitionColumns());
       pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
