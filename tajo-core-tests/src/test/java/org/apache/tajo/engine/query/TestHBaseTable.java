@@ -41,6 +41,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UnavailableTableLocation;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
@@ -164,7 +165,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         executeString(sql).close();
         fail("External table should be a existed table.");
       } catch (Throwable e) {
-        assertTrue(e.getMessage().indexOf("External table should be a existed table.") >= 0);
+        assertTrue(e instanceof UnavailableTableLocation);
       }
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
