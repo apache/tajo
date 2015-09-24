@@ -251,7 +251,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName,
-        new String[]{"key"}, desc.getStats().getNumRows());
+      new String[]{"key"}, desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
@@ -433,8 +433,15 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertEquals(resultRows2.get(res.getDouble(4))[1], res.getInt(3));
     }
 
-    res = executeString("SELECT col1, col2, col3 FROM " + tableName);
+    res = executeString("select * from " + tableName + " WHERE (col1 ='1' or col1 = '100') and col3 > 20");
     String result = resultSetToString(res);
+    String expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,36.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("SELECT col1, col2, col3 FROM " + tableName);
     res.close();
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
@@ -589,7 +596,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   }
 
   private final void verifyKeptExistingData(ResultSet res, String tableName) throws Exception {
-    res = executeString("select * from " + tableName + " where col2 = 1");
+    res = executeString("select * from " + tableName + " where col2 = 1 order by col4, col1, col2, col3");
     String resultSetData = resultSetToString(res);
     res.close();
     String expected = "col4,col1,col2,col3\n" +
@@ -671,7 +678,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1"},
-        desc.getStats().getNumRows());
+      desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1042,7 +1049,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col2"},
-        desc.getStats().getNumRows());
+      desc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -1242,6 +1249,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
   private void verifyPartitionDirectoryFromCatalog(String databaseName, String tableName,
                                                    String[] partitionColumns, Long numRows) throws Exception {
     int rowCount = 0;
+    FileSystem fs = FileSystem.get(conf);
+    Path partitionPath = null;
 
     // Get all partition column values
     StringBuilder query = new StringBuilder();
@@ -1253,7 +1262,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       }
       query.append(" ").append(partitionColumn);
     }
-    query.append(" FROM ").append(tableName);
+    query.append(" FROM ").append(databaseName).append(".").append(tableName);
     ResultSet res = executeString(query.toString());
 
     StringBuilder partitionName = new StringBuilder();
@@ -1274,6 +1283,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
       assertNotNull(partitionDescProto);
       assertTrue(partitionDescProto.getPath().indexOf(tableName + "/" + partitionName.toString()) > 0);
 
+      partitionPath = new Path(partitionDescProto.getPath());
+      ContentSummary cs = fs.getContentSummary(partitionPath);
+
+      assertEquals(cs.getLength(), partitionDescProto.getNumBytes());
       rowCount++;
     }
 
@@ -1313,7 +1326,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       // If duplicated partitions had been removed, partitions just will contain 'KEY=N' partition and 'KEY=R'
       // partition. In previous Query and Stage, duplicated partitions were not deleted because they had been in List.
       // If you want to verify duplicated partitions, you need to use List instead of Set with DerbyStore.
-      List<PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, tableName);
+      List<PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
       assertEquals(2, partitions.size());
 
       PartitionDescProto firstPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=N");
@@ -1324,5 +1337,504 @@ public class TestTablePartitions extends QueryTestCaseBase {
       executeString("DROP TABLE lineitem2 PURGE");
       executeString("DROP TABLE " + tableName + " PURGE");
     }
+  }
+
+  @Test
+  public final void testPatternMatchingPredicatesAndStringFunctions() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testPatternMatchingPredicatesAndStringFunctions");
+    String expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      executeString("create table " + tableName
+        + " (col1 int4, col2 int4) partition by column(l_shipdate text, l_returnflag text) ").close();
+
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+      assertEquals(4, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+      executeString(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_shipdate, l_returnflag from lineitem");
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(l_shipdate text, l_returnflag text) "
+          + " as select l_orderkey, l_partkey, l_shipdate, l_returnflag from lineitem");
+    }
+
+    assertTrue(client.existTable(tableName));
+
+    // Like
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE l_shipdate LIKE '1996%' and l_returnflag = 'N' order by l_shipdate");
+
+    expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
+      "-------------------------------\n" +
+      "1,1,1996-03-13,N\n" +
+      "1,1,1996-04-12,N\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Not like
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE l_shipdate NOT LIKE '1996%' and l_returnflag IN ('R') order by l_shipdate");
+
+    expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
+      "-------------------------------\n" +
+      "3,3,1993-11-09,R\n" +
+      "3,2,1994-02-02,R\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // In
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE l_shipdate IN ('1993-11-09', '1994-02-02', '1997-01-28') AND l_returnflag = 'R' order by l_shipdate");
+
+    expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
+      "-------------------------------\n" +
+      "3,3,1993-11-09,R\n" +
+      "3,2,1994-02-02,R\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Similar to
+    res = executeString("SELECT * FROM " + tableName + " WHERE l_shipdate similar to '1993%' order by l_shipdate");
+
+    expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
+      "-------------------------------\n" +
+      "3,3,1993-11-09,R\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Regular expression
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE l_shipdate regexp '[1-2][0-9][0-9][3-9]-[0-1][0-9]-[0-3][0-9]' "
+      + " AND l_returnflag <> 'N' ORDER BY l_shipdate");
+
+    expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
+      "-------------------------------\n" +
+      "3,3,1993-11-09,R\n" +
+      "3,2,1994-02-02,R\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Concatenate
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE l_shipdate = ( '1996' || '-' || '03' || '-' || '13' ) order by l_shipdate");
+
+    expectedResult = "col1,col2,l_shipdate,l_returnflag\n" +
+      "-------------------------------\n" +
+      "1,1,1996-03-13,N\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+  }
+
+  @Test
+  public final void testDatePartitionColumn() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testDatePartitionColumn");
+    String expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      executeString("create table " + tableName + " (col1 int4, col2 int4) partition by column(key date) ").close();
+
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+      assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+      executeString(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, l_shipdate from lineitem");
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key date) "
+          + " as select l_orderkey, l_partkey, l_shipdate::date from lineitem");
+    }
+
+    assertTrue(client.existTable(tableName));
+
+    // LessThanOrEquals
+    res = executeString("SELECT * FROM " + tableName + " WHERE key <= date '1995-09-01' order by col1, col2, key");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // LessThan and GreaterThan
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > to_date('1993-01-01', 'YYYY-MM-DD') " +
+      " and key < to_date('1996-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Between
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key between date '1993-01-01' and date '1997-01-01' order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,1996-04-12\n" +
+      "1,1,1996-03-13\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Cast
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < '1997-01-01'::timestamp order by col1, col2, key ");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,1996-03-13\n" +
+      "1,1,1996-04-12\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Interval
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < date '1994-01-01' + interval '1 year' order by col1, col2, key ");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // DateTime Function #1
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < add_months(date '1994-01-01', 12) order by col1, col2, key ");
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // DateTime Function #2
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > '1993-01-01'::date " +
+      " and key < add_months('1994-01-01'::timestamp, 12) order by col1, col2, key ");
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+  }
+
+  @Test
+  public final void testTimestampPartitionColumn() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testTimestampPartitionColumn");
+    String expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      executeString("create table " + tableName
+        + " (col1 int4, col2 int4) partition by column(key timestamp) ").close();
+
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+      assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+      executeString(
+        "insert overwrite into " + tableName
+          + " select l_orderkey, l_partkey, to_timestamp(l_shipdate, 'YYYY-MM-DD') from lineitem");
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key timestamp) "
+          + " as select l_orderkey, l_partkey, to_timestamp(l_shipdate, 'YYYY-MM-DD') from lineitem");
+    }
+
+    assertTrue(client.existTable(tableName));
+
+    // LessThanOrEquals
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key <= to_timestamp('1995-09-01', 'YYYY-MM-DD') order by col1, col2, key");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02 00:00:00\n" +
+      "3,3,1993-11-09 00:00:00\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // LessThan and GreaterThan
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > to_timestamp('1993-01-01', 'YYYY-MM-DD') and " +
+      "key < to_timestamp('1996-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02 00:00:00\n" +
+      "3,3,1993-11-09 00:00:00\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Between
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key between to_timestamp('1993-01-01', 'YYYY-MM-DD') " +
+      "and to_timestamp('1997-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,1996-04-12 00:00:00\n" +
+      "1,1,1996-03-13 00:00:00\n" +
+      "3,2,1994-02-02 00:00:00\n" +
+      "3,3,1993-11-09 00:00:00\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+  }
+
+  @Test
+  public final void testTimePartitionColumn() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testTimePartitionColumn");
+    String  expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      executeString("create table " + tableName
+        + " (col1 int4, col2 int4) partition by column(key time) ").close();
+
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
+      assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
+
+      executeString(
+        "insert overwrite into " + tableName
+          + " select l_orderkey, l_partkey " +
+          " , CASE l_shipdate WHEN '1996-03-13' THEN cast ('11:20:40' as time) " +
+          " WHEN '1997-01-28' THEN cast ('12:10:20' as time) " +
+          " WHEN '1994-02-02' THEN cast ('12:10:30' as time) " +
+          " ELSE cast ('00:00:00' as time) END " +
+          " from lineitem");
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key time) "
+          + " as select l_orderkey, l_partkey " +
+          " , CASE l_shipdate WHEN '1996-03-13' THEN cast ('11:20:40' as time) " +
+          " WHEN '1997-01-28' THEN cast ('12:10:20' as time) " +
+          " WHEN '1994-02-02' THEN cast ('12:10:30' as time) " +
+          " ELSE cast ('00:00:00' as time) END " +
+          " from lineitem");
+    }
+
+    assertTrue(client.existTable(tableName));
+    // LessThanOrEquals
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key <= cast('12:10:20' as time) order by col1, col2, key");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,00:00:00\n" +
+      "1,1,11:20:40\n" +
+      "2,2,12:10:20\n" +
+      "3,3,00:00:00\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // LessThan and GreaterThan
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key > cast('00:00:00' as time) and " +
+      "key < cast('12:10:00' as time) order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,11:20:40\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // Between
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key between cast('11:00:00' as time) " +
+      "and cast('13:00:00' as time) order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,11:20:40\n" +
+      "2,2,12:10:20\n" +
+      "3,2,12:10:30\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+  }
+
+  @Test
+  public final void testDatabaseNameIncludeTableName() throws Exception {
+    executeString("create database test_partition").close();
+
+    String databaseName = "test_partition";
+    String tableName = CatalogUtil.normalizeIdentifier("part");
+
+    if (nodeType == NodeType.INSERT) {
+      executeString(
+        "create table " + databaseName + "." + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
+
+      assertTrue(catalog.existsTable(databaseName, tableName));
+      assertEquals(2, catalog.getTableDesc(databaseName, tableName).getSchema().size());
+      assertEquals(3, catalog.getTableDesc(databaseName, tableName).getLogicalSchema().size());
+
+      executeString(
+        "insert overwrite into " + databaseName + "." + tableName + " select l_orderkey, l_partkey, " +
+          "l_quantity from lineitem");
+    } else {
+      executeString(
+        "create table "+ databaseName + "." + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
+          + " as select l_orderkey, l_partkey, l_quantity from lineitem");
+    }
+
+    TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
+    verifyPartitionDirectoryFromCatalog(databaseName, tableName, new String[]{"key"},
+      tableDesc.getStats().getNumRows());
+
+    ResultSet res = executeString("select * from " + databaseName + "." + tableName + " ORDER BY key");
+
+    String result = resultSetToString(res);
+    String expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,17.0\n" +
+      "1,1,36.0\n" +
+      "2,2,38.0\n" +
+      "3,2,45.0\n" +
+      "3,3,49.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    executeString("DROP TABLE " + databaseName + "." + tableName + " PURGE").close();
+    executeString("DROP database " + databaseName).close();
+  }
+
+  @Test
+  public void testAbnormalDirectories()  throws Exception {
+    ResultSet res = null;
+    FileSystem fs = FileSystem.get(conf);
+    Path path = null;
+
+    String tableName = CatalogUtil.normalizeIdentifier("testAbnormalDirectories");
+    if (nodeType == NodeType.INSERT) {
+      executeString(
+        "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ").close();
+      executeString(
+        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
+          "l_quantity from lineitem").close();
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
+        + " as select l_orderkey, l_partkey, l_quantity from lineitem").close();
+    }
+
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+
+    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
+      tableDesc.getStats().getNumRows());
+
+    // When partitions only exist on file system without catalog.
+    String externalTableName = "testCreateExternalColumnPartitionedTable";
+
+    executeString("create external table " + externalTableName + " (col1 int4, col2 int4) " +
+      " USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN (key float8) " +
+      " location '" + tableDesc.getUri().getPath() + "'").close();
+
+    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName);
+    String result = resultSetToString(res);
+    String expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "5\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Make abnormal directories
+    path = new Path(tableDesc.getUri().getPath(), "key=100.0");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().getPath(), "key=");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().getPath(), "col1=a");
+    fs.mkdirs(path);
+    assertEquals(8, fs.listStatus(path.getParent()).length);
+
+    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName + " WHERE key > 40.0");
+    result = resultSetToString(res);
+    expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "2\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Remove existing partition directory
+    path = new Path(tableDesc.getUri().getPath(), "key=36.0");
+    fs.delete(path, true);
+
+    res = executeString("SELECT * FROM " + tableName + " ORDER BY key");
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,17.0\n" +
+      "2,2,38.0\n" +
+      "3,2,45.0\n" +
+      "3,3,49.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("SELECT COUNT(*) AS cnt FROM " + tableName + " WHERE key > 30.0");
+    result = resultSetToString(res);
+    expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "3\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Sort
+    String sortedTableName = "sortedPartitionTable";
+    executeString("create table " + sortedTableName + " AS SELECT * FROM " + tableName
+        + " ORDER BY col1, col2 desc").close();
+
+    res = executeString("SELECT * FROM " + sortedTableName + " ORDER BY col1, col2 desc;");
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,17.0\n" +
+      "2,2,38.0\n" +
+      "3,3,49.0\n" +
+      "3,2,45.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    executeString("DROP TABLE " + sortedTableName + " PURGE").close();
+    executeString("DROP TABLE " + externalTableName).close();
+    executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 }

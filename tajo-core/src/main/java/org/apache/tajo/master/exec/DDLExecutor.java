@@ -20,6 +20,7 @@ package org.apache.tajo.master.exec;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -508,8 +509,14 @@ public class DDLExecutor {
           throw new AmbiguousPartitionDirectoryExistException(assumedDirectory.toString());
         }
 
+        long numBytes = 0L;
+        if (fs.exists(partitionPath)) {
+          ContentSummary summary = fs.getContentSummary(partitionPath);
+          numBytes = summary.getLength();
+        }
+
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
-            alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION));
+          alterTable.getPartitionValues(), alterTable.getLocation(), AlterTableType.ADD_PARTITION, numBytes));
 
         // If the partition's path doesn't exist, this would make the directory by force.
         if (!fs.exists(partitionPath)) {
@@ -595,15 +602,15 @@ public class DDLExecutor {
     PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns);
 
     // loop from one to the number of partition columns
-    Path [] filteredPaths = PartitionedTableRewriter.toPathArray(fs.listStatus(tablePath, filters[0]));
+    Path [] filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
 
     // Get all file status matched to a ith level path filter.
     for (int i = 1; i < partitionColumns.size(); i++) {
-      filteredPaths = PartitionedTableRewriter.toPathArray(fs.listStatus(filteredPaths, filters[i]));
+      filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
 
     // Find missing partitions from filesystem
-    List<PartitionDescProto> existingPartitions = catalog.getPartitions(databaseName, simpleTableName);
+    List<PartitionDescProto> existingPartitions = catalog.getPartitionsOfTable(databaseName, simpleTableName);
     List<String> existingPartitionNames = TUtil.newList();
     Path existingPartitionPath = null;
 
@@ -698,5 +705,14 @@ public class DDLExecutor {
   private boolean ensureColumnExistance(String tableName, String columnName) throws UndefinedTableException {
     final TableDesc tableDesc = catalog.getTableDesc(tableName);
     return tableDesc.getSchema().containsByName(columnName);
+  }
+
+  private Path [] toPathArray(FileStatus[] fileStatuses) {
+    Path [] paths = new Path[fileStatuses.length];
+    for (int i = 0; i < fileStatuses.length; i++) {
+      FileStatus fileStatus = fileStatuses[i];
+      paths[i] = fileStatus.getPath();
+    }
+    return paths;
   }
 }

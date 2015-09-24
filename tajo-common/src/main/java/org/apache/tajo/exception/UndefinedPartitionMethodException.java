@@ -29,7 +29,7 @@ public class UndefinedPartitionMethodException extends TajoException {
     super(state);
   }
 
-  public UndefinedPartitionMethodException(String partitionName) {
-    super(ResultCode.UNDEFINED_PARTITION_METHOD, partitionName);
+  public UndefinedPartitionMethodException(String tableName) {
+    super(ResultCode.UNDEFINED_PARTITION_METHOD, tableName);
   }
 }
