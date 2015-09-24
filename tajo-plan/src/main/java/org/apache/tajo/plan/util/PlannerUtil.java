@@ -98,7 +98,12 @@ public class PlannerUtil {
 
   /**
    * Checks whether the query is simple or not.
-   * The simple query can be defined as 'select * from tb_name [LIMIT X]'.
+   *
+   * The simple query can be as follows:
+   * <ul>
+   * <li><code>'select * from tb_name [LIMIT X]'</code></li>
+   * <li><code>'select length(name), name from tb_name [LIMIT X]'</code></li>
+   * </ul>
    *
    * @param plan The logical plan
    * @return True if the query is a simple query.
@@ -125,36 +130,6 @@ public class PlannerUtil {
       if (scanNode == null) {
         scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
       }
-      /*
-      if (scanNode.hasTargets()) {
-        // If the number of columns in the select clause is s different from table schema,
-        // This query is not a simple query.
-        if (scanNode.getTableDesc().hasPartition()) {
-          // In the case of partitioned table, the actual number of columns is ScanNode.InSchema + partitioned columns
-          int numPartitionColumns = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema().size();
-          if (scanNode.getTargets().length != scanNode.getInSchema().size() + numPartitionColumns) {
-            return false;
-          }
-        } else {
-          if (scanNode.getTargets().length != scanNode.getInSchema().size()) {
-            return false;
-          }
-        }
-
-        noComplexComputation = true;
-        for (int i = 0; i < scanNode.getTargets().length; i++) {
-          noComplexComputation =
-              noComplexComputation && scanNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD;
-          if (noComplexComputation) {
-            noComplexComputation = noComplexComputation &&
-                scanNode.getTargets()[i].getNamedColumn().equals(
-                    scanNode.getTableDesc().getLogicalSchema().getColumn(i));
-          }
-          if (!noComplexComputation) {
-            return noComplexComputation;
-          }
-        }
-      }*/
 
       if (!noWhere && scanNode.getTableDesc().hasPartition()) {
         EvalNode node = ((SelectionNode) plan.getRootBlock().getNode(NodeType.SELECTION)).getQual();
