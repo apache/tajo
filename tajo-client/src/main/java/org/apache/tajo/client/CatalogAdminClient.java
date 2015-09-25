@@ -55,7 +55,8 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if the database is dropped successfully.
    * @throws UndefinedDatabaseException
    */
-  void dropDatabase(final String databaseName) throws UndefinedDatabaseException, InsufficientPrivilegeException;
+  void dropDatabase(final String databaseName)
+      throws UndefinedDatabaseException, InsufficientPrivilegeException, CannotDropCurrentDatabaseException;
 
   List<String> getAllDatabaseNames();
 

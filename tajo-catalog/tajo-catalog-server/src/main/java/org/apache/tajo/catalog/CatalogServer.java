@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.error.Errors;
+import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
@@ -59,6 +60,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
@@ -376,11 +378,10 @@ public class CatalogServer extends AbstractService {
           for (AlterTablespaceCommand command : request.getCommandList()) {
             if (command.getType() == AlterTablespaceProto.AlterTablespaceType.LOCATION) {
               try {
-                URI uri = URI.create(command.getLocation());
+                URI uri = new URI(command.getLocation());
                 Preconditions.checkArgument(uri.getScheme() != null);
-              } catch (Exception e) {
-                throw new ServiceException("ALTER TABLESPACE's LOCATION must be a URI form (scheme:///.../), but "
-                    + command.getLocation());
+              } catch (URISyntaxException e) {
+                return returnError(ResultCode.INVALID_URL, command.getLocation());
               }
             }
           }

@@ -197,7 +197,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   public void dropDatabase(final String databaseName) throws UndefinedDatabaseException,
-      InsufficientPrivilegeException {
+      InsufficientPrivilegeException, CannotDropCurrentDatabaseException {
 
     catalogClient.dropDatabase(databaseName);
   }
