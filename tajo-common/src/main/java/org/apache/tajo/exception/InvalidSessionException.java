@@ -16,13 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
 public class InvalidSessionException extends TajoException {
+  public InvalidSessionException(ReturnState state) {
+    super(state);
+  }
+
   public InvalidSessionException(String sessionId) {
     super(Errors.ResultCode.INVALID_SESSION, sessionId);
   }

@@ -59,7 +59,7 @@ public class TestNodeResourceManager {
   @Before
   public void setup() {
     conf = new TajoConf();
-    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    conf.setBoolVar(TajoConf.ConfVars.$TEST_MODE, true);
 
     taskMemory = 512;
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES, 4);

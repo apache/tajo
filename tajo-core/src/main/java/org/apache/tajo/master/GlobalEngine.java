@@ -29,6 +29,7 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.CatalogService;
@@ -145,8 +146,7 @@ public class GlobalEngine extends AbstractService {
     newQueryContext.setDefaultSpaceUri(TablespaceManager.getDefault().getUri());
     newQueryContext.setDefaultSpaceRootUri(TablespaceManager.getDefault().getRootUri());
 
-    String tajoTest = System.getProperty(CommonTestingUtil.TAJO_TEST_KEY);
-    if (tajoTest != null && tajoTest.equalsIgnoreCase(CommonTestingUtil.TAJO_TEST_TRUE)) {
+    if (TajoConstants.IS_TEST_MODE) {
       newQueryContext.putAll(CommonTestingUtil.getSessionVarsForTest());
     }
 
