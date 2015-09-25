@@ -1877,10 +1877,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         } else {
           builder.setPath(resultSet.getString("PATH"));
         }
-        String storeType = resultSet.getString("STORE_TYPE");
-        if (storeType != null) {
-          storeType = storeType.trim();
-          builder.setStoreType(storeType);
+        String dataFormat = resultSet.getString("STORE_TYPE");
+        if (dataFormat != null) {
+          dataFormat = dataFormat.trim();
+          builder.setDataFormat(dataFormat);
         }
         
         tables.add(builder.build());

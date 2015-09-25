@@ -293,7 +293,7 @@ message TableDescriptorProto {
 	required string name = 3;
 	optional string tableType = 4;
 	required string path = 5;
-	required string storeType = 6;
+	required string dataFormat = 6;
 }
 
 message AlterTablespaceProto {
