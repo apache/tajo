@@ -36,6 +36,7 @@ import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
@@ -457,7 +458,12 @@ public class CatalogServer extends AbstractService {
       if (metaDictionary.isSystemDatabase(split[0])) {
         return errInsufficientPrivilege("alter a table in database '" + split[0] + "'");
       }
-      
+
+      // TODO: This should be removed at TAJO-1891
+      if (proto.getAlterTableType() == CatalogProtos.AlterTableType.ADD_PARTITION) {
+        return errFeatureNotSupported("ADD PARTTIION");
+      }
+
       wlock.lock();
 
       try {

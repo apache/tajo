@@ -20,13 +20,13 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.catalog.store.*;
@@ -36,7 +36,6 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.UnsupportedCatalogStore;
 import org.apache.tajo.util.KeyValueSet;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -137,6 +136,39 @@ public class CatalogTestingUtil {
     } else {
       throw new UnsupportedCatalogStore(clazz.getCanonicalName());
     }
+  }
+
+  public static PartitionDesc buildPartitionDesc(String partitionName) {
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    String[] partitionNames = partitionName.split("/");
+
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
+    for(int i = 0; i < partitionNames.length; i++) {
+      String [] splits = partitionNames[i].split("=");
+      String columnName = "", partitionValue = "";
+      if (splits.length == 2) {
+        columnName = splits[0];
+        partitionValue = splits[1];
+      } else if (splits.length == 1) {
+        if (partitionNames[i].charAt(0) == '=') {
+          partitionValue = splits[0];
+        } else {
+          columnName = "";
+        }
+      }
+
+      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
+      builder.setColumnName(columnName);
+      builder.setPartitionValue(partitionValue);
+      partitionKeyList.add(builder.build());
+    }
+
+    partitionDesc.setPartitionKeys(partitionKeyList);
+
+    partitionDesc.setPath("hdfs://xxx.com/warehouse/" + partitionName);
+    return partitionDesc;
   }
 
   public static void prepareBaseData(CatalogService catalog, String testDir) throws Exception {

@@ -27,7 +27,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.UndefinedPartitionException;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,7 +39,6 @@ import static org.junit.Assert.*;
 public class TestCatalogAgainstCaseSensitivity {
   static CatalogServer server;
   static CatalogService catalog;
-  final static String TEST_URI = "hdfs://xxx.com/warehouse";
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -147,7 +145,8 @@ public class TestCatalogAgainstCaseSensitivity {
     assertEquals(5000, stats.getNumRows().longValue());
   }
 
-  @Test
+  // TODO: This should be added at TAJO-1891
+//  @Test
   public void testTablePartition() throws Exception {
     //////////////////////////////////////////////////////////////////////////////
     // Test add partition
@@ -157,18 +156,14 @@ public class TestCatalogAgainstCaseSensitivity {
     assertTrue(catalog.existsTable("TestDatabase1", "testPartition1"));
 
     String partitionName = "DaTe=bBb/dAtE=AaA";
-    PartitionDesc partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, TEST_URI);
+    PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    AlterTableDesc alterTableDesc = new AlterTableDesc();
-//    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
-//    alterTableDesc.setPartitionDesc(partitionDesc);
-//    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-//
-//    catalog.alterTable(alterTableDesc);
-    List targetPartitions = TUtil.newList();
-    targetPartitions.add(CatalogUtil.buildPartitionDescProto(partitionName, TEST_URI));
-    catalog.addPartitions("TestDatabase1", "TestPartition1", targetPartitions, true);
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    catalog.alterTable(alterTableDesc);
 
     PartitionDescProto resultDesc = catalog.getPartition("TestDatabase1", "TestPartition1",
         partitionName);
@@ -179,18 +174,14 @@ public class TestCatalogAgainstCaseSensitivity {
     assertEquals(resultDesc.getPartitionKeysCount(), 2);
 
     partitionName = "DaTe=BbB/dAtE=aAa";
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
-//
-//    alterTableDesc = new AlterTableDesc();
-//    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
-//    alterTableDesc.setPartitionDesc(partitionDesc);
-//    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-//
-//    catalog.alterTable(alterTableDesc);
-    targetPartitions.clear();
-    targetPartitions.add(CatalogUtil.buildPartitionDescProto(partitionName, TEST_URI));
-    catalog.addPartitions("TestDatabase1", "TestPartition1", targetPartitions, true);
+    partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
+
+    alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    catalog.alterTable(alterTableDesc);
 
     resultDesc = catalog.getPartition("TestDatabase1", "TestPartition1",
         partitionName);
@@ -231,9 +222,9 @@ public class TestCatalogAgainstCaseSensitivity {
     //////////////////////////////////////////////////////////////////////////////
 
     partitionName = "DaTe=BbB/dAtE=aAa";
-    partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, TEST_URI);
+    partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
-    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
@@ -247,7 +238,7 @@ public class TestCatalogAgainstCaseSensitivity {
     assertNull(resultDesc);
 
     partitionName = "DaTe=bBb/dAtE=AaA";
-    partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, TEST_URI);
+    partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));

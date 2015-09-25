@@ -624,15 +624,13 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         addNewColumn(databaseName, tableName, alterTableDescProto.getAddColumn());
         break;
       case ADD_PARTITION:
-        // Disable the alter table add partition statement temporarily at TAJO-1887
-//        partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
-//        partitionDesc = getPartition(databaseName, tableName, partitionName);
-//        if(partitionDesc != null) {
-//          throw new DuplicatePartitionException(partitionName);
-//        }
-//        addPartition(databaseName, tableName, alterTableDescProto.getPartitionDesc());
-//        break;
-        throw new UnsupportedOperationException();
+        partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
+        partitionDesc = getPartition(databaseName, tableName, partitionName);
+        if(partitionDesc != null) {
+          throw new DuplicatePartitionException(partitionName);
+        }
+        addPartition(databaseName, tableName, alterTableDescProto.getPartitionDesc());
+        break;
       case DROP_PARTITION:
         partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
         partitionDesc = getPartition(databaseName, tableName, partitionName);

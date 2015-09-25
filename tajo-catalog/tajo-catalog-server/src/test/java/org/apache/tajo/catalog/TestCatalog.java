@@ -39,7 +39,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -778,7 +777,7 @@ public class TestCatalog {
     assertFalse(catalog.existsTable(tableName));
   }
 
-  @Test
+  // TODO: This should be added at TAJO-1891
   public final void testAddAndDeleteTablePartitionByColumn() throws Exception {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4)
@@ -814,8 +813,8 @@ public class TestCatalog {
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
-    testAddPartition(tableName, "id=10/name=aaa", retrieved.getUri().toString());
-    testAddPartition(tableName, "id=20/name=bbb", retrieved.getUri().toString());
+    testAddPartition(tableName, "id=10/name=aaa");
+    testAddPartition(tableName, "id=20/name=bbb");
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, simpleTableName);
     assertNotNull(partitions);
@@ -928,19 +927,14 @@ public class TestCatalog {
     assertEquals(2, partitions.size());
   }
 
-  private void testAddPartition(String tableName, String partitionName, String tablePath) throws Exception {
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    AlterTableDesc alterTableDesc = new AlterTableDesc();
-//    alterTableDesc.setTableName(tableName);
-//    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-//
-//    alterTableDesc.setPartitionDesc(CatalogTestingUtil.buildPartitionDesc(partitionName));
-//
-//    catalog.alterTable(alterTableDesc);
-    String[] splits = tableName.split("\\.");
-    List partitions = TUtil.newList();
-    partitions.add(CatalogUtil.buildPartitionDescProto(partitionName, tablePath));
-    catalog.addPartitions(splits[0], splits[1], partitions, true);
+  private void testAddPartition(String tableName, String partitionName) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    alterTableDesc.setPartitionDesc(CatalogTestingUtil.buildPartitionDesc(partitionName));
+
+    catalog.alterTable(alterTableDesc);
 
     String [] split = CatalogUtil.splitFQTableName(tableName);
 
@@ -948,7 +942,7 @@ public class TestCatalog {
 
     assertNotNull(resultDesc);
     assertEquals(resultDesc.getPartitionName(), partitionName);
-    assertEquals(resultDesc.getPath(), tablePath + File.separator + partitionName);
+    assertEquals(resultDesc.getPath(), "hdfs://xxx.com/warehouse/" + partitionName);
 
     assertEquals(resultDesc.getPartitionKeysCount(), 2);
   }

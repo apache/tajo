@@ -29,7 +29,6 @@ import org.apache.tajo.exception.UndefinedDatabaseException;
 import org.apache.tajo.exception.UndefinedPartitionException;
 import org.apache.tajo.exception.UndefinedPartitionMethodException;
 import org.apache.tajo.exception.UndefinedTableException;
-import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -59,7 +58,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddNewColumn() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "EFG");
     executeDDL("alter_table_add_new_column_ddl.sql", null);
-    assertColumnExists(createdNames.get(0), "cool");
+    assertColumnExists(createdNames.get(0),"cool");
   }
 
   @Test
@@ -76,7 +75,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     cleanupQuery(after_res);
   }
 
-  @Test
+  // TODO: This should be added at TAJO-1891
+//  @Test
   public final void testAlterTableAddPartition() throws Exception {
     executeDDL("create_partitioned_table.sql", null);
 
@@ -90,12 +90,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "col3");
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(1).getSimpleName(), "col4");
 
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    executeDDL("alter_table_add_partition1.sql", null);
-//    executeDDL("alter_table_add_partition2.sql", null);
-    List targetPartitions = TUtil.newList();
-    targetPartitions.add(CatalogUtil.buildPartitionDescProto("col3=1/col4=2", retrieved.getUri().toString()));
-    catalog.addPartitions("TestAlterTable", "partitioned_table", targetPartitions, true);
+    executeDDL("alter_table_add_partition1.sql", null);
+    executeDDL("alter_table_add_partition2.sql", null);
 
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
@@ -107,11 +103,10 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(partitions.get(0).getPartitionKeysList().get(1).getPartitionValue(), "2");
 
     assertNotNull(partitions.get(0).getPath());
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    Path partitionPath = new Path(partitions.get(0).getPath());
-//    FileSystem fs = partitionPath.getFileSystem(conf);
-//    assertTrue(fs.exists(partitionPath));
-//    assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
+    Path partitionPath = new Path(partitions.get(0).getPath());
+    FileSystem fs = partitionPath.getFileSystem(conf);
+    assertTrue(fs.exists(partitionPath));
+    assertTrue(partitionPath.toString().indexOf("col3=1/col4=2") > 0);
 
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
@@ -119,8 +114,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    assertFalse(fs.exists(partitionPath));
+    assertFalse(fs.exists(partitionPath));
 
     catalog.dropTable(tableName);
   }

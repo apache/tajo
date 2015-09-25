@@ -31,19 +31,16 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.List;
 
 public class TestCatalogExceptions {
 
   static CatalogServer server;
   static CatalogService catalog;
-  final static String TEST_URI = "hdfs://xxx.com/warehouse";
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -160,59 +157,50 @@ public class TestCatalogExceptions {
             build());
   }
 
-  @Test
+  // TODO: This should be added at TAJO-1891
+//  @Test
   public void testAddPartitionWithWrongUri() throws Exception {
     // TODO: currently, wrong uri does not occur any exception.
     String partitionName = "DaTe=/=AaA";
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    PartitionDesc partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, "");
-//
-//    AlterTableDesc alterTableDesc = new AlterTableDesc();
-//    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
-//    alterTableDesc.setPartitionDesc(partitionDesc);
-//    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-//
-//    catalog.alterTable(alterTableDesc);
-    List targetPartitions = TUtil.newList();
-    targetPartitions.add(CatalogUtil.buildPartitionDescProto(partitionName, TEST_URI));
-    catalog.addPartitions("TestDatabase1", "TestPartition1", targetPartitions, true);
+    PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
+
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    catalog.alterTable(alterTableDesc);
   }
 
-  // Disable the alter table add partition statement temporarily at TAJO-1887
+  // TODO: This should be added at TAJO-1891
 //  @Test(expected = DuplicatePartitionException.class)
-  @Test(expected = TajoInternalError.class)
   public void testAddDuplicatePartition() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    PartitionDesc partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, TEST_URI);
-//    AlterTableDesc alterTableDesc = new AlterTableDesc();
-//    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
-//    alterTableDesc.setPartitionDesc(partitionDesc);
-//    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-//
-//    catalog.alterTable(alterTableDesc);
-    List targetPartitions = TUtil.newList();
-    targetPartitions.add(CatalogUtil.buildPartitionDescProto(partitionName, TEST_URI));
-    catalog.addPartitions("TestDatabase1", "TestPartition1", targetPartitions, true);
+    PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
+
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    catalog.alterTable(alterTableDesc);
 
     partitionName = "DaTe=bBb/dAtE=AaA";
-    // Disable the alter table add partition statement temporarily at TAJO-1887
-//    partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, TEST_URI);
-//
-//    alterTableDesc = new AlterTableDesc();
-//    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
-//    alterTableDesc.setPartitionDesc(partitionDesc);
-//    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-//
-//    catalog.alterTable(alterTableDesc);
-    targetPartitions.add(CatalogUtil.buildPartitionDescProto(partitionName, TEST_URI));
-    catalog.addPartitions("TestDatabase1", "TestPartition1", targetPartitions, true);
+    partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
+
+    alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    catalog.alterTable(alterTableDesc);
   }
 
-  @Test(expected = UndefinedTableException.class)
+  // TODO: This should be added at TAJO-1891
+//  @Test(expected = UndefinedTableException.class)
   public void testAddPartitionToUndefinedTable() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
-    PartitionDesc partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, TEST_URI);
+    PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined"));
@@ -225,7 +213,7 @@ public class TestCatalogExceptions {
   @Test(expected = UndefinedPartitionException.class)
   public void testDropUndefinedPartition() throws Exception {
     String partitionName = "DaTe=undefined/dAtE=undefined";
-    PartitionDesc partitionDesc = CatalogUtil.buildPartitionDesc(partitionName, TEST_URI);
+    PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
