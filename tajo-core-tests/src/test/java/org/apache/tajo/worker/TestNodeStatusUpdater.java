@@ -50,7 +50,7 @@ public class TestNodeStatusUpdater {
   @Before
   public void setup() {
     conf = new TajoConf();
-    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    conf.setBoolVar(TajoConf.ConfVars.$TEST_MODE, true);
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES, 2);
     conf.setIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM, 2);
 

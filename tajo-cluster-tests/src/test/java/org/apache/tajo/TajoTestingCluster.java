@@ -113,8 +113,8 @@ public class TajoTestingCluster {
   }
 
   void setTestingFlagProperties() {
-    System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
-    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    System.setProperty(TajoConstants.TEST_KEY, Boolean.TRUE.toString());
+    conf.set(TajoConstants.TEST_KEY, Boolean.TRUE.toString());
   }
 
   void initPropertiesAndConfigs() {

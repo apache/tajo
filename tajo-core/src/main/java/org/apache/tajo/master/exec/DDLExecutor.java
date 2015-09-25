@@ -258,7 +258,7 @@ public class DDLExecutor {
   }
 
   public void dropDatabase(QueryContext queryContext, String databaseName, boolean ifExists)
-      throws UndefinedDatabaseException, InsufficientPrivilegeException {
+      throws UndefinedDatabaseException, InsufficientPrivilegeException, CannotDropCurrentDatabaseException {
 
     boolean exists = catalog.existDatabase(databaseName);
     if (!exists) {
@@ -271,7 +271,7 @@ public class DDLExecutor {
     }
 
     if (queryContext.getCurrentDatabase().equals(databaseName)) {
-      throw new RuntimeException("ERROR: Cannot drop the current open database");
+      throw new CannotDropCurrentDatabaseException();
     }
 
     catalog.dropDatabase(databaseName);

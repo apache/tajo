@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
@@ -61,7 +62,8 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     this.availableResource = NodeResources.clone(totalResource);
     this.dispatcher.register(NodeResourceEvent.EventType.class, this);
     validateConf(tajoConf);
-    this.enableTest = conf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE");
+    this.enableTest = conf.get(TajoConstants.TEST_KEY, Boolean.FALSE.toString())
+        .equalsIgnoreCase(Boolean.TRUE.toString());
     super.serviceInit(conf);
     LOG.info("Initialized NodeResourceManager for " + totalResource);
   }
