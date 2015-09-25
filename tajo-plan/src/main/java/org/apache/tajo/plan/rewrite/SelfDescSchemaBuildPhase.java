@@ -245,7 +245,12 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public LogicalNode visitFilter(ProcessorContext ctx, Stack<Expr> stack, Selection expr) throws TajoException {
       Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr.getQual(), OpType.Column);
       for (ColumnReferenceExpr col : columnSet) {
-        NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
+        if (!ctx.planContext.getQueryBlock().isAliasedName(col.getName())) {
+          NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
+        } else {
+          col.setQualifier(CatalogUtil.extractQualifier(
+              ctx.planContext.getQueryBlock().getOriginalName(col.getName())));
+        }
         TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
       }
 
@@ -294,7 +299,11 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     @Override
     public LogicalNode visitSimpleTableSubquery(ProcessorContext ctx, Stack<Expr> stack, SimpleTableSubquery expr)
         throws TajoException {
-      super.visitSimpleTableSubquery(ctx, stack, expr);
+      QueryBlock childBlock = ctx.planContext.getPlan().getBlock(
+          ctx.planContext.getPlan().getBlockNameByExpr(expr.getSubQuery()));
+      ProcessorContext newContext = new ProcessorContext(new PlanContext(ctx.planContext, childBlock));
+
+      super.visitSimpleTableSubquery(newContext, stack, expr);
 
       TableSubQueryNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
@@ -306,7 +315,11 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     @Override
     public LogicalNode visitTableSubQuery(ProcessorContext ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
         throws TajoException {
-      super.visitTableSubQuery(ctx, stack, expr);
+      QueryBlock childBlock = ctx.planContext.getPlan().getBlock(
+          ctx.planContext.getPlan().getBlockNameByExpr(expr.getSubQuery()));
+      ProcessorContext newContext = new ProcessorContext(new PlanContext(ctx.planContext, childBlock));
+
+      super.visitTableSubQuery(newContext, stack, expr);
 
       TableSubQueryNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
