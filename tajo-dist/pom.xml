@@ -46,6 +46,7 @@
         <configuration>
           <excludes>
             <exclude>src/main/conf/workers</exclude>
+            <exclude>src/main/conf/storage-site.json.template</exclude>
           </excludes>
         </configuration>
       </plugin>

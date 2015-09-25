@@ -22,8 +22,8 @@ import io.netty.buffer.*;
 import io.netty.util.ResourceLeakDetector;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.util.CommonTestingUtil;
 
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
@@ -44,7 +44,7 @@ public class BufferPool {
     *  Because the TaskRunner thread is newly created
     * */
 
-    if (System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (TajoConstants.IS_TEST_MODE) {
       /* Disable pooling buffers for memory usage  */
       ALLOCATOR = UnpooledByteBufAllocator.DEFAULT;
 
