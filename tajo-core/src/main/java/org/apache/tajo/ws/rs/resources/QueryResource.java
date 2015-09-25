@@ -29,7 +29,7 @@ import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.master.QueryManager;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.querymaster.QueryJobEvent;
-import org.apache.tajo.session.InvalidSessionException;
+import org.apache.tajo.exception.InvalidSessionException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.ws.rs.*;

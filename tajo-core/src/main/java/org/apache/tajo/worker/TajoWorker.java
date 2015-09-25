@@ -196,7 +196,7 @@ public class TajoWorker extends CompositeService {
       addIfService(pullService);
     }
 
-    if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {
       httpPort = initWebServer();
     }
 
@@ -324,7 +324,7 @@ public class TajoWorker extends CompositeService {
     }
     connectToCatalog();
 
-    if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {
       initCleanupService();
     }
 

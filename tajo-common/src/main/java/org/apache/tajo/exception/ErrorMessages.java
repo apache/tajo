@@ -39,7 +39,6 @@ public class ErrorMessages {
     ADD_MESSAGE(NOT_IMPLEMENTED, "not implemented feature: %s", 1);
     ADD_MESSAGE(FEATURE_NOT_SUPPORTED, "unsupported feature: %s", 1);
     ADD_MESSAGE(INVALID_RPC_CALL, "invalid RPC Call: %s", 1);
-    ADD_MESSAGE(INVALID_VALUE_FOR_CAST, "%s value cannot be casted to %s", 2);
 
     // Query Management and Scheduler
     ADD_MESSAGE(QUERY_FAILED, "query has been failed due to %s", 1);
@@ -53,11 +52,10 @@ public class ErrorMessages {
     ADD_MESSAGE(NO_SUCH_SESSION_VARIABLE, "no such session variable '%s", 1);
     ADD_MESSAGE(INVALID_SESSION_VARIABLE, "invalid session variable '%s': %s", 2);
 
-
     // Syntax Error or Access Rule Violation
     ADD_MESSAGE(SYNTAX_ERROR, "%s", 1);
     ADD_MESSAGE(INSUFFICIENT_PRIVILEGE, "Insufficient privilege to %s", 1);
-    ADD_MESSAGE(INVALID_NAME, "Invalid name '%s'");
+    ADD_MESSAGE(CANNOT_DROP_CURRENT_DATABASE, "Cannot drop the current database", 1);
 
     ADD_MESSAGE(UNDEFINED_TABLESPACE, "tablespace '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_DATABASE, "database '%s' does not exist", 1);
@@ -88,6 +86,9 @@ public class ErrorMessages {
     ADD_MESSAGE(AMBIGUOUS_COLUMN, "column name '%s' is ambiguous", 1);
     ADD_MESSAGE(AMBIGUOUS_FUNCTION, "function '%s' is ambiguous", 1);
 
+    ADD_MESSAGE(INVALID_NAME, "Invalid name '%s'");
+    ADD_MESSAGE(INVALID_VALUE_FOR_CAST, "%s value cannot be casted to %s", 2);
+
     ADD_MESSAGE(DIVISION_BY_ZERO, "Division by zero: %s", 1);
 
     ADD_MESSAGE(DATATYPE_MISMATCH,
@@ -104,7 +105,7 @@ public class ErrorMessages {
     ADD_MESSAGE(LMD_NO_MATCHED_DATATYPE, "no matched type for %s", 1);
 
     // Storage and Data Format
-    ADD_MESSAGE(UNAVAILABLE_TABLE_LOCATION, "unavailable table location '%s': %s", 2);
+    ADD_MESSAGE(UNAVAILABLE_TABLE_LOCATION, "unavailable table location '%s', cause: %s", 2);
     ADD_MESSAGE(UNKNOWN_DATAFORMAT, "unknown data format: '%s'", 1);
     ADD_MESSAGE(UNSUPPORTED_DATATYPE, "unsupported data type: '%s'", 1);
     ADD_MESSAGE(INVALID_TABLE_PROPERTY, "invalid table property '%s': '%s'", 2);
