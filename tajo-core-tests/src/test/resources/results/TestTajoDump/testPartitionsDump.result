@@ -21,7 +21,6 @@ ALTER TABLE "TestTajoDump"."TableName3" REPAIR PARTITION
 
 
 
-
 --
 -- Name: "TestTajoDump"."TableName4"; Type: TABLE; Storage: TEXT
 --

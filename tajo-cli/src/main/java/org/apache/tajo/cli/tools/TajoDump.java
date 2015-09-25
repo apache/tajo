@@ -197,7 +197,7 @@ public class TajoDump {
 //          for (PartitionDescProto eachPartitionProto : partitionProtos) {
 //            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
 //          }
-          writer.write(String.format("ALTER TABLE %s REPAIR PARTITION%n",
+          writer.write(String.format("ALTER TABLE %s REPAIR PARTITION",
             CatalogUtil.denormalizeIdentifier(databaseName) + "." + CatalogUtil.denormalizeIdentifier(tableName)));
 
           writer.write("\n\n");
