@@ -33,10 +33,10 @@ import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UndefinedOperatorException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -44,7 +44,6 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -1043,50 +1042,5 @@ public class CatalogUtil {
     public int compare(String o1, String o2) {
       return originlSchema.getColumnId(o1) - originlSchema.getColumnId(o2);
     }
-  }
-
-  public static PartitionDesc buildPartitionDesc(String partitionName, String tablePath) {
-    PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setPartitionName(partitionName);
-
-    String[] partitionNames = partitionName.split("/");
-    partitionDesc.setPartitionKeys(buildPartitionKeyProtos(partitionNames));
-    partitionDesc.setPath(tablePath + File.separator + partitionName);
-    return partitionDesc;
-  }
-
-  public static PartitionDescProto buildPartitionDescProto(String partitionName, String tablePath) {
-    PartitionDescProto.Builder partitionDescProto = PartitionDescProto.newBuilder();
-    partitionDescProto.setPartitionName(partitionName);
-
-    String[] partitionNames = partitionName.split("/");
-    partitionDescProto.addAllPartitionKeys(buildPartitionKeyProtos(partitionNames));
-    partitionDescProto.setPath(tablePath + File.separator + partitionName);
-    return partitionDescProto.build();
-  }
-
-  private static List<PartitionKeyProto> buildPartitionKeyProtos(String[] partitionNames) {
-    List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
-    for(int i = 0; i < partitionNames.length; i++) {
-      String [] splits = partitionNames[i].split("=");
-      String columnName = "", partitionValue = "";
-      if (splits.length == 2) {
-        columnName = splits[0];
-        partitionValue = splits[1];
-      } else if (splits.length == 1) {
-        if (partitionNames[i].charAt(0) == '=') {
-          partitionValue = splits[0];
-        } else {
-          columnName = "";
-        }
-      }
-
-      PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
-      builder.setColumnName(columnName);
-      builder.setPartitionValue(partitionValue);
-      partitionKeyList.add(builder.build());
-    }
-
-    return partitionKeyList;
   }
 }
