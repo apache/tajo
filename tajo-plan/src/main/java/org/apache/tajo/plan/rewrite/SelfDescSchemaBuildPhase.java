@@ -144,6 +144,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
   static class ProcessorContext {
     final PlanContext planContext;
     final Map<String, List<ColumnReferenceExpr>> projectColumns = new HashMap<>();
+    final Set<String> aliasSet = new HashSet<>();
 
     public ProcessorContext(PlanContext planContext) {
       this.planContext = planContext;
@@ -174,6 +175,9 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         Set<ColumnReferenceExpr> columns = ExprFinder.finds(eachNamedExpr, OpType.Column);
         for (ColumnReferenceExpr col : columns) {
           TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+        }
+        if (eachNamedExpr.hasAlias()) {
+          ctx.aliasSet.add(eachNamedExpr.getAlias());
         }
       }
 
@@ -245,13 +249,10 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public LogicalNode visitFilter(ProcessorContext ctx, Stack<Expr> stack, Selection expr) throws TajoException {
       Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr.getQual(), OpType.Column);
       for (ColumnReferenceExpr col : columnSet) {
-        if (!ctx.planContext.getQueryBlock().isAliasedName(col.getName())) {
+        if (!ctx.aliasSet.contains(col.getName())) {
           NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
-        } else {
-          col.setQualifier(CatalogUtil.extractQualifier(
-              ctx.planContext.getQueryBlock().getOriginalName(col.getName())));
+          TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
         }
-        TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
       }
 
       super.visitFilter(ctx, stack, expr);
