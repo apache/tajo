@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;

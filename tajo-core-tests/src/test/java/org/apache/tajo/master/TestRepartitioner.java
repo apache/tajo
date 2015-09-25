@@ -38,9 +38,6 @@ import java.net.URI;
 import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.HASH_SHUFFLE;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.SCATTERED_HASH_SHUFFLE;
 import static org.apache.tajo.querymaster.Repartitioner.FetchGroupMeta;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;

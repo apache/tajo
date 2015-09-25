@@ -45,8 +45,6 @@ import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.storage.*;
@@ -64,9 +62,6 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
-
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 
 /**
  * Repartitioner creates non-leaf tasks and shuffles intermediate data.

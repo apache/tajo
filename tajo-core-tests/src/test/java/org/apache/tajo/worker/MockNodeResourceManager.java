@@ -24,7 +24,6 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.ResourceProtos.TaskAllocationProto;
 import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.worker.event.NodeResourceEvent;

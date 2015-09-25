@@ -23,7 +23,6 @@ import com.google.gson.*;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;

@@ -20,7 +20,6 @@ package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -28,7 +27,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 import java.util.List;

@@ -28,8 +28,6 @@ import org.junit.runners.Parameterized;
 
 import java.sql.SQLException;
 
-import static org.junit.Assert.assertEquals;
-
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
 @NamedTest("TestJoinQuery")

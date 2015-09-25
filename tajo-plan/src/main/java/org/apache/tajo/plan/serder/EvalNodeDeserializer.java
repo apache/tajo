@@ -37,7 +37,6 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.plan.logical.WindowSpec;
-import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
 import java.util.*;
 

@@ -38,7 +38,6 @@ import org.apache.tajo.exception.*;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
-import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 

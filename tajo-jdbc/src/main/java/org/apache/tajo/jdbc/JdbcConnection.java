@@ -26,8 +26,6 @@ import org.apache.tajo.client.CatalogAdminClient;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
-import org.apache.tajo.exception.SQLExceptionUtil;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;

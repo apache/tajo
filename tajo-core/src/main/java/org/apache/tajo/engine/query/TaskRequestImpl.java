@@ -25,7 +25,6 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.ResourceProtos.FetchProto;
 import org.apache.tajo.ResourceProtos.TaskRequestProtoOrBuilder;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.util.ArrayList;

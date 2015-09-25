@@ -26,10 +26,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.util.StringUtils;
 
-import static org.apache.tajo.plan.serder.PlanProto.DataChannelProto;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-import static org.apache.tajo.plan.serder.PlanProto.TransmitType;
-
 public class DataChannel {
   private ExecutionBlockId srcId;
   private ExecutionBlockId targetId;

@@ -19,7 +19,6 @@
 package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;

@@ -29,8 +29,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.WindowSpec;
-import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
-import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec.WindowFrame;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.util.Map;

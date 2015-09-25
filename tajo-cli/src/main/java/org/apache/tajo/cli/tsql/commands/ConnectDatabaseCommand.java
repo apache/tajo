@@ -19,12 +19,8 @@
 package org.apache.tajo.cli.tsql.commands;
 
 import com.google.common.base.Preconditions;
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.UndefinedDatabaseException;
-
-import java.sql.SQLException;
 
 public class ConnectDatabaseCommand extends TajoShellCommand {
 

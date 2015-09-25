@@ -31,9 +31,6 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.GlobalPlanner.GlobalPlanContext;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
-import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
@@ -48,8 +45,6 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
-
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.HASH_SHUFFLE;
 
 public class DistinctGroupbyBuilder {
   private static Log LOG = LogFactory.getLog(DistinctGroupbyBuilder.class);

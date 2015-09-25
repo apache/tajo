@@ -27,7 +27,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
 
 /**

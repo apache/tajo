@@ -27,8 +27,6 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-
 /**
  * ShuffeFileWriteNode is an expression for an intermediate data materialization step.
  */

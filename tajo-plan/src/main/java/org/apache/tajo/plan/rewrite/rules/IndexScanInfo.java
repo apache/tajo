@@ -27,7 +27,6 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
-import org.apache.tajo.plan.serder.PlanProto.SimplePredicateProto;
 
 import java.net.URI;
 
