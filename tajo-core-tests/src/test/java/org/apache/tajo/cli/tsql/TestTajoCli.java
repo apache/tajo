@@ -473,6 +473,18 @@ public class TestTajoCli {
     }
   }
 
+  // TODO: This should be removed at TAJO-1891
+  @Test
+  public void testAddPartitionNotimplementedException() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testAddPartitionNotimplementedException");
+    tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " add partition (key2 = 0.1)");
+
+    String consoleResult;
+    consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
   // TODO: This should be added at TAJO-1891
   public void testAlterTableAddDropPartition() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
