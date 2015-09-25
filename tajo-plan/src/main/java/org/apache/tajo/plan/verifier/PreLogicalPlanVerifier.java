@@ -190,7 +190,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return true;
   }
 
-  private boolean assertSupportedStoreType(VerificationState state, String name) {
+  private boolean assertSupportedDataFormat(VerificationState state, String name) {
     Preconditions.checkNotNull(name);
 
     if (name.equalsIgnoreCase("RAW")) {
@@ -271,7 +271,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (expr.hasStorageType()) {
-      assertSupportedStoreType(context.state, expr.getStorageType());
+      assertSupportedDataFormat(context.state, expr.getStorageType());
     }
 
     return expr;
@@ -298,7 +298,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (expr.hasStorageType()) {
-      assertSupportedStoreType(context.state, expr.getStorageType());
+      assertSupportedDataFormat(context.state, expr.getDataFormat());
     }
 
     if (child != null && child.getType() == OpType.Projection) {

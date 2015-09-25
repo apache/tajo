@@ -838,7 +838,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn.setAutoCommit(false);
 
       String sql = "INSERT INTO TABLES (DB_ID, " + COL_TABLES_NAME +
-          ", TABLE_TYPE, PATH, STORE_TYPE, HAS_SELF_DESCRIBE_SCHEMA) VALUES(?, ?, ?, ?, ?, ?) ";
+          ", TABLE_TYPE, PATH, DATA_FORMAT, HAS_SELF_DESCRIBE_SCHEMA) VALUES(?, ?, ?, ?, ?, ?) ";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -1666,7 +1666,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ResultSet res = null;
     PreparedStatement pstmt = null;
     CatalogProtos.TableDescProto.Builder tableBuilder = null;
-    String storeType;
+    String dataFormat;
 
     Pair<Integer, String> databaseIdAndUri = getDatabaseIdAndUri(databaseName);
 
@@ -1677,7 +1677,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Geting Table Description
       //////////////////////////////////////////
       String sql =
-          "SELECT TID, " + COL_TABLES_NAME + ", TABLE_TYPE, PATH, STORE_TYPE, HAS_SELF_DESCRIBE_SCHEMA FROM TABLES " +
+          "SELECT TID, " + COL_TABLES_NAME + ", TABLE_TYPE, PATH, DATA_FORMAT, HAS_SELF_DESCRIBE_SCHEMA FROM TABLES " +
               "WHERE DB_ID = ? AND " + COL_TABLES_NAME + "=?";
 
       if (LOG.isDebugEnabled()) {
@@ -1702,7 +1702,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       tableBuilder.setPath(res.getString(4).trim());
-      storeType = res.getString(5).trim();
+      dataFormat = res.getString(5).trim();
       boolean hasSelfDescSchema = res.getBoolean(6);
 
       res.close();
@@ -1740,7 +1740,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       //////////////////////////////////////////
       CatalogProtos.TableProto.Builder metaBuilder = CatalogProtos.TableProto.newBuilder();
 
-      metaBuilder.setDataFormat(storeType);
+      metaBuilder.setDataFormat(dataFormat);
       sql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE " + COL_TABLES_PK + " = ?";
 
       if (LOG.isDebugEnabled()) {
@@ -1854,7 +1854,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     List<TableDescriptorProto> tables = new ArrayList<>();
 
     try {
-      String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.STORE_TYPE, " +
+      String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.DATA_FORMAT, " +
           " s.SPACE_URI FROM " + TB_TABLES + " t, " + TB_DATABASES + " d, " + TB_SPACES +
           " s WHERE t.DB_ID = d.DB_ID AND d.SPACE_ID = s.SPACE_ID";
 
@@ -1877,7 +1877,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         } else {
           builder.setPath(resultSet.getString("PATH"));
         }
-        String dataFormat = resultSet.getString("STORE_TYPE");
+        String dataFormat = resultSet.getString("DATA_FORMAT");
         if (dataFormat != null) {
           dataFormat = dataFormat.trim();
           builder.setDataFormat(dataFormat);

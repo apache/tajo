@@ -75,7 +75,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   				TABLE_TYPE VARCHAR(128) NOT NULL,
   				PATH VARCHAR(4096),
   				HAS_SELF_DESCRIBE_SCHEMA BOOLEAN,
-  				STORE_TYPE CHAR(16),
+  				DATA_FORMAT CHAR(16),
   				FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID),
   				UNIQUE (DB_ID, TABLE_NAME)
 				)]]>

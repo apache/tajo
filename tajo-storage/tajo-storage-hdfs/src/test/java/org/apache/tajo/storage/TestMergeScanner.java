@@ -66,11 +66,11 @@ public class TestMergeScanner {
       "}\n";
 
   private Path testDir;
-  private String storeType;
+  private String dataFormat;
   private FileSystem fs;
 
-  public TestMergeScanner(String storeType) {
-    this.storeType = storeType;
+  public TestMergeScanner(String dataFormat) {
+    this.dataFormat = dataFormat;
   }
 
   @Parameters
@@ -106,13 +106,13 @@ public class TestMergeScanner {
     schema.addColumn("age", Type.INT8);
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
-    if (storeType.equalsIgnoreCase("AVRO")) {
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    if (dataFormat.equalsIgnoreCase("AVRO")) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MULTIPLE_FILES_AVRO_SCHEMA);
     }
 
-    Path table1Path = new Path(testDir, storeType + "_1.data");
+    Path table1Path = new Path(testDir, dataFormat + "_1.data");
     Appender appender1 = TablespaceManager.getLocalFs().getAppender(null, null, meta, schema, table1Path);
     appender1.enableStats();
     appender1.init();
@@ -134,7 +134,7 @@ public class TestMergeScanner {
       assertEquals(tupleNum, stat1.getNumRows().longValue());
     }
 
-    Path table2Path = new Path(testDir, storeType + "_2.data");
+    Path table2Path = new Path(testDir, dataFormat + "_2.data");
     Appender appender2 = TablespaceManager.getLocalFs().getAppender(null, null, meta, schema, table2Path);
     appender2.enableStats();
     appender2.init();
@@ -174,7 +174,7 @@ public class TestMergeScanner {
     while ((tuple = scanner.next()) != null) {
       totalCounts++;
 
-      if (storeType.equalsIgnoreCase("RAW")) {
+      if (dataFormat.equalsIgnoreCase("RAW")) {
         assertEquals(4, tuple.size());
         assertFalse(tuple.isBlankOrNull(0));
         assertFalse(tuple.isBlankOrNull(1));

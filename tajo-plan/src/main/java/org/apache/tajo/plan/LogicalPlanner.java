@@ -1841,7 +1841,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setUri(targetUri);
 
     if (expr.hasStorageType()) {
-      insertNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(expr.getStorageType()));
+      insertNode.setDataFormat(CatalogUtil.getBackwardCompitableDataFormat(expr.getDataFormat()));
     }
     if (expr.hasParams()) {
       KeyValueSet options = new KeyValueSet();
@@ -1888,7 +1888,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setTableSchema(baseTable.getSchema());
     createTableNode.setPartitionMethod(partitionDesc);
 
-    createTableNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(baseTable.getMeta().getDataFormat()));
+    createTableNode.setDataFormat(CatalogUtil.getBackwardCompitableDataFormat(baseTable.getMeta().getDataFormat()));
     createTableNode.setOptions(baseTable.getMeta().getOptions());
 
     createTableNode.setExternal(baseTable.isExternal());
@@ -1924,9 +1924,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setUri(getCreatedTableURI(context, expr));
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
-      createTableNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(expr.getStorageType()));
+      createTableNode.setDataFormat(CatalogUtil.getBackwardCompitableDataFormat(expr.getStorageType()));
     } else { // otherwise, default type
-      createTableNode.setStorageType(BuiltinStorages.TEXT);
+      createTableNode.setDataFormat(BuiltinStorages.TEXT);
     }
 
     // Set default storage properties to table

@@ -842,7 +842,7 @@ public class PlannerUtil {
     }
   }
 
-  public static String getStoreType(LogicalPlan plan) {
+  public static String getDataFormat(LogicalPlan plan) {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     NodeType nodeType = rootNode.getChild().getType();
     if (nodeType == NodeType.CREATE_TABLE) {

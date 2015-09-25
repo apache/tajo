@@ -35,10 +35,10 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
     Preconditions.checkNotNull(json);
 		JsonObject jsonObject = json.getAsJsonObject();
 
-    String storeType = CommonGsonHelper.getOrDie(jsonObject, "store").getAsString();
+    String dataFormat = CommonGsonHelper.getOrDie(jsonObject, "store").getAsString();
 
     KeyValueSet keyValueSet = context.deserialize(CommonGsonHelper.getOrDie(jsonObject, "options"), KeyValueSet.class);
-		return new TableMeta(storeType, keyValueSet);
+		return new TableMeta(dataFormat, keyValueSet);
 	}
 
 	@Override

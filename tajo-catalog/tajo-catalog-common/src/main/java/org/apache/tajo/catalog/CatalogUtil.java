@@ -281,11 +281,11 @@ public class CatalogUtil {
   }
 
 
-  public static String getBackwardCompitablityStoreType(String storeType) {
-    return getStoreTypeString(getStoreType(storeType));
+  public static String getBackwardCompitableDataFormat(String dataFormat) {
+    return getDataFormatAsString(asDataFormat(dataFormat));
   }
 
-  public static String getStoreTypeString(final DataFormat type) {
+  public static String getDataFormatAsString(final DataFormat type) {
     if (type == DataFormat.TEXTFILE) {
       return BuiltinStorages.TEXT;
     } else {
@@ -293,7 +293,7 @@ public class CatalogUtil {
     }
   }
 
-  public static DataFormat getStoreType(final String typeStr) {
+  public static DataFormat asDataFormat(final String typeStr) {
     if (typeStr.equalsIgnoreCase("CSV")) {
       return DataFormat.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(DataFormat.RAW.name())) {
@@ -321,13 +321,13 @@ public class CatalogUtil {
     }
   }
 
-  public static TableMeta newTableMeta(String storeType) {
-    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(storeType);
-    return new TableMeta(storeType, defaultProperties);
+  public static TableMeta newTableMeta(String dataFormat) {
+    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(dataFormat);
+    return new TableMeta(dataFormat, defaultProperties);
   }
 
-  public static TableMeta newTableMeta(String storeType, KeyValueSet options) {
-    return new TableMeta(storeType, options);
+  public static TableMeta newTableMeta(String dataFormat, KeyValueSet options) {
+    return new TableMeta(dataFormat, options);
   }
 
   public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
@@ -979,21 +979,21 @@ public class CatalogUtil {
   /**
    * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
    *
-   * @param storeType DataFormat
+   * @param dataFormat DataFormat
    * @return Table properties
    */
-  public static KeyValueSet newDefaultProperty(String storeType) {
+  public static KeyValueSet newDefaultProperty(String dataFormat) {
     KeyValueSet options = new KeyValueSet();
-    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (storeType.equalsIgnoreCase("JSON")) {
+    } else if (dataFormat.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
-    } else if (storeType.equalsIgnoreCase("RCFILE")) {
+    } else if (dataFormat.equalsIgnoreCase("RCFILE")) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
       options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
       options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (storeType.equalsIgnoreCase("PARQUET")) {
+    } else if (dataFormat.equalsIgnoreCase("PARQUET")) {
       options.set(BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE);
       options.set(PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE);
       options.set(COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);

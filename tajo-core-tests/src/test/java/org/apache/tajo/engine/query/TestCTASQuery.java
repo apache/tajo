@@ -210,8 +210,8 @@ public class TestCTASQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testCtasWithStoreType() throws Exception {
-    ResultSet res = executeFile("CtasWithStoreType.sql");
+  public final void testCtasWithDataFormat() throws Exception {
+    ResultSet res = executeFile("CtasWithDataFormat.sql");
     res.close();
 
     ResultSet res2 = executeQuery();

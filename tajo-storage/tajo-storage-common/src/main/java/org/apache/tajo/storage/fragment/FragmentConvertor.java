@@ -47,17 +47,17 @@ public class FragmentConvertor {
    */
   private static final Class<?>[] DEFAULT_FRAGMENT_PARAMS = { ByteString.class };
 
-  public static Class<? extends Fragment> getFragmentClass(Configuration conf, String storeType)
+  public static Class<? extends Fragment> getFragmentClass(Configuration conf, String dataFormat)
   throws IOException {
-    Class<? extends Fragment> fragmentClass = CACHED_FRAGMENT_CLASSES.get(storeType.toLowerCase());
+    Class<? extends Fragment> fragmentClass = CACHED_FRAGMENT_CLASSES.get(dataFormat.toLowerCase());
     if (fragmentClass == null) {
       fragmentClass = conf.getClass(
-          String.format("tajo.storage.fragment.%s.class", storeType.toLowerCase()), null, Fragment.class);
-      CACHED_FRAGMENT_CLASSES.put(storeType.toLowerCase(), fragmentClass);
+          String.format("tajo.storage.fragment.%s.class", dataFormat.toLowerCase()), null, Fragment.class);
+      CACHED_FRAGMENT_CLASSES.put(dataFormat.toLowerCase(), fragmentClass);
     }
 
     if (fragmentClass == null) {
-      throw new IOException("No such a fragment for " + storeType.toLowerCase());
+      throw new IOException("No such a fragment for " + dataFormat.toLowerCase());
     }
 
     return fragmentClass;

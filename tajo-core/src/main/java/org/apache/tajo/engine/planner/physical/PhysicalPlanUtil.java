@@ -209,12 +209,12 @@ public class PhysicalPlanUtil {
    * @param nullChar A character for NULL representation
    */
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
-    String storeType = meta.getDataFormat();
-    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
+    String dataFormat = meta.getDataFormat();
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       meta.putOption(StorageConstants.TEXT_NULL, nullChar);
-    }  else if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
+    }  else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
-    } else if (storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
     }
   }
@@ -226,12 +226,12 @@ public class PhysicalPlanUtil {
    * @return True if TableMeta contains NULL char property according to file format
    */
   public static boolean containsNullChar(TableMeta meta) {
-    String storeType = meta.getDataFormat();
-    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
+    String dataFormat = meta.getDataFormat();
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       return meta.containsOption(StorageConstants.TEXT_NULL);
-    } else if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       return meta.containsOption(StorageConstants.RCFILE_NULL);
-    } else if (storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
     } else {
       return false;

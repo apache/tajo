@@ -63,7 +63,7 @@ public class TestQueryValidation extends QueryTestCaseBase {
   }
 
   @Test
-  public void testUnsupportedStoreType() throws IOException {
+  public void testUnsupportedDataFormat() throws IOException {
     // See TAJO-1249
     assertInvalidSQLFromFile("invalid_store_format.sql");
   }

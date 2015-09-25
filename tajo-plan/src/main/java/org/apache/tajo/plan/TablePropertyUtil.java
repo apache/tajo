@@ -38,10 +38,10 @@ public class TablePropertyUtil {
    * @param node CreateTableNode
    */
   public static void setTableProperty(OverridableConf context, CreateTableNode node) {
-    String storeType = node.getStorageType();
+    String dataFormat = node.getStorageType();
     KeyValueSet property = node.getOptions();
 
-    if (storeType.equalsIgnoreCase("TEXT") || storeType.equalsIgnoreCase("TEXT")) {
+    if (dataFormat.equalsIgnoreCase("TEXT") || dataFormat.equalsIgnoreCase("TEXT")) {
       setSessionToProperty(context, SessionVars.NULL_CHAR, property, StorageConstants.TEXT_NULL);
     }
   }

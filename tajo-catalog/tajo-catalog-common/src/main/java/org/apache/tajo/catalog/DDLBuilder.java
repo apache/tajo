@@ -114,7 +114,7 @@ public class DDLBuilder {
   }
 
   private static void buildUsingClause(StringBuilder sb, TableMeta meta) {
-    sb.append(" USING " +  CatalogUtil.getBackwardCompitablityStoreType(meta.getDataFormat()));
+    sb.append(" USING " +  CatalogUtil.getBackwardCompitableDataFormat(meta.getDataFormat()));
   }
 
   private static void buildWithClause(final StringBuilder sb, TableMeta meta) {

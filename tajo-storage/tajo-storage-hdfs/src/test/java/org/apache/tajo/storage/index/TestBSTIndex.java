@@ -54,10 +54,10 @@ public class TestBSTIndex {
   private static final String TEST_PATH = "target/test-data/TestIndex";
   private Path testDir;
   private FileSystem fs;
-  private String storeType;
+  private String dataFormat;
 
   public TestBSTIndex(String type) {
-    this.storeType = type;
+    this.dataFormat = type;
     conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.ROOT_DIR, TEST_PATH);
     schema = new Schema();
@@ -85,9 +85,9 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testFindValue_" + storeType);
+    Path tablePath = new Path(testDir, "testFindValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -118,7 +118,7 @@ public class TestBSTIndex {
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindValue_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindValue_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX,
         keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
@@ -146,7 +146,7 @@ public class TestBSTIndex {
     scanner.close();
 
     tuple = new VTuple(keySchema.size());
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + storeType + ".idx"), keySchema, comp);
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + dataFormat + ".idx"), keySchema, comp);
     reader.open();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
@@ -176,9 +176,9 @@ public class TestBSTIndex {
 
   @Test
   public void testBuildIndexWithAppender() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testBuildIndexWithAppender_" + storeType);
+    Path tablePath = new Path(testDir, "testBuildIndexWithAppender_" + dataFormat);
     FileAppender appender = (FileAppender) ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -194,7 +194,7 @@ public class TestBSTIndex {
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testBuildIndexWithAppender_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testBuildIndexWithAppender_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -225,7 +225,7 @@ public class TestBSTIndex {
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
     tuple = new VTuple(keySchema.size());
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testBuildIndexWithAppender_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testBuildIndexWithAppender_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
@@ -256,9 +256,9 @@ public class TestBSTIndex {
 
   @Test
   public void testFindOmittedValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = StorageUtil.concatPath(testDir, "testFindOmittedValue_" + storeType);
+    Path tablePath = StorageUtil.concatPath(testDir, "testFindOmittedValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(meta, schema, tablePath);
     appender.init();
     Tuple tuple;
@@ -287,7 +287,7 @@ public class TestBSTIndex {
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindOmittedValue_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindOmittedValue_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -313,7 +313,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindOmittedValue_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindOmittedValue_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
     for (int i = 1; i < TUPLE_NUM - 1; i += 2) {
@@ -327,9 +327,9 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testFindNextKeyValue_" + storeType);
+    Path tablePath = new Path(testDir, "testFindNextKeyValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -360,7 +360,7 @@ public class TestBSTIndex {
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindNextKeyValue_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindNextKeyValue_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -386,7 +386,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyValue_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyValue_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
@@ -420,9 +420,9 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyOmittedValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testFindNextKeyOmittedValue_" + storeType);
+    Path tablePath = new Path(testDir, "testFindNextKeyOmittedValue_" + dataFormat);
     Appender appender = (((FileTablespace) TablespaceManager.getLocalFs()))
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -453,7 +453,7 @@ public class TestBSTIndex {
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindNextKeyOmittedValue_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindNextKeyOmittedValue_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -479,7 +479,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyOmittedValue_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyOmittedValue_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
@@ -502,9 +502,9 @@ public class TestBSTIndex {
 
   @Test
   public void testFindMinValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testFindMinValue" + storeType);
+    Path tablePath = new Path(testDir, "testFindMinValue" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -535,7 +535,7 @@ public class TestBSTIndex {
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindMinValue_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindMinValue_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -563,7 +563,7 @@ public class TestBSTIndex {
 
     tuple = new VTuple(keySchema.size());
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindMinValue_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindMinValue_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
@@ -588,9 +588,9 @@ public class TestBSTIndex {
 
   @Test
   public void testMinMax() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testMinMax_" + storeType);
+    Path tablePath = new Path(testDir, "testMinMax_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -621,7 +621,7 @@ public class TestBSTIndex {
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testMinMax_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testMinMax_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -647,7 +647,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testMinMax_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testMinMax_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
 
@@ -694,9 +694,9 @@ public class TestBSTIndex {
 
   @Test
   public void testConcurrentAccess() throws IOException, InterruptedException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testConcurrentAccess_" + storeType);
+    Path tablePath = new Path(testDir, "testConcurrentAccess_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -728,7 +728,7 @@ public class TestBSTIndex {
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testConcurrentAccess_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testConcurrentAccess_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -754,7 +754,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testConcurrentAccess_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testConcurrentAccess_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
 
@@ -776,9 +776,9 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValueDescOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testFindValueDescOrder_" + storeType);
+    Path tablePath = new Path(testDir, "testFindValueDescOrder_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(meta, schema, tablePath);
     appender.init();
@@ -811,7 +811,7 @@ public class TestBSTIndex {
 
 
     BSTIndex bst = new BSTIndex(conf);
-    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindValueDescOrder_" + storeType + ".idx"),
+    BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindValueDescOrder_" + dataFormat + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
@@ -839,7 +839,7 @@ public class TestBSTIndex {
 
     tuple = new VTuple(keySchema.size());
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValueDescOrder_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValueDescOrder_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
@@ -870,9 +870,9 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyValueDescOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(storeType);
+    meta = CatalogUtil.newTableMeta(dataFormat);
 
-    Path tablePath = new Path(testDir, "testFindNextKeyValueDescOrder_" + storeType);
+    Path tablePath = new Path(testDir, "testFindNextKeyValueDescOrder_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(meta, schema, tablePath);
     appender.init();
 
@@ -904,7 +904,7 @@ public class TestBSTIndex {
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir,
-        "testFindNextKeyValueDescOrder_" + storeType + ".idx"), BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
+        "testFindNextKeyValueDescOrder_" + dataFormat + ".idx"), BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
@@ -930,7 +930,7 @@ public class TestBSTIndex {
     scanner.close();
 
 
-    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyValueDescOrder_" + storeType + ".idx"),
+    BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyValueDescOrder_" + dataFormat + ".idx"),
         keySchema, comp);
     reader.open();
 

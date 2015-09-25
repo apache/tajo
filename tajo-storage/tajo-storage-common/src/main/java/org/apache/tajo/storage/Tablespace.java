@@ -276,12 +276,12 @@ public abstract class Tablespace {
   /**
    * Return the Scanner class for the DataFormat that is defined in storage-default.xml.
    *
-   * @param storeType store type
+   * @param dataFormat store type
    * @return The Scanner class
    * @throws java.io.IOException
    */
-  public Class<? extends Scanner> getScannerClass(String storeType) throws IOException {
-    String handlerName = storeType.toLowerCase();
+  public Class<? extends Scanner> getScannerClass(String dataFormat) throws IOException {
+    String handlerName = dataFormat.toLowerCase();
     Class<? extends Scanner> scannerClass = OldStorageManager.SCANNER_HANDLER_CACHE.get(handlerName);
     if (scannerClass == null) {
       scannerClass = conf.getClass(
@@ -290,7 +290,7 @@ public abstract class Tablespace {
     }
 
     if (scannerClass == null) {
-      throw new IOException("Unknown Storage Type: " + storeType);
+      throw new IOException("Unknown Storage Type: " + dataFormat);
     }
 
     return scannerClass;

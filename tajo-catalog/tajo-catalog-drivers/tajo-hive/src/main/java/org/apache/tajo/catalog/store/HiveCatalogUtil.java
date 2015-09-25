@@ -99,7 +99,7 @@ public class HiveCatalogUtil {
     }
   }
 
-  public static String getStoreType(String fileFormat) {
+  public static String getDataFormat(String fileFormat) {
     Preconditions.checkNotNull(fileFormat);
 
     String[] fileFormatArrary = fileFormat.split("\\.");

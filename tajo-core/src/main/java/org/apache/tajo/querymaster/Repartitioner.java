@@ -636,7 +636,7 @@ public class Repartitioner {
     TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), false);
 
     if (sortNode.getSortPurpose() == SortPurpose.STORAGE_SPECIFIED) {
-      String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
+      String dataFormat = PlannerUtil.getDataFormat(masterPlan.getLogicalPlan());
       CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalRootNode rootNode = masterPlan.getLogicalPlan().getRootBlock().getRoot();
       TableDesc tableDesc = null;
@@ -647,7 +647,7 @@ public class Repartitioner {
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }
 
-      Tablespace space = TablespaceManager.getAnyByScheme(storeType).get();
+      Tablespace space = TablespaceManager.getAnyByScheme(dataFormat).get();
       ranges = space.getInsertSortRanges(
           stage.getContext().getQueryContext(),
           tableDesc,
