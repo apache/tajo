@@ -192,13 +192,14 @@ public class TajoDump {
           writer.write("--\n");
           writer.write(String.format("-- Table Partitions: %s%n", tableName));
           writer.write("--\n");
-          // Disable the alter table add partition statement temporarily at TAJO-1887
+          // TODO: This should be improved at TAJO-1891
 //          List<PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
 //          for (PartitionDescProto eachPartitionProto : partitionProtos) {
 //            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
 //          }
           writer.write(String.format("ALTER TABLE %s REPAIR PARTITION%n",
             CatalogUtil.denormalizeIdentifier(databaseName) + "." + CatalogUtil.denormalizeIdentifier(tableName)));
+
           writer.write("\n\n");
         }
 

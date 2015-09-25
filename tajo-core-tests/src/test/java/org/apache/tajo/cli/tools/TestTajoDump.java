@@ -113,19 +113,15 @@ public class TestTajoDump extends QueryTestCaseBase {
           + " partition by column(\"col3\" int4, \"col4\" int4)"
       );
 
-      // TODO: This should be added at TAJO-1891
+      // TODO: This should be improved at TAJO-1891
 //      executeString("ALTER TABLE \"" + getCurrentDatabase() + "\".\"TableName3\"" +
 //        " ADD PARTITION (\"col3\" = 1 , \"col4\" = 2)");
-
-      // TODO: This should be removed at TAJO-1891
+//      executeString("ALTER TABLE \"" + getCurrentDatabase() + "\".\"TableName4\"" +
+//        " ADD PARTITION (\"col3\" = 'tajo' , \"col4\" = '2015-09-01')");
       executeString("create table \"" + getCurrentDatabase() + "\".\"TableName4\""
           + " (\"col1\" int4, \"col2\" int4) "
           + " partition by column(\"col3\" TEXT, \"col4\" date)"
       );
-
-      // TODO: This should be added at TAJO-1891
-//      executeString("ALTER TABLE \"" + getCurrentDatabase() + "\".\"TableName4\"" +
-//        " ADD PARTITION (\"col3\" = 'tajo' , \"col4\" = '2015-09-01')");
 
       try {
         UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
