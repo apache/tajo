@@ -1287,7 +1287,6 @@ public class TestLogicalPlanner {
   };
 
   // TODO: This should be added at TAJO-1891
-//  @Test
   public final void testAddPartitionAndDropPartition() throws TajoException {
     String tableName = CatalogUtil.normalizeIdentifier("partitioned_table");
     String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);

@@ -158,7 +158,6 @@ public class TestCatalogExceptions {
   }
 
   // TODO: This should be added at TAJO-1891
-//  @Test
   public void testAddPartitionWithWrongUri() throws Exception {
     // TODO: currently, wrong uri does not occur any exception.
     String partitionName = "DaTe=/=AaA";
@@ -173,7 +172,6 @@ public class TestCatalogExceptions {
   }
 
   // TODO: This should be added at TAJO-1891
-//  @Test(expected = DuplicatePartitionException.class)
   public void testAddDuplicatePartition() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
@@ -197,7 +195,6 @@ public class TestCatalogExceptions {
   }
 
   // TODO: This should be added at TAJO-1891
-//  @Test(expected = UndefinedTableException.class)
   public void testAddPartitionToUndefinedTable() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);

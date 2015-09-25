@@ -76,7 +76,6 @@ public class TestAlterTable extends QueryTestCaseBase {
   }
 
   // TODO: This should be added at TAJO-1891
-//  @Test
   public final void testAlterTableAddPartition() throws Exception {
     executeDDL("create_partitioned_table.sql", null);
 
