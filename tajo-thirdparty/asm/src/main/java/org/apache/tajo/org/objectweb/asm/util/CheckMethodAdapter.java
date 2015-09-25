@@ -1202,7 +1202,7 @@ public class CheckMethodAdapter extends MethodVisitor {
                 checkIdentifier(name, begin, slash, null);
                 begin = slash + 1;
             } while (slash != max);
-        } catch (IllegalArgumentException _) {
+        } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException(
                     "Invalid "
                             + msg
@@ -1280,7 +1280,7 @@ public class CheckMethodAdapter extends MethodVisitor {
             }
             try {
                 checkInternalName(desc, start + 1, index, null);
-            } catch (IllegalArgumentException _) {
+            } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Invalid descriptor: "
                         + desc);
             }
