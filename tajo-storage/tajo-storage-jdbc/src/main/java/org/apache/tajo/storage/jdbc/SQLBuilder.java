@@ -19,7 +19,6 @@
 package org.apache.tajo.storage.jdbc;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;

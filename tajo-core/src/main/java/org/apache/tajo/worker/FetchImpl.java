@@ -32,8 +32,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-
 /**
  * <code>FetchImpl</code> information to indicate the locations of intermediate data.
  */

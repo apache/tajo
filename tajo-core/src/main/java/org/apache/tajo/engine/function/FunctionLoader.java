@@ -45,7 +45,6 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.GENERAL;

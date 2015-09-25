@@ -32,8 +32,6 @@ import org.apache.tajo.exception.*;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
-import static org.apache.tajo.exception.ExceptionUtil.makeNotSupported;
-
 public class HiveCatalogUtil {
   public static void validateSchema(Table tblSchema) {
     for (FieldSchema fieldSchema : tblSchema.getCols()) {

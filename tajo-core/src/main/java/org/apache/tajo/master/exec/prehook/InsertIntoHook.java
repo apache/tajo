@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.exec.prehook;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.InsertNode;

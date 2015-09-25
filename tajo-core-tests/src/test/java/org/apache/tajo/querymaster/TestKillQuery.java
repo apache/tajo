@@ -42,7 +42,6 @@ import org.apache.tajo.master.event.StageEventType;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;

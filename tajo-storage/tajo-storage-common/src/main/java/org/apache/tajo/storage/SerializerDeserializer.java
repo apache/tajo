@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 

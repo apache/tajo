@@ -27,7 +27,6 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.util.TUtil;
 
 /**

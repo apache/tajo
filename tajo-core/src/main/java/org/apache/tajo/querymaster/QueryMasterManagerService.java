@@ -31,7 +31,6 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.CallFuture;

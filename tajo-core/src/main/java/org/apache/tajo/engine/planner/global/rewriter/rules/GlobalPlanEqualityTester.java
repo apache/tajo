@@ -26,7 +26,6 @@ import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.serder.LogicalNodeSerializer;
-import org.apache.tajo.plan.serder.PlanProto;
 
 /**
  * It verifies the equality between the input and output of LogicalNodeTree(De)Serializer in global planning.

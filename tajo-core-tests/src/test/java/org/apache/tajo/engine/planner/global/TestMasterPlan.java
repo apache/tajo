@@ -21,7 +21,6 @@ package org.apache.tajo.engine.planner.global;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.junit.Test;
 
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 

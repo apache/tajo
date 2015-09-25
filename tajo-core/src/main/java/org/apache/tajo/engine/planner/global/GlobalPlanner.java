@@ -59,7 +59,6 @@ import java.util.*;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.apache.tajo.conf.TajoConf.ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 
 /**
  * Build DAG

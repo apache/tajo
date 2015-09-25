@@ -35,7 +35,6 @@ import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 
 import java.net.InetSocketAddress;
 import java.net.URI;

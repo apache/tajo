@@ -19,8 +19,6 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import org.apache.tajo.common.TajoDataTypes.Type;
 
 import java.util.*;
