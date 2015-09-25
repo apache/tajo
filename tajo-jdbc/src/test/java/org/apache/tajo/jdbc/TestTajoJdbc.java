@@ -589,10 +589,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     }
   }
 
-
-  // Disable the alter table add partition statement temporarily at TAJO-1887
-  /*
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testAlterTableAddPartition() throws Exception {
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -631,7 +628,6 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     }
   }
-  */
 
   @Test
   public void testMaxRows() throws Exception {

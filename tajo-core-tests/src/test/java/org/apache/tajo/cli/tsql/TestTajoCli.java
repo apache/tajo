@@ -473,9 +473,7 @@ public class TestTajoCli {
     }
   }
 
-  // Disable the alter table add partition statement temporarily at TAJO-1887
-/*
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testAlterTableAddDropPartition() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
 
@@ -505,7 +503,6 @@ public class TestTajoCli {
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);
   }
-*/
 
   public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {
     @Override
