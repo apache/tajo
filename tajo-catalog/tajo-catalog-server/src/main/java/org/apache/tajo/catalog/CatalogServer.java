@@ -461,7 +461,7 @@ public class CatalogServer extends AbstractService {
 
       // TODO: This should be removed at TAJO-1891
       if (proto.getAlterTableType() == CatalogProtos.AlterTableType.ADD_PARTITION) {
-        return errFeatureNotSupported("ADD PARTTIION");
+        return errFeatureNotImplemented("ADD PARTTIION");
       }
 
       wlock.lock();
