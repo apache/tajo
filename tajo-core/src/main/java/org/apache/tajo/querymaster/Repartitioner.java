@@ -195,7 +195,7 @@ public class Repartitioner {
       int maxStatsScanIdx = -1;
       StringBuilder nonLeafScanNamesBuilder = new StringBuilder();
       for (int i = 0; i < scans.length; i++) {
-        if (scans[i].getTableDesc().getMeta().getStoreType().equalsIgnoreCase("RAW")) {
+        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase("RAW")) {
           // Intermediate data scan
           hasNonLeafNode = true;
           largeScanIndexList.add(i);

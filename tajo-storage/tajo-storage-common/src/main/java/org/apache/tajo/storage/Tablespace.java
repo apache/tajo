@@ -209,7 +209,7 @@ public abstract class Tablespace {
 
     Scanner scanner;
 
-    Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
+    Class<? extends Scanner> scannerClass = getScannerClass(meta.getDataFormat());
     scanner = OldStorageManager.newScannerInstance(scannerClass, conf, schema, meta, fragment);
     scanner.setTarget(target.toArray());
 
@@ -256,7 +256,7 @@ public abstract class Tablespace {
 
     Class<? extends Appender> appenderClass;
 
-    String handlerName = meta.getStoreType().toLowerCase();
+    String handlerName = meta.getDataFormat().toLowerCase();
     appenderClass = OldStorageManager.APPENDER_HANDLER_CACHE.get(handlerName);
     if (appenderClass == null) {
       appenderClass = conf.getClass(
@@ -265,7 +265,7 @@ public abstract class Tablespace {
     }
 
     if (appenderClass == null) {
-      throw new IOException("Unknown Storage Type: " + meta.getStoreType());
+      throw new IOException("Unknown Storage Type: " + meta.getDataFormat());
     }
 
     appender = OldStorageManager.newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);

@@ -75,12 +75,12 @@ message SchemaProto {
 
 message FragmentProto {
   required string id = 1;
-  required string storeType = 2;
+  required string dataFormat = 2;
   required bytes contents = 3;
 }
 
 message TableProto {
-  required string storeType = 1;
+  required string dataFormat = 1;
   optional KeyValueSetProto params = 2;
 }
 

@@ -43,7 +43,7 @@ public abstract class TextLineSerDe {
 
   public static ByteBuf getNullChars(TableMeta meta) {
     byte[] nullCharByteArray;
-    if (meta.getStoreType().equals("SEQUENCEFILE")) {
+    if (meta.getDataFormat().equals("SEQUENCEFILE")) {
       nullCharByteArray = getNullCharsAsBytes(meta, StorageConstants.SEQUENCEFILE_NULL, "\\");
     } else {
       nullCharByteArray = getNullCharsAsBytes(meta);

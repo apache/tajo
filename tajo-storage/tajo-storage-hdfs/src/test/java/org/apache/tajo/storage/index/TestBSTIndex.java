@@ -124,7 +124,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -148,7 +148,7 @@ public class TestBSTIndex {
     tuple = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + storeType + ".idx"), keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -228,7 +228,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testBuildIndexWithAppender_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -292,7 +292,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -365,7 +365,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -389,7 +389,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyValue_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -458,7 +458,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -482,7 +482,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindNextKeyOmittedValue_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -540,7 +540,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -566,7 +566,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindMinValue_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -626,7 +626,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -733,7 +733,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -816,7 +816,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -842,7 +842,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValueDescOrder_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
-    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -908,7 +908,7 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 
@@ -937,7 +937,7 @@ public class TestBSTIndex {
     assertEquals(keySchema, reader.getKeySchema());
     assertEquals(comp, reader.getComparator());
 
-    scanner = OldStorageManager.getStorageManager(conf, meta.getStoreType()).
+    scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
         getSeekableScanner(meta, schema, tablet.getProto(), schema);
     scanner.init();
 

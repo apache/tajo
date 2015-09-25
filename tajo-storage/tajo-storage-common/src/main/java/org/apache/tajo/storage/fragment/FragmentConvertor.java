@@ -82,9 +82,9 @@ public class FragmentConvertor {
 
   public static <T extends Fragment> T convert(Configuration conf, FragmentProto fragment)
       throws IOException {
-    Class<T> fragmentClass = (Class<T>) getFragmentClass(conf, fragment.getStoreType().toLowerCase());
+    Class<T> fragmentClass = (Class<T>) getFragmentClass(conf, fragment.getDataFormat().toLowerCase());
     if (fragmentClass == null) {
-      throw new IOException("No such a fragment class for " + fragment.getStoreType());
+      throw new IOException("No such a fragment class for " + fragment.getDataFormat());
     }
     return convert(fragmentClass, fragment);
   }

@@ -38,7 +38,6 @@ import org.apache.tajo.exception.*;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
-import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
@@ -854,7 +853,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setString(3, TableType.MANAGED.name());
       }
       pstmt.setString(4, table.getPath());
-      pstmt.setString(5, table.getMeta().getStoreType());
+      pstmt.setString(5, table.getMeta().getDataFormat());
       pstmt.setBoolean(6, table.getSchema() == null);
       pstmt.executeUpdate();
       pstmt.close();
@@ -1741,7 +1740,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       //////////////////////////////////////////
       CatalogProtos.TableProto.Builder metaBuilder = CatalogProtos.TableProto.newBuilder();
 
-      metaBuilder.setStoreType(storeType);
+      metaBuilder.setDataFormat(storeType);
       sql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE " + COL_TABLES_PK + " = ?";
 
       if (LOG.isDebugEnabled()) {

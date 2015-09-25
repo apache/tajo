@@ -103,7 +103,7 @@ public class OldStorageManager {
   }
 
   /**
-   * Returns the proper Tablespace instance according to the storeType.
+   * Returns the proper Tablespace instance according to the dataFormat.
    *
    * @param tajoConf Tajo system property.
    * @param storeType Storage type
@@ -120,7 +120,7 @@ public class OldStorageManager {
   }
 
   /**
-   * Returns the proper Tablespace instance according to the storeType
+   * Returns the proper Tablespace instance according to the dataFormat
    *
    * @param tajoConf Tajo system property.
    * @param uri Key that can identify each storage manager(may be a path)

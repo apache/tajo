@@ -24,9 +24,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
@@ -1401,7 +1398,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private void updatePhysicalInfo(TableDesc desc) {
 
     // FAKEFILE is used for test
-    if (!desc.getMeta().getStoreType().equals("SYSTEM") && !desc.getMeta().getStoreType().equals("FAKEFILE")) {
+    if (!desc.getMeta().getDataFormat().equals("SYSTEM") && !desc.getMeta().getDataFormat().equals("FAKEFILE")) {
       try {
         if (desc.getStats() != null) {
           desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
@@ -1891,7 +1888,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setTableSchema(baseTable.getSchema());
     createTableNode.setPartitionMethod(partitionDesc);
 
-    createTableNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(baseTable.getMeta().getStoreType()));
+    createTableNode.setStorageType(CatalogUtil.getBackwardCompitablityStoreType(baseTable.getMeta().getDataFormat()));
     createTableNode.setOptions(baseTable.getMeta().getOptions());
 
     createTableNode.setExternal(baseTable.isExternal());

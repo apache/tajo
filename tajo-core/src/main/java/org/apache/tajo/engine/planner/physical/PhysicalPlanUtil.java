@@ -209,7 +209,7 @@ public class PhysicalPlanUtil {
    * @param nullChar A character for NULL representation
    */
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
-    String storeType = meta.getStoreType();
+    String storeType = meta.getDataFormat();
     if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       meta.putOption(StorageConstants.TEXT_NULL, nullChar);
     }  else if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
@@ -226,7 +226,7 @@ public class PhysicalPlanUtil {
    * @return True if TableMeta contains NULL char property according to file format
    */
   public static boolean containsNullChar(TableMeta meta) {
-    String storeType = meta.getStoreType();
+    String storeType = meta.getDataFormat();
     if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       return meta.containsOption(StorageConstants.TEXT_NULL);
     } else if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {

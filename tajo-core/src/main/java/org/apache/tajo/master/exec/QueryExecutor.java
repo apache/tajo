@@ -513,7 +513,7 @@ public class QueryExecutor {
         List<CatalogProtos.ColumnProto> columns = new ArrayList<>();
         CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
             .setTableName(nodeUniqName)
-            .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(BuiltinStorages.TEXT).build())
+            .setMeta(CatalogProtos.TableProto.newBuilder().setDataFormat(BuiltinStorages.TEXT).build())
             .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
             .setStats(stats.getProto())
             .build();

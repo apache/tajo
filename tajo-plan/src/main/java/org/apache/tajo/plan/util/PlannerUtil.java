@@ -183,7 +183,7 @@ public class PlannerUtil {
     
     for (LogicalNode node: scanNodes) {
       scanNode = (ScanNode) node;
-      isVirtualTable &= (scanNode.getTableDesc().getMeta().getStoreType().equalsIgnoreCase("SYSTEM"));
+      isVirtualTable &= (scanNode.getTableDesc().getMeta().getDataFormat().equalsIgnoreCase("SYSTEM"));
     }
     
     return !checkIfDDLPlan(rootNode) && hasScanNode && isVirtualTable;
