@@ -566,7 +566,7 @@ message DataChannelProto {
   repeated ColumnProto shuffleKeys = 7;
   optional int32 numOutputs = 9 [default = 1];
 
-  optional string storeType = 10;
+  optional string dataFormat = 10;
 }
 
 message EnforcerProto {

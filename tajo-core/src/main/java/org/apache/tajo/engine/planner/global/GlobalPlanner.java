@@ -68,8 +68,8 @@ public class GlobalPlanner {
   private static Log LOG = LogFactory.getLog(GlobalPlanner.class);
 
   private final TajoConf conf;
-  private final String storeType;
-  private final String finalOutputStoreType;
+  private final String dataFormat;
+  private final String finalOutputDataFormat;
   private final CatalogService catalog;
   private final GlobalPlanRewriteEngine rewriteEngine;
 
@@ -77,8 +77,8 @@ public class GlobalPlanner {
   public GlobalPlanner(final TajoConf conf, final CatalogService catalog) throws IOException {
     this.conf = conf;
     this.catalog = catalog;
-    this.storeType = conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase();
-    this.finalOutputStoreType = conf.getVar(ConfVars.QUERY_OUTPUT_DEFAULT_FILE_FORMAT).toUpperCase();
+    this.dataFormat = conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase();
+    this.finalOutputDataFormat = conf.getVar(ConfVars.QUERY_OUTPUT_DEFAULT_FILE_FORMAT).toUpperCase();
 
     Class<? extends GlobalPlanRewriteRuleProvider> clazz =
         (Class<? extends GlobalPlanRewriteRuleProvider>) conf.getClassVar(GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);
@@ -99,8 +99,8 @@ public class GlobalPlanner {
     return catalog;
   }
 
-  public String getStoreType() {
-    return storeType;
+  public String getDataFormat() {
+    return dataFormat;
   }
 
   public static class GlobalPlanContext {
@@ -163,7 +163,7 @@ public class GlobalPlanner {
   private void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
     outputChannel.setShuffleType(NONE_SHUFFLE);
     outputChannel.setShuffleOutputNum(1);
-    outputChannel.setStoreType(finalOutputStoreType);
+    outputChannel.setDataFormat(finalOutputDataFormat);
     outputChannel.setSchema(outputSchema);
   }
 
@@ -171,7 +171,7 @@ public class GlobalPlanner {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() +
             ") is not initialized");
-    TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet());
+    TableMeta meta = new TableMeta(channel.getDataFormat(), new KeyValueSet());
     TableDesc desc = new TableDesc(
         channel.getSrcId().toString(), channel.getSchema(), meta, StorageConstants.LOCAL_FS_URI);
     ScanNode scanNode = plan.createNode(ScanNode.class);
@@ -184,7 +184,7 @@ public class GlobalPlanner {
     ExecutionBlock childBlock = leftTable ? leftBlock : rightBlock;
 
     DataChannel channel = new DataChannel(childBlock, parent, HASH_SHUFFLE, 32);
-    channel.setStoreType(storeType);
+    channel.setDataFormat(dataFormat);
     if (join.getJoinType() != JoinType.CROSS) {
       // ShuffleKeys need to not have thea-join condition because Tajo supports only equi-join.
       Column [][] joinColumns = PlannerUtil.joinJoinKeyForEachTable(join.getJoinQual(),
@@ -331,7 +331,7 @@ public class GlobalPlanner {
     // create other side channel
     if (otherSideBlock != null) {
       DataChannel otherSideChannel = new DataChannel(otherSideBlock, targetBlock, HASH_SHUFFLE, 32);
-      otherSideChannel.setStoreType(storeType);
+      otherSideChannel.setDataFormat(dataFormat);
       if (otherSideShuffleKeys != null) {
         otherSideChannel.setShuffleKeys(otherSideShuffleKeys);
       }
@@ -587,7 +587,7 @@ public class GlobalPlanner {
     channel = new DataChannel(firstStage, secondStage, HASH_SHUFFLE, 32);
     channel.setShuffleKeys(secondPhaseGroupby.getGroupingColumns().clone());
     channel.setSchema(firstStage.getPlan().getOutSchema());
-    channel.setStoreType(storeType);
+    channel.setDataFormat(dataFormat);
 
     // Setting for the second phase's logical plan
     ScanNode scanNode = buildInputExecutor(context.plan.getLogicalPlan(), channel);
@@ -735,7 +735,7 @@ public class GlobalPlanner {
       channel.setShuffleKeys(firstPhaseGroupby.getGroupingColumns());
     }
     channel.setSchema(firstPhaseGroupby.getOutSchema());
-    channel.setStoreType(storeType);
+    channel.setDataFormat(dataFormat);
 
     ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
     secondPhaseGroupby.setChild(scanNode);
@@ -888,7 +888,7 @@ public class GlobalPlanner {
       ExecutionBlock childBlock = masterPlan.getExecBlock(channel.getSrcId());
       setShuffleKeysFromPartitionedTableStore(currentNode, channel);
       channel.setSchema(childBlock.getPlan().getOutSchema());
-      channel.setStoreType(storeType);
+      channel.setDataFormat(dataFormat);
       lastChannel = channel;
     }
 
@@ -911,7 +911,7 @@ public class GlobalPlanner {
     DataChannel channel = new DataChannel(lastBlock, nextBlock, HASH_SHUFFLE, 32);
     setShuffleKeysFromPartitionedTableStore(currentNode, channel);
     channel.setSchema(lastBlock.getPlan().getOutSchema());
-    channel.setStoreType(storeType);
+    channel.setDataFormat(dataFormat);
 
     ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
     currentNode.setChild(scanNode);
@@ -990,7 +990,7 @@ public class GlobalPlanner {
         MasterPlan masterPlan = context.plan;
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
 
-          dataChannel.setStoreType(finalOutputStoreType);
+          dataChannel.setDataFormat(finalOutputDataFormat);
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);
@@ -1035,7 +1035,7 @@ public class GlobalPlanner {
         DataChannel newChannel = new DataChannel(execBlock, newExecBlock, HASH_SHUFFLE, 1);
         newChannel.setShuffleKeys(new Column[]{});
         newChannel.setSchema(node.getOutSchema());
-        newChannel.setStoreType(storeType);
+        newChannel.setDataFormat(dataFormat);
 
         ScanNode scanNode = buildInputExecutor(plan, newChannel);
         LimitNode parentLimit = PlannerUtil.clone(context.plan.getLogicalPlan(), node);
@@ -1103,7 +1103,7 @@ public class GlobalPlanner {
         channel.setShuffleKeys(null);
       }
       channel.setSchema(windowAgg.getInSchema());
-      channel.setStoreType(storeType);
+      channel.setDataFormat(dataFormat);
 
       LogicalNode childNode = windowAgg.getChild();
       ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), channel);
@@ -1236,7 +1236,7 @@ public class GlobalPlanner {
 
       for (ExecutionBlock childBlocks : queryBlockBlocks) {
         DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_SHUFFLE, 1);
-        channel.setStoreType(storeType);
+        channel.setDataFormat(dataFormat);
         masterPlan.addConnect(channel);
       }
 

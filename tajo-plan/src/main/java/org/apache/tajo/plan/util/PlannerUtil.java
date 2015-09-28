@@ -159,7 +159,7 @@ public class PlannerUtil {
     
     for (LogicalNode node: scanNodes) {
       scanNode = (ScanNode) node;
-      isVirtualTable &= (scanNode.getTableDesc().getMeta().getStoreType().equalsIgnoreCase("SYSTEM"));
+      isVirtualTable &= (scanNode.getTableDesc().getMeta().getDataFormat().equalsIgnoreCase("SYSTEM"));
     }
     
     return !checkIfDDLPlan(rootNode) && hasScanNode && isVirtualTable;
@@ -818,7 +818,7 @@ public class PlannerUtil {
     }
   }
 
-  public static String getStoreType(LogicalPlan plan) {
+  public static String getDataFormat(LogicalPlan plan) {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     NodeType nodeType = rootNode.getChild().getType();
     if (nodeType == NodeType.CREATE_TABLE) {

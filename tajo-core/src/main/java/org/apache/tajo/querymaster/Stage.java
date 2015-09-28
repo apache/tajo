@@ -775,14 +775,14 @@ public class Stage implements EventHandler<StageEvent> {
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
 
     // if store plan (i.e., CREATE or INSERT OVERWRITE)
-    String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
-    if (storeType == null) {
+    String dataFormat = PlannerUtil.getDataFormat(masterPlan.getLogicalPlan());
+    if (dataFormat == null) {
       // get final output store type (i.e., SELECT)
-      storeType = channel.getStoreType();
+      dataFormat = channel.getDataFormat();
     }
 
     schema = channel.getSchema();
-    meta = CatalogUtil.newTableMeta(storeType, new KeyValueSet());
+    meta = CatalogUtil.newTableMeta(dataFormat, new KeyValueSet());
     inputStatistics = statsArray[0];
     resultStatistics = statsArray[1];
   }

@@ -195,7 +195,7 @@ public class Repartitioner {
       int maxStatsScanIdx = -1;
       StringBuilder nonLeafScanNamesBuilder = new StringBuilder();
       for (int i = 0; i < scans.length; i++) {
-        if (scans[i].getTableDesc().getMeta().getStoreType().equalsIgnoreCase("RAW")) {
+        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase("RAW")) {
           // Intermediate data scan
           hasNonLeafNode = true;
           largeScanIndexList.add(i);
@@ -636,7 +636,7 @@ public class Repartitioner {
     TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), false);
 
     if (sortNode.getSortPurpose() == SortPurpose.STORAGE_SPECIFIED) {
-      String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
+      String dataFormat = PlannerUtil.getDataFormat(masterPlan.getLogicalPlan());
       CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalRootNode rootNode = masterPlan.getLogicalPlan().getRootBlock().getRoot();
       TableDesc tableDesc = null;
@@ -647,7 +647,7 @@ public class Repartitioner {
             PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
       }
 
-      Tablespace space = TablespaceManager.getAnyByScheme(storeType).get();
+      Tablespace space = TablespaceManager.getAnyByScheme(dataFormat).get();
       ranges = space.getInsertSortRanges(
           stage.getContext().getQueryContext(),
           tableDesc,

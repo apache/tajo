@@ -98,7 +98,7 @@ public class Insert extends Expr {
     this.storageType = storageType;
   }
 
-  public String getStorageType() {
+  public String getDataFormat() {
     return storageType;
   }
 

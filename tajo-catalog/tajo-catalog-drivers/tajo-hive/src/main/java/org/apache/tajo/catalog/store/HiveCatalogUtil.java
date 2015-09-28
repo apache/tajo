@@ -32,8 +32,6 @@ import org.apache.tajo.exception.*;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
-import static org.apache.tajo.exception.ExceptionUtil.makeNotSupported;
-
 public class HiveCatalogUtil {
   public static void validateSchema(Table tblSchema) {
     for (FieldSchema fieldSchema : tblSchema.getCols()) {
@@ -101,7 +99,7 @@ public class HiveCatalogUtil {
     }
   }
 
-  public static String getStoreType(String fileFormat) {
+  public static String getDataFormat(String fileFormat) {
     Preconditions.checkNotNull(fileFormat);
 
     String[] fileFormatArrary = fileFormat.split("\\.");
@@ -113,11 +111,11 @@ public class HiveCatalogUtil {
     if(outputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
       return BuiltinStorages.TEXT;
     } else if(outputFormatClass.equals(HiveSequenceFileOutputFormat.class.getSimpleName())) {
-      return CatalogProtos.StoreType.SEQUENCEFILE.name();
+      return CatalogProtos.DataFormat.SEQUENCEFILE.name();
     } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
-      return CatalogProtos.StoreType.RCFILE.name();
+      return CatalogProtos.DataFormat.RCFILE.name();
     } else if(outputFormatClass.equals(DeprecatedParquetOutputFormat.class.getSimpleName())) {
-      return CatalogProtos.StoreType.PARQUET.name();
+      return CatalogProtos.DataFormat.PARQUET.name();
     } else {
       throw new TajoRuntimeException(new UnknownDataFormatException(fileFormat));
     }

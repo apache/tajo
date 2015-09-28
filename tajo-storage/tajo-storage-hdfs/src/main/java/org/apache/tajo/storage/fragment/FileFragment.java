@@ -230,7 +230,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);
-    fragmentBuilder.setStoreType(BuiltinStorages.TEXT);
+    fragmentBuilder.setDataFormat(BuiltinStorages.TEXT);
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     return fragmentBuilder.build();
   }
