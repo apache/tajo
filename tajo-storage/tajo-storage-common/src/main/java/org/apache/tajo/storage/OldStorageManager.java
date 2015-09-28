@@ -103,39 +103,39 @@ public class OldStorageManager {
   }
 
   /**
-   * Returns the proper Tablespace instance according to the storeType.
+   * Returns the proper Tablespace instance according to the dataFormat.
    *
    * @param tajoConf Tajo system property.
-   * @param storeType Storage type
+   * @param dataFormat Storage type
    * @return
    * @throws IOException
    */
-  public static Tablespace getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
+  public static Tablespace getStorageManager(TajoConf tajoConf, String dataFormat) throws IOException {
     FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
     if (fileSystem != null) {
-      return getStorageManager(tajoConf, fileSystem.getUri(), storeType);
+      return getStorageManager(tajoConf, fileSystem.getUri(), dataFormat);
     } else {
-      return getStorageManager(tajoConf, null, storeType);
+      return getStorageManager(tajoConf, null, dataFormat);
     }
   }
 
   /**
-   * Returns the proper Tablespace instance according to the storeType
+   * Returns the proper Tablespace instance according to the dataFormat
    *
    * @param tajoConf Tajo system property.
    * @param uri Key that can identify each storage manager(may be a path)
-   * @param storeType Storage type
+   * @param dataFormat Storage type
    * @return
    * @throws IOException
    */
   public static synchronized Tablespace getStorageManager(
-      TajoConf tajoConf, URI uri, String storeType) throws IOException {
+      TajoConf tajoConf, URI uri, String dataFormat) throws IOException {
     Preconditions.checkNotNull(tajoConf);
     Preconditions.checkNotNull(uri);
-    Preconditions.checkNotNull(storeType);
+    Preconditions.checkNotNull(dataFormat);
 
     String typeName;
-    if (storeType.equalsIgnoreCase("HBASE")) {
+    if (dataFormat.equalsIgnoreCase("HBASE")) {
       typeName = "hbase";
     } else {
       typeName = "hdfs";

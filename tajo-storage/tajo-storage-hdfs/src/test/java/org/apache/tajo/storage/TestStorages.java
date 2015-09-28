@@ -109,7 +109,7 @@ public class TestStorages {
           "  ]\n" +
           "}\n";
 
-  private String storeType;
+  private String dataFormat;
   private boolean splitable;
   private boolean statsable;
   private boolean seekable;
@@ -121,14 +121,14 @@ public class TestStorages {
       throws IOException {
     final String TEST_PATH = "target/test-data/TestStorages";
 
-    this.storeType = type;
+    this.dataFormat = type;
     this.splitable = splitable;
     this.statsable = statsable;
     this.seekable = seekable;
     this.internalType = internalType;
     conf = new TajoConf();
 
-    if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       conf.setInt(RCFile.RECORD_INTERVAL_CONF_STR, 100);
     }
 
@@ -159,7 +159,7 @@ public class TestStorages {
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT8);
 
-      TableMeta meta = CatalogUtil.newTableMeta(storeType);
+      TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
       Path tablePath = new Path(testDir, "Splitable.data");
       FileTablespace sm = TablespaceManager.getLocalFs();
       Appender appender = sm.getAppender(meta, schema, tablePath);
@@ -214,9 +214,9 @@ public class TestStorages {
     schema.addColumn("age", Type.INT8);
     schema.addColumn("score", Type.FLOAT4);
 
-    TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
-    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
     }
@@ -231,7 +231,7 @@ public class TestStorages {
     TableStats stat = appender.getStats();
     assertEquals(0, stat.getNumRows().longValue());
 
-    if(internalType || BuiltinStorages.TEXT.equals(storeType)) {
+    if(internalType || BuiltinStorages.TEXT.equals(dataFormat)) {
       FileStatus fileStatus = fs.getFileStatus(tablePath);
       assertEquals(0, fileStatus.getLen());
     }
@@ -252,12 +252,12 @@ public class TestStorages {
 
   @Test
   public void testRCFileSplitable() throws IOException {
-    if (storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT8);
 
-      TableMeta meta = CatalogUtil.newTableMeta(storeType);
+      TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
       Path tablePath = new Path(testDir, "Splitable.data");
       FileTablespace sm = TablespaceManager.getLocalFs();
       Appender appender = sm.getAppender(meta, schema, tablePath);
@@ -312,9 +312,9 @@ public class TestStorages {
     schema.addColumn("age", Type.INT8);
     schema.addColumn("score", Type.FLOAT4);
 
-    TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
-    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
     }
@@ -370,7 +370,7 @@ public class TestStorages {
 
   @Test
   public void testVariousTypes() throws IOException {
-    boolean handleProtobuf = !storeType.equalsIgnoreCase(BuiltinStorages.JSON);
+    boolean handleProtobuf = !dataFormat.equalsIgnoreCase(BuiltinStorages.JSON);
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -389,9 +389,9 @@ public class TestStorages {
     }
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
-    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       String path = JavaResourceUtil.getResourceURL("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
@@ -443,7 +443,7 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    boolean handleProtobuf = !storeType.equalsIgnoreCase(BuiltinStorages.JSON);
+    boolean handleProtobuf = !dataFormat.equalsIgnoreCase(BuiltinStorages.JSON);
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -463,13 +463,13 @@ public class TestStorages {
     }
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
     meta.putOption(StorageConstants.TEXT_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
     meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
-    if (storeType.equalsIgnoreCase("AVRO")) {
+    if (dataFormat.equalsIgnoreCase("AVRO")) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
     }
 
@@ -540,7 +540,7 @@ public class TestStorages {
 
   @Test
   public void testRCFileTextSerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
+    if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -558,7 +558,7 @@ public class TestStorages {
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
@@ -609,7 +609,7 @@ public class TestStorages {
 
   @Test
   public void testRCFileBinarySerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
+    if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -627,7 +627,7 @@ public class TestStorages {
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
@@ -678,7 +678,7 @@ public class TestStorages {
 
   @Test
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
+    if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -696,7 +696,7 @@ public class TestStorages {
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
@@ -751,7 +751,7 @@ public class TestStorages {
 
   @Test
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
-    if(!storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
+    if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
@@ -769,7 +769,7 @@ public class TestStorages {
     schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
@@ -825,14 +825,14 @@ public class TestStorages {
 
   @Test
   public void testTime() throws IOException {
-    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT) || internalType) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT) || internalType) {
       Schema schema = new Schema();
       schema.addColumn("col1", Type.DATE);
       schema.addColumn("col2", Type.TIME);
       schema.addColumn("col3", Type.TIMESTAMP);
 
       KeyValueSet options = new KeyValueSet();
-      TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+      TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
 
       Path tablePath = new Path(testDir, "testTime.data");
       FileTablespace sm = TablespaceManager.getLocalFs();
@@ -874,7 +874,7 @@ public class TestStorages {
     schema.addColumn("age", Type.INT8);
     schema.addColumn("comment", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(storeType);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
     Path tablePath = new Path(testDir, "Seekable.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
     FileAppender appender = (FileAppender) sm.getAppender(meta, schema, tablePath);
@@ -952,12 +952,12 @@ public class TestStorages {
     schema.addColumn("col5", Type.INT8);
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    if (storeType.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
     }
 
-    if (storeType.equalsIgnoreCase(BuiltinStorages.RAW)) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.RAW)) {
       OldStorageManager.clearCache();
       /* TAJO-1250 reproduce BufferOverflow of RAWFile */
       int headerSize = 4 + 2 + 1; //Integer record length + Short null-flag length + 1 byte null flags
@@ -1006,9 +1006,9 @@ public class TestStorages {
   @Test
   public void testLessThanSchemaSize() throws IOException {
     /* Internal storage must be same with schema size */
-    if (internalType || storeType.equalsIgnoreCase(BuiltinStorages.AVRO)
-        || storeType.equalsIgnoreCase(BuiltinStorages.PARQUET)
-        || storeType.equalsIgnoreCase(BuiltinStorages.ORC)) {
+    if (internalType || dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)
+        || dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)
+        || dataFormat.equalsIgnoreCase(BuiltinStorages.ORC)) {
       return;
     }
 
@@ -1018,8 +1018,8 @@ public class TestStorages {
     dataSchema.addColumn("col3", Type.INT2);
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -1071,10 +1071,10 @@ public class TestStorages {
 
   @Test
   public final void testInsertFixedCharTypeWithOverSize() throws Exception {
-    if (!storeType.equalsIgnoreCase(BuiltinStorages.TEXT) &&
-        !storeType.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE) &&
-        !storeType.equalsIgnoreCase(BuiltinStorages.RCFILE) &&
-        !storeType.equalsIgnoreCase(BuiltinStorages.PARQUET)) {
+    if (!dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT) &&
+        !dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE) &&
+        !dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE) &&
+        !dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)) {
       return;
     }
 
@@ -1082,10 +1082,10 @@ public class TestStorages {
     dataSchema.addColumn("col1", Type.CHAR);
 
     KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(storeType));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
 
-    Path tablePath = new Path(testDir, "test_storetype_oversize.data");
+    Path tablePath = new Path(testDir, "test_dataformat_oversize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
     Appender appender = sm.getAppender(meta, dataSchema, tablePath);
     appender.init();

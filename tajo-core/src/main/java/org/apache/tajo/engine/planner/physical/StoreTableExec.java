@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -83,7 +82,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
   public void openNewFile(int suffixId) throws IOException {
     Schema appenderSchema = (plan instanceof InsertNode) ? ((InsertNode) plan).getTableSchema() : outSchema;
 
-    if (PlannerUtil.isFileStorageType(meta.getStoreType())) {
+    if (PlannerUtil.isFileStorageType(meta.getDataFormat())) {
       String prevFile = null;
 
       lastFileName = context.getOutputPath();

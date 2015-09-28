@@ -276,7 +276,7 @@ public class Task implements EventHandler<TaskEvent> {
         fragmentList.add(fragment.toString());
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
-        fragmentList.add("ERROR: " + eachFragment.getStoreType() + "," + eachFragment.getId() + ": " + e.getMessage());
+        fragmentList.add("ERROR: " + eachFragment.getDataFormat() + "," + eachFragment.getId() + ": " + e.getMessage());
       }
     }
     taskHistory.setFragments(fragmentList.toArray(new String[]{}));

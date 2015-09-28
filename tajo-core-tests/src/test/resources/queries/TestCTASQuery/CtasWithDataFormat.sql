@@ -1,4 +1,4 @@
-create table testCtasWithStoreType (col1 float, col2 float) using rcfile as
+create table testCtasWithDataFormat (col1 float, col2 float) using rcfile as
 select
   sum(l_orderkey) as total1,
   avg(l_partkey) as total2

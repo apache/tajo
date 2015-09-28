@@ -142,7 +142,7 @@ public class DistinctGroupbyBuilder {
 
       firstChannel.setShuffleKeys(firstStageDistinctNode.getFirstStageShuffleKeyColumns());
       firstChannel.setSchema(firstStageDistinctNode.getOutSchema());
-      firstChannel.setStoreType(globalPlanner.getStoreType());
+      firstChannel.setDataFormat(globalPlanner.getDataFormat());
 
       ScanNode scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), firstChannel);
       secondStageDistinctNode.setChild(scanNode);
@@ -161,7 +161,7 @@ public class DistinctGroupbyBuilder {
         secondChannel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
       }
       secondChannel.setSchema(secondStageDistinctNode.getOutSchema());
-      secondChannel.setStoreType(globalPlanner.getStoreType());
+      secondChannel.setDataFormat(globalPlanner.getDataFormat());
 
       scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), secondChannel);
       thirdStageDistinctNode.setChild(scanNode);
@@ -333,7 +333,7 @@ public class DistinctGroupbyBuilder {
         channel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
       }
       channel.setSchema(firstStageDistinctNode.getOutSchema());
-      channel.setStoreType(globalPlanner.getStoreType());
+      channel.setDataFormat(globalPlanner.getDataFormat());
 
       ScanNode scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), channel);
       secondStageDistinctNode.setChild(scanNode);

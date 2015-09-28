@@ -124,7 +124,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   }
 
   public String toString() {
-    return "CreateTable (table=" + tableName + ", external=" + external + ", storeType=" + storageType +
+    return "CreateTable (table=" + tableName + ", external=" + external + ", dataFormat=" + storageType +
         ", ifNotExists=" + ifNotExists +")";
   }
 

@@ -115,7 +115,7 @@ public class TestCatalogAgainstCaseSensitivity {
       assertTrue(tableDescs.containsKey(qualifiedTableName));
       TableDesc desc = tableDescs.get(qualifiedTableName);
       assertEquals(desc.getUri().toString(), eachTableDescriptor.getPath());
-      assertEquals(desc.getMeta().getStoreType(), eachTableDescriptor.getStoreType());
+      assertEquals(desc.getMeta().getDataFormat(), eachTableDescriptor.getDataFormat());
     }
 
     //////////////////////////////////////////////////////////////////////////////

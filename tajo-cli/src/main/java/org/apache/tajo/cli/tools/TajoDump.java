@@ -22,7 +22,6 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.client.TajoClient;
@@ -178,7 +177,7 @@ public class TajoDump {
         String fqName = CatalogUtil.buildFQName(databaseName, tableName);
         TableDesc table = client.getTableDesc(fqName);
 
-        if (table.getMeta().getStoreType().equalsIgnoreCase("SYSTEM")) {
+        if (table.getMeta().getDataFormat().equalsIgnoreCase("SYSTEM")) {
           continue;
         }
         

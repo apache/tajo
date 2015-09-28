@@ -210,8 +210,8 @@ public class TestCTASQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testCtasWithStoreType() throws Exception {
-    ResultSet res = executeFile("CtasWithStoreType.sql");
+  public final void testCtasWithDataFormat() throws Exception {
+    ResultSet res = executeFile("CtasWithDataFormat.sql");
     res.close();
 
     ResultSet res2 = executeQuery();
@@ -220,7 +220,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
     TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
-    assertTrue("RCFILE".equalsIgnoreCase(desc.getMeta().getStoreType()));
+    assertTrue("RCFILE".equalsIgnoreCase(desc.getMeta().getDataFormat()));
   }
 
   @Test
@@ -234,7 +234,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
     TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
-    assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getStoreType()));
+    assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getDataFormat()));
   }
 
   @Test
@@ -248,7 +248,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
     TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
-    assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getStoreType()));
+    assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getDataFormat()));
 
 
     KeyValueSet options = desc.getMeta().getOptions();

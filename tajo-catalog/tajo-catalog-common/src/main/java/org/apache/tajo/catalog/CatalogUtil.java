@@ -30,13 +30,12 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.proto.CatalogProtos.DataFormat;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UndefinedOperatorException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -282,53 +281,53 @@ public class CatalogUtil {
   }
 
 
-  public static String getBackwardCompitablityStoreType(String storeType) {
-    return getStoreTypeString(getStoreType(storeType));
+  public static String getBackwardCompitableDataFormat(String dataFormat) {
+    return getDataFormatAsString(asDataFormat(dataFormat));
   }
 
-  public static String getStoreTypeString(final StoreType type) {
-    if (type == StoreType.TEXTFILE) {
+  public static String getDataFormatAsString(final DataFormat type) {
+    if (type == DataFormat.TEXTFILE) {
       return BuiltinStorages.TEXT;
     } else {
       return type.name();
     }
   }
 
-  public static StoreType getStoreType(final String typeStr) {
+  public static DataFormat asDataFormat(final String typeStr) {
     if (typeStr.equalsIgnoreCase("CSV")) {
-      return StoreType.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
-      return StoreType.RAW;
-    } else if (typeStr.equalsIgnoreCase(StoreType.ROWFILE.name())) {
-      return StoreType.ROWFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
-      return StoreType.RCFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.ORC.name())) {
-      return StoreType.ORC;
-    } else if (typeStr.equalsIgnoreCase(StoreType.PARQUET.name())) {
-      return StoreType.PARQUET;
-    } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
-      return StoreType.SEQUENCEFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
-      return StoreType.AVRO;
+      return DataFormat.TEXTFILE;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.RAW.name())) {
+      return CatalogProtos.DataFormat.RAW;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ROWFILE.name())) {
+      return DataFormat.ROWFILE;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.RCFILE.name())) {
+      return DataFormat.RCFILE;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ORC.name())) {
+      return CatalogProtos.DataFormat.ORC;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.PARQUET.name())) {
+      return DataFormat.PARQUET;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.SEQUENCEFILE.name())) {
+      return DataFormat.SEQUENCEFILE;
+    } else if (typeStr.equalsIgnoreCase(DataFormat.AVRO.name())) {
+      return CatalogProtos.DataFormat.AVRO;
     } else if (typeStr.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      return StoreType.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.JSON.name())) {
-      return StoreType.JSON;
-    } else if (typeStr.equalsIgnoreCase(StoreType.HBASE.name())) {
-      return StoreType.HBASE;
+      return CatalogProtos.DataFormat.TEXTFILE;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.JSON.name())) {
+      return CatalogProtos.DataFormat.JSON;
+    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.HBASE.name())) {
+      return CatalogProtos.DataFormat.HBASE;
     } else {
       return null;
     }
   }
 
-  public static TableMeta newTableMeta(String storeType) {
-    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(storeType);
-    return new TableMeta(storeType, defaultProperties);
+  public static TableMeta newTableMeta(String dataFormat) {
+    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(dataFormat);
+    return new TableMeta(dataFormat, defaultProperties);
   }
 
-  public static TableMeta newTableMeta(String storeType, KeyValueSet options) {
-    return new TableMeta(storeType, options);
+  public static TableMeta newTableMeta(String dataFormat, KeyValueSet options) {
+    return new TableMeta(dataFormat, options);
   }
 
   public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
@@ -980,21 +979,21 @@ public class CatalogUtil {
   /**
    * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
    *
-   * @param storeType StoreType
+   * @param dataFormat DataFormat
    * @return Table properties
    */
-  public static KeyValueSet newDefaultProperty(String storeType) {
+  public static KeyValueSet newDefaultProperty(String dataFormat) {
     KeyValueSet options = new KeyValueSet();
-    if (storeType.equalsIgnoreCase(BuiltinStorages.TEXT)) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (storeType.equalsIgnoreCase("JSON")) {
+    } else if (dataFormat.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
-    } else if (storeType.equalsIgnoreCase("RCFILE")) {
+    } else if (dataFormat.equalsIgnoreCase("RCFILE")) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
       options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
       options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    } else if (storeType.equalsIgnoreCase("PARQUET")) {
+    } else if (dataFormat.equalsIgnoreCase("PARQUET")) {
       options.set(BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE);
       options.set(PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE);
       options.set(COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
