@@ -285,6 +285,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1889: UndefinedColumnException when a query with table subquery is 
+    executed on self-describing tables. (jihoon)
+
     TAJO-1894: Filter condition is ignored when a query involves multiple 
     subqueries and aggregations. (jihoon)
 

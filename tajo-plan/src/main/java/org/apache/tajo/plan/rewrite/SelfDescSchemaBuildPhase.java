@@ -144,6 +144,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
   static class ProcessorContext {
     final PlanContext planContext;
     final Map<String, List<ColumnReferenceExpr>> projectColumns = new HashMap<>();
+    final Set<String> aliasSet = new HashSet<>();
 
     public ProcessorContext(PlanContext planContext) {
       this.planContext = planContext;
@@ -174,6 +175,9 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         Set<ColumnReferenceExpr> columns = ExprFinder.finds(eachNamedExpr, OpType.Column);
         for (ColumnReferenceExpr col : columns) {
           TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+        }
+        if (eachNamedExpr.hasAlias()) {
+          ctx.aliasSet.add(eachNamedExpr.getAlias());
         }
       }
 
@@ -245,8 +249,10 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public LogicalNode visitFilter(ProcessorContext ctx, Stack<Expr> stack, Selection expr) throws TajoException {
       Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr.getQual(), OpType.Column);
       for (ColumnReferenceExpr col : columnSet) {
-        NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
-        TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+        if (!ctx.aliasSet.contains(col.getName())) {
+          NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
+          TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+        }
       }
 
       super.visitFilter(ctx, stack, expr);
@@ -294,7 +300,11 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     @Override
     public LogicalNode visitSimpleTableSubquery(ProcessorContext ctx, Stack<Expr> stack, SimpleTableSubquery expr)
         throws TajoException {
-      super.visitSimpleTableSubquery(ctx, stack, expr);
+      QueryBlock childBlock = ctx.planContext.getPlan().getBlock(
+          ctx.planContext.getPlan().getBlockNameByExpr(expr.getSubQuery()));
+      ProcessorContext newContext = new ProcessorContext(new PlanContext(ctx.planContext, childBlock));
+
+      super.visitSimpleTableSubquery(newContext, stack, expr);
 
       TableSubQueryNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
@@ -306,7 +316,11 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     @Override
     public LogicalNode visitTableSubQuery(ProcessorContext ctx, Stack<Expr> stack, TablePrimarySubQuery expr)
         throws TajoException {
-      super.visitTableSubQuery(ctx, stack, expr);
+      QueryBlock childBlock = ctx.planContext.getPlan().getBlock(
+          ctx.planContext.getPlan().getBlockNameByExpr(expr.getSubQuery()));
+      ProcessorContext newContext = new ProcessorContext(new PlanContext(ctx.planContext, childBlock));
+
+      super.visitTableSubQuery(newContext, stack, expr);
 
       TableSubQueryNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
       LogicalNode child = getNonRelationListExpr(ctx.planContext.getPlan(), expr.getSubQuery());
