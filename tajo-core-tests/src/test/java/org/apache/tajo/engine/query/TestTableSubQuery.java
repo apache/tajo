@@ -78,4 +78,35 @@ public class TestTableSubQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(
+      queries = @QuerySpec("" +
+          "select \n" +
+          "  o_custkey, cnt \n" +
+          "from \n" +
+          "  ( \n" +
+          "    select \n" +
+          "      o_custkey, cnt, row_number() over (partition by o_custkey order by cnt desc) ranking \n" +
+          "    from \n" +
+          "      (\n" +
+          "        select \n" +
+          "          o_custkey, l_suppkey, count(*) cnt\n" +
+          "        from \n" +
+          "          orders, lineitem\n" +
+          "        where \n" +
+          "          l_orderkey = o_orderkey\n" +
+          "        group by \n" +
+          "          o_custkey, l_suppkey\n" +
+          "        having cnt > 0\n" +
+          "      ) t\n" +
+          "  ) t2 \n" +
+          "where \n" +
+          "  ranking = 1;"
+      )
+  )
+  public void testMultipleSubqueriesWithAggregation() throws Exception {
+    runSimpleTests();
+  }
 }

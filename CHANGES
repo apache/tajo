@@ -56,6 +56,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1885: Simple query with projection should be supported. (hyunsik)
+
     TAJO-1890: Clean up debug and test modes and unhandled exceptions. 
     (hyunsik)
 
@@ -298,6 +300,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1894: Filter condition is ignored when a query involves multiple 
+    subqueries and aggregations. (jihoon)
 
     TAJO-1827: JSON parsing error at storage-site.json while tajo master
     starts up. (jaehwa)

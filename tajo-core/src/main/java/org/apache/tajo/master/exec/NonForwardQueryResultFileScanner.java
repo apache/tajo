@@ -38,6 +38,7 @@ import org.apache.tajo.engine.planner.physical.PartitionMergeScanExec;
 import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.Repartitioner;
@@ -81,19 +82,19 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private Future<MemoryRowBlock> nextFetch;
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-                                          TableDesc tableDesc, int maxRow) throws IOException {
-    this(tajoConf, sessionId, queryId, scanNode, tableDesc, maxRow, null);
+                                          int maxRow) throws IOException {
+    this(tajoConf, sessionId, queryId, scanNode, maxRow, null);
   }
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-      TableDesc tableDesc, int maxRow, CodecType codecType) throws IOException {
+      int maxRow, CodecType codecType) throws IOException {
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
     this.queryId = queryId;
     this.scanNode = scanNode;
-    this.tableDesc = tableDesc;
+    this.tableDesc = scanNode.getTableDesc();
     this.maxRow = maxRow;
-    this.rowEncoder = RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
+    this.rowEncoder = RowStoreUtil.createEncoder(scanNode.getOutSchema());
     this.codecType = codecType;
   }
 
@@ -213,7 +214,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   public SerializedResultSet nextRowBlock(int fetchRowNum) throws IOException {
     try {
       final SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
-      resultSetBuilder.setSchema(getLogicalSchema().getProto());
+      resultSetBuilder.setSchema(scanNode.getOutSchema().getProto());
       resultSetBuilder.setRows(0);
 
       if (isStopped) return resultSetBuilder.build();
@@ -251,7 +252,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       }
       return resultSetBuilder.build();
     } catch (Throwable t) {
-      throw new IOException(t.getMessage(), t);
+      throw new TajoInternalError(t.getCause());
     }
   }
 
@@ -261,7 +262,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private Future<MemoryRowBlock> fetchNextRowBlock(final int fetchRowNum) throws IOException {
     final SettableFuture<MemoryRowBlock> future = SettableFuture.create();
     if (rowBlock == null) {
-      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(tableDesc.getLogicalSchema()));
+      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scanNode.getOutSchema()));
     }
 
     if (scanExec == null) {
@@ -300,8 +301,8 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
           }
 
           future.set(rowBlock);
-        } catch (IOException e) {
-          future.setException(e);
+        } catch (Throwable t) {
+          future.setException(t);
         }
       }
     });
@@ -310,6 +311,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
 
   @Override
   public Schema getLogicalSchema() {
-    return tableDesc.getLogicalSchema();
+    return scanNode.getOutSchema();
   }
 }

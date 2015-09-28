@@ -45,7 +45,7 @@ public class QueryStatus {
     if (proto.hasErrorMessage()) {
       errorText = proto.getErrorMessage();
     } else {
-      errorText = "Internal error. Please check out log files in ${tajo_install_dir}/logs files.";
+      errorText = "Internal error. Please check out log files in ${tajo_install_dir}/logs directory.";
     }
     if (proto.hasErrorTrace()) {
       errorTrace = proto.getErrorTrace();
