@@ -218,7 +218,7 @@ public class TestTajoClient {
 
   @Test
   public final void testKillQuery() throws IOException, TajoException, InterruptedException {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem where l_orderkey > 0");
     Thread.sleep(1000);
     QueryId queryId = new QueryId(res.getQueryId());
     client.killQuery(queryId);
