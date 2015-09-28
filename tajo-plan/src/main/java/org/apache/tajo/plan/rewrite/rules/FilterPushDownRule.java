@@ -532,9 +532,12 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   public LogicalNode visitTableSubQuery(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                         TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     List<EvalNode> matched = TUtil.newList();
+    List<EvalNode> unmatched = TUtil.newList();
     for (EvalNode eval : context.pushingDownFilters) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, node)) {
         matched.add(eval);
+      } else {
+        unmatched.add(eval);
       }
     }
 
@@ -544,6 +547,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, plan.getBlock(node.getSubQuery()));
     context.setToOrigin(transformedMap);
+    context.addFiltersTobePushed(unmatched);
 
     return node;
   }
