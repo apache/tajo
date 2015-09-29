@@ -578,8 +578,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     }
   }
 
-
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testAlterTableAddPartition() throws Exception {
     Statement stmt = null;
     ResultSet resultSet = null;

@@ -459,7 +459,12 @@ public class CatalogServer extends AbstractService {
       if (metaDictionary.isSystemDatabase(split[0])) {
         return errInsufficientPrivilege("alter a table in database '" + split[0] + "'");
       }
-      
+
+      // TODO: This should be removed at TAJO-1891
+      if (proto.getAlterTableType() == CatalogProtos.AlterTableType.ADD_PARTITION) {
+        return errFeatureNotImplemented("ADD PARTTIION");
+      }
+
       wlock.lock();
 
       try {
