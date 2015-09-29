@@ -228,11 +228,18 @@ public interface CatalogService {
   /**
    * Add a table via table description
    *
+   * @param desc
    * @throws DuplicateColumnException
    * @throws DuplicateTableException
    * @throws InsufficientPrivilegeException
    * @throws UndefinedColumnException
    * @throws UndefinedTableException
+   * @throws DuplicateDatabaseException
+   * @throws DuplicatePartitionException
+   * @throws UndefinedDatabaseException
+   * @throws UndefinedPartitionMethodException
+   * @throws UndefinedPartitionException
+   * @throws NotImplementedException
    *
    * @see AlterTableDesc
    */
@@ -246,7 +253,8 @@ public interface CatalogService {
       DuplicatePartitionException,
       UndefinedDatabaseException,
       UndefinedPartitionMethodException,
-      UndefinedPartitionException;
+      UndefinedPartitionException,
+       NotImplementedException;
 
   void updateTableStats(UpdateTableStatsProto stats) throws UndefinedTableException, InsufficientPrivilegeException;
 }

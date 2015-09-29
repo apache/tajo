@@ -145,7 +145,7 @@ public class TestCatalogAgainstCaseSensitivity {
     assertEquals(5000, stats.getNumRows().longValue());
   }
 
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testTablePartition() throws Exception {
     //////////////////////////////////////////////////////////////////////////////
     // Test add partition

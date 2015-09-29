@@ -75,7 +75,12 @@ public class TestSQLAnalyzer {
         new Predicate<FileStatus>() {
           @Override
           public boolean apply(@Nullable FileStatus input) {
-            return input.isFile();
+            // TODO: This should be removed at TAJO-1891
+            if (input.getPath().getName().indexOf("add_partition") > -1) {
+              return false;
+            } else {
+              return input.isFile();
+            }
           }
         }
     );

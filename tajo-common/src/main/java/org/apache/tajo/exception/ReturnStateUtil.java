@@ -201,4 +201,9 @@ public class ReturnStateUtil {
   public static ReturnState errDuplicateFunction(String signature) {
     return returnError(ResultCode.DUPLICATE_FUNCTION, signature);
   }
+
+  public static ReturnState errFeatureNotImplemented(String feature) {
+    return returnError(ResultCode.NOT_IMPLEMENTED, feature);
+  }
+
 }
