@@ -42,7 +42,7 @@ limitations under the License.
         <configuration>
           <excludes>
             <exclude>BUILDING</exclude>
-            <exclude>src/main/sphinx/**/*.rst</exclude>
+            <exclude>src/main/sphinx/**/*</exclude>
           </excludes>
         </configuration>
       </plugin>
