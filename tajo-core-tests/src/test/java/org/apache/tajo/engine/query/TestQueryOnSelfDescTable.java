@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.exception.AmbiguousColumnException;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoException;
 import org.junit.After;
 import org.junit.Test;
@@ -128,6 +129,17 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
   )
   public final void testTableSubquery3() throws Exception {
     runSimpleTests();
+  }
+
+  @Test(expected = NotImplementedException.class)
+  public final void testSelectRecordField() throws Exception {
+    executeString("select glossary.\"GlossDiv\" " +
+        "from self_desc_table2 where char_length(glossary.\"GlossDiv\".title) > 0 ");
+  }
+
+  @Test(expected = NotImplementedException.class)
+  public final void testSelectRecordField2() throws Exception {
+    executeString("select glossary from self_desc_table2 where char_length(glossary.\"GlossDiv\".title) > 0 ");
   }
 
   @Test
