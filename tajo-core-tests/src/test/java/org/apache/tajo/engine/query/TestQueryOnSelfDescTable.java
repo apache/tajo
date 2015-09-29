@@ -123,7 +123,7 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
           "from\n" +
           "  self_desc_table2\n" +
           ") t " +
-          "where len > 1"
+          "where len = 1"
       )
   )
   public final void testTableSubquery3() throws Exception {
