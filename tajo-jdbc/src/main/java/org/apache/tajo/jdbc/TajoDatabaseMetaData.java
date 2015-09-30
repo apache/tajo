@@ -461,7 +461,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     columns.add(tuple);
 
     ResultSet result = new TajoMetaDataResultSet(
-            Collections.singletonList("TABLE_TYPE")
+        Collections.singletonList("TABLE_TYPE")
         , Collections.singletonList(Type.VARCHAR)
         , columns);
 
@@ -768,7 +768,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return new TajoMetaDataResultSet(
         Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
         Arrays.asList(Type.VARCHAR, Type.VARCHAR),
-            Collections.singletonList(tuple));
+        Collections.singletonList(tuple));
   }
 
   @Override
