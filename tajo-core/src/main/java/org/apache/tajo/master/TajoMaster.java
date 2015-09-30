@@ -34,6 +34,7 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.AlterTablespace;
 import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
@@ -54,7 +55,6 @@ import org.apache.tajo.metrics.ClusterResourceMetricSet;
 import org.apache.tajo.metrics.Master;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
@@ -172,13 +172,7 @@ public class TajoMaster extends CompositeService {
 
     context = new MasterContext(systemConf);
     clock = new SystemClock();
-
     RackResolver.init(systemConf);
-
-    RpcClientManager rpcManager = RpcClientManager.getInstance();
-    rpcManager.setRetries(systemConf.getInt(RpcConstants.RPC_CLIENT_RETRY_MAX, RpcConstants.DEFAULT_RPC_RETRIES));
-    rpcManager.setTimeoutSeconds(
-        systemConf.getInt(RpcConstants.RPC_CLIENT_TIMEOUT_SECS, RpcConstants.DEFAULT_RPC_TIMEOUT_SECONDS));
 
     initResourceManager();
 
@@ -249,7 +243,7 @@ public class TajoMaster extends CompositeService {
   }
 
   private void initWebServer() throws Exception {
-    if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {
       InetSocketAddress address = systemConf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS);
       webServer = StaticHttpServer.getInstance(this ,"admin", address.getHostName(), address.getPort(),
           true, null, context.getConf(), null);

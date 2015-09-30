@@ -161,6 +161,10 @@ public class ReturnStateUtil {
     return returnError(ResultCode.UNDEFINED_PARTITION, partitionName);
   }
 
+  public static ReturnState errUndefinedPartitions(String tbName) {
+    return returnError(ResultCode.UNDEFINED_PARTITIONS, tbName);
+  }
+
   public static ReturnState errUndefinedPartitionMethod(String tbName) {
     return returnError(ResultCode.UNDEFINED_PARTITION_METHOD, tbName);
   }
@@ -197,4 +201,9 @@ public class ReturnStateUtil {
   public static ReturnState errDuplicateFunction(String signature) {
     return returnError(ResultCode.DUPLICATE_FUNCTION, signature);
   }
+
+  public static ReturnState errFeatureNotImplemented(String feature) {
+    return returnError(ResultCode.NOT_IMPLEMENTED, feature);
+  }
+
 }

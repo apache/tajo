@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.verifier;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
@@ -189,7 +190,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return true;
   }
 
-  private boolean assertSupportedStoreType(VerificationState state, String name) {
+  private boolean assertSupportedDataFormat(VerificationState state, String name) {
     Preconditions.checkNotNull(name);
 
     if (name.equalsIgnoreCase("RAW")) {
@@ -249,10 +250,28 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
     if (expr.hasTableElements()) {
       assertRelationSchema(context, expr);
+    } else {
+      if (expr.getStorageType() != null) {
+        if (expr.hasSelfDescSchema()) {
+          // TODO: support other types like Parquet and ORC.
+          if (!expr.getStorageType().equalsIgnoreCase(BuiltinStorages.JSON)) {
+            if (expr.getStorageType().equalsIgnoreCase(BuiltinStorages.PARQUET) ||
+                expr.getStorageType().equalsIgnoreCase(BuiltinStorages.ORC)) {
+              throw new NotImplementedException(expr.getStorageType());
+            } else {
+              throw new UnsupportedException(expr.getStorageType());
+            }
+          }
+        } else {
+          if (expr.getLikeParentTableName() == null && expr.getSubQuery() == null) {
+            throw new TajoInternalError(expr.getTableName() + " does not have pre-defined or self-describing schema");
+          }
+        }
+      }
     }
 
     if (expr.hasStorageType()) {
-      assertSupportedStoreType(context.state, expr.getStorageType());
+      assertSupportedDataFormat(context.state, expr.getStorageType());
     }
 
     return expr;
@@ -279,7 +298,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (expr.hasStorageType()) {
-      assertSupportedStoreType(context.state, expr.getStorageType());
+      assertSupportedDataFormat(context.state, expr.getDataFormat());
     }
 
     if (child != null && child.getType() == OpType.Projection) {
@@ -331,6 +350,16 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
           }
         }
       }
+    }
+
+    return expr;
+  }
+
+  // TODO: This should be removed at TAJO-1891
+  @Override
+  public Expr visitAlterTable(Context context, Stack<Expr> stack, AlterTable expr) throws TajoException {
+    if (expr.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION) {
+      context.state.addVerification(new NotImplementedException("ADD PARTITION"));
     }
 
     return expr;

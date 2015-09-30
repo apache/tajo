@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.util.TUtil;
 
 import java.util.List;
 
@@ -56,6 +57,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   @Expose protected String partitionName;
   @Expose protected List<PartitionKeyProto> partitionKeys;
   @Expose protected String path; //optional
+  @Expose private Long numBytes = null; // optional
 
   private CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
 
@@ -83,26 +85,29 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     this.partitionKeys = partitionKeys;
   }
 
+  public Long getNumBytes() {
+    return numBytes;
+  }
+
+  public void setNumBytes(Long numBytes) {
+    this.numBytes = numBytes;
+  }
+
   public int hashCode() {
-    return Objects.hashCode(partitionName, partitionKeys, path);
+    return Objects.hashCode(partitionName, partitionKeys, path, numBytes);
   }
 
   public boolean equals(Object o) {
     if (o instanceof PartitionDesc) {
       PartitionDesc another = (PartitionDesc) o;
-      boolean eq = ((partitionName != null && another.partitionName != null
-          && partitionName.equals(another.partitionName)) ||
-          (partitionName == null && another.partitionName == null));
-      eq = eq && ((partitionKeys != null && another.partitionKeys != null
-                     && partitionKeys.equals(another.partitionKeys))
-                 || (partitionKeys == null && another.partitionKeys == null));
-      eq = eq && ((path != null && another.path != null && path.equals(another.path)) ||
-          (path == null && another.path == null));
+      boolean eq = this.partitionName.equals(another.partitionName);
+      eq = eq && this.partitionKeys.equals(another.partitionKeys);
+      eq = eq && this.path.equals(another.path);
+      eq = eq && TUtil.checkEquals(this.numBytes, another.numBytes);
       return eq;
     }
     return false;
   }
-
 
   @Override
   public CatalogProtos.PartitionDescProto getProto() {
@@ -123,6 +128,10 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
 
     if(this.path != null) {
       builder.setPath(this.path);
+    }
+
+    if(this.numBytes != null) {
+      builder.setNumBytes(this.numBytes);
     }
 
     return builder.build();
@@ -149,6 +158,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     desc.partitionName = partitionName;
     desc.partitionKeys = partitionKeys;
     desc.path = path;
+    desc.numBytes = numBytes;
 
     return desc;
   }

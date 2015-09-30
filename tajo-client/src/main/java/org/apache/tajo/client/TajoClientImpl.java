@@ -35,6 +35,7 @@ import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -196,7 +197,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   public void dropDatabase(final String databaseName) throws UndefinedDatabaseException,
-      InsufficientPrivilegeException {
+      InsufficientPrivilegeException, CannotDropCurrentDatabaseException {
 
     catalogClient.dropDatabase(databaseName);
   }
@@ -245,9 +246,9 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.getFunctions(functionName);
   }
 
-  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+  public List<PartitionDescProto> getPartitionsOfTable(final String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException {
-    return catalogClient.getAllPartitions(tableName);
+    return catalogClient.getPartitionsOfTable(tableName);
   }
 
   @Override

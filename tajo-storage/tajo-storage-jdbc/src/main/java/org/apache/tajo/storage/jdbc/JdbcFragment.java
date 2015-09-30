@@ -94,7 +94,7 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
 
     CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();
     fragmentBuilder.setId(this.inputSourceId);
-    fragmentBuilder.setStoreType("JDBC");
+    fragmentBuilder.setDataFormat("JDBC");
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     return fragmentBuilder.build();
   }

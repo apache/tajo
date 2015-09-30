@@ -20,7 +20,6 @@ package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -28,7 +27,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
 import java.util.List;
@@ -434,7 +432,7 @@ public class TestCreateTable extends QueryTestCaseBase {
     if(origTableDesc.getMeta() != null) {
       TableMeta origMeta = origTableDesc.getMeta();
       TableMeta newMeta = newTableDesc.getMeta();
-      if(origMeta.getStoreType().equals(newMeta.getStoreType()) == false) {
+      if(origMeta.getDataFormat().equals(newMeta.getDataFormat()) == false) {
         fail("Store type of input tables not equal");
         return false;
       }
@@ -648,5 +646,36 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     executeString("DROP TABLE D9.nested_table2");
     executeString("DROP DATABASE D9").close();
+  }
+
+  @Test
+  public final void testSelfDescTable1() throws Exception {
+    executeString("create database d9;").close();
+
+    assertTableNotExists("d9.schemaless");
+    executeQuery();
+    assertTableExists("d9.schemaless");
+    TableDesc desc = getClient().getTableDesc("d9.schemaless");
+    assertTrue(desc.hasEmptySchema());
+
+    executeString("drop table d9.schemaless").close();
+    executeString("drop database d9").close();
+  }
+
+  @Test
+  public final void testSelfDescTable2() throws Exception {
+    executeString("create database d10;").close();
+
+    String className = getClass().getSimpleName();
+    Path currentDatasetPath = new Path(datasetBasePath, className);
+    Path filePath = StorageUtil.concatPath(currentDatasetPath, "table1");
+    String sql = "create external table d10.schemaless (*) using json with ('compression.codec'='none') location '" + filePath.toString() + "'";
+    executeString(sql).close();
+    assertTableExists("d10.schemaless");
+    TableDesc desc = getClient().getTableDesc("d10.schemaless");
+    assertTrue(desc.hasEmptySchema());
+
+    executeString("drop table d10.schemaless").close();
+    executeString("drop database d10").close();
   }
 }

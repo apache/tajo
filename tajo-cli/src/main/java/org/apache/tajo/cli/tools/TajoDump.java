@@ -22,7 +22,6 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.client.TajoClient;
@@ -175,9 +174,10 @@ public class TajoDump {
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {
-        TableDesc table = client.getTableDesc(CatalogUtil.buildFQName(databaseName, tableName));
-        
-        if (table.getMeta().getStoreType().equalsIgnoreCase("SYSTEM")) {
+        String fqName = CatalogUtil.buildFQName(databaseName, tableName);
+        TableDesc table = client.getTableDesc(fqName);
+
+        if (table.getMeta().getDataFormat().equalsIgnoreCase("SYSTEM")) {
           continue;
         }
         
@@ -186,16 +186,19 @@ public class TajoDump {
         } else {
           writer.write(DDLBuilder.buildDDLForBaseTable(table));
         }
-
         if (table.hasPartition()) {
           writer.write("\n\n");
           writer.write("--\n");
           writer.write(String.format("-- Table Partitions: %s%n", tableName));
           writer.write("--\n");
-          List<PartitionDescProto> partitionProtos = client.getAllPartitions(tableName);
-          for (PartitionDescProto eachPartitionProto : partitionProtos) {
-            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
-          }
+          // TODO: This should be improved at TAJO-1891
+//          List<PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
+//          for (PartitionDescProto eachPartitionProto : partitionProtos) {
+//            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
+//          }
+          writer.write(String.format("ALTER TABLE %s REPAIR PARTITION",
+            CatalogUtil.denormalizeIdentifier(databaseName) + "." + CatalogUtil.denormalizeIdentifier(tableName)));
+
           writer.write("\n\n");
         }
 

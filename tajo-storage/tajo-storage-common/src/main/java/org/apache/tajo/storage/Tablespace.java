@@ -209,7 +209,7 @@ public abstract class Tablespace {
 
     Scanner scanner;
 
-    Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
+    Class<? extends Scanner> scannerClass = getScannerClass(meta.getDataFormat());
     scanner = OldStorageManager.newScannerInstance(scannerClass, conf, schema, meta, fragment);
     scanner.setTarget(target.toArray());
 
@@ -256,7 +256,7 @@ public abstract class Tablespace {
 
     Class<? extends Appender> appenderClass;
 
-    String handlerName = meta.getStoreType().toLowerCase();
+    String handlerName = meta.getDataFormat().toLowerCase();
     appenderClass = OldStorageManager.APPENDER_HANDLER_CACHE.get(handlerName);
     if (appenderClass == null) {
       appenderClass = conf.getClass(
@@ -265,7 +265,7 @@ public abstract class Tablespace {
     }
 
     if (appenderClass == null) {
-      throw new IOException("Unknown Storage Type: " + meta.getStoreType());
+      throw new IOException("Unknown Storage Type: " + meta.getDataFormat());
     }
 
     appender = OldStorageManager.newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);
@@ -274,14 +274,14 @@ public abstract class Tablespace {
   }
 
   /**
-   * Return the Scanner class for the StoreType that is defined in storage-default.xml.
+   * Return the Scanner class for the DataFormat that is defined in storage-default.xml.
    *
-   * @param storeType store type
+   * @param dataFormat store type
    * @return The Scanner class
    * @throws java.io.IOException
    */
-  public Class<? extends Scanner> getScannerClass(String storeType) throws IOException {
-    String handlerName = storeType.toLowerCase();
+  public Class<? extends Scanner> getScannerClass(String dataFormat) throws IOException {
+    String handlerName = dataFormat.toLowerCase();
     Class<? extends Scanner> scannerClass = OldStorageManager.SCANNER_HANDLER_CACHE.get(handlerName);
     if (scannerClass == null) {
       scannerClass = conf.getClass(
@@ -290,7 +290,7 @@ public abstract class Tablespace {
     }
 
     if (scannerClass == null) {
-      throw new IOException("Unknown Storage Type: " + storeType);
+      throw new IOException("Unknown Storage Type: " + dataFormat);
     }
 
     return scannerClass;

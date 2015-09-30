@@ -244,7 +244,7 @@ message PersistentStoreNode {
 message StoreTableNodeSpec { // required PersistentStoreNode
   optional string tableName = 1; // 'INSERT INTO LOCATION' does not require 'table name'.
   optional string uri = 2;
-  required SchemaProto table_schema = 3;
+  optional SchemaProto table_schema = 3; // optional for self-describing formats
   optional PartitionMethodProto partitionMethod = 4;
 }
 
@@ -302,6 +302,7 @@ message AlterTableNode {
     SET_PROPERTY = 3;
     ADD_PARTITION = 4;
     DROP_PARTITION = 5;
+    REPAIR_PARTITION = 6;    
   }
 
   message RenameTable {
@@ -565,7 +566,7 @@ message DataChannelProto {
   repeated ColumnProto shuffleKeys = 7;
   optional int32 numOutputs = 9 [default = 1];
 
-  optional string storeType = 10;
+  optional string dataFormat = 10;
 }
 
 message EnforcerProto {

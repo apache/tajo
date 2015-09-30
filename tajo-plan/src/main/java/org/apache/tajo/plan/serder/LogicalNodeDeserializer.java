@@ -502,7 +502,7 @@ public class LogicalNodeDeserializer {
       createTable.setOutSchema(convertSchema(protoNode.getOutSchema()));
     }
     createTable.setChild(nodeMap.get(persistentStoreProto.getChildSeq()));
-    createTable.setStorageType(persistentStoreProto.getStorageType());
+    createTable.setDataFormat(persistentStoreProto.getStorageType());
     createTable.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
 
     createTable.setTableName(storeTableNodeSpec.getTableName());
@@ -510,13 +510,15 @@ public class LogicalNodeDeserializer {
       createTable.setPartitionMethod(new PartitionMethodDesc(storeTableNodeSpec.getPartitionMethod()));
     }
 
-    createTable.setTableSchema(convertSchema(storeTableNodeSpec.getTableSchema()));
+    if (storeTableNodeSpec.hasTableSchema()) {
+      createTable.setTableSchema(convertSchema(storeTableNodeSpec.getTableSchema()));
+    }
 
     if (createTableNodeSpec.hasTablespaceName()) {
      createTable.setTableSpaceName(createTableNodeSpec.getTablespaceName());
     }
     createTable.setExternal(createTableNodeSpec.getExternal());
-    if (createTableNodeSpec.getExternal() && storeTableNodeSpec.hasUri()) {
+    if (storeTableNodeSpec.hasUri()) {
       createTable.setUri(URI.create(storeTableNodeSpec.getUri()));
     }
     createTable.setIfNotExists(createTableNodeSpec.getIfNotExists());
@@ -538,7 +540,7 @@ public class LogicalNodeDeserializer {
       insertNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
     }
     insertNode.setChild(nodeMap.get(persistentStoreProto.getChildSeq()));
-    insertNode.setStorageType(persistentStoreProto.getStorageType());
+    insertNode.setDataFormat(persistentStoreProto.getStorageType());
     insertNode.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
 
     if (storeTableNodeSpec.hasTableName()) {
@@ -647,6 +649,9 @@ public class LogicalNodeDeserializer {
         .getPartitionValuesCount()]));
       alterTable.setPurge(alterPartition.getPurge());
       alterTable.setIfExists(alterPartition.getIfExists());
+      break;
+    case REPAIR_PARTITION:
+      alterTable.setTableName(alterTableProto.getTableName());
       break;
     default:
       throw new TajoRuntimeException(

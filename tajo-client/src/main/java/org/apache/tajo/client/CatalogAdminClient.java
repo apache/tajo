@@ -55,7 +55,8 @@ public interface CatalogAdminClient extends Closeable {
    * @return True if the database is dropped successfully.
    * @throws UndefinedDatabaseException
    */
-  void dropDatabase(final String databaseName) throws UndefinedDatabaseException, InsufficientPrivilegeException;
+  void dropDatabase(final String databaseName)
+      throws UndefinedDatabaseException, InsufficientPrivilegeException, CannotDropCurrentDatabaseException;
 
   List<String> getAllDatabaseNames();
 
@@ -143,7 +144,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to get. This name is case sensitive.
    * @return lists of partitions
    */
-  List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+  List<PartitionDescProto> getPartitionsOfTable(final String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException;
 
   List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName);

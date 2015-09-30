@@ -43,5 +43,11 @@ public class TajoConstants {
   public static final int UNKNOWN_ROW_NUMBER = -1;
   public static final int UNKNOWN_LENGTH = -1;
 
+  public static final String TEST_KEY = "tajo.test.enabled";
+  public static final String DEBUG_KEY = "tajo.debug.enabled";
+
+  public static final boolean IS_TEST_MODE = Boolean.parseBoolean(System.getProperty(TEST_KEY, "false"));
+  public static final boolean IS_DEBUG_MODE = Boolean.parseBoolean(System.getProperty(DEBUG_KEY, "false"));
+
   private TajoConstants() {}
 }

@@ -117,6 +117,7 @@ create_table_statement
 
 table_elements
   : LEFT_PAREN field_element (COMMA field_element)* RIGHT_PAREN
+  | LEFT_PAREN asterisk RIGHT_PAREN
   ;
 
 field_element
@@ -307,6 +308,7 @@ nonreserved_keywords
   | RECORD
   | REGEXP
   | RENAME
+  | REPAIR
   | RESET
   | RLIKE
   | ROLLUP
@@ -1312,7 +1314,11 @@ derived_column
   ;
 
 qualified_asterisk
-  : (tb_name=identifier DOT)? MULTIPLY
+  : (tb_name=identifier DOT)? asterisk
+  ;
+
+asterisk
+  : MULTIPLY
   ;
 
 set_qualifier
@@ -1619,6 +1625,7 @@ alter_table_statement
   | ALTER TABLE table_name ADD (if_not_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
   | ALTER TABLE table_name DROP (if_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (PURGE)?
   | ALTER TABLE table_name SET PROPERTY property_list
+  | ALTER TABLE table_name REPAIR PARTITION
   ;
 
 partition_column_value_list

@@ -99,7 +99,7 @@ public class DescTableCommand extends TajoShellCommand {
     StringBuilder sb = new StringBuilder();
     sb.append("\ntable name: ").append(desc.getName()).append("\n");
     sb.append("table uri: ").append(desc.getUri()).append("\n");
-    sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
+    sb.append("store type: ").append(desc.getMeta().getDataFormat()).append("\n");
     if (desc.getStats() != null) {
 
       long row = desc.getStats().getNumRows();

@@ -645,7 +645,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat());
 
     FileSystem fs = sm.getFileSystem();
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();
@@ -779,7 +779,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat());
 
     FileSystem fs = sm.getFileSystem();
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();

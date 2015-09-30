@@ -111,7 +111,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    SeekableScanner fileScanner = OldStorageManager.getStorageManager(conf, meta.getStoreType())
+    SeekableScanner fileScanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
     fileScanner.init();
     Tuple keyTuple;
@@ -136,7 +136,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir,
         "FindValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner = OldStorageManager.getStorageManager(conf, meta.getStoreType())
+    fileScanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
     fileScanner.init();
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
@@ -202,7 +202,7 @@ public class TestSingleCSVFileBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
     
-    SeekableScanner fileScanner  = OldStorageManager.getStorageManager(conf, meta.getStoreType())
+    SeekableScanner fileScanner  = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
     fileScanner.init();
     Tuple keyTuple;
@@ -224,7 +224,7 @@ public class TestSingleCSVFileBSTIndex {
     
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"), keySchema, comp);
     reader.open();
-    fileScanner  = OldStorageManager.getStorageManager(conf, meta.getStoreType())
+    fileScanner  = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
     fileScanner.init();
     Tuple result;

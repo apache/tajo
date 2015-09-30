@@ -437,7 +437,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     case PROJECTION:
       ProjectionNode projectionNode = (ProjectionNode) node;
-      cost = getCost(projectionNode.getChild());
+      cost = getCost((LogicalNode) projectionNode.getChild());
       break;
 
     case JOIN:
@@ -446,15 +446,17 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (joinNode.hasJoinQual()) {
         filterFactor = Math.pow(DEFAULT_SELECTION_FACTOR,
             AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()).length);
-        cost = getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()) * filterFactor;
+        cost = getCost((LogicalNode)joinNode.getLeftChild()) *
+            getCost((LogicalNode)joinNode.getRightChild()) * filterFactor;
       } else {
-        cost = Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
+        cost = Math.pow(getCost((LogicalNode)joinNode.getLeftChild()) *
+            getCost((LogicalNode)joinNode.getRightChild()), 2);
       }
       break;
 
     case SELECTION:
       SelectionNode selectionNode = (SelectionNode) node;
-      cost = getCost(selectionNode.getChild()) *
+      cost = getCost((LogicalNode)selectionNode.getChild()) *
           Math.pow(DEFAULT_SELECTION_FACTOR, AlgebraicUtil.toConjunctiveNormalFormArray(selectionNode.getQual()).length);
       break;
 
@@ -474,7 +476,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     case UNION:
       UnionNode unionNode = (UnionNode) node;
-      cost = getCost(unionNode.getLeftChild()) + getCost(unionNode.getRightChild());
+      cost = getCost((LogicalNode)unionNode.getLeftChild()) +
+          getCost((LogicalNode)unionNode.getRightChild());
       break;
 
     case EXCEPT:
@@ -484,7 +487,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     default:
       // all binary operators (join, union, except, and intersect) are handled in the above cases.
       // So, we need to handle only unary nodes in default.
-      cost = getCost(((UnaryNode) node).getChild());
+      cost = getCost((LogicalNode)((UnaryNode) node).getChild());
       break;
     }
 

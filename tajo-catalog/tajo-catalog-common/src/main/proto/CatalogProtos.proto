@@ -25,7 +25,7 @@ option java_generate_equals_and_hash = true;
 import "DataTypes.proto";
 import "PrimitiveProtos.proto";
 
-enum StoreType {
+enum DataFormat {
   MEM = 0;
   TEXTFILE = 1;
   RAW = 2;
@@ -75,12 +75,12 @@ message SchemaProto {
 
 message FragmentProto {
   required string id = 1;
-  required string storeType = 2;
+  required string dataFormat = 2;
   required bytes contents = 3;
 }
 
 message TableProto {
-  required string storeType = 1;
+  required string dataFormat = 1;
   optional KeyValueSetProto params = 2;
 }
 
@@ -98,7 +98,7 @@ message TableDescProto {
   required string table_name = 2;
   optional string path = 3;
   required TableProto meta = 4;
-  required SchemaProto schema = 5;
+  optional SchemaProto schema = 5;
   optional TableStatsProto stats = 6;
   optional PartitionMethodProto partition = 7;
   optional bool isExternal = 8 [default = false];
@@ -248,18 +248,30 @@ message PartitionDescProto {
   repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
   optional int32 id = 4;
+  optional int64 numBytes = 5;
 }
 
 message PartitionKeyProto {
   required string columnName = 1;
-  optional string parentColumnName = 2;
-  required string partitionValue = 3;
+  required string partitionValue = 2;
 }
 
 message PartitionIdentifierProto {
   required string databaseName = 1;
   required string tableName = 2;
   optional string partitionName = 3;
+}
+
+message PartitionsByAlgebraProto {
+  required string databaseName = 1;
+  required string tableName = 2;
+  required string algebra = 3; // json object which contains algebra expressions
+}
+
+message PartitionsByFilterProto {
+  required string databaseName = 1;
+  required string tableName = 2;
+  required string filter = 3; // filter string: (col1 ='1' or col1 = '100') and col3 > 20
 }
 
 message TablespaceProto {
@@ -281,7 +293,7 @@ message TableDescriptorProto {
 	required string name = 3;
 	optional string tableType = 4;
 	required string path = 5;
-	required string storeType = 6;
+	required string dataFormat = 6;
 }
 
 message AlterTablespaceProto {

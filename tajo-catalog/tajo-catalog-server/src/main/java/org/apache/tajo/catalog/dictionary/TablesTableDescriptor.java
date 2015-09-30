@@ -29,7 +29,7 @@ class TablesTableDescriptor extends AbstractTableDescriptor {
       new ColumnDescriptor("table_name", Type.TEXT, 0),
       new ColumnDescriptor("table_type", Type.TEXT, 0),
       new ColumnDescriptor("path", Type.TEXT, 0),
-      new ColumnDescriptor("store_type", Type.TEXT, 0)
+      new ColumnDescriptor("data_format", Type.TEXT, 0)
   };
 
   public TablesTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {

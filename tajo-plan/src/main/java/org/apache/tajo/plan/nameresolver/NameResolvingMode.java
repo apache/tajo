@@ -73,8 +73,8 @@ package org.apache.tajo.plan.nameresolver;
  * </ol>
  */
 public enum NameResolvingMode {
-  RELS_ONLY,          // finding from only relations
-  RELS_AND_SUBEXPRS,  // finding from relations and subexprs in a place
-  SUBEXPRS_AND_RELS,  // finding from subexprs and relations in a place
-  LEGACY              // Finding in a legacy manner (globally)
+  RELS_ONLY,                    // finding from only relations excluding self-describing ones
+  RELS_AND_SUBEXPRS,            // finding from relations and subexprs in a place
+  SUBEXPRS_AND_RELS,            // finding from subexprs and relations in a place
+  LEGACY                        // Finding in a legacy manner (globally)
 }

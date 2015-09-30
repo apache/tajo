@@ -115,7 +115,7 @@ public class TestCatalogAgainstCaseSensitivity {
       assertTrue(tableDescs.containsKey(qualifiedTableName));
       TableDesc desc = tableDescs.get(qualifiedTableName);
       assertEquals(desc.getUri().toString(), eachTableDescriptor.getPath());
-      assertEquals(desc.getMeta().getStoreType(), eachTableDescriptor.getStoreType());
+      assertEquals(desc.getMeta().getDataFormat(), eachTableDescriptor.getDataFormat());
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ public class TestCatalogAgainstCaseSensitivity {
     assertEquals(5000, stats.getNumRows().longValue());
   }
 
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testTablePartition() throws Exception {
     //////////////////////////////////////////////////////////////////////////////
     // Test add partition
@@ -194,7 +194,7 @@ public class TestCatalogAgainstCaseSensitivity {
     // Test get partitions of a table
     //////////////////////////////////////////////////////////////////////////////
 
-    List<PartitionDescProto> partitionDescs = catalog.getPartitions("TestDatabase1", "TestPartition1");
+    List<PartitionDescProto> partitionDescs = catalog.getPartitionsOfTable("TestDatabase1", "TestPartition1");
     assertEquals(2, partitionDescs.size());
     Map<String, PartitionDescProto> tablePartitionMap = new HashMap<>();
     for (PartitionDescProto eachPartition : partitionDescs) {

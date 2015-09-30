@@ -53,12 +53,12 @@ public class TestCompressionStorages {
   private TajoConf conf;
   private static String TEST_PATH = "target/test-data/TestCompressionStorages";
 
-  private String storeType;
+  private String dataFormat;
   private Path testDir;
   private FileSystem fs;
 
   public TestCompressionStorages(String type) throws IOException {
-    this.storeType = type;
+    this.dataFormat = type;
     conf = new TajoConf();
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
@@ -76,44 +76,44 @@ public class TestCompressionStorages {
 
   @Test
   public void testDeflateCodecCompressionData() throws IOException {
-    storageCompressionTest(storeType, DeflateCodec.class);
+    storageCompressionTest(dataFormat, DeflateCodec.class);
   }
 
   @Test
   public void testGzipCodecCompressionData() throws IOException {
-    if (storeType.equalsIgnoreCase("RCFILE")) {
+    if (dataFormat.equalsIgnoreCase("RCFILE")) {
       if( ZlibFactory.isNativeZlibLoaded(conf)) {
-        storageCompressionTest(storeType, GzipCodec.class);
+        storageCompressionTest(dataFormat, GzipCodec.class);
       }
-    } else if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
       if( ZlibFactory.isNativeZlibLoaded(conf)) {
-        storageCompressionTest(storeType, GzipCodec.class);
+        storageCompressionTest(dataFormat, GzipCodec.class);
       }
     } else {
-      storageCompressionTest(storeType, GzipCodec.class);
+      storageCompressionTest(dataFormat, GzipCodec.class);
     }
   }
 
   @Test
   public void testSnappyCodecCompressionData() throws IOException {
     if (SnappyCodec.isNativeCodeLoaded()) {
-      storageCompressionTest(storeType, SnappyCodec.class);
+      storageCompressionTest(dataFormat, SnappyCodec.class);
     }
   }
 
   @Test
   public void testLz4CodecCompressionData() throws IOException {
     if(NativeCodeLoader.isNativeCodeLoaded() && Lz4Codec.isNativeCodeLoaded())
-    storageCompressionTest(storeType, Lz4Codec.class);
+    storageCompressionTest(dataFormat, Lz4Codec.class);
   }
 
-  private void storageCompressionTest(String storeType, Class<? extends CompressionCodec> codec) throws IOException {
+  private void storageCompressionTest(String dataFormat, Class<? extends CompressionCodec> codec) throws IOException {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.FLOAT4);
     schema.addColumn("name", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(storeType);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
     meta.putOption("compression.codec", codec.getCanonicalName());
     meta.putOption("compression.type", SequenceFile.CompressionType.BLOCK.name());
     meta.putOption("rcfile.serde", TextSerializerDeserializer.class.getName());
@@ -154,7 +154,7 @@ public class TestCompressionStorages {
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, tablets[0], schema);
     scanner.init();
 
-    if (storeType.equalsIgnoreCase("SEQUENCEFILE")) {
+    if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
       assertTrue(scanner instanceof SequenceFileScanner);
       Writable key = ((SequenceFileScanner) scanner).getKey();
       assertEquals(key.getClass().getCanonicalName(), LongWritable.class.getCanonicalName());

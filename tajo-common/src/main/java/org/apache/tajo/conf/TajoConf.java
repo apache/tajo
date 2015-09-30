@@ -230,6 +230,10 @@ public class TajoConf extends Configuration {
     //  Internal RPC Client
     INTERNAL_RPC_CLIENT_WORKER_THREAD_NUM("tajo.internal.rpc.client.worker-thread-num",
         Runtime.getRuntime().availableProcessors() * 2),
+    RPC_CLIENT_RETRY_NUM("tajo.rpc.client.retry-num", 3, Validators.min("1")),
+    RPC_CLIENT_CONNECTION_TIMEOUT("tajo.rpc.client.connection-timeout-ms", (long)15 * 1000, Validators.min("0")),
+    RPC_CLIENT_SOCKET_TIMEOUT("tajo.rpc.client.socket-timeout-ms", (long)180 * 1000, Validators.min("0")),
+    RPC_CLIENT_HANG_DETECTION_ENABLED("tajo.rpc.client.hang-detection", true, Validators.bool()),
 
     // Internal RPC Server
     MASTER_RPC_SERVER_WORKER_THREAD_NUM("tajo.master.rpc.server.worker-thread-num",
@@ -365,7 +369,8 @@ public class TajoConf extends Configuration {
     $TEXT_NULL("tajo.text.null", "\\\\N"),
 
     // Only for Debug and Testing
-    $DEBUG_ENABLED("tajo.debug.enabled", false),
+    $DEBUG_ENABLED(TajoConstants.DEBUG_KEY, false),
+    $TEST_MODE(TajoConstants.TEST_KEY, false),
     $TEST_BROADCAST_JOIN_ENABLED("tajo.dist-query.join.auto-broadcast", true),
     $TEST_JOIN_OPT_ENABLED("tajo.test.plan.join-optimization.enabled", true),
     $TEST_FILTER_PUSHDOWN_ENABLED("tajo.test.plan.filter-pushdown.enabled", true),

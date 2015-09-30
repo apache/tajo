@@ -62,6 +62,7 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
@@ -87,6 +88,8 @@ import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 public class Stage implements EventHandler<StageEvent> {
 
   private static final Log LOG = LogFactory.getLog(Stage.class);
+
+  private final Properties rpcParams;
 
   private MasterPlan masterPlan;
   private ExecutionBlock block;
@@ -299,6 +302,8 @@ public class Stage implements EventHandler<StageEvent> {
     this.masterPlan = masterPlan;
     this.block = block;
     this.eventHandler = context.getEventHandler();
+
+    this.rpcParams = RpcParameterFactory.get(context.getConf());
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     this.readLock = readWriteLock.readLock();
@@ -720,7 +725,7 @@ public class Stage implements EventHandler<StageEvent> {
         public void run() {
           try {
             AsyncRpcClient tajoWorkerRpc =
-                RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true);
+                RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true, rpcParams);
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.stopExecutionBlock(null,
                 requestProto, NullCallback.get(PrimitiveProtos.BoolProto.class));
@@ -770,14 +775,14 @@ public class Stage implements EventHandler<StageEvent> {
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
 
     // if store plan (i.e., CREATE or INSERT OVERWRITE)
-    String storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
-    if (storeType == null) {
+    String dataFormat = PlannerUtil.getDataFormat(masterPlan.getLogicalPlan());
+    if (dataFormat == null) {
       // get final output store type (i.e., SELECT)
-      storeType = channel.getStoreType();
+      dataFormat = channel.getDataFormat();
     }
 
     schema = channel.getSchema();
-    meta = CatalogUtil.newTableMeta(storeType, new KeyValueSet());
+    meta = CatalogUtil.newTableMeta(dataFormat, new KeyValueSet());
     inputStatistics = statsArray[0];
     resultStatistics = statsArray[1];
   }

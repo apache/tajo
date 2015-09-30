@@ -633,6 +633,10 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       partitionBuilder.setPurge(node.isPurge());
       alterTableBuilder.setAlterPartition(partitionBuilder);
       break;
+    case REPAIR_PARTITION:
+      alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.REPAIR_PARTITION);
+      alterTableBuilder.setTableName(node.getTableName());
+      break;
     default:
       throw new TajoRuntimeException(
           new NotImplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name()));
@@ -711,7 +715,10 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     if (node.hasUri()) {
       storeTableBuilder.setUri(node.getUri().toString());
     }
-    storeTableBuilder.setTableSchema(node.getTableSchema().getProto());
+
+    if (node.hasTableSchema()) {
+      storeTableBuilder.setTableSchema(node.getTableSchema().getProto());
+    }
 
     if (node.hasPartition()) {
       storeTableBuilder.setPartitionMethod(node.getPartitionMethod().getProto());

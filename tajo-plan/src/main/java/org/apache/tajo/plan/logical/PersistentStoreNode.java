@@ -39,7 +39,7 @@ public abstract class PersistentStoreNode extends UnaryNode implements Cloneable
     super(pid, nodeType);
   }
 
-  public void setStorageType(String storageType) {
+  public void setDataFormat(String storageType) {
     this.storageType = storageType;
   }
 

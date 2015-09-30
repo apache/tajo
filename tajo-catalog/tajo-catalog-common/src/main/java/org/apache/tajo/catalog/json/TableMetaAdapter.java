@@ -23,7 +23,6 @@ import com.google.gson.*;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
@@ -36,17 +35,17 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
     Preconditions.checkNotNull(json);
 		JsonObject jsonObject = json.getAsJsonObject();
 
-    String storeType = CommonGsonHelper.getOrDie(jsonObject, "store").getAsString();
+    String dataFormat = CommonGsonHelper.getOrDie(jsonObject, "store").getAsString();
 
     KeyValueSet keyValueSet = context.deserialize(CommonGsonHelper.getOrDie(jsonObject, "options"), KeyValueSet.class);
-		return new TableMeta(storeType, keyValueSet);
+		return new TableMeta(dataFormat, keyValueSet);
 	}
 
 	@Override
 	public JsonElement serialize(TableMeta src, Type typeOfSrc,
 			JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
-    jsonObj.addProperty("store", src.getStoreType());
+    jsonObj.addProperty("store", src.getDataFormat());
     jsonObj.add("options", context.serialize(src.getOptions(), KeyValueSet.class));
 		return jsonObj;
 	}

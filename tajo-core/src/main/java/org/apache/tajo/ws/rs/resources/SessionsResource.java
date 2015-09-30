@@ -24,7 +24,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.session.InvalidSessionException;
+import org.apache.tajo.exception.InvalidSessionException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;

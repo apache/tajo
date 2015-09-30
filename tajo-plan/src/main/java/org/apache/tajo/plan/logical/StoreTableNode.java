@@ -74,6 +74,10 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     return this.uri;
   }
 
+  public boolean hasTableSchema() {
+    return this.tableSchema != null;
+  }
+
   public void setTableSchema(Schema schema) {
     this.tableSchema = schema;
   }
@@ -117,10 +121,10 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     if (obj instanceof StoreTableNode) {
       StoreTableNode other = (StoreTableNode) obj;
       boolean eq = super.equals(other);
-      eq = eq && TUtil.checkEquals(this.tableName, other.tableName);
-      eq = eq && TUtil.checkEquals(uri, other.uri);
-      eq = tableSchema.equals(other.tableSchema);
-      eq = eq && TUtil.checkEquals(partitionDesc, other.partitionDesc);
+      eq &= TUtil.checkEquals(this.tableName, other.tableName);
+      eq &= TUtil.checkEquals(uri, other.uri);
+      eq &= TUtil.checkEquals(tableSchema, other.tableSchema);
+      eq &= TUtil.checkEquals(partitionDesc, other.partitionDesc);
       return eq;
     } else {
       return false;

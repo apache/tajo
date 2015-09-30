@@ -197,7 +197,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   public void testResultSetCompression() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         TajoConstants.DEFAULT_DATABASE_NAME);
-    connUri = connUri + "?" + SessionVars.COMPRESSED_RESULT_TRANSFER.keyname() + "=true";
+    connUri = connUri + "?useCompression=true";
     Connection conn = DriverManager.getConnection(connUri);
     assertTrue(conn.isValid(100));
 
@@ -578,8 +578,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     }
   }
 
-
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testAlterTableAddPartition() throws Exception {
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -593,7 +592,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     try {
       if (!testingCluster.isHiveCatalogStoreRunning()) {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
-          tajoMasterAddress.getPort(), "TestTajoJdbc");
+            tajoMasterAddress.getPort(), "TestTajoJdbc");
 
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
@@ -665,7 +664,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     props.setProperty(SessionVars.BLOCK_ON_RESULT.keyname(), "false");
 
     Connection conn = new JdbcConnection(connUri, props);
-    PreparedStatement statement = conn.prepareStatement("select sleep(1) from lineitem");
+    PreparedStatement statement = conn.prepareStatement("select sleep(1) from lineitem where l_orderkey > 0");
     try {
       assertTrue("should have result set", statement.execute());
       TajoResultSetBase result = (TajoResultSetBase) statement.getResultSet();

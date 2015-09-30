@@ -76,20 +76,27 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
     NameResolvingMode columnRsvLevel;
+    boolean includeSelfDescTable;
 
-    public Context(LogicalPlanner.PlanContext planContext, NameResolvingMode colRsvLevel) {
+    public Context(LogicalPlanner.PlanContext planContext, NameResolvingMode colRsvLevel, boolean includeSeflDescTable) {
       this.queryContext = planContext.queryContext;
       this.timeZone = planContext.timeZone;
 
       this.plan = planContext.plan;
       this.currentBlock = planContext.queryBlock;
       this.columnRsvLevel = colRsvLevel;
+      this.includeSelfDescTable = includeSeflDescTable;
     }
   }
 
   public EvalNode createEvalNode(LogicalPlanner.PlanContext planContext, Expr expr,
                                  NameResolvingMode colRsvLevel) throws TajoException {
-    Context context = new Context(planContext, colRsvLevel);
+    return createEvalNode(planContext, expr, colRsvLevel, false);
+  }
+
+  public EvalNode createEvalNode(LogicalPlanner.PlanContext planContext, Expr expr,
+                                 NameResolvingMode colRsvLevel, boolean includeSeflDescTable) throws TajoException {
+    Context context = new Context(planContext, colRsvLevel, includeSeflDescTable);
     return planContext.evalOptimizer.optimize(planContext, visit(context, new Stack<Expr>(), expr));
   }
 
@@ -542,12 +549,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     switch (ctx.columnRsvLevel) {
     case LEGACY:
-      column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
-      break;
     case RELS_ONLY:
     case RELS_AND_SUBEXPRS:
     case SUBEXPRS_AND_RELS:
-      column = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr, ctx.columnRsvLevel);
+      column = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr, ctx.columnRsvLevel, ctx.includeSelfDescTable);
       break;
     default:
       throw new TajoInternalError("Unsupported column resolving level: " + ctx.columnRsvLevel.name());

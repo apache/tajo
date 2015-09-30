@@ -30,6 +30,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   @Expose private String tableSpaceName;
   @Expose private boolean external;
   @Expose private boolean ifNotExists;
+  @Expose private boolean selfDescSchema = false;
 
   public CreateTableNode(int pid) {
     super(pid, NodeType.CREATE_TABLE);
@@ -82,6 +83,14 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
     return ifNotExists;
   }
 
+  public void setSelfDescSchema(boolean selfDescSchema) {
+    this.selfDescSchema = selfDescSchema;
+  }
+
+  public boolean hasSelfDescSchema() {
+    return selfDescSchema;
+  }
+
   @Override
   public PlanString getPlanString() {
     return new PlanString(this);
@@ -115,7 +124,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   }
 
   public String toString() {
-    return "CreateTable (table=" + tableName + ", external=" + external + ", storeType=" + storageType +
+    return "CreateTable (table=" + tableName + ", external=" + external + ", dataFormat=" + storageType +
         ", ifNotExists=" + ifNotExists +")";
   }
 

@@ -40,7 +40,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
   @BeforeClass
   public static void setUp() throws Exception {
     out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(testingCluster.getConfiguration(), new String[]{}, System.in, out);
+    tajoCli = new TajoCli(testingCluster.getConfiguration(), new String[]{}, null, System.in, out);
   }
 
   @AfterClass
@@ -129,9 +129,18 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
   }
 
   @Test
+  public void testQueryFailureOfSimpleQuery() throws Exception {
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailureOfSimpleQuery') from default.lineitem" ,
+        "?fail\n" +
+            "-------------------------------\n" +
+            "ERROR: internal error: internal error: testQueryFailureOfSimpleQuery\n");
+  }
+
+  @Test
   public void testQueryFailure() throws Exception {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-    assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem" ,
-        "ERROR: Internal error. Please check out log files in ${tajo_install_dir}/logs files.\n");
+    assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem where l_orderkey > 0" ,
+        "ERROR: Internal error. Please check out log files in ${tajo_install_dir}/logs directory.\n");
   }
 }

@@ -172,7 +172,7 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
-    fragmentBuilder.setStoreType(BuiltinStorages.HBASE);
+    fragmentBuilder.setDataFormat(BuiltinStorages.HBASE);
     return fragmentBuilder.build();
   }
 
