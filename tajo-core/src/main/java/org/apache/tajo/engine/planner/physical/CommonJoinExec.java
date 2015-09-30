@@ -36,10 +36,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * common exec for all join execs
@@ -186,7 +183,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
    * @return created list of a null tuple
    */
   protected List<Tuple> nullTupleList(int width) {
-    return Arrays.asList(NullTuple.create(width));
+    return Collections.singletonList(NullTuple.create(width));
   }
 
   @Override
