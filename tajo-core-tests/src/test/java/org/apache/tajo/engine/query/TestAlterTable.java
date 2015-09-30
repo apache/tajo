@@ -35,6 +35,7 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.List;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -58,7 +59,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddNewColumn() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "EFG");
     executeDDL("alter_table_add_new_column_ddl.sql", null);
-    assertColumnExists(createdNames.get(0),"cool");
+    assertColumnExists(createdNames.get(0), "cool");
   }
 
   @Test
@@ -197,6 +198,39 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
     verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
     catalog.dropTable(tableName);
+  }
+
+  @Test
+  public final void testDatabaseNameIncludeTableNameWithRepairPartition() throws Exception {
+    String databaseName = "test_repair_partition";
+    String tableName = "part";
+    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+
+    executeString("create database " + databaseName).close();
+    executeString("create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
+        + " as select l_orderkey, l_partkey, l_quantity from default.lineitem");
+
+    TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
+    assertNotNull(tableDesc);
+
+    verifyPartitionCount(databaseName, tableName, 5);
+
+    // Remove all partitions
+    executeString("ALTER TABLE " + canonicalTableName + " DROP PARTITION (key = 17.0)").close();
+    executeString("ALTER TABLE " + canonicalTableName + " DROP PARTITION (key = 36.0)").close();
+    executeString("ALTER TABLE " + canonicalTableName + " DROP PARTITION (key = 38.0)").close();
+    executeString("ALTER TABLE " + canonicalTableName + " DROP PARTITION (key = 45.0)").close();
+    executeString("ALTER TABLE " + canonicalTableName + " DROP PARTITION (key = 49.0)").close();
+
+    verifyPartitionCount(databaseName, tableName, 0);
+
+    executeString("ALTER TABLE " + canonicalTableName + " REPAIR PARTITION").close();
+
+    verifyPartitionCount(databaseName, tableName, 5);
+
+    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
+    executeString("DROP database " + databaseName).close();
+
   }
 
   private void verifyPartitionCount(String databaseName, String tableName, int expectedCount)
