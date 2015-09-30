@@ -28,7 +28,6 @@ import org.apache.tajo.exception.TajoException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.ResultSet;
-import java.util.Map;
 import java.util.Properties;
 
 public class TajoClient implements Closeable {

@@ -19,7 +19,6 @@
 package org.apache.tajo.storage;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.text.TextLineParsingError;

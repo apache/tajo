@@ -36,8 +36,6 @@ import org.apache.tajo.util.Bytes;
 import java.io.File;
 import java.io.IOException;
 
-import static org.apache.hadoop.hbase.HConstants.REPLICATION_ENABLE_KEY;
-
 public class HBaseTestClusterUtil {
   private static final Log LOG = LogFactory.getLog(HBaseTestClusterUtil.class);
   private Configuration conf;
