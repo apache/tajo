@@ -35,7 +35,6 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.List;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -59,7 +58,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddNewColumn() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "EFG");
     executeDDL("alter_table_add_new_column_ddl.sql", null);
-    assertColumnExists(createdNames.get(0), "cool");
+    assertColumnExists(createdNames.get(0),"cool");
   }
 
   @Test
