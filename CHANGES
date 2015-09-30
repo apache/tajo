@@ -287,6 +287,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1902: Add line delimiter for repair partition in TajoDump. (jaehwa)
+
     TAJO-1889: UndefinedColumnException when a query with table subquery is 
     executed on self-describing tables. (jihoon)
 
