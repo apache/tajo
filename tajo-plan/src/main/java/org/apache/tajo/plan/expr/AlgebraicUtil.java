@@ -205,7 +205,7 @@ public class AlgebraicUtil {
    * @return the simplified expr
    */
   public static EvalNode eliminateConstantExprs(EvalNode expr) {
-    return algebraicOptimizer.visit(null, expr, new Stack<EvalNode>());
+    return algebraicOptimizer.visit(null, expr, new Stack<>());
   }
   
   /** 

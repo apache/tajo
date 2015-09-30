@@ -376,7 +376,7 @@ public class CheckMethodAdapter extends MethodVisitor {
      *            the method visitor to which this adapter must delegate calls.
      */
     public CheckMethodAdapter(final MethodVisitor mv) {
-        this(mv, new HashMap<Label, Integer>());
+        this(mv, new HashMap<>());
     }
 
     /**

@@ -200,7 +200,7 @@ public class PlannerUtil {
 
   public static String getTopRelationInLineage(LogicalPlan plan, LogicalNode from) throws TajoException {
     RelationFinderVisitor visitor = new RelationFinderVisitor(true);
-    visitor.visit(null, plan, null, from, new Stack<LogicalNode>());
+    visitor.visit(null, plan, null, from, new Stack<>());
     if (visitor.getFoundRelations().isEmpty()) {
       return null;
     } else {
@@ -276,7 +276,7 @@ public class PlannerUtil {
   public static void replaceNode(LogicalPlan plan, LogicalNode startNode, LogicalNode oldNode, LogicalNode newNode) {
     LogicalNodeReplaceVisitor replacer = new LogicalNodeReplaceVisitor(oldNode, newNode);
     try {
-      replacer.visit(new ReplacerContext(), plan, null, startNode, new Stack<LogicalNode>());
+      replacer.visit(new ReplacerContext(), plan, null, startNode, new Stack<>());
     } catch (TajoException e) {
       throw new TajoInternalError(e);
     }
@@ -731,14 +731,14 @@ public class PlannerUtil {
   public static boolean existsAggregationFunction(Expr expr) throws TajoException {
     AggregationFunctionFinder finder = new AggregationFunctionFinder();
     AggFunctionFoundResult result = new AggFunctionFoundResult();
-    finder.visit(result, new Stack<Expr>(), expr);
+    finder.visit(result, new Stack<>(), expr);
     return result.generalSetFunction;
   }
 
   public static boolean existsDistinctAggregationFunction(Expr expr) throws TajoException {
     AggregationFunctionFinder finder = new AggregationFunctionFinder();
     AggFunctionFoundResult result = new AggFunctionFoundResult();
-    finder.visit(result, new Stack<Expr>(), expr);
+    finder.visit(result, new Stack<>(), expr);
     return result.distinctSetFunction;
   }
 
@@ -965,7 +965,7 @@ public class PlannerUtil {
 
   public static List<EvalNode> getAllEqualEvals(EvalNode qual) {
     EvalTreeUtil.EvalFinder finder = new EvalTreeUtil.EvalFinder(EvalType.EQUAL);
-    finder.visit(null, qual, new Stack<EvalNode>());
+    finder.visit(null, qual, new Stack<>());
     return finder.getEvalNodes();
   }
 

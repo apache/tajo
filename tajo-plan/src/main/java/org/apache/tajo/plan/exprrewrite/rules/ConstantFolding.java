@@ -38,7 +38,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
 
   @Override
   public EvalNode optimize(LogicalPlanner.PlanContext context, EvalNode evalNode) {
-    return visit(context, evalNode, new Stack<EvalNode>());
+    return visit(context, evalNode, new Stack<>());
   }
 
   @Override

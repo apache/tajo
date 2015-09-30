@@ -45,14 +45,14 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   }
 
   public static void compile(CompilationContext context, LogicalNode node) throws TajoException {
-    instance.visit(context, null, null, node, new Stack<LogicalNode>());
+    instance.visit(context, null, null, node, new Stack<>());
     context.compiledEval = Collections.unmodifiableMap(context.compiledEval);
   }
 
   public static Map<Pair<Schema, EvalNode>, EvalNode> compile(TajoClassLoader classLoader, LogicalNode node)
       throws TajoException {
     CompilationContext context = new CompilationContext(classLoader);
-    instance.visit(context, null, null, node, new Stack<LogicalNode>());
+    instance.visit(context, null, null, node, new Stack<>());
     return context.compiledEval;
   }
 

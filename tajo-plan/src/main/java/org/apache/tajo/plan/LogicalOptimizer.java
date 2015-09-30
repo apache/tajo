@@ -122,7 +122,7 @@ public class LogicalOptimizer {
 
       JoinTargetCollector collector = new JoinTargetCollector();
       Set<Target> targets = new LinkedHashSet<>();
-      collector.visitJoin(targets, plan, block, old, new Stack<LogicalNode>());
+      collector.visitJoin(targets, plan, block, old, new Stack<>());
 
       if (targets.size() == 0) {
         newJoinNode.setTargets(PlannerUtil.schemaToTargets(old.getOutSchema()));
@@ -463,7 +463,7 @@ public class LogicalOptimizer {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostLeft = true;
     RelationNodeFinder finder = new RelationNodeFinder();
-    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    finder.visit(context, plan, block, from, new Stack<>());
     return context.founds.isEmpty() ? null : context.founds.iterator().next();
   }
 
@@ -481,7 +481,7 @@ public class LogicalOptimizer {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostRight = true;
     RelationNodeFinder finder = new RelationNodeFinder();
-    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    finder.visit(context, plan, block, from, new Stack<>());
     return context.founds.isEmpty() ? null : context.founds.iterator().next();
   }
 

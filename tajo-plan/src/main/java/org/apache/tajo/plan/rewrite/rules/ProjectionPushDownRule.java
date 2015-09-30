@@ -1059,8 +1059,8 @@ public class ProjectionPushDownRule extends
         rightBlock.getName()));
 
     stack.push(node);
-    visit(leftContext, plan, leftBlock, leftBlock.getRoot(), new Stack<LogicalNode>());
-    visit(rightContext, plan, rightBlock, rightBlock.getRoot(), new Stack<LogicalNode>());
+    visit(leftContext, plan, leftBlock, leftBlock.getRoot(), new Stack<>());
+    visit(rightContext, plan, rightBlock, rightBlock.getRoot(), new Stack<>());
     stack.pop();
     return node;
   }

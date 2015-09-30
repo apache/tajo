@@ -120,7 +120,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     ExprNormalizedResult exprNormalizedResult = new ExprNormalizedResult(context, subexprElimination);
     Stack<Expr> stack = new Stack<>();
     stack.push(expr);
-    visit(exprNormalizedResult, new Stack<Expr>(), expr);
+    visit(exprNormalizedResult, new Stack<>(), expr);
     exprNormalizedResult.baseExpr = stack.pop();
     return exprNormalizedResult;
   }
@@ -180,13 +180,13 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   public Expr visitBinaryOperator(ExprNormalizedResult ctx, Stack<Expr> stack, BinaryOperator expr) throws TajoException {
     stack.push(expr);
 
-    visit(ctx, new Stack<Expr>(), expr.getLeft());
+    visit(ctx, new Stack<>(), expr.getLeft());
     if (isBinaryCommonTermsElimination(ctx, expr.getLeft())) {
       String refName = ctx.block.namedExprsMgr.addExpr(expr.getLeft());
       expr.setLeft(new ColumnReferenceExpr(refName));
     }
 
-    visit(ctx, new Stack<Expr>(), expr.getRight());
+    visit(ctx, new Stack<>(), expr.getRight());
     if (isBinaryCommonTermsElimination(ctx, expr.getRight())) {
       String refName = ctx.block.namedExprsMgr.addExpr(expr.getRight());
       expr.setRight(new ColumnReferenceExpr(refName));

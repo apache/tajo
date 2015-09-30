@@ -163,7 +163,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     PlanContext context = new PlanContext(queryContext, plan, rootBlock, evalOptimizer, debug);
     preprocessor.process(context, expr);
     plan.resetGeneratedId();
-    LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
+    LogicalNode topMostNode = this.visit(context, new Stack<>(), expr);
 
     // Add Root Node
     LogicalRootNode root = plan.createNode(LogicalRootNode.class);
@@ -1431,7 +1431,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     PlanContext newContext = new PlanContext(context, childBlock);
     context.plan.connectBlocks(childBlock, context.queryBlock, BlockType.TableSubQuery);
-    LogicalNode child = visit(newContext, new Stack<Expr>(), expr.getSubQuery());
+    LogicalNode child = visit(newContext, new Stack<>(), expr.getSubQuery());
     TableSubQueryNode subQueryNode = currentBlock.getNodeFromExpr(expr);
 
     subQueryNode.setSubQuery(child);
@@ -1574,7 +1574,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock leftBlock = context.plan.getBlockByExpr(setOperation.getLeft());
     PlanContext leftContext = new PlanContext(context, leftBlock);
     stack.push(setOperation);
-    LogicalNode leftChild = visit(leftContext, new Stack<Expr>(), setOperation.getLeft());
+    LogicalNode leftChild = visit(leftContext, new Stack<>(), setOperation.getLeft());
     stack.pop();
     // Connect left child and current blocks
     context.plan.connectBlocks(leftContext.queryBlock, context.queryBlock, BlockType.TableSubQuery);
@@ -1585,7 +1585,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock rightBlock = context.plan.getBlockByExpr(setOperation.getRight());
     PlanContext rightContext = new PlanContext(context, rightBlock);
     stack.push(setOperation);
-    LogicalNode rightChild = visit(rightContext, new Stack<Expr>(), setOperation.getRight());
+    LogicalNode rightChild = visit(rightContext, new Stack<>(), setOperation.getRight());
     stack.pop();
     // Connect right child and current blocks
     context.plan.connectBlocks(rightContext.queryBlock, context.queryBlock, BlockType.TableSubQuery);

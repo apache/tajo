@@ -45,7 +45,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
 
   public CONTEXT visit(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block)
       throws TajoException {
-    visit(context, plan, block, block.getRoot(), new Stack<LogicalNode>());
+    visit(context, plan, block, block.getRoot(), new Stack<>());
     return context;
   }
 

@@ -370,7 +370,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private final String rack;
     /** A key is disk volume, and a value is a list of tasks to be scheduled. */
     private Map<Integer, LinkedHashSet<TaskAttempt>> unassignedTaskForEachVolume =
-        Collections.synchronizedMap(new HashMap<Integer, LinkedHashSet<TaskAttempt>>());
+        Collections.synchronizedMap(new HashMap<>());
     /** A value is last assigned volume id for each task runner */
     private HashMap<TaskAttemptId, Integer> lastAssignedVolumeId = Maps.newHashMap();
     /**
@@ -619,8 +619,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     // two list leafTasks and nonLeafTasks keep all tasks to be scheduled. Even though some task is included in
     // leafTaskHostMapping or leafTasksRackMapping, some task T will not be sent to a task runner
     // if the task is not included in leafTasks and nonLeafTasks.
-    private final Set<TaskAttemptId> leafTasks = Collections.synchronizedSet(new HashSet<TaskAttemptId>());
-    private final Set<TaskAttemptId> nonLeafTasks = Collections.synchronizedSet(new HashSet<TaskAttemptId>());
+    private final Set<TaskAttemptId> leafTasks = Collections.synchronizedSet(new HashSet<>());
+    private final Set<TaskAttemptId> nonLeafTasks = Collections.synchronizedSet(new HashSet<>());
     private Map<String, HostVolumeMapping> leafTaskHostMapping = Maps.newConcurrentMap();
     private final Map<String, HashSet<TaskAttemptId>> leafTasksRackMapping = Maps.newConcurrentMap();
 

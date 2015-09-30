@@ -126,7 +126,7 @@ public class TestEvalNodeToExprConverter {
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
     EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
-    convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
+    convertor.visit(null, scanNode.getQual(), new Stack<>());
 
     Expr resultExpr = convertor.getResult();
 
@@ -156,7 +156,7 @@ public class TestEvalNodeToExprConverter {
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
     EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
-    convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
+    convertor.visit(null, scanNode.getQual(), new Stack<>());
 
     Expr resultExpr = convertor.getResult();
     BinaryOperator equals = AlgebraicUtil.findTopExpr(resultExpr, OpType.Equals);
@@ -185,7 +185,7 @@ public class TestEvalNodeToExprConverter {
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
     EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
-    convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
+    convertor.visit(null, scanNode.getQual(), new Stack<>());
 
     Expr resultExpr = convertor.getResult();
 
@@ -243,7 +243,7 @@ public class TestEvalNodeToExprConverter {
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
     EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
-    convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
+    convertor.visit(null, scanNode.getQual(), new Stack<>());
 
     Expr resultExpr = convertor.getResult();
 
@@ -298,7 +298,7 @@ public class TestEvalNodeToExprConverter {
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
     EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
-    convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
+    convertor.visit(null, scanNode.getQual(), new Stack<>());
 
     Expr resultExpr = convertor.getResult();
 
@@ -353,7 +353,7 @@ public class TestEvalNodeToExprConverter {
     ScanNode scanNode = PlannerUtil.findTopNode(node, NodeType.SCAN);
 
     EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(scanNode.getTableName());
-    convertor.visit(null, scanNode.getQual(), new Stack<EvalNode>());
+    convertor.visit(null, scanNode.getQual(), new Stack<>());
 
     Expr resultExpr = convertor.getResult();
 
