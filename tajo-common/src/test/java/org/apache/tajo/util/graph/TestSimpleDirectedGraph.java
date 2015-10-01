@@ -69,13 +69,13 @@ public class TestSimpleDirectedGraph {
     assertEquals(2, graph.getChildCount(child2));
 
     // visitor
-    graph.accept(root, new Visitor());
+    graph.accept(null, root, new Visitor());
   }
 
-  private class Visitor implements DirectedGraphVisitor<String> {
+  private class Visitor implements DirectedGraphVisitor<Object, String> {
 
     @Override
-    public void visit(Stack<String> stack, String s) {
+    public void visit(Object context, Stack<String> stack, String s) {
       if(LOG.isDebugEnabled()) {
         LOG.debug("Element:" + s);
       }
