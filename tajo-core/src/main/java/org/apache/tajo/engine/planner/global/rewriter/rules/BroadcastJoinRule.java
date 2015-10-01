@@ -172,8 +172,6 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
                                     GlobalPlanRewriteUtil.ParentFinder parentFinder) {
       this.plan = plan;
       this.relSizeComparator = relationSizeComparator;
-//      this.thresholdForNonCrossJoin = thresholdForNonCrossJoin;
-//      this.thresholdForCrossJoin = thresholdForCrossJoin;
       this.parentFinder = parentFinder;
     }
 
