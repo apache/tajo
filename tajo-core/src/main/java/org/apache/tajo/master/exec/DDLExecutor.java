@@ -626,13 +626,25 @@ public class DDLExecutor {
     // Find missing partitions from CatalogStore
     List<PartitionDescProto> targetPartitions = TUtil.newList();
     for(Path filteredPath : filteredPaths) {
-      PartitionDescProto targetPartition = getPartitionDesc(tablePath, filteredPath);
-      if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+
+      int startIdx = filteredPath.toString().indexOf(PartitionedTableRewriter.getColumnPartitionPathPrefix
+        (partitionColumns));
+
+      // if there is partition column in the path
+      if (startIdx > -1) {
+        PartitionDescProto targetPartition = getPartitionDesc(tablePath, filteredPath);
+        if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+          }
+          targetPartitions.add(targetPartition);
         }
-        targetPartitions.add(targetPartition);
+      } else {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Invalid partition path:" + filteredPath.toString());
+        }
       }
+
     }
 
     catalog.addPartitions(databaseName, simpleTableName, targetPartitions, true);
