@@ -532,12 +532,12 @@ public class QueryClientImpl implements QueryClient {
   public QueryHistoryProto getQueryHistory(final QueryId queryId) throws QueryNotFoundException {
     final QueryInfoProto queryInfo = getQueryInfo(queryId);
 
-    if (queryInfo.getHostNameOfQM() == null || queryInfo.getQueryMasterClientPort() == 0) {
+    if (queryInfo.getHostNameOfQm() == null || queryInfo.getQueryMasterClientPort() == 0) {
       return null;
     }
 
     InetSocketAddress qmAddress = new InetSocketAddress(
-        queryInfo.getHostNameOfQM(), queryInfo.getQueryMasterClientPort());
+        queryInfo.getHostNameOfQm(), queryInfo.getQueryMasterClientPort());
 
     RpcClientManager manager = RpcClientManager.getInstance();
     NettyClientBase qmClient = null;

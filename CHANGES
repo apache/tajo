@@ -6,6 +6,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
   
+    TAJO-1461: Follow Protocol Buffer Style Guide. (Contributed by David Chen,
+    committed by hyunsik)
+
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES

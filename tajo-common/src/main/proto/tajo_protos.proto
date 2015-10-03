@@ -55,13 +55,13 @@ enum FetcherState {
 }
 
 message WorkerConnectionInfoProto {
-    required int32 id = 1;
-    required string host = 2;
-    required int32 peerRpcPort = 3;
-    required int32 pullServerPort = 4;
-    optional int32 queryMasterPort = 5;
-    required int32 clientPort = 6;
-    required int32 httpInfoPort = 7;
+  required int32 id = 1;
+  required string host = 2;
+  required int32 peer_rpc_port = 3;
+  required int32 pull_server_port = 4;
+  optional int32 query_master_port = 5;
+  required int32 client_port = 6;
+  required int32 http_info_port = 7;
 }
 
 message NodeResourceProto {
@@ -71,5 +71,5 @@ message NodeResourceProto {
 }
 
 enum CodecType {
-      SNAPPY = 0;
+  SNAPPY = 0;
 }
