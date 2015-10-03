@@ -466,7 +466,6 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         if (o instanceof ColumnVertex) {
           ColumnVertex other = (ColumnVertex) o;
           return this.name.equals(other.name) &&
-//              this.type.equals(other.type) &&
               this.path.equals(other.path);
         }
         return false;
@@ -474,7 +473,6 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       @Override
       public int hashCode() {
-//        return Objects.hashCode(name, type, path);
         return Objects.hashCode(name, path);
       }
     }
