@@ -1,7 +1,5 @@
 Tajo Change Log 
 
-Release 0.12.0 - unreleased
-
 Release 0.11.0 - unreleased
 
   NEW FEATURES
@@ -286,6 +284,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1901: Repair partition throws ArrayIndexOutOfBoundsException 
+    occasionally. (Contributed by jaehwa, committed by hyunsik)
 
     TAJO-1902: Add line delimiter for repair partition in TajoDump. (jaehwa)
 

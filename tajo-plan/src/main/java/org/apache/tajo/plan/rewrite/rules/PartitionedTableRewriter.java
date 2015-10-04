@@ -479,7 +479,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param partitionColumn the schema of column partition
    * @return The first part string of column partition path.
    */
-  private static String getColumnPartitionPathPrefix(Schema partitionColumn) {
+  public static String getColumnPartitionPathPrefix(Schema partitionColumn) {
     StringBuilder sb = new StringBuilder();
     sb.append(partitionColumn.getColumn(0).getSimpleName()).append("=");
     return sb.toString();

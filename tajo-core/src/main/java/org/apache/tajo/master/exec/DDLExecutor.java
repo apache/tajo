@@ -50,6 +50,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -625,13 +626,25 @@ public class DDLExecutor {
     // Find missing partitions from CatalogStore
     List<PartitionDescProto> targetPartitions = TUtil.newList();
     for(Path filteredPath : filteredPaths) {
-      PartitionDescProto targetPartition = getPartitionDesc(simpleTableName, filteredPath);
-      if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+
+      int startIdx = filteredPath.toString().indexOf(PartitionedTableRewriter.getColumnPartitionPathPrefix
+        (partitionColumns));
+
+      // if there is partition column in the path
+      if (startIdx > -1) {
+        PartitionDescProto targetPartition = getPartitionDesc(tablePath, filteredPath);
+        if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
+          }
+          targetPartitions.add(targetPartition);
         }
-        targetPartitions.add(targetPartition);
+      } else {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Invalid partition path:" + filteredPath.toString());
+        }
       }
+
     }
 
     catalog.addPartitions(databaseName, simpleTableName, targetPartitions, true);
@@ -645,12 +658,11 @@ public class DDLExecutor {
     LOG.info("Total added partitions to CatalogStore: " + targetPartitions.size());
   }
 
-  private PartitionDescProto getPartitionDesc(String tableName, Path path) throws IOException {
-    String partitionPath = path.toString();
+  private PartitionDescProto getPartitionDesc(Path tablePath, Path partitionPath) throws IOException {
+    String partitionName = StringUtils.unescapePathName(partitionPath.toString());
 
-    String partitionName = StringUtils.unescapePathName(partitionPath);
-    int startIndex = partitionPath.indexOf(tableName);
-    partitionName = partitionName.substring(startIndex + tableName.length() + 1, partitionPath.length());
+    int startIndex = partitionName.indexOf(tablePath.toString()) + tablePath.toString().length();
+    partitionName = partitionName.substring(startIndex +  File.separator.length());
 
     CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
     builder.setPartitionName(partitionName);
@@ -668,7 +680,7 @@ public class DDLExecutor {
       builder.addPartitionKeys(keyBuilder.build());
     }
 
-    builder.setPath(partitionPath);
+    builder.setPath(partitionPath.toString());
 
     return builder.build();
   }
