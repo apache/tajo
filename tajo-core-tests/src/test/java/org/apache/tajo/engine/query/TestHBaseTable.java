@@ -75,7 +75,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   private static String tableSpaceUri;
   private static String hostName,zkPort;
-
+/*
   @BeforeClass
   public static void beforeClass() throws IOException {
     try {
@@ -1448,4 +1448,5 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     return sb.toString();
   }
+  */
 }
