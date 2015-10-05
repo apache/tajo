@@ -1731,12 +1731,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     return tables;
   }
-  
+
   @Override
   public List<TableDescriptorProto> getAllTables() {
     List<TableDescriptorProto> tables = new ArrayList<>();
 
-    String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.STORE_TYPE, " +
+    String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.DATA_FORMAT, " +
             " s.SPACE_URI FROM " + TB_TABLES + " t, " + TB_DATABASES + " d, " + TB_SPACES +
             " s WHERE t.DB_ID = d.DB_ID AND d.SPACE_ID = s.SPACE_ID";
 
@@ -1744,7 +1744,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
          ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TableDescriptorProto.Builder builder = TableDescriptorProto.newBuilder();
-        
+
         builder.setTid(resultSet.getInt("TID"));
         builder.setDbId(resultSet.getInt("DB_ID"));
         String tableName = resultSet.getString(COL_TABLES_NAME);
@@ -1763,13 +1763,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           dataFormat = dataFormat.trim();
           builder.setDataFormat(dataFormat);
         }
-        
+
         tables.add(builder.build());
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     }
-    
+
     return tables;
   }
   
