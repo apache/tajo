@@ -20,7 +20,6 @@ package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
@@ -47,10 +46,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.UUID;
+import java.util.*;
 
 import static org.apache.tajo.storage.StorageConstants.LOCAL_FS_URI;
 
@@ -320,7 +316,7 @@ public class TablespaceManager implements StorageService {
       registerTableSpace(space.name, space.uri, space.getConfig(), true, true);
     }
     // if there is an existing one, return it.
-    return Optional.fromNullable(existing);
+    return Optional.ofNullable(existing);
   }
 
   @VisibleForTesting
@@ -332,7 +328,7 @@ public class TablespaceManager implements StorageService {
         existing = TABLE_SPACES.remove(uri);
       }
     }
-    return Optional.fromNullable(existing);
+    return Optional.ofNullable(existing);
   }
 
   public Iterable<String> getSupportSchemes() {
@@ -419,7 +415,7 @@ public class TablespaceManager implements StorageService {
       }
     }
 
-    return Optional.absent();
+    return Optional.empty();
   }
 
   @Override

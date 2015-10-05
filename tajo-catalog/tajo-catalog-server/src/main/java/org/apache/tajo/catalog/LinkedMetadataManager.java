@@ -18,7 +18,6 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +31,7 @@ import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.collect.Collections2.filter;
 
@@ -85,7 +85,7 @@ public class LinkedMetadataManager {
         });
 
     if (filtered.isEmpty()) {
-      return Optional.absent();
+      return Optional.empty();
     } else {
       MetadataProvider found = filtered.iterator().next();
       return Optional.of(new Pair<>(found.getTablespaceName(), found.getTablespaceUri()));

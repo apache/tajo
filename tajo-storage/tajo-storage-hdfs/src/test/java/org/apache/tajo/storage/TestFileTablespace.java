@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
@@ -42,6 +41,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.Assert.*;
@@ -271,7 +271,7 @@ public class TestFileTablespace {
     cluster.waitClusterUp();
     URI uri = URI.create(cluster.getFileSystem().getUri() + "/tajo");
 
-    Optional<Tablespace> existingTs = Optional.absent();
+    Optional<Tablespace> existingTs = Optional.empty();
     try {
       /* Local FileSystem */
       FileTablespace space = TablespaceManager.getLocalFs();
