@@ -94,7 +94,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public static <T extends Expr> Set<T> finds(Expr expr, OpType type) throws TajoException {
       FinderContext<T> context = new FinderContext<>(type);
       ExprFinderIncludeSubquery finder = new ExprFinderIncludeSubquery();
-      finder.visit(context, new Stack<Expr>(), expr);
+      finder.visit(context, new Stack<>(), expr);
       return context.set;
     }
 
@@ -138,7 +138,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     if (processor == null) {
       processor = new Processor();
     }
-    return processor.visit(new ProcessorContext(context), new Stack<Expr>(), expr);
+    return processor.visit(new ProcessorContext(context), new Stack<>(), expr);
   }
 
   static class ProcessorContext {

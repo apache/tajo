@@ -59,7 +59,7 @@ public class NettyServerBase {
   protected ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private InetSocketAddress initIsa;
-  private Set<RpcEventListener> listeners = Collections.synchronizedSet(new HashSet<RpcEventListener>());
+  private Set<RpcEventListener> listeners = Collections.synchronizedSet(new HashSet<>());
 
   public NettyServerBase(InetSocketAddress address) {
     this.initIsa = address;

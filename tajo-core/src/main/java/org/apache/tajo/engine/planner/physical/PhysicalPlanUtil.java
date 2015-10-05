@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PhysicalPlanUtil {
   public static <T extends PhysicalExec> T findExecutor(PhysicalExec plan, Class<? extends PhysicalExec> clazz)
       throws PhysicalPlanningException {
-    return (T) new FindVisitor().visit(plan, new Stack<PhysicalExec>(), clazz);
+    return (T) new FindVisitor().visit(plan, new Stack<>(), clazz);
   }
 
   public static TupleComparator [] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {

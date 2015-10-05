@@ -29,7 +29,7 @@ import java.util.*;
 public class NestedPathUtil {
   public static final String PATH_DELIMITER = "/";
 
-  public static final List<String> ROOT_PATH = Collections.unmodifiableList(new ArrayList<String>());
+  public static final List<String> ROOT_PATH = Collections.unmodifiableList(new ArrayList<>());
 
   public static boolean isPath(String name) {
     return name.indexOf(PATH_DELIMITER.charAt(0)) >= 0;

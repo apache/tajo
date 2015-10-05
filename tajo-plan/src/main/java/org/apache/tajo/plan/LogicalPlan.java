@@ -521,7 +521,7 @@ public class LogicalPlan {
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
       relationList.add(relation);
-      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<AccessPathInfo>());
+      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<>());
     }
 
     public void addRelation(RelationNode relation, List<AccessPathInfo> accessPathInfos) {
@@ -530,7 +530,7 @@ public class LogicalPlan {
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
       relationList.add(relation);
-      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<AccessPathInfo>());
+      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<>());
     }
 
     public void addAccessPath(RelationNode relation, AccessPathInfo accessPathInfo) {

@@ -46,7 +46,7 @@ public class EvalTreeUtil {
   public static int replace(EvalNode expr, EvalNode targetExpr, EvalNode tobeReplaced) {
     EvalReplaceVisitor replacer = new EvalReplaceVisitor(targetExpr, tobeReplaced);
     ReplaceContext context = new ReplaceContext();
-    replacer.visit(context, expr, new Stack<EvalNode>());
+    replacer.visit(context, expr, new Stack<>());
     return context.countOfReplaces;
   }
 
@@ -511,13 +511,13 @@ public class EvalTreeUtil {
 
   public static <T extends EvalNode> Collection<T> findEvalsByType(EvalNode evalNode, EvalType type) {
     EvalFinder finder = new EvalFinder(type);
-    finder.visit(null, evalNode, new Stack<EvalNode>());
+    finder.visit(null, evalNode, new Stack<>());
     return (Collection<T>) finder.evalNodes;
   }
 
   public static <T extends EvalNode> Collection<T> findOuterJoinSensitiveEvals(EvalNode evalNode) {
     OuterJoinSensitiveEvalFinder finder = new OuterJoinSensitiveEvalFinder();
-    finder.visit(null, evalNode, new Stack<EvalNode>());
+    finder.visit(null, evalNode, new Stack<>());
     return (Collection<T>) finder.evalNodes;
   }
 

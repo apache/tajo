@@ -59,13 +59,13 @@ public class LegacyClientDelegate extends SessionConnection implements ClientDel
 
   public LegacyClientDelegate(String host, int port, Properties clientParams) {
     super(new DummyServiceTracker(NetUtils.createSocketAddr(host, port)), null,
-        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams)));
+        new KeyValueSet(clientParams == null ? new HashMap<>() : Maps.fromProperties(clientParams)));
     queryClient = new QueryClientImpl(this);
   }
 
   public LegacyClientDelegate(ServiceDiscovery discovery, Properties clientParams) {
     super(new DelegateServiceTracker(discovery), null,
-        new KeyValueSet(clientParams == null ? new HashMap<String, String>() : Maps.fromProperties(clientParams)));
+        new KeyValueSet(clientParams == null ? new HashMap<>() : Maps.fromProperties(clientParams)));
     queryClient = new QueryClientImpl(this);
   }
 

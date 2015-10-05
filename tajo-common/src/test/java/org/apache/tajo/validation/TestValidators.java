@@ -101,11 +101,11 @@ public class TestValidators {
   }
   
   private <T extends Validator> Matcher<? super ConstraintViolation> hasAClass(Matcher<Class<T>> matcher) {
-    return new ValidatorClazzMatcher<T>(matcher);
+    return new ValidatorClazzMatcher<>(matcher);
   }
   
   private <T> Matcher<Iterable<? extends T>> hasItem(Matcher<? extends T> matcher) {
-    return new CollectionMatcher<T>(matcher);
+    return new CollectionMatcher<>(matcher);
   }
   
   @Test
