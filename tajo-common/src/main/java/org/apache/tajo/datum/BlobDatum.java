@@ -23,7 +23,6 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.exception.InvalidOperationException;
-import org.apache.tajo.util.TUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

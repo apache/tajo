@@ -15,6 +15,11 @@ Release 0.12.0 - unreleased
 
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
+  TASKS
+
+    TAJO-1893: Remove unused import. (Contributed by Dongkyu Hwangbo, 
+    Committed by jihoon)
+
   SUB TASKS
 
     TAJO-1844: Eliminate explicit diamond expressions. 

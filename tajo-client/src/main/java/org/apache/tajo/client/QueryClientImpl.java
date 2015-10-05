@@ -26,7 +26,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
-import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -54,7 +53,6 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.exception.ExceptionUtil.throwIfError;
 import static org.apache.tajo.exception.ExceptionUtil.throwsIfThisError;

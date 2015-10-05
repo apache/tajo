@@ -25,12 +25,9 @@ import org.apache.hadoop.hive.serde2.objectinspector.StructField;
 import org.apache.hadoop.hive.serde2.objectinspector.StructObjectInspector;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.Tuple;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class TajoStructObjectInspector extends StructObjectInspector {

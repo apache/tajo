@@ -30,7 +30,6 @@ import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 public class CSVLineDeserializer extends TextLineDeserializer {
   private ByteBufProcessor processor;

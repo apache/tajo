@@ -20,9 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
-import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.NotImplementedException;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,9 +29,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.sql.SQLException;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
