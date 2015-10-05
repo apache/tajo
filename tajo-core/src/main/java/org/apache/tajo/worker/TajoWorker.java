@@ -44,7 +44,6 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.querymaster.QueryMaster;
 import org.apache.tajo.querymaster.QueryMasterManagerService;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
@@ -196,7 +195,7 @@ public class TajoWorker extends CompositeService {
       addIfService(pullService);
     }
 
-    if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {
       httpPort = initWebServer();
     }
 
@@ -324,7 +323,7 @@ public class TajoWorker extends CompositeService {
     }
     connectToCatalog();
 
-    if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {
       initCleanupService();
     }
 

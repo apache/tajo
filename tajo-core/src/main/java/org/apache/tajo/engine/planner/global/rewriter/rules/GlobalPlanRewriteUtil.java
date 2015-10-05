@@ -48,7 +48,7 @@ public class GlobalPlanRewriteUtil {
           originalChannel.getShuffleOutputNum());
       newChannel.setSchema(originalChannel.getSchema());
       newChannel.setShuffleKeys(originalChannel.getShuffleKeys());
-      newChannel.setStoreType(originalChannel.getStoreType());
+      newChannel.setDataFormat(originalChannel.getDataFormat());
       newChannel.setTransmitType(originalChannel.getTransmitType());
       plan.addConnect(newChannel);
       plan.disconnect(eachGrandChild, child);

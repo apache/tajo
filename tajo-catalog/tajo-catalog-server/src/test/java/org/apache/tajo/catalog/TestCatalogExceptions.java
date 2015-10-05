@@ -79,11 +79,11 @@ public class TestCatalogExceptions {
   @Test(expected = TajoInternalError.class)
   public void testAlterTablespaceWithWrongUri() throws Exception {
     catalog.alterTablespace(AlterTablespaceProto.newBuilder().
-        setSpaceName("space1").
-        addCommand(
-            AlterTablespaceCommand.newBuilder().
-                setType(AlterTablespaceType.LOCATION).
-                setLocation("hdfs:")).build());
+      setSpaceName("space1").
+      addCommand(
+        AlterTablespaceCommand.newBuilder().
+          setType(AlterTablespaceType.LOCATION).
+          setLocation("hdfs:")).build());
   }
 
   @Test(expected = UndefinedTablespaceException.class)
@@ -121,11 +121,11 @@ public class TestCatalogExceptions {
     schema.addColumn(CatalogUtil.buildFQName(tableName, "cOlumn"), Type.INT8);
     Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
     catalog.createTable(
-        new TableDesc(
-            CatalogUtil.buildFQName("TestDatabase1", tableName),
-            schema,
-            new TableMeta("TEXT", new KeyValueSet()),
-            path.toUri(), true));
+      new TableDesc(
+        CatalogUtil.buildFQName("TestDatabase1", tableName),
+        schema,
+        new TableMeta("TEXT", new KeyValueSet()),
+        path.toUri(), true));
   }
 
   @Test(expected = DuplicateTableException.class)
@@ -147,17 +147,17 @@ public class TestCatalogExceptions {
   @Test(expected = UndefinedTableException.class)
   public void testUpdateTableStatsOfUndefinedTable() throws Exception {
     catalog.updateTableStats(
-        UpdateTableStatsProto.newBuilder().
-            setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined")).
-            setStats(
-                TableStatsProto.newBuilder().
-                    setNumRows(0).
-                    setNumBytes(0).
-                    build()).
-            build());
+      UpdateTableStatsProto.newBuilder().
+        setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined")).
+        setStats(
+          TableStatsProto.newBuilder().
+            setNumRows(0).
+            setNumBytes(0).
+            build()).
+        build());
   }
 
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testAddPartitionWithWrongUri() throws Exception {
     // TODO: currently, wrong uri does not occur any exception.
     String partitionName = "DaTe=/=AaA";
@@ -171,7 +171,7 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
-  @Test(expected = DuplicatePartitionException.class)
+  // TODO: This should be added at TAJO-1891
   public void testAddDuplicatePartition() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
@@ -194,13 +194,27 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
-  @Test(expected = UndefinedTableException.class)
+  // TODO: This should be added at TAJO-1891
   public void testAddPartitionToUndefinedTable() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined"));
+    alterTableDesc.setPartitionDesc(partitionDesc);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    catalog.alterTable(alterTableDesc);
+  }
+
+  // TODO: This should be removed at TAJO-1891
+  @Test(expected = NotImplementedException.class)
+  public void testAddPartitionNotimplementedException() throws Exception {
+    String partitionName = "DaTe=/=AaA";
+    PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
+
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 

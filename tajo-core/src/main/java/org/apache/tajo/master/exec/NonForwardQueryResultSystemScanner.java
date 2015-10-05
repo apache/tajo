@@ -52,7 +52,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
-import org.apache.tajo.session.InvalidSessionException;
+import org.apache.tajo.exception.InvalidSessionException;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
@@ -245,8 +245,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           }
         } else if ("path".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(table.getPath()));
-        } else if ("store_type".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(table.getStoreType()));
+        } else if ("data_format".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(table.getDataFormat()));
         }
       }
       

@@ -20,7 +20,6 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
@@ -160,8 +159,8 @@ public class CatalogTestingUtil {
       }
 
       PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
-      builder.setColumnName(partitionValue);
-      builder.setPartitionValue(columnName);
+      builder.setColumnName(columnName);
+      builder.setPartitionValue(partitionValue);
       partitionKeyList.add(builder.build());
     }
 

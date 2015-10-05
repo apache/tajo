@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.function.stream;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 

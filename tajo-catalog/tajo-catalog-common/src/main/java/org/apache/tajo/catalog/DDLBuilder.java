@@ -24,9 +24,11 @@ import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 
-import java.util.*;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map.Entry;
-import java.util.function.Consumer;
 
 public class DDLBuilder {
 
@@ -35,7 +37,7 @@ public class DDLBuilder {
 
     sb.append("--\n")
       .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
-      .append(" Storage: ").append(desc.getMeta().getStoreType());
+      .append(" Storage: ").append(desc.getMeta().getDataFormat());
     sb.append("\n-- Path: ").append(desc.getUri());
     sb.append("\n--\n");
     sb.append("CREATE EXTERNAL TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
@@ -58,7 +60,7 @@ public class DDLBuilder {
 
     sb.append("--\n")
         .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
-        .append(" Storage: ").append(desc.getMeta().getStoreType());
+        .append(" Storage: ").append(desc.getMeta().getDataFormat());
     sb.append("\n--\n");
     sb.append("CREATE TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());
@@ -114,7 +116,7 @@ public class DDLBuilder {
   }
 
   private static void buildUsingClause(StringBuilder sb, TableMeta meta) {
-    sb.append(" USING " +  CatalogUtil.getBackwardCompitablityStoreType(meta.getStoreType()));
+    sb.append(" USING " +  CatalogUtil.getBackwardCompitableDataFormat(meta.getDataFormat()));
   }
 
   private static void buildWithClause(final StringBuilder sb, TableMeta meta) {
@@ -181,8 +183,7 @@ public class DDLBuilder {
 
     List<Column> colums = table.getPartitionMethod().getExpressionSchema().getAllColumns();
 
-    String[] splitPartitionName = partition.getPartitionName().split("/");
-
+    String[] splitPartitionName = partition.getPartitionName().split(File.separator);
     for(int i = 0; i < splitPartitionName.length; i++) {
       String[] partitionColumnValue = splitPartitionName[i].split("=");
       if (i > 0) {

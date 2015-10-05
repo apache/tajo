@@ -64,9 +64,9 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 		this(tableName, schema, meta, path, true);
 	}
 	
-	public TableDesc(String tableName, @Nullable Schema schema, String storeType, KeyValueSet options,
+	public TableDesc(String tableName, @Nullable Schema schema, String dataFormat, KeyValueSet options,
                    @Nullable URI path) {
-	  this(tableName, schema, new TableMeta(storeType, options), path);
+	  this(tableName, schema, new TableMeta(dataFormat, options), path);
 	}
 	
 	public TableDesc(TableDescProto proto) {

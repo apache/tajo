@@ -1261,13 +1261,32 @@ public class TestLogicalPlanner {
     return root.getChild();
   }
 
+  @Test
+  public final void testAlterTableRepairPartiton() throws TajoException {
+    QueryContext qc = createQueryContext();
+
+    String sql = "ALTER TABLE table1 REPAIR PARTITION";
+    Expr expr = sqlAnalyzer.parse(sql);
+    LogicalPlan rootNode = planner.createPlan(qc, expr);
+    LogicalNode plan = rootNode.getRootBlock().getRoot();
+    testJsonSerDerObject(plan);
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
+
+    AlterTableNode msckNode = root.getChild();
+
+    assertEquals(msckNode.getAlterTableOpType(), AlterTableOpType.REPAIR_PARTITION);
+    assertEquals(msckNode.getTableName(), "table1");
+  }
+
   String [] ALTER_PARTITIONS = {
     "ALTER TABLE partitioned_table ADD PARTITION (col1 = 1 , col2 = 2) LOCATION 'hdfs://xxx" +
       ".com/warehouse/partitioned_table/col1=1/col2=2'", //0
     "ALTER TABLE partitioned_table DROP PARTITION (col1 = '2015' , col2 = '01', col3 = '11' )", //1
   };
 
-  @Test
+  // TODO: This should be added at TAJO-1891
   public final void testAddPartitionAndDropPartition() throws TajoException {
     String tableName = CatalogUtil.normalizeIdentifier("partitioned_table");
     String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);

@@ -280,37 +280,50 @@ public class QueryExecutor {
 
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
                               SubmitQueryResponse.Builder response) throws Exception {
-    ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
-    TableDesc desc = scanNode.getTableDesc();
 
-    if (desc.hasPartition()) {
+    ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
+    final TableDesc table = scanNode.getTableDesc();
+    if (table.hasPartition()) {
       scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
     }
 
+    final TableDesc resultDesc = new TableDesc("", scanNode.getOutSchema(),
+        new TableMeta(BuiltinStorages.DRAW, table.getMeta().getOptions()), null);
+    resultDesc.setStats(new TableStats());
+
+    // push down limit
     int maxRow = Integer.MAX_VALUE;
     if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
       maxRow = (int) limitNode.getFetchFirstNum();
       scanNode.setLimit(maxRow);
     }
-    if (desc.getStats().getNumRows() == 0) {
-      desc.getStats().setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
+
+    // get the estimated number of rows
+    long estimatedRowNum;
+    if (table.getStats().getNumRows() == 0) {
+      estimatedRowNum = TajoConstants.UNKNOWN_ROW_NUMBER;
+    } else {
+      estimatedRowNum = table.getStats().getNumRows();
     }
+    estimatedRowNum = Math.min(estimatedRowNum, maxRow);
+    resultDesc.getStats().setNumRows(estimatedRowNum);
 
-    QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
-        (LogicalRootNode) plan.getRootBlock().getRoot());
 
-    NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultFileScanner(
-        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, desc, maxRow);
+    final QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
+        plan.getRootBlock().getRoot());
 
+    final NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultFileScanner(
+        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, maxRow);
     queryResultScanner.init();
+
     session.addNonForwardQueryResultScanner(queryResultScanner);
 
     response.setState(OK);
     response.setQueryId(queryInfo.getQueryId().getProto());
     response.setResultType(ResultType.ENCLOSED);
     response.setMaxRowNum(maxRow);
-    response.setTableDesc(desc.getProto());
+    response.setTableDesc(resultDesc.getProto());
   }
 
   public void execNonFromQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
@@ -513,7 +526,7 @@ public class QueryExecutor {
         List<CatalogProtos.ColumnProto> columns = new ArrayList<>();
         CatalogProtos.TableDescProto tableDescProto = CatalogProtos.TableDescProto.newBuilder()
             .setTableName(nodeUniqName)
-            .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(BuiltinStorages.TEXT).build())
+            .setMeta(CatalogProtos.TableProto.newBuilder().setDataFormat(BuiltinStorages.TEXT).build())
             .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
             .setStats(stats.getProto())
             .build();

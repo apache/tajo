@@ -21,6 +21,7 @@ package org.apache.tajo.exception;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
@@ -44,10 +45,21 @@ public class ExceptionUtil {
     // Query Management and Scheduler
     ADD_EXCEPTION(QUERY_NOT_FOUND, QueryNotFoundException.class);
 
+    // Session
+    ADD_EXCEPTION(INVALID_SESSION, InvalidSessionException.class);
+    ADD_EXCEPTION(NO_SUCH_SESSION_VARIABLE, NoSuchSessionVariableException.class);
+    ADD_EXCEPTION(INVALID_SESSION_VARIABLE, InvalidSessionVariableException.class);
+
+    // Data Exception (SQLState Class - 22)
+    ADD_EXCEPTION(DIVISION_BY_ZERO, DividedByZeroException.class);
+    ADD_EXCEPTION(INVALID_URL, InvalidURLException.class);
+    ADD_EXCEPTION(INVALID_VALUE_FOR_CAST, InvalidValueForCastException.class);
+
     // Syntax Error or Access Rule Violation
     ADD_EXCEPTION(SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION, SQLSyntaxError.class);
     ADD_EXCEPTION(SYNTAX_ERROR, SQLSyntaxError.class);
     ADD_EXCEPTION(INSUFFICIENT_PRIVILEGE, InsufficientPrivilegeException.class);
+    ADD_EXCEPTION(CANNOT_DROP_CURRENT_DATABASE, CannotDropCurrentDatabaseException.class);
 
     ADD_EXCEPTION(UNDEFINED_TABLESPACE, UndefinedTablespaceException.class);
     ADD_EXCEPTION(UNDEFINED_DATABASE, UndefinedDatabaseException.class);
@@ -55,6 +67,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_TABLE, UndefinedTableException.class);
     ADD_EXCEPTION(UNDEFINED_COLUMN, UndefinedColumnException.class);
     ADD_EXCEPTION(UNDEFINED_FUNCTION, UndefinedFunctionException.class);
+    ADD_EXCEPTION(UNDEFINED_PARTITION_METHOD, UndefinedPartitionMethodException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION, UndefinedPartitionException.class);
     ADD_EXCEPTION(UNDEFINED_PARTITION_KEY, UndefinedPartitionKeyException.class);
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
@@ -74,8 +87,8 @@ public class ExceptionUtil {
     ADD_EXCEPTION(AMBIGUOUS_COLUMN, AmbiguousColumnException.class);
     ADD_EXCEPTION(AMBIGUOUS_FUNCTION, AmbiguousFunctionException.class);
 
+    // Expressions
     ADD_EXCEPTION(DATATYPE_MISMATCH, DataTypeMismatchException.class);
-    ADD_EXCEPTION(DATATYPE_MISMATCH, InvalidValueForCastException.class);
 
     ADD_EXCEPTION(UNAVAILABLE_TABLE_LOCATION, UnavailableTableLocationException.class);
     ADD_EXCEPTION(UNKNOWN_DATAFORMAT, UnknownDataFormatException.class);
@@ -189,7 +202,10 @@ public class ExceptionUtil {
   }
 
   public static void printStackTraceIfError(Log log, Throwable t) {
-    if (System.getProperty("DEBUG") != null || !ExceptionUtil.isManagedException(t)) {
+    // if this runs as an actual cluster instance or a debug mode, it will print all stacktraces.
+    // In other cases (i.e., run as a test mode and not debug mode), it will print stacktraces
+    // if the query is managed mode.
+    if (!TajoConstants.IS_TEST_MODE || TajoConstants.IS_DEBUG_MODE || !ExceptionUtil.isManagedException(t)) {
       ExceptionUtil.printStackTrace(log, t);
     }
   }

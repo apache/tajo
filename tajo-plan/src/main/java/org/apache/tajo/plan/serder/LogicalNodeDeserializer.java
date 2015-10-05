@@ -502,7 +502,7 @@ public class LogicalNodeDeserializer {
       createTable.setOutSchema(convertSchema(protoNode.getOutSchema()));
     }
     createTable.setChild(nodeMap.get(persistentStoreProto.getChildSeq()));
-    createTable.setStorageType(persistentStoreProto.getStorageType());
+    createTable.setDataFormat(persistentStoreProto.getStorageType());
     createTable.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
 
     createTable.setTableName(storeTableNodeSpec.getTableName());
@@ -540,7 +540,7 @@ public class LogicalNodeDeserializer {
       insertNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
     }
     insertNode.setChild(nodeMap.get(persistentStoreProto.getChildSeq()));
-    insertNode.setStorageType(persistentStoreProto.getStorageType());
+    insertNode.setDataFormat(persistentStoreProto.getStorageType());
     insertNode.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
 
     if (storeTableNodeSpec.hasTableName()) {
@@ -649,6 +649,9 @@ public class LogicalNodeDeserializer {
         .getPartitionValuesCount()]));
       alterTable.setPurge(alterPartition.getPurge());
       alterTable.setIfExists(alterPartition.getIfExists());
+      break;
+    case REPAIR_PARTITION:
+      alterTable.setTableName(alterTableProto.getTableName());
       break;
     default:
       throw new TajoRuntimeException(

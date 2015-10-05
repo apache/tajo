@@ -20,7 +20,6 @@ package org.apache.tajo.client.v2.exception;
 
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
 
 public class ClientConnectionException extends TajoException {
   public ClientConnectionException(Throwable t) {

@@ -26,6 +26,6 @@ import "CatalogProtos.proto";
 
 message TupleComparatorProto {
   required SchemaProto schema = 1;
-  repeated SortSpecProto sortSpecs = 2;
-  repeated TupleComparatorSpecProto compSpecs = 3;
+  repeated SortSpecProto sort_specs = 2;
+  repeated TupleComparatorSpecProto comp_specs = 3;
 }

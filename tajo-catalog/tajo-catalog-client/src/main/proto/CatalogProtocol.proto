@@ -75,8 +75,8 @@ message GetIndexeDescResponse {
 }
 
 message GetIndexByColumnNamesRequest {
-  required TableIdentifierProto tableIdentifier = 1;
-  repeated string columnNames = 2;
+  required TableIdentifierProto table_identifier = 1;
+  repeated string column_names = 2;
 }
 
 message GetPartitionsResponse {
@@ -117,21 +117,29 @@ service CatalogProtocolService {
   rpc getAllTableStats(NullProto) returns (GetTableStatsResponse);
   rpc getAllColumns(NullProto) returns (GetColumnsResponse);
 
-  rpc getPartitionMethodByTableName(TableIdentifierProto) returns (GetPartitionMethodResponse);
+  rpc getPartitionMethodByTableName(TableIdentifierProto)
+      returns (GetPartitionMethodResponse);
   rpc existPartitionMethod(TableIdentifierProto) returns (ReturnState);
 
-  rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (GetPartitionDescResponse);
-  rpc getPartitionsByTableName(PartitionIdentifierProto) returns (GetPartitionsResponse);
+  rpc existsPartitions(TableIdentifierProto) returns (ReturnState);
+  rpc getPartitionByPartitionName(PartitionIdentifierProto)
+      returns (GetPartitionDescResponse);
+  rpc getPartitionsByTableName(TableIdentifierProto)
+      returns (GetPartitionsResponse);
   rpc getAllPartitions(NullProto) returns (GetTablePartitionsResponse);
   rpc addPartitions(AddPartitionsProto) returns (ReturnState);
+  rpc getPartitionsByAlgebra(PartitionsByAlgebraProto)
+      returns (GetPartitionsResponse);
 
   rpc createIndex(IndexDescProto) returns (ReturnState);
   rpc dropIndex(IndexNameProto) returns (ReturnState);
   rpc existIndexByName(IndexNameProto) returns (ReturnState);
-  rpc existIndexByColumnNames(GetIndexByColumnNamesRequest) returns (ReturnState);
+  rpc existIndexByColumnNames(GetIndexByColumnNamesRequest)
+      returns (ReturnState);
   rpc existIndexesByTable(TableIdentifierProto) returns (ReturnState);
   rpc getIndexByName(IndexNameProto) returns (IndexResponse);
-  rpc getIndexByColumnNames(GetIndexByColumnNamesRequest) returns (IndexResponse);
+  rpc getIndexByColumnNames(GetIndexByColumnNamesRequest)
+      returns (IndexResponse);
   rpc getAllIndexesByTable(TableIdentifierProto) returns (IndexListResponse);
   rpc getAllIndexes(NullProto) returns (IndexListResponse);
 

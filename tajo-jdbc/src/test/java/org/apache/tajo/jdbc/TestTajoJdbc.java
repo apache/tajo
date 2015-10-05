@@ -19,32 +19,21 @@
 package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Maps;
-import io.netty.channel.ConnectTimeoutException;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.SQLExceptionUtil;
-import org.apache.tajo.util.UriUtil;
 import org.junit.AfterClass;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.sql.*;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.apache.tajo.error.Errors.ResultCode.CLIENT_CONNECTION_EXCEPTION;
-import static org.apache.tajo.error.Errors.ResultCode.CLIENT_UNABLE_TO_ESTABLISH_CONNECTION;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
@@ -589,8 +578,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     }
   }
 
-
-  @Test
+  // TODO: This should be added at TAJO-1891
   public void testAlterTableAddPartition() throws Exception {
     Statement stmt = null;
     ResultSet resultSet = null;
@@ -676,7 +664,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     props.setProperty(SessionVars.BLOCK_ON_RESULT.keyname(), "false");
 
     Connection conn = new JdbcConnection(connUri, props);
-    PreparedStatement statement = conn.prepareStatement("select sleep(1) from lineitem");
+    PreparedStatement statement = conn.prepareStatement("select sleep(1) from lineitem where l_orderkey > 0");
     try {
       assertTrue("should have result set", statement.execute());
       TajoResultSetBase result = (TajoResultSetBase) statement.getResultSet();

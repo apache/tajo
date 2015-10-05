@@ -5,15 +5,29 @@ Release 0.12.0 - unreleased
   NEW FEATURES
 
   IMPROVEMENT
+
+    TAJO-1899: Calling 'Arrays.asList()' with too few arguments cause memory 
+    extravagance. (Contributed by Dongkyu Hwangbo, committed by jihoon)
   
-    TAJO-1883: Keep tajo-client and its dependent modules to be 1.7 target.
-    (hyunsik)
+    TAJO-1461: Follow Protocol Buffer Style Guide. (Contributed by David Chen,
+    committed by hyunsik)
 
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
 
+    TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
+
+  TASKS
+
+    TAJO-1893: Remove unused import. (Contributed by Dongkyu Hwangbo, 
+    Committed by jihoon)
+
   SUB TASKS
+
+    TAJO-1844: Eliminate explicit diamond expressions. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
 
 Release 0.11.0 - unreleased
 
@@ -52,6 +66,13 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1663: Change the variable name storeType to dataFormat. (hyunsik)
+
+    TAJO-1885: Simple query with projection should be supported. (hyunsik)
+
+    TAJO-1890: Clean up debug and test modes and unhandled exceptions. 
+    (hyunsik)
 
     TAJO-1860: Refactor Rpc clients to take Connection Parameters. (hyunsik)
  
@@ -292,6 +313,22 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1901: Repair partition throws ArrayIndexOutOfBoundsException 
+    occasionally. (Contributed by jaehwa, committed by hyunsik)
+
+    TAJO-1902: Add line delimiter for repair partition in TajoDump. (jaehwa)
+
+    TAJO-1889: UndefinedColumnException when a query with table subquery is
+    executed on self-describing tables. (jihoon)
+
+    TAJO-1894: Filter condition is ignored when a query involves multiple 
+    subqueries and aggregations. (jihoon)
+
+    TAJO-1827: JSON parsing error at storage-site.json while tajo master
+    starts up. (jaehwa)
+
+    TAJO-1884: Add missing jetty-util dependency. (jinho)
 
     TAJO-1861: TSQL should change line after printout error message during 
     connecting other database. (jihoon)
@@ -681,6 +718,13 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1887: Disable the alter table add partition statement temporarily.
+    (jaehwa)
+
+    TAJO-1493: Make partition pruning based on catalog informations. (jaehwa)
+
+    TAJO-1673: Implement recover partitions. (jaehwa)
 
     TAJO-1844: Eliminate explicit diamond expressions. 
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)

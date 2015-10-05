@@ -31,9 +31,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.FileUtil;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 

@@ -55,7 +55,7 @@ public class TestTableMeta {
     TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
     
     TableMeta meta2 = (TableMeta) meta1.clone();
-    assertEquals(meta1.getStoreType(), meta2.getStoreType());
+    assertEquals(meta1.getDataFormat(), meta2.getDataFormat());
     assertEquals(meta1, meta2);
   }
   
@@ -73,7 +73,7 @@ public class TestTableMeta {
   
   @Test
   public void testGetStorageType() {
-    assertEquals("TEXT", meta.getStoreType());
+    assertEquals("TEXT", meta.getDataFormat());
   }
   
   @Test
@@ -108,7 +108,7 @@ public class TestTableMeta {
 			optionBuilder.addKeyval(keyValueBuilder);
 		}
 		TableProto.Builder builder = TableProto.newBuilder();
-		builder.setStoreType(BuiltinStorages.TEXT);
+		builder.setDataFormat(BuiltinStorages.TEXT);
 		builder.setParams(optionBuilder);
 		TableMeta meta2 = new TableMeta(builder.build());
 		assertTrue(meta1.equals(meta2));

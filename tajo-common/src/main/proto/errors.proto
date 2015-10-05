@@ -94,14 +94,16 @@ enum ResultCode {
   // Data Exception (SQLState Class - 22)
   DIVISION_BY_ZERO                      = 451; // SQLState: 22012 - Division by zero
   INVALID_VALUE_FOR_CAST                = 452; // SQLState: 22T01 - Invalid data value for cast
+  INVALID_URL                           = 453; // SQLState: 22T02 - Invalid URL
 
   // Section: Class 42 - Syntax Error or Access Rule Violation
   SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION = 501; // SQLState: 42000
   SYNTAX_ERROR                          = 502; // SQLState: 42601
   INSUFFICIENT_PRIVILEGE                = 503; // SQLState: 42501
+  CANNOT_DROP_CURRENT_DATABASE          = 504; // SQLState: 42T01
 
   UNDEFINED_TABLESPACE                  = 511; // ?
-  UNDEFINED_DATABASE                    = 512; // SQLState: 42T01
+  UNDEFINED_DATABASE                    = 512; // SQLState: 42T02
   UNDEFINED_SCHEMA                      = 513; // SQLState:
   UNDEFINED_TABLE                       = 514; // SQLState: 42P01
   UNDEFINED_COLUMN                      = 515; // SQLState: 42703
@@ -114,6 +116,7 @@ enum ResultCode {
   UNDEFINED_OPERATOR                    = 522; // SQLState: 42883 (=UNDEFINED_FUNCTION)
   UNDEFINED_PARTITION_KEY               = 523; // ?
   UNDEFINED_TABLESPACE_HANDLER          = 524; // SQLState: 42T11 - No Tablespace Handler for the URI scheme
+  UNDEFINED_PARTITIONS                  = 525; // ?
 
   DUPLICATE_TABLESPACE                  = 531;
   DUPLICATE_DATABASE                    = 532; // SQLState: 42P04

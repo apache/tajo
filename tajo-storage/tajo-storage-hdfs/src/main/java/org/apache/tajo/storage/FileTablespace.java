@@ -19,7 +19,6 @@
 package org.apache.tajo.storage;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;
@@ -343,9 +342,9 @@ public class FileTablespace extends Tablespace {
 
       FileStatus[] matches = fs.globStatus(p, inputFilter);
       if (matches == null) {
-        errors.add(new IOException("Input path does not exist: " + p));
+        LOG.warn("Input path does not exist: " + p);
       } else if (matches.length == 0) {
-        errors.add(new IOException("Input Pattern " + p + " matches 0 files"));
+        LOG.warn("Input Pattern " + p + " matches 0 files");
       } else {
         for (FileStatus globStat : matches) {
           if (globStat.isDirectory()) {

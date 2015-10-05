@@ -560,10 +560,10 @@ public class TajoMasterClientService extends AbstractService {
 
           if(request.hasCompressCodec()) {
             queryResultScanner = new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(),
-                queryId, scanNode, resultTableDesc, Integer.MAX_VALUE, request.getCompressCodec());
+                queryId, scanNode, Integer.MAX_VALUE, request.getCompressCodec());
           } else {
             queryResultScanner = new NonForwardQueryResultFileScanner(context.getConf(),
-                session.getSessionId(), queryId, scanNode, resultTableDesc, Integer.MAX_VALUE);
+                session.getSessionId(), queryId, scanNode, Integer.MAX_VALUE);
           }
 
           queryResultScanner.init();
@@ -974,7 +974,7 @@ public class TajoMasterClientService extends AbstractService {
           tableName = request.getValue();
         }
 
-        List<PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
+        List<PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
         return PartitionListResponse.newBuilder()
           .setState(OK)
           .addAllPartition(partitions)

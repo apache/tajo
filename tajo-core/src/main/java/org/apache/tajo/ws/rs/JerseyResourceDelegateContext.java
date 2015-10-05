@@ -18,7 +18,6 @@
 
 package org.apache.tajo.ws.rs;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 

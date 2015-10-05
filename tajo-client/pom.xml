@@ -73,7 +73,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemProperties>
-            <tajo.test>TRUE</tajo.test>
+            <tajo.test.enabled>true</tajo.test.enabled>
           </systemProperties>
           <argLine>-Xms512m -Xmx1024m -Dfile.encoding=UTF-8</argLine>
         </configuration>

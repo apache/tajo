@@ -40,7 +40,7 @@ public class DataChannel {
 
   private Schema schema;
 
-  private String storeType = BuiltinStorages.RAW;
+  private String dataFormat = BuiltinStorages.RAW;
 
   public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId) {
     this.srcId = srcId;
@@ -82,8 +82,8 @@ public class DataChannel {
       this.numOutputs = proto.getNumOutputs();
     }
 
-    if (proto.hasStoreType()) {
-      this.storeType = proto.getStoreType();
+    if (proto.hasDataFormat()) {
+      this.dataFormat = proto.getDataFormat();
     }
   }
 
@@ -144,16 +144,16 @@ public class DataChannel {
     return numOutputs;
   }
 
-  public boolean hasStoreType() {
-    return this.storeType != null;
+  public boolean hasDataFormat() {
+    return this.dataFormat != null;
   }
 
-  public void setStoreType(String storeType) {
-    this.storeType = storeType;
+  public void setDataFormat(String dataFormat) {
+    this.dataFormat = dataFormat;
   }
 
-  public String getStoreType() {
-    return storeType;
+  public String getDataFormat() {
+    return dataFormat;
   }
 
   public DataChannelProto getProto() {
@@ -176,8 +176,8 @@ public class DataChannel {
       builder.setNumOutputs(numOutputs);
     }
 
-    if(storeType != null){
-      builder.setStoreType(storeType);
+    if(dataFormat != null){
+      builder.setDataFormat(dataFormat);
     }
     return builder.build();
   }

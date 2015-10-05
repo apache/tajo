@@ -168,11 +168,19 @@ public interface CatalogService {
   boolean existPartitionMethod(String databaseName, String tableName) throws UndefinedTableException,
       UndefinedDatabaseException;
 
+  boolean existPartitions(String databaseName, String tableName) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
+
   PartitionDescProto getPartition(String databaseName, String tableName, String partitionName)
       throws UndefinedPartitionException, UndefinedPartitionMethodException, UndefinedDatabaseException,
       UndefinedTableException;
 
-  List<PartitionDescProto> getPartitions(String databaseName, String tableName);
+  List<PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName) throws UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException;
+
+  List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
+    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+    UnsupportedException;
 
   List<TablePartitionProto> getAllPartitions();
 
@@ -220,11 +228,18 @@ public interface CatalogService {
   /**
    * Add a table via table description
    *
+   * @param desc
    * @throws DuplicateColumnException
    * @throws DuplicateTableException
    * @throws InsufficientPrivilegeException
    * @throws UndefinedColumnException
    * @throws UndefinedTableException
+   * @throws DuplicateDatabaseException
+   * @throws DuplicatePartitionException
+   * @throws UndefinedDatabaseException
+   * @throws UndefinedPartitionMethodException
+   * @throws UndefinedPartitionException
+   * @throws NotImplementedException
    *
    * @see AlterTableDesc
    */
@@ -238,7 +253,8 @@ public interface CatalogService {
       DuplicatePartitionException,
       UndefinedDatabaseException,
       UndefinedPartitionMethodException,
-      UndefinedPartitionException;
+      UndefinedPartitionException,
+       NotImplementedException;
 
   void updateTableStats(UpdateTableStatsProto stats) throws UndefinedTableException, InsufficientPrivilegeException;
 }

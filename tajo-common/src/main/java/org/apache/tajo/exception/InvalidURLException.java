@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,14 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.session;
+package org.apache.tajo.exception;
 
 import org.apache.tajo.error.Errors;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 
-public class InvalidSessionException extends TajoException {
-  public InvalidSessionException(String sessionId) {
-    super(Errors.ResultCode.INVALID_SESSION, sessionId);
+public class InvalidURLException extends TajoException {
+  public InvalidURLException(ReturnState e) {
+    super(e);
+  }
+
+  public InvalidURLException(String url) {
+    super(Errors.ResultCode.INVALID_URL, url);
   }
 }

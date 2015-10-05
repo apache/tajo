@@ -106,7 +106,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                            PhysicalExec execPlan) throws IOException {
     DataChannel channel = context.getDataChannel();
     ShuffleFileWriteNode shuffleFileWriteNode = LogicalPlan.createNodeWithoutPID(ShuffleFileWriteNode.class);
-    shuffleFileWriteNode.setStorageType(context.getDataChannel().getStoreType());
+    shuffleFileWriteNode.setDataFormat(context.getDataChannel().getDataFormat());
     shuffleFileWriteNode.setInSchema(plan.getOutSchema());
     shuffleFileWriteNode.setOutSchema(plan.getOutSchema());
     shuffleFileWriteNode.setShuffle(channel.getShuffleType(), channel.getShuffleKeys(), channel.getShuffleOutputNum());

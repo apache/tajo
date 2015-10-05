@@ -369,7 +369,8 @@ public class TajoConf extends Configuration {
     $TEXT_NULL("tajo.text.null", "\\\\N"),
 
     // Only for Debug and Testing
-    $DEBUG_ENABLED("tajo.debug.enabled", false),
+    $DEBUG_ENABLED(TajoConstants.DEBUG_KEY, false),
+    $TEST_MODE(TajoConstants.TEST_KEY, false),
     $TEST_BROADCAST_JOIN_ENABLED("tajo.dist-query.join.auto-broadcast", true),
     $TEST_JOIN_OPT_ENABLED("tajo.test.plan.join-optimization.enabled", true),
     $TEST_FILTER_PUSHDOWN_ENABLED("tajo.test.plan.filter-pushdown.enabled", true),

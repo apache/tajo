@@ -37,7 +37,6 @@ import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.parser.sql.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -1947,6 +1946,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     final int PARTITION_MASK = 00000020;
     final int SET_MASK = 00000002;
     final int PROPERTY_MASK = 00010000;
+    final int REPAIR_MASK = 00000003;
 
     int val = 00000000;
 
@@ -1978,6 +1978,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           case PROPERTY:
             val = val | PROPERTY_MASK;
             break;
+          case REPAIR:
+            val = val | REPAIR_MASK;
+            break;
           default:
             break;
         }
@@ -1989,6 +1992,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   private AlterTableOpType evaluateAlterTableOperationTye(final int value) {
 
     switch (value) {
+      case 19:
+        return AlterTableOpType.REPAIR_PARTITION;
       case 65:
         return AlterTableOpType.RENAME_TABLE;
       case 73:

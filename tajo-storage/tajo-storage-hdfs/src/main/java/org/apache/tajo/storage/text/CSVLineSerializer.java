@@ -21,7 +21,6 @@ package org.apache.tajo.storage.text;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;

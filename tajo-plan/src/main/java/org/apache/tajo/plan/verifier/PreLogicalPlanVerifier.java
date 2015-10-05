@@ -190,7 +190,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return true;
   }
 
-  private boolean assertSupportedStoreType(VerificationState state, String name) {
+  private boolean assertSupportedDataFormat(VerificationState state, String name) {
     Preconditions.checkNotNull(name);
 
     if (name.equalsIgnoreCase("RAW")) {
@@ -271,7 +271,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (expr.hasStorageType()) {
-      assertSupportedStoreType(context.state, expr.getStorageType());
+      assertSupportedDataFormat(context.state, expr.getStorageType());
     }
 
     return expr;
@@ -298,7 +298,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     }
 
     if (expr.hasStorageType()) {
-      assertSupportedStoreType(context.state, expr.getStorageType());
+      assertSupportedDataFormat(context.state, expr.getDataFormat());
     }
 
     if (child != null && child.getType() == OpType.Projection) {
@@ -350,6 +350,16 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
           }
         }
       }
+    }
+
+    return expr;
+  }
+
+  // TODO: This should be removed at TAJO-1891
+  @Override
+  public Expr visitAlterTable(Context context, Stack<Expr> stack, AlterTable expr) throws TajoException {
+    if (expr.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION) {
+      context.state.addVerification(new NotImplementedException("ADD PARTITION"));
     }
 
     return expr;

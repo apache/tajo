@@ -43,7 +43,6 @@ import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;

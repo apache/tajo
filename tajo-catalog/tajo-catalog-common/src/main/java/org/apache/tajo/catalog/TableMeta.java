@@ -35,21 +35,21 @@ import java.util.Map;
  * It contains all information for scanning a fragmented table
  */
 public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObject, Cloneable {
-	@Expose protected String storeType;
+	@Expose protected String dataFormat;
 	@Expose protected KeyValueSet options;
 	
-	public TableMeta(String storeType, KeyValueSet options) {
-    this.storeType = storeType;
+	public TableMeta(String dataFormat, KeyValueSet options) {
+    this.dataFormat = dataFormat;
     this.options = new KeyValueSet(options);
   }
 	
 	public TableMeta(TableProto proto) {
-    this.storeType = proto.getStoreType();
+    this.dataFormat = proto.getDataFormat();
     this.options = new KeyValueSet(proto.getParams());
 	}
 	
-	public String getStoreType() {
-		return this.storeType;		
+	public String getDataFormat() {
+		return this.dataFormat;
 	}
 	
   public void setOptions(KeyValueSet options) {
@@ -84,7 +84,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 		if(object instanceof TableMeta) {
 			TableMeta other = (TableMeta) object;
 
-			boolean eq = this.getStoreType().equals(other.getStoreType());
+			boolean eq = this.getDataFormat().equals(other.getDataFormat());
 			eq = eq && this.getOptions().equals(other.getOptions());
 			return eq;
 		}
@@ -93,13 +93,13 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	}
 	
 	public int hashCode() {
-	  return Objects.hashCode(getStoreType(), getOptions());
+	  return Objects.hashCode(getDataFormat(), getOptions());
 	}
 	
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 	  TableMeta meta = (TableMeta) super.clone();
-    meta.storeType = getStoreType();
+    meta.dataFormat = getDataFormat();
     meta.options = (KeyValueSet) (toMap() != null ? options.clone() : null);
     return meta;
 	}
@@ -115,7 +115,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	////////////////////////////////////////////////////////////////////////
 	public TableProto getProto() {
     TableProto.Builder builder = TableProto.newBuilder();
-    builder.setStoreType(storeType);
+    builder.setDataFormat(dataFormat);
     builder.setParams(options.getProto());
     return builder.build();
 	}
@@ -127,7 +127,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	}
 
   public void mergeProtoToLocal() {
-    getStoreType();
+    getDataFormat();
     toMap();
   }
 }

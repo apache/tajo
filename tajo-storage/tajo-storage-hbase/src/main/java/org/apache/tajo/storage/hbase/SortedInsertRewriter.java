@@ -21,8 +21,6 @@ package org.apache.tajo.storage.hbase;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.exception.InvalidTablePropertyException;
-import org.apache.tajo.exception.MissingTablePropertyException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;

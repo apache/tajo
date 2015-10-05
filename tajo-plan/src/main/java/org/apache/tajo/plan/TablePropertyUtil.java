@@ -21,7 +21,6 @@ package org.apache.tajo.plan;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
@@ -38,10 +37,10 @@ public class TablePropertyUtil {
    * @param node CreateTableNode
    */
   public static void setTableProperty(OverridableConf context, CreateTableNode node) {
-    String storeType = node.getStorageType();
+    String dataFormat = node.getStorageType();
     KeyValueSet property = node.getOptions();
 
-    if (storeType.equalsIgnoreCase("TEXT") || storeType.equalsIgnoreCase("TEXT")) {
+    if (dataFormat.equalsIgnoreCase("TEXT") || dataFormat.equalsIgnoreCase("TEXT")) {
       setSessionToProperty(context, SessionVars.NULL_CHAR, property, StorageConstants.TEXT_NULL);
     }
   }

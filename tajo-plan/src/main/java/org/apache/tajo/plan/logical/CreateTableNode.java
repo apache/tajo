@@ -24,8 +24,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
-import java.net.URI;
-
 public class CreateTableNode extends StoreTableNode implements Cloneable {
   @Expose private String tableSpaceName;
   @Expose private boolean external;
@@ -124,7 +122,7 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   }
 
   public String toString() {
-    return "CreateTable (table=" + tableName + ", external=" + external + ", storeType=" + storageType +
+    return "CreateTable (table=" + tableName + ", external=" + external + ", dataFormat=" + storageType +
         ", ifNotExists=" + ifNotExists +")";
   }
 

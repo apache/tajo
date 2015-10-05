@@ -88,7 +88,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public void dropDatabase(final String databaseName)
-      throws UndefinedDatabaseException, InsufficientPrivilegeException {
+      throws UndefinedDatabaseException, InsufficientPrivilegeException, CannotDropCurrentDatabaseException {
 
     try {
       final BlockingInterface stub = conn.getTMStub();
@@ -96,6 +96,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
       throwsIfThisError(state, UndefinedDatabaseException.class);
       throwsIfThisError(state, InsufficientPrivilegeException.class);
+      throwsIfThisError(state, CannotDropCurrentDatabaseException.class);
       ensureOk(state);
 
     } catch (ServiceException e) {
@@ -244,7 +245,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
+  public List<PartitionDescProto> getPartitionsOfTable(final String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException {
 
     final BlockingInterface stub = conn.getTMStub();

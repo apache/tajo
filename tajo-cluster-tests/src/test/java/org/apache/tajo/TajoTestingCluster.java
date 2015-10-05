@@ -48,7 +48,6 @@ import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.history.QueryHistory;
@@ -113,8 +112,8 @@ public class TajoTestingCluster {
   }
 
   void setTestingFlagProperties() {
-    System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
-    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    System.setProperty(TajoConstants.TEST_KEY, Boolean.TRUE.toString());
+    conf.set(TajoConstants.TEST_KEY, Boolean.TRUE.toString());
   }
 
   void initPropertiesAndConfigs() {

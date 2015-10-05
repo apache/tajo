@@ -238,7 +238,7 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration combine.self="override">
               <systemProperties>
-                <tajo.test>TRUE</tajo.test>
+                <tajo.test.enabled>TRUE</tajo.test.enabled>
               </systemProperties>
               <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
             </configuration>
@@ -262,7 +262,7 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration combine.self="override">
               <systemProperties>
-                <tajo.test>TRUE</tajo.test>
+                <tajo.test.enabled>TRUE</tajo.test.enabled>
               </systemProperties>
               <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
             </configuration>
@@ -286,7 +286,7 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration combine.self="override">
               <systemProperties>
-                <tajo.test>TRUE</tajo.test>
+                <tajo.test.enabled>TRUE</tajo.test.enabled>
               </systemProperties>
               <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
             </configuration>

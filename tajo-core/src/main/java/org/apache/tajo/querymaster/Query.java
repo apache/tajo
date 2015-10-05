@@ -44,7 +44,6 @@ import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.ExecutionQueue;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -509,8 +508,11 @@ public class Query implements EventHandler<QueryEvent> {
         if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
           List<PartitionDescProto> partitions = query.getPartitions();
           if (partitions != null) {
-            String databaseName, simpleTableName;
+            // Set contents length and file count to PartitionDescProto by listing final output directories.
+            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
+              finalOutputDir, partitions);
 
+            String databaseName, simpleTableName;
             if (CatalogUtil.isFQTableName(tableDesc.getName())) {
               String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
               databaseName = split[0];
@@ -521,7 +523,7 @@ public class Query implements EventHandler<QueryEvent> {
             }
 
             // Store partitions to CatalogStore using alter table statement.
-            catalog.addPartitions(databaseName, simpleTableName, partitions, true);
+            catalog.addPartitions(databaseName, simpleTableName, finalPartitions, true);
             LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
           } else {
             LOG.info("Can't find partitions for adding.");
@@ -534,6 +536,21 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       return QueryState.QUERY_SUCCEEDED;
+    }
+
+    private List<PartitionDescProto> getPartitionsWithContentsSummary(TajoConf conf, Path outputDir,
+        List<PartitionDescProto> partitions) throws IOException {
+      List<PartitionDescProto> finalPartitions = TUtil.newList();
+
+      FileSystem fileSystem = outputDir.getFileSystem(conf);
+      for (PartitionDescProto partition : partitions) {
+        PartitionDescProto.Builder builder = partition.toBuilder();
+        Path partitionPath = new Path(outputDir, partition.getPath());
+        ContentSummary contentSummary = fileSystem.getContentSummary(partitionPath);
+        builder.setNumBytes(contentSummary.getLength());
+        finalPartitions.add(builder.build());
+      }
+      return finalPartitions;
     }
 
     private static interface QueryHook {
