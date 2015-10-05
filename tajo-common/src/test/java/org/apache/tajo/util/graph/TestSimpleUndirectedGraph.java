@@ -31,7 +31,7 @@ public class TestSimpleUndirectedGraph {
 
   @Test
   public final void test() {
-    UndirectedGraph<String, Integer> graph = new SimpleUndirectedGraph<String, Integer>();
+    UndirectedGraph<String, Integer> graph = new SimpleUndirectedGraph<>();
 
     //     root
     //     /  \

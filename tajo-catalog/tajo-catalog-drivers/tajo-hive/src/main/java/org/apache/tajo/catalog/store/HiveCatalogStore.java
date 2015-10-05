@@ -353,7 +353,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           databaseName,
           "",
           defaultTableSpaceUri + "/" + databaseName,
-          new HashMap<String, String>());
+              new HashMap<>());
       client = clientPool.getClient();
       client.getHiveClient().createDatabase(database);
     } catch (AlreadyExistsException e) {
@@ -439,7 +439,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       StorageDescriptor sd = new StorageDescriptor();
       sd.setSerdeInfo(new SerDeInfo());
-      sd.getSerdeInfo().setParameters(new HashMap<String, String>());
+      sd.getSerdeInfo().setParameters(new HashMap<>());
       sd.getSerdeInfo().setName(table.getTableName());
 
       // if tajo set location method, thrift client make exception as follows:
@@ -558,7 +558,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         }
       }
 
-      sd.setSortCols(new ArrayList<Order>());
+      sd.setSortCols(new ArrayList<>());
 
       table.setSd(sd);
       client.getHiveClient().createTable(table);
@@ -968,7 +968,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       if (!(filters[i] instanceof IsNullPredicate)) {
         visitor.setColumn(target);
-        visitor.visit(null, new Stack<Expr>(), filters[i]);
+        visitor.visit(null, new Stack<>(), filters[i]);
         result = visitor.getResult();
 
         // If visitor build filter successfully, add filter to be used for executing hive api.

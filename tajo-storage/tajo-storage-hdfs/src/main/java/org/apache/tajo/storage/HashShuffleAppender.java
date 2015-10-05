@@ -102,7 +102,7 @@ public class HashShuffleAppender implements Appender {
         taskTupleIndexes.put(taskId, taskIndexes);
       }
       taskIndexes.add(
-          new Pair<Long, Pair<Integer, Integer>>(currentPage.getFirst(), new Pair(rowNumInPage, nextRowNum)));
+              new Pair<>(currentPage.getFirst(), new Pair(rowNumInPage, nextRowNum)));
       rowNumInPage = nextRowNum;
 
       if (posAfterWritten - currentPage.getFirst() > pageSize) {

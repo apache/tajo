@@ -97,7 +97,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public EvalNode createEvalNode(LogicalPlanner.PlanContext planContext, Expr expr,
                                  NameResolvingMode colRsvLevel, boolean includeSeflDescTable) throws TajoException {
     Context context = new Context(planContext, colRsvLevel, includeSeflDescTable);
-    return planContext.evalOptimizer.optimize(planContext, visit(context, new Stack<Expr>(), expr));
+    return planContext.evalOptimizer.optimize(planContext, visit(context, new Stack<>(), expr));
   }
 
   public static void assertEval(boolean condition, String message) throws TajoException {

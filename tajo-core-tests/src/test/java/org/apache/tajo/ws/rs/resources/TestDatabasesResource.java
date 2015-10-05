@@ -75,7 +75,7 @@ public class TestDatabasesResource extends QueryTestCaseBase {
   @Test
   public void testGetAllDatabases() throws Exception {
     Map<String, Collection<String>> databaseNames = restClient.target(databasesURI)
-        .request().get(new GenericType<Map<String, Collection<String>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
     
     assertNotNull(databaseNames);
     assertFalse(databaseNames.isEmpty());
@@ -100,7 +100,7 @@ public class TestDatabasesResource extends QueryTestCaseBase {
     assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
     
     Map<String, Collection<String>> databaseNames = restClient.target(databasesURI)
-        .request().get(new GenericType<Map<String, Collection<String>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
     
     assertNotNull(databaseNames);
     assertFalse(databaseNames.isEmpty());
@@ -127,7 +127,7 @@ public class TestDatabasesResource extends QueryTestCaseBase {
     DatabaseInfoResponse response =
         restClient.target(databasesURI).path("/{databaseName}")
         .resolveTemplate("databaseName", TajoConstants.DEFAULT_DATABASE_NAME)
-        .request().get(new GenericType<DatabaseInfoResponse>(DatabaseInfoResponse.class));
+        .request().get(new GenericType<>(DatabaseInfoResponse.class));
     
     assertNotNull(response);
     assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, response.getName());
@@ -159,7 +159,7 @@ public class TestDatabasesResource extends QueryTestCaseBase {
     assertEquals(Status.CREATED.getStatusCode(), response.getStatus());
     
     Map<String, Collection<String>> databaseNames = restClient.target(databasesURI)
-        .request().get(new GenericType<Map<String, Collection<String>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
     
     assertNotNull(databaseNames);
     assertFalse(databaseNames.isEmpty());

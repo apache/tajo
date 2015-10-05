@@ -148,7 +148,7 @@ public class TaskImpl implements Task {
       context.setOutputPath(outFilePath);
     }
 
-    this.localChunks = Collections.synchronizedList(new ArrayList<FileChunk>());
+    this.localChunks = Collections.synchronizedList(new ArrayList<>());
     LOG.info("==================================");
     LOG.info("* Stage " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
