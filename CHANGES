@@ -5,6 +5,9 @@ Release 0.12.0 - unreleased
   NEW FEATURES
 
   IMPROVEMENT
+
+    TAJO-1899: Calling 'Arrays.asList()' with too few arguments cause memory 
+    extravagance. (Contributed by Dongkyu Hwangbo, committed by jihoon)
   
     TAJO-1461: Follow Protocol Buffer Style Guide. (Contributed by David Chen,
     committed by hyunsik)
