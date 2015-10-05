@@ -21,7 +21,6 @@ package org.apache.tajo.cli.tsql;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.client.ClientParameters;
 
-import javax.validation.constraints.Null;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;

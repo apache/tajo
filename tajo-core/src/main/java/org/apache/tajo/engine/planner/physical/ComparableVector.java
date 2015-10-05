@@ -35,7 +35,6 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 
 import java.util.Arrays;
 import java.util.BitSet;

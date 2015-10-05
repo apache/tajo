@@ -18,8 +18,6 @@
 
 package org.apache.tajo.pullserver;
 
-import java.util.concurrent.TimeUnit;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -27,7 +25,6 @@ import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.handler.timeout.IdleStateHandler;
 
 public class HttpDataServerChannelInitializer extends ChannelInitializer<Channel> {
   private String userName;

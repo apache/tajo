@@ -23,7 +23,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.MurmurHash;
 import org.apache.tajo.util.NumberUtil;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.nio.ByteBuffer;

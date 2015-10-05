@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import com.google.protobuf.Message;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

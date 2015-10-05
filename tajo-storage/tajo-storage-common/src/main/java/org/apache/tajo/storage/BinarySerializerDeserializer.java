@@ -19,7 +19,6 @@
 package org.apache.tajo.storage;
 
 import com.google.common.base.Preconditions;
-import com.google.protobuf.Message;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.*;

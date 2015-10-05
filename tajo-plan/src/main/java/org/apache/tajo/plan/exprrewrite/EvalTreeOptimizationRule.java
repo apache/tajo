@@ -20,7 +20,6 @@ package org.apache.tajo.plan.exprrewrite;
 
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.annotator.Prioritized;
-import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
 
 @Prioritized

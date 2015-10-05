@@ -20,7 +20,6 @@ package org.apache.tajo.algebra;
 
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 

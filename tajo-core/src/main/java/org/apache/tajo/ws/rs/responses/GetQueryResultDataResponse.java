@@ -19,9 +19,7 @@
 package org.apache.tajo.ws.rs.responses;
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.error.Errors;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.ipc.ClientProtos;
 
 import com.google.gson.annotations.Expose;
 

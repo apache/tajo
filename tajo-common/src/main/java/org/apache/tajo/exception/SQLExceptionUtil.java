@@ -25,7 +25,6 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import java.sql.SQLException;
 import java.util.Map;
 
-import static org.apache.tajo.error.Errors.ResultCode.INVALID_VALUE_FOR_CAST;
 import static org.apache.tajo.exception.ReturnStateUtil.isError;
 
 public class SQLExceptionUtil {
