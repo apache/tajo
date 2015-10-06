@@ -64,7 +64,6 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -73,7 +72,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import static org.apache.tajo.exception.ReturnStateUtil.OK;
 import static org.apache.tajo.exception.ReturnStateUtil.errUndefinedDatabase;

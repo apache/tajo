@@ -37,7 +37,6 @@ import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.parser.sql.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 

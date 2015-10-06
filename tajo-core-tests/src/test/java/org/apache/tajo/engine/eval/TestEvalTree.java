@@ -33,7 +33,6 @@ import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.junit.Assert.*;
-import static org.junit.Assert.fail;
 
 public class TestEvalTree extends ExprTestBase {
   @Test

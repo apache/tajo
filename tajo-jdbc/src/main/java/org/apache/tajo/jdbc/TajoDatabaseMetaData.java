@@ -431,7 +431,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return new TajoMetaDataResultSet(
         Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
         Arrays.asList(Type.VARCHAR, Type.VARCHAR),
-        Arrays.asList(tuple));
+        Collections.singletonList(tuple));
   }
 
   @Override
@@ -448,8 +448,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     }
 
     return new TajoMetaDataResultSet(
-        Arrays.asList("TABLE_CAT"),
-        Arrays.asList(Type.VARCHAR) ,
+        Collections.singletonList("TABLE_CAT"),
+        Collections.singletonList(Type.VARCHAR),
         tuples);
   }
 
@@ -461,8 +461,8 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     columns.add(tuple);
 
     ResultSet result = new TajoMetaDataResultSet(
-        Arrays.asList("TABLE_TYPE")
-        , Arrays.asList(Type.VARCHAR)
+        Collections.singletonList("TABLE_TYPE")
+        , Collections.singletonList(Type.VARCHAR)
         , columns);
 
     return result;
@@ -768,7 +768,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return new TajoMetaDataResultSet(
         Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
         Arrays.asList(Type.VARCHAR, Type.VARCHAR),
-        Arrays.asList(tuple));
+        Collections.singletonList(tuple));
   }
 
   @Override
