@@ -18,14 +18,8 @@
 
 package org.apache.tajo.jdbc;
 
-import com.google.common.collect.Maps;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.QueryClient;
-import org.apache.tajo.client.QueryStatus;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,7 +27,6 @@ import org.junit.experimental.categories.Category;
 
 import java.net.InetSocketAddress;
 import java.sql.*;
-import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;

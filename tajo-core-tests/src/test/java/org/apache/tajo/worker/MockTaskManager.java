@@ -24,7 +24,6 @@ import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
 import org.apache.tajo.ResourceProtos.ExecutionBlockListProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.event.TaskManagerEvent;
 

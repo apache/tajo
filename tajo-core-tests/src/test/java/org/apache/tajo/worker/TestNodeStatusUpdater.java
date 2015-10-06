@@ -23,7 +23,6 @@ import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeStatusEvent;
 import org.junit.After;
 import org.junit.Before;

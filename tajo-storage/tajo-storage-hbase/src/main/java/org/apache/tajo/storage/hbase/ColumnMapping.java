@@ -22,11 +22,9 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.exception.InvalidTablePropertyException;
 import org.apache.tajo.exception.MissingTablePropertyException;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.KeyValueSet;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
