@@ -1558,6 +1558,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public CatalogProtos.TableDescProto getTable(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException {
 
+    Connection conn;
     ResultSet res = null;
     PreparedStatement pstmt = null;
     CatalogProtos.TableDescProto.Builder tableBuilder = null;
@@ -1565,7 +1566,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     Pair<Integer, String> databaseIdAndUri = getDatabaseIdAndUri(databaseName);
 
-    try (Connection conn = getConnection()) {
+    try {
       tableBuilder = CatalogProtos.TableDescProto.newBuilder();
 
       //////////////////////////////////////////
@@ -1579,6 +1580,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
+      conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseIdAndUri.getFirst());
       pstmt.setString(2, tableName);
@@ -1826,14 +1828,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   
   @Override
   public List<ColumnProto> getAllColumns() {
+    Connection conn;
+    ResultSet resultSet = null;
     List<ColumnProto> columns = new ArrayList<>();
 
     String sql =
             "SELECT TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH FROM " + TB_COLUMNS +
                     " ORDER BY TID ASC, ORDINAL_POSITION ASC";
 
-    try (Connection conn = getConnection();
-         ResultSet resultSet = conn.createStatement().executeQuery(sql)) {
+    try {
+      conn = getConnection();
+      resultSet = conn.createStatement().executeQuery(sql);
+
       while (resultSet.next()) {
         ColumnProto.Builder builder = ColumnProto.newBuilder();
 
