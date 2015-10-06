@@ -41,7 +41,6 @@ import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
-import javax.xml.transform.Result;
 import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
