@@ -28,6 +28,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1915: Add a TajoClient example for creating and getting tables.
+    (hyunsik)
+
     TAJO-1893: Remove unused import. (Contributed by Dongkyu Hwangbo, 
     Committed by jihoon)
 
