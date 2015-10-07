@@ -125,7 +125,7 @@
 					INDEX_NAME VARCHAR(128) NOT NULL,
 					INDEX_TYPE CHAR(32) NOT NULL,
 					PATH VARCHAR(4096),
-					COLUMN_NAMES VARCHAR(128) NOT NULL, -- array of column names
+					COLUMN_NAMES VARCHAR(255) NOT NULL, -- array of column names
 					DATA_TYPES VARCHAR(128) NOT NULL, -- array of column types
 					ORDERS VARCHAR(128) NOT NULL, -- array of column orders
 					NULL_ORDERS VARCHAR(128) NOT NULL, -- array of null orderings

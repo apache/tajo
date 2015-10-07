@@ -9,7 +9,7 @@ Prerequisites
 ======================
 
  * Hadoop 2.3.0 or higher (up to 2.6.0)
- * Java 1.7 or higher
+ * Java 1.8 or higher
  * Protocol buffer 2.5.0
 
 ===================================

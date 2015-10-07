@@ -63,6 +63,10 @@
  * [User Documentation] (tajo-0.2.0-doc.html)
  * [Source Tarball](http://apache.org/dyn/closer.cgi/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.sha1)) ([ASC](http://www.apache.org/dist/tajo/tajo-0.2.0-incubating/tajo-0.2.0-incubating-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
 
+## Nightly builds
+
+For developers, Tajo maintains nightly builds and SNAPSHOT artifacts. More information is available on [Tajo developer Wiki] (https://cwiki.apache.org/confluence/display/TAJO/Nightly+Builds).
+
 ## Getting the source code via Git
 
 The development codebase can also be downloaded from [the Apache git repository](https://git-wip-us.apache.org/repos/asf/tajo.git) as follows:
