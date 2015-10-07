@@ -109,8 +109,8 @@ public class TajoStatement implements Statement {
     isClosed = true;
   }
 
+  @Override
   public void closeOnCompletion() throws SQLException {
-     // JDK 1.7
     throw new SQLFeatureNotSupportedException("closeOnCompletion() is not supported yet.");
   }
 
@@ -292,8 +292,8 @@ public class TajoStatement implements Statement {
     return isClosed;
   }
 
+  @Override
   public boolean isCloseOnCompletion() throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("isCloseOnCompletion() is not supported yet.");
   }
 
