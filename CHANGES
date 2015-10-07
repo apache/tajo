@@ -593,6 +593,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1907: Reduce the size of the INDEXES table's COLUMN_NAMES field.
+    (jihoon)
+
     TAJO-1914: Remove imports of guava library of facebook. (jihoon)
 
     TAJO-1872: Increase the minimum split size and add a classpath to hadoop
