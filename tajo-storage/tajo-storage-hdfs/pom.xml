@@ -71,6 +71,7 @@
             <exclude>src/test/resources/dataset/**</exclude>
             <exclude>src/main/resources/*.json</exclude>
             <exclude>src/test/resources/*.json</exclude>
+            <exclude>dependency-reduced-pom.xml</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -162,11 +163,63 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-report-plugin</artifactId>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <excludes>
+                  <exclude>io.netty:*</exclude>
+                  <exclude>org.apache.tajo:tajo-common</exclude>
+                  <exclude>org.apache.tajo:tajo-catalog-common</exclude>
+                  <exclude>org.apache.tajo:tajo-plan</exclude>
+                  <exclude>org.apache.tajo:tajo-storage-commom</exclude>
+                  <exclude>org.apache.avro:*</exclude>
+                  <exclude>org.apache.hadoop:*</exclude>
+                  <exclude>com.facebook.hive:*</exclude>
+                  <exclude>com.facebook.presto.hive:*</exclude>
+                  <exclude>io.airlift:*</exclude>
+                  <exclude>joda-time:joda-time</exclude>
+                  <exclude>org.mortbay.jetty:*</exclude>
+                  <exclude>commons-lang:commons-lang</exclude>
+                  <exclude>com.google.guava:guava</exclude>
+                  <exclude>org.iq80.snappy:snappy</exclude>
+                  <exclude>org.xerial.snappy:snappy-java</exclude>
+                  <exclude>org.slf4j:slf4j-api</exclude>
+                  <exclude>org.apache.velocity:velocity</exclude>
+                  <exclude>commons-codec:commons-codec</exclude>
+                  <exclude>commons-collections:commons-collections</exclude>
+                  <exclude>org.codehaus.jackson:jackson-core-asl</exclude>
+                  <exclude>org.codehaus.jackson:jackson-mapper-asl</exclude>
+                  <exclude>com.thoughtworks.paranamer:paranamer</exclude>
+                  <exclude>com.google.code.findbugs:jsr305</exclude>
+                  <exclude>org.apache.commons:commons-compress</exclude>
+                  <exclude>org.tukaani:xz</exclude>
+                  <exclude>com.fasterxml.jackson.core:jackson-core</exclude>
+                  <exclude>javax.validation:validation-api</exclude>
+                  <exclude>javax.inject:javax.inject</exclude>
+                </excludes>
+              </artifactSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
 
   <dependencies>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-buffer</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-transport</artifactId>
@@ -351,10 +404,6 @@
       <groupId>com.twitter</groupId>
       <artifactId>parquet-format</artifactId>
       <version>${parquet.format.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-buffer</artifactId>
     </dependency>
     <dependency>
       <groupId>com.facebook.presto</groupId>
