@@ -64,7 +64,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
 
-    final int INITIAL_TUPLE_SLOT = context.getQueryContext().getInt(SessionVars.TEST_JOIN_HASH_TABLE_SIZE);
+    final int INITIAL_TUPLE_SLOT = context.getQueryContext().getInt(SessionVars.JOIN_HASH_TABLE_SIZE);
     this.leftTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
     this.rightTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
     SortSpec[][] sortSpecs = new SortSpec[2][];

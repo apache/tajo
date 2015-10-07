@@ -52,7 +52,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     } else {
       variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     }
-    variables.put(SessionVars.TEST_AGG_HASH_TABLE_SIZE.keyname(), "100");
+    variables.put(SessionVars.AGG_HASH_TABLE_SIZE.keyname(), "100");
     client.updateSessionVariables(variables);
   }
 

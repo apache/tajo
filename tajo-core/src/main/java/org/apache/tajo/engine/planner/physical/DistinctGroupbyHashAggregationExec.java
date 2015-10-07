@@ -360,7 +360,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
     public HashAggregator(GroupbyNode groupbyNode, Schema schema) throws IOException {
 
-      hashTable = new TupleMap<>(context.getQueryContext().getInt(SessionVars.TEST_AGG_HASH_TABLE_SIZE));
+      hashTable = new TupleMap<>(context.getQueryContext().getInt(SessionVars.AGG_HASH_TABLE_SIZE));
 
       List<Column> groupingKeyColumnList = new ArrayList<>(distinctGroupingKeyColumnSet);
 

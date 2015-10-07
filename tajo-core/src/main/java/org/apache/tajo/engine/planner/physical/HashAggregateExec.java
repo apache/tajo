@@ -43,7 +43,7 @@ public class HashAggregateExec extends AggregationExec {
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
     hashKeyProjector = new KeyProjector(inSchema, plan.getGroupingColumns());
-    hashTable = new TupleMap<>(ctx.getQueryContext().getInt(SessionVars.TEST_AGG_HASH_TABLE_SIZE));
+    hashTable = new TupleMap<>(ctx.getQueryContext().getInt(SessionVars.AGG_HASH_TABLE_SIZE));
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
 

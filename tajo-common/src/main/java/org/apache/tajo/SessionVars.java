@@ -130,6 +130,9 @@ public enum SessionVars implements ConfigKey {
       Long.class, Validators.min("0")),
   NULL_CHAR(ConfVars.$TEXT_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
+  AGG_HASH_TABLE_SIZE(ConfVars.$AGG_HASH_TABLE_SIZE, "Aggregation hash table size", DEFAULT),
+  SORT_HASH_TABLE_SIZE(ConfVars.$SORT_HASH_TABLE_SIZE, "Sort hash table size", DEFAULT),
+  JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, "Join hash table size", DEFAULT),
 
   // for index
   INDEX_ENABLED(ConfVars.$INDEX_ENABLED, "index scan enabled", DEFAULT),
@@ -161,9 +164,6 @@ public enum SessionVars implements ConfigKey {
   TEST_FILTER_PUSHDOWN_ENABLED(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED, "filter push down enabled", TEST_VAR),
   TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", TEST_VAR),
   TEST_PLAN_SHAPE_FIX_ENABLED(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED, "(test only) plan shape fix enabled", TEST_VAR),
-  TEST_AGG_HASH_TABLE_SIZE(ConfVars.$TEST_AGG_HASH_TABLE_SIZE, "(test only) aggregation hash table size", TEST_VAR),
-  TEST_SORT_HASH_TABLE_SIZE(ConfVars.$TEST_SORT_HASH_TABLE_SIZE, "(test only) sort hash table size", TEST_VAR),
-  TEST_JOIN_HASH_TABLE_SIZE(ConfVars.$TEST_JOIN_HASH_TABLE_SIZE, "(test only) join hash table size", TEST_VAR),
   ;
 
   public static final Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();

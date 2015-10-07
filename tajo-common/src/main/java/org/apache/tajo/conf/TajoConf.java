@@ -344,6 +344,9 @@ public class TajoConf extends Configuration {
         Validators.min("0")),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
     $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation (todo this is broken)
+    $AGG_HASH_TABLE_SIZE("tajo.executor.aggregate.hash-table.size", 10000),
+    $SORT_HASH_TABLE_SIZE("tajo.executor.sort.hash-table.size", 100000),
+    $JOIN_HASH_TABLE_SIZE("tajo.executor.join.hash-table.size", 100000),
 
     // for index
     $INDEX_ENABLED("tajo.query.index.enabled", false),
@@ -376,9 +379,6 @@ public class TajoConf extends Configuration {
     $TEST_FILTER_PUSHDOWN_ENABLED("tajo.test.plan.filter-pushdown.enabled", true),
     $TEST_MIN_TASK_NUM("tajo.test.min-task-num", -1),
     $TEST_PLAN_SHAPE_FIX_ENABLED("tajo.test.plan.shape.fix.enabled", false),  // used for explain statement test
-    $TEST_AGG_HASH_TABLE_SIZE("tajo.test.aggregate.hash-table.size", 10000),
-    $TEST_SORT_HASH_TABLE_SIZE("tajo.test.sort.hash-table.size", 100000),
-    $TEST_JOIN_HASH_TABLE_SIZE("tajo.test.join.hash-table.size", 100000),
 
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
