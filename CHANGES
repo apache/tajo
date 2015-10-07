@@ -28,6 +28,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1908: Add a link to the nightly build version to the download page.
+    (jihoon)
+
     TAJO-1915: Add a TajoClient example for creating and getting tables.
     (hyunsik)
 
