@@ -100,7 +100,7 @@ public class ShutdownHookManager {
   }
 
   private Set<HookEntry> hooks =
-      Collections.synchronizedSet(new HashSet<>());
+      Collections.synchronizedSet(new HashSet<HookEntry>());
 
   private AtomicBoolean shutdownInProgress = new AtomicBoolean(false);
 

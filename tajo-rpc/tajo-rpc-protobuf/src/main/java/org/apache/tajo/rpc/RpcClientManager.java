@@ -41,7 +41,7 @@ public class RpcClientManager {
 
   /* entries will be removed by ConnectionCloseFutureListener */
   private static final Map<RpcConnectionKey, NettyClientBase>
-      clients = Collections.synchronizedMap(new HashMap<>());
+      clients = Collections.synchronizedMap(new HashMap<RpcConnectionKey, NettyClientBase>());
 
   private static RpcClientManager instance;
 
