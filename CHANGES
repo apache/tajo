@@ -1,6 +1,6 @@
 Tajo Change Log 
 
-Release 0.11.0 - Released
+Release 0.11.0 - unreleased
 
   NEW FEATURES
 
@@ -284,6 +284,8 @@ Release 0.11.0 - Released
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+  
+    TAJO-1913: Timezone does not affect the constant folding. (hyunsik)
 
     TAJO-1901: Repair partition throws ArrayIndexOutOfBoundsException 
     occasionally. (Contributed by jaehwa, committed by hyunsik)

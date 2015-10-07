@@ -446,7 +446,7 @@ public class TestTajoCli {
     tajoCli.executeScript("select * from " + tableName);
     String consoleResult = new String(out.toByteArray());
     tajoCli.executeScript("DROP TABLE " + tableName + " PURGE");
-    assertTrue(consoleResult.contains("1970-01-01 01:00:00"));
+    assertTrue(consoleResult.contains("1970-01-01 00:00:00"));
   }
 
   @Test(timeout = 3000)
