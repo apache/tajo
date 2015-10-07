@@ -16,6 +16,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1895: Add a maven profile to skip the unit tests of 
+    tajo-storage-pgsql. (hyunsik)
+
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
@@ -619,6 +622,8 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1914: Remove imports of guava library of facebook. (jihoon)
 
     TAJO-1872: Increase the minimum split size and add a classpath to hadoop 
     tools. (jihoon)
