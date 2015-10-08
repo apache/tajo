@@ -138,9 +138,16 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     NodeResource resource =  allocatedResourceMap.remove(taskId);
 
     if(resource != null) {
-      workerContext.getNodeResourceManager().getDispatcher().getEventHandler().handle(
-          new NodeResourceDeallocateEvent(resource, NodeResourceEvent.ResourceType.TASK));
+      releaseResource(resource);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Task resource " + taskId + " is released. (" + resource + ")");
+      }
     }
+  }
+
+  protected void releaseResource(NodeResource resource) {
+    workerContext.getNodeResourceManager().getDispatcher().getEventHandler().handle(
+        new NodeResourceDeallocateEvent(resource, NodeResourceEvent.ResourceType.TASK));
   }
 
   protected Task createTask(ExecutionBlockContext executionBlockContext,

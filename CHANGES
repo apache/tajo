@@ -285,6 +285,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1875: Resource leak after a query failure. (jihoon)
+
     TAJO-1903: Insert clause occassionally fails on S3. (jinho)
 
     TAJO-1912: Selection from aliased schemaless tables throws an error.
