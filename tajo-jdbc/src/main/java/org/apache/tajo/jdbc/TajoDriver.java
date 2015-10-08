@@ -76,8 +76,8 @@ public class TajoDriver implements Driver, Closeable {
     return false;
   }
 
+  @Override
   public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("getParentLogger not supported");
   }
 }

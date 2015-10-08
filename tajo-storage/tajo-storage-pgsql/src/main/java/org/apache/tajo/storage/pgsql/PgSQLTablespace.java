@@ -68,4 +68,9 @@ public class PgSQLTablespace extends JdbcTablespace {
     scanner.setTarget(target.toArray());
     return scanner;
   }
+
+  @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException();
+  }
 }

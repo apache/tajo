@@ -50,6 +50,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.7</source> <!-- for keeping tajo-client and tajo-jdbc available in 1.7-->
+          <target>1.7</target> <!-- for keeping tajo-client and tajo-jdbc available in 1.7-->
+          <encoding>${project.build.sourceEncoding}</encoding>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.rat</groupId>
