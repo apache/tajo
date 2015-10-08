@@ -333,6 +333,14 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1903: Insert clause occassionally fails on S3. (jinho)
+
+    TAJO-1912: Selection from aliased schemaless tables throws an error. 
+    (jihoon)
+
+    TAJO-1918: Writing text type in Parquet should handle text bytes.
+    (Contributed by Jongyoung Park. Committed by jinho) 
+
     TAJO-1901: Repair partition throws ArrayIndexOutOfBoundsException 
     occasionally. (Contributed by jaehwa, committed by hyunsik)
 

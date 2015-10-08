@@ -71,6 +71,15 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
   @Test
   @Option(sort = true)
   @SimpleTest(
+      queries = @QuerySpec("select t1.glossary.title from self_desc_table2 t1")
+  )
+  public final void testSelectFromAliasedTable() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(
       queries = @QuerySpec("" +
           "select title1, title2, null_expected, sortas, abbrev from (\n" +
           "select\n" +
@@ -229,10 +238,99 @@ public class TestQueryOnSelfDescTable extends QueryTestCaseBase {
         "  user.favourites_count = name.first_name");
   }
 
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(
+      queries = @QuerySpec("" +
+          "select\n" +
+          "  user.favourites_count::int8,\n" +
+          "  l_linenumber,\n" +
+          "  l_comment\n" +
+          "from\n" +
+          "  default.lineitem l1, self_desc_table3 t1\n" +
+          "where\n" +
+          "  user.favourites_count::int8 = (l_orderkey - 1)"
+      )
+  )
+  public final void testJoinAliasedTables() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(
+      queries = @QuerySpec("" +
+          "select\n" +
+          "  user.favourites_count::int8,\n" +
+          "  l_linenumber,\n" +
+          "  l_comment\n" +
+          "from\n" +
+          "  default.lineitem l1, self_desc_table3 t3, default.orders o1, default.supplier s1\n" +
+          "where\n" +
+          "  user.favourites_count::int8 = (l_orderkey - 1) and l_orderkey = o_orderkey and l_linenumber = s_suppkey"
+      )
+  )
+  public final void testJoinAliasedTables2() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test(expected = AmbiguousColumnException.class)
+  public final void testJoinAliasedTables3() throws Exception {
+    executeString("" +
+        "select " +
+        "  user.favourites_count::int8, " +
+        "  l_linenumber, " +
+        "  l_comment " +
+        "from " +
+        "  default.lineitem l1, " +
+        "  self_desc_table1 t1, " +
+        "  self_desc_table3 t2, " +
+        "  default.orders o2, " +
+        "  default.supplier s2 " +
+        "where " +
+        "  user.favourites_count::int8 = (l_orderkey - 1) and " +
+        "  l_orderkey = o_orderkey and " +
+        "  l_linenumber = s_suppkey and " +
+        "  self_desc_table3.user.favourites_count = self_desc_table1.name.first_name");
+  }
+
   @Test
   @Option(sort = true)
   @SimpleTest
   public final void testJoinOfSelfDescTablesWithQualifiedColumns() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(
+      queries = @QuerySpec("" +
+          "select\n" +
+          "  t1.user.favourites_count::int8\n" +
+          "from\n" +
+          "  github g1, self_desc_table3 t1\n" +
+          "where\n" +
+          "  t1.user.favourites_count = (g1.actor.id::int8 - 206379)::text"
+      )
+  )
+  public final void testJoinOfSelfDescTablesWithQualifiedColumns2() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(
+      queries = @QuerySpec("" +
+          "select\n" +
+          "  t1.user.favourites_count::int8\n" +
+          "from\n" +
+          "  github g1, self_desc_table3 t1\n" +
+          "where\n" +
+          "  self_desc_table3.user.favourites_count = (github.actor.id::int8 - 206379)::text"
+      )
+  )
+  public final void testJoinOfSelfDescTablesWithQualifiedColumns3() throws Exception {
     runSimpleTests();
   }
 
