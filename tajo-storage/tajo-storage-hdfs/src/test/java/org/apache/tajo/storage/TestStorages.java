@@ -706,7 +706,6 @@ public class TestStorages {
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
@@ -721,7 +720,7 @@ public class TestStorages {
         DatumFactory.createBlob("hyunsik babo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
         NullDatum.get(),
-        factory.createDatum(queryid.getProto())
+        ProtobufDatumFactory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
     appender.flush();
