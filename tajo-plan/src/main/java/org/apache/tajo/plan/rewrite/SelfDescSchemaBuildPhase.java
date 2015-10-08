@@ -395,9 +395,13 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       Set<Column> simpleColumns = new HashSet<>();
       List<Column> columnList = new ArrayList<>(columns);
-      Collections.sort(columnList, (c1, c2) ->
-          c2.getSimpleName().split(NestedPathUtil.PATH_DELIMITER).length -
-          c1.getSimpleName().split(NestedPathUtil.PATH_DELIMITER).length);
+      Collections.sort(columnList, new Comparator<Column>() {
+        @Override
+        public int compare(Column c1, Column c2) {
+          return c2.getSimpleName().split(NestedPathUtil.PATH_DELIMITER).length -
+              c1.getSimpleName().split(NestedPathUtil.PATH_DELIMITER).length;
+        }
+      });
 
       for (Column eachColumn : columnList) {
         String simpleName = eachColumn.getSimpleName();
@@ -434,17 +438,17 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       // Build record columns
       RecordColumnBuilder builder = new RecordColumnBuilder(schemaGraph);
-      rootVertexes.forEach(eachRoot -> {
+      for (ColumnVertex eachRoot : rootVertexes) {
         schemaGraph.accept(eachRoot, builder);
         schema.addColumn(eachRoot.column);
-      });
+      }
 
       // Add simple columns
-      simpleColumns.forEach(eachColumn -> {
+      for (Column eachColumn : simpleColumns) {
         if (!schema.contains(eachColumn)) {
           schema.addColumn(eachColumn);
         }
-      });
+      }
 
       return schema;
     }
