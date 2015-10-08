@@ -101,7 +101,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
       Type fieldType = fields.get(index);
       if (!tuple.isBlankOrNull(tajoIndex)) {
         recordConsumer.startField(fieldType.getName(), index);
-        writeValue(fieldType, column, tuple, tajoIndex);
+        writeValue(column, tuple, tajoIndex);
         recordConsumer.endField(fieldType.getName(), index);
       } else if (fieldType.isRepetition(Type.Repetition.REQUIRED)) {
         throw new RuntimeException("Null-value for required field: " +
@@ -111,7 +111,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
     }
   }
 
-  private void writeValue(Type fieldType, Column column, Tuple tuple, int index) {
+  private void writeValue(Column column, Tuple tuple, int index) {
     switch (column.getDataType().getType()) {
       case BOOLEAN:
         recordConsumer.addBoolean(tuple.getBool(index));
