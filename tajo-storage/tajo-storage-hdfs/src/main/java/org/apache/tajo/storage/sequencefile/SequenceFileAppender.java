@@ -40,7 +40,6 @@ import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
 import org.apache.tajo.util.BytesUtils;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class SequenceFileAppender extends FileAppender {
@@ -93,10 +92,6 @@ public class SequenceFileAppender extends FileAppender {
       nullChars = NullDatum.get().asTextBytes();
     } else {
       nullChars = nullCharacters.getBytes();
-    }
-
-    if (!fs.exists(path.getParent())) {
-      throw new FileNotFoundException(path.toString());
     }
 
     if(this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
