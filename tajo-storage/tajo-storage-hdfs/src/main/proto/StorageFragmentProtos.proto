@@ -27,8 +27,8 @@ import "CatalogProtos.proto";
 message FileFragmentProto {
   required string id = 1;
   required string path = 2;
-  required int64 startOffset = 3;
+  required int64 start_offset = 3;
   required int64 length = 4;
   repeated string hosts = 5;
-  repeated int32 diskIds = 6;
+  repeated int32 disk_ids = 6;
 }

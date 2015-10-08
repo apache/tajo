@@ -170,6 +170,11 @@ public class TimestampDatum extends Datum {
   }
 
   @Override
+  public byte[] asTextBytes() {
+    return asChars().getBytes(TextDatum.DEFAULT_CHARSET);
+  }
+
+  @Override
   public Datum equalsTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIME) {
       return timestamp == datum.asInt8() ? BooleanDatum.TRUE : BooleanDatum.FALSE;

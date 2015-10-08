@@ -31,28 +31,28 @@ import "DataTypes.proto";
 
 message CreateSessionRequest {
   required string username = 1;
-  optional string baseDatabaseName = 2;
+  optional string base_database_name = 2;
 }
 
 message CreateSessionResponse {
   required ReturnState state = 1;
-  optional SessionIdProto sessionId = 2;
-  optional KeyValueSetProto sessionVars = 3;
+  optional SessionIdProto session_id = 2;
+  optional KeyValueSetProto session_vars = 3;
 }
 
 message UpdateSessionVariableRequest {
-  optional SessionIdProto sessionId = 1;
-  optional KeyValueSetProto sessionVars = 2;
-  repeated string unsetVariables = 3;
+  optional SessionIdProto session_id = 1;
+  optional KeyValueSetProto session_vars = 2;
+  repeated string unset_variables = 3;
 }
 
 message SessionUpdateResponse {
   required ReturnState state = 1;
-  optional KeyValueSetProto sessionVars = 2;
+  optional KeyValueSetProto session_vars = 2;
 }
 
 message SessionedStringProto {
-  optional SessionIdProto sessionId = 1;
+  optional SessionIdProto session_id = 1;
   optional string value = 2;
 }
 
@@ -62,137 +62,137 @@ message ExplainQueryResponse {
 }
 
 message QueryRequest {
-  optional SessionIdProto sessionId = 1;
+  optional SessionIdProto session_id = 1;
   required string query = 2;
-  repeated KeyValueProto sessionVars = 3;
-  required bool isJson = 4;
+  repeated KeyValueProto session_vars = 3;
+  required bool is_json = 4;
 }
 
 message UpdateQueryResponse {
   required ReturnState state = 1;
-  optional KeyValueSetProto sessionVars = 2;
+  optional KeyValueSetProto session_vars = 2;
 }
 
 message GetQueryResultRequest {
-  optional SessionIdProto sessionId = 1;
-  required QueryIdProto queryId = 2;
+  optional SessionIdProto session_id = 1;
+  required QueryIdProto query_id = 2;
 }
 
 message GetQueryResultResponse {
   required ReturnState state = 1;
-  optional TableDescProto tableDesc = 2;
-  optional string tajoUserName = 3;
+  optional TableDescProto table_desc = 2;
+  optional string tajo_user_name = 3;
 }
 
 message QueryIdRequest {
-  optional SessionIdProto sessionId = 1;
-  required QueryIdProto queryId = 2;
+  optional SessionIdProto session_id = 1;
+  required QueryIdProto query_id = 2;
 }
 
 message GetQueryListRequest {
-  optional SessionIdProto sessionId = 1;
+  optional SessionIdProto session_id = 1;
 }
 
 message BriefQueryInfo {
-  required QueryIdProto queryId = 1;
+  required QueryIdProto query_id = 1;
   required QueryState state = 2;
-  required int64 startTime = 3;
-  required int64 finishTime = 4;
+  required int64 start_time = 3;
+  required int64 finish_time = 4;
   required string query = 5;
-  optional string queryMasterHost = 6;
-  optional int32 queryMasterPort = 7;
+  optional string query_master_host = 6;
+  optional int32 query_master_port = 7;
   required float progress = 8;
 }
 
 message GetQueryListResponse {
   required ReturnState state = 1;
-  repeated BriefQueryInfo queryList = 2;
+  repeated BriefQueryInfo query_list = 2;
 }
 
 message GetQueryStatusRequest {
-  optional SessionIdProto sessionId = 1;
-  required QueryIdProto queryId = 2;
+  optional SessionIdProto session_id = 1;
+  required QueryIdProto query_id = 2;
 }
 
 message SerializedResultSet {
   required SchemaProto schema = 1;
   required int32 rows = 2;
-  optional int32 decompressedLength = 3;
-  optional CodecType decompressCodec = 4;
-  optional bytes serializedTuples = 5;
+  optional int32 decompressed_length = 3;
+  optional CodecType decompress_codec = 4;
+  optional bytes serialized_tuples = 5;
 }
 
 message SubmitQueryResponse {
   required ReturnState state = 1;
 
   enum ResultType {
-    NO_RESULT = 0; // this query does not have any result.
-    ENCLOSED  = 1; // the response encloses the query result.
-    FETCH     = 2; // the query result should be fetched
+    NO_RESULT = 0;  // this query does not have any result.
+    ENCLOSED  = 1;  // the response encloses the query result.
+    FETCH     = 2;  // the query result should be fetched
   }
 
   optional ResultType result_type = 2;
 
-  optional QueryIdProto queryId = 3;
-  optional string userName = 4;
+  optional QueryIdProto query_id = 3;
+  optional string user_name = 4;
 
-  optional string queryMasterHost = 6;
-  optional int32 queryMasterPort = 7;
+  optional string query_master_host = 6;
+  optional int32 query_master_port = 7;
 
-  optional SerializedResultSet resultSet = 8;
-  optional TableDescProto tableDesc = 9;
-  optional int32 maxRowNum = 10;
+  optional SerializedResultSet result_set = 8;
+  optional TableDescProto table_desc = 9;
+  optional int32 max_row_num = 10;
 
-  optional KeyValueSetProto sessionVars = 11;
+  optional KeyValueSetProto session_vars = 11;
 }
 
 message GetQueryStatusResponse {
   required ReturnState state = 1;
-  optional QueryIdProto queryId = 2;
+  optional QueryIdProto query_id = 2;
   optional QueryState query_state = 3;
   optional float progress = 4;
-  optional int64 submitTime = 5;
-  optional int64 finishTime = 7;
-  optional bool hasResult = 8;
-  optional string errorMessage = 9;
-  optional string errorTrace = 10;
-  optional string queryMasterHost = 11;
-  optional int32 queryMasterPort = 12;
+  optional int64 submit_time = 5;
+  optional int64 finish_time = 7;
+  optional bool has_result = 8;
+  optional string error_message = 9;
+  optional string error_trace = 10;
+  optional string query_master_host = 11;
+  optional int32 query_master_port = 12;
 }
 
 message GetQueryResultDataRequest {
-  required SessionIdProto sessionId = 1;
-  required QueryIdProto queryId = 2;
-  required int32 fetchRowNum = 3;
-  optional CodecType compressCodec = 4;
+  required SessionIdProto session_id = 1;
+  required QueryIdProto query_id = 2;
+  required int32 fetch_row_num = 3;
+  optional CodecType compress_codec = 4;
 }
 
 message GetQueryResultDataResponse {
   required ReturnState state = 1;
-  optional SerializedResultSet resultSet = 2;
+  optional SerializedResultSet result_set = 2;
 }
 
 message GetClusterInfoRequest {
-  optional SessionIdProto sessionId = 1;
+  optional SessionIdProto session_id = 1;
 }
 
 message WorkerResourceInfo {
-  required WorkerConnectionInfoProto connectionInfo = 1;
-  required NodeResourceProto totalResource = 2;
-  required NodeResourceProto availableResource = 3;
-  required int32 numRunningTasks = 4;
-  required string workerStatus = 5;
-  required int64 lastHeartbeat = 6;
-  required int32 numQueryMasterTasks = 7;
+  required WorkerConnectionInfoProto connection_info = 1;
+  required NodeResourceProto total_resource = 2;
+  required NodeResourceProto available_resource = 3;
+  required int32 num_running_tasks = 4;
+  required string worker_status = 5;
+  required int64 last_heartbeat = 6;
+  required int32 num_query_master_tasks = 7;
 }
 
 message GetClusterInfoResponse {
   required ReturnState state = 1;
-  repeated WorkerResourceInfo workerList = 2;
+  repeated WorkerResourceInfo worker_list = 2;
 }
 
 message CreateTableRequest {
-  optional SessionIdProto sessionId = 1;
+  optional SessionIdProto session_id = 1;
   required string name = 2;
   optional SchemaProto schema = 3;
   required TableProto meta = 4;
@@ -201,77 +201,77 @@ message CreateTableRequest {
 }
 
 message DropTableRequest {
-  optional SessionIdProto sessionId = 1;
+  optional SessionIdProto session_id = 1;
   required string name = 2;
   optional bool purge = 3 [default = false];
 }
 
 message QueryInfoProto {
-  required string queryId = 1;
+  required string query_id = 1;
   optional string sql = 2;
-  optional KeyValueSetProto contextVars= 3;
-  optional QueryState queryState = 4;
+  optional KeyValueSetProto context_vars = 3;
+  optional QueryState query_state = 4;
   optional float progress = 5;
-  optional int64 startTime = 6;
-  optional int64 finishTime = 7;
-  optional string lastMessage = 8;
-  optional string hostNameOfQM = 9;
-  optional int32 queryMasterPort = 10;
-  optional int32 queryMasterClientPort = 11;
-  optional int32 queryMasterInfoPort = 12;
-  optional TableDescProto resultDesc = 13;
+  optional int64 start_time = 6;
+  optional int64 finish_time = 7;
+  optional string last_message = 8;
+  optional string host_name_of_qm = 9;
+  optional int32 query_master_port = 10;
+  optional int32 query_master_client_port = 11;
+  optional int32 query_master_info_port = 12;
+  optional TableDescProto result_desc = 13;
 }
 
 message StageHistoryProto {
-  required string executionBlockId =1;
+  required string execution_block_id =1;
   required string state = 2;
-  optional int64 startTime = 3;
-  optional int64 finishTime = 4;
-  optional int32 succeededObjectCount = 5;
-  optional int32 failedObjectCount = 6;
-  optional int32 killedObjectCount = 7;
-  optional int32 totalScheduledObjectsCount = 8;
+  optional int64 start_time = 3;
+  optional int64 finish_time = 4;
+  optional int32 succeeded_object_count = 5;
+  optional int32 failed_object_count = 6;
+  optional int32 killed_object_count = 7;
+  optional int32 total_scheduled_objects_count = 8;
 
-  optional int64 totalInputBytes = 9;
-  optional int64 totalReadBytes = 10;
-  optional int64 totalReadRows = 11;
-  optional int64 totalWriteBytes = 12;
-  optional int64 totalWriteRows = 13;
-  optional int32 numShuffles = 14;
+  optional int64 total_input_bytes = 9;
+  optional int64 total_read_bytes = 10;
+  optional int64 total_read_rows = 11;
+  optional int64 total_write_bytes = 12;
+  optional int64 total_write_rows = 13;
+  optional int32 num_shuffles = 14;
   optional float progress =15;
 
   optional string plan = 16;
-  optional int32 hostLocalAssigned = 17;
-  optional int32 rackLocalAssigned = 18;
+  optional int32 host_local_assigned = 17;
+  optional int32 rack_local_assigned = 18;
 }
 
 message QueryHistoryProto {
-  required string queryId = 1;
-  optional string queryMaster = 2;
-  optional int32 httpPort = 3;
-  optional string logicalPlan = 4;
-  optional string distributedPlan = 5;
-  repeated KeyValueProto sessionVariables = 6;
-  repeated StageHistoryProto stageHistories = 7;
+  required string query_id = 1;
+  optional string query_master = 2;
+  optional int32 http_port = 3;
+  optional string logical_plan = 4;
+  optional string distributed_plan = 5;
+  repeated KeyValueProto session_variables = 6;
+  repeated StageHistoryProto stage_histories = 7;
 }
 
 message GetQueryHistoryResponse {
   required ReturnState state = 1;
-  optional QueryHistoryProto queryHistory = 2;
+  optional QueryHistoryProto query_history = 2;
 }
 
 message GetQueryInfoResponse {
   required ReturnState state = 1;
-  optional QueryInfoProto queryInfo = 2;
+  optional QueryInfoProto query_info = 2;
 }
 
 message CreateIndexResponse {
   required ReturnState result = 1;
-  optional IndexDescProto indexDesc = 2;
+  optional IndexDescProto index_desc = 2;
 }
 
 message GetIndexWithColumnsRequest {
-  required SessionIdProto sessionId = 1;
-  required string tableName = 2;
-  repeated string columnNames = 3;
+  required SessionIdProto session_id = 1;
+  required string table_name = 2;
+  repeated string column_names = 3;
 }

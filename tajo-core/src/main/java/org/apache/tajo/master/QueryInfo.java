@@ -227,7 +227,7 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
     }
 
     if (hostNameOfQM != null) {
-      builder.setHostNameOfQM(hostNameOfQM);
+      builder.setHostNameOfQm(hostNameOfQM);
     }
 
     return builder.build();

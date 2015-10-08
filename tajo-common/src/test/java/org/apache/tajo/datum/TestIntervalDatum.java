@@ -19,7 +19,6 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.Test;

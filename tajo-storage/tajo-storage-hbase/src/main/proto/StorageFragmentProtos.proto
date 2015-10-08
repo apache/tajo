@@ -26,11 +26,11 @@ import "CatalogProtos.proto";
 
 message HBaseFragmentProto {
   required string uri = 1;
-  required string tableName = 2;
-  required string hbaseTableName = 3;
-  required bytes startRow = 4;
-  required bytes stopRow = 5;
+  required string table_name = 2;
+  required string hbase_table_name = 3;
+  required bytes start_row = 4;
+  required bytes stop_row = 5;
   required bool last = 6;
   required int64 length = 7;
-  optional string regionLocation = 8;
+  optional string region_location = 8;
 }

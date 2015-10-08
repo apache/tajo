@@ -26,7 +26,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
-import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -54,7 +53,6 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.exception.ExceptionUtil.throwIfError;
 import static org.apache.tajo.exception.ExceptionUtil.throwsIfThisError;
@@ -532,12 +530,12 @@ public class QueryClientImpl implements QueryClient {
   public QueryHistoryProto getQueryHistory(final QueryId queryId) throws QueryNotFoundException {
     final QueryInfoProto queryInfo = getQueryInfo(queryId);
 
-    if (queryInfo.getHostNameOfQM() == null || queryInfo.getQueryMasterClientPort() == 0) {
+    if (queryInfo.getHostNameOfQm() == null || queryInfo.getQueryMasterClientPort() == 0) {
       return null;
     }
 
     InetSocketAddress qmAddress = new InetSocketAddress(
-        queryInfo.getHostNameOfQM(), queryInfo.getQueryMasterClientPort());
+        queryInfo.getHostNameOfQm(), queryInfo.getQueryMasterClientPort());
 
     RpcClientManager manager = RpcClientManager.getInstance();
     NettyClientBase qmClient = null;

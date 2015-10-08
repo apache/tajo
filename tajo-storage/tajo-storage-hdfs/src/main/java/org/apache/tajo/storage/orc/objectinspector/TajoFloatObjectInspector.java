@@ -22,7 +22,6 @@ import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspe
 import org.apache.hadoop.hive.serde2.typeinfo.PrimitiveTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.TypeInfoFactory;
 import org.apache.tajo.datum.Float4Datum;
-import org.apache.tajo.datum.Int8Datum;
 
 public class TajoFloatObjectInspector extends TajoPrimitiveObjectInspector implements DoubleObjectInspector {
   @Override

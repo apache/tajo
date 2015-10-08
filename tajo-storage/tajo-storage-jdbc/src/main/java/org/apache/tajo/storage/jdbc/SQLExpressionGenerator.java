@@ -21,7 +21,6 @@ package org.apache.tajo.storage.jdbc;
 import com.google.common.base.Function;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.datum.BooleanDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;

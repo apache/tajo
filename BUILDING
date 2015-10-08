@@ -4,7 +4,7 @@ Build instructions for Tajo
 Requirements:
 
 * Unix System
-* JDK 1.7 or higher
+* JDK 1.8 or higher
 * Maven 3.0 or higher
 * Protocol Buffers 2.5.0
 * Internet connection for first build (to fetch all Maven and Tajo dependencies)
@@ -15,18 +15,23 @@ Maven main modules:
   tajo                            (Main Tajo project)
          - tajo-project           (Parent POM for all Tajo Maven modules. )
                                   (All plugins & dependencies versions are defined here.)
-         - tajo-algebra
-         - tajo-common
-         - tajo-rpc
-         - tajo-catalog
-         - tajo-storage
-         - tajo-pullserver
-         - tajo-core
-         - tajo-client
-         - tajo-jdbc
-         - tajo-maven-plugin
-         - tajo-docs
+         - tajo-algebra           (Algebraic expressions)
+         - tajo-catalog           (Catalog and its plugins)
+         - tajo-common            (Common modules)
+         - tajo-core              (Core module)
+         - tajo-core-tests        (Tests for core module and query execution)
+         - tajo-client            (Client API and its implementation)
+         - tajo-client-example    (Client API examples)
          - tajo-dist              (Tajo distribution assembler)
+         - tajo-docs              (User documentation)
+         - tajo-jdbc              (Tajo JDBC Driver)
+         - tajo-maven-plugin      (Maven Plugin)
+         - tajo-metrics           (Metrics)
+         - tajo-plan              (Plan representation)
+         - tajo-pullserver        (Pullserver for intermediate)
+         - tajo-rpc               (Rpc)
+         - tajo-sql-parser        (SQL parser)
+         - tajo-storage           (Storage and its plugins)
 
 --------------------------------------------------------------------------------
 Maven build goals:
@@ -53,6 +58,7 @@ Maven build goals:
   * -Dtest=<TESTCLASSNAME>,<TESTCLASSNAME#METHODNAME>,....
   * -Dtest.exclude=<TESTCLASSNAME>
   * -Dtest.exclude.pattern=**/<TESTCLASSNAME1>.java,**/<TESTCLASSNAME2>.java
+  * For more information, refer to https://cwiki.apache.org/confluence/display/TAJO/Unit+Tests.
 
 --------------------------------------------------------------------------------
 Building distributions:

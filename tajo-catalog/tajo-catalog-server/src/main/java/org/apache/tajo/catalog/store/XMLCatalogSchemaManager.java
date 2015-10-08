@@ -23,7 +23,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.store.object.*;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.util.TUtil;
 

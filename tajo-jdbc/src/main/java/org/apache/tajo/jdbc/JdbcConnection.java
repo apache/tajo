@@ -26,8 +26,6 @@ import org.apache.tajo.client.CatalogAdminClient;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
-import org.apache.tajo.exception.SQLExceptionUtil;
-import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
@@ -435,24 +433,25 @@ public class JdbcConnection implements Connection {
   }
 
   public void abort(Executor executor) throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("abort is not supported");
   }
 
+  @Override
   public int getNetworkTimeout() throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("getNetworkTimeout is not supported");
   }
 
+  @Override
   public void setNetworkTimeout(Executor executor, int milliseconds) throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("setNetworkTimeout not supported");
   }
 
+  @Override
   public String getSchema() throws SQLException {
     return TajoConstants.DEFAULT_SCHEMA_NAME;
   }
 
+  @Override
   public void setSchema(String schema) throws SQLException {
     throw new SQLFeatureNotSupportedException("setSchema() is not supported yet");
   }

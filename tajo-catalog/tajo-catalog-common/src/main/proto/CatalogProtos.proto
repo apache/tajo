@@ -66,7 +66,7 @@ enum AlterTableType {
 message ColumnProto {
   required string name = 1;
   optional int32 tid = 2;
-  required DataType dataType = 3;
+  required DataType data_type = 3;
 }
 
 message SchemaProto {
@@ -75,12 +75,12 @@ message SchemaProto {
 
 message FragmentProto {
   required string id = 1;
-  required string dataFormat = 2;
+  required string data_format = 2;
   required bytes contents = 3;
 }
 
 message TableProto {
-  required string dataFormat = 1;
+  required string data_format = 1;
   optional KeyValueSetProto params = 2;
 }
 
@@ -101,13 +101,13 @@ message TableDescProto {
   optional SchemaProto schema = 5;
   optional TableStatsProto stats = 6;
   optional PartitionMethodProto partition = 7;
-  optional bool isExternal = 8 [default = false];
+  optional bool is_external = 8 [default = false];
 }
 
 message TableIdentifierProto {
   required string database_name = 1;
   required string table_name = 2;
-  optional int32 dbId = 3;
+  optional int32 db_id = 3;
   optional int32 tid = 4;
 }
 
@@ -117,14 +117,14 @@ message NamespaceProto {
 }
 
 message IndexDescProto {
-  required TableIdentifierProto tableIdentifier = 1;
-  required string indexName = 2;
-  required IndexMethod indexMethod = 3;
-  required string indexPath = 4;
+  required TableIdentifierProto table_identifier = 1;
+  required string index_name = 2;
+  required IndexMethod index_method = 3;
+  required string index_path = 4;
   repeated SortSpecProto key_sort_specs = 5;
-  required SchemaProto targetRelationSchema = 6;
-  optional bool isUnique = 7 [default = false];
-  optional bool isClustered = 8 [default = false];
+  required SchemaProto target_relation_schema = 6;
+  optional bool is_unique = 7 [default = false];
+  optional bool is_clustered = 8 [default = false];
 }
 
 enum IndexMethod {
@@ -135,9 +135,9 @@ enum IndexMethod {
 }
 
 message IndexNameProto {
-  required string databaseName = 1;
+  required string database_name = 1;
   optional string namespace = 2;
-  required string indexName = 3;
+  required string index_name = 3;
 }
 
 message TableOptionProto {
@@ -148,13 +148,13 @@ message TableOptionProto {
 message TablePartitionProto {
   required int32 partition_id = 1;
   required int32 tid = 2;
-  optional string partitionName = 3;
+  optional string partition_name = 3;
   optional string path = 4;
 }
 
 message GetFunctionsResponse {
   required ReturnState state = 1;
-  repeated FunctionDescProto functionDesc = 2;
+  repeated FunctionDescProto function_desc = 2;
 }
 
 message UnregisterFunctionRequest {
@@ -163,33 +163,33 @@ message UnregisterFunctionRequest {
 
 message GetFunctionMetaRequest {
   required string signature = 1;
-  optional FunctionType functionType = 2;
-  repeated DataType parameterTypes = 3;
+  optional FunctionType function_type = 2;
+  repeated DataType parameter_types = 3;
 }
 
 message ContainFunctionRequest {
   required string signature = 1;
-  optional FunctionType functionType = 2;
-  repeated DataType parameterTypes = 3;
+  optional FunctionType function_type = 2;
+  repeated DataType parameter_types = 3;
 }
 
 message TableStatsProto {
-  required int64 numRows = 1;
-  required int64 numBytes = 2;
-  optional int32 numBlocks = 4;
-  optional int32 numShuffleOutputs = 5;
-  optional int64 avgRows = 6;
-  optional int64 readBytes = 7;
-  repeated ColumnStatsProto colStat = 8;
+  required int64 num_rows = 1;
+  required int64 num_bytes = 2;
+  optional int32 num_blocks = 4;
+  optional int32 num_shuffle_outputs = 5;
+  optional int64 avg_rows = 6;
+  optional int64 read_bytes = 7;
+  repeated ColumnStatsProto col_stat = 8;
   optional int32 tid = 9;
 }
 
 message ColumnStatsProto {
   required ColumnProto column = 1;
-  optional int64 numDistVal = 2;
-  optional int64 numNulls = 3;
-  optional bytes minValue = 4;
-  optional bytes maxValue = 5;
+  optional int64 num_dist_val = 2;
+  optional int64 num_nulls = 3;
+  optional bytes min_value = 4;
+  optional bytes max_value = 5;
 }
 
 enum StatType {
@@ -213,91 +213,93 @@ message StatProto {
 }
 
 message ServerNameProto {
-  required string serverName = 1;
-  required string hostName = 2;
+  required string server_name = 1;
+  required string host_name = 2;
   required int32 port = 3;
 }
 
 message TupleComparatorSpecProto {
-  required int32 columnId = 1;
+  required int32 column_id = 1;
   optional bool ascending = 2 [default = true];
-  optional bool nullFirst = 3 [default = false];
+  optional bool null_first = 3 [default = false];
 }
 
 message SortSpecProto {
   required ColumnProto column = 1;
   optional bool ascending = 2 [default = true];
-  optional bool nullFirst = 3 [default = false];
+  optional bool null_first = 3 [default = false];
 }
 
 message PartitionMethodProto {
-  required TableIdentifierProto tableIdentifier = 1;
-  required PartitionType partitionType = 2;
+  required TableIdentifierProto table_identifier = 1;
+  required PartitionType partition_type = 2;
   required string expression = 3;
-  required SchemaProto expressionSchema = 4;
+  required SchemaProto expression_schema = 4;
 }
 
 message AddPartitionsProto {
-  required TableIdentifierProto tableIdentifier = 1;
-  repeated PartitionDescProto partitionDesc = 2;
-  required bool ifNotExists = 3;
+  required TableIdentifierProto table_identifier = 1;
+  repeated PartitionDescProto partition_desc = 2;
+  required bool if_not_exists = 3;
 }
 
 message PartitionDescProto {
-  required string partitionName = 1;
-  repeated PartitionKeyProto partitionKeys = 2;
+  required string partition_name = 1;
+  repeated PartitionKeyProto partition_keys = 2;
   optional string path = 3;
   optional int32 id = 4;
-  optional int64 numBytes = 5;
+  optional int64 num_bytes = 5;
 }
 
 message PartitionKeyProto {
-  required string columnName = 1;
-  required string partitionValue = 2;
+  required string column_name = 1;
+  required string partition_value = 2;
 }
 
 message PartitionIdentifierProto {
-  required string databaseName = 1;
-  required string tableName = 2;
-  optional string partitionName = 3;
+  required string database_name = 1;
+  required string table_name = 2;
+  optional string partition_name = 3;
 }
 
 message PartitionsByAlgebraProto {
-  required string databaseName = 1;
-  required string tableName = 2;
-  required string algebra = 3; // json object which contains algebra expressions
+  required string database_name = 1;
+  required string table_name = 2;
+  // JSON object which contains algebra expressions.
+  required string algebra = 3;
 }
 
 message PartitionsByFilterProto {
-  required string databaseName = 1;
-  required string tableName = 2;
-  required string filter = 3; // filter string: (col1 ='1' or col1 = '100') and col3 > 20
+  required string database_name = 1;
+  required string table_name = 2;
+  // Filter string: (col1 ='1' or col1 = '100') and col3 > 20
+  required string filter = 3;
 }
 
 message TablespaceProto {
-  required string spaceName = 1;
+  required string space_name = 1;
   required string uri = 2;
   optional string handler = 3;
-  optional int32 id = 4; 
+  optional int32 id = 4;
 }
 
 message DatabaseProto {
- 	required int32 spaceId = 1;
- 	required int32 id = 2;
- 	required string name = 3;
+   required int32 space_id = 1;
+   required int32 id = 2;
+   required string name = 3;
 }
 
 message TableDescriptorProto {
-	required int32 dbId = 1;
+	required int32 db_id = 1;
 	required int32 tid = 2;
 	required string name = 3;
-	optional string tableType = 4;
+	optional string table_type = 4;
 	required string path = 5;
-	required string dataFormat = 6;
+	required string data_format = 6;
 }
 
 message AlterTablespaceProto {
-  required string spaceName = 1;
+  required string space_name = 1;
   repeated AlterTablespaceCommand command = 2;
 
   enum AlterTablespaceType {
@@ -311,23 +313,23 @@ message AlterTablespaceProto {
 }
 
 message AlterTableDescProto {
-  required string tableName = 1;
-  optional string newTableName = 2 ;
-  optional ColumnProto addColumn = 3;
-  optional AlterColumnProto alterColumnName = 4;
-  required AlterTableType alterTableType = 5;
-  optional PartitionDescProto partitionDesc = 6;
+  required string table_name = 1;
+  optional string new_table_name = 2 ;
+  optional ColumnProto add_column = 3;
+  optional AlterColumnProto alter_column_name = 4;
+  required AlterTableType alter_table_type = 5;
+  optional PartitionDescProto partition_desc = 6;
   optional KeyValueSetProto params = 7;
-  optional string newTablePath = 8;
+  optional string new_table_path = 8;
 }
 
 message AlterColumnProto {
-  required string oldColumnName = 1;
-  required string newColumnName = 2;
+  required string old_column_name = 1;
+  required string new_column_name = 2;
 }
 
 message UpdateTableStatsProto {
-  required string tableName = 1;
+  required string table_name = 1;
   required TableStatsProto stats = 2;
 }
 
@@ -355,12 +357,12 @@ message FunctionDescProto {
 message FunctionSignatureProto {
   required FunctionType type = 1;
   required string name = 2;
-  required DataType returnType = 3;
-  repeated DataType parameterTypes = 4;
+  required DataType return_type = 3;
+  repeated DataType parameter_types = 4;
 }
 
 message FunctionSupplementProto {
-  optional string shortDescription = 1;
+  optional string short_description = 1;
   optional string detail = 2;
   optional string example = 3;
 }
@@ -369,26 +371,26 @@ message FunctionInvocationProto {
   optional ClassBaseInvocationDescProto legacy = 1;
   optional StaticMethodInvocationDescProto scalar = 2;
   optional ClassBaseInvocationDescProto aggregation = 3;
-  optional StaticMethodInvocationDescProto scalarJIT = 4;
-  optional ClassBaseInvocationDescProto aggregationJIT = 5;
+  optional StaticMethodInvocationDescProto scalar_jit = 4;
+  optional ClassBaseInvocationDescProto aggregation_jit = 5;
   optional PythonInvocationDescProto python = 6;
 }
 
 message ClassBaseInvocationDescProto {
-  required string className = 1;
+  required string class_name = 1;
 }
 
 message StaticMethodInvocationDescProto {
-  required string className = 1;
-  required string methodName = 2;
-  required string returnClass = 3;
-  repeated string paramClasses = 4;
+  required string class_name = 1;
+  required string method_name = 2;
+  required string return_class = 3;
+  repeated string param_classes = 4;
 }
 
 message PythonInvocationDescProto {
-  required string funcName = 1;
-  required string filePath = 2;
-  required bool isScalarFunction = 3;
+  required string func_name = 1;
+  required string file_path = 2;
+  required bool is_scalar_function = 3;
 }
 
 message TableResponse {
@@ -408,12 +410,12 @@ message FunctionListResponse {
 
 message IndexListResponse {
   required ReturnState state = 1;
-  repeated IndexDescProto indexDesc = 2;
+  repeated IndexDescProto index_desc = 2;
 }
 
 message IndexResponse {
   required ReturnState state = 1;
-  optional IndexDescProto indexDesc = 2;
+  optional IndexDescProto index_desc = 2;
 }
 
 message PartitionListResponse {
