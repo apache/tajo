@@ -371,7 +371,7 @@ public class CheckMethodAdapter extends MethodVisitor {
      * {@link #CheckMethodAdapter(int,String,String,MethodVisitor,Map)}).
      * <i>Subclasses must not use this constructor</i>. Instead, they must use
      * the {@link #CheckMethodAdapter(int, MethodVisitor, Map)} version.
-     * 
+     *
      * @param mv
      *            the method visitor to which this adapter must delegate calls.
      */

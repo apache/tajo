@@ -84,7 +84,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     String className = EvalCodeGenerator.class.getPackage().getName() + ".CompiledEval" + getAndIncrementClassSeq();
     EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className),
         schema, classWriter, expr);
-    visit(context, expr, new Stack<EvalNode>());
+    visit(context, expr, new Stack<>());
     context.emitReturn();
 
     Class aClass = classLoader.defineClass(className, classWriter.toByteArray());

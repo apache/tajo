@@ -72,7 +72,7 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
     LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
     rewriter.init(context.getQueryContext());
-    rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
+    rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<>());
     return plan;
   }
 

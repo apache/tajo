@@ -45,7 +45,7 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
 
   private List<Deque<ExecutionBlock>> toStacks(ExecutionBlock root) {
     List<Deque<ExecutionBlock>> stacks = new ArrayList<>();
-    toStacks(root, stacks, new ArrayList<ExecutionBlock>());
+    toStacks(root, stacks, new ArrayList<>());
     return stacks;
   }
 
@@ -58,7 +58,7 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
     } else {
       List<ExecutionBlock> children = masterPlan.getChilds(current);
       for (int i = 0; i < children.size(); i++) {
-        toStacks(children.get(i), queues, i == 0 ? stack : new Stack<ExecutionBlock>());
+        toStacks(children.get(i), queues, i == 0 ? stack : new Stack<>());
       }
     }
   }

@@ -70,7 +70,7 @@ public class TestClusterResource extends QueryTestCaseBase {
   public void testGetCluster() throws Exception {
     Map<String, List<Object>> workerMap =
         restClient.target(clusterURI)
-        .request().get(new GenericType<Map<String, List<Object>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
     
     assertNotNull(workerMap);
     assertFalse(workerMap.isEmpty());

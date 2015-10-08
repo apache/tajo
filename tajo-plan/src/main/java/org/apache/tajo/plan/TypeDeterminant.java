@@ -51,7 +51,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   }
 
   public DataType determineDataType(LogicalPlanner.PlanContext ctx, Expr expr) throws TajoException {
-    return visit(ctx, new Stack<Expr>(), expr);
+    return visit(ctx, new Stack<>(), expr);
   }
 
   @Override

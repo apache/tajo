@@ -68,7 +68,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
   @Override
   public LogicalNode process(PlanContext context, Expr expr) throws TajoException {
-    return processor.visit(context, new Stack<Expr>(), expr);
+    return processor.visit(context, new Stack<>(), expr);
   }
   
   static class Processor extends BaseAlgebraVisitor<PlanContext, LogicalNode> {
@@ -345,13 +345,13 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         throws TajoException {
       LogicalPlan.QueryBlock leftBlock = ctx.getPlan().newQueryBlock();
       LogicalPlanner.PlanContext leftContext = new LogicalPlanner.PlanContext(ctx, leftBlock);
-      LogicalNode leftChild = visit(leftContext, new Stack<Expr>(), expr.getLeft());
+      LogicalNode leftChild = visit(leftContext, new Stack<>(), expr.getLeft());
       leftBlock.setRoot(leftChild);
       ctx.getQueryBlock().registerExprWithNode(expr.getLeft(), leftChild);
 
       LogicalPlan.QueryBlock rightBlock = ctx.getPlan().newQueryBlock();
       LogicalPlanner.PlanContext rightContext = new LogicalPlanner.PlanContext(ctx, rightBlock);
-      LogicalNode rightChild = visit(rightContext, new Stack<Expr>(), expr.getRight());
+      LogicalNode rightChild = visit(rightContext, new Stack<>(), expr.getRight());
       rightBlock.setRoot(rightChild);
       ctx.getQueryBlock().registerExprWithNode(expr.getRight(), rightChild);
 
@@ -571,7 +571,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       public static void normalize(LogicalPlanner.PlanContext context, Expr expr) throws TajoException {
         NameRefInSelectListNormalizer normalizer = new NameRefInSelectListNormalizer();
-        normalizer.visit(context,new Stack<Expr>(), expr);
+        normalizer.visit(context, new Stack<>(), expr);
       }
 
       @Override

@@ -37,9 +37,9 @@ public class ReflectionUtil {
    * CONF_CONSTRUCTOR_CACHE keeps classes which have one constructor to take TajoConf.
    */
   private static final Map<Class<?>, Constructor<?>> EMPTY_CONSTRUCTOR_CACHE =
-      new ConcurrentHashMap<Class<?>, Constructor<?>>();
+          new ConcurrentHashMap<>();
   private static final Map<Class<?>, Constructor<?>> CONF_CONSTRUCTOR_CACHE =
-      new ConcurrentHashMap<Class<?>, Constructor<?>>();
+          new ConcurrentHashMap<>();
 
   /**
    * Initialize an instance by a given class

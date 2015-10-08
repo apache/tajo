@@ -44,6 +44,9 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1909: Eliminate remained explicit diamond expressions.
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
     TAJO-1844: Eliminate explicit diamond expressions. 
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
