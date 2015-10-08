@@ -36,7 +36,6 @@ import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -71,10 +70,8 @@ public class AvroAppender extends FileAppender {
    */
   public void init() throws IOException {
     FileSystem fs = path.getFileSystem(conf);
-    if (!fs.exists(path.getParent())) {
-      throw new FileNotFoundException(path.toString());
-    }
-    FSDataOutputStream outputStream = fs.create(path);
+
+    FSDataOutputStream outputStream = fs.create(path, false);
 
     avroSchema = AvroUtil.getAvroSchema(meta, conf);
     avroFields = avroSchema.getFields();

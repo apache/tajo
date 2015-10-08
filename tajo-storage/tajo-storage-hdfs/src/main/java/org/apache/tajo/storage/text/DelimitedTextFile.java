@@ -39,7 +39,6 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
-import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
 import org.apache.tajo.unit.StorageUnit;
@@ -47,7 +46,6 @@ import org.apache.tajo.util.ReflectionUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -133,10 +131,6 @@ public class DelimitedTextFile {
 
     @Override
     public void init() throws IOException {
-      if (!fs.exists(path.getParent())) {
-        throw new FileNotFoundException(path.toString());
-      }
-
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
       }
@@ -163,19 +157,12 @@ public class DelimitedTextFile {
         String extension = codec.getDefaultExtension();
         compressedPath = path.suffix(extension);
 
-        if (fs.exists(compressedPath)) {
-          throw new AlreadyExistsStorageException(compressedPath);
-        }
-
-        fos = fs.create(compressedPath);
+        fos = fs.create(compressedPath, false);
         deflateFilter = codec.createOutputStream(fos, compressor);
         outputStream = new DataOutputStream(deflateFilter);
 
       } else {
-        if (fs.exists(path)) {
-          throw new AlreadyExistsStorageException(path);
-        }
-        fos = fs.create(path);
+        fos = fs.create(path, false);
         outputStream = new DataOutputStream(new BufferedOutputStream(fos));
       }
 

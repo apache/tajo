@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.tajo.BuiltinStorages;
@@ -57,6 +58,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class TestStorages {
@@ -1152,6 +1154,43 @@ public class TestStorages {
 
     if (internalType){
       OldStorageManager.clearCache();
+    }
+  }
+
+  @Test
+  public void testFileAlreadyExists() throws IOException {
+
+    if (internalType) return;
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("score", Type.FLOAT4);
+
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+          TEST_PROJECTION_AVRO_SCHEMA);
+    }
+
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Path tablePath = new Path(testDir, "testFileAlreadyExists.data");
+
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.init();
+    appender.close();
+
+    try {
+      appender = sm.getAppender(meta, schema, tablePath);
+      appender.init();
+      if (BuiltinStorages.ORC.equals(dataFormat)) {
+        appender.close();
+      }
+      fail(dataFormat);
+    } catch (IOException e) {
+    } finally {
+      IOUtils.cleanup(null, appender);
     }
   }
 }
