@@ -1117,7 +1117,9 @@ public class TestStorages {
 
   @Test
   public void testDateTextHandling() throws Exception {
-    if (!dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO) ||
+            dataFormat.equalsIgnoreCase(BuiltinStorages.RAW) ||
+            dataFormat.equalsIgnoreCase(BuiltinStorages.DRAW)) {
       return;
     }
 
