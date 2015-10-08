@@ -62,17 +62,17 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     return "Self-describing schema build phase";
   }
 
-  private static String getQualifiedRelationName(PlanContext context, Relation relation) {
-    return CatalogUtil.isFQTableName(relation.getName()) ?
-        relation.getName() :
-        CatalogUtil.buildFQName(context.getQueryContext().get(SessionVars.CURRENT_DATABASE), relation.getName());
+  private static String getQualifiedName(PlanContext context, String simpleName) {
+    return CatalogUtil.isFQTableName(simpleName) ?
+        simpleName :
+        CatalogUtil.buildFQName(context.getQueryContext().get(SessionVars.CURRENT_DATABASE), simpleName);
   }
 
   @Override
   public boolean isEligible(PlanContext context, Expr expr) throws TajoException {
     Set<Relation> relations = ExprFinderIncludeSubquery.finds(expr, OpType.Relation);
     for (Relation eachRelation : relations) {
-      TableDesc tableDesc = catalog.getTableDesc(getQualifiedRelationName(context, eachRelation));
+      TableDesc tableDesc = catalog.getTableDesc(getQualifiedName(context, eachRelation.getName()));
       if (tableDesc.hasEmptySchema()) {
         return true;
       }
@@ -94,7 +94,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public static <T extends Expr> Set<T> finds(Expr expr, OpType type) throws TajoException {
       FinderContext<T> context = new FinderContext<>(type);
       ExprFinderIncludeSubquery finder = new ExprFinderIncludeSubquery();
-      finder.visit(context, new Stack<Expr>(), expr);
+      finder.visit(context, new Stack<>(), expr);
       return context.set;
     }
 
@@ -138,7 +138,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     if (processor == null) {
       processor = new Processor();
     }
-    return processor.visit(new ProcessorContext(context), new Stack<Expr>(), expr);
+    return processor.visit(new ProcessorContext(context), new Stack<>(), expr);
   }
 
   static class ProcessorContext {
@@ -361,19 +361,29 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       TableDesc desc = scan.getTableDesc();
 
       if (desc.hasEmptySchema()) {
-        if (ctx.projectColumns.containsKey(getQualifiedRelationName(ctx.planContext, expr))) {
-          Set<Column> columns = new HashSet<>();
-          for (ColumnReferenceExpr col : ctx.projectColumns.get(getQualifiedRelationName(ctx.planContext, expr))) {
+        Set<Column> columns = new HashSet<>();
+        if (ctx.projectColumns.containsKey(getQualifiedName(ctx.planContext, expr.getName()))) {
+          for (ColumnReferenceExpr col : ctx.projectColumns.get(getQualifiedName(ctx.planContext, expr.getName()))) {
             columns.add(NameResolver.resolve(plan, queryBlock, col, NameResolvingMode.RELS_ONLY, true));
           }
+        }
 
-          desc.setSchema(buildSchemaFromColumnSet(columns));
-          scan.init(desc);
-        } else {
+        if (expr.hasAlias()) {
+          if (ctx.projectColumns.containsKey(getQualifiedName(ctx.planContext, expr.getAlias()))) {
+            for (ColumnReferenceExpr col : ctx.projectColumns.get(getQualifiedName(ctx.planContext, expr.getAlias()))) {
+              columns.add(NameResolver.resolve(plan, queryBlock, col, NameResolvingMode.RELS_ONLY, true));
+            }
+          }
+        }
+
+        if (columns.isEmpty()) {
           // error
           throw new TajoInternalError(
-              "Columns projected from " + getQualifiedRelationName(ctx.planContext, expr) + " is not found.");
+              "Columns projected from " + getQualifiedName(ctx.planContext, expr.getName()) + " is not found.");
         }
+
+        desc.setSchema(buildSchemaFromColumnSet(columns));
+        scan.init(desc);
       }
 
       return scan;

@@ -978,6 +978,9 @@ Release 0.10.0 - Released
 
   BUG FIXES
 
+    TAJO-1912: Selection from aliased schemaless tables throws an error.
+    (jihoon)
+
     TAJO-1356: Race conditions in QueryInProgress. (jinho)
 
     TAJO-1277: GreedyHeuristicJoinOrderAlgorithm sometimes wrongly assumes 
