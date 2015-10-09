@@ -94,7 +94,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     public static <T extends Expr> Set<T> finds(Expr expr, OpType type) throws TajoException {
       FinderContext<T> context = new FinderContext<>(type);
       ExprFinderIncludeSubquery finder = new ExprFinderIncludeSubquery();
-      finder.visit(context, new Stack<>(), expr);
+      finder.visit(context, new Stack<Expr>(), expr);
       return context.set;
     }
 
@@ -138,7 +138,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     if (processor == null) {
       processor = new Processor();
     }
-    return processor.visit(new ProcessorContext(context), new Stack<>(), expr);
+    return processor.visit(new ProcessorContext(context), new Stack<Expr>(), expr);
   }
 
   static class ProcessorContext {
@@ -403,7 +403,17 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       Set<ColumnVertex> rootVertexes = new HashSet<>();
       Schema schema = new Schema();
 
-      for (Column eachColumn : columns) {
+      Set<Column> simpleColumns = new HashSet<>();
+      List<Column> columnList = new ArrayList<>(columns);
+      Collections.sort(columnList, new Comparator<Column>() {
+        @Override
+        public int compare(Column c1, Column c2) {
+          return c2.getSimpleName().split(NestedPathUtil.PATH_DELIMITER).length -
+              c1.getSimpleName().split(NestedPathUtil.PATH_DELIMITER).length;
+        }
+      });
+
+      for (Column eachColumn : columnList) {
         String simpleName = eachColumn.getSimpleName();
         if (NestedPathUtil.isPath(simpleName)) {
           String[] paths = simpleName.split(NestedPathUtil.PATH_DELIMITER);
@@ -413,24 +423,26 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
               parentName = CatalogUtil.buildFQName(eachColumn.getQualifier(), parentName);
             }
             // Leaf column type is TEXT; otherwise, RECORD.
-            Type childDataType = (i == paths.length-2) ? Type.TEXT : Type.RECORD;
+            ColumnVertex childVertex = new ColumnVertex(
+                paths[i+1],
+                StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+2),
+                Type.RECORD
+            );
+            if (i == paths.length - 2 && !schemaGraph.hasVertex(childVertex)) {
+              childVertex = new ColumnVertex(childVertex.name, childVertex.path, Type.TEXT);
+            }
+
             ColumnVertex parentVertex = new ColumnVertex(
                 parentName,
                 StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+1),
                 Type.RECORD);
-            schemaGraph.addEdge(
-                new ColumnEdge(
-                    new ColumnVertex(
-                        paths[i+1],
-                        StringUtils.join(paths, NestedPathUtil.PATH_DELIMITER, 0, i+2), childDataType
-                    ),
-                    parentVertex));
+            schemaGraph.addEdge(new ColumnEdge(childVertex, parentVertex));
             if (i == 0) {
               rootVertexes.add(parentVertex);
             }
           }
         } else {
-          schema.addColumn(eachColumn);
+          simpleColumns.add(eachColumn);
         }
       }
 
@@ -439,6 +451,13 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       for (ColumnVertex eachRoot : rootVertexes) {
         schemaGraph.accept(eachRoot, builder);
         schema.addColumn(eachRoot.column);
+      }
+
+      // Add simple columns
+      for (Column eachColumn : simpleColumns) {
+        if (!schema.contains(eachColumn)) {
+          schema.addColumn(eachColumn);
+        }
       }
 
       return schema;
@@ -461,7 +480,6 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         if (o instanceof ColumnVertex) {
           ColumnVertex other = (ColumnVertex) o;
           return this.name.equals(other.name) &&
-              this.type.equals(other.type) &&
               this.path.equals(other.path);
         }
         return false;
@@ -469,7 +487,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       @Override
       public int hashCode() {
-        return Objects.hashCode(name, type, path);
+        return Objects.hashCode(name, path);
       }
     }
 
@@ -486,6 +504,10 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     private static class SchemaGraph extends SimpleDirectedGraph<ColumnVertex, ColumnEdge> {
       public void addEdge(ColumnEdge edge) {
         this.addEdge(edge.child, edge.parent, edge);
+      }
+
+      public boolean hasVertex(ColumnVertex vertex) {
+        return this.directedEdges.containsKey(vertex) || this.reversedEdges.containsKey(vertex);
       }
     }
 
