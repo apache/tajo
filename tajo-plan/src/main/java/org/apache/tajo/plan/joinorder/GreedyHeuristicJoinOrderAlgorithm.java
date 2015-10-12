@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.algebra.Projection;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
