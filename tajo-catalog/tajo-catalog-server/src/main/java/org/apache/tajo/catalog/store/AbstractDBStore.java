@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.*;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.plan.expr.*;
@@ -2334,7 +2335,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
               pstmt.setDate(currentIndex, (Date) parameter.getSecond());
               break;
             case TIMESTAMP:
-              pstmt.setTimestamp(currentIndex, (Timestamp) parameter.getSecond());
+              pstmt.setString(currentIndex, ((TimestampDatum) parameter.getSecond()).asChars());
               break;
             case TIME:
               pstmt.setTime(currentIndex, (Time) parameter.getSecond());

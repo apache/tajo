@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.*;
 import org.apache.tajo.datum.TimeDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.ExprAnnotator;
@@ -150,8 +151,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       DateTimeUtil.toUTCTimezone(tm, tz);
 
       sb.append("?").append(" )");
-      Timestamp timestamp = new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
-      parameters.add(new Pair(Type.TIMESTAMP, timestamp));
+      parameters.add(new Pair(Type.TIMESTAMP, new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm))));
     } else {
       sb.append("\"").append(expr.toString()).append("\"");
     }

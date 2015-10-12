@@ -1542,6 +1542,19 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
+    // IN
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key IN ( to_date('1994-02-02', 'YYYY-MM-DD'), to_date('1993-11-09', 'YYYY-MM-DD')) order by col1, " +
+      "col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02\n" +
+      "3,3,1993-11-09\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
@@ -1605,6 +1618,19 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "-------------------------------\n" +
       "1,1,1996-04-12 00:00:00\n" +
       "1,1,1996-03-13 00:00:00\n" +
+      "3,2,1994-02-02 00:00:00\n" +
+      "3,3,1993-11-09 00:00:00\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // IN
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key IN (to_timestamp('1994-02-02', 'YYYY-MM-DD'), to_timestamp('1993-11-09', 'YYYY-MM-DD')) " +
+      " order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
       "3,2,1994-02-02 00:00:00\n" +
       "3,3,1993-11-09 00:00:00\n";
 
@@ -1685,6 +1711,18 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "1,1,11:20:40\n" +
       "2,2,12:10:20\n" +
       "3,2,12:10:30\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    // IN
+    res = executeString("SELECT * FROM " + tableName
+      + " WHERE key IN (cast('11:20:40' as time), cast('12:10:20' as time)) order by col1, col2, key desc");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,11:20:40\n" +
+      "2,2,12:10:20\n";
 
     assertEquals(expectedResult, resultSetToString(res));
     res.close();
