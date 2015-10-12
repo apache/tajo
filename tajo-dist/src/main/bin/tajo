@@ -272,13 +272,13 @@ fi
 
 HIVE_CONF=$HIVE_HOME/conf
 
-if [ -d ${HIVE_CONF} ]; then
+if [ -d ${HIVE_HOME} ] && [ -d ${HIVE_CONF} ]; then
   CLASSPATH=${HIVE_CONF}:${CLASSPATH}
 fi
 
 HIVE_LIB=$HIVE_HOME/lib
 
-if [ -d ${HIVE_LIB} ]; then
+if [ -d ${HIVE_HOME} ] && [ -d ${HIVE_LIB} ]; then
 
   for f in ${HIVE_LIB}/hive-*.jar; do
     CLASSPATH=${CLASSPATH}:$f;
