@@ -22,13 +22,13 @@ import org.apache.commons.collections.map.LRUMap;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 public class JoinGraphContext {
-  private Set<JoinVertex> rootVertexes = TUtil.newHashSet(); // most left vertex in the join plan
+  private Set<JoinVertex> rootVertexes = new HashSet<>(); // most left vertex in the join plan
   private JoinGraph joinGraph = new JoinGraph();
 
   // New join edges are frequently created during join order optimization.
@@ -37,10 +37,10 @@ public class JoinGraphContext {
 
   // candidate predicates contain the predicates which are not pushed to any join nodes yet.
   // evaluated predicates contain the predicates which are already pushed to some join nodes.
-  private Set<EvalNode> candidateJoinConditions = TUtil.newHashSet(); // predicates from the on clause
-  private Set<EvalNode> candidateJoinFilters = TUtil.newHashSet();    // predicates from the where clause
-  private Set<EvalNode> evaluatedJoinConditions = TUtil.newHashSet(); // predicates from the on clause
-  private Set<EvalNode> evaluatedJoinFilters = TUtil.newHashSet();    // predicates from the where clause
+  private Set<EvalNode> candidateJoinConditions = new HashSet<>(); // predicates from the on clause
+  private Set<EvalNode> candidateJoinFilters = new HashSet<>();    // predicates from the where clause
+  private Set<EvalNode> evaluatedJoinConditions = new HashSet<>(); // predicates from the on clause
+  private Set<EvalNode> evaluatedJoinFilters = new HashSet<>();    // predicates from the where clause
 
   public JoinGraph getJoinGraph() {
     return joinGraph;

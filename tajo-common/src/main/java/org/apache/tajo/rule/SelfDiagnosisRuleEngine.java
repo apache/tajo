@@ -18,13 +18,7 @@
 
 package org.apache.tajo.rule;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
-
-import org.apache.tajo.util.TUtil;
+import java.util.*;
 
 public class SelfDiagnosisRuleEngine {
 
@@ -32,7 +26,7 @@ public class SelfDiagnosisRuleEngine {
   private static volatile SelfDiagnosisRuleEngine instance;
   
   private SelfDiagnosisRuleEngine() {
-    wrapperMap = TUtil.newHashMap();
+    wrapperMap = new HashMap<>();
     loadPredefinedRules();
   }
   
@@ -69,7 +63,7 @@ public class SelfDiagnosisRuleEngine {
         Map<String, RuleWrapper> categoryMap = wrapperMap.get(wrapper.getCategoryName());
 
         if (categoryMap == null) {
-          categoryMap = TUtil.newHashMap();
+          categoryMap = new HashMap<>();
           wrapperMap.put(wrapper.getCategoryName(), categoryMap);
         }
 

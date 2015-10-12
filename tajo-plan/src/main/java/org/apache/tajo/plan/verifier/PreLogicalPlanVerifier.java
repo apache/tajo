@@ -30,10 +30,10 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.util.ExprFinder;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.validation.ConstraintViolation;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
@@ -84,7 +84,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   public Expr visitProjection(Context context, Stack<Expr> stack, Projection expr) throws TajoException {
     super.visitProjection(context, stack, expr);
 
-    Set<String> names = TUtil.newHashSet();
+    Set<String> names = new HashSet<>();
 
     for (NamedExpr namedExpr : expr.getNamedExprs()) {
 

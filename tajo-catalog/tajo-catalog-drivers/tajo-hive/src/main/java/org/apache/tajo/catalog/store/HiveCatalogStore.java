@@ -725,7 +725,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       partition.setDbName(databaseName);
       partition.setTableName(tableName);
 
-      Map<String, String> params = TUtil.newHashMap();
+      Map<String, String> params = new HashMap<>();
       params.put(StatsSetupConst.TOTAL_SIZE, Long.toString(partitionDescProto.getNumBytes()));
       partition.setParameters(params);
 

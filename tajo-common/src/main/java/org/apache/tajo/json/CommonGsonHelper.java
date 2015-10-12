@@ -25,9 +25,9 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 
 public class CommonGsonHelper {
@@ -38,7 +38,7 @@ public class CommonGsonHelper {
   }
 
 	private static Map<Type, GsonSerDerAdapter> registerAdapters() {
-    Map<Type, GsonSerDerAdapter> adapters = TUtil.newHashMap();
+    Map<Type, GsonSerDerAdapter> adapters = new HashMap<>();
     adapters.put(Datum.class, new DatumAdapter());
 
     return adapters;

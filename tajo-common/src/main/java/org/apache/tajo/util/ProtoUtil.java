@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.common.ProtoObject;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,7 +47,7 @@ public class ProtoUtil {
   }
 
   public static Map<String, String> convertToMap(KeyValueSetProto proto) {
-    Map<String, String> keyVals = TUtil.newHashMap();
+    Map<String, String> keyVals = new HashMap<>();
     for(KeyValueProto keyval : proto.getKeyvalList()) {
       keyVals.put(keyval.getKey(), keyval.getValue());
     }
