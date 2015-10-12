@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.algebra.Projection;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
@@ -236,8 +237,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
   private static JoinEdge swapLeftAndRightIfNecessary(JoinEdge edge) {
     if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
-      double leftCost = getCost(edge.getLeftVertex());
-      double rightCost = getCost(edge.getRightVertex());
+      double leftCost = getCostWithVertex(edge.getLeftVertex());
+      double rightCost = getCostWithVertex(edge.getRightVertex());
       if (leftCost < rightCost) {
         return new JoinEdge(edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
       } else if (leftCost == rightCost) {
@@ -393,18 +394,18 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           break;
       }
       // cost = estimated input size * filter factor * (output tuple width / input tuple width)
-      cost = getCost(joinEdge.getLeftVertex()) *
-          getCost(joinEdge.getRightVertex()) * factor;
+      cost = getCostWithVertex(joinEdge.getLeftVertex()) *
+          getCostWithVertex(joinEdge.getRightVertex()) * factor;
     } else {
       // make cost bigger if cross join
-      cost = Math.pow(getCost(joinEdge.getLeftVertex()) *
-          getCost(joinEdge.getRightVertex()), 2);
+      cost = Math.pow(getCostWithVertex(joinEdge.getLeftVertex()) *
+          getCostWithVertex(joinEdge.getRightVertex()), 2);
     }
 
     return checkInfinity(cost * COMPUTATION_FACTOR);
   }
 
-  public static double getCost(JoinVertex joinVertex) {
+  public static double getCostWithVertex(JoinVertex joinVertex) {
     double cost;
     if (joinVertex instanceof RelationVertex) {
       cost = getCost(((RelationVertex) joinVertex).getRelationNode());
@@ -437,7 +438,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     case PROJECTION:
       ProjectionNode projectionNode = (ProjectionNode) node;
-      cost = getCost((LogicalNode) projectionNode.getChild());
+      cost = getCost(projectionNode.getChild());
       break;
 
     case JOIN:
@@ -446,17 +447,17 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (joinNode.hasJoinQual()) {
         filterFactor = Math.pow(DEFAULT_SELECTION_FACTOR,
             AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()).length);
-        cost = getCost((LogicalNode)joinNode.getLeftChild()) *
-            getCost((LogicalNode)joinNode.getRightChild()) * filterFactor;
+        cost = getCost(joinNode.getLeftChild()) *
+            getCost(joinNode.getRightChild()) * filterFactor;
       } else {
-        cost = Math.pow(getCost((LogicalNode)joinNode.getLeftChild()) *
-            getCost((LogicalNode)joinNode.getRightChild()), 2);
+        cost = Math.pow(getCost(joinNode.getLeftChild()) *
+            getCost(joinNode.getRightChild()), 2);
       }
       break;
 
     case SELECTION:
       SelectionNode selectionNode = (SelectionNode) node;
-      cost = getCost((LogicalNode)selectionNode.getChild()) *
+      cost = getCost(selectionNode.getChild()) *
           Math.pow(DEFAULT_SELECTION_FACTOR, AlgebraicUtil.toConjunctiveNormalFormArray(selectionNode.getQual()).length);
       break;
 
@@ -476,8 +477,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     case UNION:
       UnionNode unionNode = (UnionNode) node;
-      cost = getCost((LogicalNode)unionNode.getLeftChild()) +
-          getCost((LogicalNode)unionNode.getRightChild());
+      cost = getCost(unionNode.getLeftChild()) +
+          getCost(unionNode.getRightChild());
       break;
 
     case EXCEPT:
@@ -487,7 +488,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     default:
       // all binary operators (join, union, except, and intersect) are handled in the above cases.
       // So, we need to handle only unary nodes in default.
-      cost = getCost((LogicalNode)((UnaryNode) node).getChild());
+      cost = getCost(((UnaryNode) node).getChild());
       break;
     }
 
