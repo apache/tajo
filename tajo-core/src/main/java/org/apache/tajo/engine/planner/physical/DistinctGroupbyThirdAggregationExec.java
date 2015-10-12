@@ -91,7 +91,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       }
       resultTupleLength += eachGroupby.getAggFunctions().length;
     }
-    aggregators = aggregatorList.toArray(new DistinctFinalAggregator[]{});
+    aggregators = aggregatorList.toArray(new DistinctFinalAggregator[aggregatorList.size()]);
     outTuple = new VTuple(resultTupleLength);
 
     // make output schema mapping index

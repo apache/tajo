@@ -262,6 +262,6 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
       }
     }
 
-    return shuffleKeyColumns.toArray(new Column[]{});
+    return shuffleKeyColumns.toArray(new Column[shuffleKeyColumns.size()]);
   }
 }
