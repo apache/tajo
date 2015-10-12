@@ -202,7 +202,7 @@ public class BytesUtils {
   }
   
   public static byte[][] splitTrivial(byte[] value, byte delimiter) {
-    List<byte[]> split = new ArrayList<byte[]>();
+    List<byte[]> split = new ArrayList<>();
     int prev = 0;
     for (int i = 0; i < value.length; i++) {
       if (value[i] == delimiter) {

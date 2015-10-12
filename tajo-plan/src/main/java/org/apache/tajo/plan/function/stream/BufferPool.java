@@ -27,7 +27,6 @@ import io.netty.util.internal.PlatformDependent;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.util.CommonTestingUtil;
 
 import java.lang.reflect.Field;
 

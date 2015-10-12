@@ -20,7 +20,6 @@ package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
 import org.apache.tajo.json.GsonObject;

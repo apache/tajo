@@ -33,7 +33,7 @@ import java.util.Stack;
  *
  */
 public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
-  private Stack<Expr> exprs = new Stack<Expr>();
+  private Stack<Expr> exprs = new Stack<>();
 
   private String tableName;
 

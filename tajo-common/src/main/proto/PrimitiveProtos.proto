@@ -58,7 +58,7 @@ message KeyValueSetProto {
 
 message ReturnState {
   required tajo.error.ResultCode return_code  = 1;
-  optional string message                     = 2;
+  optional string message = 2;
   optional tajo.error.StackTrace stack_trace  = 3;
 }
 

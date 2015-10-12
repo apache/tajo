@@ -24,8 +24,6 @@ import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.sql.ResultSet;
-
 @Category(IntegrationTest.class)
 public class TestCommonConditionReduce extends QueryTestCaseBase {
 

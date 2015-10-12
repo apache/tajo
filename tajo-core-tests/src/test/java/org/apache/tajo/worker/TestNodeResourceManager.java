@@ -27,13 +27,14 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.util.List;
 import java.util.Queue;
@@ -43,6 +44,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.apache.tajo.ResourceProtos.*;
 import static org.junit.Assert.*;
 public class TestNodeResourceManager {
+
+  @Rule
+  public TestName name = new TestName();
 
   private MockNodeResourceManager resourceManager;
   private NodeStatusUpdater statusUpdater;
@@ -55,6 +59,14 @@ public class TestNodeResourceManager {
   private CompositeService service;
   private int taskMemory;
   private TajoConf conf;
+
+  private static boolean enableEbCreateFailure(String testName) {
+    if (testName.equals("testResourceDeallocateWithEbCreateFailure")) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 
   @Before
   public void setup() {
@@ -107,6 +119,10 @@ public class TestNodeResourceManager {
     taskExecutor = new MockTaskExecutor(new Semaphore(0), workerContext);
     resourceManager = new MockNodeResourceManager(new Semaphore(0), dispatcher, workerContext);
     statusUpdater = new MockNodeStatusUpdater(new CountDownLatch(0), workerContext);
+
+    if (enableEbCreateFailure(name.getMethodName())) {
+      ((MockTaskManager)taskManager).enableEbCreateFailure();
+    }
 
     service = new CompositeService("MockService") {
       @Override
@@ -236,7 +252,6 @@ public class TestNodeResourceManager {
 
     List<Future> futureList = Lists.newArrayList();
 
-    long startTime = System.currentTimeMillis();
     for (int i = 0; i < parallelCount; i++) {
       futureList.add(executor.submit(new Runnable() {
             @Override
@@ -277,5 +292,26 @@ public class TestNodeResourceManager {
 
     executor.shutdown();
     assertEquals(taskSize, totalComplete.get());
+  }
+
+  @Test
+  public void testResourceDeallocateWithEbCreateFailure() throws Exception {
+    final int taskSize = 10;
+    resourceManager.setTaskHandlerEvent(true);
+
+    final ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
+    final Queue<TaskAllocationProto>
+        totalTasks = MockNodeResourceManager.createTaskRequests(ebId, taskMemory, taskSize);
+
+    TaskAllocationProto task = totalTasks.poll();
+    BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
+    requestProto.addTaskRequest(task);
+    requestProto.setExecutionBlockId(ebId.getProto());
+    CallFuture<BatchAllocationResponse> callFuture = new CallFuture<>();
+    dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
+    assertTrue(callFuture.get().getCancellationTaskCount() == 0);
+
+    Thread.sleep(2000); // wait for resource deallocation
+    assertEquals(resourceManager.getTotalResource(), resourceManager.getAvailableResource());
   }
 }

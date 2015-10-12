@@ -32,9 +32,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.expr.AlgebraicUtil;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
@@ -122,7 +119,7 @@ public class LogicalOptimizer {
 
       JoinTargetCollector collector = new JoinTargetCollector();
       Set<Target> targets = new LinkedHashSet<>();
-      collector.visitJoin(targets, plan, block, old, new Stack<LogicalNode>());
+      collector.visitJoin(targets, plan, block, old, new Stack<>());
 
       if (targets.size() == 0) {
         newJoinNode.setTargets(PlannerUtil.schemaToTargets(old.getOutSchema()));
@@ -463,7 +460,7 @@ public class LogicalOptimizer {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostLeft = true;
     RelationNodeFinder finder = new RelationNodeFinder();
-    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    finder.visit(context, plan, block, from, new Stack<>());
     return context.founds.isEmpty() ? null : context.founds.iterator().next();
   }
 
@@ -481,7 +478,7 @@ public class LogicalOptimizer {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostRight = true;
     RelationNodeFinder finder = new RelationNodeFinder();
-    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
+    finder.visit(context, plan, block, from, new Stack<>());
     return context.founds.isEmpty() ? null : context.founds.iterator().next();
   }
 

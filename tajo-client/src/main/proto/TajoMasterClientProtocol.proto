@@ -35,7 +35,8 @@ service TajoMasterClientProtocolService {
   // Session APIs
   rpc createSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc removeSession(SessionIdProto) returns (ReturnState);
-  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (SessionUpdateResponse);
+  rpc updateSessionVariables(UpdateSessionVariableRequest)
+      returns (SessionUpdateResponse);
   rpc existSessionVariable(SessionedStringProto) returns (ReturnState);
   rpc getSessionVariable(SessionedStringProto) returns (StringResponse);
   rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetResponse);
@@ -44,7 +45,8 @@ service TajoMasterClientProtocolService {
   rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
   rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
-  rpc getQueryResultData(GetQueryResultDataRequest) returns (GetQueryResultDataResponse);
+  rpc getQueryResultData(GetQueryResultDataRequest)
+      returns (GetQueryResultDataResponse);
 
   // Query And Resource Management APIs
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
@@ -70,7 +72,8 @@ service TajoMasterClientProtocolService {
   rpc getTableList(SessionedStringProto) returns (StringListResponse);
   rpc getTableDesc(SessionedStringProto) returns (TableResponse);
   rpc getFunctionList(SessionedStringProto) returns (FunctionListResponse);
-  rpc getPartitionsByTableName(SessionedStringProto) returns (PartitionListResponse);
+  rpc getPartitionsByTableName(SessionedStringProto)
+      returns (PartitionListResponse);
 
   // Index Management APIs
   rpc getIndexWithName(SessionedStringProto) returns (IndexResponse);

@@ -56,7 +56,7 @@ public class TestRepartitioner {
 
     Map<Integer, List<IntermediateEntry>> intermediateEntries = new HashMap<>();
     for (int i = 0; i < numPartition; i++) {
-      intermediateEntries.put(i, new ArrayList<IntermediateEntry>());
+      intermediateEntries.put(i, new ArrayList<>());
     }
     for (int i = 0; i < 1000; i++) {
       int partitionId = i % numPartition;

@@ -19,7 +19,6 @@
 package org.apache.tajo.catalog.store;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.exception.TajoException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

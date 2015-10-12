@@ -108,7 +108,7 @@ public class TestQueryResource extends QueryTestCaseBase {
     GetSubmitQueryResponse response = restClient.target(queriesURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
         .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
-            new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+                new GenericType<>(GetSubmitQueryResponse.class));
 
     assertNotNull(response);
     assertEquals(ResultCode.OK, response.getResultCode());
@@ -121,7 +121,7 @@ public class TestQueryResource extends QueryTestCaseBase {
     assertTrue(queryId != null && !queryId.isEmpty());
     
     Map<String, List<StringMap>> queriesMap = restClient.target(queriesURI)
-        .request().get(new GenericType<Map<String, List<StringMap>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
     
     assertNotNull(queriesMap);
     
@@ -146,7 +146,7 @@ public class TestQueryResource extends QueryTestCaseBase {
     GetSubmitQueryResponse response = restClient.target(queriesURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
         .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
-            new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+                new GenericType<>(GetSubmitQueryResponse.class));
 
     assertNotNull(response);
     assertEquals(ResultCode.OK, response.getResultCode());
@@ -162,7 +162,7 @@ public class TestQueryResource extends QueryTestCaseBase {
         .path("/{queryId}")
         .resolveTemplate("queryId", queryId)
         .queryParam("print", "BRIEF")
-        .request().get(new GenericType<QueryInfo>(QueryInfo.class));
+        .request().get(new GenericType<>(QueryInfo.class));
     
     assertNotNull(queryInfo);
     assertEquals(queryId, queryInfo.getQueryIdStr());
@@ -176,7 +176,7 @@ public class TestQueryResource extends QueryTestCaseBase {
     GetSubmitQueryResponse response = restClient.target(queriesURI)
       .request().header(tajoSessionIdHeaderName, sessionId)
       .post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
-          new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+              new GenericType<>(GetSubmitQueryResponse.class));
 
     assertNotNull(response);
     assertEquals(ResultCode.OK, response.getResultCode());
@@ -191,7 +191,7 @@ public class TestQueryResource extends QueryTestCaseBase {
     QueryInfo queryInfo = restClient.target(queriesURI)
       .path("/{queryId}")
       .resolveTemplate("queryId", queryId)
-      .request().get(new GenericType<QueryInfo>(QueryInfo.class));
+      .request().get(new GenericType<>(QueryInfo.class));
 
     assertNotNull(queryInfo);
     assertEquals(queryId, queryInfo.getQueryIdStr());

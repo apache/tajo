@@ -181,7 +181,7 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
                                         TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     context.depth++;
     stack.push(node);
-    visit(context, plan, block, node.getSubQuery(), new Stack<LogicalNode>());
+    visit(context, plan, block, node.getSubQuery(), new Stack<>());
     stack.pop();
     context.depth--;
     context.add(context.depth, node.getPlanString());

@@ -15,8 +15,6 @@
  */
 package org.apache.tajo.maven.plugin.versioninfo;
 
-import org.apache.tajo.maven.plugin.util.Exec;
-import org.apache.tajo.maven.plugin.util.FileSetUtils;
 import org.apache.maven.model.FileSet;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;

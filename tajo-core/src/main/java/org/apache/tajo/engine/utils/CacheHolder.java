@@ -19,13 +19,10 @@
 package org.apache.tajo.engine.utils;
 
 import org.apache.tajo.QueryId;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.planner.physical.TupleList;
 import org.apache.tajo.engine.planner.physical.TupleMap;
-import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.worker.TaskAttemptContext;
 

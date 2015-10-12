@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.function.window;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;

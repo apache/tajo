@@ -569,15 +569,13 @@ public abstract class TajoResultSetBase implements ResultSet {
     throw new SQLFeatureNotSupportedException("getObject not supported");
   }
 
-  public <T> T getObject(String name, Class<T> x)
-      throws SQLException {
-    //JDK 1.7
+  @Override
+  public <T> T getObject(String name, Class<T> x) throws SQLException {
     throw new SQLFeatureNotSupportedException("getObject not supported");
   }
 
-  public <T> T getObject(int index, Class<T> x)
-      throws SQLException {
-    //JDK 1.7
+  @Override
+  public <T> T getObject(int index, Class<T> x) throws SQLException {
     throw new SQLFeatureNotSupportedException("getObject not supported");
   }
 

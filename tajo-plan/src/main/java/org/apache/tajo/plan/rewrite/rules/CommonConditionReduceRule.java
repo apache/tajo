@@ -86,7 +86,7 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
     @Override
     public LogicalNode visitFilter(Object context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    SelectionNode selNode, Stack<LogicalNode> stack) throws TajoException {
-      selNode.setQual(evalRewriter.visit(null, selNode.getQual(), new Stack<EvalNode>()));
+      selNode.setQual(evalRewriter.visit(null, selNode.getQual(), new Stack<>()));
       return null;
     }
 
@@ -94,7 +94,7 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
     public LogicalNode visitJoin(Object context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode joinNode, Stack<LogicalNode> stack) throws TajoException {
       if (joinNode.hasJoinQual()) {
-        joinNode.setJoinQual(evalRewriter.visit(null, joinNode.getJoinQual(), new Stack<EvalNode>()));
+        joinNode.setJoinQual(evalRewriter.visit(null, joinNode.getJoinQual(), new Stack<>()));
       }
       return null;
     }

@@ -24,11 +24,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.function.Function;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import static org.junit.Assert.*;

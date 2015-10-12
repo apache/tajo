@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.storage.Tuple;
 

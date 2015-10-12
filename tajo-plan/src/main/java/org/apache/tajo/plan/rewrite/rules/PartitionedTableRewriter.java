@@ -80,7 +80,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
     this.catalog = context.getCatalog();
-    rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
+    rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<>());
     return plan;
   }
 
@@ -237,7 +237,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     if (conjunctiveForms != null) {
       EvalNode evalNode = AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms);
       EvalNodeToExprConverter convertor = new EvalNodeToExprConverter(databaseName + "." + tableName);
-      convertor.visit(null, evalNode, new Stack<EvalNode>());
+      convertor.visit(null, evalNode, new Stack<>());
       request.setAlgebra(convertor.getResult().toJson());
     } else {
       request.setAlgebra("");
@@ -479,7 +479,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param partitionColumn the schema of column partition
    * @return The first part string of column partition path.
    */
-  private static String getColumnPartitionPathPrefix(Schema partitionColumn) {
+  public static String getColumnPartitionPathPrefix(Schema partitionColumn) {
     StringBuilder sb = new StringBuilder();
     sb.append(partitionColumn.getColumn(0).getSimpleName()).append("=");
     return sb.toString();

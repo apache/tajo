@@ -20,7 +20,6 @@ package org.apache.tajo.plan.rewrite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 

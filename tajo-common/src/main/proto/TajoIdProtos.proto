@@ -22,22 +22,22 @@ option java_generic_services = false;
 option java_generate_equals_and_hash = true;
 
 message QueryIdProto {
-    required string id = 1;
-    required int32 seq = 2;
+  required string id = 1;
+  required int32 seq = 2;
 }
 
 message ExecutionBlockIdProto {
-    required QueryIdProto queryId = 1;
-    required int32 id = 2;
+  required QueryIdProto query_id = 1;
+  required int32 id = 2;
 }
 
 message TaskIdProto {
-    required ExecutionBlockIdProto executionBlockId = 1;
-    required int32 id = 2;
+  required ExecutionBlockIdProto execution_block_id = 1;
+  required int32 id = 2;
 }
 
 message TaskAttemptIdProto {
-  required TaskIdProto taskId = 1;
+  required TaskIdProto task_id = 1;
   required int32 id = 2;
 }
 

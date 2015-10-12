@@ -123,47 +123,47 @@ public class TUtil {
   }
 
   public static <T> Set<T> newHashSet() {
-    return new HashSet<T>();
+    return new HashSet<>();
   }
 
   public static <T> Set<T> newHashSet(T ...items) {
-    return new HashSet<T>(Arrays.asList(items));
+    return new HashSet<>(Arrays.asList(items));
   }
 
   public static <K,V> Map<K,V> newHashMap() {
-    return new HashMap<K, V>();
+    return new HashMap<>();
   }
 
   public static <K,V> Map<K,V> newHashMap(Map<K,V> map) {
-    return new HashMap<K, V>(map);
+    return new HashMap<>(map);
   }
 
   public static <K, V> Map<K,V> newHashMap(K k, V v) {
-    HashMap<K, V> newMap = new HashMap<K, V>();
+    HashMap<K, V> newMap = new HashMap<>();
     newMap.put(k, v);
     return newMap;
   }
 
   public static <K,V> Map<K,V> newLinkedHashMap() {
-    return new LinkedHashMap<K, V>();
+    return new LinkedHashMap<>();
   }
 
   public static <K, V> Map<K,V> newLinkedHashMap(K k, V v) {
-    HashMap<K, V> newMap = new LinkedHashMap<K, V>();
+    HashMap<K, V> newMap = new LinkedHashMap<>();
     newMap.put(k, v);
     return newMap;
   }
 
   public static <K,V> Map<K,V> newConcurrentHashMap() {
-    return new ConcurrentHashMap<K, V>();
+    return new ConcurrentHashMap<>();
   }
 
   public static <T> List<T> newList() {
-    return new ArrayList<T>();
+    return new ArrayList<>();
   }
 
   public static <T> List<T> newList(T...items) {
-    List<T> list = new ArrayList<T>();
+    List<T> list = new ArrayList<>();
     for (T t : items) {
       list.add(t);
     }
@@ -172,7 +172,7 @@ public class TUtil {
   }
 
   public static <T> List<T> newList(Collection<T> items) {
-    List<T> list = new ArrayList<T>();
+    List<T> list = new ArrayList<>();
     for (T t : items) {
       list.add(t);
     }

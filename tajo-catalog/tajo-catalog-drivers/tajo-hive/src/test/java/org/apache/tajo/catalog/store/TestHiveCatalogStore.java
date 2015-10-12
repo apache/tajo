@@ -423,7 +423,7 @@ public class TestHiveCatalogStore {
       Path path = new Path(uri.getPath(), partitionName);
       builder.setPath(path.toString());
 
-      List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
+      List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
       String[] split = partitionName.split("/");
       for(int i = 0; i < split.length; i++) {
         String[] eachPartitionName = split[i].split("=");

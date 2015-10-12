@@ -54,6 +54,11 @@ public class DateDatum extends Datum {
     return tm;
   }
 
+  @Override
+  public byte[] asTextBytes() {
+    return asChars().getBytes(TextDatum.DEFAULT_CHARSET);
+  }
+
   public int getCenturyOfEra() {
     return asTimeMeta().getCenturyOfEra();
   }

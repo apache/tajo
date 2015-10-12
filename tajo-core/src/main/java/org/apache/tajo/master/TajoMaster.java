@@ -34,8 +34,6 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.algebra.AlterTablespace;
 import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -79,7 +77,6 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
