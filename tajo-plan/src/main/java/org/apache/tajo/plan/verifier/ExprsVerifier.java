@@ -47,7 +47,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   }
 
   public static VerificationState verify(VerificationState state, LogicalNode currentNode, EvalNode expression) {
-    instance.visit(state, expression, new Stack<EvalNode>());
+    instance.visit(state, expression, new Stack<>());
     Set<Column> referredColumns = EvalTreeUtil.findUniqueColumns(expression);
     for (Column referredColumn : referredColumns) {
       if (!currentNode.getInSchema().contains(referredColumn)) {

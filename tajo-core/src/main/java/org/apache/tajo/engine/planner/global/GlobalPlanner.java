@@ -136,7 +136,7 @@ public class GlobalPlanner {
     // Its output is a graph, where each vertex is an execution block, and each edge is a data channel.
     // MasterPlan contains them.
     LogicalNode lastNode = planner.visit(globalPlanContext,
-        masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<LogicalNode>());
+        masterPlan.getLogicalPlan(), masterPlan.getLogicalPlan().getRootBlock(), inputPlan, new Stack<>());
     ExecutionBlock childExecBlock = globalPlanContext.execBlockMap.get(lastNode.getPID());
 
     ExecutionBlock terminalBlock;

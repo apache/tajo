@@ -326,13 +326,13 @@ public class Repartitioner {
         if (hashEntries.containsKey(emptyPartitionId)) {
           Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
           if (tbNameToInterm.containsKey(scanEbId))
-            tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
+            tbNameToInterm.get(scanEbId).addAll(new ArrayList<>());
           else
-            tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+            tbNameToInterm.put(scanEbId, new ArrayList<>());
         } else {
           Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                   new HashMap<>();
-          tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+          tbNameToInterm.put(scanEbId, new ArrayList<>());
           hashEntries.put(emptyPartitionId, tbNameToInterm);
         }
       }

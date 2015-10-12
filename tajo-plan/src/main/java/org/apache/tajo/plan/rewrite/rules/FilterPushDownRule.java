@@ -115,7 +115,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     catalog = rewriteRuleContext.getCatalog();
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
       context.clear();
-      this.visit(context, plan, block, block.getRoot(), new Stack<LogicalNode>());
+      this.visit(context, plan, block, block.getRoot(), new Stack<>());
     }
 
     if (LOG.isDebugEnabled()) {

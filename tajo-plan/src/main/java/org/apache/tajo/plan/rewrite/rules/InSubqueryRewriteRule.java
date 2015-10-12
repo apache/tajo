@@ -81,7 +81,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
   public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
     LogicalPlan.QueryBlock rootBlock = context.getPlan().getRootBlock();
     LogicalPlan plan = context.getPlan();
-    rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
+    rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<>());
     return plan;
   }
 

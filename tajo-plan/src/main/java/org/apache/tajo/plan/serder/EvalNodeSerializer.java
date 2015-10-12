@@ -59,7 +59,7 @@ public class EvalNodeSerializer
   public static PlanProto.EvalNodeTree serialize(EvalNode evalNode) {
     EvalNodeSerializer.EvalTreeProtoBuilderContext context =
         new EvalNodeSerializer.EvalTreeProtoBuilderContext();
-    instance.visit(context, evalNode, new Stack<EvalNode>());
+    instance.visit(context, evalNode, new Stack<>());
     return context.treeBuilder.build();
   }
 

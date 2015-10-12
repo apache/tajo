@@ -59,7 +59,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   public VerificationState verify(OverridableConf queryContext, VerificationState state, Expr expr)
       throws TajoException {
     Context context = new Context(queryContext, state);
-    visit(context, new Stack<Expr>(), expr);
+    visit(context, new Stack<>(), expr);
     return context.state;
   }
 

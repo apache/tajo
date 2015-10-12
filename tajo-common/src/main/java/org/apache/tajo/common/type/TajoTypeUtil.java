@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TajoTypeUtil {
-  private static List<Datum[]> typeInfos = new ArrayList<Datum[]>();
+  private static List<Datum[]> typeInfos = new ArrayList<>();
 
   public static List<Datum[]> getTypeInfos() {
     synchronized (typeInfos) {

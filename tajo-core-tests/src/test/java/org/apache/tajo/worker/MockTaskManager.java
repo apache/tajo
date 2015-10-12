@@ -29,18 +29,31 @@ import org.apache.tajo.worker.event.TaskManagerEvent;
 
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeoutException;
 
 public class MockTaskManager extends TaskManager {
 
   private final Semaphore barrier;
+  private boolean testEbCreateFailure = false;
 
   public MockTaskManager(Semaphore barrier, Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
     super(dispatcher, workerContext);
     this.barrier = barrier;
   }
 
+  public void enableEbCreateFailure() {
+    testEbCreateFailure = true;
+  }
+
+  public void disableEbCreateFailure() {
+    testEbCreateFailure = true;
+  }
+
   @Override
   protected ExecutionBlockContext createExecutionBlock(ExecutionBlockId executionBlockId, String queryMaster) {
+    if (testEbCreateFailure) {
+      throw new RuntimeException("Failure for test");
+    }
     try {
       ExecutionBlockContextResponse.Builder builder = ExecutionBlockContextResponse.newBuilder();
       builder.setExecutionBlockId(executionBlockId.getProto())

@@ -269,7 +269,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
 	@Override
   public Object clone() throws CloneNotSupportedException {    
     KeyValueSet keyValueSet = (KeyValueSet) super.clone();
-    keyValueSet.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) : null;
+    keyValueSet.keyVals = keyVals != null ? new HashMap<>(keyVals) : null;
     return keyValueSet;
 	}
 	

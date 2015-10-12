@@ -70,7 +70,7 @@ public class TestFunctionsResource extends QueryTestCaseBase {
   public void testGetAllFunctions() throws Exception {
     List<FunctionSignature> functionSignatures =
         restClient.target(functionsURI)
-        .request().get(new GenericType<List<FunctionSignature>>(List.class));
+        .request().get(new GenericType<>(List.class));
     
     assertNotNull(functionSignatures);
     assertTrue(functionSignatures.size() > 0);

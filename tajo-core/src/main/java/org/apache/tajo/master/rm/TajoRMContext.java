@@ -40,7 +40,7 @@ public class TajoRMContext {
   private final ConcurrentMap<Integer, NodeStatus> inactiveNodes = Maps.newConcurrentMap();
 
   private final Set<Integer> liveQueryMasterWorkerResources =
-      Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+      Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 
   public TajoRMContext(Dispatcher dispatcher) {
