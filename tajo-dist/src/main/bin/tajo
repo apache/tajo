@@ -232,13 +232,13 @@ HDFS_LIBRARY_PATH="${HADOOP_HOME}/lib/native/"
 
 HBASE_CONF=$HBASE_HOME/conf
 
-if [ -d ${HBASE_CONF} ]; then
+if [ ! -z ${HBASE_HOME} ] && [ -d ${HBASE_HOME} ] && [ -d ${HBASE_CONF} ]; then
   CLASSPATH=${HBASE_CONF}:${CLASSPATH}
 fi
 
 HBASE_LIB=$HBASE_HOME/lib
 
-if [ -d ${HBASE_LIB} ]; then
+if [ ! -z ${HBASE_HOME} ] && [ -d ${HBASE_HOME} ] && [ -d ${HBASE_LIB} ]; then
 
   for f in ${HBASE_LIB}/hbase-server-*.jar; do
     CLASSPATH=${CLASSPATH}:$f;
@@ -272,13 +272,13 @@ fi
 
 HIVE_CONF=$HIVE_HOME/conf
 
-if [ -d ${HIVE_HOME} ] && [ -d ${HIVE_CONF} ]; then
+if [ ! -z ${HIVE_HOME} ] && [ -d ${HIVE_HOME} ] && [ -d ${HIVE_CONF} ]; then
   CLASSPATH=${HIVE_CONF}:${CLASSPATH}
 fi
 
 HIVE_LIB=$HIVE_HOME/lib
 
-if [ -d ${HIVE_HOME} ] && [ -d ${HIVE_LIB} ]; then
+if [ ! -z ${HIVE_HOME} ] && [ -d ${HIVE_HOME} ] && [ -d ${HIVE_LIB} ]; then
 
   for f in ${HIVE_LIB}/hive-*.jar; do
     CLASSPATH=${CLASSPATH}:$f;
