@@ -143,6 +143,24 @@ public class TestCatalogAgainstCaseSensitivity {
     TableStats stats = catalog.getTableDesc("TestDatabase1", "TestTable1").getStats();
     assertEquals(10000, stats.getNumBytes().longValue());
     assertEquals(5000, stats.getNumRows().longValue());
+
+    //////////////////////////////////////////////////////////////////////////////
+    // all table stats
+    //////////////////////////////////////////////////////////////////////////////
+
+    Map<Integer, String> allDatabases = new HashMap<>();
+    for (DatabaseProto databaseProto : catalog.getAllDatabases()) {
+      allDatabases.put(databaseProto.getId(), databaseProto.getName());
+    }
+    Map<Integer, TableStats> statsMap = new HashMap<>();
+    for (TableDescriptorProto descriptorProto : catalog.getAllTables()) {
+      statsMap.put(descriptorProto.getTid(),
+          catalog.getTableDesc(allDatabases.get(descriptorProto.getDbId()), descriptorProto.getName()).getStats());
+    }
+
+    for (TableStatsProto statsProto : catalog.getAllTableStats()) {
+      assertEquals(statsMap.get(statsProto.getTid()), new TableStats(statsProto));
+    }
   }
 
   // TODO: This should be added at TAJO-1891
