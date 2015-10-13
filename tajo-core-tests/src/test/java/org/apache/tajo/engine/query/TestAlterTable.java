@@ -483,7 +483,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     for (CatalogProtos.PartitionDescProto eachPartition : partitions) {
       assertTrue(eachPartition.getNumBytes() > 0L);
     }
-    
+
     // Remove all partitions
     dropPartitions(databaseName, tableName, tableDesc.getPartitionMethod().getExpressionSchema().getAllColumns());
 

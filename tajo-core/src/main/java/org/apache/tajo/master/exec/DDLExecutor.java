@@ -681,7 +681,9 @@ public class DDLExecutor {
     }
 
     builder.setPath(partitionPath.toString());
-    builder.setNumBytes(fs.getFileStatus(partitionPath).getLen());
+
+    ContentSummary contentSummary = fs.getContentSummary(partitionPath);
+    builder.setNumBytes(contentSummary.getLength());
 
     return builder.build();
   }
