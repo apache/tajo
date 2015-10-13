@@ -478,6 +478,12 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     verifyPartitionCount(databaseName, tableName, 5);
 
+    // Check the volume of partition
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
+    for (CatalogProtos.PartitionDescProto eachPartition : partitions) {
+      assertTrue(eachPartition.getNumBytes() > 0L);
+    }
+
     // Remove all partitions
     dropPartitions(databaseName, tableName, tableDesc.getPartitionMethod().getExpressionSchema().getAllColumns());
 
