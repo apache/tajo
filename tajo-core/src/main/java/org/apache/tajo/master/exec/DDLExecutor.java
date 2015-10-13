@@ -632,7 +632,7 @@ public class DDLExecutor {
 
       // if there is partition column in the path
       if (startIdx > -1) {
-        PartitionDescProto targetPartition = getPartitionDesc(tablePath, filteredPath);
+        PartitionDescProto targetPartition = getPartitionDesc(tablePath, filteredPath, fs);
         if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
           if (LOG.isDebugEnabled()) {
             LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
@@ -658,7 +658,7 @@ public class DDLExecutor {
     LOG.info("Total added partitions to CatalogStore: " + targetPartitions.size());
   }
 
-  private PartitionDescProto getPartitionDesc(Path tablePath, Path partitionPath) throws IOException {
+  private PartitionDescProto getPartitionDesc(Path tablePath, Path partitionPath, FileSystem fs) throws IOException {
     String partitionName = StringUtils.unescapePathName(partitionPath.toString());
 
     int startIndex = partitionName.indexOf(tablePath.toString()) + tablePath.toString().length();
@@ -681,6 +681,7 @@ public class DDLExecutor {
     }
 
     builder.setPath(partitionPath.toString());
+    builder.setNumBytes(fs.getFileStatus(partitionPath).getLen());
 
     return builder.build();
   }
