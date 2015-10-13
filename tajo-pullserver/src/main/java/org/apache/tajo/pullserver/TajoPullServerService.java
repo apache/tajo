@@ -195,7 +195,7 @@ public class TajoPullServerService extends AbstractService {
       localFS = new LocalFileSystem();
 
       conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
-              , conf.getInt(TajoConf.ConfVars.PULLSERVER_PORT.varname, TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal));
+          , conf.getInt(TajoConf.ConfVars.PULLSERVER_PORT.varname, TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal));
       super.init(conf);
       LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
     } catch (Throwable t) {
