@@ -285,6 +285,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
+
     TAJO-1900: When a record column and its child column are retrieved together, 
     the record column might not be inferred as record type properly. (jihoon)
 
