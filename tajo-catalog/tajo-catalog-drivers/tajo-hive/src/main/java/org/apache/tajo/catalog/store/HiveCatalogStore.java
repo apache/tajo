@@ -434,7 +434,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.ORC) ||
           tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.PARQUET)) {
-        throw new NotImplementedException(tableDesc.getMeta().getDataFormat()+" is not supported yet in HCatalog");
+        throw new NotImplementedException(tableDesc.getMeta().getDataFormat()+" is not supported temporarily in HCatalog");
       }
 
       table.setDbName(databaseName);
