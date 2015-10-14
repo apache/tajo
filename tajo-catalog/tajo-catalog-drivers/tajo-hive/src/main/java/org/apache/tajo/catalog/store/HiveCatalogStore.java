@@ -431,6 +431,12 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
 
       org.apache.hadoop.hive.metastore.api.Table table = new org.apache.hadoop.hive.metastore.api.Table();
+
+      if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.ORC) ||
+          tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.PARQUET)) {
+        throw new NotImplementedException(tableDesc.getMeta().getDataFormat()+" is not supported yet in HCatalog");
+      }
+
       table.setDbName(databaseName);
       table.setTableName(tableName);
       table.setParameters(new HashMap<>(tableDesc.getMeta().getOptions().getAllKeyValus()));
