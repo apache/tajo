@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -118,7 +119,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private Path [] findFilteredPaths(OverridableConf queryContext, Schema partitionColumns, EvalNode [] conjunctiveForms,
+  @VisibleForTesting
+  public Path [] findFilteredPaths(OverridableConf queryContext, Schema partitionColumns, EvalNode [] conjunctiveForms,
                                     Path tablePath)
       throws IOException {
 
