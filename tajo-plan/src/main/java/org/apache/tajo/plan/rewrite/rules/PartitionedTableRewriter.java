@@ -134,38 +134,37 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
-    String [] splits = CatalogUtil.splitFQTableName(tableName);
-    List<PartitionDescProto> partitions = null;
-
-    try {
-      if (conjunctiveForms == null) {
-        partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
-        if (partitions.isEmpty()) {
-          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-        } else {
-          filteredPaths = findFilteredPathsByPartitionDesc(partitions);
-        }
-      } else {
-        if (catalog.existPartitions(splits[0], splits[1])) {
-          PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
-          partitions = catalog.getPartitionsByAlgebra(request);
-          filteredPaths = findFilteredPathsByPartitionDesc(partitions);
-        } else {
-          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-        }
-      }
-    } catch (UnsupportedException ue) {
-      // Partial catalog might not allow some filter conditions. For example, HiveMetastore doesn't In statement,
-      // regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
-      LOG.warn(ue.getMessage());
-      partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
-      if (partitions.isEmpty()) {
-        filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-      } else {
-        filteredPaths = findFilteredPathsByPartitionDesc(partitions);
-      }
-      scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
-    }
+    // TODO: This should be improved at TAJO-1891
+//    String [] splits = CatalogUtil.splitFQTableName(tableName);
+//    List<PartitionDescProto> partitions = null;
+//    try {
+//      if (conjunctiveForms == null) {
+//        partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
+//        if (partitions.isEmpty()) {
+//        } else {
+//          filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+//        }
+//      } else {
+//        if (catalog.existPartitions(splits[0], splits[1])) {
+//          PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
+//          partitions = catalog.getPartitionsByAlgebra(request);
+//          filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+//        } else {
+//          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+//        }
+//      }
+//    } catch (UnsupportedException ue) {
+//      // Partial catalog might not allow some filter conditions. For example, HiveMetastore doesn't In statement,
+//      // regexp statement and so on. Above case, Tajo need to build filtered path by listing hdfs directories.
+//      LOG.warn(ue.getMessage());
+//      partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
+//      if (partitions.isEmpty()) {
+//      } else {
+//        filteredPaths = findFilteredPathsByPartitionDesc(partitions);
+//      }
+//      scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
+//    }
+    filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
 
     LOG.info("Filtered directory or files: " + filteredPaths.length);
     return filteredPaths;
@@ -421,6 +420,26 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
   }
 
+  // TODO: This should be removed at TAJO-1891
+  private void updateTableStat(OverridableConf queryContext, PartitionedTableScanNode scanNode)
+      throws TajoException {
+    if (scanNode.getInputPaths().length > 0) {
+      try {
+        FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(queryContext.getConf());
+        long totalVolume = 0;
+
+        for (Path input : scanNode.getInputPaths()) {
+          ContentSummary summary = fs.getContentSummary(input);
+          totalVolume += summary.getLength();
+          totalVolume += summary.getFileCount();
+        }
+        scanNode.getTableDesc().getStats().setNumBytes(totalVolume);
+      } catch (Throwable e) {
+        throw new TajoInternalError(e);
+      }
+    }
+  }
+
   /**
    * Take a look at a column partition path. A partition path consists
    * of a table path part and column values part. This method transforms
@@ -500,7 +519,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
         rewrittenScanNode.init(scanNode, filteredPaths);
-        rewrittenScanNode.getTableDesc().getStats().setNumBytes(totalVolume);
+        // TODO: This should be improved at TAJO-1891
+//        rewrittenScanNode.getTableDesc().getStats().setNumBytes(totalVolume);
+        updateTableStat(queryContext, rewrittenScanNode);
 
         // if it is topmost node, set it as the rootnode of this block.
         if (stack.empty() || block.getRoot().equals(scanNode)) {
