@@ -85,7 +85,7 @@ public class StorageConstants {
   public static final String ORC_STRIPE_SIZE = "orc.stripe.size";
   public static final String DEFAULT_ORC_STRIPE_SIZE = "67108864"; // 64MB
 
-  public static final String ORC_COMPRESSION_KIND = "orc.compression.kind";
+  public static final String ORC_COMPRESSION = "orc.compress";
   public static final String ORC_COMPRESSION_KIND_NONE = "none";
   public static final String ORC_COMPRESSION_KIND_SNAPPY = "snappy";
   public static final String ORC_COMPRESSION_KIND_LZO = "lzo";

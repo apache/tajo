@@ -24,6 +24,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.io.IOConstants;
+import org.apache.hadoop.hive.ql.io.StorageFormatDescriptor;
+import org.apache.hadoop.hive.ql.io.StorageFormatFactory;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -60,9 +64,11 @@ public class TestHiveCatalogStore {
 
   private static HiveCatalogStore store;
   private static Path warehousePath;
+  private static StorageFormatFactory formatFactory;
 
   @BeforeClass
   public static void setUp() throws Exception {
+    formatFactory = new StorageFormatFactory();
     Path testPath = CommonTestingUtil.getTestDir();
     warehousePath = new Path(testPath, "warehouse");
 
@@ -86,7 +92,7 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testTableUsingTextFile() throws Exception {
-    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
+    TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
@@ -102,6 +108,11 @@ public class TestHiveCatalogStore {
         new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
+
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.TEXTFILE);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, CUSTOMER);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
     assertEquals(table.getName(), table1.getName());
@@ -120,7 +131,7 @@ public class TestHiveCatalogStore {
   public void testTableUsingRCFileWithBinarySerde() throws Exception {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    TableMeta meta = new TableMeta("RCFILE", options);
+    TableMeta meta = new TableMeta(BuiltinStorages.RCFILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
@@ -131,6 +142,11 @@ public class TestHiveCatalogStore {
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
+
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.RCFILE);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, REGION);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
@@ -149,7 +165,7 @@ public class TestHiveCatalogStore {
   public void testTableUsingRCFileWithTextSerde() throws Exception {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
-    TableMeta meta = new TableMeta("RCFILE", options);
+    TableMeta meta = new TableMeta(BuiltinStorages.RCFILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
@@ -160,6 +176,11 @@ public class TestHiveCatalogStore {
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
+
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.RCFILE);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, REGION);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
@@ -178,7 +199,7 @@ public class TestHiveCatalogStore {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
     options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\u0003"));
-    TableMeta meta = new TableMeta("TEXT", options);
+    TableMeta meta = new TableMeta(BuiltinStorages.TEXT, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
@@ -194,6 +215,11 @@ public class TestHiveCatalogStore {
 
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, SUPPLIER));
+
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.TEXTFILE);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, SUPPLIER);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, SUPPLIER));
     assertEquals(table.getName(), table1.getName());
@@ -470,7 +496,7 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testGetAllTableNames() throws Exception{
-    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
+    TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
     schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
@@ -498,7 +524,7 @@ public class TestHiveCatalogStore {
 
   @Test
   public void testDeleteTable() throws Exception {
-    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
+    TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
     schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
@@ -522,7 +548,7 @@ public class TestHiveCatalogStore {
   public void testTableUsingSequenceFileWithBinarySerde() throws Exception {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
-    TableMeta meta = new TableMeta("SEQUENCEFILE", options);
+    TableMeta meta = new TableMeta(BuiltinStorages.SEQUENCE_FILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
@@ -533,6 +559,11 @@ public class TestHiveCatalogStore {
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
+
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.SEQUENCEFILE);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, REGION);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
@@ -551,7 +582,7 @@ public class TestHiveCatalogStore {
   public void testTableUsingSequenceFileWithTextSerde() throws Exception {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
-    TableMeta meta = new TableMeta("SEQUENCEFILE", options);
+    TableMeta meta = new TableMeta(BuiltinStorages.SEQUENCE_FILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
@@ -562,6 +593,11 @@ public class TestHiveCatalogStore {
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
+
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.SEQUENCEFILE);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, REGION);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
     assertEquals(table.getName(), table1.getName());
@@ -595,6 +631,11 @@ public class TestHiveCatalogStore {
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
 
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.PARQUET);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, CUSTOMER);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
+
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
     assertEquals(table.getName(), table1.getName());
     assertEquals(table.getUri(), table1.getUri());
@@ -610,7 +651,7 @@ public class TestHiveCatalogStore {
   public void testDataTypeCompatibility() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testDataTypeCompatibility");
 
-    TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
+    TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);
