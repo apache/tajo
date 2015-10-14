@@ -287,6 +287,9 @@ Release 0.11.0 - unreleased
 
     TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
 
+    TAJO-1917: Conflict on Parquet Libraries. (Contributed by Jongyoung Park.
+    Committed by jihoon)
+
     TAJO-1900: When a record column and its child column are retrieved together, 
     the record column might not be inferred as record type properly. (jihoon)
 
