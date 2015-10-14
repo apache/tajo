@@ -484,6 +484,10 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       partitionScan.addAllPaths(pathStrs);
     }
 
+    if (node.getPartitions() != null) {
+      partitionScan.addAllPartitions(node.getPartitions());
+    }
+
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setScan(scanBuilder);
     nodeBuilder.setPartitionScan(partitionScan);
