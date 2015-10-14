@@ -19,6 +19,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
+    
     TAJO-1913: Timezone does not affect the constant folding. (hyunsik)
 
     TAJO-1895: Add a maven profile to skip the unit tests of 
