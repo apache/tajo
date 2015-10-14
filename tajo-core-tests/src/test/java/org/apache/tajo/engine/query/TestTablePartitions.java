@@ -434,7 +434,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     res = executeString("SELECT col1, col2, col3 FROM " + tableName);
-    String result = resultSetToString(res);
     res.close();
 
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2", "col3"},
@@ -1324,79 +1323,5 @@ public class TestTablePartitions extends QueryTestCaseBase {
       executeString("DROP TABLE lineitem2 PURGE");
       executeString("DROP TABLE " + tableName + " PURGE");
     }
-  }
-
-  @Test
-  public void testExternalTable()  throws Exception {
-    ResultSet res = null;
-    FileSystem fs = FileSystem.get(conf);
-    Path path = null;
-
-    String tableName = CatalogUtil.normalizeIdentifier("managedTable");
-    if (nodeType == NodeType.INSERT) {
-      executeString(
-        "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ").close();
-      executeString(
-        "insert overwrite into " + tableName + " select l_orderkey, l_partkey, " +
-          "l_quantity from lineitem").close();
-    } else {
-      executeString(
-        "create table " + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
-          + " as select l_orderkey, l_partkey, l_quantity from lineitem").close();
-    }
-
-    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-
-    verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
-      tableDesc.getStats().getNumRows());
-
-    // When partitions only exist on file system without catalog.
-    String externalTableName = "testExternalTable";
-
-    executeString("create external table " + externalTableName + " (col1 int4, col2 int4) " +
-      " USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN (key float8) " +
-      " location '" + tableDesc.getUri().getPath() + "'").close();
-
-    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName);
-    String result = resultSetToString(res);
-    String expectedResult = "cnt\n" +
-      "-------------------------------\n" +
-      "5\n";
-    res.close();
-    assertEquals(expectedResult, result);
-
-    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName + " WHERE key > 40.0");
-    result = resultSetToString(res);
-    expectedResult = "cnt\n" +
-      "-------------------------------\n" +
-      "2\n";
-    res.close();
-    assertEquals(expectedResult, result);
-
-    // Remove existing partition directory
-    path = new Path(tableDesc.getUri().getPath(), "key=36.0");
-    fs.delete(path, true);
-
-    res = executeString("SELECT * FROM " + externalTableName + " ORDER BY key");
-    result = resultSetToString(res);
-    expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
-      "1,1,17.0\n" +
-      "2,2,38.0\n" +
-      "3,2,45.0\n" +
-      "3,3,49.0\n";
-    res.close();
-    assertEquals(expectedResult, result);
-
-    res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName + " WHERE key > 30.0");
-    result = resultSetToString(res);
-    expectedResult = "cnt\n" +
-      "-------------------------------\n" +
-      "3\n";
-    res.close();
-    assertEquals(expectedResult, result);
-
-    executeString("DROP TABLE " + externalTableName).close();
-    executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 }
