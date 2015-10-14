@@ -18,6 +18,9 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -32,6 +35,7 @@ import org.apache.tajo.plan.expr.ConstEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
+import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -100,9 +104,30 @@ public class SeqScanExec extends ScanExec {
     if (fragments != null && fragments.length > 0) {
       List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
 
+      Path partitionPath = fileFragments.get(0).getPath();
+      int startIdx = partitionPath.toString().indexOf(PartitionedTableRewriter.getColumnPartitionPathPrefix
+        (columnPartitionSchema));
+
+      PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) plan;
+      // Get a partition key value from a PartitionDescProto
+      if (startIdx == -1) {
+        partitionedTableScanNode.initPartitionMap();
+        FileSystem fs = partitionPath.getFileSystem(context.getConf());
+        FileStatus fileStatus = fs.getFileStatus(partitionPath);
+        String path = null;
+        if (fileStatus.isDirectory()) {
+          path = partitionPath.toString();
+        } else {
+          path = partitionPath.getParent().toString();
+        }
+        CatalogProtos.PartitionDescProto partitionDescProto = partitionedTableScanNode.getPartitionDescProto(path);
+        partitionRow = PartitionedTableRewriter.buildTupleFromPartitionDescProto(columnPartitionSchema,
+          partitionDescProto, false);
       // Get a partition key value from a given path
-      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
-              columnPartitionSchema, fileFragments.get(0).getPath(), false);
+      } else {
+        partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
+          columnPartitionSchema, fileFragments.get(0).getPath(), false);
+      }
     }
 
     // Targets or search conditions may contain column references.

@@ -29,10 +29,13 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.List;
+import java.util.Map;
 
 public class PartitionedTableScanNode extends ScanNode {
   @Expose Path [] inputPaths;
   @Expose List<PartitionDescProto> partitions;
+
+  private Map<String, PartitionDescProto> partitionMap;
 
   public PartitionedTableScanNode(int pid) {
     super(pid, NodeType.PARTITIONS_SCAN);
@@ -65,6 +68,22 @@ public class PartitionedTableScanNode extends ScanNode {
 
   public void setPartitions(List<PartitionDescProto> partitions) {
     this.partitions = partitions;
+  }
+
+  public void initPartitionMap() {
+    if (partitionMap == null) {
+      partitionMap = TUtil.newHashMap();
+    } else {
+      partitionMap.clear();
+    }
+
+    for(PartitionDescProto partition : partitions) {
+      partitionMap.put(partition.getPath(), partition);
+    }
+  }
+
+  public PartitionDescProto getPartitionDescProto(String path) {
+    return partitionMap.get(path);
   }
 
   public String toString() {
