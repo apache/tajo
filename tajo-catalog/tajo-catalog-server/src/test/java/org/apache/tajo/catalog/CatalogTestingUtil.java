@@ -160,8 +160,8 @@ public class CatalogTestingUtil {
       }
 
       PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
-      builder.setColumnName(columnName);
-      builder.setPartitionValue(partitionValue);
+      builder.setColumnName(partitionValue);
+      builder.setPartitionValue(columnName);
       partitionKeyList.add(builder.build());
     }
 

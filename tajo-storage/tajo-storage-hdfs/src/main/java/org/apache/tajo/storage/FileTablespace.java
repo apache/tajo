@@ -343,9 +343,9 @@ public class FileTablespace extends Tablespace {
 
       FileStatus[] matches = fs.globStatus(p, inputFilter);
       if (matches == null) {
-        LOG.warn("Input path does not exist: " + p);
+        errors.add(new IOException("Input path does not exist: " + p));
       } else if (matches.length == 0) {
-        LOG.warn("Input Pattern " + p + " matches 0 files");
+        errors.add(new IOException("Input Pattern " + p + " matches 0 files"));
       } else {
         for (FileStatus globStat : matches) {
           if (globStat.isDirectory()) {

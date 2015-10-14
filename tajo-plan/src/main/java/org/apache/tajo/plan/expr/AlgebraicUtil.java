@@ -18,19 +18,15 @@
 
 package org.apache.tajo.plan.expr;
 
-import com.google.common.base.Preconditions;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
 public class AlgebraicUtil {
-
+  
   /**
    * Transpose a given comparison expression into the expression 
    * where the variable corresponding to the target is placed 
@@ -497,146 +493,4 @@ public class AlgebraicUtil {
       return super.visitTimeLiteral(ctx, stack, expr);
     }
   }
-
-  /**
-   * Find the top expr matched to type from the given expr
-   *
-   * @param expr start expr
-   * @param type to find
-   * @return a found expr
-   */
-  public static <T extends Expr> T findTopExpr(Expr expr, OpType type) throws TajoException {
-    Preconditions.checkNotNull(expr);
-    Preconditions.checkNotNull(type);
-
-    List<Expr> exprs = ExprFinder.findsInOrder(expr, type);
-    if (exprs.size() == 0) {
-      return null;
-    } else {
-      return (T) exprs.get(0);
-    }
-  }
-
-  /**
-   * Find the most bottom expr matched to type from the given expr
-   *
-   * @param expr start expr
-   * @param type to find
-   * @return a found expr
-   */
-  public static <T extends Expr> T findMostBottomExpr(Expr expr, OpType type) throws TajoException {
-    Preconditions.checkNotNull(expr);
-    Preconditions.checkNotNull(type);
-
-    List<Expr> exprs = ExprFinder.findsInOrder(expr, type);
-    if (exprs.size() == 0) {
-      return null;
-    } else {
-      return (T) exprs.get(exprs.size()-1);
-    }
-  }
-
-  /**
-   * Transforms an algebra expression to an array of conjunctive normal formed algebra expressions.
-   *
-   * @param expr The algebra expression to be transformed to an array of CNF-formed expressions.
-   * @return An array of CNF-formed algebra expressions
-   */
-  public static Expr[] toConjunctiveNormalFormArray(Expr expr) {
-    List<Expr> list = TUtil.newList();
-    toConjunctiveNormalFormArrayRecursive(expr, list);
-    return list.toArray(new Expr[list.size()]);
-  }
-
-  private static void toConjunctiveNormalFormArrayRecursive(Expr node, List<Expr> found) {
-    if (node.getType() == OpType.And) {
-      toConjunctiveNormalFormArrayRecursive(((BinaryOperator) node).getLeft(), found);
-      toConjunctiveNormalFormArrayRecursive(((BinaryOperator) node).getRight(), found);
-    } else {
-      found.add(node);
-    }
-  }
-
-  /**
-   * Build Exprs for all columns with a list of filter conditions.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Then, this methods will create three Exprs for (col1), (col2), (col3).
-   *
-   * Assume that an user gives a condition WHERE col1 ='A' and col3 = 'C'.
-   * There is no filter condition corresponding to col2.
-   * Then, the path filter conditions are corresponding to the followings:
-   *
-   * The first Expr: col1 = 'A'
-   * The second Expr: col2 IS NOT NULL
-   * The third Expr: col3 = 'C'
-   *
-   * 'IS NOT NULL' predicate is always true against the partition path.
-   *
-   *
-   * @param partitionColumns
-   * @param conjunctiveForms
-   * @return
-   */
-  public static Expr[] getRearrangedCNFExpressions(String tableName,
-    List<CatalogProtos.ColumnProto> partitionColumns, Expr[] conjunctiveForms) {
-    Expr[] filters = new Expr[partitionColumns.size()];
-    Column target;
-
-    for (int i = 0; i < partitionColumns.size(); i++) {
-      List<Expr> accumulatedFilters = TUtil.newList();
-      target = new Column(partitionColumns.get(i));
-      ColumnReferenceExpr columnReference = new ColumnReferenceExpr(tableName, target.getSimpleName());
-
-      if (conjunctiveForms == null) {
-        accumulatedFilters.add(new IsNullPredicate(true, columnReference));
-      } else {
-        for (Expr expr : conjunctiveForms) {
-          Set<ColumnReferenceExpr> columnSet = ExprFinder.finds(expr, OpType.Column);
-          if (columnSet.contains(columnReference)) {
-            // Accumulate one qual per level
-            accumulatedFilters.add(expr);
-          }
-        }
-
-        if (accumulatedFilters.size() == 0) {
-          accumulatedFilters.add(new IsNullPredicate(true, columnReference));
-        }
-      }
-
-      Expr filterPerLevel = AlgebraicUtil.createSingletonExprFromCNFByExpr(
-        accumulatedFilters.toArray(new Expr[accumulatedFilters.size()]));
-      filters[i] = filterPerLevel;
-    }
-
-    return filters;
-  }
-
-  /**
-   * Convert a list of conjunctive normal forms into a singleton expression.
-   *
-   * @param cnfExprs
-   * @return The EvalNode object that merges all CNF-formed expressions.
-   */
-  public static Expr createSingletonExprFromCNFByExpr(Expr... cnfExprs) {
-    if (cnfExprs.length == 1) {
-      return cnfExprs[0];
-    }
-
-    return createSingletonExprFromCNFRecursiveByExpr(cnfExprs, 0);
-  }
-
-  private static Expr createSingletonExprFromCNFRecursiveByExpr(Expr[] exprs, int idx) {
-    if (idx >= exprs.length) {
-      throw new ArrayIndexOutOfBoundsException("index " + idx + " is exceeded the maximum length ("+
-        exprs.length+") of EvalNode");
-    }
-
-    if (idx == exprs.length - 2) {
-      return new BinaryOperator(OpType.And, exprs[idx], exprs[idx + 1]);
-    } else {
-      return new BinaryOperator(OpType.And, exprs[idx], createSingletonExprFromCNFRecursiveByExpr(exprs, idx + 1));
-    }
-  }
-
 }

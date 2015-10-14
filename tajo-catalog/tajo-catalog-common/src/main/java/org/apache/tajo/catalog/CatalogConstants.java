@@ -59,7 +59,6 @@ public class CatalogConstants {
   public static final String COL_PARTITIONS_PK = "PARTITION_ID";
   public static final String COL_COLUMN_NAME = "COLUMN_NAME";
   public static final String COL_PARTITION_VALUE = "PARTITION_VALUE";
-  public static final String COL_PARTITION_BYTES = "NUM_BYTES";
-
+  
   public static final String INFORMATION_SCHEMA_DB_NAME = "information_schema";
 }

@@ -34,7 +34,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -262,27 +261,10 @@ public class TestHiveCatalogStore {
     }
 
     testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150101");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=10/n_date=20150102");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150101");
     testAddPartition(table1.getUri(), NATION, "n_nationkey=20/n_date=20150102");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150101");
-    testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150102");
-
-    List<String> partitionNames = TUtil.newList();
-    partitionNames.add("n_nationkey=40/n_date=20150801");
-    partitionNames.add("n_nationkey=40/n_date=20150802");
-    partitionNames.add("n_nationkey=50/n_date=20150801");
-    partitionNames.add("n_nationkey=50/n_date=20150802");
-    testAddPartitions(table1.getUri(), NATION, partitionNames);
-
-    testGetPartitionsByAlgebra(DB_NAME, NATION);
 
     testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
-    testDropPartition(NATION, "n_nationkey=10/n_date=20150102");
-    testDropPartition(NATION, "n_nationkey=20/n_date=20150101");
     testDropPartition(NATION, "n_nationkey=20/n_date=20150102");
-    testDropPartition(NATION, "n_nationkey=30/n_date=20150101");
-    testDropPartition(NATION, "n_nationkey=30/n_date=20150102");
 
     CatalogProtos.PartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10/n_date=20150101");
     assertNull(partition);
@@ -293,87 +275,6 @@ public class TestHiveCatalogStore {
     store.dropTable(DB_NAME, NATION);
   }
 
-  private void testGetPartitionsByAlgebra(String databaseName, String tableName) throws Exception {
-    String qfTableName = databaseName + "." + tableName;
-
-    // Equals Operator
-    CatalogProtos.PartitionsByAlgebraProto.Builder request = CatalogProtos.PartitionsByAlgebraProto.newBuilder();
-    request.setDatabaseName(databaseName);
-    request.setTableName(tableName);
-
-    String algebra = "{\n" +
-      "  \"LeftExpr\": {\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"n_nationkey\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Value\": \"10\",\n" +
-      "      \"ValueType\": \"Unsigned_Integer\",\n" +
-      "      \"OpType\": \"Literal\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"Equals\"\n" +
-      "  },\n" +
-      "  \"RightExpr\": {\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"n_date\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Value\": \"20150101\",\n" +
-      "      \"ValueType\": \"String\",\n" +
-      "      \"OpType\": \"Literal\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"Equals\"\n" +
-      "  },\n" +
-      "  \"OpType\": \"And\"\n" +
-      "}";
-
-    request.setAlgebra(algebra);
-
-    List<CatalogProtos.PartitionDescProto> partitions = store.getPartitionsByAlgebra(request.build());
-    assertNotNull(partitions);
-    assertEquals(1, partitions.size());
-
-    // OR
-    algebra = "{\n" +
-      "  \"LeftExpr\": {\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"n_nationkey\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Value\": \"20\",\n" +
-      "      \"ValueType\": \"Unsigned_Integer\",\n" +
-      "      \"OpType\": \"Literal\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"Equals\"\n" +
-      "  },\n" +
-      "  \"RightExpr\": {\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"n_nationkey\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Value\": \"30\",\n" +
-      "      \"ValueType\": \"Unsigned_Integer\",\n" +
-      "      \"OpType\": \"Literal\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"Equals\"\n" +
-      "  },\n" +
-      "  \"OpType\": \"Or\"\n" +
-      "}";
-
-    request.setAlgebra(algebra);
-
-    partitions = store.getPartitionsByAlgebra(request.build());
-    assertNotNull(partitions);
-    assertEquals(4, partitions.size());
-  }
 
   private void testAddPartition(URI uri, String tableName, String partitionName) throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
@@ -415,45 +316,6 @@ public class TestHiveCatalogStore {
     }
   }
 
-  private void testAddPartitions(URI uri, String tableName, List<String> partitionNames) throws Exception {
-    List<CatalogProtos.PartitionDescProto> partitions = TUtil.newList();
-    for (String partitionName : partitionNames) {
-      CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
-      builder.setPartitionName(partitionName);
-      Path path = new Path(uri.getPath(), partitionName);
-      builder.setPath(path.toString());
-
-      List<PartitionKeyProto> partitionKeyList = new ArrayList<PartitionKeyProto>();
-      String[] split = partitionName.split("/");
-      for(int i = 0; i < split.length; i++) {
-        String[] eachPartitionName = split[i].split("=");
-
-        PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
-        keyBuilder.setColumnName(eachPartitionName[0]);
-        keyBuilder.setPartitionValue(eachPartitionName[1]);
-        partitionKeyList.add(keyBuilder.build());
-      }
-      builder.addAllPartitionKeys(partitionKeyList);
-      partitions.add(builder.build());
-    }
-
-    store.addPartitions(DB_NAME, tableName, partitions, true);
-
-    for (String partitionName : partitionNames) {
-      CatalogProtos.PartitionDescProto resultDesc = store.getPartition(DB_NAME, NATION, partitionName);
-      assertNotNull(resultDesc);
-      assertEquals(resultDesc.getPartitionName(), partitionName);
-      assertEquals(resultDesc.getPath(), uri.toString() + "/" + partitionName);
-      assertEquals(resultDesc.getPartitionKeysCount(), 2);
-
-      String[] split = partitionName.split("/");
-      for (int i = 0; i < resultDesc.getPartitionKeysCount(); i++) {
-        CatalogProtos.PartitionKeyProto keyProto = resultDesc.getPartitionKeys(i);
-        String[] eachName = split[i].split("=");
-        assertEquals(keyProto.getPartitionValue(), eachName[1]);
-      }
-    }
-  }
 
   private void testDropPartition(String tableName,  String partitionName) throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
@@ -543,7 +405,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
-      table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
+        table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 

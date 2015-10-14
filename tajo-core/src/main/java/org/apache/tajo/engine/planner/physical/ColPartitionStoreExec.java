@@ -38,7 +38,6 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.unit.StorageUnit;
-import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -174,18 +173,17 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
       PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
       keyBuilder.setColumnName(split[0]);
-      // Partition path have been escaped to avoid URISyntaxException. But partition value of partition keys table
-      // need to contain unescaped value for comparing filter conditions in select statement.
-      keyBuilder.setPartitionValue(StringUtils.unescapePathName(split[1]));
+      keyBuilder.setPartitionValue(split[1]);
 
       builder.addPartitionKeys(keyBuilder.build());
     }
 
     if (this.plan.getUri() == null) {
-      // In CTAS, the uri would be null. So, it get the uri from staging directory.
-      int endIndex = storeTablePath.toString().indexOf(FileTablespace.TMP_STAGING_DIR_PREFIX);
+      // In CTAS, the uri would be null. So,
+      String[] split = CatalogUtil.splitTableName(plan.getTableName());
+      int endIndex = storeTablePath.toString().indexOf(split[1]) + split[1].length();
       String outputPath = storeTablePath.toString().substring(0, endIndex);
-      builder.setPath(outputPath +  partition);
+      builder.setPath(outputPath + "/" + partition);
     } else {
       builder.setPath(this.plan.getUri().toString() + "/" + partition);
     }

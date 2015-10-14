@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.util.KeyValueSet;
 
-import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -167,7 +166,8 @@ public class DDLBuilder {
 
     List<Column> colums = table.getPartitionMethod().getExpressionSchema().getAllColumns();
 
-    String[] splitPartitionName = partition.getPartitionName().split(File.separator);
+    String[] splitPartitionName = partition.getPartitionName().split("/");
+
     for(int i = 0; i < splitPartitionName.length; i++) {
       String[] partitionColumnValue = splitPartitionName[i].split("=");
       if (i > 0) {

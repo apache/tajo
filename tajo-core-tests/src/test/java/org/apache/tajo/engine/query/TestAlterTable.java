@@ -105,7 +105,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_add_partition1.sql", null);
     executeDDL("alter_table_add_partition2.sql", null);
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 1);
     assertEquals(partitions.get(0).getPartitionName(), "col3=1/col4=2");
@@ -123,7 +123,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("alter_table_drop_partition1.sql", null);
     executeDDL("alter_table_drop_partition2.sql", null);
 
-    partitions = catalog.getPartitionsOfTable("TestAlterTable", "partitioned_table");
+    partitions = catalog.getPartitions("TestAlterTable", "partitioned_table");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
     assertFalse(fs.exists(partitionPath));
@@ -478,12 +478,6 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     verifyPartitionCount(databaseName, tableName, 5);
 
-    // Check the volume of partition
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
-    for (CatalogProtos.PartitionDescProto eachPartition : partitions) {
-      assertTrue(eachPartition.getNumBytes() > 0L);
-    }
-
     // Remove all partitions
     dropPartitions(databaseName, tableName, tableDesc.getPartitionMethod().getExpressionSchema().getAllColumns());
 
@@ -505,7 +499,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   private void verifyPartitionCount(String databaseName, String tableName, int expectedCount)
     throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedPartitionException {
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
     assertNotNull(partitions);
     assertEquals(partitions.size(), expectedCount);
   }
@@ -513,7 +507,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   private void dropPartitions(String databaseName, String tableName, List<Column> colums)
     throws Exception {
     String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(databaseName, tableName);
 
     StringBuilder sb = new StringBuilder();
     for (CatalogProtos.PartitionDescProto partition : partitions) {

@@ -811,33 +811,16 @@ public class CatalogUtil {
   /**
    * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
    * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
-   * *
-   * @param tableName
-   * @param columns
-   * @param values
-   * @param path
-   * @param alterTableType
-   * @return
-   */
-  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns, String[] values, @Nullable
-    String path, AlterTableType alterTableType) {
-    return addOrDropPartition(tableName, columns, values, path, alterTableType, 0L);
-  }
-  /**
-   * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
-   * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
    *
    * @param tableName table name
    * @param columns partition column names
    * @param values partition values
-   * @param path partition directory path
+   * @param location partition location
    * @param alterTableType ADD_PARTITION or DROP_PARTITION
-   * @param numBytes contents length
    * @return AlterTableDesc
    */
-  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns, String[] values,
-    @Nullable String path, AlterTableType alterTableType, long numBytes) {
-
+  public static AlterTableDesc addOrDropPartition(String tableName, String[] columns,
+                                            String[] values, String location, AlterTableType alterTableType) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
 
@@ -847,11 +830,8 @@ public class CatalogUtil {
     partitionDesc.setPartitionKeys(pair.getFirst());
     partitionDesc.setPartitionName(pair.getSecond());
 
-    if (alterTableType.equals(AlterTableType.ADD_PARTITION)) {
-      if (path != null) {
-        partitionDesc.setPath(path);
-      }
-      partitionDesc.setNumBytes(numBytes);
+    if (alterTableType.equals(AlterTableType.ADD_PARTITION) && location != null) {
+      partitionDesc.setPath(location);
     }
 
     alterTableDesc.setPartitionDesc(partitionDesc);
