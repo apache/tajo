@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.OverridableConf;
@@ -30,6 +32,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -37,6 +40,39 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestPartitionedTableRewriter extends QueryTestCaseBase {
+
+  @Test
+  public final void testPartitionPruningUsingManuallyAddedPartition() throws Exception {
+    String tableName = "testPartitionPruningUsingManualAddedPartition".toLowerCase();
+    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
+
+    executeString("create table " + canonicalTableName + " (n_nationkey INT8, n_name TEXT, n_regionkey INT8) " +
+      "partition by column(key TEXT)");
+
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    assertNotNull(tableDesc);
+
+    FileSystem fs = FileSystem.get(conf);
+    Path path = new Path(tableDesc.getUri().toString() + "/key=part123");
+    fs.mkdirs(path);
+    FileUtil.writeTextToFile("1|ARGENTINA|1", new Path(path, "data"));
+
+    path = new Path(tableDesc.getUri().toString() + "/key=part456");
+    fs.mkdirs(path);
+    FileUtil.writeTextToFile("2|BRAZIL|1", new Path(path, "data"));
+
+    path = new Path(tableDesc.getUri().toString() + "/key=part789");
+    fs.mkdirs(path);
+    FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
+
+    // Get all partitions
+    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " ORDER BY key", 3);
+
+    // Get partition with filter condition
+    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " WHERE key = 'part456' ORDER BY key", 4);
+
+    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
+  }
 
   @Test
   public final void testPartitionPruningUsingDirectories() throws Exception {
@@ -51,15 +87,15 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertNotNull(tableDesc);
 
     // Get all partitions
-    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " ORDER BY key", false);
+    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " ORDER BY key", 1);
 
     // Get partition with filter condition
-    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " WHERE key = 17.0 ORDER BY key", true);
+    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " WHERE key = 17.0 ORDER BY key", 2);
 
     executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }
 
-  private void verifyFindFilteredPartitionPaths(String sql, boolean hasFilterCondition) throws Exception {
+  private void verifyFindFilteredPartitionPaths(String sql, int type) throws Exception {
     Expr expr = sqlParser.parse(sql);
     QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
@@ -74,10 +110,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     SortNode sortNode = projNode.getChild();
 
     ScanNode scanNode = null;
-    if(!hasFilterCondition) {
-      assertEquals(NodeType.SCAN, sortNode.getChild().getType());
-      scanNode = sortNode.getChild();
-    } else {
+    if(type == 2 || type == 4) {
       assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
       SelectionNode selNode = sortNode.getChild();
       assertTrue(selNode.hasQual());
@@ -85,6 +118,9 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
       assertEquals(NodeType.SCAN, selNode.getChild().getType());
       scanNode = selNode.getChild();
       scanNode.setQual(selNode.getQual());
+    } else {
+      assertEquals(NodeType.SCAN, sortNode.getChild().getType());
+      scanNode = sortNode.getChild();
     }
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
@@ -93,16 +129,24 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     Path[] filteredPaths = rewriter.findFilteredPartitionPaths(conf, scanNode);
     assertNotNull(filteredPaths);
 
-    if (!hasFilterCondition) {
+    if (type == 1) {
       assertEquals(5, filteredPaths.length);
       assertEquals("key=17.0", filteredPaths[0].getName());
       assertEquals("key=36.0", filteredPaths[1].getName());
       assertEquals("key=38.0", filteredPaths[2].getName());
       assertEquals("key=45.0", filteredPaths[3].getName());
       assertEquals("key=49.0", filteredPaths[4].getName());
-    } else {
+    } else if (type == 2){
       assertEquals(1, filteredPaths.length);
       assertEquals("key=17.0", filteredPaths[0].getName());
+    } else if (type == 3){
+      assertEquals(3, filteredPaths.length);
+      assertEquals("key=part123", filteredPaths[0].getName());
+      assertEquals("key=part456", filteredPaths[1].getName());
+      assertEquals("key=part789", filteredPaths[2].getName());
+    } else {
+      assertEquals(1, filteredPaths.length);
+      assertEquals("key=part456", filteredPaths[0].getName());
     }
   }
 }
