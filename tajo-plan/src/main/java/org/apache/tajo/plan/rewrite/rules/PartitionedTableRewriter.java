@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -110,11 +111,21 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
   }
 
-  private FilteredPartition findFilteredPaths(OverridableConf queryContext, String tableName,
+  @VisibleForTesting
+  public CatalogService getCatalog() {
+    return catalog;
+  }
+
+  @VisibleForTesting
+  public void setCatalog(CatalogService catalog) {
+    this.catalog = catalog;
+  }
+
+  public FilteredPartitionInfo findFilteredPartitionInfo(OverridableConf queryContext, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
     throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, UnsupportedException {
-    return findFilteredPaths(queryContext, tableName, partitionColumns, conjunctiveForms, tablePath, null);
+    return findFilteredPartitionInfo(queryContext, tableName, partitionColumns, conjunctiveForms, tablePath, null);
   }
 
   /**
@@ -127,12 +138,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private FilteredPartition findFilteredPaths(OverridableConf queryContext, String tableName,
+  private FilteredPartitionInfo findFilteredPartitionInfo(OverridableConf queryContext, String tableName,
       Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath, ScanNode scanNode)
       throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException, UnsupportedException {
 
-    FilteredPartition filteredPartition = new FilteredPartition();
+    FilteredPartitionInfo filteredPartition = new FilteredPartitionInfo();
     Pair<Path[], Long> pair = null;
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
@@ -143,17 +154,17 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       if (conjunctiveForms == null) {
         partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
         if (partitions.isEmpty()) {
-          pair = findFilteredPartitionFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+          pair = findFilteredPartitionInfoFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
         } else {
-          pair = findFilteredPartitionsByPartitionDesc(partitions);
+          pair = findFilteredPartitionInfosByPartitionDesc(partitions);
         }
       } else {
         if (catalog.existPartitions(splits[0], splits[1])) {
           PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
           partitions = catalog.getPartitionsByAlgebra(request);
-          pair = findFilteredPartitionsByPartitionDesc(partitions);
+          pair = findFilteredPartitionInfosByPartitionDesc(partitions);
         } else {
-          pair = findFilteredPartitionFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+          pair = findFilteredPartitionInfoFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
         }
       }
     } catch (UnsupportedException ue) {
@@ -162,9 +173,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       LOG.warn(ue.getMessage());
       partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
       if (partitions.isEmpty()) {
-        pair = findFilteredPartitionFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+        pair = findFilteredPartitionInfoFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
       } else {
-        pair = findFilteredPartitionsByPartitionDesc(partitions);
+        pair = findFilteredPartitionInfosByPartitionDesc(partitions);
       }
       scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
     }
@@ -184,7 +195,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param partitions
    * @return
    */
-  private Pair<Path[], Long> findFilteredPartitionsByPartitionDesc(List<PartitionDescProto> partitions) {
+  private Pair<Path[], Long> findFilteredPartitionInfosByPartitionDesc(List<PartitionDescProto> partitions) {
     Path [] filteredPaths = new Path[partitions.size()];
     long totalVolume = 0L;
     for (int i = 0; i < partitions.size(); i++) {
@@ -206,7 +217,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private Pair<Path[], Long> findFilteredPartitionFromFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
+  private Pair<Path[], Long> findFilteredPartitionInfoFromFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
                                                   FileSystem fs, Path tablePath) throws IOException{
     Pair<Path[], Long> pair = null;
     Path [] filteredPaths = null;
@@ -343,8 +354,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return new Pair<>(paths, totalVolume);
   }
 
-  public FilteredPartition findFilteredPartition(OverridableConf queryContext, ScanNode scanNode) throws IOException,
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
+  @VisibleForTesting
+  public FilteredPartitionInfo findFilteredPartitionInfo(OverridableConf queryContext, ScanNode scanNode) throws
+    IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, UnsupportedException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
@@ -384,10 +396,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
-      return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema,
+      return findFilteredPartitionInfo(queryContext, table.getName(), paritionValuesSchema,
         indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()), scanNode);
     } else { // otherwise, we will get all partition paths.
-      return findFilteredPaths(queryContext, table.getName(), paritionValuesSchema, null, new Path(table.getUri()));
+      return findFilteredPartitionInfo(queryContext, table.getName(), paritionValuesSchema, null, new Path(table.getUri()));
     }
   }
 
@@ -511,7 +523,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
 
       try {
-        FilteredPartition filteredPartition = findFilteredPartition(queryContext, scanNode);
+        FilteredPartitionInfo filteredPartition = findFilteredPartitionInfo(queryContext, scanNode);
         plan.addHistory("PartitionTableRewriter chooses " + filteredPartition.getPartitionPaths().length
           + " of partitions");
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
@@ -529,36 +541,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         throw new TajoInternalError("Partitioned Table Rewrite Failed: \n" + e.getMessage());
       }
       return null;
-    }
-  }
-
-  class FilteredPartition {
-    private Path[] partitionPaths;
-    private List<PartitionDescProto> partitions;
-    private long totalVolume;
-
-    public Path[] getPartitionPaths() {
-      return partitionPaths;
-    }
-
-    public void setPartitionPaths(Path[] partitionPaths) {
-      this.partitionPaths = partitionPaths;
-    }
-
-    public List<PartitionDescProto> getPartitions() {
-      return partitions;
-    }
-
-    public void setPartitions(List<PartitionDescProto> partitions) {
-      this.partitions = partitions;
-    }
-
-    public long getTotalVolume() {
-      return totalVolume;
-    }
-
-    public void setTotalVolume(long totalVolume) {
-      this.totalVolume = totalVolume;
     }
   }
 }
