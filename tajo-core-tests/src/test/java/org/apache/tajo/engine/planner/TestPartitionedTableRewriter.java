@@ -30,35 +30,22 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class TestPartitionedTableRewriter extends QueryTestCaseBase {
-  @Before
-  public void setUp() throws Exception {
-    executeString("create database " + getCurrentDatabase()).close();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    executeString("drop database " + getCurrentDatabase()).close();
-  }
-
   @Test
   public final void testPartitionPruningUsingDirectories() throws Exception {
-    String databaseName = getCurrentDatabase().toLowerCase();
     String tableName = "testPartitionPruningUsingDirectories".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
 
     executeString(
       "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
         + " as select l_orderkey, l_partkey, l_quantity from default.lineitem");
 
-    TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
     assertNotNull(tableDesc);
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();

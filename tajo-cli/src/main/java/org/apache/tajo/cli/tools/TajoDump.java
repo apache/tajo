@@ -217,7 +217,7 @@ public class TajoDump {
         System.err.println("ERROR:" + tableName + "," + e.getMessage());
       }
     }
-    
+
     LOG.warn("Partition dump and restore are not supported yet");
   }
 
