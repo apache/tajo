@@ -325,7 +325,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         for (Path input : scanNode.getInputPaths()) {
           ContentSummary summary = fs.getContentSummary(input);
           totalVolume += summary.getLength();
-          totalVolume += summary.getFileCount();
         }
         scanNode.getTableDesc().getStats().setNumBytes(totalVolume);
       } catch (Throwable e) {
