@@ -15,6 +15,19 @@ CREATE DATABASE IF NOT EXISTS "TestTajoDump";
 CREATE TABLE "TestTajoDump"."TableName3" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN(col3 INT4, col4 INT4);
 
 --
+-- Table Partitions: TableName3
+-- Partition dump and restore are not supported yet
+--
+
+
+
+
+--
 -- Name: "TestTajoDump"."TableName4"; Type: TABLE; Storage: TEXT
 --
 CREATE TABLE "TestTajoDump"."TableName4" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN(col3 TEXT, col4 DATE);
+
+--
+-- Table Partitions: TableName4
+-- Partition dump and restore are not supported yet
+--

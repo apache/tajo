@@ -183,7 +183,7 @@ public class TajoDump {
         if (table.getMeta().getDataFormat().equalsIgnoreCase("SYSTEM")) {
           continue;
         }
-        
+
         if (table.isExternal()) {
           writer.write(DDLBuilder.buildDDLForExternalTable(table));
         } else {
@@ -191,17 +191,18 @@ public class TajoDump {
         }
 
         // TODO: This should be improved at TAJO-1891
-//        if (table.hasPartition()) {
-//          writer.write("\n\n");
-//          writer.write("--\n");
-//          writer.write(String.format("-- Table Partitions: %s%n", tableName));
-//          writer.write("--\n");
+        if (table.hasPartition()) {
+          writer.write("\n\n");
+          writer.write("--\n");
+          writer.write(String.format("-- Table Partitions: %s%n", tableName));
+          writer.write("-- Partition dump and restore are not supported yet\n");
+          writer.write("--\n");
 //          List<PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
 //          for (PartitionDescProto eachPartitionProto : partitionProtos) {
 //            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
 //          }
-//          writer.write("\n\n");
-//        }
+          writer.write("\n\n");
+        }
 
         if (client.hasIndexes(tableName)) {
           List<CatalogProtos.IndexDescProto> indexeProtos = client.getIndexes(tableName);
@@ -217,9 +218,8 @@ public class TajoDump {
         System.err.println("ERROR:" + tableName + "," + e.getMessage());
       }
     }
-
-    LOG.warn("Partition dump and restore are not supported yet");
   }
+
 
   private static String toDateString() {
     DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
