@@ -52,16 +52,21 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
     assertNotNull(tableDesc);
 
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
+
     // Get all partitions
-    verifyFilteredPartitionInfo("SELECT * FROM " + canonicalTableName + " ORDER BY key", false);
+    verifyFilteredPartitionInfo(rewriter, "SELECT * FROM " + canonicalTableName + " ORDER BY key", false);
 
     // Get partition with filter condition
-    verifyFilteredPartitionInfo("SELECT * FROM " + canonicalTableName + " WHERE key = 17.0 ORDER BY key", true);
+    verifyFilteredPartitionInfo(rewriter, "SELECT * FROM " + canonicalTableName + " WHERE key = 17.0 ORDER BY key",
+      true);
 
     executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }
 
-  private void verifyFilteredPartitionInfo(String sql, boolean hasFilterCondition) throws Exception {
+  private void verifyFilteredPartitionInfo(PartitionedTableRewriter rewriter, String sql, boolean hasFilterCondition)
+    throws Exception {
     Expr expr = sqlParser.parse(sql);
     QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
@@ -89,8 +94,6 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
       scanNode.setQual(selNode.getQual());
     }
 
-    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
-    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
