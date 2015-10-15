@@ -2357,6 +2357,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setPath(res.getString("PATH"));
         builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
 
+        setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
+
         partitions.add(builder.build());
       }
     } catch (SQLException se) {
