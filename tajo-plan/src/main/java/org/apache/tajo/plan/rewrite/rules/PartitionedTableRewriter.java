@@ -145,7 +145,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     FilteredPartitionInfo filteredPartition = new FilteredPartitionInfo();
     Pair<Path[], Long> pair = null;
-    Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
