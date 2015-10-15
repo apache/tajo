@@ -119,8 +119,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  @VisibleForTesting
-  public Path [] findFilteredPaths(OverridableConf queryContext, Schema partitionColumns, EvalNode [] conjunctiveForms,
+  private Path [] findFilteredPaths(OverridableConf queryContext, Schema partitionColumns, EvalNode [] conjunctiveForms,
                                     Path tablePath)
       throws IOException {
 
@@ -224,7 +223,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return paths;
   }
 
-  private Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException {
+  @VisibleForTesting
+  public Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 

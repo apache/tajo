@@ -19,23 +19,25 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestPartitionedTableRewriter extends QueryTestCaseBase {
+
   @Test
   public final void testPartitionPruningUsingDirectories() throws Exception {
     String tableName = "testPartitionPruningUsingDirectories".toLowerCase();
@@ -48,33 +50,59 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
     assertNotNull(tableDesc);
 
+    // Get all partitions
+    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " ORDER BY key", false);
+
+    // Get partition with filter condition
+    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " WHERE key = 17.0 ORDER BY key", true);
+
+    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
+  }
+
+  private void verifyFindFilteredPartitionPaths(String sql, boolean hasFilterCondition) throws Exception {
+    Expr expr = sqlParser.parse(sql);
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
+
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    ProjectionNode projNode = root.getChild();
+
+    assertEquals(NodeType.SORT, projNode.getChild().getType());
+    SortNode sortNode = projNode.getChild();
+
+    ScanNode scanNode = null;
+    if(!hasFilterCondition) {
+      assertEquals(NodeType.SCAN, sortNode.getChild().getType());
+      scanNode = sortNode.getChild();
+    } else {
+      assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
+      SelectionNode selNode = sortNode.getChild();
+      assertTrue(selNode.hasQual());
+
+      assertEquals(NodeType.SCAN, selNode.getChild().getType());
+      scanNode = selNode.getChild();
+      scanNode.setQual(selNode.getQual());
+    }
+
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    Schema partitionColumns = tableDesc.getPartitionMethod().getExpressionSchema();
-
-    // Get all partitions
-    Path[] filteredPaths = rewriter.findFilteredPaths(conf, partitionColumns, null, new Path(tableDesc.getUri()));
+    Path[] filteredPaths = rewriter.findFilteredPartitionPaths(conf, scanNode);
     assertNotNull(filteredPaths);
-    assertEquals(5, filteredPaths.length);
-    assertEquals("key=17.0", filteredPaths[0].getName());
-    assertEquals("key=36.0", filteredPaths[1].getName());
-    assertEquals("key=38.0", filteredPaths[2].getName());
-    assertEquals("key=45.0", filteredPaths[3].getName());
-    assertEquals("key=49.0", filteredPaths[4].getName());
 
-    // Get specified partition
-    BinaryEval qual = new BinaryEval(EvalType.EQUAL
-      , new FieldEval(new Column("key", TajoDataTypes.Type.FLOAT8))
-      , new ConstEval(DatumFactory.createFloat8("17.0"))
-    );
-
-    filteredPaths = rewriter.findFilteredPaths(conf, partitionColumns, new EvalNode[] {qual},
-      new Path(tableDesc.getUri()));
-    assertNotNull(filteredPaths);
-    assertEquals(1, filteredPaths.length);
-    assertEquals("key=17.0", filteredPaths[0].getName());
-
-    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
+    if (!hasFilterCondition) {
+      assertEquals(5, filteredPaths.length);
+      assertEquals("key=17.0", filteredPaths[0].getName());
+      assertEquals("key=36.0", filteredPaths[1].getName());
+      assertEquals("key=38.0", filteredPaths[2].getName());
+      assertEquals("key=45.0", filteredPaths[3].getName());
+      assertEquals("key=49.0", filteredPaths[4].getName());
+    } else {
+      assertEquals(1, filteredPaths.length);
+      assertEquals("key=17.0", filteredPaths[0].getName());
+    }
   }
 }
