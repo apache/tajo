@@ -219,7 +219,7 @@ public class TestHiveCatalogStore {
 
   }
 
-  // TODO: This should be added at TAJO-1891
+  @Test
   public void testAddTableByPartition() throws Exception {
     TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
 
