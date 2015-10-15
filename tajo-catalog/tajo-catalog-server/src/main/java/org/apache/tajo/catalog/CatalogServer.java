@@ -815,6 +815,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
         return GetTableStatsResponse.newBuilder()
+            .setState(OK)
             .addAllStats(store.getAllTableStats())
             .build();
 

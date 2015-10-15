@@ -287,6 +287,10 @@ Release 0.11.0 - unreleased
 
     TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
 
+
+    TAJO-1923: Selecting on information_schema.table_stats throws an internal 
+    error. (jihoon)
+
     TAJO-1917: Conflict on Parquet Libraries. (Contributed by Jongyoung Park.
     Committed by jihoon)
 
