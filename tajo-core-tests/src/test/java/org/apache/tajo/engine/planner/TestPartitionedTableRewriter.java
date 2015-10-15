@@ -19,10 +19,8 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.http.conn.scheme.Scheme;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.algebra.LiteralValue;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -35,8 +33,6 @@ import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.sql.ResultSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
