@@ -42,7 +42,7 @@ import static org.junit.Assert.assertTrue;
 public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
-  public final void testPartitionPruningUsingManuallyAddedPartition() throws Exception {
+  public final void testPartitionPruningWithManualPartitionPathCreation() throws Exception {
     String tableName = "testPartitionPruningUsingManualAddedPartition".toLowerCase();
     String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
 
@@ -65,38 +65,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     fs.mkdirs(path);
     FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
 
-    // Get all partitions
-    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " ORDER BY key", 3);
-
-    // Get partition with filter condition
-    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " WHERE key = 'part456' ORDER BY key", 4);
-
-    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
-  }
-
-  @Test
-  public final void testPartitionPruningUsingDirectories() throws Exception {
-    String tableName = "testPartitionPruningUsingDirectories".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
-
-    executeString(
-      "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
-        + " as select l_orderkey, l_partkey, l_quantity from default.lineitem");
-
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    assertNotNull(tableDesc);
-
-    // Get all partitions
-    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " ORDER BY key", 1);
-
-    // Get partition with filter condition
-    verifyFindFilteredPartitionPaths("SELECT * FROM " + canonicalTableName + " WHERE key = 17.0 ORDER BY key", 2);
-
-    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
-  }
-
-  private void verifyFindFilteredPartitionPaths(String sql, int type) throws Exception {
-    Expr expr = sqlParser.parse(sql);
+    Expr expr = sqlParser.parse("SELECT * FROM " + canonicalTableName + " WHERE key = 'part456' ORDER BY key");
     QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
@@ -109,19 +78,13 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals(NodeType.SORT, projNode.getChild().getType());
     SortNode sortNode = projNode.getChild();
 
-    ScanNode scanNode = null;
-    if(type == 2 || type == 4) {
-      assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
-      SelectionNode selNode = sortNode.getChild();
-      assertTrue(selNode.hasQual());
+    assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
+    SelectionNode selNode = sortNode.getChild();
+    assertTrue(selNode.hasQual());
 
-      assertEquals(NodeType.SCAN, selNode.getChild().getType());
-      scanNode = selNode.getChild();
-      scanNode.setQual(selNode.getQual());
-    } else {
-      assertEquals(NodeType.SCAN, sortNode.getChild().getType());
-      scanNode = sortNode.getChild();
-    }
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
@@ -129,24 +92,56 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     Path[] filteredPaths = rewriter.findFilteredPartitionPaths(conf, scanNode);
     assertNotNull(filteredPaths);
 
-    if (type == 1) {
-      assertEquals(5, filteredPaths.length);
-      assertEquals("key=17.0", filteredPaths[0].getName());
-      assertEquals("key=36.0", filteredPaths[1].getName());
-      assertEquals("key=38.0", filteredPaths[2].getName());
-      assertEquals("key=45.0", filteredPaths[3].getName());
-      assertEquals("key=49.0", filteredPaths[4].getName());
-    } else if (type == 2){
-      assertEquals(1, filteredPaths.length);
-      assertEquals("key=17.0", filteredPaths[0].getName());
-    } else if (type == 3){
-      assertEquals(3, filteredPaths.length);
-      assertEquals("key=part123", filteredPaths[0].getName());
-      assertEquals("key=part456", filteredPaths[1].getName());
-      assertEquals("key=part789", filteredPaths[2].getName());
-    } else {
-      assertEquals(1, filteredPaths.length);
-      assertEquals("key=part456", filteredPaths[0].getName());
-    }
+    assertEquals(1, filteredPaths.length);
+    assertEquals("key=part456", filteredPaths[0].getName());
+
+    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
+  }
+
+  @Test
+  public final void testPartitionPruningWitCTAS() throws Exception {
+    String tableName = "testPartitionPruningUsingDirectories".toLowerCase();
+    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
+
+    executeString(
+      "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
+        + " as select l_orderkey, l_partkey, l_quantity from default.lineitem");
+
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    assertNotNull(tableDesc);
+
+    Expr expr = sqlParser.parse("SELECT * FROM " + canonicalTableName + " WHERE key <= 40.0 ORDER BY key");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
+
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    ProjectionNode projNode = root.getChild();
+
+    assertEquals(NodeType.SORT, projNode.getChild().getType());
+    SortNode sortNode = projNode.getChild();
+
+    assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
+    SelectionNode selNode = sortNode.getChild();
+    assertTrue(selNode.hasQual());
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    scanNode.setQual(selNode.getQual());
+
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
+
+    Path[] filteredPaths = rewriter.findFilteredPartitionPaths(conf, scanNode);
+    assertNotNull(filteredPaths);
+
+    assertEquals(3, filteredPaths.length);
+    assertEquals("key=17.0", filteredPaths[0].getName());
+    assertEquals("key=36.0", filteredPaths[1].getName());
+    assertEquals("key=38.0", filteredPaths[2].getName());
+
+    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }
 }
