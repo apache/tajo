@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.StorageFormatDescriptor;
 import org.apache.hadoop.hive.ql.io.StorageFormatFactory;
@@ -112,7 +113,8 @@ public class TestHiveCatalogStore {
     StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.TEXTFILE);
     org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, CUSTOMER);
     assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
-    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
+    //IgnoreKeyTextOutputFormat was deprecated
+    assertEquals(HiveIgnoreKeyTextOutputFormat.class.getName(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
     assertEquals(table.getName(), table1.getName());
@@ -219,7 +221,8 @@ public class TestHiveCatalogStore {
     StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.TEXTFILE);
     org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, SUPPLIER);
     assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
-    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
+    //IgnoreKeyTextOutputFormat was deprecated
+    assertEquals(HiveIgnoreKeyTextOutputFormat.class.getName(), hiveTable.getSd().getOutputFormat());
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, SUPPLIER));
     assertEquals(table.getName(), table1.getName());
