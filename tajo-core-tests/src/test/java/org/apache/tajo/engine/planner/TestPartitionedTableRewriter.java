@@ -62,11 +62,11 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
 
-    createPartitionTableIncludedOnePartitionKeyColumn(fs, rootDir, schema, meta);
-    createPartitionTableIncludedMultiplePartitionKeyColumns(fs, rootDir, schema, meta);
+    createExternalTableIncludedOnePartitionKeyColumn(fs, rootDir, schema, meta);
+    createExternalTableIncludedMultiplePartitionKeyColumns(fs, rootDir, schema, meta);
   }
 
-  private static void createPartitionTableIncludedOnePartitionKeyColumn(FileSystem fs, Path rootDir, Schema schema,
+  private static void createExternalTableIncludedOnePartitionKeyColumn(FileSystem fs, Path rootDir, Schema schema,
     TableMeta meta) throws Exception {
     Schema partSchema = new Schema();
     partSchema.addColumn("key", TajoDataTypes.Type.TEXT);
@@ -96,7 +96,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
   }
 
-  private static void createPartitionTableIncludedMultiplePartitionKeyColumns(FileSystem fs, Path rootDir,
+  private static void createExternalTableIncludedMultiplePartitionKeyColumns(FileSystem fs, Path rootDir,
       Schema schema, TableMeta meta) throws Exception {
     Schema partSchema = new Schema();
     partSchema.addColumn("key1", TajoDataTypes.Type.TEXT);
