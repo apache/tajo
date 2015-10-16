@@ -530,6 +530,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       try {
         Pair<Path[], List<PartitionDescProto>> pair = findFilteredPartitionPair(queryContext, scanNode);
         plan.addHistory("PartitionTableRewriter chooses " + pair.getFirst().length + " of partitions");
+
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
         rewrittenScanNode.init(scanNode, pair.getFirst());
         rewrittenScanNode.setPartitions(pair.getSecond());
