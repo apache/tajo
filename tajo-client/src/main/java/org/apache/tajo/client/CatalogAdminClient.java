@@ -144,7 +144,7 @@ public interface CatalogAdminClient extends Closeable {
    * @param tableName The table name to get. This name is case sensitive.
    * @return lists of partitions
    */
-  List<PartitionDescProto> getPartitionsOfTable(final String tableName) throws UndefinedDatabaseException,
+  List<PartitionDescProto> getAllPartitions(final String tableName) throws UndefinedDatabaseException,
     UndefinedTableException, UndefinedPartitionMethodException;
 
   List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName);

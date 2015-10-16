@@ -21,6 +21,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+			* 13 - 2015-10-14: Disable partition pruning using catalog temporarily. (TAJO-1926)
       * 12 - 2015-09-28: Change the variable name storeType to dataFormat (TAJO-1663)
       * 11 - 2015-09-23: Add contents length and file count for partition directory (TAJO-1493)
       * 10 - 2015-09-22: Well support for self-describing data formats (TAJO-1832)
@@ -35,7 +36,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-	<tns:base version="12">
+	<tns:base version="13">
 		<tns:objects>
 			<tns:Object name="META" type="table" order="0">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -174,7 +175,6 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   				PARTITION_NAME VARCHAR(128),
   				PARTITION_VALUE VARCHAR(1024),
   				PATH VARCHAR(4096),
-  				NUM_BYTES BIGINT,
   				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
   				UNIQUE (TID, PARTITION_NAME)
 				)]]>

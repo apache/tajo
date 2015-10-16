@@ -285,8 +285,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1926: Disable partition pruning using catalog temporarily. (jaehwa)
+    
     TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
-
 
     TAJO-1923: Selecting on information_schema.table_stats throws an internal 
     error. (jihoon)
@@ -721,8 +722,6 @@ Release 0.11.0 - unreleased
 
     TAJO-1887: Disable the alter table add partition statement temporarily.
     (jaehwa)
-
-    TAJO-1493: Make partition pruning based on catalog informations. (jaehwa)
 
     TAJO-1673: Implement recover partitions. (jaehwa)
 

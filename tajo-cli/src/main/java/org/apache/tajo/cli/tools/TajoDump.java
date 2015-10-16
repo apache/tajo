@@ -20,6 +20,8 @@ package org.apache.tajo.cli.tools;
 
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -42,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class TajoDump {
+  private static final Log LOG = LogFactory.getLog(TajoDump.class);
   private static final org.apache.commons.cli.Options options;
 
   static {
@@ -180,25 +183,24 @@ public class TajoDump {
         if (table.getMeta().getDataFormat().equalsIgnoreCase("SYSTEM")) {
           continue;
         }
-        
+
         if (table.isExternal()) {
           writer.write(DDLBuilder.buildDDLForExternalTable(table));
         } else {
           writer.write(DDLBuilder.buildDDLForBaseTable(table));
         }
+
+        // TODO: This should be improved at TAJO-1891
         if (table.hasPartition()) {
           writer.write("\n\n");
           writer.write("--\n");
           writer.write(String.format("-- Table Partitions: %s%n", tableName));
+          writer.write("-- Partition dump and restore are not supported yet\n");
           writer.write("--\n");
-          // TODO: This should be improved at TAJO-1891
 //          List<PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
 //          for (PartitionDescProto eachPartitionProto : partitionProtos) {
 //            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
 //          }
-          writer.write(String.format("ALTER TABLE %s REPAIR PARTITION;",
-            CatalogUtil.denormalizeIdentifier(databaseName) + "." + CatalogUtil.denormalizeIdentifier(tableName)));
-
           writer.write("\n\n");
         }
 
@@ -217,6 +219,7 @@ public class TajoDump {
       }
     }
   }
+
 
   private static String toDateString() {
     DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");

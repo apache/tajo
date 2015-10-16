@@ -92,96 +92,18 @@ public interface CatalogStore extends Closeable {
 
   /************************** PARTITIONS *****************************/
   /**
-   * Check if list of partitions exist on catalog.
-   *
-   * @param databaseName
-   * @param tableName
-   * @return
-   * @throws UndefinedDatabaseException
-   * @throws UndefinedTableException
-   * @throws UndefinedPartitionMethodException
-   */
-  boolean existPartitions(String databaseName, String tableName) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
-
-  /**
    * Get all partitions of a table
    * @param tableName the table name
    * @return
    * @throws TajoException
    */
-  List<CatalogProtos.PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UnsupportedException;
+  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws
+      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException;
 
   CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
-                                                String partitionName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException, UndefinedPartitionException;
-
-  /**
-   * Get list of partitions matching specified algrbra expression.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Assume that an user want to give a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20 .
-   *
-   * Then, the algebra expression would be written as following:
-   *
-   *  {
-   *  "LeftExpr": {
-   *    "LeftExpr": {
-   *      "Qualifier": "default.table1",
-   *      "ColumnName": "col3",
-   *      "OpType": "Column"
-   *    },
-   *    "RightExpr": {
-   *      "Value": "20.0",
-   *      "ValueType": "Unsigned_Integer",
-   *      "OpType": "Literal"
-   *    },
-   *    "OpType": "GreaterThan"
-   *  },
-   *  "RightExpr": {
-   *    "LeftExpr": {
-   *      "LeftExpr": {
-   *        "Qualifier": "default.table1",
-   *        "ColumnName": "col1",
-   *        "OpType": "Column"
-   *      },
-   *      "RightExpr": {
-   *        "Value": "1",
-   *        "ValueType": "String",
-   *        "OpType": "Literal"
-   *      },
-   *      "OpType": "Equals"
-   *    },
-   *    "RightExpr": {
-   *      "LeftExpr": {
-   *        "Qualifier": "default.table1",
-   *        "ColumnName": "col1",
-   *        "OpType": "Column"
-   *      },
-   *      "RightExpr": {
-   *        "Value": "100",
-   *        "ValueType": "String",
-   *        "OpType": "Literal"
-   *      },
-   *      "OpType": "Equals"
-   *    },
-   *    "OpType": "Or"
-   *  },
-   *  "OpType": "And"
-   * }
-   *
-   * @param request the database name, the table name, the algebra expression
-   * @return list of PartitionDescProto
-   * @throws UndefinedDatabaseException
-   * @throws UndefinedTableException
-   * @throws UndefinedPartitionMethodException
-   * @throws UndefinedOperatorException
-   */
-  List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UndefinedOperatorException, UnsupportedException;
+                                                String partitionName)
+      throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
+      UndefinedPartitionMethodException;
 
   List<TablePartitionProto> getAllPartitions();
 

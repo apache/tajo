@@ -59,7 +59,7 @@ public class TestCatalog {
 	static CatalogServer server;
 	static CatalogService catalog;
 
-  @BeforeClass
+	@BeforeClass
 	public static void setUp() throws Exception {
 
     server = new MiniCatalogServer();
@@ -590,7 +590,7 @@ public class TestCatalog {
 
 		assertEquals(retrived.getFunctionName(),"test2");
 		assertEquals(retrived.getLegacyFuncClass(),TestFunc1.class);
-		assertEquals(retrived.getFuncType(), FunctionType.UDF);
+		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
 
   @Test
@@ -785,8 +785,7 @@ public class TestCatalog {
         .addColumn("age", Type.INT4)
         .addColumn("score", Type.FLOAT8);
 
-    String simpleTableName = "addedtable";
-    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, simpleTableName);
+    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
@@ -801,7 +800,7 @@ public class TestCatalog {
 
     TableDesc desc =
         new TableDesc(tableName, schema, meta,
-            new Path(CommonTestingUtil.getTestDir(), simpleTableName).toUri());
+            new Path(CommonTestingUtil.getTestDir(), "addedtable").toUri());
     desc.setPartitionMethod(partitionMethodDesc);
     assertFalse(catalog.existsTable(tableName));
     catalog.createTable(desc);
@@ -816,115 +815,19 @@ public class TestCatalog {
     testAddPartition(tableName, "id=10/name=aaa");
     testAddPartition(tableName, "id=20/name=bbb");
 
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, simpleTableName);
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 2);
-    assertEquals(partitions.get(0).getNumBytes(), 0L);
-
-    testGetPartitionsByAlgebra(DEFAULT_DATABASE_NAME, simpleTableName);
 
     testDropPartition(tableName, "id=10/name=aaa");
     testDropPartition(tableName, "id=20/name=bbb");
 
-    partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, simpleTableName);
+    partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
     assertNotNull(partitions);
     assertEquals(partitions.size(), 0);
 
     catalog.dropTable(tableName);
     assertFalse(catalog.existsTable(tableName));
-  }
-
-  private void testGetPartitionsByAlgebra(String databaseName, String tableName) throws Exception {
-    String qfTableName = databaseName + "." + tableName;
-
-    // Equals Operator
-    CatalogProtos.PartitionsByAlgebraProto.Builder request = CatalogProtos.PartitionsByAlgebraProto.newBuilder();
-    request.setDatabaseName(databaseName);
-    request.setTableName(tableName);
-
-    String algebra = "{\n" +
-      "  \"LeftExpr\": {\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"id\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Value\": \"10\",\n" +
-      "      \"ValueType\": \"Unsigned_Integer\",\n" +
-      "      \"OpType\": \"Literal\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"Equals\"\n" +
-      "  },\n" +
-      "  \"RightExpr\": {\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"name\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Value\": \"aaa\",\n" +
-      "      \"ValueType\": \"String\",\n" +
-      "      \"OpType\": \"Literal\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"Equals\"\n" +
-      "  },\n" +
-      "  \"OpType\": \"And\"\n" +
-      "}";
-
-    request.setAlgebra(algebra);
-
-    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsByAlgebra(request.build());
-    assertNotNull(partitions);
-    assertEquals(1, partitions.size());
-
-    // GreaterThan Operator and InPredicate Operatior
-    algebra = "{\n" +
-      "  \"LeftExpr\": {\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"id\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Value\": \"0\",\n" +
-      "      \"ValueType\": \"Unsigned_Integer\",\n" +
-      "      \"OpType\": \"Literal\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"GreaterThan\"\n" +
-      "  },\n" +
-      "  \"RightExpr\": {\n" +
-      "    \"IsNot\": false,\n" +
-      "    \"LeftExpr\": {\n" +
-      "      \"Qualifier\": \"" + qfTableName + "\",\n" +
-      "      \"ColumnName\": \"name\",\n" +
-      "      \"OpType\": \"Column\"\n" +
-      "    },\n" +
-      "    \"RightExpr\": {\n" +
-      "      \"Values\": [\n" +
-      "        {\n" +
-      "          \"Value\": \"aaa\",\n" +
-      "          \"ValueType\": \"String\",\n" +
-      "          \"OpType\": \"Literal\"\n" +
-      "        },\n" +
-      "        {\n" +
-      "          \"Value\": \"bbb\",\n" +
-      "          \"ValueType\": \"String\",\n" +
-      "          \"OpType\": \"Literal\"\n" +
-      "        }\n" +
-      "      ],\n" +
-      "      \"OpType\": \"ValueList\"\n" +
-      "    },\n" +
-      "    \"OpType\": \"InPredicate\"\n" +
-      "  },\n" +
-      "  \"OpType\": \"And\"\n" +
-      "}";
-
-    request.setAlgebra(algebra);
-
-    partitions = catalog.getPartitionsByAlgebra(request.build());
-    assertNotNull(partitions);
-    assertEquals(2, partitions.size());
   }
 
   private void testAddPartition(String tableName, String partitionName) throws Exception {

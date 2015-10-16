@@ -18,11 +18,14 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Function;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.StringUtils;
 
-import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -115,19 +118,31 @@ public class DDLBuilder {
     sb.append(" USING " +  CatalogUtil.getBackwardCompitableDataFormat(meta.getDataFormat()));
   }
 
-  private static void buildWithClause(StringBuilder sb, TableMeta meta) {
+  private static void buildWithClause(final StringBuilder sb, TableMeta meta) {
     KeyValueSet options = meta.getOptions();
     if (options != null && options.size() > 0) {
-      boolean first = true;
+
       sb.append(" WITH (");
-      for (Map.Entry<String, String> entry : meta.getOptions().getAllKeyValus().entrySet()) {
-        if (first) {
-          first = false;
-        } else {
-          sb.append(", ");
+
+      // sort table properties in an lexicographic order of the property keys.
+      Map.Entry<String, String>[] entries = meta.getOptions().getAllKeyValus().entrySet().toArray(
+        new Map.Entry[meta.getOptions().size()]);
+
+      Arrays.sort(entries, new Comparator<Map.Entry<String, String>>() {
+        @Override
+        public int compare(Map.Entry<String, String> o1, Map.Entry<String, String> o2) {
+          return o1.getKey().compareTo(o2.getKey());
         }
-        sb.append("'").append(entry.getKey()).append("'='").append(entry.getValue()).append("'");
-      }
+      });
+
+      // Join all properties by comma (',')
+      sb.append(StringUtils.join(entries, ", ", new Function<Map.Entry<String, String>, String>() {
+        @Override
+        public String apply(Map.Entry<String, String> e) {
+          return "'" + e.getKey() + "'='" + e.getValue() + "'";
+        }
+      }));
+
       sb.append(")");
     }
   }
@@ -167,7 +182,8 @@ public class DDLBuilder {
 
     List<Column> colums = table.getPartitionMethod().getExpressionSchema().getAllColumns();
 
-    String[] splitPartitionName = partition.getPartitionName().split(File.separator);
+    String[] splitPartitionName = partition.getPartitionName().split("/");
+
     for(int i = 0; i < splitPartitionName.length; i++) {
       String[] partitionColumnValue = splitPartitionName[i].split("=");
       if (i > 0) {

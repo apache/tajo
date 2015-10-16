@@ -407,29 +407,6 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException {
-
-    try {
-      final BlockingInterface stub = getStub();
-      final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
-      final ReturnState state = stub.existsPartitions(null, request);
-
-      if (isThisError(state, UNDEFINED_PARTITIONS)) {
-        return false;
-      }
-      throwsIfThisError(state, UndefinedDatabaseException.class);
-      throwsIfThisError(state, UndefinedTableException.class);
-      throwsIfThisError(state, UndefinedPartitionMethodException.class);
-      ensureOk(state);
-      return true;
-
-    } catch (ServiceException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
   public final PartitionDescProto getPartition(final String databaseName, final String tableName,
                                                final String partitionName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionException,
@@ -457,41 +434,20 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   }
 
   @Override
-  public final List<PartitionDescProto> getPartitionsOfTable(final String databaseName, final String tableName) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+  public final List<PartitionDescProto> getPartitions(final String databaseName, final String tableName) {
     try {
       final BlockingInterface stub = getStub();
-      final TableIdentifierProto request = buildTableIdentifier(databaseName, tableName);
+      final PartitionIdentifierProto request = PartitionIdentifierProto.newBuilder()
+          .setDatabaseName(databaseName)
+          .setTableName(tableName)
+          .build();
       final GetPartitionsResponse response = stub.getPartitionsByTableName(null, request);
 
-      throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
-      throwsIfThisError(response.getState(), UndefinedTableException.class);
-      throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
       ensureOk(response.getState());
       return response.getPartitionList();
 
     } catch (ServiceException e) {
       throw new RuntimeException(e);
-    }
-  }
-
-  @Override
-  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-    UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-    UnsupportedException {
-    try {
-      final BlockingInterface stub = getStub();
-      GetPartitionsResponse response = stub.getPartitionsByAlgebra(null, request);
-
-      throwsIfThisError(response.getState(), UndefinedDatabaseException.class);
-      throwsIfThisError(response.getState(), UndefinedTableException.class);
-      throwsIfThisError(response.getState(), UndefinedPartitionMethodException.class);
-      throwsIfThisError(response.getState(), UnsupportedException.class);
-      ensureOk(response.getState());
-      return response.getPartitionList();
-    } catch (ServiceException e) {
-      LOG.error(e.getMessage(), e);
-      return null;
     }
   }
 

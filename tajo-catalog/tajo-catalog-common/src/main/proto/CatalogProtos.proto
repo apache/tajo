@@ -248,30 +248,18 @@ message PartitionDescProto {
   repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
   optional int32 id = 4;
-  optional int64 numBytes = 5;
 }
 
 message PartitionKeyProto {
   required string columnName = 1;
-  required string partitionValue = 2;
+  optional string parentColumnName = 2;
+  required string partitionValue = 3;
 }
 
 message PartitionIdentifierProto {
   required string databaseName = 1;
   required string tableName = 2;
   optional string partitionName = 3;
-}
-
-message PartitionsByAlgebraProto {
-  required string databaseName = 1;
-  required string tableName = 2;
-  required string algebra = 3; // json object which contains algebra expressions
-}
-
-message PartitionsByFilterProto {
-  required string databaseName = 1;
-  required string tableName = 2;
-  required string filter = 3; // filter string: (col1 ='1' or col1 = '100') and col3 > 20
 }
 
 message TablespaceProto {

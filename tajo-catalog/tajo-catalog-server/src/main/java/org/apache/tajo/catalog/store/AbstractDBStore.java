@@ -25,27 +25,25 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.*;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.util.JavaResourceUtil;
-import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
-import java.sql.Date;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
@@ -59,8 +57,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String catalogUri;
 
   protected final String insertPartitionSql = "INSERT INTO " + TB_PARTTIONS
-    + "(" + COL_TABLES_PK + ", PARTITION_NAME, PATH, " + COL_PARTITION_BYTES
-    + ") VALUES (?, ? , ?, ?)";
+    + "(" + COL_TABLES_PK + ", PARTITION_NAME, PATH) VALUES (?, ? , ?)";
 
   protected final String insertPartitionKeysSql = "INSERT INTO " + TB_PARTTION_KEYS  + "("
     + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", "
@@ -1383,7 +1380,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt1.setInt(1, tableId);
       pstmt1.setString(2, partition.getPartitionName());
       pstmt1.setString(3, partition.getPath());
-      pstmt1.setLong(4, partition.getNumBytes());
       pstmt1.executeUpdate();
 
       pstmt2 = conn.prepareStatement(insertPartitionKeysSql);
@@ -2137,7 +2133,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PartitionDescProto.Builder builder = null;
 
     try {
-      String sql = "SELECT PATH, " + COL_PARTITIONS_PK  + ", " + COL_PARTITION_BYTES + " FROM " + TB_PARTTIONS +
+      String sql = "SELECT PATH, " + COL_PARTITIONS_PK + " FROM " + TB_PARTTIONS +
         " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ";
 
       if (LOG.isDebugEnabled()) {
@@ -2155,7 +2151,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setId(res.getInt(COL_PARTITIONS_PK));
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
-        builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
       } else {
         throw new UndefinedPartitionException(partitionName);
@@ -2196,8 +2191,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public List<PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName)
+  public List<PartitionDescProto> getPartitions(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2209,8 +2205,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ensurePartitionTable(tableName, tableId);
 
     try {
-      String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES
-        + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
+      String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + " FROM "
+        + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -2225,7 +2221,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder = PartitionDescProto.newBuilder();
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(res.getString("PARTITION_NAME"));
-        builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
         setPartitionKeys(res.getInt(COL_PARTITIONS_PK), builder);
         partitions.add(builder.build());
       }
@@ -2236,256 +2231,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     return partitions;
   }
-
-  @Override
-  public boolean existPartitions(String databaseName, String tableName) throws UndefinedDatabaseException,
-    UndefinedTableException, UndefinedPartitionMethodException {
-
-    String sql = null;
-    Connection conn = null;
-    ResultSet res = null;
-    PreparedStatement pstmt = null;
-    boolean result = false;
-
-    final int databaseId = getDatabaseId(databaseName);
-    final int tableId = getTableId(databaseId, databaseName, tableName);
-    ensurePartitionTable(tableName, tableId);
-
-    try {
-      if (this instanceof DerbyStore) {
-        sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? FETCH FIRST ROW ONLY ";
-      } else {
-        sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? LIMIT 1 ";
-      }
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sql);
-      }
-
-      conn = getConnection();
-      pstmt = conn.prepareStatement(sql);
-      pstmt.setInt(1, tableId);
-      res = pstmt.executeQuery();
-
-      if (res.next()) {
-        result = true;
-      }
-    } catch (SQLException se) {
-      throw new TajoInternalError(se);
-    } finally {
-      CatalogUtil.closeQuietly(pstmt, res);
-    }
-    return result;
-  }
-
-  @Override
-  public List<PartitionDescProto> getPartitionsByAlgebra(PartitionsByAlgebraProto request) throws
-      UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
-      UnsupportedException {
-    Connection conn = null;
-    PreparedStatement pstmt = null;
-    ResultSet res = null;
-    int currentIndex = 1;
-    String selectStatement = null;
-    Pair<String, List<PartitionFilterSet>> pair = null;
-
-    List<PartitionDescProto> partitions = TUtil.newList();
-    List<PartitionFilterSet> filterSets = null;
-
-    int databaseId = getDatabaseId(request.getDatabaseName());
-    int tableId = getTableId(databaseId, request.getDatabaseName(), request.getTableName());
-    if (!existPartitionMethod(request.getDatabaseName(), request.getTableName())) {
-      throw new UndefinedPartitionMethodException(request.getTableName());
-    }
-
-    try {
-      TableDescProto tableDesc = getTable(request.getDatabaseName(), request.getTableName());
-
-      pair = getSelectStatementAndPartitionFilterSet(tableDesc.getTableName(), tableDesc.getPartition()
-        .getExpressionSchema().getFieldsList(), request.getAlgebra());
-
-      selectStatement = pair.getFirst();
-      filterSets = pair.getSecond();
-
-      conn = getConnection();
-      pstmt = conn.prepareStatement(selectStatement);
-
-      // Set table id by force because first parameter of all direct sql is table id
-      pstmt.setInt(currentIndex, tableId);
-      currentIndex++;
-
-      for (PartitionFilterSet filter : filterSets) {
-        // Set table id by force because all filters have table id as first parameter.
-        pstmt.setInt(currentIndex, tableId);
-        currentIndex++;
-
-        for (Pair<Type, Object> parameter : filter.getParameters()) {
-          switch (parameter.getFirst()) {
-            case BOOLEAN:
-              pstmt.setBoolean(currentIndex, (Boolean)parameter.getSecond());
-              break;
-            case INT8:
-              pstmt.setLong(currentIndex, (Long) parameter.getSecond());
-              break;
-            case FLOAT8:
-              pstmt.setDouble(currentIndex, (Double) parameter.getSecond());
-              break;
-            case DATE:
-              pstmt.setDate(currentIndex, (Date) parameter.getSecond());
-              break;
-            case TIMESTAMP:
-              pstmt.setTimestamp(currentIndex, (Timestamp) parameter.getSecond());
-              break;
-            case TIME:
-              pstmt.setTime(currentIndex, (Time) parameter.getSecond());
-              break;
-            default:
-              pstmt.setString(currentIndex, (String) parameter.getSecond());
-              break;
-          }
-          currentIndex++;
-        }
-      }
-
-      res = pstmt.executeQuery();
-
-      while (res.next()) {
-        PartitionDescProto.Builder builder = PartitionDescProto.newBuilder();
-
-        builder.setId(res.getInt(COL_PARTITIONS_PK));
-        builder.setPartitionName(res.getString("PARTITION_NAME"));
-        builder.setPath(res.getString("PATH"));
-        builder.setNumBytes(res.getLong(COL_PARTITION_BYTES));
-
-        partitions.add(builder.build());
-      }
-    } catch (SQLException se) {
-      throw new TajoInternalError(se);
-    } finally {
-      CatalogUtil.closeQuietly(pstmt, res);
-    }
-
-    return partitions;
-  }
-
-  /**
-   * Create a select statement and parameters for querying partitions and partition keys in CatalogStore.
-   *
-   * For example, consider you have a partitioned table for three columns (i.e., col1, col2, col3).
-   * Assume that an user gives a condition WHERE (col1 ='1' or col1 = '100') and col3 > 20.
-   * There is no filter condition corresponding to col2.
-   *
-   * Then, the sql would be generated as following:
-   *
-   *  SELECT A.PARTITION_ID, A.PARTITION_NAME, A.PATH FROM PARTITIONS A
-   *  WHERE A.TID = ?
-   *  AND A.PARTITION_ID IN (
-   *    SELECT T1.PARTITION_ID FROM PARTITION_KEYS T1
-   *    JOIN PARTITION_KEYS T2 ON T1.TID=T2.TID AND T1.PARTITION_ID = T2.PARTITION_ID AND T2.TID = ?
-   *    AND ( T2.COLUMN_NAME = 'col2' AND T2.PARTITION_VALUE IS NOT NULL )
-   *    JOIN PARTITION_KEYS T3 ON T1.TID=T3.TID AND T1.PARTITION_ID = T3.PARTITION_ID AND T3.TID = ?
-   *    AND ( T3.COLUMN_NAME = 'col3' AND T3.PARTITION_VALUE > ? )
-   *    WHERE T1.TID = ? AND ( T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE = ? )
-   *    OR ( T1.COLUMN_NAME = 'col1' AND T1.PARTITION_VALUE = ? )
-   )
-   *
-   * @param tableName the table name
-   * @param partitionColumns list of partition column
-   * @param json the algebra expression
-   * @return the select statement and partition filter sets
-   */
-  private Pair<String, List<PartitionFilterSet>> getSelectStatementAndPartitionFilterSet(String tableName,
-      List<ColumnProto> partitionColumns, String json) {
-
-    Pair<String, List<PartitionFilterSet>> result = null;
-    Expr[] exprs = null;
-
-    try {
-      List<PartitionFilterSet> filterSets = TUtil.newList();
-
-      if (json != null && !json.isEmpty()) {
-        Expr algebra = JsonHelper.fromJson(json, Expr.class);
-        exprs = AlgebraicUtil.toConjunctiveNormalFormArray(algebra);
-      }
-
-      // Write table alias for all levels
-      String tableAlias;
-
-      PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
-      visitor.setIsHiveCatalog(false);
-
-      Expr[] filters = AlgebraicUtil.getRearrangedCNFExpressions(tableName, partitionColumns, exprs);
-
-      StringBuffer sb = new StringBuffer();
-      sb.append("\n SELECT A.").append(CatalogConstants.COL_PARTITIONS_PK)
-        .append(", A.PARTITION_NAME, A.PATH ").append(", ").append(COL_PARTITION_BYTES)
-        .append(" FROM ").append(CatalogConstants.TB_PARTTIONS).append(" A ")
-        .append("\n WHERE A.").append(CatalogConstants.COL_TABLES_PK).append(" = ? ")
-        .append("\n AND A.").append(CatalogConstants.COL_PARTITIONS_PK).append(" IN (")
-        .append("\n   SELECT T1.").append(CatalogConstants.COL_PARTITIONS_PK)
-        .append(" FROM ").append(CatalogConstants.TB_PARTTION_KEYS).append(" T1 ");
-
-      // Write join clause from second column to last column.
-      Column target;
-
-      for (int i = 1; i < partitionColumns.size(); i++) {
-        target = new Column(partitionColumns.get(i));
-        tableAlias = "T" + (i+1);
-
-        visitor.setColumn(target);
-        visitor.setTableAlias(tableAlias);
-        visitor.visit(null, new Stack<Expr>(), filters[i]);
-
-        sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
-          .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
-          .append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK)
-          .append(" AND T1.").append(CatalogConstants.COL_PARTITIONS_PK)
-          .append(" = ").append(tableAlias).append(".").append(CatalogConstants.COL_PARTITIONS_PK)
-          .append(" AND ").append(tableAlias).append(".").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-        sb.append(visitor.getResult());
-
-        // Set parameters for executing PrepareStament
-        PartitionFilterSet filterSet = new PartitionFilterSet();
-        filterSet.setColumnName(target.getSimpleName());
-
-        List<Pair<Type, Object>> list = TUtil.newList();
-        list.addAll(visitor.getParameters());
-        filterSet.addParameters(list);
-
-        filterSets.add(filterSet);
-        visitor.clearParameters();
-      }
-
-      // Write where clause for first column
-      target = new Column(partitionColumns.get(0));
-      tableAlias = "T1";
-      visitor.setColumn(target);
-      visitor.setTableAlias(tableAlias);
-      visitor.visit(null, new Stack<Expr>(), filters[0]);
-
-      sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
-      sb.append(visitor.getResult())
-        .append("\n )");
-      sb.append("\n ORDER BY A.PARTITION_NAME");
-
-      // Set parameters for executing PrepareStament
-      PartitionFilterSet filterSet = new PartitionFilterSet();
-      filterSet.setColumnName(target.getSimpleName());
-
-      List<Pair<Type, Object>> list = TUtil.newList();
-      list.addAll(visitor.getParameters());
-      filterSet.addParameters(list);
-
-      filterSets.add(filterSet);
-
-      result = new Pair<>(sb.toString(), filterSets);
-    } catch (TajoException e) {
-      throw new TajoInternalError(e);
-    }
-
-    return result;
-  }
-
 
   @Override
   public List<TablePartitionProto> getAllPartitions() {
@@ -2578,7 +2323,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt3.setInt(1, tableId);
         pstmt3.setString(2, partition.getPartitionName());
         pstmt3.setString(3, partition.getPath());
-        pstmt3.setLong(4, partition.getNumBytes());
         pstmt3.addBatch();
         pstmt3.clearParameters();
 
@@ -3206,34 +2950,5 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     return exist;
-  }
-
-  class PartitionFilterSet {
-    private String columnName;
-    private List<Pair<Type, Object>> parameters;
-
-    public PartitionFilterSet() {
-      parameters = TUtil.newList();
-    }
-
-    public String getColumnName() {
-      return columnName;
-    }
-
-    public void setColumnName(String columnName) {
-      this.columnName = columnName;
-    }
-
-    public List<Pair<Type, Object>> getParameters() {
-      return parameters;
-    }
-
-    public void setParameters(List<Pair<Type, Object>> parameters) {
-      this.parameters = parameters;
-    }
-
-    public void addParameters(List<Pair<Type, Object>> parameters) {
-      this.parameters.addAll(parameters);
-    }
   }
 }

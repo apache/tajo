@@ -16,8 +16,9 @@ CREATE TABLE "TestTajoDump"."TableName3" (col1 INT4, col2 INT4) USING TEXT WITH 
 
 --
 -- Table Partitions: TableName3
+-- Partition dump and restore are not supported yet
 --
-ALTER TABLE "TestTajoDump"."TableName3" REPAIR PARTITION;
+
 
 
 
@@ -28,5 +29,5 @@ CREATE TABLE "TestTajoDump"."TableName4" (col1 INT4, col2 INT4) USING TEXT WITH 
 
 --
 -- Table Partitions: TableName4
+-- Partition dump and restore are not supported yet
 --
-ALTER TABLE "TestTajoDump"."TableName4" REPAIR PARTITION;
