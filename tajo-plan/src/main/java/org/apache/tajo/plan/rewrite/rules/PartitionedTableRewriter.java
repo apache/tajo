@@ -525,6 +525,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         FilteredPartitionInfo filteredPartition = findFilteredPartitionInfo(queryContext, scanNode);
         plan.addHistory("PartitionTableRewriter chooses " + filteredPartition.getPartitionPaths().length
           + " of partitions");
+        
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
         rewrittenScanNode.init(scanNode, filteredPartition.getPartitionPaths());
         rewrittenScanNode.getTableDesc().getStats().setNumBytes(filteredPartition.getTotalVolume());
