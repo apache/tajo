@@ -338,6 +338,7 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1928: Can't read parquet on hive meta. (jinho)
 
     TAJO-1923: Selecting on information_schema.table_stats throws an internal 
     error. (jihoon)
