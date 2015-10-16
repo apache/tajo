@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.StatsSetupConst;
 import org.apache.hadoop.hive.metastore.TableType;
 import org.apache.hadoop.hive.metastore.api.*;
+import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.io.IOConstants;
 import org.apache.hadoop.hive.ql.io.StorageFormatDescriptor;
 import org.apache.hadoop.hive.ql.io.StorageFormatFactory;
@@ -36,6 +37,7 @@ import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
 import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
+import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.Expr;
@@ -455,21 +457,18 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       sd.getSerdeInfo().setParameters(new HashMap<>());
       sd.getSerdeInfo().setName(table.getTableName());
 
-      // if tajo set location method, thrift client make exception as follows:
-      // Caused by: MetaException(message:java.lang.NullPointerException)
-      // If you want to modify table path, you have to modify on Hive cli.
-      if (tableDesc.isExternal()) {
-        table.setTableType(TableType.EXTERNAL_TABLE.name());
-        table.putToParameters("EXTERNAL", "TRUE");
+      //If tableType is a managed-table, the location is hive-warehouse dir
+      // and it will be wrong path in output committing
+      table.setTableType(TableType.EXTERNAL_TABLE.name());
+      table.putToParameters("EXTERNAL", "TRUE");
 
-        Path tablePath = new Path(tableDesc.getUri());
-        FileSystem fs = tablePath.getFileSystem(conf);
-        if (fs.isFile(tablePath)) {
-          LOG.warn("A table path is a file, but HiveCatalogStore does not allow a file path.");
-          sd.setLocation(tablePath.getParent().toString());
-        } else {
-          sd.setLocation(tablePath.toString());
-        }
+      Path tablePath = new Path(tableDesc.getUri());
+      FileSystem fs = tablePath.getFileSystem(conf);
+      if (fs.isFile(tablePath)) {
+        LOG.warn("A table path is a file, but HiveCatalogStore does not allow a file path.");
+        sd.setLocation(tablePath.getParent().toString());
+      } else {
+        sd.setLocation(tablePath.toString());
       }
 
       // set column information
@@ -509,14 +508,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL)));
         }
       } else if (tableDesc.getMeta().getDataFormat().equals(BuiltinStorages.TEXT)) {
-        StorageFormatDescriptor descriptor = storageFormatFactory.get(IOConstants.TEXTFILE);
-        sd.setInputFormat(descriptor.getInputFormat());
-        sd.setOutputFormat(descriptor.getOutputFormat());
-        if(descriptor.getSerde() == null) {
-          sd.getSerdeInfo().setSerializationLib(LazySimpleSerDe.class.getName());
-        } else {
-          sd.getSerdeInfo().setSerializationLib(descriptor.getSerde());
-        }
+        // TextFileStorageFormatDescriptor has deprecated class. so the class name set directly
+        sd.setInputFormat(TextInputFormat.class.getName());
+        sd.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getName());
+        sd.getSerdeInfo().setSerializationLib(LazySimpleSerDe.class.getName());
 
         String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.TEXT_DELIMITER,
             StorageConstants.DEFAULT_FIELD_DELIMITER);
@@ -579,20 +574,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           table.putToParameters(ParquetOutputFormat.COMPRESSION,
               tableDesc.getMeta().getOption(ParquetOutputFormat.COMPRESSION));
         }
-      } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.ORC)) {
-        StorageFormatDescriptor descriptor = storageFormatFactory.get(IOConstants.ORC);
-        sd.setInputFormat(descriptor.getInputFormat());
-        sd.setOutputFormat(descriptor.getOutputFormat());
-        sd.getSerdeInfo().setSerializationLib(descriptor.getSerde());
-
-        if (tableDesc.getMeta().containsOption(StorageConstants.ORC_COMPRESSION)) {
-          table.putToParameters(StorageConstants.ORC_COMPRESSION,
-              tableDesc.getMeta().getOption(StorageConstants.ORC_COMPRESSION));
-        }
       } else {
         throw new UnsupportedException(tableDesc.getMeta().getDataFormat() + " in HivecatalogStore");
       }
-
 
       sd.setSortCols(new ArrayList<>());
 
@@ -1329,6 +1313,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<TablespaceProto> getTablespaces() {
-    throw new UnsupportedOperationException();
+    return Lists.newArrayList(getTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME));
   }
 }
