@@ -68,7 +68,7 @@ set JAVA_HOME=%JAVA_HOME%
 @rem Tajo cluster mode. the default mode is standby mode.
 set TAJO_WORKER_STANDBY_MODE=true
 
-@rem It must be required to use HCatalogStore
+@rem It must be required to use HiveCatalogStore
 @rem set HIVE_HOME=
 @rem set HIVE_JDBC_DRIVER_DIR=
 
