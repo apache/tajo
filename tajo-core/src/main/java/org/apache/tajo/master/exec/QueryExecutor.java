@@ -291,7 +291,6 @@ public class QueryExecutor {
 
     final TableDesc resultDesc = new TableDesc("", scanNode.getOutSchema(),
         new TableMeta(BuiltinStorages.DRAW, table.getMeta().getOptions()), null);
-    resultDesc.setStats(new TableStats());
 
     // push down limit
     int maxRow = Integer.MAX_VALUE;
@@ -300,17 +299,6 @@ public class QueryExecutor {
       maxRow = (int) limitNode.getFetchFirstNum();
       scanNode.setLimit(maxRow);
     }
-
-    // get the estimated number of rows
-    long estimatedRowNum;
-    if (table.getStats().getNumRows() == 0) {
-      estimatedRowNum = TajoConstants.UNKNOWN_ROW_NUMBER;
-    } else {
-      estimatedRowNum = table.getStats().getNumRows();
-    }
-    estimatedRowNum = Math.min(estimatedRowNum, maxRow);
-    resultDesc.getStats().setNumRows(estimatedRowNum);
-
 
     final QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
         (LogicalRootNode) plan.getRootBlock().getRoot());
