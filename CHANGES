@@ -285,6 +285,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1928: Can't read parquet on hive meta. (jinho)
+
     TAJO-1926: Disable partition pruning using catalog temporarily. (jaehwa)
     
     TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
