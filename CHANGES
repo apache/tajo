@@ -35,6 +35,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1934: Test failures in TestPgSQLQueryTests due to sort order. 
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
     TAJO-1916: 'How to contribute' link is broken. (jihoon)
 
     TAJO-1907: Reduce the size of the INDEXES table's COLUMN_NAMES field.
