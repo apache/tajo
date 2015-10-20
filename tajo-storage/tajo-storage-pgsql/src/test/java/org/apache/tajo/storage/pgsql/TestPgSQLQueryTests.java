@@ -45,21 +45,18 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testProjectedColumns() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testFixedLengthFields() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testVariableLengthFields() throws Exception {
     runSimpleTests();
   }
@@ -111,7 +108,6 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testTPCH_Q3() throws Exception {
     runSimpleTests();
   }
@@ -134,42 +130,36 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testInPredicateWithNumbers() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testInPredicateWithLiterals() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testBetweenNumbers() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testBetweenDates() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testCaseWhenFilter() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testFunctionWithinFilter() throws Exception {
     runSimpleTests();
   }
@@ -183,7 +173,6 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
-  @Option(sort = true)
   public void testCtasToHdfs() throws Exception {
     try {
       executeString("CREATE DATABASE pgtmp").close();
