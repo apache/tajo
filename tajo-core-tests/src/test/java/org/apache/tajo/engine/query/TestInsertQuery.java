@@ -37,6 +37,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.Assert.*;
 
@@ -627,16 +628,14 @@ public class TestInsertQuery extends QueryTestCaseBase {
     executeString("DROP TABLE table1 PURGE");
   }
 
-  @Test
-  public final void testInsertOverwriteTableWithNonFromQuery() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("InsertOverwriteWithEvalQuery");
+  public final void testInsertOverwriteAllValues(String rawTableName, String query) throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier(rawTableName);
     ResultSet res = executeString("create table " + tableName +" (col1 int4, col2 float4, col3 text)");
     res.close();
     CatalogService catalog = testingCluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
 
-    res = executeString("insert overwrite into " + tableName
-        + " select 1::INT4, 2.1::FLOAT4, 'test'; ");
+    res = executeString(query);
 
     res.close();
 
@@ -658,13 +657,24 @@ public class TestInsertQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testInsertOverwriteTableWithNonFromQuery2() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("InsertOverwriteWithEvalQuery2");
+  public final void testInsertOverwriteAllValues1() throws Exception {
+    String tbName = getMethodName();
+    testInsertOverwriteAllValues(tbName, "insert overwrite into " + tbName + " select 1::INT4, 2.1::FLOAT4, 'test'; ");
+  }
+
+  @Test
+  public final void testInsertOverwriteAllValues2() throws Exception {
+    String tbName = getMethodName();
+    testInsertOverwriteAllValues(tbName, "insert overwrite into " + tbName + " VALUES(1::INT4, 2.1::FLOAT4, 'test');");
+  }
+
+  public final void testInsertOverwriteSomeValues(String rawTableName, String sql) throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier(rawTableName);
     ResultSet res = executeString("create table " + tableName +" (col1 int4, col2 float4, col3 text)");
     res.close();
     CatalogService catalog = testingCluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
-    res = executeString("insert overwrite into " + tableName + " (col1, col3) select 1::INT4, 'test';");
+    res = executeString(sql);
     res.close();
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), tableName);
@@ -683,6 +693,20 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
     res.close();
     executeString("DROP TABLE " + tableName + " PURGE");
+  }
+
+  @Test
+  public final void testInsertOverwriteTableSomeValues1() throws Exception {
+    String tbName = getMethodName();
+    testInsertOverwriteSomeValues(tbName,
+        "insert overwrite into " + tbName + " (col1, col3) select 1::INT4, 'test'");
+  }
+
+  @Test
+  public final void testInsertOverwriteTableSomeValues2() throws Exception {
+    String tbName = getMethodName();
+    testInsertOverwriteSomeValues(tbName,
+        "insert overwrite into " + tbName + " (col1, col3) VALUES(1::INT4, 'test')");
   }
 
   @Test
