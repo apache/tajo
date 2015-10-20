@@ -233,7 +233,7 @@ public class TestKillQuery {
     WorkerConnectionInfo queryMaster = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
 
     TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
-    taskRequest.set(attemptId, new ArrayList<CatalogProtos.FragmentProto>(),
+    taskRequest.set(attemptId, new ArrayList<>(),
         null, false, PlanProto.LogicalNodeTree.newBuilder().build(), new QueryContext(conf),
         null, null, queryMaster.getHostAndQMPort());
     taskRequest.setInterQuery();

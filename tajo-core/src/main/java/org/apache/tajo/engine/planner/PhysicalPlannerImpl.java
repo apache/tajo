@@ -86,7 +86,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     PhysicalExec execPlan;
 
     try {
-      execPlan = createPlanRecursive(context, logicalPlan, new Stack<LogicalNode>());
+      execPlan = createPlanRecursive(context, logicalPlan, new Stack<>());
       if (execPlan instanceof StoreTableExec
           || execPlan instanceof RangeShuffleFileWriteExec
           || execPlan instanceof HashShuffleFileWriteExec

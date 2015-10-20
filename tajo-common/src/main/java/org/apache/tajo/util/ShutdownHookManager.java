@@ -117,7 +117,7 @@ public class ShutdownHookManager {
   List<Runnable> getShutdownHooksInOrder() {
     List<HookEntry> list;
     synchronized (MGR.hooks) {
-      list = new ArrayList<HookEntry>(MGR.hooks);
+      list = new ArrayList<>(MGR.hooks);
     }
     Collections.sort(list, new Comparator<HookEntry>() {
 
@@ -127,7 +127,7 @@ public class ShutdownHookManager {
         return o2.priority - o1.priority;
       }
     });
-    List<Runnable> ordered = new ArrayList<Runnable>();
+    List<Runnable> ordered = new ArrayList<>();
     for (HookEntry entry: list) {
       ordered.add(entry.hook);
     }

@@ -79,7 +79,7 @@ public final class CodecPool {
       Class<T> codecClass = (Class<T>) codec.getClass();
       synchronized (pool) {
         if (!pool.containsKey(codecClass)) {
-          pool.put(codecClass, new ArrayList<T>());
+          pool.put(codecClass, new ArrayList<>());
         }
 
         List<T> codecList = pool.get(codecClass);

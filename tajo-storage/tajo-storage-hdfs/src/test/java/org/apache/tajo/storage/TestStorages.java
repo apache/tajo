@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.BytesWritable;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.tajo.BuiltinStorages;
@@ -57,6 +58,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class TestStorages {
@@ -706,7 +708,6 @@ public class TestStorages {
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
@@ -721,7 +722,7 @@ public class TestStorages {
         DatumFactory.createBlob("hyunsik babo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
         NullDatum.get(),
-        factory.createDatum(queryid.getProto())
+        ProtobufDatumFactory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
     appender.flush();
@@ -779,7 +780,6 @@ public class TestStorages {
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
     VTuple tuple = new VTuple(13);
     tuple.put(new Datum[] {
@@ -795,7 +795,7 @@ public class TestStorages {
         DatumFactory.createBlob("hyunsik babo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
         NullDatum.get(),
-        factory.createDatum(queryid.getProto())
+        ProtobufDatumFactory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
     appender.flush();
@@ -1113,5 +1113,84 @@ public class TestStorages {
     }
 
     assertTrue(ok);
+  }
+
+  @Test
+  public void testDateTextHandling() throws Exception {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO) || internalType) {
+      return;
+    }
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.TEXT);
+
+    KeyValueSet options = new KeyValueSet();
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Path tablePath = new Path(testDir, "testTextHandling.data");
+
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+
+    appender.init();
+
+    VTuple tuple = new VTuple(1);
+    tuple.put(0, DatumFactory.createDate(1994,7,30));
+
+    appender.addTuple(tuple);
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner = sm.getScanner(meta, schema, fragment, null);
+    scanner.init();
+
+    Tuple retrieved;
+    while ((retrieved = scanner.next()) != null) {
+      assertEquals(tuple.get(0).asChars(), retrieved.asDatum(0).asChars());
+    }
+    scanner.close();
+
+    if (internalType){
+      OldStorageManager.clearCache();
+    }
+  }
+
+  @Test
+  public void testFileAlreadyExists() throws IOException {
+
+    if (internalType) return;
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("score", Type.FLOAT4);
+
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+          TEST_PROJECTION_AVRO_SCHEMA);
+    }
+
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Path tablePath = new Path(testDir, "testFileAlreadyExists.data");
+
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.init();
+    appender.close();
+
+    try {
+      appender = sm.getAppender(meta, schema, tablePath);
+      appender.init();
+      if (BuiltinStorages.ORC.equals(dataFormat)) {
+        appender.close();
+      }
+      fail(dataFormat);
+    } catch (IOException e) {
+    } finally {
+      IOUtils.cleanup(null, appender);
+    }
   }
 }

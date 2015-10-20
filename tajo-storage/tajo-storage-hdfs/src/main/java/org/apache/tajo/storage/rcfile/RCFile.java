@@ -727,10 +727,6 @@ public class RCFile {
     public void init() throws IOException {
       fs = path.getFileSystem(conf);
 
-      if (!fs.exists(path.getParent())) {
-        throw new FileNotFoundException(path.toString());
-      }
-
       if (this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
         String codecClassname = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
         try {
@@ -773,7 +769,7 @@ public class RCFile {
         columnBuffers[i] = new ColumnBuffer();
       }
 
-      init(conf, fs.create(path, true, 4096, (short) 3, fs.getDefaultBlockSize(), null), codec, metadata);
+      init(conf, fs.create(path, false, 4096, (short) 3, fs.getDefaultBlockSize(), null), codec, metadata);
       initializeFileHeader();
       writeFileHeader();
       finalizeFileHeader();

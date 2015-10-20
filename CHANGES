@@ -19,6 +19,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
+    
     TAJO-1913: Timezone does not affect the constant folding. (hyunsik)
 
     TAJO-1895: Add a maven profile to skip the unit tests of 
@@ -43,6 +45,9 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-1909: Eliminate remained explicit diamond expressions.
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
     TAJO-1844: Eliminate explicit diamond expressions. 
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)
@@ -332,6 +337,30 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1933: When a simple query executed on partitioned tables, the number of 
+    result rows is always the number of rows of the whole table. (jihoon)
+
+    TAJO-1928: Can't read parquet on hive meta. (jinho)
+
+    TAJO-1923: Selecting on information_schema.table_stats throws an internal 
+    error. (jihoon)
+
+    TAJO-1917: Conflict on Parquet Libraries. (Contributed by Jongyoung Park.
+    Committed by jihoon)
+
+    TAJO-1900: When a record column and its child column are retrieved together, 
+    the record column might not be inferred as record type properly. (jihoon)
+
+    TAJO-1875: Resource leak after a query failure. (jihoon)
+
+    TAJO-1903: Insert clause occassionally fails on S3. (jinho)
+
+    TAJO-1912: Selection from aliased schemaless tables throws an error. 
+    (jihoon)
+
+    TAJO-1918: Writing text type in Parquet should handle text bytes.
+    (Contributed by Jongyoung Park. Committed by jinho) 
 
     TAJO-1901: Repair partition throws ArrayIndexOutOfBoundsException 
     occasionally. (Contributed by jaehwa, committed by hyunsik)

@@ -112,7 +112,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 		GetSubmitQueryResponse response = restClient.target(queriesURI)
 			.request().header(tajoSessionIdHeaderName, sessionId)
 			.post(Entity.entity(queryRequest, MediaType.APPLICATION_JSON),
-				new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+                    new GenericType<>(GetSubmitQueryResponse.class));
 
 		assertNotNull(response);
 		assertEquals(ResultCode.OK, response.getResultCode());
@@ -126,7 +126,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 		createNewTableForTestCreateTable(tableName, sessionId);
 
     Map<String, Collection<String>> tables = restClient.target(tablesURI)
-        .request().get(new GenericType<Map<String, Collection<String>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
 
     List<String> tableNames = (List<String>)tables.get("tables");
     assertNotNull(tableNames);
@@ -152,7 +152,7 @@ public class TestTablesResource extends QueryTestCaseBase {
     
     TableDesc selectedTable = restClient.target(tablesURI)
         .path("/{tableName}").resolveTemplate("tableName", tableName)
-        .request().get(new GenericType<TableDesc>(TableDesc.class));
+        .request().get(new GenericType<>(TableDesc.class));
     
     assertNotNull(selectedTable);
     assertTrue(StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(selectedTable.getName())));
@@ -177,7 +177,7 @@ public class TestTablesResource extends QueryTestCaseBase {
     
     TableDesc selectedTable = restClient.target(tablesURI)
         .path("/{tableName}").resolveTemplate("tableName", tableName)
-        .request().get(new GenericType<TableDesc>(TableDesc.class));
+        .request().get(new GenericType<>(TableDesc.class));
     
     assertNotNull(selectedTable);
     assertTrue(StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(selectedTable.getName())));

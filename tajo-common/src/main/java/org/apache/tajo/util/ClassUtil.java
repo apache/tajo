@@ -39,7 +39,7 @@ public abstract class ClassUtil {
   }
 
   public static Set<Class> findClasses(@Nullable Class targetClass, String packageFilter, Predicate predicate) {
-    Set<Class> classSet = new HashSet<Class>();
+    Set<Class> classSet = new HashSet<>();
 
     String classpath = System.getProperty("java.class.path");
     String[] paths = classpath.split(System.getProperty("path.separator"));

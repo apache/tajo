@@ -185,12 +185,14 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
                 + ", running tasks:" + getRunningTasks() + ", availableResource: "
                 + workerContext.getNodeResourceManager().getAvailableResource());
           }
-          getTaskExecutor().handle(taskStartEvent);
-        } catch (Exception e) {
-          getTaskExecutor().releaseResource(taskStartEvent.getTaskAttemptId());
+        } catch (Throwable e) {
+          LOG.fatal(e.getMessage(), e);
+          getTaskExecutor().releaseResource(taskStartEvent.getAllocatedResource());
           getWorkerContext().getTaskManager().getDispatcher().getEventHandler()
               .handle(new ExecutionBlockErrorEvent(taskStartEvent.getExecutionBlockId(), e));
+          break;
         }
+        getTaskExecutor().handle(taskStartEvent);
         break;
       }
       case EB_STOP: {

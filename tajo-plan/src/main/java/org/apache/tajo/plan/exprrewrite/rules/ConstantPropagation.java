@@ -46,7 +46,7 @@ public class ConstantPropagation extends SimpleEvalNodeVisitor<LogicalPlanner.Pl
         return evalNode; // otherwise, it just returns.
       }
     } else {
-      return visit(context, evalNode, new Stack<EvalNode>());
+      return visit(context, evalNode, new Stack<>());
     }
   }
 

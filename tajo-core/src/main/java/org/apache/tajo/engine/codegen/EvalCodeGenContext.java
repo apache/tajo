@@ -71,7 +71,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
         "L" + TajoGeneratorAdapter.getInternalName(Schema.class) + ";", null, null);
 
     VariablesPreBuilder builder = new VariablesPreBuilder();
-    builder.visit(this, evalNode, new Stack<EvalNode>());
+    builder.visit(this, evalNode, new Stack<>());
   }
 
   public static void emitCreateSchema(TajoGeneratorAdapter adapter, MethodVisitor mv, Schema schema) {

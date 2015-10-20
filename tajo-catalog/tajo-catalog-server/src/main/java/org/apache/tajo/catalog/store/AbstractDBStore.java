@@ -2434,7 +2434,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
         visitor.setColumn(target);
         visitor.setTableAlias(tableAlias);
-        visitor.visit(null, new Stack<Expr>(), filters[i]);
+        visitor.visit(null, new Stack<>(), filters[i]);
 
         sb.append("\n   JOIN ").append(CatalogConstants.TB_PARTTION_KEYS).append(" ").append(tableAlias)
           .append(" ON T1.").append(CatalogConstants.COL_TABLES_PK).append("=")
@@ -2461,7 +2461,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       tableAlias = "T1";
       visitor.setColumn(target);
       visitor.setTableAlias(tableAlias);
-      visitor.visit(null, new Stack<Expr>(), filters[0]);
+      visitor.visit(null, new Stack<>(), filters[0]);
 
       sb.append("\n   WHERE T1.").append(CatalogConstants.COL_TABLES_PK).append(" = ? AND ");
       sb.append(visitor.getResult())
