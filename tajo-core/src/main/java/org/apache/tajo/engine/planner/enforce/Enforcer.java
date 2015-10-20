@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +40,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
 
   @SuppressWarnings("unused")
   public Enforcer() {
-    properties = TUtil.newHashMap();
+    properties = new HashMap<>();
   }
 
   public Enforcer(EnforcerProto proto) {
@@ -52,7 +53,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
 
   private void initProperties() {
     if (properties == null) {
-      properties = TUtil.newHashMap();
+      properties = new HashMap<>();
       for (EnforceProperty property : proto.getPropertiesList()) {
         TUtil.putToNestedList(properties, property.getType(), property);
       }

@@ -19,6 +19,7 @@
 package org.apache.tajo.rule.base;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.tajo.conf.TajoConf;
@@ -28,7 +29,6 @@ import org.apache.tajo.rule.SelfDiagnosisRuleVisibility;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.rule.SelfDiagnosisRuleDefinition;
 import org.apache.tajo.rule.SelfDiagnosisRule;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.validation.ConstraintViolation;
 import org.apache.tajo.validation.ConstraintViolationException;
 import org.apache.tajo.validation.Validator;
@@ -38,7 +38,7 @@ import org.apache.tajo.validation.Validator;
 public class TajoConfValidationRule implements SelfDiagnosisRule {
   
   private Collection<ConstraintViolation> isValidationTestPassed(TajoConf.ConfVars confVar, String varValue) {
-    Set<ConstraintViolation> violationSet = TUtil.newHashSet();
+    Set<ConstraintViolation> violationSet = new HashSet<>();
     
     if (varValue != null && confVar.valueClass() != null && confVar.validator() != null) {
       Class<?> valueClazz = confVar.valueClass();

@@ -25,8 +25,8 @@ import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.util.TUtil;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public class JoinedRelationsVertex implements JoinVertex {
 
-  private final Set<RelationVertex> relations = TUtil.newHashSet();
+  private final Set<RelationVertex> relations = new HashSet<>();
   private final JoinEdge joinEdge;
 
   public JoinedRelationsVertex(JoinEdge joinEdge) {

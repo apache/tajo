@@ -6,6 +6,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1850: Using TUtil.newHash(Set/Map) should be replaced by Java's 
+    diamond operator. (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
     TAJO-1883: Keep tajo-client and its dependent modules to be 1.7 target.
     (hyunsik)
 

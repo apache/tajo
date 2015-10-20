@@ -45,6 +45,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -72,7 +73,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   public static Set<FunctionDesc> registerFunctions(URI path, String namespace) throws IOException {
     // TODO: we should support the namespace for python functions.
 
-    Set<FunctionDesc> functionDescs = TUtil.newHashSet();
+    Set<FunctionDesc> functionDescs = new HashSet<>();
 
     InputStream in = getScriptAsStream(path);
     List<FunctionInfo> functions = null;

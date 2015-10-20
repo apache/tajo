@@ -1443,7 +1443,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private void setTargetOfTableSubQuery (PlanContext context, QueryBlock block, TableSubQueryNode subQueryNode)
       throws TajoException {
     // Add additional expressions required in upper nodes.
-    Set<String> newlyEvaluatedExprs = TUtil.newHashSet();
+    Set<String> newlyEvaluatedExprs = new HashSet<>();
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
       try {
         EvalNode evalNode = exprAnnotator.createEvalNode(context, rawTarget.getExpr(),

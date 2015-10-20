@@ -42,7 +42,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   @Expose private Map<String,String> keyVals;
 
 	public KeyValueSet() {
-    keyVals = TUtil.newHashMap();
+    keyVals = new HashMap<>();
 	}
 
   public KeyValueSet(Map<String, String> keyVals) {
@@ -51,7 +51,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   }
 
 	public KeyValueSet(KeyValueSetProto proto) {
-    this.keyVals = TUtil.newHashMap();
+    this.keyVals = new HashMap<>();
     for(KeyValueProto keyval : proto.getKeyvalList()) {
       this.keyVals.put(keyval.getKey(), keyval.getValue());
     }

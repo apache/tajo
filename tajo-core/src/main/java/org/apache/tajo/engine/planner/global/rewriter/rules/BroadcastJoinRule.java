@@ -157,7 +157,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private final long thresholdForCrossJoin;
     private final boolean broadcastForNonCrossJoinEnabled;
     private final GlobalPlanRewriteUtil.ParentFinder parentFinder;
-    private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = TUtil.newHashMap();
+    private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = new HashMap<>();
 
     public BroadcastJoinPlanBuilder(MasterPlan plan, RelationSizeComparator relationSizeComparator,
                                     GlobalPlanRewriteUtil.ParentFinder parentFinder,

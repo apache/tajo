@@ -443,7 +443,7 @@ public class TestRepartitioner {
     assertEquals(32, fetches.size());
 
     int expectedSize = 0;
-    Set<FetchImpl> fetchSet = TUtil.newHashSet();
+    Set<FetchImpl> fetchSet = new HashSet<>();
     for(List<FetchImpl> list : fetches){
       expectedSize += list.size();
       fetchSet.addAll(list);

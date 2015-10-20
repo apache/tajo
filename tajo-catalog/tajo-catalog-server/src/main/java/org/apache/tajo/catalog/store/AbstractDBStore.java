@@ -1108,7 +1108,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet res = null;
-    Map<String, String> options = TUtil.newHashMap();
+    Map<String, String> options = new HashMap<>();
 
     try {
       String tidSql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE TID=?";

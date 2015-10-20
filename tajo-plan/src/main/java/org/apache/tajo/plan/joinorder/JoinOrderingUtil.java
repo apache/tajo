@@ -24,8 +24,8 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.EvalType;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.util.TUtil;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -42,7 +42,7 @@ public class JoinOrderingUtil {
    */
   public static Set<EvalNode> findJoinConditionForJoinVertex(Set<EvalNode> candidates, JoinEdge edge,
                                                              boolean isOnPredicates) {
-    Set<EvalNode> conditionsForThisJoin = TUtil.newHashSet();
+    Set<EvalNode> conditionsForThisJoin = new HashSet<>();
     for (EvalNode predicate : candidates) {
       if (EvalTreeUtil.isJoinQual(predicate, false)
           && checkIfEvaluatedAtEdge(predicate, edge, isOnPredicates)) {
@@ -205,14 +205,14 @@ public class JoinOrderingUtil {
    * @return
    */
   public static Set<JoinVertex> getAllInterchangeableVertexes(JoinGraphContext context, JoinVertex from) {
-    Set<JoinVertex> founds = TUtil.newHashSet();
+    Set<JoinVertex> founds = new HashSet<>();
     getAllInterchangeableVertexes(founds, context, from);
     return founds;
   }
 
   public static void getAllInterchangeableVertexes(Set<JoinVertex> founds, JoinGraphContext context, JoinVertex vertex) {
     founds.add(vertex);
-    Set<JoinVertex> foundAtThis = TUtil.newHashSet();
+    Set<JoinVertex> foundAtThis = new HashSet<>();
     List<JoinEdge> candidateEdges = context.getJoinGraph().getOutgoingEdges(vertex);
     if (candidateEdges != null) {
       for (JoinEdge candidateEdge : candidateEdges) {
@@ -304,7 +304,7 @@ public class JoinOrderingUtil {
    * @return
    */
   public static Set<JoinEdge> getAllAssociativeEdges(JoinGraphContext context, JoinEdge edge) {
-    Set<JoinEdge> associativeEdges = TUtil.newHashSet();
+    Set<JoinEdge> associativeEdges = new HashSet<>();
     JoinVertex start = edge.getRightVertex();
     List<JoinEdge> candidateEdges = context.getJoinGraph().getOutgoingEdges(start);
     if (candidateEdges != null) {

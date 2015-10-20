@@ -27,8 +27,9 @@ import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -45,7 +46,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
       throws TajoException {
 
-    Set<JoinVertex> vertexes = TUtil.newHashSet();
+    Set<JoinVertex> vertexes = new HashSet<>();
     for (RelationNode relationNode : block.getRelations()) {
       vertexes.add(new RelationVertex(relationNode));
     }
@@ -75,8 +76,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       //
       // The chosen best pair will be regarded as a join vertex again.
       // So, the join edges which share any vertexes with the best pair should be updated, too.
-      Set<JoinEdge> willBeRemoved = TUtil.newHashSet();
-      Set<JoinEdge> willBeAdded = TUtil.newHashSet();
+      Set<JoinEdge> willBeRemoved = new HashSet<>();
+      Set<JoinEdge> willBeAdded = new HashSet<>();
 
       // Find every join edges which should be updated.
       prepareGraphUpdate(graphContext, joinGraph, bestPair, newVertex, willBeAdded, willBeRemoved);
@@ -252,7 +253,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   private static class JoinEdgeFinderContext {
-    private Set<JoinVertex> visited = TUtil.newHashSet();
+    private Set<JoinVertex> visited = new HashSet<>();
 
     public void reset() {
       visited.clear();
@@ -297,7 +298,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
             interchangeableWithRightVertex = JoinOrderingUtil.getAllInterchangeableVertexes(graphContext,
                 edgeFromLeftTarget.getRightVertex());
           } else {
-            interchangeableWithRightVertex = TUtil.newHashSet(edgeFromLeftTarget.getRightVertex());
+            interchangeableWithRightVertex = new HashSet<>(Arrays.asList(edgeFromLeftTarget.getRightVertex()));
           }
 
           if (interchangeableWithRightVertex.contains(rightTarget)) {
