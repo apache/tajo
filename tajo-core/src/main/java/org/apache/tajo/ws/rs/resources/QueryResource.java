@@ -213,6 +213,12 @@ public class QueryResource {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
           JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
+
+      if (sessionId == null || sessionId.isEmpty()) {
+        return ResourcesUtil.createBadRequestResponse(LOG, "Session id is required. Please refer the header " +
+                QueryResource.tajoSessionIdHeaderName);
+      }
+
       context.put(sessionIdKey, sessionId);
       JerseyResourceDelegateContextKey<SubmitQueryRequest> submitQueryRequestKey =
           JerseyResourceDelegateContextKey.valueOf(submitQueryRequestKeyName, SubmitQueryRequest.class);
