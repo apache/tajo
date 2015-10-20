@@ -181,7 +181,7 @@ public class TestSimpleScheduler {
     QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     CallFuture<NodeResourceResponse> callBack = new CallFuture<>();
     rmContext.getDispatcher().getEventHandler().handle(new ResourceReserveSchedulerEvent(
-        createResourceRequest(queryId, requestNum, new ArrayList<Integer>()), callBack));
+        createResourceRequest(queryId, requestNum, new ArrayList<>()), callBack));
 
     NodeResourceResponse responseProto = callBack.get();
     assertEquals(queryId, new QueryId(responseProto.getQueryId()));

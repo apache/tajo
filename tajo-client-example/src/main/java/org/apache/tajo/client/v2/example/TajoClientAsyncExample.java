@@ -56,7 +56,8 @@ public class TajoClientAsyncExample {
 
   public static void main(String[] args) throws ClientUnableToConnectException {
     if (args.length < 3) {
-      System.err.println("usage: java -cp [classpath] TajoClientAsyncExample [hostname] [port] sql");
+      System.err.println(String.format("usage: java -cp [classpath] %s [hostname] [port] sql",
+          TajoClientAsyncExample.class.getCanonicalName()));
       System.exit(-1);
     }
 

@@ -37,7 +37,7 @@ public class IntervalDatum extends Datum {
   static enum DATE_UNIT {
     CENTURY, DECADE, YEAR, MONTH, DAY, HOUR, MINUTE, SECOND, MICROSEC, MILLISEC, TIMEZONE,
   }
-  static Map<String, DATE_UNIT> DATE_FORMAT_LITERAL = new HashMap<String, DATE_UNIT>();
+  static Map<String, DATE_UNIT> DATE_FORMAT_LITERAL = new HashMap<>();
   static {
     Object[][] dateFormatLiterals = new Object[][]{
         {DATE_UNIT.CENTURY, "c,cent,centuries,century"},

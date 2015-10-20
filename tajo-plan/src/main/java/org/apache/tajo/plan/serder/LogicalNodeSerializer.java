@@ -71,7 +71,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   public static LogicalNodeTree serialize(LogicalNode node) {
     SerializeContext context = new SerializeContext();
     try {
-      instance.visit(context, null, null, node, new Stack<LogicalNode>());
+      instance.visit(context, null, null, node, new Stack<>());
     } catch (TajoException e) {
       throw new TajoInternalError(e);
     }
@@ -273,7 +273,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   @Override
   public LogicalNode visitGroupBy(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                   GroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
-    super.visitGroupBy(context, plan, block, node, new Stack<LogicalNode>());
+    super.visitGroupBy(context, plan, block, node, new Stack<>());
 
     PlanProto.LogicalNode.Builder nodeBuilder = buildGroupby(context, node);
     context.treeBuilder.addNodes(nodeBuilder);
@@ -309,7 +309,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   @Override
   public LogicalNode visitDistinctGroupby(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           DistinctGroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
-    super.visitDistinctGroupby(context, plan, block, node, new Stack<LogicalNode>());
+    super.visitDistinctGroupby(context, plan, block, node, new Stack<>());
 
     int [] childIds = registerGetChildIds(context, node);
 
@@ -757,7 +757,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   @Override
   public LogicalNode visitCreateIndex(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       CreateIndexNode node, Stack<LogicalNode> stack) throws TajoException {
-    super.visitCreateIndex(context, plan, block, node, new Stack<LogicalNode>());
+    super.visitCreateIndex(context, plan, block, node, new Stack<>());
 
     PlanProto.CreateIndexNode.Builder createIndexBuilder = PlanProto.CreateIndexNode.newBuilder();
     int [] childIds = registerGetChildIds(context, node);

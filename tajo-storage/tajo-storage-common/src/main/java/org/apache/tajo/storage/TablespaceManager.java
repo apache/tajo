@@ -185,8 +185,8 @@ public class TablespaceManager implements StorageService {
     JSONObject storageDesc = (JSONObject) entry.getValue();
     String handlerClass = (String) storageDesc.get(KEY_STORAGE_HANDLER);
 
-    return new Pair<String, Class<? extends Tablespace>>(
-        storageType, (Class<? extends Tablespace>) Class.forName(handlerClass));
+    return new Pair<>(
+            storageType, (Class<? extends Tablespace>) Class.forName(handlerClass));
   }
 
   private void loadTableSpaces(JSONObject json, boolean override) {

@@ -19,7 +19,7 @@
 package org.apache.tajo.storage.json;
 
 
-import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import net.minidev.json.JSONObject;

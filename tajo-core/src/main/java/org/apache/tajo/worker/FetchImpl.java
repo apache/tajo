@@ -79,13 +79,13 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
   public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
                    int partitionId) {
     this(host, type, executionBlockId, partitionId, null, false, null,
-        new ArrayList<Integer>(), new ArrayList<Integer>());
+            new ArrayList<>(), new ArrayList<>());
   }
 
   public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
                    int partitionId, List<Task.IntermediateEntry> intermediateEntryList) {
     this(host, type, executionBlockId, partitionId, null, false, null,
-        new ArrayList<Integer>(), new ArrayList<Integer>());
+            new ArrayList<>(), new ArrayList<>());
     for (Task.IntermediateEntry entry : intermediateEntryList){
       addPart(entry.getTaskId(), entry.getAttemptId());
     }

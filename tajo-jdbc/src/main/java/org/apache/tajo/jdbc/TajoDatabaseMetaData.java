@@ -300,7 +300,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         "PROCEDURE_TYPE"),
         Arrays.asList(Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.INT4, Type.INT4, Type.INT4,
             Type.VARCHAR, Type.INT2),
-        new ArrayList<MetaDataTuple>());
+            new ArrayList<MetaDataTuple>());
   }
 
   @Override
@@ -317,7 +317,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
             Type.INT2, Type.VARCHAR, Type.INT4, Type.INT4, Type.INT2,
             Type.INT2, Type.INT2, Type.VARCHAR, Type.VARCHAR, Type.INT2,
             Type.INT2, Type.INT2, Type.INT1, Type.VARCHAR, Type.VARCHAR),
-        new ArrayList<MetaDataTuple>());
+            new ArrayList<MetaDataTuple>());
   }
 
   /**
@@ -567,7 +567,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         "IS_GRANTABLE"),
         Arrays.asList(Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR,
             Type.VARCHAR, Type.VARCHAR),
-        new ArrayList<MetaDataTuple>());
+            new ArrayList<MetaDataTuple>());
   }
 
   @Override
@@ -576,7 +576,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return new TajoMetaDataResultSet(Arrays.asList("TABLE_CAT", "TABLE_SCHEM",
         "TABLE_NAME", "GRANTOR", "GRANTEE", "PRIVILEGE", "IS_GRANTABLE"),
         Arrays.asList(Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR, Type.VARCHAR),
-        new ArrayList<MetaDataTuple>());
+            new ArrayList<MetaDataTuple>());
   }
 
   @Override
@@ -585,7 +585,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return new TajoMetaDataResultSet(Arrays.asList("SCOPE", "COLUMN_NAME",
         "DATA_TYPE", "TYPE_NAME", "COLUMN_SIZE", "BUFFER_LENGTH", "DECIMAL_DIGITS", "PSEUDO_COLUMN"),
         Arrays.asList(Type.INT2, Type.VARCHAR, Type.INT2, Type.VARCHAR, Type.INT4, Type.INT4, Type.INT2, Type.INT2),
-        new ArrayList<MetaDataTuple>());
+            new ArrayList<MetaDataTuple>());
   }
 
   @Override
@@ -594,7 +594,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return new TajoMetaDataResultSet(Arrays.asList("SCOPE", "COLUMN_NAME",
         "DATA_TYPE", "TYPE_NAME", "COLUMN_SIZE", "BUFFER_LENGTH", "DECIMAL_DIGITS", "PSEUDO_COLUMN"),
         Arrays.asList(Type.INT2, Type.VARCHAR, Type.INT2, Type.VARCHAR, Type.INT4, Type.INT4, Type.INT2, Type.INT2),
-        new ArrayList<MetaDataTuple>());
+            new ArrayList<MetaDataTuple>());
   }
 
   @Override
@@ -782,7 +782,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
       throws SQLException {
     return new TajoMetaDataResultSet(Arrays.asList("NAME", "MAX_LEN", "DEFAULT_VALUE", "DESCRIPTION"),
         Arrays.asList(Type.VARCHAR, Type.INT4, Type.VARCHAR, Type.VARCHAR),
-        new ArrayList<MetaDataTuple>());
+            new ArrayList<MetaDataTuple>());
   }
 
   @Override
@@ -1256,14 +1256,14 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     return iface.isInstance(this);
   }
 
+  @Override
   public boolean generatedKeyAlwaysReturned() throws SQLException {
-    // JDK 1.7
     return false;
   }
 
+  @Override
   public ResultSet getPseudoColumns(String catalog, String schemaPattern,
                                     String tableNamePattern, String columnNamePattern) throws SQLException {
-    // JDK 1.7
     throw new SQLFeatureNotSupportedException("getPseudoColumns not supported");
   }
 }

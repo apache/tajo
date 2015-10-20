@@ -58,7 +58,7 @@ public abstract class TajoMetricsReporter {
         groupName = "";
         itemName = key;
         if(!metricsGroup.containsKey(groupName)) {
-          metricsGroup.put(groupName, new HashMap<String, T>());
+          metricsGroup.put(groupName, new HashMap<>());
         }
         metricsGroup.get(groupName).put(itemName, entry.getValue());
         continue;

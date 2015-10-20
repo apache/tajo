@@ -116,7 +116,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     GetSubmitQueryResponse response = restClient.target(queriesURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
         .post(Entity.entity(request, MediaType.APPLICATION_JSON),
-					new GenericType<GetSubmitQueryResponse>(GetSubmitQueryResponse.class));
+                new GenericType<>(GetSubmitQueryResponse.class));
 
     assertNotNull(response);
     assertEquals(ResultCode.OK, response.getResultCode());
@@ -138,7 +138,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     GetQueryResultDataResponse response = restClient.target(queryResultURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
-        .get(new GenericType<GetQueryResultDataResponse>(GetQueryResultDataResponse.class));
+        .get(new GenericType<>(GetQueryResultDataResponse.class));
 
     assertNotNull(response);
     assertNotNull(response.getResultCode());
@@ -172,7 +172,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     GetQueryResultDataResponse response = restClient.target(queryResultURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
-        .get(new GenericType<GetQueryResultDataResponse>(GetQueryResultDataResponse.class));
+        .get(new GenericType<>(GetQueryResultDataResponse.class));
 
     assertNotNull(response);
     assertNotNull(response.getResultCode());
@@ -234,7 +234,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     GetQueryResultDataResponse response = restClient.target(queryResultURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
-        .get(new GenericType<GetQueryResultDataResponse>(GetQueryResultDataResponse.class));
+        .get(new GenericType<>(GetQueryResultDataResponse.class));
 
     assertNotNull(response);
     assertNotNull(response.getResultCode());

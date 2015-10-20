@@ -166,7 +166,7 @@ public class TestSessionsResource extends QueryTestCaseBase {
 
     Map<String, Map<String, String>> variablesMap = restClient.target(sessionsURI)
         .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())
-        .request().get(new GenericType<Map<String, Map<String, String>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
 
     assertNotNull(variablesMap);
     assertTrue(variablesMap.containsKey("variables"));
@@ -209,7 +209,7 @@ public class TestSessionsResource extends QueryTestCaseBase {
     
     Map<String, Map<String, String>> retrievedVariables = restClient.target(sessionsURI)
         .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())
-        .request().get(new GenericType<Map<String, Map<String, String>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
     
     assertNotNull(retrievedVariables);
     assertFalse(retrievedVariables.isEmpty());
@@ -247,7 +247,7 @@ public class TestSessionsResource extends QueryTestCaseBase {
     
     Map<String, Map<String, String>> retrievedVariables = restClient.target(sessionsURI)
         .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())
-        .request().get(new GenericType<Map<String, Map<String, String>>>(Map.class));
+        .request().get(new GenericType<>(Map.class));
     
     assertNotNull(retrievedVariables);
     assertFalse(retrievedVariables.isEmpty());

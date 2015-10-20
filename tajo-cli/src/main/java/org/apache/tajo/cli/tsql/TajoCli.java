@@ -50,7 +50,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-public class TajoCli {
+public class TajoCli implements Closeable {
   public static final int SHUTDOWN_HOOK_PRIORITY = 50;
   public static final String ERROR_PREFIX = "ERROR: ";
   public static final String KILL_PREFIX = "KILL: ";

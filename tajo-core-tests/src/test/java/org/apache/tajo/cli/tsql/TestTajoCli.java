@@ -18,6 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
+import com.google.common.io.NullOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
@@ -446,7 +447,7 @@ public class TestTajoCli {
     tajoCli.executeScript("select * from " + tableName);
     String consoleResult = new String(out.toByteArray());
     tajoCli.executeScript("DROP TABLE " + tableName + " PURGE");
-    assertTrue(consoleResult.contains("1970-01-01 01:00:00"));
+    assertTrue(consoleResult.contains("1970-01-01 00:00:00"));
   }
 
   @Test(timeout = 3000)
@@ -470,6 +471,22 @@ public class TestTajoCli {
       assertOutputResult(consoleResult);
     } finally {
       cli.close();
+    }
+  }
+
+  @Test
+  public void testResultRowNumWhenSelectingOnPartitionedTable() throws Exception {
+    try (TajoCli cli2 = new TajoCli(cluster.getConfiguration(), new String[]{}, null, System.in,
+        new NullOutputStream())) {
+      cli2.executeScript("create table region_part (r_regionkey int8, r_name text) " +
+          "partition by column (r_comment text) as select * from region");
+
+      setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+      tajoCli.executeScript("select r_comment from region_part where r_comment = 'hs use ironic, even requests. s'");
+      String consoleResult = new String(out.toByteArray());
+      assertOutputResult(consoleResult);
+    } finally {
+      tajoCli.executeScript("drop table region_part purge");
     }
   }
 

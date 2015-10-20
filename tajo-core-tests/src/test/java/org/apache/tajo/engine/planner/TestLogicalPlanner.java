@@ -1036,7 +1036,7 @@ public class TestLogicalPlanner {
     testGenerateCuboids[1] = new Column("col2", Type.INT8);
     testGenerateCuboids[2] = new Column("col3", Type.FLOAT4);
 
-    testGenerateCuboidsResult.add(new HashSet<Column>());
+    testGenerateCuboidsResult.add(new HashSet<>());
     testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[0]));
     testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[1]));
     testGenerateCuboidsResult.add(Sets.newHashSet(testGenerateCuboids[2]));
@@ -1051,7 +1051,7 @@ public class TestLogicalPlanner {
 
     testCubeByCuboids[0] = new Column("employee.name", Type.TEXT);
     testCubeByCuboids[1] = new Column("employee.empid", Type.INT4);
-    testCubeByResult.add(new HashSet<Column>());
+    testCubeByResult.add(new HashSet<>());
     testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[0]));
     testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[1]));
     testCubeByResult.add(Sets.newHashSet(testCubeByCuboids[0],

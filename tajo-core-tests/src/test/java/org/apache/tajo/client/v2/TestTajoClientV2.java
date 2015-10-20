@@ -18,7 +18,7 @@
 
 package org.apache.tajo.client.v2;
 
-import com.facebook.presto.hive.shaded.com.google.common.collect.Lists;
+import com.google.common.collect.Lists;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.service.ServiceTracker;

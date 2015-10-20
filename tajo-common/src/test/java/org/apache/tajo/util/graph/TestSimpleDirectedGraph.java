@@ -35,7 +35,7 @@ public class TestSimpleDirectedGraph {
 
   @Test
   public final void test() {
-    SimpleDirectedGraph<String, Integer> graph = new SimpleDirectedGraph<String, Integer>();
+    SimpleDirectedGraph<String, Integer> graph = new SimpleDirectedGraph<>();
 
     //     root
     //     /  \

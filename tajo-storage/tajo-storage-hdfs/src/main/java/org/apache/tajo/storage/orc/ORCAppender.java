@@ -111,7 +111,7 @@ public class ORCAppender extends FileAppender {
   }
 
   private CompressionKind getCompressionKind() {
-    String kindstr = meta.getOption(StorageConstants.ORC_COMPRESSION_KIND, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
+    String kindstr = meta.getOption(StorageConstants.ORC_COMPRESSION, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
 
     if (kindstr.equalsIgnoreCase(StorageConstants.ORC_COMPRESSION_KIND_ZIP)) {
       return CompressionKind.ZLIB;
