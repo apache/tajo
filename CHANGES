@@ -6,6 +6,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1911: Change guava's Optional to Java's Optional. (hyunsik)
+
     TAJO-1850: Using TUtil.newHash(Set/Map) should be replaced by Java's 
     diamond operator. (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 

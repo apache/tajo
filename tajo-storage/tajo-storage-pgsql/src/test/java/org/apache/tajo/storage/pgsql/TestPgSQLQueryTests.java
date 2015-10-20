@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.pgsql;
 
-import com.google.common.base.Optional;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Tablespace;
@@ -28,6 +27,7 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class TestPgSQLQueryTests extends QueryTestCaseBase {
   @SuppressWarnings("unused")
@@ -187,7 +187,7 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
     connProperties.put("user", "postgres");
     connProperties.put("password", "");
 
-    Optional<Tablespace> old = Optional.absent();
+    Optional<Tablespace> old = Optional.empty();
     try {
       old = PgSQLTestServer.resetAllParamsAndSetConnProperties(connProperties);
       runSimpleTests();
