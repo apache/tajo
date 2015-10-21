@@ -246,7 +246,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.debug(sql.toString());
     }
 
-    try (ResultSet result = getConnection().prepareStatement(sql).executeQuery()) {
+    try (PreparedStatement pstmt = getConnection().prepareStatement(sql);
+         ResultSet result = pstmt.executeQuery()) {
       if (result.next()) {
         schemaVersion = result.getInt("VERSION");
       }
@@ -416,7 +417,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       sql += " WHERE " + whereCondition;
     }
 
-    try (ResultSet resultSet = getConnection().prepareStatement(sql).executeQuery()) {
+    try (PreparedStatement pstmt = getConnection().prepareStatement(sql);
+         ResultSet resultSet = pstmt.executeQuery()) {
       while (resultSet.next()) {
         tablespaceNames.add(resultSet.getString(1));
       }
@@ -433,7 +435,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     String sql = "SELECT SPACE_ID, SPACE_NAME, SPACE_HANDLER, SPACE_URI FROM " + TB_SPACES ;
 
-    try (ResultSet resultSet = getConnection().createStatement().executeQuery(sql)) {
+    try (Statement stmt = getConnection().createStatement();
+         ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TablespaceProto.Builder builder = TablespaceProto.newBuilder();
         builder.setId(resultSet.getInt("SPACE_ID"));
@@ -643,7 +646,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       sql += " WHERE " + whereCondition;
     }
 
-    try (ResultSet resultSet = getConnection().prepareStatement(sql).executeQuery()) {
+    try (PreparedStatement pstmt = getConnection().prepareStatement(sql);
+         ResultSet resultSet = pstmt.executeQuery()) {
       while (resultSet.next()) {
         databaseNames.add(resultSet.getString(1));
       }
@@ -660,7 +664,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     String sql = "SELECT DB_ID, DB_NAME, SPACE_ID FROM " + TB_DATABASES;
 
-    try (ResultSet resultSet = getConnection().createStatement().executeQuery(sql)) {
+    try (Statement stmt = getConnection().createStatement();
+         ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         DatabaseProto.Builder builder = DatabaseProto.newBuilder();
         
@@ -1747,7 +1752,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
             " s.SPACE_URI FROM " + TB_TABLES + " t, " + TB_DATABASES + " d, " + TB_SPACES +
             " s WHERE t.DB_ID = d.DB_ID AND d.SPACE_ID = s.SPACE_ID";
 
-    try (ResultSet resultSet = getConnection().createStatement().executeQuery(sql)) {
+    try (Statement stmt = getConnection().createStatement();
+         ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TableDescriptorProto.Builder builder = TableDescriptorProto.newBuilder();
         
@@ -1785,7 +1791,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     String sql = "SELECT tid, key_, value_ FROM " + TB_OPTIONS;
 
-    try (ResultSet resultSet = getConnection().createStatement().executeQuery(sql)) {
+    try (Statement stmt = getConnection().createStatement();
+         ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TableOptionProto.Builder builder = TableOptionProto.newBuilder();
         
@@ -1811,7 +1818,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     String sql = "SELECT tid, num_rows, num_bytes FROM " + TB_STATISTICS;
 
-    try (ResultSet resultSet = getConnection().createStatement().executeQuery(sql)) {
+    try (Statement stmt = getConnection().createStatement();
+         ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TableStatsProto.Builder builder = TableStatsProto.newBuilder();
         
@@ -2330,7 +2338,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     String sql = "SELECT " + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", PARTITION_NAME, " +
             " PATH FROM " + TB_PARTTIONS;
 
-    try (ResultSet resultSet = getConnection().createStatement().executeQuery(sql)) {
+    try (Statement stmt = getConnection().createStatement();
+         ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
 
