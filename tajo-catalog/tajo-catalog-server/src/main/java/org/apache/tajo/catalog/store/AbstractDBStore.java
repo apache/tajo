@@ -254,7 +254,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException e) {
       throw new TajoInternalError(e);
     }
-    
+
     return schemaVersion;
   }
 
@@ -428,7 +428,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     return tablespaceNames;
   }
-  
+
   @Override
   public List<TablespaceProto> getTablespaces() {
     List<TablespaceProto> tablespaces = TUtil.newList();
@@ -443,7 +443,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setSpaceName(resultSet.getString("SPACE_NAME"));
         builder.setHandler(resultSet.getString("SPACE_HANDLER"));
         builder.setUri(resultSet.getString("SPACE_URI"));
-        
+
         tablespaces.add(builder.build());
       }
       return tablespaces;
@@ -657,7 +657,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     return databaseNames;
   }
-  
+
   @Override
   public List<DatabaseProto> getAllDatabases() {
     List<DatabaseProto> databases = new ArrayList<>();
@@ -668,17 +668,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
          ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         DatabaseProto.Builder builder = DatabaseProto.newBuilder();
-        
+
         builder.setId(resultSet.getInt("DB_ID"));
         builder.setName(resultSet.getString("DB_NAME"));
         builder.setSpaceId(resultSet.getInt("SPACE_ID"));
-        
+
         databases.add(builder.build());
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     }
-    
+
     return databases;
   }
 
@@ -1743,7 +1743,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     return tables;
   }
-  
+
   @Override
   public List<TableDescriptorProto> getAllTables() {
     List<TableDescriptorProto> tables = new ArrayList<>();
@@ -1756,7 +1756,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
          ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TableDescriptorProto.Builder builder = TableDescriptorProto.newBuilder();
-        
+
         builder.setTid(resultSet.getInt("TID"));
         builder.setDbId(resultSet.getInt("DB_ID"));
         String tableName = resultSet.getString(COL_TABLES_NAME);
@@ -1775,16 +1775,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           dataFormat = dataFormat.trim();
           builder.setDataFormat(dataFormat);
         }
-        
+
         tables.add(builder.build());
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     }
-    
+
     return tables;
   }
-  
+
   @Override
   public List<TableOptionProto> getAllTableProperties() {
     List<TableOptionProto> options = new ArrayList<>();
@@ -1795,23 +1795,23 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
          ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TableOptionProto.Builder builder = TableOptionProto.newBuilder();
-        
+
         builder.setTid(resultSet.getInt("TID"));
-        
+
         KeyValueProto.Builder keyValueBuilder = KeyValueProto.newBuilder();
         keyValueBuilder.setKey(resultSet.getString("KEY_"));
         keyValueBuilder.setValue(resultSet.getString("VALUE_"));
         builder.setKeyval(keyValueBuilder.build());
-        
+
         options.add(builder.build());
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     }
-    
+
     return options;
   }
-  
+
   @Override
   public List<TableStatsProto> getAllTableStats() {
     List<TableStatsProto> stats = new ArrayList<>();
@@ -1822,20 +1822,20 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
          ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TableStatsProto.Builder builder = TableStatsProto.newBuilder();
-        
+
         builder.setTid(resultSet.getInt("TID"));
         builder.setNumRows(resultSet.getLong("NUM_ROWS"));
         builder.setNumBytes(resultSet.getLong("NUM_BYTES"));
-        
+
         stats.add(builder.build());
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     }
-    
+
     return stats;
   }
-  
+
   @Override
   public List<ColumnProto> getAllColumns() {
     Connection conn;
@@ -1871,13 +1871,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         } else {
           builder.setDataType(CatalogUtil.newSimpleDataType(type));
         }
-        
+
         columns.add(builder.build());
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     }
-    
+
     return columns;
   }
 
