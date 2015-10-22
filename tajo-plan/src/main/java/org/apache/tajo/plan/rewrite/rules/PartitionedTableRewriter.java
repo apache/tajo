@@ -181,9 +181,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     filteredPartition.setPartitionPaths(pair.getFirst());
     filteredPartition.setTotalVolume(pair.getSecond());
-    if (partitions != null) {
-      filteredPartition.setPartitions(partitions);
-    }
     LOG.info("Filtered directory or files: " + pair.getFirst().length);
     return filteredPartition;
   }

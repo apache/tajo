@@ -24,7 +24,6 @@ import java.util.List;
 
 public class FilteredPartitionInfo {
   private Path[] partitionPaths;
-  private List<CatalogProtos.PartitionDescProto> partitions;
   private long totalVolume;
 
   public Path[] getPartitionPaths() {
@@ -33,14 +32,6 @@ public class FilteredPartitionInfo {
 
   public void setPartitionPaths(Path[] partitionPaths) {
     this.partitionPaths = partitionPaths;
-  }
-
-  public List<CatalogProtos.PartitionDescProto> getPartitions() {
-    return partitions;
-  }
-
-  public void setPartitions(List<CatalogProtos.PartitionDescProto> partitions) {
-    this.partitions = partitions;
   }
 
   public long getTotalVolume() {
