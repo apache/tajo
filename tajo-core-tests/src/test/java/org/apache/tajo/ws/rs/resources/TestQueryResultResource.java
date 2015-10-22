@@ -39,6 +39,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import javax.ws.rs.BadRequestException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -58,7 +59,6 @@ import static org.apache.tajo.exception.ErrorUtil.isOk;
 import static org.junit.Assert.*;
 
 public class TestQueryResultResource extends QueryTestCaseBase {
-
   private URI restServiceURI;
   private URI sessionsURI;
   private URI queriesURI;
@@ -148,6 +148,17 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     assertNotNull(response.getResultset());
     assertTrue(response.getResultset().getId() != 0);
     assertNotNull(response.getResultset().getLink());
+  }
+
+  @Test(expected = BadRequestException.class)
+  public void testGetQueryResultWithoutSessionId() throws Exception {
+    String sessionId = generateNewSessionAndGetId();
+    URI queryIdURI = sendNewQueryResquest(sessionId, "select * from lineitem");
+    URI queryResultURI = new URI(queryIdURI + "/result");
+
+    GetQueryResultDataResponse response = restClient.target(queryResultURI)
+            .request()
+            .get(new GenericType<>(GetQueryResultDataResponse.class));
   }
 
   @Test

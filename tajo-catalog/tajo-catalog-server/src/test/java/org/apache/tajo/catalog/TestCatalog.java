@@ -513,7 +513,7 @@ public class TestCatalog {
 	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
 	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
 
-    Set<IndexDesc> indexDescs = TUtil.newHashSet();
+    Set<IndexDesc> indexDescs = new HashSet<>();
     indexDescs.add(desc1);
     indexDescs.add(desc2);
     indexDescs.add(desc3);

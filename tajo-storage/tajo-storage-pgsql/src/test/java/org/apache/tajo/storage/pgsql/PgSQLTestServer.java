@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.pgsql;
 
-import com.google.common.base.Optional;
 import io.airlift.testing.postgresql.TestingPostgreSqlServer;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
@@ -39,6 +38,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Map;
+import java.util.Optional;
 
 public class PgSQLTestServer {
   private static final Log LOG = LogFactory.getLog(PgSQLTestServer.class);

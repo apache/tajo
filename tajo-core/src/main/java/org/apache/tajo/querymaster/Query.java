@@ -329,7 +329,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public List<PartitionDescProto> getPartitions() {
-    Set<PartitionDescProto> partitions = TUtil.newHashSet();
+    Set<PartitionDescProto> partitions = new HashSet<>();
     for(Stage eachStage : getStages()) {
       partitions.addAll(eachStage.getPartitions());
     }

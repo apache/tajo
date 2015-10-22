@@ -22,8 +22,9 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.RelationNode;
-import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 public class RelationVertex implements JoinVertex{
@@ -62,7 +63,7 @@ public RelationVertex(RelationNode relationNode) {
 
   @Override
   public Set<RelationVertex> getRelations() {
-    return TUtil.newHashSet(this);
+    return new HashSet<>(Arrays.asList(this));
   }
 
   @Override

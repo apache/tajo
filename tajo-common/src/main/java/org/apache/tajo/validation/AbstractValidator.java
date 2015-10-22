@@ -19,8 +19,7 @@
 package org.apache.tajo.validation;
 
 import java.util.Collection;
-
-import org.apache.tajo.util.TUtil;
+import java.util.HashSet;
 
 public abstract class AbstractValidator implements Validator {
   
@@ -30,7 +29,7 @@ public abstract class AbstractValidator implements Validator {
 
   @Override
   public <T> Collection<ConstraintViolation> validate(T object) {
-    Collection<ConstraintViolation> violations = TUtil.newHashSet();
+    Collection<ConstraintViolation> violations = new HashSet<>();
     
     if (!validateInternal(object)) {
       ConstraintViolation violation = new ConstraintViolation();

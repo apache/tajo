@@ -18,8 +18,9 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 public class RelationList extends Expr {
@@ -64,9 +65,9 @@ public class RelationList extends Expr {
 
   @Override
   boolean equalsTo(Expr expr) {
-    Set<Expr> thisSet = TUtil.newHashSet(relations);
+    Set<Expr> thisSet = new HashSet<>(Arrays.asList(relations));
     RelationList another = (RelationList) expr;
-    Set<Expr> anotherSet = TUtil.newHashSet(another.relations);
+    Set<Expr> anotherSet = new HashSet<>(Arrays.asList(another.relations));
     return thisSet.equals(anotherSet);
   }
 

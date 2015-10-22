@@ -19,13 +19,13 @@
 package org.apache.tajo.plan.expr;
 
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
-import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public class EvalContext {
-  private final Map<EvalNode, TajoScriptEngine> scriptEngineMap = TUtil.newHashMap();
+  private final Map<EvalNode, TajoScriptEngine> scriptEngineMap = new HashMap<>();
 
   public void addScriptEngine(EvalNode evalNode, TajoScriptEngine scriptExecutor) {
     this.scriptEngineMap.put(evalNode, scriptExecutor);
