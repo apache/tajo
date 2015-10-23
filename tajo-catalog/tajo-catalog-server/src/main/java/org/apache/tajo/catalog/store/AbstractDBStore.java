@@ -239,6 +239,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private int getSchemaVersion() {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet result = null;
     int schemaVersion = -1;
     
     String sql = "SELECT version FROM META";
@@ -246,13 +249,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.debug(sql.toString());
     }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql);
-         ResultSet result = pstmt.executeQuery()) {
+    try {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
+      result = pstmt.executeQuery();
+
       if (result.next()) {
         schemaVersion = result.getInt("VERSION");
       }
     } catch (SQLException e) {
       throw new TajoInternalError(e);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, result);
     }
     
     return schemaVersion;
@@ -285,11 +293,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
    * Insert the version of the current catalog schema
    */
   protected void insertSchemaVersion() {
-    try (PreparedStatement pstmt = getConnection().prepareStatement("INSERT INTO META VALUES (?)")) {
+    Connection conn;
+    PreparedStatement pstmt = null;
+    try {
+      conn = getConnection();
+      pstmt = conn.prepareStatement("INSERT INTO META VALUES (?)");
       pstmt.setInt(1, getDriverVersion());
       pstmt.executeUpdate();
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
     }
   }
 
@@ -341,23 +355,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public boolean existTablespace(String tableSpaceName) {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
     boolean exist = false;
 
-    StringBuilder sql = new StringBuilder();
-    sql.append("SELECT SPACE_NAME FROM " + TB_SPACES + " WHERE SPACE_NAME = ?");
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql.toString());
-    }
+    try {
+      StringBuilder sql = new StringBuilder();
+      sql.append("SELECT SPACE_NAME FROM " + TB_SPACES + " WHERE SPACE_NAME = ?");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql.toString());
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql.toString())) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql.toString());
       pstmt.setString(1, tableSpaceName);
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return exist;
@@ -409,21 +427,29 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private Collection<String> getAllTablespaceNamesInternal(@Nullable String whereCondition) {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet resultSet = null;
+
     List<String> tablespaceNames = new ArrayList<>();
 
-    String sql = "SELECT SPACE_NAME FROM " + TB_SPACES;
+    try {
+      String sql = "SELECT SPACE_NAME FROM " + TB_SPACES;
 
-    if (whereCondition != null) {
-      sql += " WHERE " + whereCondition;
-    }
+      if (whereCondition != null) {
+        sql += " WHERE " + whereCondition;
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql);
-         ResultSet resultSet = pstmt.executeQuery()) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
+      resultSet = pstmt.executeQuery();
       while (resultSet.next()) {
         tablespaceNames.add(resultSet.getString(1));
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, resultSet);
     }
 
     return tablespaceNames;
@@ -431,12 +457,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   
   @Override
   public List<TablespaceProto> getTablespaces() {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
     List<TablespaceProto> tablespaces = TUtil.newList();
 
-    String sql = "SELECT SPACE_ID, SPACE_NAME, SPACE_HANDLER, SPACE_URI FROM " + TB_SPACES ;
+    try {
+      String sql = "SELECT SPACE_ID, SPACE_NAME, SPACE_HANDLER, SPACE_URI FROM " + TB_SPACES ;
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
 
-    try (Statement stmt = getConnection().createStatement();
-         ResultSet resultSet = stmt.executeQuery(sql)) {
       while (resultSet.next()) {
         TablespaceProto.Builder builder = TablespaceProto.newBuilder();
         builder.setId(resultSet.getInt("SPACE_ID"));
@@ -450,16 +481,21 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
     }
   }
 
   @Override
   public TablespaceProto getTablespace(String spaceName) throws UndefinedTablespaceException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet resultSet = null;
 
-    String sql = "SELECT * FROM " + TB_SPACES + " WHERE SPACE_NAME=?";
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
+      String sql = "SELECT * FROM " + TB_SPACES + " WHERE SPACE_NAME=?";
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setString(1, spaceName);
       resultSet = pstmt.executeQuery();
 
@@ -483,7 +519,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(resultSet);
+      CatalogUtil.closeQuietly(pstmt, resultSet);
     }
   }
 
@@ -573,23 +609,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public boolean existDatabase(String databaseName) {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
     boolean exist = false;
 
-    StringBuilder sql = new StringBuilder();
-    sql.append("SELECT DB_NAME FROM " + TB_DATABASES + " WHERE DB_NAME = ?");
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql.toString());
-    }
+    try {
+      StringBuilder sql = new StringBuilder();
+      sql.append("SELECT DB_NAME FROM " + TB_DATABASES + " WHERE DB_NAME = ?");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql.toString());
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql.toString())) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql.toString());
       pstmt.setString(1, databaseName);
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return exist;
@@ -638,21 +678,29 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private Collection<String> getAllDatabaseNamesInternal(@Nullable String whereCondition) {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet resultSet = null;
+
     List<String> databaseNames = new ArrayList<>();
 
-    String sql = "SELECT DB_NAME FROM " + TB_DATABASES;
+    try {
+      String sql = "SELECT DB_NAME FROM " + TB_DATABASES;
 
-    if (whereCondition != null) {
-      sql += " WHERE " + whereCondition;
-    }
+      if (whereCondition != null) {
+        sql += " WHERE " + whereCondition;
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql);
-         ResultSet resultSet = pstmt.executeQuery()) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
+      resultSet = pstmt.executeQuery();
       while (resultSet.next()) {
         databaseNames.add(resultSet.getString(1));
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, resultSet);
     }
 
     return databaseNames;
@@ -660,12 +708,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   
   @Override
   public List<DatabaseProto> getAllDatabases() {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
     List<DatabaseProto> databases = new ArrayList<>();
 
-    String sql = "SELECT DB_ID, DB_NAME, SPACE_ID FROM " + TB_DATABASES;
+    try {
+      String sql = "SELECT DB_ID, DB_NAME, SPACE_ID FROM " + TB_DATABASES;
 
-    try (Statement stmt = getConnection().createStatement();
-         ResultSet resultSet = stmt.executeQuery(sql)) {
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
         DatabaseProto.Builder builder = DatabaseProto.newBuilder();
         
@@ -677,6 +731,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
     }
     
     return databases;
@@ -707,11 +763,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private TableSpaceInternal getTableSpaceInfo(String spaceName) throws UndefinedTablespaceException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    String sql = "SELECT SPACE_ID, SPACE_URI, SPACE_HANDLER from " + TB_SPACES + " WHERE SPACE_NAME = ?";
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
+      String sql = "SELECT SPACE_ID, SPACE_URI, SPACE_HANDLER from " + TB_SPACES + " WHERE SPACE_NAME = ?";
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setString(1, spaceName);
       res = pstmt.executeQuery();
       if (!res.next()) {
@@ -721,16 +780,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
   private int getTableId(int databaseId, String databaseName, String tableName) throws UndefinedTableException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    String tidSql = "SELECT TID from TABLES WHERE db_id = ? AND " + COL_TABLES_NAME + "=?";
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(tidSql)) {
+    try {
+      String tidSql = "SELECT TID from TABLES WHERE db_id = ? AND " + COL_TABLES_NAME + "=?";
+      conn = getConnection();
+      pstmt = conn.prepareStatement(tidSql);
       pstmt.setInt(1, databaseId);
       pstmt.setString(2, tableName);
       res = pstmt.executeQuery();
@@ -741,7 +803,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
@@ -1043,12 +1105,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private Map<String, String> getTableOptions(final int tableId) {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
     Map<String, String> options = new HashMap<>();
 
-    String tidSql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE TID=?";
+    try {
+      String tidSql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE TID=?";
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(tidSql)) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(tidSql);
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
 
@@ -1058,7 +1124,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return options;
@@ -1068,11 +1134,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final String updateSql = "UPDATE " + TB_OPTIONS + " SET VALUE_=? WHERE TID=? AND KEY_=?";
     final String insertSql = "INSERT INTO " + TB_OPTIONS + " (TID, KEY_, VALUE_) VALUES(?, ?, ?)";
 
+    Connection conn;
     PreparedStatement pstmt = null;
 
     Map<String, String> oldProperties = getTableOptions(tableId);
 
-    try (Connection conn = getConnection()) {
+    try {
+      conn = getConnection();
       conn.setAutoCommit(false);
 
       for (KeyValueProto entry : properties.getKeyvalList()) {
@@ -1113,14 +1181,21 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.debug(updtaeRenameTableSql);
     }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(updtaeRenameTableSql)) {
+    Connection conn;
+    PreparedStatement pstmt = null;
 
+    try {
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(updtaeRenameTableSql);
       pstmt.setString(1, tableName);
       pstmt.setInt(2, tableId);
       pstmt.executeUpdate();
 
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
     }
   }
 
@@ -1133,8 +1208,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.debug(updtaeRenameTableSql);
     }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(updtaeRenameTableSql)) {
+    Connection conn;
+    PreparedStatement pstmt = null;
 
+    try {
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(updtaeRenameTableSql);
       pstmt.setString(1, tableName);
       pstmt.setString(2, newTablePath);
       pstmt.setInt(3, tableId);
@@ -1142,6 +1222,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
     }
   }
 
@@ -1163,11 +1245,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.debug(insertNewColumnSql);
     }
 
+    Connection conn;
     PreparedStatement pstmt = null;
     ResultSet resultSet = null;
 
-    try (Connection conn = getConnection()) {
+    try {
 
+      conn = getConnection();
       conn.setAutoCommit(false);
 
       String tableName = CatalogUtil.extractQualifier(alterColumnProto.getOldColumnName());
@@ -1375,9 +1459,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.debug(sql);
     }
 
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setString(1, databaseName);
       res = pstmt.executeQuery();
       if (!res.next()) {
@@ -1388,23 +1476,28 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException e) {
       throw new TajoInternalError(e);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
   @Override
   public boolean existTable(String databaseName, final String tableName) throws UndefinedDatabaseException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
     boolean exist = false;
 
-    String sql = "SELECT TID FROM TABLES WHERE DB_ID = ? AND " + COL_TABLES_NAME + "=?";
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql.toString());
-    }
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
       int dbid = getDatabaseId(databaseName);
+
+      String sql = "SELECT TID FROM TABLES WHERE DB_ID = ? AND " + COL_TABLES_NAME + "=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql.toString());
+      }
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql.toString());
 
       pstmt.setInt(1, dbid);
       pstmt.setString(2, tableName);
@@ -1413,7 +1506,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return exist;
@@ -1544,9 +1637,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       LOG.debug(sql);
     }
 
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setString(1, databaseName);
       res = pstmt.executeQuery();
       if (!res.next()) {
@@ -1557,7 +1654,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException e) {
       throw new TajoInternalError(e);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
@@ -1717,20 +1814,24 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public List<String> getAllTableNames(String databaseName) throws UndefinedDatabaseException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
 
     List<String> tables = new ArrayList<>();
 
-    String sql = "SELECT " + COL_TABLES_NAME + " FROM TABLES WHERE DB_ID = ?";
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
 
       int dbid = getDatabaseId(databaseName);
 
+      String sql = "SELECT " + COL_TABLES_NAME + " FROM TABLES WHERE DB_ID = ?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, dbid);
       res = pstmt.executeQuery();
       while (res.next()) {
@@ -1739,21 +1840,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
     return tables;
   }
   
   @Override
   public List<TableDescriptorProto> getAllTables() {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
     List<TableDescriptorProto> tables = new ArrayList<>();
 
-    String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.DATA_FORMAT, " +
-            " s.SPACE_URI FROM " + TB_TABLES + " t, " + TB_DATABASES + " d, " + TB_SPACES +
-            " s WHERE t.DB_ID = d.DB_ID AND d.SPACE_ID = s.SPACE_ID";
+    try {
+      String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.DATA_FORMAT, " +
+          " s.SPACE_URI FROM " + TB_TABLES + " t, " + TB_DATABASES + " d, " + TB_SPACES +
+          " s WHERE t.DB_ID = d.DB_ID AND d.SPACE_ID = s.SPACE_ID";
 
-    try (Statement stmt = getConnection().createStatement();
-         ResultSet resultSet = stmt.executeQuery(sql)) {
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
         TableDescriptorProto.Builder builder = TableDescriptorProto.newBuilder();
         
@@ -1780,6 +1887,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
     }
     
     return tables;
@@ -1787,12 +1896,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   
   @Override
   public List<TableOptionProto> getAllTableProperties() {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
     List<TableOptionProto> options = new ArrayList<>();
 
-    String sql = "SELECT tid, key_, value_ FROM " + TB_OPTIONS;
+    try {
+      String sql = "SELECT tid, key_, value_ FROM " + TB_OPTIONS;
 
-    try (Statement stmt = getConnection().createStatement();
-         ResultSet resultSet = stmt.executeQuery(sql)) {
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
         TableOptionProto.Builder builder = TableOptionProto.newBuilder();
         
@@ -1807,6 +1922,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
     }
     
     return options;
@@ -1814,12 +1931,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   
   @Override
   public List<TableStatsProto> getAllTableStats() {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
     List<TableStatsProto> stats = new ArrayList<>();
 
-    String sql = "SELECT tid, num_rows, num_bytes FROM " + TB_STATISTICS;
+    try {
+      String sql = "SELECT tid, num_rows, num_bytes FROM " + TB_STATISTICS;
 
-    try (Statement stmt = getConnection().createStatement();
-         ResultSet resultSet = stmt.executeQuery(sql)) {
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
         TableStatsProto.Builder builder = TableStatsProto.newBuilder();
         
@@ -1831,6 +1954,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
     }
     
     return stats;
@@ -1889,20 +2014,24 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName) throws
       UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
 
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
 
     final int databaseId = getDatabaseId(databaseName);
     final int tableId = getTableId(databaseId, databaseName, tableName);
     ensurePartitionTable(tableName, tableId);
 
-    String sql = "SELECT partition_type, expression, expression_schema FROM " + TB_PARTITION_METHODS +
-            " WHERE " + COL_TABLES_PK + " = ? ";
+    try {
+      String sql = "SELECT partition_type, expression, expression_schema FROM " + TB_PARTITION_METHODS +
+          " WHERE " + COL_TABLES_PK + " = ? ";
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
 
@@ -1915,7 +2044,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (Throwable se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
@@ -1923,21 +2052,24 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public boolean existPartitionMethod(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException {
 
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
     boolean exist = false;
 
-    String sql = "SELECT partition_type, expression, expression_schema FROM " + TB_PARTITION_METHODS +
-            " WHERE " + COL_TABLES_PK + "= ?";
+    try {
+      String sql = "SELECT partition_type, expression, expression_schema FROM " + TB_PARTITION_METHODS +
+          " WHERE " + COL_TABLES_PK + "= ?";
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
 
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
 
@@ -1945,7 +2077,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
     return exist;
   }
@@ -1962,16 +2094,20 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private void ensurePartitionTable(String tbName, int tableId)
       throws UndefinedTableException, UndefinedDatabaseException, UndefinedPartitionMethodException {
 
+    Connection conn;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
 
-    String sql = "SELECT partition_type, expression, expression_schema FROM " + TB_PARTITION_METHODS +
-            " WHERE " + COL_TABLES_PK + "= ?";
+    try {
+      String sql = "SELECT partition_type, expression, expression_schema FROM " + TB_PARTITION_METHODS +
+          " WHERE " + COL_TABLES_PK + "= ?";
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
 
@@ -1981,7 +2117,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
@@ -1995,17 +2131,21 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final int tableId = getTableId(databaseId, databaseName, tableName);
     ensurePartitionTable(tableName, tableId);
 
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
     PartitionDescProto.Builder builder = null;
 
-    String sql = "SELECT PATH, " + COL_PARTITIONS_PK  + ", " + COL_PARTITION_BYTES + " FROM " + TB_PARTTIONS +
-            " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ";
+    try {
+      String sql = "SELECT PATH, " + COL_PARTITIONS_PK  + ", " + COL_PARTITION_BYTES + " FROM " + TB_PARTTIONS +
+        " WHERE " + COL_TABLES_PK + " = ? AND PARTITION_NAME = ? ";
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, tableId);
       pstmt.setString(2, partitionName);
       res = pstmt.executeQuery();
@@ -2023,18 +2163,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
     return builder.build();
   }
 
   private void setPartitionKeys(int pid, PartitionDescProto.Builder partitionDesc) {
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
 
-    String sql = "SELECT "+ COL_COLUMN_NAME  + " , "+ COL_PARTITION_VALUE
-            + " FROM " + TB_PARTTION_KEYS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
+    try {
+      String sql = "SELECT "+ COL_COLUMN_NAME  + " , "+ COL_PARTITION_VALUE
+        + " FROM " + TB_PARTTION_KEYS + " WHERE " + COL_PARTITIONS_PK + " = ? ";
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, pid);
       res = pstmt.executeQuery();
 
@@ -2047,14 +2191,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
   @Override
   public List<PartitionDescProto> getPartitionsOfTable(String databaseName, String tableName)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException {
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
     PartitionDescProto.Builder builder = null;
     List<PartitionDescProto> partitions = new ArrayList<>();
 
@@ -2062,14 +2208,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     final int tableId = getTableId(databaseId, databaseName, tableName);
     ensurePartitionTable(tableName, tableId);
 
-    String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES
-            + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
+    try {
+      String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES
+        + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
 
@@ -2084,7 +2232,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
     return partitions;
   }
@@ -2094,24 +2242,28 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     UndefinedTableException, UndefinedPartitionMethodException {
 
     String sql = null;
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
     boolean result = false;
 
     final int databaseId = getDatabaseId(databaseName);
     final int tableId = getTableId(databaseId, databaseName, tableName);
     ensurePartitionTable(tableName, tableId);
 
-    if (this instanceof DerbyStore) {
-      sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? FETCH FIRST ROW ONLY ";
-    } else {
-      sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? LIMIT 1 ";
-    }
+    try {
+      if (this instanceof DerbyStore) {
+        sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? FETCH FIRST ROW ONLY ";
+      } else {
+        sql = "SELECT 1 FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ? LIMIT 1 ";
+      }
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
 
@@ -2121,7 +2273,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
     return result;
   }
@@ -2337,13 +2489,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public List<TablePartitionProto> getAllPartitions() {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
     List<TablePartitionProto> partitions = new ArrayList<>();
 
-    String sql = "SELECT " + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", PARTITION_NAME, " +
-            " PATH FROM " + TB_PARTTIONS;
+    try {
+      String sql = "SELECT " + COL_PARTITIONS_PK + ", " + COL_TABLES_PK + ", PARTITION_NAME, " +
+        " PATH FROM " + TB_PARTTIONS;
 
-    try (Statement stmt = getConnection().createStatement();
-         ResultSet resultSet = stmt.executeQuery(sql)) {
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
       while (resultSet.next()) {
         TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
 
@@ -2356,6 +2514,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
     } catch (SQLException se) {
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
     }
 
     return partitions;
@@ -2480,12 +2640,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   @Override
   public void createIndex(final IndexDescProto proto)
       throws UndefinedDatabaseException, UndefinedTableException, DuplicateIndexException {
+    Connection conn = null;
     PreparedStatement pstmt = null;
 
     final String databaseName = proto.getTableIdentifier().getDatabaseName();
     final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
 
-    try (Connection conn = getConnection()) {
+    try {
 
       // indexes table
       int databaseId = getDatabaseId(databaseName);
@@ -2493,6 +2654,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String sql = String.format("SELECT INDEX_NAME FROM %s WHERE DB_ID=? AND INDEX_NAME=?", TB_INDEXES);
 
+      conn = getConnection();
       conn.setAutoCommit(false);
 
       pstmt = conn.prepareStatement(sql);
@@ -2560,13 +2722,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   @Override
   public void dropIndex(String databaseName, final String indexName)
       throws UndefinedDatabaseException, UndefinedIndexException {
+    Connection conn;
     PreparedStatement pstmt = null;
 
-    try (Connection conn = getConnection()) {
+    try {
       int databaseId = getDatabaseId(databaseName);
 
       String sql = String.format("SELECT INDEX_NAME FROM %s WHERE %s=? AND INDEX_NAME=?", TB_INDEXES, COL_DATABASES_PK);
 
+      conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setString(2, indexName);
@@ -2597,9 +2761,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   public static String getTableName(Connection conn, int tableId) throws SQLException {
     ResultSet res = null;
+    PreparedStatement pstmt = null;
 
-    try (PreparedStatement pstmt =
-                 conn.prepareStatement("SELECT " + COL_TABLES_NAME + " FROM " + TB_TABLES + " WHERE " + COL_TABLES_PK + "=?")) {
+    try {
+      pstmt =
+          conn.prepareStatement("SELECT " + COL_TABLES_NAME + " FROM " + TB_TABLES + " WHERE " + COL_TABLES_PK + "=?");
       pstmt.setInt(1, tableId);
       res = pstmt.executeQuery();
       if (!res.next()) {
@@ -2607,7 +2773,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
       return res.getString(1);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
   }
 
@@ -2647,19 +2813,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public IndexDescProto getIndexByName(String databaseName, final String indexName)
       throws UndefinedDatabaseException, UndefinedIndexException {
 
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
     IndexDescProto proto = null;
 
-    String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND INDEX_NAME=?";
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
-
-    try (Connection conn = getConnection();
-         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+    try {
       int databaseId = getDatabaseId(databaseName);
 
+      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND INDEX_NAME=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setString(2, indexName);
       res = pstmt.executeQuery();
@@ -2682,7 +2851,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return proto;
@@ -2692,25 +2861,29 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws UndefinedDatabaseException, UndefinedTableException, UndefinedIndexException {
 
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
     IndexDescProto proto = null;
 
-    String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " +
-            COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
       TableDescProto tableDescProto = getTable(databaseName, tableName);
+
+      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " +
+          COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
       String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames);
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
       pstmt.setString(3, unifiedName);
@@ -2727,7 +2900,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return proto;
@@ -2735,20 +2908,24 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public boolean existIndexByName(String databaseName, final String indexName) throws UndefinedDatabaseException {
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
 
     boolean exist = false;
 
-    String sql =
-            "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND INDEX_NAME=?";
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
       int databaseId = getDatabaseId(databaseName);
 
+      String sql =
+          "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND INDEX_NAME=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setString(2, indexName);
       res = pstmt.executeQuery();
@@ -2756,7 +2933,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return exist;
@@ -2766,27 +2943,31 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws UndefinedDatabaseException, UndefinedTableException {
 
+    Connection conn = null;
     ResultSet res = null;
+    PreparedStatement pstmt = null;
 
     boolean exist = false;
 
-    String sql =
-            "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES +
-                    " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
-
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql);
-    }
-
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+    try {
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
       Schema relationSchema = new Schema(getTable(databaseName, tableName).getSchema());
+
+      String sql =
+          "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES +
+              " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
       String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames);
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
       pstmt.setString(3, unifiedName);
@@ -2795,7 +2976,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
     return exist;
   }
@@ -2998,16 +3179,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   private boolean existColumn(final int tableId, final String columnName) {
+    Connection conn ;
+    PreparedStatement pstmt = null;
     ResultSet res = null;
     boolean exist = false;
 
-    String sql = "SELECT COLUMN_NAME FROM " + TB_COLUMNS + " WHERE TID = ? AND COLUMN_NAME = ?";
+    try {
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(sql.toString());
-    }
+      String sql = "SELECT COLUMN_NAME FROM " + TB_COLUMNS + " WHERE TID = ? AND COLUMN_NAME = ?";
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql.toString());
+      }
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql.toString());
+
       pstmt.setInt(1, tableId);
       pstmt.setString(2, columnName);
       res = pstmt.executeQuery();
@@ -3015,7 +3202,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } catch (SQLException se) {
       throw new TajoInternalError(se);
     } finally {
-      CatalogUtil.closeQuietly(res);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
 
     return exist;
