@@ -1,6 +1,25 @@
 Tajo Change Log 
 
-Release 0.11.0 - unreleased
+Release 0.11.1 - unreleased
+
+  NEW FEATURES
+
+
+  IMPROVEMENT
+
+
+  BUG FIXES
+
+    TAJO-1643: SQLParse can't parse parentheses table clause. (hyunsik)
+
+
+  TASKS
+
+
+  SUB TASKS
+
+
+Release 0.11.0 - Released
 
   NEW FEATURES
 
