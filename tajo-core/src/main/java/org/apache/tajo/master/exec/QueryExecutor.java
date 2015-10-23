@@ -470,7 +470,7 @@ public class QueryExecutor {
         taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, null);
         taskAttemptContext.setOutputPath(new Path(finalOutputUri));
 
-        EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
+        EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, insertNode.getChild());
         InsertRowsExec exec = new InsertRowsExec(taskAttemptContext, insertNode, evalExprExec);
 
         try {

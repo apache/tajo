@@ -1,0 +1,72 @@
+{
+  "IsOverwrite": false,
+  "TableName": "table1",
+  "SubPlan": {
+    "IsDistinct": false,
+    "Projections": [
+      {
+        "Expr": {
+          "Value": "1",
+          "ValueType": "Unsigned_Integer",
+          "OpType": "Literal"
+        },
+        "OpType": "Target"
+      },
+      {
+        "Expr": {
+          "Value": "2.3",
+          "ValueType": "Unsigned_Float",
+          "OpType": "Literal"
+        },
+        "OpType": "Target"
+      },
+      {
+        "Expr": {
+          "ColumnName": "str",
+          "OpType": "Column"
+        },
+        "OpType": "Target"
+      },
+      {
+        "Expr": {
+          "Date": {
+            "Year": "1980",
+            "Month": "04",
+            "Day": "01"
+          },
+          "OpType": "DateLiteral"
+        },
+        "OpType": "Target"
+      },
+      {
+        "Expr": {
+          "Time": {
+            "Hour": "01",
+            "Minute": "50",
+            "Second": "00"
+          },
+          "OpType": "TimeLiteral"
+        },
+        "OpType": "Target"
+      },
+      {
+        "Expr": {
+          "Date": {
+            "Year": "1980",
+            "Month": "04",
+            "Day": "1"
+          },
+          "Time": {
+            "Hour": "01",
+            "Minute": "50",
+            "Second": "00"
+          },
+          "OpType": "TimestampLiteral"
+        },
+        "OpType": "Target"
+      }
+    ],
+    "OpType": "Projection"
+  },
+  "OpType": "Insert"
+}

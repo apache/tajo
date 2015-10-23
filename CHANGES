@@ -56,6 +56,9 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1653: Add 'INSERT INTO VALUES' statement for OLTP-like storages.
+    (hyunsik)
+
     TAJO-1936: NPE when calling the query result REST api(DaeMyung Kang)
 
     TAJO-1909: Eliminate remained explicit diamond expressions.
