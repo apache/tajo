@@ -167,6 +167,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
@@ -175,6 +176,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     Path[] filteredPaths = filteredPartitionInfo.getPartitionPaths();
     assertEquals(1, filteredPaths.length);
     assertEquals("key=part456", filteredPaths[0].getName());
+
+    assertEquals(10L, filteredPartitionInfo.getTotalVolume());
   }
 
   @Test
@@ -196,6 +199,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     ScanNode scanNode = sortNode.getChild();
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
@@ -206,6 +210,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key=part123", filteredPaths[0].getName());
     assertEquals("key=part456", filteredPaths[1].getName());
     assertEquals("key=part789", filteredPaths[2].getName());
+
+    assertEquals(33L, filteredPartitionInfo.getTotalVolume());
   }
 
   @Test
@@ -229,12 +235,15 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
     assertNotNull(filteredPartitionInfo);
 
     assertEquals(0, filteredPartitionInfo.getPartitionPaths().length);
+
+    assertEquals(0L, filteredPartitionInfo.getTotalVolume());
   }
 
   @Test
@@ -259,6 +268,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
@@ -269,6 +279,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key=part123", filteredPaths[0].getName());
     assertEquals("key=part456", filteredPaths[1].getName());
     assertEquals("key=part789", filteredPaths[2].getName());
+
+    assertEquals(33L, filteredPartitionInfo.getTotalVolume());
   }
 
   @Test
@@ -293,6 +305,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo= rewriter.findFilteredPartitionInfo(conf, scanNode);
@@ -303,6 +316,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key3=3", filteredPaths[0].getName());
     assertEquals("key2=supp789", filteredPaths[0].getParent().getName());
     assertEquals("key1=part789", filteredPaths[0].getParent().getParent().getName());
+
+    assertEquals(10L, filteredPartitionInfo.getTotalVolume());
   }
 
   @Test
@@ -330,6 +345,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
@@ -345,6 +361,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key3=2", filteredPaths[1].getName());
     assertEquals("key2=supp123", filteredPaths[1].getParent().getName());
     assertEquals("key1=part123", filteredPaths[1].getParent().getParent().getName());
+
+    assertEquals(23L, filteredPartitionInfo.getTotalVolume());
   }
 
   @Test
@@ -372,6 +390,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
@@ -387,6 +406,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key3=2", filteredPaths[1].getName());
     assertEquals("key2=supp123", filteredPaths[1].getParent().getName());
     assertEquals("key1=part123", filteredPaths[1].getParent().getParent().getName());
+
+    assertEquals(23L, filteredPartitionInfo.getTotalVolume());
   }
 
   @Test
@@ -424,6 +445,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     scanNode.setQual(selNode.getQual());
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     FilteredPartitionInfo filteredPartitionInfo = rewriter.findFilteredPartitionInfo(conf, scanNode);
@@ -434,6 +456,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key=17.0", filteredPaths[0].getName());
     assertEquals("key=36.0", filteredPaths[1].getName());
     assertEquals("key=38.0", filteredPaths[2].getName());
+
+    assertEquals(12L, filteredPartitionInfo.getTotalVolume());
 
     executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }

@@ -215,10 +215,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    */
   private Pair<Path[], Long> findFilteredPartitionInfoFromFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
                                                   FileSystem fs, Path tablePath) throws IOException{
-    Pair<Path[], Long> pair = null;
     Path [] filteredPaths = null;
     PathFilter [] filters;
-    long totalVolume = 0L;
 
     if (conjunctiveForms == null) {
       filters = buildAllAcceptingPathFilters(partitionColumns);
@@ -227,17 +225,29 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     // loop from one to the number of partition columns
-    pair = getPathArrayAndTotalVolume(fs.listStatus(tablePath, filters[0]));
-    filteredPaths = pair.getFirst();
-    totalVolume += pair.getSecond();
+    filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
 
     for (int i = 1; i < partitionColumns.size(); i++) {
       // Get all file status matched to a ith level path filter.
-      pair = getPathArrayAndTotalVolume(fs.listStatus(filteredPaths, filters[i]));
-      filteredPaths = pair.getFirst();
-      totalVolume += pair.getSecond();
+      filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
-    return new Pair<>(filteredPaths, totalVolume);
+
+    Long totalVolume = getTableVolume(fs, filteredPaths);
+    Pair<Path[], Long> pair = new Pair<>(filteredPaths, totalVolume);
+    return pair;
+  }
+
+  private Long getTableVolume(FileSystem fs, Path[] paths) {
+    Long totalVolume = 0L;
+    try {
+      for (Path input : paths) {
+        ContentSummary summary = fs.getContentSummary(input);
+        totalVolume += summary.getLength();
+      }
+    } catch (Throwable e) {
+      throw new TajoInternalError(e);
+    }
+    return totalVolume;
   }
 
   /**
@@ -339,15 +349,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return filters;
   }
 
-  private Pair<Path[], Long> getPathArrayAndTotalVolume(FileStatus[] fileStatuses) {
+  private Path [] toPathArray(FileStatus[] fileStatuses) {
     Path [] paths = new Path[fileStatuses.length];
-    long totalVolume = 0L;
     for (int i = 0; i < fileStatuses.length; i++) {
       FileStatus fileStatus = fileStatuses[i];
       paths[i] = fileStatus.getPath();
-      totalVolume += fileStatus.getLen();
     }
-    return new Pair<>(paths, totalVolume);
+    return paths;
   }
 
   @VisibleForTesting
