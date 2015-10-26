@@ -34,9 +34,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
-import java.util.List;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * InSubqueryRewriteRule finds all subqueries occurring in the where clause with "IN" keywords,
@@ -144,7 +142,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
       EvalNode[] originDnfs = AlgebraicUtil.toDisjunctiveNormalFormArray(node.getQual());
       List<EvalNode> rewrittenDnfs = TUtil.newList();
       for (EvalNode eachDnf : originDnfs) {
-        Set<EvalNode> cnfs = TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(eachDnf));
+        Set<EvalNode> cnfs = new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(eachDnf)));
         cnfs.removeAll(inSubqueries);
         if (!cnfs.isEmpty()) {
           rewrittenDnfs.add(AlgebraicUtil.createSingletonExprFromCNF(cnfs));

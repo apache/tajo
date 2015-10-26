@@ -34,9 +34,9 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.plan.serder.EvalNodeAdapter;
 import org.apache.tajo.plan.serder.LogicalNodeAdapter;
-import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -48,7 +48,7 @@ public class CoreGsonHelper {
   }
 	
 	private static Map<Type, GsonSerDerAdapter> registerAdapters() {
-    Map<Type, GsonSerDerAdapter> adapters = TUtil.newHashMap();
+    Map<Type, GsonSerDerAdapter> adapters = new HashMap<>();
     adapters.put(Path.class, new PathSerializer());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(LogicalNode.class, new LogicalNodeAdapter());

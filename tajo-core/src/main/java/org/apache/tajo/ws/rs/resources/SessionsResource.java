@@ -177,6 +177,12 @@ public class SessionsResource {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
           JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
+
+      if (sessionId == null || sessionId.isEmpty()) {
+        return ResourcesUtil.createBadRequestResponse(LOG, "Session id is required. Please refer the header " +
+                QueryResource.tajoSessionIdHeaderName);
+      }
+
       context.put(sessionIdKey, sessionId);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -239,6 +245,12 @@ public class SessionsResource {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
           JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
+
+      if (sessionId == null || sessionId.isEmpty()) {
+        return ResourcesUtil.createBadRequestResponse(LOG, "Session id is required. Please refer the header " +
+                QueryResource.tajoSessionIdHeaderName);
+      }
+
       context.put(sessionIdKey, sessionId);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -308,6 +320,12 @@ public class SessionsResource {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
           JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
+
+      if (sessionId == null || sessionId.isEmpty()) {
+        return ResourcesUtil.createBadRequestResponse(LOG, "Session id is required. Please refer the header " +
+                QueryResource.tajoSessionIdHeaderName);
+      }
+
       context.put(sessionIdKey, sessionId);
       JerseyResourceDelegateContextKey<Map> variablesMapKey =
           JerseyResourceDelegateContextKey.valueOf(variablesKeyName, Map.class);

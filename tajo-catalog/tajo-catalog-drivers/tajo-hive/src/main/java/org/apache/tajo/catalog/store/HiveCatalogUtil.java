@@ -20,17 +20,25 @@ package org.apache.tajo.catalog.store;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
-import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
-import org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat;
-import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
+import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
+import org.apache.hadoop.hive.ql.io.RCFileInputFormat;
+import org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
+import org.apache.hadoop.hive.serde2.avro.AvroSerDe;
+import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
+import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
+import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
+import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
+import org.apache.hadoop.mapred.SequenceFileInputFormat;
+import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.tajo.BuiltinStorages;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.LMDNoMatchedDatatypeException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnknownDataFormatException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.thrift.TException;
-import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
 public class HiveCatalogUtil {
   public static void validateSchema(Table tblSchema) {
@@ -99,25 +107,38 @@ public class HiveCatalogUtil {
     }
   }
 
-  public static String getDataFormat(String fileFormat) {
-    Preconditions.checkNotNull(fileFormat);
+  public static String getDataFormat(StorageDescriptor descriptor) {
+    Preconditions.checkNotNull(descriptor);
 
-    String[] fileFormatArrary = fileFormat.split("\\.");
-    if(fileFormatArrary.length < 1) {
-      throw new TajoRuntimeException(new UnknownDataFormatException(fileFormat));
-    }
+    String serde = descriptor.getSerdeInfo().getSerializationLib();
+    String inputFormat = descriptor.getInputFormat();
 
-    String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
-    if(outputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
-      return BuiltinStorages.TEXT;
-    } else if(outputFormatClass.equals(HiveSequenceFileOutputFormat.class.getSimpleName())) {
-      return CatalogProtos.DataFormat.SEQUENCEFILE.name();
-    } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {
-      return CatalogProtos.DataFormat.RCFILE.name();
-    } else if(outputFormatClass.equals(DeprecatedParquetOutputFormat.class.getSimpleName())) {
-      return CatalogProtos.DataFormat.PARQUET.name();
+    if (LazySimpleSerDe.class.getName().equals(serde)) {
+      if (TextInputFormat.class.getName().equals(inputFormat)) {
+        return BuiltinStorages.TEXT;
+      } else if (SequenceFileInputFormat.class.getName().equals(inputFormat)) {
+        return BuiltinStorages.SEQUENCE_FILE;
+      } else {
+        throw new TajoRuntimeException(new UnknownDataFormatException(inputFormat));
+      }
+    } else if (LazyBinarySerDe.class.getName().equals(serde)) {
+      if (SequenceFileInputFormat.class.getName().equals(inputFormat)) {
+        return BuiltinStorages.SEQUENCE_FILE;
+      } else {
+        throw new TajoRuntimeException(new UnknownDataFormatException(inputFormat));
+      }
+    } else if (LazyBinaryColumnarSerDe.class.getName().equals(serde) || ColumnarSerDe.class.getName().equals(serde)) {
+      if (RCFileInputFormat.class.getName().equals(inputFormat)) {
+        return BuiltinStorages.RCFILE;
+      } else {
+        throw new TajoRuntimeException(new UnknownDataFormatException(inputFormat));
+      }
+    } else if (ParquetHiveSerDe.class.getName().equals(serde)) {
+      return BuiltinStorages.PARQUET;
+    } else if (AvroSerDe.class.getName().equals(serde)) {
+      return BuiltinStorages.AVRO;
     } else {
-      throw new TajoRuntimeException(new UnknownDataFormatException(fileFormat));
+      throw new TajoRuntimeException(new UnknownDataFormatException(inputFormat));
     }
   }
 

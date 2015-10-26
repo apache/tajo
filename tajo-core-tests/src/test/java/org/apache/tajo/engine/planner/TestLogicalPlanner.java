@@ -516,7 +516,7 @@ public class TestLogicalPlanner {
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
-    Map<BinaryEval, Boolean> qualMap = TUtil.newHashMap();
+    Map<BinaryEval, Boolean> qualMap = new HashMap<>();
     BinaryEval joinQual = new BinaryEval(EvalType.EQUAL
         , new FieldEval(new Column("default.n.n_regionkey", Type.INT4))
         , new FieldEval(new Column("default.ps.ps_suppkey", Type.INT4))
@@ -555,7 +555,7 @@ public class TestLogicalPlanner {
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
-    Map<BinaryEval, Boolean> qualMap = TUtil.newHashMap();
+    Map<BinaryEval, Boolean> qualMap = new HashMap<>();
     BinaryEval joinQual = new BinaryEval(EvalType.EQUAL
         , new FieldEval(new Column("default.n.n_name", Type.TEXT))
         , new ConstEval(new TextDatum("MOROCCO"))
@@ -596,7 +596,7 @@ public class TestLogicalPlanner {
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
-    Map<BinaryEval, Boolean> qualMap = TUtil.newHashMap();
+    Map<BinaryEval, Boolean> qualMap = new HashMap<>();
     TextDatum[] datums = new TextDatum[3];
     datums[0] = new TextDatum("ARGENTINA");
     datums[1] = new TextDatum("ETHIOPIA");
@@ -642,7 +642,7 @@ public class TestLogicalPlanner {
     LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
-    Map<BinaryEval, Boolean> scanMap = TUtil.newHashMap();
+    Map<BinaryEval, Boolean> scanMap = new HashMap<>();
     TextDatum[] datums = new TextDatum[3];
     datums[0] = new TextDatum("ARGENTINA");
     datums[1] = new TextDatum("ETHIOPIA");
@@ -654,7 +654,7 @@ public class TestLogicalPlanner {
     );
     scanMap.put(scanQual, Boolean.FALSE);
 
-    Map<BinaryEval, Boolean> joinQualMap = TUtil.newHashMap();
+    Map<BinaryEval, Boolean> joinQualMap = new HashMap<>();
     BinaryEval joinQual = new BinaryEval(EvalType.GTH
         , new FieldEval(new Column("default.t.n_nationkey", Type.INT4))
         , new FieldEval(new Column("default.s.s_suppkey", Type.INT4))

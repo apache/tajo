@@ -18,13 +18,12 @@
 
 package org.apache.tajo.rule;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import org.apache.tajo.util.TUtil;
 
 public class EvaluationContext {
 
-  private final Map<String, Object> paramMap = TUtil.newHashMap();
+  private final Map<String, Object> paramMap = new HashMap<>();
   
   public void clearParameters() {
     paramMap.clear();

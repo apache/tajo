@@ -28,6 +28,7 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,7 +73,7 @@ public class PartitionedTableScanNode extends ScanNode {
 
   public void initPartitionMap() {
     if (partitionMap == null) {
-      partitionMap = TUtil.newHashMap();
+      partitionMap = new HashMap<String, PartitionDescProto>();
     } else {
       partitionMap.clear();
     }

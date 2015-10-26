@@ -31,7 +31,6 @@ import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -97,10 +96,10 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
   private int fetchedRows;
 
   private NonDistinctHashAggregator nonDistinctHashAggregator;
-  private Map<Integer, DistinctHashAggregator> nodeSeqToDistinctAggregators = TUtil.newHashMap();
+  private Map<Integer, DistinctHashAggregator> nodeSeqToDistinctAggregators = new HashMap<>();
 
   private KeyProjector nonDistinctGroupingKeyProjector;
-  private Map<Integer, KeyProjector> distinctGroupbyKeyProjectors = TUtil.newHashMap();
+  private Map<Integer, KeyProjector> distinctGroupbyKeyProjectors = new HashMap<>();
 
   private int resultTupleLength;
 
@@ -316,7 +315,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
     public DistinctHashAggregator(GroupbyNode groupbyNode, int nodeSequence) throws IOException {
 
-      Set<Column> groupingKeySet = TUtil.newHashSet(plan.getGroupingColumns());
+      Set<Column> groupingKeySet = new HashSet<>(Arrays.asList(plan.getGroupingColumns()));
 
       List<Column> distinctGroupingKeyIndexSet = new ArrayList<>();
       Column[] groupingColumns = groupbyNode.getGroupingColumns();

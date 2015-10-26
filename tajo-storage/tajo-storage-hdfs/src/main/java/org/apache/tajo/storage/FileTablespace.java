@@ -43,7 +43,6 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.TUtil;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -834,10 +833,10 @@ public class FileTablespace extends Tablespace {
             && (!overwriteEnabled || (overwriteEnabled && summary.getFileCount() > 0L))) {
             // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
             // renaming directory.
-            Map<Path, Path> renameDirs = TUtil.newHashMap();
+            Map<Path, Path> renameDirs = new HashMap<>();
             // This is a map for recovering existing partition directory. A key is current directory and a value is
             // temporary directory to back up.
-            Map<Path, Path> recoveryDirs = TUtil.newHashMap();
+            Map<Path, Path> recoveryDirs = new HashMap<>();
 
             try {
               if (!fs.exists(finalOutputDir)) {

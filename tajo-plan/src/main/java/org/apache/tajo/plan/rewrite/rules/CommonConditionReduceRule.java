@@ -28,8 +28,9 @@ import org.apache.tajo.plan.logical.SelectionNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
@@ -172,13 +173,13 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
         EvalType innerType = leftChild.getType();
 
         // Find common quals from the left and right children.
-        Set<EvalNode> commonQuals = TUtil.newHashSet();
+        Set<EvalNode> commonQuals = new HashSet<>();
         Set<EvalNode> leftChildSplits = innerType == EvalType.AND ?
-            TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(leftChild)) :
-            TUtil.newHashSet(AlgebraicUtil.toDisjunctiveNormalFormArray(leftChild));
+            new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(leftChild))) :
+            new HashSet<>(Arrays.asList(AlgebraicUtil.toDisjunctiveNormalFormArray(leftChild)));
         Set<EvalNode> rightChildSplits = innerType == EvalType.AND ?
-            TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(rightChild)) :
-            TUtil.newHashSet(AlgebraicUtil.toDisjunctiveNormalFormArray(rightChild));
+            new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(rightChild))) :
+            new HashSet<>(Arrays.asList(AlgebraicUtil.toDisjunctiveNormalFormArray(rightChild)));
 
         for (EvalNode eachLeftChildSplit : leftChildSplits) {
           if (rightChildSplits.contains(eachLeftChildSplit)) {

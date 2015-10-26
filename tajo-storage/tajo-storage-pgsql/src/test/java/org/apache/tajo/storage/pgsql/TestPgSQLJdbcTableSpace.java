@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.pgsql;
 
-import com.google.common.base.Optional;
 import net.minidev.json.JSONObject;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
@@ -37,6 +36,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.*;
 

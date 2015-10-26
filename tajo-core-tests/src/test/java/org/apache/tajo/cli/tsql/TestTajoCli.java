@@ -18,6 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
+import com.google.common.io.NullOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
@@ -474,6 +475,34 @@ public class TestTajoCli {
   }
 
   @Test
+  public void testResultRowNumWhenSelectingOnPartitionedTable() throws Exception {
+    try (TajoCli cli2 = new TajoCli(cluster.getConfiguration(), new String[]{}, null, System.in,
+        new NullOutputStream())) {
+      cli2.executeScript("create table region_part (r_regionkey int8, r_name text) " +
+          "partition by column (r_comment text) as select * from region");
+
+      setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+      tajoCli.executeScript("select r_comment from region_part where r_comment = 'hs use ironic, even requests. s'");
+      String consoleResult = new String(out.toByteArray());
+      assertOutputResult(consoleResult);
+    } finally {
+      tajoCli.executeScript("drop table region_part purge");
+    }
+  }
+
+  // TODO: This should be removed at TAJO-1891
+  @Test
+  public void testAddPartitionNotimplementedException() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testAddPartitionNotimplementedException");
+    tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " add partition (key2 = 0.1)");
+
+    String consoleResult;
+    consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  // TODO: This should be added at TAJO-1891
   public void testAlterTableAddDropPartition() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
 
