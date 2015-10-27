@@ -59,7 +59,7 @@ public class HiveFunctionLoader {
 
         JarFile jar = new JarFile(absPath);
         Enumeration<JarEntry> e = jar.entries();
-        URL[] urls = getURLs(fstatus);
+        URL[] urls = new URL [] { new URL("jar:" + fstatus.getPath().toUri().toURL() + "!/") };
 
         while (e.hasMoreElements()) {
           Set<Class<? extends UDF>> UDFclasses = getSubclassesFromJarEntry(e.nextElement(), urls, UDF.class);
@@ -69,13 +69,6 @@ public class HiveFunctionLoader {
     } catch (IOException e) {
       e.printStackTrace();
     }
-  }
-
-  private static URL [] getURLs(FileStatus fstatus) throws MalformedURLException {
-    URL fileURL = fstatus.getPath().toUri().toURL();
-    String jarURL = "jar:" + fileURL + "!/";
-
-    return new URL [] { new URL(jarURL) };
   }
 
   private static <T> Set<Class<? extends T>> getSubclassesFromJarEntry(JarEntry entry, URL[] urls, Class<T> targetCls) {
