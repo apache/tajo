@@ -39,7 +39,6 @@ import java.util.jar.JarFile;
 public class HiveFunctionLoader {
   public static void loadHiveUDFs(TajoConf conf) {
     String udfdir = conf.get("hive.udf.dir", "lib/hiveudf");
-    //Reflections refl = new Reflections(new ConfigurationBuilder().setUrls());
 
     try {
       FileSystem localFS = FileSystem.getLocal(conf);
@@ -63,8 +62,8 @@ public class HiveFunctionLoader {
         URL[] urls = getURLs(fstatus);
 
         while (e.hasMoreElements()) {
-          Set<Class<? extends UDF>> UDFclasses = getClassesFromJarEntry(e.nextElement(), urls, UDF.class);
-          Set<Class<? extends GenericUDF>> GenericUDFclasses = getClassesFromJarEntry(e.nextElement(), urls, GenericUDF.class);
+          Set<Class<? extends UDF>> UDFclasses = getSubclassesFromJarEntry(e.nextElement(), urls, UDF.class);
+          Set<Class<? extends GenericUDF>> GenericUDFclasses = getSubclassesFromJarEntry(e.nextElement(), urls, GenericUDF.class);
         }
       }
     } catch (IOException e) {
@@ -79,7 +78,7 @@ public class HiveFunctionLoader {
     return new URL [] { new URL(jarURL) };
   }
 
-  private static <T> Set<Class<? extends T>> getClassesFromJarEntry(JarEntry entry, URL [] urls, Class<T> targetCls) {
+  private static <T> Set<Class<? extends T>> getSubclassesFromJarEntry(JarEntry entry, URL[] urls, Class<T> targetCls) {
     String name = entry.getName();
     if (entry.isDirectory() || !name.endsWith(".class")) {
       return null;
