@@ -29,7 +29,7 @@ Features
 
     * Fully distributed SQL query processing engine
 
-    * Advanced Query Optimization such as cost-based and progressive query optimization
+    * Advanced query optimization such as cost-based and progressive query optimization
 
     * Interactive analysis on reasonable data set
 
@@ -47,7 +47,7 @@ Features
 
     * JDBC driver support
 
-    * Various file formats support, such as CSV, JSON, RCFile, SequenceFile and Parquet
+    * Various file formats support, such as CSV, JSON, RCFile, SequenceFile, ORC and Parquet
 
   * <<Easy>>
 
