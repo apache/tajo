@@ -955,7 +955,7 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets((List<Target>) projectedTargets);
+    node.setTargets(new ArrayList<>(projectedTargets));
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1093,7 +1093,7 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets((List<Target>) projectedTargets);
+    node.setTargets(new ArrayList<>(projectedTargets));
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1127,7 +1127,7 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets((List<Target>) projectedTargets);
+    node.setTargets(new ArrayList<>(projectedTargets));
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1169,7 +1169,7 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets((List<Target>) projectedTargets);
+    node.setTargets(new ArrayList<>(projectedTargets));
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
