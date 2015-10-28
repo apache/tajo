@@ -1199,7 +1199,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
-    joinNode.setTargets(targets);
+    joinNode.setTargets(new ArrayList<>(targets));
 
     // Determine join conditions
     if (join.isNatural()) { // if natural join, it should have the equi-join conditions by common column names
@@ -1306,7 +1306,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
-    join.setTargets(targets);
+    join.setTargets(new ArrayList<>(targets));
     return join;
   }
 
@@ -1367,7 +1367,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       targets.add(new Target(evalNode, reference));
     }
 
-    scanNode.setTargets((List<Target>) targets);
+    scanNode.setTargets(new ArrayList<>(targets));
 
     verifyProjectedFields(block, scanNode);
     return scanNode;
@@ -1464,7 +1464,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
 
-    subQueryNode.setTargets((List<Target>) targets);
+    subQueryNode.setTargets(new ArrayList<>(targets));
   }
 
     /*===============================================================================================
