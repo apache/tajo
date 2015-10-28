@@ -32,3 +32,13 @@ message FileFragmentProto {
   repeated string hosts = 5;
   repeated int32 disk_ids = 6;
 }
+
+message PartitionedFileFragmentProto {
+  required string id = 1;
+  required string path = 2;
+  required int64 start_offset = 3;
+  required int64 length = 4;
+  repeated string hosts = 5;
+  repeated int32 disk_ids = 6;
+  required string partitionName = 7; /* it cosists of partition key and value */
+}
