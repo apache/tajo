@@ -22,13 +22,21 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public class PartitionedTableScanNode extends ScanNode {
   @Expose Path [] inputPaths;
+  @Expose List<PartitionDescProto> partitions;
+
+  private Map<String, PartitionDescProto> partitionMap;
 
   public PartitionedTableScanNode(int pid) {
     super(pid, NodeType.PARTITIONS_SCAN);
@@ -54,8 +62,32 @@ public class PartitionedTableScanNode extends ScanNode {
   public Path [] getInputPaths() {
     return inputPaths;
   }
-	
-	public String toString() {
+
+  public List<PartitionDescProto> getPartitions() {
+    return partitions;
+  }
+
+  public void setPartitions(List<PartitionDescProto> partitions) {
+    this.partitions = partitions;
+  }
+
+  public void initPartitionMap() {
+    if (partitionMap == null) {
+      partitionMap = new HashMap<String, PartitionDescProto>();
+    } else {
+      partitionMap.clear();
+    }
+
+    for(PartitionDescProto partition : partitions) {
+      partitionMap.put(partition.getPath(), partition);
+    }
+  }
+
+  public PartitionDescProto getPartitionDescProto(String path) {
+    return partitionMap.get(path);
+  }
+
+  public String toString() {
     StringBuilder sb = new StringBuilder("Partitions Scan (table=").append(getTableName());
     if (hasAlias()) {
       sb.append(", alias=").append(alias);

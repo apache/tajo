@@ -777,7 +777,7 @@ public class TestCatalog {
     assertFalse(catalog.existsTable(tableName));
   }
 
-  // TODO: This should be added at TAJO-1891
+  @Test
   public final void testAddAndDeleteTablePartitionByColumn() throws Exception {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4)

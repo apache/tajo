@@ -354,14 +354,4 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
     return expr;
   }
-
-  // TODO: This should be removed at TAJO-1891
-  @Override
-  public Expr visitAlterTable(Context context, Stack<Expr> stack, AlterTable expr) throws TajoException {
-    if (expr.getAlterTableOpType() == AlterTableOpType.ADD_PARTITION) {
-      context.state.addVerification(new NotImplementedException("ADD PARTITION"));
-    }
-
-    return expr;
-  }
 }

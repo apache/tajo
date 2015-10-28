@@ -1837,4 +1837,124 @@ public class TestTablePartitions extends QueryTestCaseBase {
     executeString("DROP TABLE " + externalTableName).close();
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
+
+  @Test
+  public void testArbitraryPartitionPath()  throws Exception {
+    FileSystem fs = FileSystem.get(conf);
+    Path path = null;
+    ContentSummary contentSummary = null;
+
+    PartitionDescProto partitionDescProto = null;
+    ResultSet res = null;
+    String result = null, expectedResult = null;
+
+    String tableName = CatalogUtil.normalizeIdentifier("testAbnormalDirectories");
+    if (nodeType == NodeType.INSERT) {
+      executeString(
+        "create table " + tableName + " (col1 int4, col2 float8) partition by column(key int4) ").close();
+      executeString(
+        "insert overwrite into " + tableName + " select l_orderkey, l_quantity, l_partkey " +
+          " from lineitem where l_partkey > 2").close();
+    } else {
+      executeString(
+        "create table " + tableName + "(col1 int4, col2 float8) partition by column(key int4) "
+          + " as select l_orderkey, l_quantity, l_partkey from lineitem where l_partkey > 2").close();
+    }
+
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+
+    // Check the number of rows
+    res = executeString("SELECT count(*) as cnt FROM " + tableName);
+    result = resultSetToString(res);
+    expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "1\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Make arbitrary partition path
+    path = new Path(tableDesc.getUri().toString() + "/part12345");
+
+    executeString("INSERT INTO LOCATION '" + path + "'"
+      + " select l_orderkey, l_quantity, l_partkey  from lineitem where l_partkey = 1");
+
+    executeString("alter table " + tableName + " add partition (key = 1)"
+      + " location '" + path.toString() + "'").close();
+
+    partitionDescProto = catalog.getPartition(getCurrentDatabase(), tableName, "key=1");
+    contentSummary = fs.getContentSummary(path);
+    assertEquals(contentSummary.getLength(), partitionDescProto.getNumBytes());
+    assertEquals(path.toString(), partitionDescProto.getPath());
+
+    path = new Path(tableDesc.getUri().toString() + "/part6789");
+
+    executeString("INSERT INTO LOCATION '" + path + "'"
+      + " select l_orderkey, l_quantity, l_partkey  from lineitem where l_partkey = 2");
+
+    executeString("alter table " + tableName + " add partition (key = 2)"
+      + " location '" + path.toString() + "'").close();
+
+    partitionDescProto = catalog.getPartition(getCurrentDatabase(), tableName, "key=2");
+    contentSummary = fs.getContentSummary(path);
+    assertEquals(contentSummary.getLength(), partitionDescProto.getNumBytes());
+    assertEquals(path.toString(), partitionDescProto.getPath());
+
+    // Check the number of rows
+    res = executeString("SELECT count(*) as cnt FROM " + tableName);
+    result = resultSetToString(res);
+    expectedResult = "cnt\n" +
+      "-------------------------------\n" +
+      "5\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Equal operator
+    res = executeString("SELECT * FROM " + tableName + " where key = 1 order by col2");
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,17.0,1\n" +
+      "1,36.0,1\n" ;
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Less than equals
+    res = executeString("SELECT * FROM " + tableName + " where key <= 2 order by key, col2");
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,17.0,1\n" +
+      "1,36.0,1\n" +
+      "2,38.0,2\n" +
+      "3,45.0,2\n" ;
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // In
+    res = executeString("SELECT * FROM " + tableName + " where key in (1, 3) order by key, col2");
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,17.0,1\n" +
+      "1,36.0,1\n" +
+      "3,49.0,3\n" ;
+    res.close();
+    assertEquals(expectedResult, result);
+
+    // Join
+    res = executeString(
+      " select col1,col2,key, p_partkey, p_name from \"" + getCurrentDatabase() + "\"." + tableName
+        + ", part where key = " + "p_partkey and col1 >= 2 order by key, col2");
+
+    result = resultSetToString(res);
+    expectedResult = "col1,col2,key,p_partkey,p_name\n" +
+      "-------------------------------\n" +
+      "2,38.0,2,2,blush thistle blue yellow saddle\n" +
+      "3,45.0,2,2,blush thistle blue yellow saddle\n" +
+      "3,49.0,3,3,spring green yellow purple cornsilk\n" ;
+    res.close();
+    assertEquals(expectedResult, result);
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+  }
 }

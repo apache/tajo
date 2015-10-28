@@ -117,6 +117,7 @@ message ScanNode {
 
 message PartitionScanSpec {
   repeated string paths = 1;
+  repeated PartitionDescProto partitions = 2;
 }
 
 message IndexScanSpec {
