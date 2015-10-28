@@ -187,7 +187,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
         return 0;
       }
     } else {
-      return -1;
+      return getPath().compareTo(t.getPath());
     }
   }
 
