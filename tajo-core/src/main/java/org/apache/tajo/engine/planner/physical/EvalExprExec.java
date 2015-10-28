@@ -25,6 +25,7 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.List;
 
 public class EvalExprExec extends PhysicalExec {
   private final EvalExprNode plan;
@@ -48,10 +49,10 @@ public class EvalExprExec extends PhysicalExec {
   @Override
   public Tuple next() throws IOException {
     if (!executedOnce) {
-      Target [] targets = plan.getTargets();
-      Tuple t = new VTuple(targets.length);
-      for (int i = 0; i < targets.length; i++) {
-        t.put(i, targets[i].getEvalTree().eval(null));
+      List<Target> targets = plan.getTargets();
+      Tuple t = new VTuple(targets.size());
+      for (int i = 0; i < targets.size(); i++) {
+        t.put(i, targets.get(i).getEvalTree().eval(null));
       }
 
       executedOnce = true;

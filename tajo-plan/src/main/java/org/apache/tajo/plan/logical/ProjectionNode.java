@@ -18,7 +18,9 @@
 
 package org.apache.tajo.plan.logical;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import com.google.gson.annotations.Expose;
 
@@ -34,13 +36,13 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   /**
    * the targets are always filled even if the query is 'select *'
    */
-  @Expose	private Target [] targets;
+  @Expose	private List<Target> targets;
 
 	public ProjectionNode(int pid) {
 		super(pid, NodeType.PROJECTION);
 	}
 
-  public void init(boolean distinct, Target [] targets) {
+  public void init(boolean distinct, List<Target> targets) {
     this.distinct = distinct;
     this.targets = targets;
   }
@@ -54,13 +56,13 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   }
 
   @Override
-  public void setTargets(Target[] targets) {
+  public void setTargets(List<Target> targets) {
     this.targets = targets;
     this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target [] getTargets() {
+  public List<Target> getTargets() {
     return this.targets;
   }
 	
@@ -71,7 +73,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	public String toString() {
 	  StringBuilder sb = new StringBuilder("Projection (distinct=").append(distinct);
     if (targets != null) {
-      sb.append(", exprs=").append(StringUtils.join(targets)).append(")");
+      sb.append(", exprs=").append(StringUtils.join(targets.toArray())).append(")");
     }
 	  return sb.toString();
 	}
@@ -81,7 +83,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
     final int prime = 31;
     int result = 1;
     result = prime * result + (distinct ? 1231 : 1237);
-    result = prime * result + Arrays.hashCode(targets);
+    result = prime * result + Arrays.hashCode(targets.toArray());
     return result;
   }
 
@@ -101,7 +103,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	@Override
   public Object clone() throws CloneNotSupportedException {
 	  ProjectionNode projNode = (ProjectionNode) super.clone();
-	  projNode.targets = targets.clone();
+      projNode.targets = new ArrayList<>(targets);
 	  
 	  return projNode;
 	}
@@ -117,9 +119,9 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 
     StringBuilder sb = new StringBuilder("Targets: ");
     if (targets != null) {
-      for (int i = 0; i < targets.length; i++) {
-        sb.append(targets[i]);
-        if (i < targets.length - 1) {
+      for (int i = 0; i < targets.size(); i++) {
+        sb.append(targets.get(i));
+        if (i < targets.size() - 1) {
           sb.append(", ");
         }
       }

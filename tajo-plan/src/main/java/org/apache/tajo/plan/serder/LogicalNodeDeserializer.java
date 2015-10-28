@@ -741,16 +741,16 @@ public class LogicalNodeDeserializer {
     return columns;
   }
 
-  public static Target[] convertTargets(OverridableConf context, EvalContext evalContext,
+  public static List<Target> convertTargets(OverridableConf context, EvalContext evalContext,
                                         List<PlanProto.Target> targetsProto) {
-    Target [] targets = new Target[targetsProto.size()];
-    for (int i = 0; i < targets.length; i++) {
+    List<Target> targets = new ArrayList<>();
+    for (int i = 0; i < targetsProto.size(); i++) {
       PlanProto.Target targetProto = targetsProto.get(i);
       EvalNode evalNode = EvalNodeDeserializer.deserialize(context, evalContext, targetProto.getExpr());
       if (targetProto.hasAlias()) {
-        targets[i] = new Target(evalNode, targetProto.getAlias());
+        targets.set(i, new Target(evalNode, targetProto.getAlias()));
       } else {
-        targets[i] = new Target((FieldEval) evalNode);
+        targets.set(i, targets.set(i, new Target((FieldEval) evalNode)));
       }
     }
     return targets;

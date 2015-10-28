@@ -41,6 +41,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class BSTIndexScanExec extends ScanExec {
@@ -92,7 +93,7 @@ public class BSTIndexScanExec extends ScanExec {
     this.reader.open();
   }
 
-  private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, Target[] targets, EvalNode qual) {
+  private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, List<Target> targets, EvalNode qual) {
     Schema mergedSchema = new Schema();
     Set<Column> qualAndTargets = new HashSet<>();
     qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(qual));

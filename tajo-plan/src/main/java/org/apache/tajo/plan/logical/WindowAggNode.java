@@ -29,6 +29,9 @@ import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
 	/** partition key sets */
   @Expose private Column [] partitionKeys;
@@ -41,7 +44,7 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
    * It's a list of targets. The partition key columns should be followed by window functions.
    * aggrFunctions keep actual aggregation functions, but it only contains field references.
    * */
-  @Expose private Target [] targets;
+  @Expose private List<Target> targets;
   @Expose private boolean hasDistinct = false;
 
   public WindowAggNode(int pid) {
@@ -98,13 +101,13 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
   }
 
   @Override
-  public void setTargets(Target[] targets) {
+  public void setTargets(List<Target> targets) {
     this.targets = targets;
     setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target[] getTargets() {
+  public List<Target> getTargets() {
     return this.targets;
   }
   
@@ -167,10 +170,7 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
     }
 
     if (targets != null) {
-      grp.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        grp.targets[i] = (Target) targets[i].clone();
-      }
+      grp.targets = new ArrayList<>(targets);
     }
 
     return grp;
@@ -224,9 +224,9 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
     }
 
     sb = new StringBuilder("target list: ");
-    for (int i = 0; i < targets.length; i++) {
-      sb.append(targets[i]);
-      if( i < targets.length - 1) {
+    for (int i = 0; i < targets.size(); i++) {
+      sb.append(targets.get(i));
+      if( i < targets.size() - 1) {
         sb.append(", ");
       }
     }

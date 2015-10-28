@@ -242,7 +242,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         }
       }
 
-      Target[] targets = buildTargets(ctx, expr.getNamedExprs());
+      List<Target> targets = buildTargets(ctx, expr.getNamedExprs());
 
       stack.pop(); // <--- Pop
 
@@ -254,17 +254,17 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       return projectionNode;
     }
 
-    private Target [] buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws TajoException {
-      Target [] targets = new Target[exprs.length];
+    private List<Target> buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws TajoException {
+      List<Target> targets = new ArrayList<>();
       for (int i = 0; i < exprs.length; i++) {
         NamedExpr namedExpr = exprs[i];
         TajoDataTypes.DataType dataType = typeDeterminant.determineDataType(context, namedExpr.getExpr());
 
         if (namedExpr.hasAlias()) {
-          targets[i] = new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType)));
+          targets.set(i, new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType))));
         } else {
           String generatedName = context.getPlan().generateUniqueColumnName(namedExpr.getExpr());
-          targets[i] = new Target(new FieldEval(new Column(generatedName, dataType)));
+          targets.set(i, new Target(new FieldEval(new Column(generatedName, dataType))));
         }
       }
       return targets;
