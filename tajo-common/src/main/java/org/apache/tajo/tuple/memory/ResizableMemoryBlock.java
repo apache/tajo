@@ -127,11 +127,11 @@ public class ResizableMemoryBlock implements MemoryBlock {
   @Override
   public void ensureSize(int size) {
     if (!buffer.isWritable(size)) {
-      if (!limitSpec.canIncrease(buffer.capacity())) {
+      if (!limitSpec.canIncrease(size)) {
         throw new RuntimeException("Cannot increase RowBlock anymore.");
       }
 
-      int newBlockSize = limitSpec.increasedSize(buffer.capacity());
+      int newBlockSize = limitSpec.increasedSize(Math.max(buffer.capacity(), size));
       resize(newBlockSize);
       LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
     }
