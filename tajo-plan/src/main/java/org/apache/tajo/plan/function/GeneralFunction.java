@@ -42,11 +42,6 @@ public abstract class GeneralFunction extends Function implements GsonObject {
 
   public abstract Datum eval(Tuple params);
 
-	public enum Type {
-	  AGG,
-	  GENERAL
-	}
-
   @Override
   public String toJson() {
     return CatalogGsonHelper.toJson(this, GeneralFunction.class);
