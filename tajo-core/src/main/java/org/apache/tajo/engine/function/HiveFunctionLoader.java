@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
@@ -81,16 +82,27 @@ public class HiveFunctionLoader {
 
   private static void analyzeUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list) {
     for (Class<? extends UDF> clazz: classes) {
-      String name;
+      String [] names;
+      boolean deterministic = true;
       FunctionSignature signature;
       FunctionInvocation invocation = new FunctionInvocation();
       FunctionSupplement supplement = new FunctionSupplement();
 
       Description desc = clazz.getDeclaredAnnotation(Description.class);
+      if (desc != null) {
+        names = desc.name().split(",");
+        for (int i=0; i<names.length; i++) {
+          names[i] = names[i].trim();
+        }
+      }
+      else {
+        names = new String [] {clazz.getName().replace('.','_')};
+      }
 
-      name = desc == null ? clazz.getSimpleName() : desc.name();
-
-      System.out.println(name);
+      UDFType type = clazz.getDeclaredAnnotation(UDFType.class);
+      if (type != null) {
+        deterministic = type.deterministic();
+      }
     }
   }
 }
