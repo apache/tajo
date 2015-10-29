@@ -53,12 +53,12 @@ public class UnsafeTupleList extends ArrayList<Tuple> {
     super.clear();
   }
 
-  public long getUsedMem() {
-    return rowBlock.getMemory().writerPosition();
+  public int usedMem() {
+    return rowBlock.usedMem();
   }
 
-  public long getCapacity() {
-    return rowBlock.getMemory().capacity();
+  public float usage() {
+    return rowBlock.usage();
   }
 
   @Override

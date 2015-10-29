@@ -46,9 +46,12 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 public class DirectRawFileWriter extends FileAppender {
-  public static final String FILE_EXTENSION = "draw";
-  private static final int BUFFER_SIZE = 64 * StorageUnit.KB;
   private static final Log LOG = LogFactory.getLog(DirectRawFileWriter.class);
+
+  public static final String FILE_EXTENSION = "draw";
+  public static final String WRITE_BUFFER_SIZE = "tajo.storage.raw.io.write-buffer.bytes";
+  public static final int DEFAULT_BUFFER_SIZE = 128 * StorageUnit.KB;
+  private static final float BUFFER_THRESHHOLD = 0.9f;
 
   private FileChannel channel;
   private RandomAccessFile randomAccessFile;
@@ -105,7 +108,8 @@ public class DirectRawFileWriter extends FileAppender {
     }
 
     if (rowBlock == null) {
-      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), BUFFER_SIZE, true);
+      int bufferSize = conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
+      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize);
     } else {
       hasExternalBuf = true;
     }
@@ -142,7 +146,7 @@ public class DirectRawFileWriter extends FileAppender {
 
     rowBlock.getWriter().putTuple(t);
 
-    if(rowBlock.getMemory().readableBytes() >= BUFFER_SIZE) {
+    if(rowBlock.usage() > BUFFER_THRESHHOLD) {
       writeRowBlock(rowBlock);
       rowBlock.clear();
     }

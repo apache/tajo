@@ -91,6 +91,20 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
     return memory.capacity();
   }
 
+  @Override
+  public int usedMem() {
+    return memory.writerPosition();
+  }
+
+  @Override
+  public float usage() {
+    if (usedMem() > 0) {
+      return (usedMem() / (float) capacity());
+    } else {
+      return 0.0f;
+    }
+  }
+
   public int maxRowNum() {
     return maxRowNum;
   }

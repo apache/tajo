@@ -30,6 +30,10 @@ public interface RowBlock {
 
   int capacity();
 
+  int usedMem();
+
+  float usage();
+
   void setRows(int rowNum);
 
   int rows();

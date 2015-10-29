@@ -118,7 +118,7 @@ public class ExternalSortExec extends SortExec {
     this.sortBufferBytesNum = context.getQueryContext().getInt(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
-    this.inMemoryTable = new UnsafeTupleList(outSchema, (int) Math.min(sortBufferBytesNum, 16 * StorageUnit.MB));
+    this.inMemoryTable = new UnsafeTupleList(outSchema, (int) Math.min(sortBufferBytesNum, Integer.MAX_VALUE));
 
     this.sortTmpDir = getExecutorTmpDir();
     localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -197,12 +197,12 @@ public class ExternalSortExec extends SortExec {
     while (!context.isStopped() && (tuple = child.next()) != null) { // partition sort start
       inMemoryTable.add(tuple);
 
-      if (inMemoryTable.getUsedMem() > sortBufferBytesNum) {
+      if (inMemoryTable.usage() > 0.9f || inMemoryTable.usedMem() > sortBufferBytesNum) {
         long runEndTime = System.currentTimeMillis();
         info(LOG, chunkId + " run loading time: " + (runEndTime - runStartTime) + " msec");
         runStartTime = runEndTime;
 
-        info(LOG, "Memory consumption exceeds " + FileUtil.humanReadableByteCount(inMemoryTable.getUsedMem(), false));
+        info(LOG, "Memory consumption exceeds " + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false));
         memoryResident = false;
 
         chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));

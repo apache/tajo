@@ -137,8 +137,8 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         usedBufferSize += (rowBlock.getMemory().writerPosition() - prevUsedMem);
 
         if (totalBufferCapacity > maxBufferSize) {
-          LOG.warn(String.format("Buffer-Capacity threshold(%s) exceeded(%s). usage: %s",
-              FileUtil.humanReadableByteCount(bufferThreshold, false),
+          LOG.warn(String.format("Too low buffer usage. threshold: %s, total capacity: %s, used: %s",
+              FileUtil.humanReadableByteCount(maxBufferSize, false),
               FileUtil.humanReadableByteCount(totalBufferCapacity, false),
               FileUtil.humanReadableByteCount(usedBufferSize, false)));
 

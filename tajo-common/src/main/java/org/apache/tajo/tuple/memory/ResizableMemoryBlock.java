@@ -123,7 +123,6 @@ public class ResizableMemoryBlock implements MemoryBlock {
     return buffer.writerIndex();
   }
 
-
   @Override
   public void ensureSize(int size) {
     if (!buffer.isWritable(size)) {

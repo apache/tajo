@@ -45,6 +45,9 @@ import java.io.IOException;
 public class DirectRawFileScanner extends FileScanner implements SeekableScanner {
   private static final Log LOG = LogFactory.getLog(DirectRawFileScanner.class);
 
+  public static final String READ_BUFFER_SIZE = "tajo.storage.raw.io.read-buffer.bytes";
+  public static final int DEFAULT_BUFFER_SIZE = 128 * StorageUnit.KB;
+
   private SeekableInputChannel channel;
 
   private boolean eos = false;
@@ -64,7 +67,8 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public void init() throws IOException {
     initChannel();
 
-    tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), 64 * StorageUnit.KB, true);
+    tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema),
+        conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE), true);
 
     reader = tupleBuffer.getReader();
 

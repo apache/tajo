@@ -609,10 +609,9 @@ public class TaskImpl implements Task {
           try {
             FileChunk fetched = fetcher.get();
             if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null
-          && fetched.getFile() != null) {
+                && fetched.getFile() != null) {
               if (fetched.fromRemote() == false) {
-          localChunks.add(fetched);
-          LOG.info("Add a new FileChunk to local chunk list");
+                localChunks.add(fetched);
               }
               break;
             }
