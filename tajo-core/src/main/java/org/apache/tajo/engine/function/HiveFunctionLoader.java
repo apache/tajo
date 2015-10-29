@@ -21,20 +21,23 @@ package org.apache.tajo.engine.function;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.function.FunctionInvocation;
+import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.function.FunctionSupplement;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 
 public class HiveFunctionLoader {
   public static void loadHiveUDFs(TajoConf conf) {
@@ -48,39 +51,46 @@ public class HiveFunctionLoader {
         return;
       }
 
-      for (FileStatus fstatus: localFS.listStatus(udfPath, (Path path)->path.getName().endsWith(".jar"))) {
+      for (FileStatus fstatus : localFS.listStatus(udfPath, (Path path) -> path.getName().endsWith(".jar"))) {
 
-        String absPath = fstatus.getPath().toString();
+        URL[] urls = new URL[]{new URL("jar:" + fstatus.getPath().toUri().toURL() + "!/")};
 
-        // Eliminate "file:"
-        if (absPath.startsWith("file:")) {
-          absPath = absPath.substring(5);
+        List<FunctionDesc> udfList = new LinkedList<>();
+
+        // For UDF's decendants (legacy)
+        Set<Class<? extends UDF>> udfClasses = getSubclassesFromJarEntry(urls, UDF.class);
+        if (udfClasses != null) {
+          analyzeUDFclasses(udfClasses, udfList);
         }
 
-        JarFile jar = new JarFile(absPath);
-        Enumeration<JarEntry> e = jar.entries();
-        URL[] urls = new URL [] { new URL("jar:" + fstatus.getPath().toUri().toURL() + "!/") };
-
-        while (e.hasMoreElements()) {
-          Set<Class<? extends UDF>> UDFclasses = getSubclassesFromJarEntry(e.nextElement(), urls, UDF.class);
-          Set<Class<? extends GenericUDF>> GenericUDFclasses = getSubclassesFromJarEntry(e.nextElement(), urls, GenericUDF.class);
-        }
+        // For GenericUDF's decendants (newer interface)
+        Set<Class<? extends GenericUDF>> genericUDFclasses = getSubclassesFromJarEntry(urls, GenericUDF.class);
       }
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  private static <T> Set<Class<? extends T>> getSubclassesFromJarEntry(JarEntry entry, URL[] urls, Class<T> targetCls) {
-    String name = entry.getName();
-    if (entry.isDirectory() || !name.endsWith(".class")) {
-      return null;
-    }
-
+  private static <T> Set<Class<? extends T>> getSubclassesFromJarEntry(URL[] urls, Class<T> targetCls) {
     Reflections refl = new Reflections(new ConfigurationBuilder().
         setUrls(urls).
         addClassLoader(new URLClassLoader(urls)));
 
     return refl.getSubTypesOf(targetCls);
+  }
+
+  private static void analyzeUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list) {
+    for (Class<? extends UDF> clazz: classes) {
+      String name;
+      FunctionSignature signature;
+      FunctionInvocation invocation = new FunctionInvocation();
+      FunctionSupplement supplement = new FunctionSupplement();
+
+      Description desc = clazz.getDeclaredAnnotation(Description.class);
+
+      name = desc == null ? clazz.getSimpleName() : desc.name();
+
+      System.out.println(name);
+    }
   }
 }
