@@ -36,6 +36,8 @@ public class TestHiveFunctionLoader {
 
   @Test
   public void testLoadHiveFunction() throws IOException {
-    HiveFunctionLoader.loadHiveUDFs(new TajoConf());
+    TajoConf conf = new TajoConf();
+    conf.set("hive.udf.dir", "/Users/eminency/test/hiveudf");
+    HiveFunctionLoader.loadHiveUDFs(conf);
   }
 }
