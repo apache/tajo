@@ -255,11 +255,11 @@ public class DistinctGroupbyBuilder {
 
       for (Column column : eachGroupbyNode.getGroupingColumns()) {
         Target target = new Target(new FieldEval(column));
-        targets.set(targetIdx++, target);
+        targets.add(targetIdx++, target);
         baseGroupByTargets.add(target);
       }
       for (Target eachAggFunctionTarget: buildInfo.getAggFunctionTargets()) {
-        targets.set(targetIdx++, eachAggFunctionTarget);
+        targets.add(targetIdx++, eachAggFunctionTarget);
       }
       eachGroupbyNode.setTargets(targets);
       eachGroupbyNode.setAggFunctions(groupbyAggFunctions.toArray(new AggregationFunctionCallEval[]{}));
@@ -277,7 +277,7 @@ public class DistinctGroupbyBuilder {
       List<Target> targets = new ArrayList<>();
       int targetIdx = 0;
       for (Target eachTarget : otherAggregationFunctionTargets) {
-        targets.set(targetIdx++, eachTarget);
+        targets.add(targetIdx++, eachTarget);
         baseGroupByTargets.add(eachTarget);
       }
 
@@ -419,10 +419,10 @@ public class DistinctGroupbyBuilder {
 
       for (Column column : eachGroupbyNode.getGroupingColumns()) {
         Target target = new Target(new FieldEval(column));
-        targets.set(targetIdx++, target);
+        targets.add(targetIdx++, target);
       }
       for (Target eachAggFunctionTarget: buildInfo.getAggFunctionTargets()) {
-        targets.set(targetIdx++, eachAggFunctionTarget);
+        targets.add(targetIdx++, eachAggFunctionTarget);
       }
       eachGroupbyNode.setTargets(targets);
       eachGroupbyNode.setAggFunctions(groupbyAggFunctions.toArray(new AggregationFunctionCallEval[]{}));
@@ -441,10 +441,10 @@ public class DistinctGroupbyBuilder {
       int targetIdx = 0;
       for (Column column : originalGroupingColumns) {
         Target target = new Target(new FieldEval(column));
-        targets.set(targetIdx++, target);
+        targets.add(targetIdx++, target);
       }
       for (Target eachTarget : otherAggregationFunctionTargets) {
-        targets.set(targetIdx++, eachTarget);
+        targets.add(targetIdx++, eachTarget);
       }
 
       otherGroupbyNode.setTargets(targets);

@@ -313,7 +313,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       NamedExpr namedExpr = projection.getNamedExprs()[i];
       EvalNode evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(),
           NameResolvingMode.RELS_AND_SUBEXPRS);
-      rawTargets.set(i, new Target(evalNode, referenceNames[i]));
+      rawTargets.add(i, new Target(evalNode, referenceNames[i]));
     }
     // it's for debugging or unit testing
     block.setRawTargets(rawTargets);
@@ -733,14 +733,14 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (int i = 0; i < referenceNames.length ; i++) {
       if (!windowFuncIndices.contains(i)) {
         if (block.isConstReference(referenceNames[i])) {
-          targets.set(targetIdx++, new Target(block.getConstByReference(referenceNames[i]), referenceNames[i]));
+          targets.add(targetIdx++, new Target(block.getConstByReference(referenceNames[i]), referenceNames[i]));
         } else {
-          targets.set(targetIdx++, block.namedExprsMgr.getTarget(referenceNames[i]));
+          targets.add(targetIdx++, block.namedExprsMgr.getTarget(referenceNames[i]));
         }
       }
     }
     for (int i = 0; i < winFuncRefs.size(); i++) {
-      targets.set(targetIdx++, block.namedExprsMgr.getTarget(winFuncRefs.get(i)));
+      targets.add(targetIdx++, block.namedExprsMgr.getTarget(winFuncRefs.get(i)));
     }
     windowAggNode.setTargets(targets);
     verifyProjectedFields(block, windowAggNode);

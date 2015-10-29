@@ -684,7 +684,7 @@ public class PlannerUtil {
     List<Target> copy = new ArrayList<>();
     for (int i = 0; i < sourceTargets.size(); i++) {
       try {
-        copy.set(i, (Target) sourceTargets.get(i).clone());
+        copy.add(i, (Target) sourceTargets.get(i).clone());
       } catch (CloneNotSupportedException e) {
         throw new InternalError(e.getMessage());
       }
