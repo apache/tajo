@@ -31,6 +31,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   /** Grouping key sets */
@@ -141,7 +142,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     result = prime * result + Arrays.hashCode(aggrFunctions);
     result = prime * result + Arrays.hashCode(groupingKeys);
     result = prime * result + (hasDistinct ? 1231 : 1237);
-    result = prime * result + Arrays.hashCode(targets.toArray());
+    result = prime * result + Objects.hashCode(targets);
     return result;
   }
 

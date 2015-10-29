@@ -30,6 +30,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class DistinctGroupbyNode extends UnaryNode implements Projectable, Cloneable {
   @Expose
@@ -166,7 +167,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     result = prime * result + Arrays.hashCode(groupingColumns);
     result = prime * result + Arrays.hashCode(resultColumnIds);
     result = prime * result + ((subGroupbyPlan == null) ? 0 : subGroupbyPlan.hashCode());
-    result = prime * result + Arrays.hashCode(targets.toArray());
+    result = prime * result + Objects.hashCode(targets);
     return result;
   }
 
