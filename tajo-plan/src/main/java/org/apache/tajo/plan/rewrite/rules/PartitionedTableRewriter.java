@@ -485,6 +485,24 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return sb.toString();
   }
 
+  private void updateTableStat(OverridableConf queryContext, PartitionedTableScanNode scanNode)
+    throws TajoException {
+    if (scanNode.getInputPaths().length > 0) {
+      try {
+        FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(queryContext.getConf());
+        long totalVolume = 0;
+
+        for (Path input : scanNode.getInputPaths()) {
+          ContentSummary summary = fs.getContentSummary(input);
+          totalVolume += summary.getLength();
+        }
+        scanNode.getTableDesc().getStats().setNumBytes(totalVolume);
+      } catch (Throwable e) {
+        throw new TajoInternalError(e);
+      }
+    }
+  }
+
   private final class Rewriter extends BasicLogicalPlanVisitor<OverridableConf, Object> {
     @Override
     public Object visitScan(OverridableConf queryContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
@@ -500,7 +518,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
         rewrittenScanNode.init(scanNode, filteredPaths);
-        rewrittenScanNode.getTableDesc().getStats().setNumBytes(totalVolume);
+        // TODO: See TAJO-1927. This code have been commented temporarily.
+//        rewrittenScanNode.getTableDesc().getStats().setNumBytes(totalVolume);
+        updateTableStat(queryContext, rewrittenScanNode);
 
         // if it is topmost node, set it as the rootnode of this block.
         if (stack.empty() || block.getRoot().equals(scanNode)) {
