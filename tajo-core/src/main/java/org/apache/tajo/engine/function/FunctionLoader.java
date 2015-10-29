@@ -28,7 +28,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -110,12 +109,8 @@ public class FunctionLoader {
 
         List<Path> filePaths = TUtil.newList();
         if (localFS.isDirectory(codePath)) {
-          for (FileStatus file : localFS.listStatus(codePath, new PathFilter() {
-            @Override
-            public boolean accept(Path path) {
-              return path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION);
-            }
-          })) {
+          for (FileStatus file : localFS.listStatus(codePath,
+              (Path path) -> path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION))) {
             filePaths.add(file.getPath());
           }
         } else {
@@ -135,12 +130,8 @@ public class FunctionLoader {
   public static Set<FunctionDesc> findScalarFunctions() {
     Set<FunctionDesc> functions = Sets.newHashSet();
 
-    Set<Method> scalarFunctions = findPublicStaticMethods("org.apache.tajo.engine.function", new Predicate() {
-      @Override
-      public boolean evaluate(Object object) {
-        return ((Method) object).getAnnotation(ScalarFunction.class) != null;
-      }
-    });
+    Set<Method> scalarFunctions = findPublicStaticMethods("org.apache.tajo.engine.function",
+        (Object object) -> ((Method)object).getAnnotation(ScalarFunction.class) != null);
 
     for (Method method : scalarFunctions) {
       ScalarFunction annotation = method.getAnnotation(ScalarFunction.class);
@@ -170,12 +161,8 @@ public class FunctionLoader {
   }
 
   private static Set<Class> findFunctionCollections(String packageName) {
-    return ClassUtil.findClasses(null, packageName, new Predicate() {
-      @Override
-      public boolean evaluate(Object object) {
-        return ((Class)object).getAnnotation(FunctionCollection.class) != null;
-      }
-    });
+    return ClassUtil.findClasses(null, packageName,
+        (Object object)->((Class)object).getAnnotation(FunctionCollection.class) != null);
   }
 
   private static Collection<FunctionDesc> buildFunctionDescs(ScalarFunction annotation, Method method) {
