@@ -40,7 +40,7 @@ public class DataChannel {
 
   private Schema schema;
 
-  private String dataFormat = BuiltinStorages.RAW;
+  private String dataFormat = BuiltinStorages.DRAW;
 
   public DataChannel(ExecutionBlockId srcId, ExecutionBlockId targetId) {
     this.srcId = srcId;

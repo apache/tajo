@@ -29,7 +29,7 @@ import org.apache.tajo.util.FileUtil;
  * due to ByteBuffer.
  */
 public class ResizableLimitSpec {
-  private final Log LOG = LogFactory.getLog(ResizableLimitSpec.class);
+  private static final Log LOG = LogFactory.getLog(ResizableLimitSpec.class);
 
   public static final int MAX_SIZE_BYTES = Integer.MAX_VALUE;
   public static final ResizableLimitSpec DEFAULT_LIMIT = new ResizableLimitSpec(Integer.MAX_VALUE);

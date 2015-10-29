@@ -42,20 +42,20 @@ import static org.apache.tajo.common.TajoDataTypes.DataType;
 public class UnSafeTuple extends ZeroCopyTuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
-  private long address;
+  private MemoryBlock memoryBlock;
   private DataType[] types;
 
   @Override
   public void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types) {
     Preconditions.checkArgument(memoryBlock.hasAddress());
 
-    this.address = memoryBlock.address();
+    this.memoryBlock = memoryBlock;
     this.types = types;
     super.set(relativePos, length);
   }
 
   public void set(UnSafeTuple tuple) {
-    this.address = tuple.address;
+    this.memoryBlock = tuple.memoryBlock;
     this.types = tuple.types;
     super.set(tuple.getRelativePos(), tuple.getLength());
   }
@@ -93,7 +93,7 @@ public class UnSafeTuple extends ZeroCopyTuple {
   }
 
   public long address() {
-    return address + getRelativePos();
+    return memoryBlock.address() + getRelativePos();
   }
 
   public HeapTuple toHeapTuple() {

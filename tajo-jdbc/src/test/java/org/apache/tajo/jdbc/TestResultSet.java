@@ -92,7 +92,7 @@ public class TestResultSet {
       tuple.put(1, DatumFactory.createInt4(i + 1));
       written += key.length() + Integer.SIZE;
       appender.addTuple(tuple);
-      rowBlock.getWriter().addTuple(tuple);
+      rowBlock.getWriter().putTuple(tuple);
     }
     appender.close();
     stats.setNumRows(tupleNum);

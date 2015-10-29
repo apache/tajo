@@ -19,6 +19,8 @@
 package org.apache.tajo.tuple;
 
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.memory.*;
 import org.apache.tajo.unit.StorageUnit;
@@ -65,13 +67,18 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   }
 
   @Override
-  public void addTuple(Tuple tuple) {
+  public void putTuple(Tuple tuple) {
     if (tuple instanceof UnSafeTuple) {
       UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
-      addTuple(unSafeTuple);
+      putTuple(unSafeTuple);
     } else {
       OffHeapRowBlockUtils.convert(tuple, this);
     }
+  }
+
+  @Override
+  public ZeroCopyTuple addTuple(Tuple tuple) {
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override

@@ -52,7 +52,7 @@ public class BufferPool {
       ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
     } else {
       TajoConf tajoConf = new TajoConf();
-      ALLOCATOR = createPooledByteBufAllocator(true, tajoConf.getBoolean(ALLOW_CACHE, false), 0);
+      ALLOCATOR = createPooledByteBufAllocator(true, tajoConf.getBoolean(ALLOW_CACHE, true), 0);
     }
   }
 

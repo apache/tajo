@@ -18,6 +18,9 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
@@ -30,6 +33,9 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
@@ -37,13 +43,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 public class HashShuffleAppenderManager {
   private static final Log LOG = LogFactory.getLog(HashShuffleAppenderManager.class);
 
-  private Map<ExecutionBlockId, Map<Integer, PartitionAppenderMeta>> appenderMap =
-          new ConcurrentHashMap<>();
+  private ConcurrentMap<ExecutionBlockId, Map<Integer, PartitionAppenderMeta>> appenderMap = Maps.newConcurrentMap();
+  private ConcurrentMap<Integer, ExecutorService> executors = Maps.newConcurrentMap(); // for parallel writing
+  private List<String> temporalPaths = Lists.newArrayList();
+
   private TajoConf systemConf;
   private FileSystem defaultFS;
   private FileSystem localFS;
@@ -59,66 +67,86 @@ public class HashShuffleAppenderManager {
     // initialize DFS and LocalFileSystems
     defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
     localFS = FileSystem.getLocal(systemConf);
-    pageSize = systemConf.getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME) * 1024 * 1024;
-  }
+    pageSize = systemConf.getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME) * StorageUnit.MB;
 
-  public HashShuffleAppender getAppender(TajoConf tajoConf, ExecutionBlockId ebId, int partId,
-                              TableMeta meta, Schema outSchema) throws IOException {
-    synchronized (appenderMap) {
-      Map<Integer, PartitionAppenderMeta> partitionAppenderMap = appenderMap.get(ebId);
+    Iterable<Path> allLocalPath = lDirAllocator.getAllLocalPathsToRead(".", systemConf);
 
-      if (partitionAppenderMap == null) {
-        partitionAppenderMap = new ConcurrentHashMap<>();
-        appenderMap.put(ebId, partitionAppenderMap);
-      }
-
-      PartitionAppenderMeta partitionAppenderMeta = partitionAppenderMap.get(partId);
-      if (partitionAppenderMeta == null) {
-        Path dataFile = getDataFile(ebId, partId);
-        FileSystem fs = dataFile.getFileSystem(systemConf);
-        if (fs.exists(dataFile)) {
-          FileStatus status = fs.getFileStatus(dataFile);
-          LOG.info("File " + dataFile + " already exists, size=" + status.getLen());
-        }
-
-        if (!fs.exists(dataFile.getParent())) {
-          fs.mkdirs(dataFile.getParent());
-        }
-
-        FileTablespace space = (FileTablespace) TablespaceManager.get(dataFile.toUri());
-        FileAppender appender = (FileAppender) space.getAppender(meta, outSchema, dataFile);
-        appender.enableStats();
-        appender.init();
-
-        partitionAppenderMeta = new PartitionAppenderMeta();
-        partitionAppenderMeta.partId = partId;
-        partitionAppenderMeta.dataFile = dataFile;
-        partitionAppenderMeta.appender = new HashShuffleAppender(ebId, partId, pageSize, appender);
-        partitionAppenderMeta.appender.init();
-        partitionAppenderMap.put(partId, partitionAppenderMeta);
-
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Create Hash shuffle file(partId=" + partId + "): " + dataFile);
-        }
-      }
-
-      return partitionAppenderMeta.appender;
+    //add async hash shuffle writer
+    for (Path path : allLocalPath) {
+      temporalPaths.add(localFS.makeQualified(path).toString());
+      executors.put(temporalPaths.size() - 1, Executors.newSingleThreadExecutor());
     }
   }
 
+  protected int getVolumeId(Path path) {
+    int i = 0;
+    for (String rootPath : temporalPaths) {
+      if (path.toString().startsWith(rootPath)) {
+        break;
+      }
+      i++;
+    }
+    Preconditions.checkPositionIndex(i, temporalPaths.size() - 1);
+    return i;
+  }
+
+  public synchronized HashShuffleAppender getAppender(MemoryRowBlock memoryRowBlock, ExecutionBlockId ebId, int partId,
+                                                      TableMeta meta, Schema outSchema) throws IOException {
+    Map<Integer, PartitionAppenderMeta> partitionAppenderMap = appenderMap.get(ebId);
+
+    if (partitionAppenderMap == null) {
+      partitionAppenderMap = new ConcurrentHashMap<>();
+      appenderMap.put(ebId, partitionAppenderMap);
+    }
+
+    PartitionAppenderMeta partitionAppenderMeta = partitionAppenderMap.get(partId);
+    if (partitionAppenderMeta == null) {
+      Path dataFile = getDataFile(ebId, partId);
+      FileSystem fs = dataFile.getFileSystem(systemConf);
+      if (fs.exists(dataFile)) {
+        FileStatus status = fs.getFileStatus(dataFile);
+        LOG.info("File " + dataFile + " already exists, size=" + status.getLen());
+      }
+
+      if (!fs.exists(dataFile.getParent())) {
+        fs.mkdirs(dataFile.getParent());
+      }
+
+      DirectRawFileWriter appender =
+          new DirectRawFileWriter(systemConf, null, outSchema, meta, dataFile, memoryRowBlock);
+      appender.enableStats();
+      appender.init();
+
+      partitionAppenderMeta = new PartitionAppenderMeta();
+      partitionAppenderMeta.partId = partId;
+      partitionAppenderMeta.dataFile = dataFile;
+      partitionAppenderMeta.appender =
+          new HashShuffleAppender(ebId, partId, pageSize, appender, getVolumeId(dataFile));
+      partitionAppenderMeta.appender.init();
+      partitionAppenderMap.put(partId, partitionAppenderMeta);
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Create Hash shuffle file(partId=" + partId + "): " + dataFile);
+      }
+    }
+
+    return partitionAppenderMeta.appender;
+  }
+
   public static int getPartParentId(int partId, TajoConf tajoConf) {
-    return partId % tajoConf.getIntVar(TajoConf.ConfVars.HASH_SHUFFLE_PARENT_DIRS);
+    return partId % tajoConf.getIntVar(ConfVars.SHUFFLE_HASH_PARENT_DIRS);
   }
 
   private Path getDataFile(ExecutionBlockId ebId, int partId) throws IOException {
     try {
       // the base dir for an output dir
       String executionBlockBaseDir = ebId.getQueryId().toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
-      Path baseDirPath = localFS.makeQualified(lDirAllocator.getLocalPathForWrite(executionBlockBaseDir, systemConf));
+      Path baseDirPath = lDirAllocator.getLocalPathForWrite(executionBlockBaseDir, systemConf);
       //LOG.info(ebId + "'s basedir is created (" + baseDirPath + ")");
 
       // If EB has many partition, too many shuffle file are in single directory.
-      return StorageUtil.concatPath(baseDirPath, "" + getPartParentId(partId, systemConf), "" + partId);
+      return localFS.makeQualified(
+          StorageUtil.concatPath(baseDirPath, "" + getPartParentId(partId, systemConf), "" + partId));
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
@@ -126,10 +154,7 @@ public class HashShuffleAppenderManager {
   }
 
   public List<HashShuffleIntermediate> close(ExecutionBlockId ebId) throws IOException {
-    Map<Integer, PartitionAppenderMeta> partitionAppenderMap = null;
-    synchronized (appenderMap) {
-      partitionAppenderMap = appenderMap.remove(ebId);
-    }
+    Map<Integer, PartitionAppenderMeta> partitionAppenderMap = appenderMap.remove(ebId);
 
     if (partitionAppenderMap == null) {
       LOG.info("Close HashShuffleAppender:" + ebId + ", not a hash shuffle");
@@ -158,16 +183,42 @@ public class HashShuffleAppenderManager {
   }
 
   public void finalizeTask(TaskAttemptId taskId) {
-    synchronized (appenderMap) {
-      Map<Integer, PartitionAppenderMeta> partitionAppenderMap =
+    Map<Integer, PartitionAppenderMeta> partitionAppenderMap =
         appenderMap.get(taskId.getTaskId().getExecutionBlockId());
-      if (partitionAppenderMap == null) {
-        return;
-      }
+    if (partitionAppenderMap == null) {
+      return;
+    }
 
-      for (PartitionAppenderMeta eachAppender: partitionAppenderMap.values()) {
-        eachAppender.appender.taskFinished(taskId);
+    for (PartitionAppenderMeta eachAppender: partitionAppenderMap.values()) {
+      eachAppender.appender.taskFinished(taskId);
+    }
+  }
+
+  /**
+   * Asynchronously write partitions.
+   */
+  public Future<MemoryRowBlock> writePartitions(TableMeta meta, Schema schema, final TaskAttemptId taskId, int partId,
+                                                final MemoryRowBlock rowBlock,
+                                                final boolean release) throws IOException {
+
+    HashShuffleAppender appender = getAppender(rowBlock, taskId.getTaskId().getExecutionBlockId(), partId, meta, schema);
+    ExecutorService executor = executors.get(appender.getVolumeId());
+    return executor.submit(new Callable<MemoryRowBlock>() {
+      @Override
+      public MemoryRowBlock call() throws Exception {
+        appender.writeRowBlock(taskId, rowBlock);
+
+        if (release) rowBlock.release();
+        else rowBlock.clear();
+
+        return rowBlock;
       }
+    });
+  }
+
+  public void shutdown() {
+    for (ExecutorService service : executors.values()) {
+      service.shutdownNow();
     }
   }
 

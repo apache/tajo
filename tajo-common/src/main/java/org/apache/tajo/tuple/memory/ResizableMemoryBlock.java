@@ -154,7 +154,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
 
   @Override
   public void release() {
-    buffer.release();
+    if(buffer.refCnt() > 0) buffer.release();
   }
 
   @Override

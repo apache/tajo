@@ -76,5 +76,7 @@ public interface RowWriter {
 
   void putProtoDatum(ProtobufDatum datum);
 
-  void addTuple(Tuple tuple);
+  void putTuple(Tuple tuple);
+
+  ZeroCopyTuple addTuple(Tuple tuple);
 }

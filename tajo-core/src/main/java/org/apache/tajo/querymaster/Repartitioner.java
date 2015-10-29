@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
@@ -195,7 +196,8 @@ public class Repartitioner {
       int maxStatsScanIdx = -1;
       StringBuilder nonLeafScanNamesBuilder = new StringBuilder();
       for (int i = 0; i < scans.length; i++) {
-        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase("RAW")) {
+
+        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.DRAW)) {
           // Intermediate data scan
           hasNonLeafNode = true;
           largeScanIndexList.add(i);

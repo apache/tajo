@@ -58,11 +58,19 @@ public class DirectRawFileWriter extends FileAppender {
 
   private TableStatistics stats;
   private ShuffleType shuffleType;
-  private MemoryRowBlock memoryRowBlock;
+  private MemoryRowBlock rowBlock;
+  private boolean hasExternalBuf;
 
   public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
                              final Schema schema, final TableMeta meta, final Path path) throws IOException {
+    this(conf, taskAttemptId, schema, meta, path, null);
+  }
+
+  public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
+                             final Schema schema, final TableMeta meta, final Path path,
+                             MemoryRowBlock rowBlock) throws IOException {
     super(conf, taskAttemptId, schema, meta, path);
+    this.rowBlock = rowBlock;
   }
 
   @Override
@@ -96,14 +104,19 @@ public class DirectRawFileWriter extends FileAppender {
               PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
     }
 
-    memoryRowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), BUFFER_SIZE, true);
+    if (rowBlock == null) {
+      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), BUFFER_SIZE, true);
+    } else {
+      hasExternalBuf = true;
+    }
+
     pos = 0;
     super.init();
   }
 
   @Override
   public long getOffset() throws IOException {
-    return pos + memoryRowBlock.getMemory().writerPosition();
+    return hasExternalBuf ? pos : pos + rowBlock.getMemory().writerPosition();
   }
 
   public void writeRowBlock(MemoryRowBlock rowBlock) throws IOException {
@@ -113,10 +126,8 @@ public class DirectRawFileWriter extends FileAppender {
       pos += rowBlock.getMemory().writeTo(fos);
     }
 
-    rowBlock.getMemory().clear();
-
     if (enabledStats) {
-      stats.incrementRows(rowBlock.rows() - stats.getNumRows());
+      stats.incrementRows(rowBlock.rows());
     }
   }
 
@@ -129,17 +140,19 @@ public class DirectRawFileWriter extends FileAppender {
       }
     }
 
-    memoryRowBlock.getWriter().addTuple(t);
+    rowBlock.getWriter().putTuple(t);
 
-    if(memoryRowBlock.getMemory().readableBytes() >= BUFFER_SIZE) {
-      writeRowBlock(memoryRowBlock);
+    if(rowBlock.getMemory().readableBytes() >= BUFFER_SIZE) {
+      writeRowBlock(rowBlock);
+      rowBlock.clear();
     }
   }
 
   @Override
   public void flush() throws IOException {
-    if(memoryRowBlock.getMemory().isReadable()) {
-      writeRowBlock(memoryRowBlock);
+    if(!hasExternalBuf && rowBlock.getMemory().isReadable()) {
+      writeRowBlock(rowBlock);
+      rowBlock.clear();
     }
   }
 
@@ -155,7 +168,9 @@ public class DirectRawFileWriter extends FileAppender {
     }
 
     IOUtils.cleanup(LOG, channel, randomAccessFile, fos);
-    memoryRowBlock.release();
+    if(!hasExternalBuf && rowBlock != null) {
+      rowBlock.release();
+    }
   }
 
   @Override

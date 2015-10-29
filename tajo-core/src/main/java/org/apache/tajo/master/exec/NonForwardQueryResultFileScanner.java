@@ -287,7 +287,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
               eof = true;
               break;
             } else {
-              rowBlock.getWriter().addTuple(tuple);
+              rowBlock.getWriter().putTuple(tuple);
               currentNumRows++;
               if (currentNumRows >= maxRow) {
                 eof = true;

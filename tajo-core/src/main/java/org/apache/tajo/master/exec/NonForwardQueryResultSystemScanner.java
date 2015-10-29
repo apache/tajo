@@ -646,7 +646,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(tableDesc.getLogicalSchema()));
         }
 
-        rowBlock.getWriter().addTuple(currentTuple);
+        rowBlock.getWriter().putTuple(currentTuple);
         currentRow++;
         rowCount++;
 

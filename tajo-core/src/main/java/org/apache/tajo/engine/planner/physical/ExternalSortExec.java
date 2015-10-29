@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -36,6 +37,8 @@ import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
@@ -47,9 +50,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
-
-import static org.apache.tajo.storage.RawFile.RawFileAppender;
-import static org.apache.tajo.storage.RawFile.RawFileScanner;
 
 /**
  * This external sort algorithm can be characterized by the followings:
@@ -79,7 +79,7 @@ public class ExternalSortExec extends SortExec {
   /** If there are available multiple cores, it tries parallel merge. */
   private ExecutorService executorService;
   /** used for in-memory sort of each chunk. */
-  private TupleList inMemoryTable;
+  private UnsafeTupleList inMemoryTable;
   /** temporal dir */
   private final Path sortTmpDir;
   /** It enables round-robin disks allocation */
@@ -108,17 +108,18 @@ public class ExternalSortExec extends SortExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
 
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta("ROWFILE");
+    this.meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
 
     this.defaultFanout = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT);
     if (defaultFanout < 2) {
       throw new PhysicalPlanningException(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.varname + " cannot be lower than 2");
     }
     // TODO - sort buffer and core num should be changed to use the allocated container resource.
-    this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
+    long bufferSize = context.getQueryContext().getInt(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
+    this.sortBufferBytesNum = (int) (bufferSize * 0.8);
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
-    this.inMemoryTable = new TupleList(100000);
+    this.inMemoryTable = new UnsafeTupleList(outSchema, (int) Math.min(bufferSize, 16 * StorageUnit.MB));
 
     this.sortTmpDir = getExecutorTmpDir();
     localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -154,9 +155,9 @@ public class ExternalSortExec extends SortExec {
   /**
    * Sort a tuple block and store them into a chunk file
    */
-  private Path sortAndStoreChunk(int chunkId, TupleList tupleBlock)
+  private Path sortAndStoreChunk(int chunkId, List tupleBlock)
       throws IOException {
-    TableMeta meta = CatalogUtil.newTableMeta("RAW");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
@@ -165,7 +166,7 @@ public class ExternalSortExec extends SortExec {
 
     long chunkWriteStart = System.currentTimeMillis();
     Path outputPath = getChunkPathForWrite(0, chunkId);
-    final RawFileAppender appender = new RawFileAppender(context.getConf(), null, inSchema, meta, outputPath);
+    final FileAppender appender = new DirectRawFileWriter(context.getConf(), null, inSchema, meta, outputPath);
     appender.init();
     for (Tuple t : sorted) {
       appender.addTuple(t);
@@ -190,26 +191,24 @@ public class ExternalSortExec extends SortExec {
    */
   private List<Path> sortAndStoreAllChunks() throws IOException {
     Tuple tuple;
-    long memoryConsumption = 0;
     List<Path> chunkPaths = TUtil.newList();
 
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
     while (!context.isStopped() && (tuple = child.next()) != null) { // partition sort start
       inMemoryTable.add(tuple);
-      memoryConsumption += MemoryUtil.calculateMemorySize(tuple);
 
-      if (memoryConsumption > sortBufferBytesNum) {
+      if (inMemoryTable.getUsedMem() > sortBufferBytesNum) {
         long runEndTime = System.currentTimeMillis();
         info(LOG, chunkId + " run loading time: " + (runEndTime - runStartTime) + " msec");
         runStartTime = runEndTime;
 
-        info(LOG, "Memory consumption exceeds " + sortBufferBytesNum + " bytes");
+        info(LOG, "Memory consumption exceeds " + FileUtil.humanReadableByteCount(inMemoryTable.getUsedMem(), false));
         memoryResident = false;
 
         chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
 
-        memoryConsumption = 0;
+        inMemoryTable.clear();
         chunkId++;
 
         // When the volume of sorting data once exceed the size of sort buffer,
@@ -248,7 +247,8 @@ public class ExternalSortExec extends SortExec {
    * Get a local path from all temporal paths in round-robin manner.
    */
   private synchronized Path getChunkPathForWrite(int level, int chunkId) throws IOException {
-    return localDirAllocator.getLocalPathForWrite(sortTmpDir + "/" + level +"_" + chunkId, context.getConf());
+    return localFS.makeQualified(localDirAllocator.getLocalPathForWrite(
+        sortTmpDir + "/" + level + "_" + chunkId, context.getConf()));
   }
 
   @Override
@@ -459,7 +459,7 @@ public class ExternalSortExec extends SortExec {
       final Path outputPath = getChunkPathForWrite(level + 1, nextRunId);
       info(LOG, mergeFanout + " files are being merged to an output file " + outputPath.getName());
       long mergeStartTime = System.currentTimeMillis();
-      final RawFileAppender output = new RawFileAppender(context.getConf(), null, inSchema, meta, outputPath);
+      final FileAppender output = new DirectRawFileWriter(context.getConf(), null, inSchema, meta, outputPath);
       output.init();
       final Scanner merger = createKWayMerger(inputFiles, startIdx, mergeFanout);
       merger.init();
@@ -499,7 +499,7 @@ public class ExternalSortExec extends SortExec {
   }
 
   private Scanner getFileScanner(FileFragment frag) throws IOException {
-    return new RawFileScanner(context.getConf(), plan.getInSchema(), meta, frag);
+    return new DirectRawFileScanner(context.getConf(), plan.getInSchema(), meta, frag);
   }
 
   private Scanner createKWayMerger(List<FileFragment> inputs, final int startChunkId, final int num) throws IOException {
@@ -794,7 +794,7 @@ public class ExternalSortExec extends SortExec {
     }
 
     if(inMemoryTable != null){
-      inMemoryTable.clear();
+      inMemoryTable.release();
       inMemoryTable = null;
     }
 

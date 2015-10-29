@@ -281,96 +281,94 @@ public class RawFile {
         }
 
         switch (columnTypes[i].getType()) {
-          case BOOLEAN :
-            outTuple.put(i, DatumFactory.createBool(buffer.get()));
-            break;
+        case BOOLEAN:
+          outTuple.put(i, DatumFactory.createBool(buffer.get()));
+          break;
 
-          case BIT :
-            outTuple.put(i, DatumFactory.createBit(buffer.get()));
-            break;
+        case BIT:
+          outTuple.put(i, DatumFactory.createBit(buffer.get()));
+          break;
 
-          case CHAR :
-            int realLen = readRawVarint32();
-            byte[] buf = new byte[realLen];
-            buffer.get(buf);
-            outTuple.put(i, DatumFactory.createChar(buf));
-            break;
+        case CHAR:
+          int realLen = readRawVarint32();
+          byte[] buf = new byte[realLen];
+          buffer.get(buf);
+          outTuple.put(i, DatumFactory.createChar(buf));
+          break;
 
-          case INT2 :
-            outTuple.put(i, DatumFactory.createInt2(buffer.getShort()));
-            break;
+        case INT2:
+          outTuple.put(i, DatumFactory.createInt2(buffer.getShort()));
+          break;
 
-          case INT4 :
-            outTuple.put(i, DatumFactory.createInt4(decodeZigZag32(readRawVarint32())));
-            break;
+        case INT4:
+          outTuple.put(i, DatumFactory.createInt4(decodeZigZag32(readRawVarint32())));
+          break;
 
-          case INT8 :
-            outTuple.put(i, DatumFactory.createInt8(decodeZigZag64(readRawVarint64())));
-            break;
+        case INT8:
+          outTuple.put(i, DatumFactory.createInt8(decodeZigZag64(readRawVarint64())));
+          break;
 
-          case FLOAT4 :
-            outTuple.put(i, DatumFactory.createFloat4(buffer.getFloat()));
-            break;
+        case FLOAT4:
+          outTuple.put(i, DatumFactory.createFloat4(buffer.getFloat()));
+          break;
 
-          case FLOAT8 :
-            outTuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
-            break;
+        case FLOAT8:
+          outTuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
+          break;
 
-          case TEXT : {
-            int len = readRawVarint32();
-            byte [] strBytes = new byte[len];
-            buffer.get(strBytes);
-            outTuple.put(i, DatumFactory.createText(strBytes));
-            break;
+        case TEXT: {
+          int len = readRawVarint32();
+          byte[] strBytes = new byte[len];
+          buffer.get(strBytes);
+          outTuple.put(i, DatumFactory.createText(strBytes));
+          break;
+        }
+
+        case BLOB: {
+          int len = readRawVarint32();
+          byte[] rawBytes = new byte[len];
+          buffer.get(rawBytes);
+          outTuple.put(i, DatumFactory.createBlob(rawBytes));
+          break;
+        }
+
+        case PROTOBUF: {
+          int len = readRawVarint32();
+          byte[] rawBytes = new byte[len];
+          buffer.get(rawBytes);
+
+          outTuple.put(i, ProtobufDatumFactory.createDatum(columnTypes[i], rawBytes));
+          break;
+        }
+
+        case INET4:
+          outTuple.put(i, DatumFactory.createInet4(buffer.getInt()));
+          break;
+
+        case DATE: {
+          int val = buffer.getInt();
+          if (val < Integer.MIN_VALUE + 1) {
+            outTuple.put(i, DatumFactory.createNullDatum());
+          } else {
+            outTuple.put(i, DatumFactory.createFromInt4(columnTypes[i], val));
           }
-
-          case BLOB : {
-            int len = readRawVarint32();
-            byte [] rawBytes = new byte[len];
-            buffer.get(rawBytes);
-            outTuple.put(i, DatumFactory.createBlob(rawBytes));
-            break;
+          break;
+        }
+        case TIME:
+        case TIMESTAMP: {
+          long val = buffer.getLong();
+          if (val < Long.MIN_VALUE + 1) {
+            outTuple.put(i, DatumFactory.createNullDatum());
+          } else {
+            outTuple.put(i, DatumFactory.createFromInt8(columnTypes[i], val));
           }
+          break;
+        }
+        case NULL_TYPE:
+          outTuple.put(i, NullDatum.get());
+          break;
 
-          case PROTOBUF: {
-            int len = readRawVarint32();
-            byte [] rawBytes = new byte[len];
-            buffer.get(rawBytes);
-
-            outTuple.put(i, ProtobufDatumFactory.createDatum(columnTypes[i], rawBytes));
-            break;
-          }
-
-          case INET4 :
-            byte [] ipv4Bytes = new byte[4];
-            buffer.get(ipv4Bytes);
-            outTuple.put(i, DatumFactory.createInet4(ipv4Bytes));
-            break;
-
-          case DATE: {
-            int val = buffer.getInt();
-            if (val < Integer.MIN_VALUE + 1) {
-              outTuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              outTuple.put(i, DatumFactory.createFromInt4(columnTypes[i], val));
-            }
-            break;
-          }
-          case TIME:
-          case TIMESTAMP: {
-            long val = buffer.getLong();
-            if (val < Long.MIN_VALUE + 1) {
-              outTuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              outTuple.put(i, DatumFactory.createFromInt8(columnTypes[i], val));
-            }
-            break;
-          }
-          case NULL_TYPE:
-            outTuple.put(i, NullDatum.get());
-            break;
-
-          default:
+        default:
         }
       }
 
@@ -658,46 +656,46 @@ public class RawFile {
           recordOffset = 0;
         }
 
-        switch(columnTypes[i].getType()) {
-          case NULL_TYPE:
-            nullFlags.set(i);
-            continue;
+        switch (columnTypes[i].getType()) {
+        case NULL_TYPE:
+          nullFlags.set(i);
+          continue;
 
-          case BOOLEAN:
-          case BIT:
-            buffer.put(t.getByte(i));
-            break;
+        case BOOLEAN:
+        case BIT:
+          buffer.put(t.getByte(i));
+          break;
 
-          case INT2 :
-            buffer.putShort(t.getInt2(i));
-            break;
+        case INT2:
+          buffer.putShort(t.getInt2(i));
+          break;
 
-          case INT4 :
-            writeRawVarint32(encodeZigZag32(t.getInt4(i)));
-            break;
+        case INT4:
+          writeRawVarint32(encodeZigZag32(t.getInt4(i)));
+          break;
 
-          case INT8 :
-            writeRawVarint64(encodeZigZag64(t.getInt8(i)));
-            break;
+        case INT8:
+          writeRawVarint64(encodeZigZag64(t.getInt8(i)));
+          break;
 
-          case FLOAT4 :
-            buffer.putFloat(t.getFloat4(i));
-            break;
+        case FLOAT4:
+          buffer.putFloat(t.getFloat4(i));
+          break;
 
-          case FLOAT8 :
-            buffer.putDouble(t.getFloat8(i));
-            break;
+        case FLOAT8:
+          buffer.putDouble(t.getFloat8(i));
+          break;
 
-          case CHAR:
-          case TEXT: {
-            byte [] strBytes = t.getBytes(i);
-            if (flushBufferAndReplace(recordOffset, strBytes.length + computeRawVarint32Size(strBytes.length))) {
-              recordOffset = 0;
-            }
-            writeRawVarint32(strBytes.length);
-            buffer.put(strBytes);
-            break;
+        case CHAR:
+        case TEXT: {
+          byte[] strBytes = t.getBytes(i);
+          if (flushBufferAndReplace(recordOffset, strBytes.length + computeRawVarint32Size(strBytes.length))) {
+            recordOffset = 0;
           }
+          writeRawVarint32(strBytes.length);
+          buffer.put(strBytes);
+          break;
+        }
 
         case DATE:
           buffer.putInt(t.getInt4(i));
@@ -708,32 +706,32 @@ public class RawFile {
           buffer.putLong(t.getInt8(i));
           break;
 
-          case BLOB : {
-            byte [] rawBytes = t.getBytes(i);
-            if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
-              recordOffset = 0;
-            }
-            writeRawVarint32(rawBytes.length);
-            buffer.put(rawBytes);
-            break;
+        case BLOB: {
+          byte[] rawBytes = t.getBytes(i);
+          if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
+            recordOffset = 0;
           }
+          writeRawVarint32(rawBytes.length);
+          buffer.put(rawBytes);
+          break;
+        }
 
-          case PROTOBUF: {
-            byte [] rawBytes = t.getBytes(i);
-            if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
-              recordOffset = 0;
-            }
-            writeRawVarint32(rawBytes.length);
-            buffer.put(rawBytes);
-            break;
+        case PROTOBUF: {
+          byte[] rawBytes = t.getBytes(i);
+          if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
+            recordOffset = 0;
           }
+          writeRawVarint32(rawBytes.length);
+          buffer.put(rawBytes);
+          break;
+        }
 
-          case INET4 :
-            buffer.put(t.getBytes(i));
-            break;
+        case INET4:
+          buffer.putInt(t.getInt4(i));
+          break;
 
-          default:
-            throw new IOException("Cannot support data type: " + columnTypes[i].getType());
+        default:
+          throw new IOException("Cannot support data type: " + columnTypes[i].getType());
         }
       }
 
