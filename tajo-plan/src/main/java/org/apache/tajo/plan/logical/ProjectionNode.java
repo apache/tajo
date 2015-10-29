@@ -18,7 +18,9 @@
 
 package org.apache.tajo.plan.logical;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 import com.google.gson.annotations.Expose;
 
