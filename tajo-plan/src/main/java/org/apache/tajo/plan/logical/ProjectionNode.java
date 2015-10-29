@@ -18,9 +18,7 @@
 
 package org.apache.tajo.plan.logical;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 import com.google.gson.annotations.Expose;
 
@@ -83,7 +81,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
     final int prime = 31;
     int result = 1;
     result = prime * result + (distinct ? 1231 : 1237);
-    result = prime * result + Arrays.hashCode(targets.toArray());
+    result = prime * result + Objects.hashCode(targets);
     return result;
   }
 
