@@ -829,17 +829,17 @@ public class ProjectionPushDownRule extends
 
     if (groupingKeyTargets != null) {
       for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
-        targets.set(groupingKeyIdx, groupingKeyTargets.get(groupingKeyIdx));
+        targets.add(groupingKeyIdx, groupingKeyTargets.get(groupingKeyIdx));
       }
     } else {
       for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
-        targets.set(groupingKeyIdx, new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx])));
+        targets.add(groupingKeyIdx, new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx])));
       }
     }
 
     if (aggEvalNames != null) {
       for (int aggrFuncIdx = 0, targetIdx = groupingKeyNum; aggrFuncIdx < aggrFuncNum; aggrFuncIdx++, targetIdx++) {
-        targets.set(targetIdx,
+        targets.add(targetIdx,
                 new Target(new FieldEval(aggEvalNames[aggrFuncIdx], aggEvalNodes[aggrFuncIdx].getValueType())));
       }
     }

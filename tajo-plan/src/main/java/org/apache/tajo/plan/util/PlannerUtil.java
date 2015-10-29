@@ -542,7 +542,7 @@ public class PlannerUtil {
     FieldEval eval;
     for (int i = 0; i < schema.size(); i++) {
       eval = new FieldEval(schema.getColumn(i));
-      targets.set(i, new Target(eval));
+      targets.add(i, new Target(eval));
     }
     return targets;
   }

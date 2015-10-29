@@ -748,9 +748,9 @@ public class LogicalNodeDeserializer {
       PlanProto.Target targetProto = targetsProto.get(i);
       EvalNode evalNode = EvalNodeDeserializer.deserialize(context, evalContext, targetProto.getExpr());
       if (targetProto.hasAlias()) {
-        targets.set(i, new Target(evalNode, targetProto.getAlias()));
+        targets.add(i, new Target(evalNode, targetProto.getAlias()));
       } else {
-        targets.set(i, targets.set(i, new Target((FieldEval) evalNode)));
+        targets.add(i, new Target((FieldEval) evalNode));
       }
     }
     return targets;

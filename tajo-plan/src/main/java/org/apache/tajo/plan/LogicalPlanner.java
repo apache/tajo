@@ -471,9 +471,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       NamedExpr namedExpr = projection.getNamedExprs()[i];
       EvalNode evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.RELS_ONLY);
       if (namedExpr.hasAlias()) {
-        targets.set(i, new Target(evalNode, namedExpr.getAlias()));
+        targets.add(i, new Target(evalNode, namedExpr.getAlias()));
       } else {
-        targets.set(i, new Target(evalNode, context.plan.generateUniqueColumnName(namedExpr.getExpr())));
+        targets.add(i, new Target(evalNode, context.plan.generateUniqueColumnName(namedExpr.getExpr())));
       }
     }
     EvalExprNode evalExprNode = context.queryBlock.getNodeFromExpr(projection);
@@ -493,15 +493,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (int i = 0; i < referenceNames.length; i++) {
       String refName = referenceNames[i];
       if (block.isConstReference(refName)) {
-        targets.set(i, new Target(block.getConstByReference(refName), refName));
+        targets.add(i, new Target(block.getConstByReference(refName), refName));
       } else if (block.namedExprsMgr.isEvaluated(refName)) {
-        targets.set(i, block.namedExprsMgr.getTarget(refName));
+        targets.add(i, block.namedExprsMgr.getTarget(refName));
       } else {
         NamedExpr namedExpr = block.namedExprsMgr.getNamedExpr(refName);
         EvalNode evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(),
             NameResolvingMode.RELS_AND_SUBEXPRS);
         block.namedExprsMgr.markAsEvaluated(refName, evalNode);
-        targets.set(i, new Target(evalNode, refName));
+        targets.add(i, new Target(evalNode, refName));
       }
     }
     return targets;
@@ -1063,11 +1063,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Build grouping keys
     for (int i = 0; i < effectiveGroupingKeyNum; i++) {
       Target target = block.namedExprsMgr.getTarget(groupingNode.getGroupingColumns()[i].getQualifiedName());
-      targets.set(i, target);
+      targets.add(i, target);
     }
 
     for (int i = 0, targetIdx = effectiveGroupingKeyNum; i < aggEvalNodes.size(); i++, targetIdx++) {
-      targets.set(targetIdx, block.namedExprsMgr.getTarget(aggEvalNames.get(i)));
+      targets.add(targetIdx, block.namedExprsMgr.getTarget(aggEvalNames.get(i)));
     }
 
     groupingNode.setTargets(targets);

@@ -261,10 +261,10 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         TajoDataTypes.DataType dataType = typeDeterminant.determineDataType(context, namedExpr.getExpr());
 
         if (namedExpr.hasAlias()) {
-          targets.set(i, new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType))));
+          targets.add(i, new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType))));
         } else {
           String generatedName = context.getPlan().generateUniqueColumnName(namedExpr.getExpr());
-          targets.set(i, new Target(new FieldEval(new Column(generatedName, dataType))));
+          targets.add(i, new Target(new FieldEval(new Column(generatedName, dataType))));
         }
       }
       return targets;
