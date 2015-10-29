@@ -64,6 +64,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     super(conf, schema, meta, fragment);
   }
 
+  @Override
   public void init() throws IOException {
     initChannel();
 
@@ -168,6 +169,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public void reset() throws IOException {
     // reload initial buffer
     filePosition = fragment.getStartKey();
+    recordCount = 0;
     seek(filePosition);
     eos = false;
     reader.reset();

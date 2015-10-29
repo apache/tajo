@@ -20,10 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -42,6 +39,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
@@ -65,7 +63,7 @@ public class TestProgressExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 5000;
+  private final int numTuple = 50000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -87,7 +85,7 @@ public class TestProgressExternalSortExec {
     schema.addColumn("empid", TajoDataTypes.Type.INT4);
     schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("RAW");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
@@ -137,7 +135,11 @@ public class TestProgressExternalSortExec {
   private void testProgress(long sortBufferBytesNum) throws Exception {
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, sortBufferBytesNum);
+    if(sortBufferBytesNum > StorageUnit.MB) {
+      queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, (int)(sortBufferBytesNum / StorageUnit.MB));
+    } else {
+      queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 1);
+    }
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);

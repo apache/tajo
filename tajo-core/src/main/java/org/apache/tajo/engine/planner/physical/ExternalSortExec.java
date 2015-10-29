@@ -772,6 +772,7 @@ public class ExternalSortExec extends SortExec {
 
   @Override
   public void close() throws IOException {
+    super.close();
     if (result != null) {
       result.close();
       try {
@@ -803,7 +804,6 @@ public class ExternalSortExec extends SortExec {
     }
 
     plan = null;
-    super.close();
   }
 
   @Override
