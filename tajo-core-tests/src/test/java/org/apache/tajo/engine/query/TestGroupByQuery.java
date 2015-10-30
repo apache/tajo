@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -44,7 +42,6 @@ import static org.junit.Assert.assertEquals;
 @Category(IntegrationTest.class)
 @RunWith(Parameterized.class)
 public class TestGroupByQuery extends QueryTestCaseBase {
-  private static final Log LOG = LogFactory.getLog(TestGroupByQuery.class);
 
   public TestGroupByQuery(String groupByOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
@@ -55,6 +52,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     } else {
       variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
     }
+    variables.put(SessionVars.AGG_HASH_TABLE_SIZE.keyname(), "100");
     client.updateSessionVariables(variables);
   }
 
@@ -80,11 +78,11 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testGroupBy2() throws Exception {
     // select count(1) as unique_key from lineitem group by l_linenumber;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -797,10 +795,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest
   public final void testPythonUdaf2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test

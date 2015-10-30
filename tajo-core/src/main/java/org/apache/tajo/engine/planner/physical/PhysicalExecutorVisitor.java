@@ -64,9 +64,6 @@ public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {
   RESULT visitLimit(CONTEXT context, LimitExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 
-  RESULT visitMemSort(CONTEXT context, MemSortExec exec, Stack<PhysicalExec> stack)
-      throws PhysicalPlanningException;
-
   RESULT visitMergeFullOuterJoin(CONTEXT context, MergeFullOuterJoinExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException;
 

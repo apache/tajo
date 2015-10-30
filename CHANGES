@@ -37,6 +37,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1906: Decrease the default size of hash map and array list for testing.
+    (jihoon)
+
     TAJO-1934: Test failures in TestPgSQLQueryTests due to sort order. 
     (Contributed by Dongkyu Hwangbo, committed by jihoon)
 
