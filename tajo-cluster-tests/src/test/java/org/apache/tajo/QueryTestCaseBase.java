@@ -245,11 +245,11 @@ public class QueryTestCaseBase {
   @After
   public void printTestName() {
     /* protect a travis stalled build */
-    System.out.println(String.format("Ran: %s.%s, Used Memory: %s, Active Threads: %d",
-        getClass().getSimpleName(),
-        name.getMethodName(),
+    System.out.println(String.format("Used Memory: %s, Active Threads: %d, Ran: %s.%s",
         FileUtil.humanReadableByteCount(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory(), false),
-        Thread.activeCount()));
+        Thread.activeCount(),
+        getClass().getSimpleName(),
+        name.getMethodName()));
   }
 
   public QueryTestCaseBase() {
