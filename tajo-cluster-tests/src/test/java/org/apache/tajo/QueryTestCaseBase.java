@@ -54,10 +54,7 @@ import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
@@ -245,12 +242,14 @@ public class QueryTestCaseBase {
     client.close();
   }
 
-  @Before
+  @After
   public void printTestName() {
     /* protect a travis stalled build */
-    System.out.println("Run: " + name.getMethodName() +
-        " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
-        / (1024 * 1024)) + " MBytes, Active Threads:" + Thread.activeCount());
+    System.out.println(String.format("\t\tRan: %s.%s, Used Memory: %s, Active Threads: %d",
+        getClass().getSimpleName(),
+        name.getMethodName(),
+        FileUtil.humanReadableByteCount(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory(), false),
+        Thread.activeCount()));
   }
 
   public QueryTestCaseBase() {
