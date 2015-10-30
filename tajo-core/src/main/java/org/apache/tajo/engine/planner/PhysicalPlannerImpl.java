@@ -1165,22 +1165,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       }
     }
 
-    Enforcer enforcer = context.getEnforcer();
-    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, sortNode);
-    if (property != null) {
-      SortEnforce.SortAlgorithm algorithm = property.getSort().getAlgorithm();
-      if (algorithm == SortEnforce.SortAlgorithm.IN_MEMORY_SORT) {
-        return new MemSortExec(context, sortNode, child);
-      } else {
-        return new ExternalSortExec(context, sortNode, child);
-      }
-    }
-
-    return createBestSortPlan(context, sortNode, child);
-  }
-
-  public SortExec createBestSortPlan(TaskAttemptContext context, SortNode sortNode,
-                                     PhysicalExec child) throws IOException {
     return new ExternalSortExec(context, sortNode, child);
   }
 
