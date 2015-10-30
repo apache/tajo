@@ -1,6 +1,21 @@
 Tajo Change Log 
 
-Release 0.11.0 - unreleased
+Release 0.11.1 - unreleased
+
+  NEW FEATURES
+
+  IMPROVEMENT
+
+  BUG FIXES
+
+  TASKS
+
+    TAJO-1906: Decrease the default size of hash map and array list for testing.
+    (jihoon)
+
+  SUB TASKS
+
+Release 0.11.0 - Released
 
   NEW FEATURES
 
