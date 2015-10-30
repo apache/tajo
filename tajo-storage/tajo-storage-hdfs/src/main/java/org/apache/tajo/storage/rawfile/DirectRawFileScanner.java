@@ -35,7 +35,6 @@ import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.tuple.memory.RowBlock;
 import org.apache.tajo.tuple.memory.UnSafeTuple;
-import org.apache.tajo.tuple.memory.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
@@ -56,7 +55,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private long filePosition;
   private long endOffset;
 
-  private ZeroCopyTuple unSafeTuple = new UnSafeTuple();
+  private UnSafeTuple unSafeTuple = new UnSafeTuple();
   private RowBlock tupleBuffer;
   private RowBlockReader reader;
 
@@ -141,7 +140,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private boolean fetchNeeded = true;
 
   @Override
-  public Tuple next() throws IOException {
+  public UnSafeTuple next() throws IOException {
     if(eos) {
       return null;
     }

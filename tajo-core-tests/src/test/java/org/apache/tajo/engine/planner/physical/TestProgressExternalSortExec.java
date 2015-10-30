@@ -85,8 +85,8 @@ public class TestProgressExternalSortExec {
     schema.addColumn("empid", TajoDataTypes.Type.INT4);
     schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
-    Path employeePath = new Path(testDir, "employee.csv");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW);
+    Path employeePath = new Path(testDir, "employee.raw");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
@@ -203,9 +203,9 @@ public class TestProgressExternalSortExec {
     TableStats tableStats = exec.getInputStats();
     assertNotNull(tableStats);
     assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getNumBytes().longValue());
-    assertEquals(cnt, testDataStats.getNumRows().longValue());
-    assertEquals(cnt, tableStats.getNumRows().longValue());
-    assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getReadBytes().longValue());
+    assertEquals(testDataStats.getNumRows().longValue(), cnt);
+    assertEquals(testDataStats.getNumRows().longValue(), tableStats.getNumRows().longValue());
+    assertTrue(testDataStats.getNumBytes().longValue() <= tableStats.getReadBytes().longValue());
 
     // for rescan test
     preVal = null;
@@ -228,9 +228,10 @@ public class TestProgressExternalSortExec {
     tableStats = exec.getInputStats();
     assertNotNull(tableStats);
     assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getNumBytes().longValue());
-    assertEquals(cnt, testDataStats.getNumRows().longValue());
-    assertEquals(cnt, tableStats.getNumRows().longValue());
-    assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getReadBytes().longValue());
+    assertEquals(testDataStats.getNumRows().longValue(), cnt);
+    assertEquals(testDataStats.getNumRows().longValue(), tableStats.getNumRows().longValue());
+    //'ReadBytes' is actual read bytes
+    assertTrue(testDataStats.getNumBytes().longValue() <= tableStats.getReadBytes().longValue());
 
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);
   }

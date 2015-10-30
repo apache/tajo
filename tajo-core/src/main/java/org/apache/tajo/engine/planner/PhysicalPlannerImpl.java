@@ -904,14 +904,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
       throws IOException {
     // check if an input is sorted in the same order to the subsequence sort operator.
-    // TODO - it works only if input files are raw files. We should check the file format.
-    // Since the default intermediate file format is raw file, it is not problem right now.
     if (checkIfSortEquivalance(ctx, scanNode, node)) {
       if (ctx.getTable(scanNode.getCanonicalName()) == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
       FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
-      return new ExternalSortExec(ctx, (SortNode) node.peek(), fragments);
+      return new ExternalSortExec(ctx, (SortNode) node.peek(), scanNode, fragments);
     } else {
       Enforcer enforcer = ctx.getEnforcer();
 

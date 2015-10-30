@@ -110,8 +110,9 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   public long getFieldAddr(int fieldId) {
     int fieldOffset = getFieldOffset(fieldId);
-    if (fieldOffset == -1) {
-      throw new RuntimeException("Invalid Field Access: " + fieldId);
+    if (fieldOffset < 0 || fieldOffset > length) {
+      throw new RuntimeException("Invalid Access. Field : " + fieldId
+          + ", Offset:" + fieldOffset + ", Record length:" + length);
     }
     return address() + fieldOffset;
   }

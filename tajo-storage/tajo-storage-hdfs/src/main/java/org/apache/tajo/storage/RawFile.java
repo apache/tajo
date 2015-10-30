@@ -397,6 +397,7 @@ public class RawFile {
       buffer.clear();
       forceFillBuffer = true;
       filePosition = fragment.getStartKey();
+      recordCount = 0;
       channel.position(filePosition);
       eos = false;
     }
