@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
@@ -119,7 +120,6 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       int partId;
       long numRows = 0;
       while (!context.isStopped() && (tuple = child.next()) != null) {
-        numRows++;
 
         partId = partitioner.getPartition(tuple);
         MemoryRowBlock rowBlock = partitionMemoryMap.get(partId);
@@ -130,105 +130,46 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         }
 
         RowWriter writer = rowBlock.getWriter();
-        long prevUsedMem = rowBlock.getMemory().writerPosition();
+        long prevUsedMem = rowBlock.usedMem();
         totalBufferCapacity -= rowBlock.capacity();
+
         writer.putTuple(tuple);
+        numRows++;
+
         totalBufferCapacity += rowBlock.capacity(); // calculate resizeable buffer capacity
-        usedBufferSize += (rowBlock.getMemory().writerPosition() - prevUsedMem);
+        usedBufferSize += (rowBlock.usedMem() - prevUsedMem);
 
         if (totalBufferCapacity > maxBufferSize) {
-          LOG.warn(String.format("Too low buffer usage. threshold: %s, total capacity: %s, used: %s",
-              FileUtil.humanReadableByteCount(maxBufferSize, false),
-              FileUtil.humanReadableByteCount(totalBufferCapacity, false),
-              FileUtil.humanReadableByteCount(usedBufferSize, false)));
-
-          List<Future<MemoryRowBlock>> resultList = Lists.newArrayList();
-          for (Map.Entry<Integer, MemoryRowBlock> entry : partitionMemoryMap.entrySet()) {
-            int appendPartId = entry.getKey();
-
-            MemoryRowBlock memoryRowBlock = entry.getValue();
-            if(memoryRowBlock.getMemory().isReadable()) {
-              //flush and release buffer
-              resultList.add(hashShuffleAppenderManager.
-                  writePartitions(meta, outSchema,  context.getTaskId(), appendPartId, memoryRowBlock, true));
-            } else {
-              // release the unused buffer
-              memoryRowBlock.release();
-            }
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format("Too low buffer usage. threshold: %s, total capacity: %s, used: %s",
+                FileUtil.humanReadableByteCount(maxBufferSize, false),
+                FileUtil.humanReadableByteCount(totalBufferCapacity, false),
+                FileUtil.humanReadableByteCount(usedBufferSize, false)));
           }
 
-          // wait for flush to storage
-          for (Future<MemoryRowBlock> future : resultList) {
-            future.get();
-          }
-
+          //flush and release buffer
+          flushBuffer(partitionMemoryMap, true);
           writtenBytes += usedBufferSize;
           totalBufferCapacity = usedBufferSize = 0;
-          partitionMemoryMap.clear();
 
         } else if (usedBufferSize > bufferThreshold) {
-          ArrayList<Integer> releaseList = Lists.newArrayList();
-          List<Future<MemoryRowBlock>> resultList = Lists.newArrayList();
-          for (Map.Entry<Integer, MemoryRowBlock> entry : partitionMemoryMap.entrySet()) {
-
-            int appendPartId = entry.getKey();
-            MemoryRowBlock memoryRowBlock = entry.getValue();
-            if(memoryRowBlock.getMemory().isReadable()) {
-
-              //flush and reuse buffer
-              resultList.add(hashShuffleAppenderManager.
-                  writePartitions(meta, outSchema,  context.getTaskId(), appendPartId, memoryRowBlock, false));
-            } else {
-              releaseList.add(appendPartId);
-            }
-          }
-
-          // wait for flush to storage
-          for (Future<MemoryRowBlock> future : resultList) {
-            future.get();
-          }
-
+          //flush and reuse buffer
+          flushBuffer(partitionMemoryMap, false);
           writtenBytes += usedBufferSize;
           usedBufferSize = 0;
-
-          // release the unused partition
-          for (Integer id : releaseList) {
-            MemoryRowBlock memoryRowBlock = partitionMemoryMap.remove(id);
-            LOG.warn("release unused buffer" + memoryRowBlock.capacity());
-            memoryRowBlock.release();
-          }
         }
       }
 
-      // write the remaining partition buffers
-      List<Future<MemoryRowBlock>> resultList = Lists.newArrayList();
-      for (Map.Entry<Integer, MemoryRowBlock> entry : partitionMemoryMap.entrySet()) {
-
-        int appendPartId = entry.getKey();
-        MemoryRowBlock memoryRowBlock = entry.getValue();
-        if(memoryRowBlock.getMemory().isReadable()) {
-          //flush and release buffer
-          resultList.add(hashShuffleAppenderManager.
-              writePartitions(meta, outSchema, context.getTaskId(), appendPartId, memoryRowBlock, true));
-        } else {
-          // release the unused buffer
-          memoryRowBlock.release();
-        }
-      }
-
-      // wait for flush to storage
-      for (Future<MemoryRowBlock> future : resultList) {
-        future.get();
-      }
+      // flush remaining buffers
+      flushBuffer(partitionMemoryMap, true);
 
       writtenBytes += usedBufferSize;
-      TableStats aggregated = (TableStats)child.getInputStats().clone();
+      usedBufferSize = totalBufferCapacity = 0;
+      TableStats aggregated = (TableStats) child.getInputStats().clone();
       aggregated.setNumBytes(writtenBytes);
       aggregated.setNumRows(numRows);
       context.setResultStats(aggregated);
 
-      usedBufferSize = totalBufferCapacity = 0;
-      partitionMemoryMap.clear();
       return null;
     } catch (RuntimeException e) {
       LOG.error(e.getMessage(), e);
@@ -236,6 +177,47 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
+    }
+  }
+
+  /**
+   * flush all buffer to local storage
+   */
+  private void flushBuffer(Map<Integer, MemoryRowBlock> partitionMemoryMap, boolean releaseBuffer)
+      throws IOException, ExecutionException, InterruptedException {
+    List<Future<MemoryRowBlock>> resultList = Lists.newArrayList();
+    ArrayList<Integer> unusedBuffer = Lists.newArrayList();
+
+    for (Map.Entry<Integer, MemoryRowBlock> entry : partitionMemoryMap.entrySet()) {
+      int appendPartId = entry.getKey();
+
+      MemoryRowBlock memoryRowBlock = entry.getValue();
+      if (memoryRowBlock.getMemory().isReadable()) {
+        //flush and release buffer
+        resultList.add(hashShuffleAppenderManager.
+            writePartitions(meta, outSchema, context.getTaskId(), appendPartId, memoryRowBlock, releaseBuffer));
+      } else {
+        if (releaseBuffer) {
+          memoryRowBlock.release();
+        } else {
+          unusedBuffer.add(appendPartId);
+        }
+      }
+    }
+
+    // wait for flush to storage
+    for (Future<MemoryRowBlock> future : resultList) {
+      future.get();
+    }
+
+    if (releaseBuffer) {
+      partitionMemoryMap.clear();
+    } else {
+      // release the unused partition
+      for (Integer id : unusedBuffer) {
+        MemoryRowBlock memoryRowBlock = partitionMemoryMap.remove(id);
+        memoryRowBlock.release();
+      }
     }
   }
 
