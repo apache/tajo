@@ -6,6 +6,11 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1911: Change guava's Optional to Java's Optional. (hyunsik)
+
+    TAJO-1850: Using TUtil.newHash(Set/Map) should be replaced by Java's 
+    diamond operator. (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
     TAJO-1883: Keep tajo-client and its dependent modules to be 1.7 target.
     (hyunsik)
 
@@ -19,6 +24,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1643: SQLParse can't parse parentheses table clause. (hyunsik)
+
     TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
     
     TAJO-1913: Timezone does not affect the constant folding. (hyunsik)
@@ -29,6 +36,9 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-1934: Test failures in TestPgSQLQueryTests due to sort order. 
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
 
     TAJO-1916: 'How to contribute' link is broken. (jihoon)
 
@@ -45,6 +55,14 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-1877: Adopt try-resource statement to AbstractDBStore. 
+    (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
+    TAJO-1653: Add 'INSERT INTO VALUES' statement for OLTP-like storages.
+    (hyunsik)
+
+    TAJO-1936: NPE when calling the query result REST api(DaeMyung Kang)
 
     TAJO-1909: Eliminate remained explicit diamond expressions.
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)

@@ -67,7 +67,7 @@ public class LogicalPlan {
   private Map<String, QueryBlock> queryBlocks = new LinkedHashMap<>();
   private Map<Integer, LogicalNode> nodeMap = new HashMap<>();
   private Map<Integer, QueryBlock> queryBlockByPID = new HashMap<>();
-  private Map<String, String> exprToBlockNameMap = TUtil.newHashMap();
+  private Map<String, String> exprToBlockNameMap = new HashMap<>();
   private SimpleDirectedGraph<String, BlockEdge> queryBlockGraph = new SimpleDirectedGraph<>();
 
   /** planning and optimization log */
@@ -427,12 +427,12 @@ public class LogicalPlan {
     private NodeType rootType;
 
     // transient states
-    private final Map<String, RelationNode> canonicalNameToRelationMap = TUtil.newHashMap();
-    private final Map<String, List<String>> relationAliasMap = TUtil.newHashMap();
-    private final Map<String, String> columnAliasMap = TUtil.newHashMap();
-    private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
+    private final Map<String, RelationNode> canonicalNameToRelationMap = new HashMap<>();
+    private final Map<String, List<String>> relationAliasMap = new HashMap<>();
+    private final Map<String, String> columnAliasMap = new HashMap<>();
+    private final Map<OpType, List<Expr>> operatorToExprMap = new HashMap<>();
     private final List<RelationNode> relationList = TUtil.newList();
-    private final Map<Integer, List<AccessPathInfo>> relNodePidAccessPathMap = TUtil.newHashMap();
+    private final Map<Integer, List<AccessPathInfo>> relNodePidAccessPathMap = new HashMap<>();
     private boolean hasWindowFunction = false;
     private final Map<String, ConstEval> constantPoolByRef = Maps.newHashMap();
     private final Map<Expr, String> constantPool = Maps.newHashMap();
@@ -440,13 +440,13 @@ public class LogicalPlan {
     /**
      * It's a map between nodetype and node. node types can be duplicated. So, latest node type is only kept.
      */
-    private final Map<NodeType, LogicalNode> nodeTypeToNodeMap = TUtil.newHashMap();
-    private final Map<String, LogicalNode> exprToNodeMap = TUtil.newHashMap();
+    private final Map<NodeType, LogicalNode> nodeTypeToNodeMap = new HashMap<>();
+    private final Map<String, LogicalNode> exprToNodeMap = new HashMap<>();
     final NamedExprsManager namedExprsMgr;
 
     private LogicalNode currentNode;
     private LogicalNode latestNode;
-    private final Set<JoinType> includedJoinTypes = TUtil.newHashSet();
+    private final Set<JoinType> includedJoinTypes = new HashSet<>();
     /**
      * Set true value if this query block has either implicit or explicit aggregation.
      */

@@ -35,10 +35,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Column name resolution utility. A SQL statement can include many kinds of column names,
@@ -129,7 +126,7 @@ public abstract class NameResolver {
    */
   public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName) {
 
-    Set<RelationNode> found = TUtil.newHashSet();
+    Set<RelationNode> found = new HashSet<>();
 
     for (RelationNode rel : block.getRelations()) {
       if (rel.getLogicalSchema().contains(columnName)) {
@@ -373,7 +370,7 @@ public abstract class NameResolver {
     // - tbname.column_name.nested_field...
     // - column.nested_fieldX...
 
-    Set<RelationNode> guessedRelations = TUtil.newHashSet();
+    Set<RelationNode> guessedRelations = new HashSet<>();
 
     // this position indicates the index of column name in qualifierParts;
     // It must be 0 or more because a qualified column is always passed to lookupQualifierAndCanonicalName().

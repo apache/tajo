@@ -122,28 +122,6 @@ public class TUtil {
     return result;
   }
 
-  public static <T> Set<T> newHashSet() {
-    return new HashSet<>();
-  }
-
-  public static <T> Set<T> newHashSet(T ...items) {
-    return new HashSet<>(Arrays.asList(items));
-  }
-
-  public static <K,V> Map<K,V> newHashMap() {
-    return new HashMap<>();
-  }
-
-  public static <K,V> Map<K,V> newHashMap(Map<K,V> map) {
-    return new HashMap<>(map);
-  }
-
-  public static <K, V> Map<K,V> newHashMap(K k, V v) {
-    HashMap<K, V> newMap = new HashMap<>();
-    newMap.put(k, v);
-    return newMap;
-  }
-
   public static <K,V> Map<K,V> newLinkedHashMap() {
     return new LinkedHashMap<>();
   }

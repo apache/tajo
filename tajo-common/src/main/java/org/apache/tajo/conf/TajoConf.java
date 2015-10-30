@@ -32,7 +32,6 @@ import org.apache.tajo.service.BaseServiceTracker;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.NumberUtil;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.validation.ConstraintViolationException;
 import org.apache.tajo.validation.Validator;
@@ -41,6 +40,7 @@ import org.apache.tajo.validation.Validators;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +49,7 @@ public class TajoConf extends Configuration {
   private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
   
-  private static final Map<String, ConfVars> vars = TUtil.newHashMap();
+  private static final Map<String, ConfVars> vars = new HashMap<>();
 
   static {
     Configuration.addDefaultResource("catalog-default.xml");

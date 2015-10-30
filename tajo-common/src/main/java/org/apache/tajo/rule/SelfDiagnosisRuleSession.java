@@ -18,12 +18,8 @@
 
 package org.apache.tajo.rule;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
@@ -37,8 +33,8 @@ public class SelfDiagnosisRuleSession {
 
   protected SelfDiagnosisRuleSession(SelfDiagnosisRuleEngine engine) {
     ruleEngine = engine;
-    categoryPredicate = TUtil.newHashSet();
-    rulePredicate = TUtil.newHashSet();
+    categoryPredicate = new HashSet<>();
+    rulePredicate = new HashSet<>();
   }
   
   public SelfDiagnosisRuleSession withCategoryNames(String...categories) {

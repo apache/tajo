@@ -26,8 +26,9 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 public class InEval extends BinaryEval {
@@ -61,7 +62,7 @@ public class InEval extends BinaryEval {
       throw new IllegalStateException("bind() must be called before eval()");
     }
     if (values == null) {
-      values = TUtil.newHashSet(((ValueSetEval) rightExpr).getValues());
+      values = new HashSet<>(Arrays.asList(((ValueSetEval) rightExpr).getValues()));
     }
 
     Datum leftValue = leftExpr.eval(tuple);
