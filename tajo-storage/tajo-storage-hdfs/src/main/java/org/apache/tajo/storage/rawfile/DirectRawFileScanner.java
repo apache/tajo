@@ -125,7 +125,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public void seek(long offset) throws IOException {
     channel.seek(offset);
     filePosition = channel.position();
-    tupleBuffer.getMemory().clear();
+    tupleBuffer.clear();
     fetchNeeded = true;
   }
 
@@ -171,7 +171,6 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     recordCount = 0;
     seek(filePosition);
     eos = false;
-    reader.reset();
   }
 
   @Override
