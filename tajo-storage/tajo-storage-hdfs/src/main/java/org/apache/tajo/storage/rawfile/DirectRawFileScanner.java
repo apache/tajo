@@ -67,13 +67,15 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public void init() throws IOException {
     initChannel();
 
-    tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema),
-        conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE), true);
+    if (tupleBuffer == null) {
+      tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema),
+          conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE), true);
+    } else {
+      tupleBuffer.clear();
+    }
 
-    reader = tupleBuffer.getReader();
-
-    fetchNeeded = !next(tupleBuffer);
-
+    fetchNeeded = true;
+    eos = false;
     super.init();
   }
 
@@ -130,7 +132,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   }
 
   public boolean next(RowBlock rowblock) throws IOException {
-    long reamin = reader.remainForRead();
+    long reamin = reader == null ? 0 : reader.remainForRead();
     boolean ret = rowblock.copyFromChannel(channel);
     reader = rowblock.getReader();
     filePosition += rowblock.getMemory().writerPosition() - reamin;
