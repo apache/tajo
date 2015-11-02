@@ -21,15 +21,16 @@
  */
 package org.apache.tajo.plan.logical;
 
-import java.util.Arrays;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class EvalExprNode extends LogicalNode implements Projectable {
   @Expose private Target[] exprs;
@@ -54,14 +55,18 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   }
 
   @Override
-  public void setTargets(Target[] targets) {
-    this.exprs = targets;
+  public void setTargets(List<Target> targets) {
+    this.exprs = targets.toArray(new Target[]{});
     this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target[] getTargets() {
-    return exprs;
+  public List<Target> getTargets() {
+    List<Target> targetList = new ArrayList<>();
+    for(int i=0; i<exprs.length; i++) {
+      targetList.add(exprs[i]);
+    }
+    return targetList;
   }
 
   public Target[] getExprs() {

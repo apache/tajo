@@ -23,13 +23,16 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ScanNode extends RelationNode implements Projectable, SelectableNode, Cloneable {
 	@Expose protected TableDesc tableDesc;
@@ -142,14 +145,18 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	}
 
   @Override
-	public void setTargets(Target [] targets) {
-	  this.targets = targets;
+	public void setTargets(List<Target> targets) {
+	  this.targets = targets.toArray(new Target[]{});
     setOutSchema(PlannerUtil.targetToSchema(targets));
 	}
 
   @Override
-	public Target [] getTargets() {
-	  return this.targets;
+	public List<Target> getTargets() {
+      List<Target> targetList = new ArrayList<>();
+      for(int i=0; i<this.targets.length; i++) {
+        targetList.add(this.targets[i]);
+      }
+	  return targetList;
 	}
 
   /**

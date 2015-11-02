@@ -1298,7 +1298,7 @@ public class GlobalPlanner {
         }
         if (leftMostSubQueryNode != null) {
           // replace target column name
-          Target[] targets = leftMostSubQueryNode.getTargets();
+          Target[] targets = leftMostSubQueryNode.getTargets().toArray(new Target[]{});
           int[] targetMappings = new int[targets.length];
           for (int i = 0; i < targets.length; i++) {
             if (targets[i].getEvalTree().getType() != EvalType.FIELD) {
@@ -1322,7 +1322,7 @@ public class GlobalPlanner {
             if (eachNode.getPID() == leftMostSubQueryNode.getPID()) {
               continue;
             }
-            Target[] eachNodeTargets = eachNode.getTargets();
+            Target[] eachNodeTargets = eachNode.getTargets().toArray(new Target[]{});
             if (eachNodeTargets.length != targetMappings.length) {
               throw new TajoInternalError("Union query can't have different number of target columns.");
             }

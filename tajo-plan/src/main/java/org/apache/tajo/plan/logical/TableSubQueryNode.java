@@ -21,10 +21,13 @@ package org.apache.tajo.plan.logical;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.util.PlannerUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private String tableName;
@@ -108,14 +111,18 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   }
 
   @Override
-  public void setTargets(Target[] targets) {
-    this.targets = targets;
+  public void setTargets(List<Target> targets) {
+    this.targets = targets.toArray(new Target[]{});
     setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target[] getTargets() {
-    return targets;
+  public List<Target> getTargets() {
+    List<Target> targetList = new ArrayList<>();
+    for(int i=0; i<targets.length; i++) {
+      targetList.add(targets[i]);
+    }
+    return targetList;
   }
 
   @Override

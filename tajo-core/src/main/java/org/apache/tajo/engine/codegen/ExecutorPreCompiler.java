@@ -93,7 +93,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   private static void compileProjectableNode(CompilationContext context, Schema schema, Projectable node) {
     Target[] targets;
     if (node.hasTargets()) {
-      targets = node.getTargets();
+      targets = node.getTargets().toArray(new Target[]{});
     } else {
       targets = PlannerUtil.schemaToTargets(node.getOutSchema());
     }
@@ -189,7 +189,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
     stack.pop();
 
     if (node.hasTargets()) {
-      for (Target target : node.getTargets()) {
+      for (Target target : node.getTargets().toArray(new Target[]{})) {
         compileIfAbsent(context, node.getLogicalSchema(), target.getEvalTree());
       }
     }
