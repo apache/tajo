@@ -252,6 +252,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       }
       return resultSetBuilder.build();
     } catch (Throwable t) {
+      close();
       throw new TajoInternalError(t.getCause());
     }
   }

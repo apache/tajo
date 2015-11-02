@@ -24,6 +24,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1954: Fix memory leak in physical operator. (jinho)
+
     TAJO-1643: SQLParse can't parse parentheses table clause. (hyunsik)
 
     TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
