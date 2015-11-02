@@ -102,7 +102,8 @@ public class PartitionedTableScanNode extends ScanNode {
 	  }
 	  
 	  if (hasTargets()) {
-	    unionScan.targets = new ArrayList<>(targets);
+	    unionScan.targets = new ArrayList<>();
+        unionScan.targets.addAll(targets);
 	  }
 
     unionScan.inputPaths = inputPaths;

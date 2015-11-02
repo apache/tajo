@@ -227,7 +227,8 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     }
 
     if (hasTargets()) {
-      scanNode.targets = new ArrayList<>(targets);
+      scanNode.targets = new ArrayList<>();
+      scanNode.targets.addAll(targets);
     }
 
     if (hasAlias()) {

@@ -124,7 +124,9 @@ public class LogicalOptimizer {
       if (targets.size() == 0) {
         newJoinNode.setTargets(PlannerUtil.schemaToTargets(old.getOutSchema()));
       } else {
-        newJoinNode.setTargets(new ArrayList<>(targets));
+        List<Target> input = new ArrayList<>();
+        input.addAll(targets);
+        newJoinNode.setTargets(input);
       }
       PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
       // End of replacement logic

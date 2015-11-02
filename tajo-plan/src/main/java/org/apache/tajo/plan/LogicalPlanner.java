@@ -1198,7 +1198,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
-    joinNode.setTargets(new ArrayList<>(targets));
+    joinNode.setTargets(targets);
 
     // Determine join conditions
     if (join.isNatural()) { // if natural join, it should have the equi-join conditions by common column names
@@ -1305,7 +1305,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
-    join.setTargets(new ArrayList<>(targets));
+    join.setTargets(targets);
     return join;
   }
 
@@ -1366,7 +1366,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       targets.add(new Target(evalNode, reference));
     }
 
-    scanNode.setTargets(new ArrayList<>(targets));
+    List<Target> input = new ArrayList<>();
+    input.addAll(targets);
+    scanNode.setTargets(input);
 
     verifyProjectedFields(block, scanNode);
     return scanNode;
@@ -1463,7 +1465,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
 
-    subQueryNode.setTargets(new ArrayList<>(targets));
+    List<Target> input = new ArrayList<>();
+    input.addAll(targets);
+    subQueryNode.setTargets(input);
   }
 
     /*===============================================================================================
@@ -1765,7 +1769,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           targets.add(new Target(new ConstEval(NullDatum.get()), column.getSimpleName()));
         }
       }
-      projectionNode.setTargets(new ArrayList<>(targets));
+      projectionNode.setTargets(targets);
 
       insertNode.setInSchema(projectionNode.getOutSchema());
       insertNode.setOutSchema(projectionNode.getOutSchema());

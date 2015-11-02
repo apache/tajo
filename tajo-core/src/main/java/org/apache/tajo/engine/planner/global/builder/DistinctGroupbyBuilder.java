@@ -720,8 +720,8 @@ public class DistinctGroupbyBuilder {
           .addAllSortSpecs(sortSpecs).build());
     }
     thirdStageBlock.getEnforcer().enforceDistinctAggregation(thirdStageDistinctNode.getPID(),
-            true, MultipleAggregationStage.THRID_STAGE,
-            DistinctAggregationAlgorithm.SORT_AGGREGATION, sortSpecArrays);
+        true, MultipleAggregationStage.THRID_STAGE,
+        DistinctAggregationAlgorithm.SORT_AGGREGATION, sortSpecArrays);
   }
 
   private ExecutionBlock buildDistinctGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
