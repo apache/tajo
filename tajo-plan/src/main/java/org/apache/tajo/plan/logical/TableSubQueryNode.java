@@ -26,10 +26,13 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.Target;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private String tableName;
   @Expose private LogicalNode subQuery;
-  @Expose private Target [] targets; // unused
+  @Expose private List<Target> targets; // unused
 
   public TableSubQueryNode(int pid) {
     super(pid, NodeType.TABLE_SUBQUERY);
@@ -108,13 +111,13 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   }
 
   @Override
-  public void setTargets(Target[] targets) {
+  public void setTargets(List<Target> targets) {
     this.targets = targets;
     setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target[] getTargets() {
+  public List<Target> getTargets() {
     return targets;
   }
 
@@ -125,9 +128,9 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
 
     if (hasTargets()) {
       StringBuilder sb = new StringBuilder("Targets: ");
-      for (int i = 0; i < targets.length; i++) {
-        sb.append(targets[i]);
-        if( i < targets.length - 1) {
+      for (int i = 0; i < targets.size(); i++) {
+        sb.append(targets.get(i));
+        if( i < targets.size() - 1) {
           sb.append(", ");
         }
       }
@@ -164,10 +167,8 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     newTableSubQueryNode.tableName = tableName;
     newTableSubQueryNode.subQuery = (LogicalNode) subQuery.clone();
     if (hasTargets()) {
-      newTableSubQueryNode.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        newTableSubQueryNode.targets[i] = (Target) targets[i].clone();
-      }
+      newTableSubQueryNode.targets = new ArrayList<>();
+      newTableSubQueryNode.targets.addAll(targets);
     }
     return newTableSubQueryNode;
   }

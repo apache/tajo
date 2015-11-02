@@ -135,7 +135,7 @@ public class TestEvalTreeUtil {
     util.shutdownCatalogCluster();
   }
 
-  public static Target [] getRawTargets(String query) {
+  public static List<Target> getRawTargets(String query) {
     LogicalPlan plan = null;
     try {
       Expr expr = analyzer.parse(query);
@@ -212,7 +212,7 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testGetSchemaFromTargets() {
-    Target [] targets = getRawTargets(QUERIES[0]);
+    List<Target> targets = getRawTargets(QUERIES[0]);
     Schema schema = EvalTreeUtil.getSchemaByTargets(null, targets);
     Column col1 = schema.getColumn(0);
     Column col2 = schema.getColumn(1);
@@ -226,17 +226,17 @@ public class TestEvalTreeUtil {
   public final void testGetContainExprs() throws CloneNotSupportedException, TajoException {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalPlan plan = planner.createPlan(defaultContext, expr, true);
-    Target [] targets = plan.getRootBlock().getRawTargets();
+    List<Target> targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
-        EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
+        EvalTreeUtil.getContainExpr(targets.get(0).getEvalTree(), col1);
     BinaryEval node = (BinaryEval) exprs.iterator().next();
     assertEquals(EvalType.LTH, node.getType());
     assertEquals(EvalType.PLUS, node.getLeftExpr().getType());
     assertEquals(new ConstEval(DatumFactory.createInt4(4)), node.getRightExpr());
 
     Column col2 = new Column("default.people.age", TajoDataTypes.Type.INT4);
-    exprs = EvalTreeUtil.getContainExpr(targets[1].getEvalTree(), col2);
+    exprs = EvalTreeUtil.getContainExpr(targets.get(1).getEvalTree(), col2);
     node = (BinaryEval) exprs.iterator().next();
     assertEquals(EvalType.GTH, node.getType());
     assertEquals("default.people.age", node.getLeftExpr().getName());
@@ -294,11 +294,11 @@ public class TestEvalTreeUtil {
   
   @Test
   public final void testSimplify() throws TajoException {
-    Target [] targets = getRawTargets(QUERIES[0]);
-    EvalNode node = AlgebraicUtil.eliminateConstantExprs(targets[0].getEvalTree());
+    List<Target> targets = getRawTargets(QUERIES[0]);
+    EvalNode node = AlgebraicUtil.eliminateConstantExprs(targets.get(0).getEvalTree());
     assertEquals(EvalType.CONST, node.getType());
     assertEquals(7, node.bind(null, null).eval(null).asInt4());
-    node = AlgebraicUtil.eliminateConstantExprs(targets[1].getEvalTree());
+    node = AlgebraicUtil.eliminateConstantExprs(targets.get(1).getEvalTree());
     assertEquals(EvalType.CONST, node.getType());
     assertTrue(7.0d == node.bind(null, null).eval(null).asFloat8());
 
@@ -307,7 +307,7 @@ public class TestEvalTreeUtil {
     targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
-        EvalTreeUtil.getContainExpr(targets[0].getEvalTree(), col1);
+        EvalTreeUtil.getContainExpr(targets.get(0).getEvalTree(), col1);
     node = exprs.iterator().next();
   }
   

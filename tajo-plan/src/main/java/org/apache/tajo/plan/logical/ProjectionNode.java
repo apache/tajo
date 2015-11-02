@@ -18,15 +18,16 @@
 
 package org.apache.tajo.plan.logical;
 
-import java.util.Arrays;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class ProjectionNode extends UnaryNode implements Projectable {
 
@@ -34,13 +35,13 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   /**
    * the targets are always filled even if the query is 'select *'
    */
-  @Expose	private Target [] targets;
+  @Expose	private List<Target> targets;
 
 	public ProjectionNode(int pid) {
 		super(pid, NodeType.PROJECTION);
 	}
 
-  public void init(boolean distinct, Target [] targets) {
+  public void init(boolean distinct, List<Target> targets) {
     this.distinct = distinct;
     this.targets = targets;
   }
@@ -54,34 +55,34 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   }
 
   @Override
-  public void setTargets(Target[] targets) {
+  public void setTargets(List<Target> targets) {
     this.targets = targets;
     this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target [] getTargets() {
+  public List<Target> getTargets() {
     return this.targets;
   }
 	
-	public void setChild(LogicalNode subNode) {
-	  super.setChild(subNode);
-	}
-	
-	public String toString() {
-	  StringBuilder sb = new StringBuilder("Projection (distinct=").append(distinct);
+  public void setChild(LogicalNode subNode) {
+    super.setChild(subNode);
+  }
+
+  public String toString() {
+    StringBuilder sb = new StringBuilder("Projection (distinct=").append(distinct);
     if (targets != null) {
-      sb.append(", exprs=").append(StringUtils.join(targets)).append(")");
+      sb.append(", exprs=").append(StringUtils.join(targets.toArray())).append(")");
     }
-	  return sb.toString();
-	}
+    return sb.toString();
+  }
 	
-	@Override
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
     result = prime * result + (distinct ? 1231 : 1237);
-    result = prime * result + Arrays.hashCode(targets);
+    result = prime * result + Objects.hashCode(targets);
     return result;
   }
 
@@ -98,13 +99,14 @@ public class ProjectionNode extends UnaryNode implements Projectable {
     }
   }
 
-	@Override
+  @Override
   public Object clone() throws CloneNotSupportedException {
-	  ProjectionNode projNode = (ProjectionNode) super.clone();
-	  projNode.targets = targets.clone();
-	  
-	  return projNode;
-	}
+    ProjectionNode projNode = (ProjectionNode) super.clone();
+    projNode.targets = new ArrayList<>();
+    projNode.targets.addAll(targets);
+
+    return projNode;
+  }
 
   @Override
   public PlanString getPlanString() {
@@ -117,9 +119,9 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 
     StringBuilder sb = new StringBuilder("Targets: ");
     if (targets != null) {
-      for (int i = 0; i < targets.length; i++) {
-        sb.append(targets[i]);
-        if (i < targets.length - 1) {
+      for (int i = 0; i < targets.size(); i++) {
+        sb.append(targets.get(i));
+        if (i < targets.size() - 1) {
           sb.append(", ");
         }
       }

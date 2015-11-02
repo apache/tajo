@@ -29,9 +29,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Tajo's logical planner can generate different shapes of logical plans for the same query,
@@ -169,8 +167,8 @@ public class ExplainPlanPreprocessorForTest {
       return AlgebraicUtil.createSingletonExprFromCNF(cnf);
     }
 
-    private Target[] sortTargets(Target[] targets) {
-      Arrays.sort(targets, targetComparator);
+    private List<Target> sortTargets(List<Target> targets) {
+      Collections.sort(targets, targetComparator);
       return targets;
     }
   }

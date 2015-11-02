@@ -27,6 +27,8 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
+
 public class PartitionedTableScanNode extends ScanNode {
   @Expose Path [] inputPaths;
 
@@ -100,10 +102,8 @@ public class PartitionedTableScanNode extends ScanNode {
 	  }
 	  
 	  if (hasTargets()) {
-	    unionScan.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        unionScan.targets[i] = (Target) targets[i].clone();
-      }
+	    unionScan.targets = new ArrayList<>();
+        unionScan.targets.addAll(targets);
 	  }
 
     unionScan.inputPaths = inputPaths;

@@ -319,16 +319,16 @@ public class QueryExecutor {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     EvalContext evalContext = new EvalContext();
-    Target[] targets = plan.getRootBlock().getRawTargets();
+    List<Target> targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new TajoInternalError("no targets");
     }
     try {
       // start script executor
       startScriptExecutors(queryContext, evalContext, targets);
-      final VTuple outTuple = new VTuple(targets.length);
-      for (int i = 0; i < targets.length; i++) {
-        EvalNode eval = targets[i].getEvalTree();
+      final VTuple outTuple = new VTuple(targets.size());
+      for (int i = 0; i < targets.size(); i++) {
+        EvalNode eval = targets.get(i).getEvalTree();
         eval.bind(evalContext, null);
         outTuple.put(i, eval.eval(null));
       }
@@ -371,10 +371,10 @@ public class QueryExecutor {
     }
   }
 
-  public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
+  public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, List<Target> targets)
       throws IOException {
-    for (int i = 0; i < targets.length; i++) {
-      EvalNode eval = targets[i].getEvalTree();
+    for (int i = 0; i < targets.size(); i++) {
+      EvalNode eval = targets.get(i).getEvalTree();
       if (eval instanceof GeneralFunctionEval) {
         GeneralFunctionEval functionEval = (GeneralFunctionEval) eval;
         if (functionEval.getFuncDesc().getInvocation().hasPython()) {

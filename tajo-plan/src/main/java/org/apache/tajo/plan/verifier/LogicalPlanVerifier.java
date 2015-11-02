@@ -65,7 +65,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
     Schema outputSchema = node.getOutSchema();
     Schema targetSchema = PlannerUtil.targetToSchema(node.getTargets());
 
-    if (outputSchema.size() != node.getTargets().length) {
+    if (outputSchema.size() != node.getTargets().size()) {
       throw new TajoInternalError(String.format("Output schema and Target's schema are mismatched at Node (%d)",
           + node.getPID()));
     }
