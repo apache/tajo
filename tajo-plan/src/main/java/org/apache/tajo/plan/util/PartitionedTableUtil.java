@@ -37,7 +37,6 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
