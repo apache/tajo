@@ -191,8 +191,8 @@ public class PartitionedTableUtil {
       scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
     }
 
-    LOG.info("### Filtered directory or files: " + filteredPartitionInfo.getPartitionPaths().length +
-      ", totalVolume:" + filteredPartitionInfo.getTotalVolume());
+    LOG.info("Total filtered input paths:" + filteredPartitionInfo.getPartitionPaths().length +
+      ", total filtered input volume:" + filteredPartitionInfo.getTotalVolume());
 
     return filteredPartitionInfo;
   }
