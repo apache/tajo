@@ -172,6 +172,11 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertEquals(1, filteredPaths.length);
     assertEquals("key=part456", filteredPaths[0].getName());
 
+
+    String[] partitionNames = filteredPartitionInfo.getPartitionNames();
+    assertEquals(1, partitionNames.length);
+    assertEquals("key=part456", partitionNames[0]);
+
     assertEquals(10L, filteredPartitionInfo.getTotalVolume());
   }
 
@@ -203,6 +208,12 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertEquals("key=part456", filteredPaths[1].getName());
     assertEquals("key=part789", filteredPaths[2].getName());
 
+    String[] partitionNames = filteredPartitionInfo.getPartitionNames();
+    assertEquals(3, partitionNames.length);
+    assertEquals("key=part123", partitionNames[0]);
+    assertEquals("key=part456", partitionNames[1]);
+    assertEquals("key=part789", partitionNames[2]);
+
     assertEquals(33L, filteredPartitionInfo.getTotalVolume());
   }
 
@@ -231,6 +242,7 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertNotNull(filteredPartitionInfo);
 
     assertEquals(0, filteredPartitionInfo.getPartitionPaths().length);
+    assertNull(filteredPartitionInfo.getPartitionNames());
 
     assertEquals(0L, filteredPartitionInfo.getTotalVolume());
   }
@@ -266,6 +278,12 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertEquals("key=part456", filteredPaths[1].getName());
     assertEquals("key=part789", filteredPaths[2].getName());
 
+    String[] partitionNames = filteredPartitionInfo.getPartitionNames();
+    assertEquals(3, partitionNames.length);
+    assertEquals("key=part123", partitionNames[0]);
+    assertEquals("key=part456", partitionNames[1]);
+    assertEquals("key=part789", partitionNames[2]);
+
     assertEquals(33L, filteredPartitionInfo.getTotalVolume());
   }
 
@@ -299,6 +317,10 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertEquals("key3=3", filteredPaths[0].getName());
     assertEquals("key2=supp789", filteredPaths[0].getParent().getName());
     assertEquals("key1=part789", filteredPaths[0].getParent().getParent().getName());
+
+    String[] partitionNames = filteredPartitionInfo.getPartitionNames();
+    assertEquals(1, partitionNames.length);
+    assertEquals("key1=part789/key2=supp789/key3=3", partitionNames[0]);
 
     assertEquals(10L, filteredPartitionInfo.getTotalVolume());
   }
@@ -342,6 +364,11 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertEquals("key2=supp123", filteredPaths[1].getParent().getName());
     assertEquals("key1=part123", filteredPaths[1].getParent().getParent().getName());
 
+    String[] partitionNames = filteredPartitionInfo.getPartitionNames();
+    assertEquals(2, partitionNames.length);
+    assertEquals("key1=part123/key2=supp123/key3=1", partitionNames[0]);
+    assertEquals("key1=part123/key2=supp123/key3=2", partitionNames[1]);
+
     assertEquals(23L, filteredPartitionInfo.getTotalVolume());
   }
 
@@ -383,6 +410,11 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertEquals("key3=2", filteredPaths[1].getName());
     assertEquals("key2=supp123", filteredPaths[1].getParent().getName());
     assertEquals("key1=part123", filteredPaths[1].getParent().getParent().getName());
+
+    String[] partitionNames = filteredPartitionInfo.getPartitionNames();
+    assertEquals(2, partitionNames.length);
+    assertEquals("key1=part123/key2=supp123/key3=1", partitionNames[0]);
+    assertEquals("key1=part123/key2=supp123/key3=2", partitionNames[1]);
 
     assertEquals(23L, filteredPartitionInfo.getTotalVolume());
   }
@@ -430,6 +462,12 @@ public class TestPartitionedTableUtil extends QueryTestCaseBase {
     assertEquals("key=17.0", filteredPaths[0].getName());
     assertEquals("key=36.0", filteredPaths[1].getName());
     assertEquals("key=38.0", filteredPaths[2].getName());
+
+    String[] partitionNames = filteredPartitionInfo.getPartitionNames();
+    assertEquals(3, partitionNames.length);
+    assertEquals("key=17.0", partitionNames[0]);
+    assertEquals("key=36.0", partitionNames[1]);
+    assertEquals("key=38.0", partitionNames[2]);
 
     assertEquals(12L, filteredPartitionInfo.getTotalVolume());
 

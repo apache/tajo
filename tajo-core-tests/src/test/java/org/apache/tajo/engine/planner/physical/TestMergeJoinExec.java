@@ -174,7 +174,7 @@ public class TestMergeJoinExec {
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, root);
     ProjectionExec proj = (ProjectionExec) exec;
     assertTrue(proj.getChild() instanceof MergeJoinExec);

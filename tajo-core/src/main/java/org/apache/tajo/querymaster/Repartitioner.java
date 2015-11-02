@@ -30,6 +30,7 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
@@ -40,13 +41,13 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanRewriteUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
+import org.apache.tajo.plan.util.FilteredPartitionInfo;
+import org.apache.tajo.plan.util.PartitionedTableUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.storage.*;
@@ -375,19 +376,13 @@ public class Repartitioner {
       //If there are more than one data files, that files should be added to fragments or partition path
 
       for (ScanNode eachScan: broadcastScans) {
-
-        Path[] partitionScanPaths = null;
         TableDesc tableDesc = masterContext.getTableDesc(eachScan);
         Tablespace space = TablespaceManager.get(tableDesc.getUri());
 
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
-
-          PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
-          partitionScanPaths = partitionScan.getInputPaths();
-          // set null to inputPaths in getFragmentsFromPartitionedTable()
-          getFragmentsFromPartitionedTable((FileTablespace) space, eachScan, tableDesc);
-          partitionScan.setInputPaths(partitionScanPaths);
-
+          CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+          TajoConf tajoConf = masterContext.getConf();
+          getFragmentsFromPartitionedTable(catalog, tajoConf, (FileTablespace) space, eachScan, tableDesc);
         } else {
 
           Collection<Fragment> scanFragments =
@@ -461,18 +456,25 @@ public class Repartitioner {
   /**
    * It creates a number of fragments for all partitions.
    */
-  public static List<Fragment> getFragmentsFromPartitionedTable(Tablespace tsHandler,
-                                                                          ScanNode scan,
-                                                                          TableDesc table) throws IOException {
+  public static List<Fragment> getFragmentsFromPartitionedTable(CatalogService catalog, TajoConf conf,
+    Tablespace tsHandler, ScanNode scan, TableDesc table) throws IOException, UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException, UndefinedOperatorException, UnsupportedException {
     Preconditions.checkArgument(tsHandler instanceof FileTablespace, "tsHandler must be FileTablespace");
     if (!(scan instanceof PartitionedTableScanNode)) {
       throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
     }
+
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
+
+    FilteredPartitionInfo filteredPartitionInfo = PartitionedTableUtil.findFilteredPartitionInfo(catalog, conf,
+      partitionsScan);
+
     fragments.addAll(((FileTablespace) tsHandler).getSplits(
-      scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getInputPaths()));
-    partitionsScan.setInputPaths(null);
+      scan.getCanonicalName(), table.getMeta(), table.getSchema(), filteredPartitionInfo.getPartitionNames(),
+      filteredPartitionInfo.getPartitionPaths()));
+
+    partitionsScan.getTableDesc().getStats().setNumBytes(filteredPartitionInfo.getTotalVolume());
     return fragments;
   }
 
@@ -504,16 +506,13 @@ public class Repartitioner {
       TableDesc desc = stage.getContext().getTableDesc(scan);
 
       Collection<Fragment> scanFragments;
-      Path[] partitionScanPaths = null;
-
-
       Tablespace space = TablespaceManager.get(desc.getUri());
 
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scan;
-        partitionScanPaths = partitionScan.getInputPaths();
         // set null to inputPaths in getFragmentsFromPartitionedTable()
-        scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
+        CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+        TajoConf tajoConf = stage.getContext().getConf();
+        scanFragments = getFragmentsFromPartitionedTable(catalog, tajoConf, space, scan, desc);
       } else {
         scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan.getQual());
       }
@@ -522,13 +521,7 @@ public class Repartitioner {
         if (i == baseScanId) {
           baseFragments = scanFragments;
         } else {
-          if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-            PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
-            // PhisicalPlanner make PartitionMergeScanExec when table is boradcast table and inputpaths is not empty
-            partitionScan.setInputPaths(partitionScanPaths);
-          } else {
-            broadcastFragments.addAll(scanFragments);
-          }
+          broadcastFragments.addAll(scanFragments);
         }
       }
     }

@@ -21,10 +21,24 @@ import org.apache.hadoop.fs.Path;
 
 public class FilteredPartitionInfo {
   private Path[] partitionPaths;
+  private String[] partitionNames;
   private long totalVolume;
+
+  public FilteredPartitionInfo() {
+  }
+
+  public FilteredPartitionInfo(Path[] partitionPaths) {
+    this.partitionPaths = partitionPaths;
+  }
 
   public FilteredPartitionInfo(Path[] partitionPaths, long totalVolume) {
     this.partitionPaths = partitionPaths;
+    this.totalVolume = totalVolume;
+  }
+
+  public FilteredPartitionInfo(Path[] partitionPaths, String[] partitionNames, long totalVolume) {
+    this.partitionPaths = partitionPaths;
+    this.partitionNames = partitionNames;
     this.totalVolume = totalVolume;
   }
 
@@ -34,6 +48,14 @@ public class FilteredPartitionInfo {
 
   public void setPartitionPaths(Path[] partitionPaths) {
     this.partitionPaths = partitionPaths;
+  }
+
+  public String[] getPartitionNames() {
+    return partitionNames;
+  }
+
+  public void setPartitionNames(String[] partitionNames) {
+    this.partitionNames = partitionNames;
   }
 
   public long getTotalVolume() {

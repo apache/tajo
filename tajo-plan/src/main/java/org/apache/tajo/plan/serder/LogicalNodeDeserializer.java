@@ -462,13 +462,6 @@ public class LogicalNodeDeserializer {
                                                                PlanProto.LogicalNode protoNode) {
     PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getNodeId());
     fillScanNode(context, evalContext, protoNode, partitionedScan);
-
-    PlanProto.PartitionScanSpec partitionScanProto = protoNode.getPartitionScan();
-    Path [] paths = new Path[partitionScanProto.getPathsCount()];
-    for (int i = 0; i < partitionScanProto.getPathsCount(); i++) {
-      paths[i] = new Path(partitionScanProto.getPaths(i));
-    }
-    partitionedScan.setInputPaths(paths);
     return partitionedScan;
   }
 

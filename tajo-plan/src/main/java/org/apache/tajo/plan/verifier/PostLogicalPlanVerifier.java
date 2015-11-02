@@ -134,13 +134,6 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<Context, Ob
   private static long getTableVolume(ScanNode scanNode) {
     if (scanNode.getTableDesc().hasStats()) {
       long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
-        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-          scanBytes = 0L;
-        }
-      }
-
       return scanBytes;
     } else {
       return -1;

@@ -701,7 +701,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   class SimplePhysicalPlannerImpl extends PhysicalPlannerImpl {
 
     public SimplePhysicalPlannerImpl(TajoConf conf) {
-      super(conf);
+      super(conf, masterContext.getCatalog());
     }
 
     @Override

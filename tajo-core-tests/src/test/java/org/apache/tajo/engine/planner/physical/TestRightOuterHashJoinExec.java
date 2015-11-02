@@ -244,7 +244,7 @@ public class TestRightOuterHashJoinExec {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
@@ -285,7 +285,7 @@ public class TestRightOuterHashJoinExec {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
@@ -326,7 +326,7 @@ public class TestRightOuterHashJoinExec {
     Expr expr = analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;

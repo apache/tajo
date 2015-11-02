@@ -28,10 +28,20 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
 public class PartitionedTableScanNode extends ScanNode {
-  @Expose Path [] inputPaths;
-
   public PartitionedTableScanNode(int pid) {
     super(pid, NodeType.PARTITIONS_SCAN);
+  }
+
+  public void init(ScanNode scanNode) {
+    tableDesc = scanNode.tableDesc;
+    setInSchema(scanNode.getInSchema());
+    setOutSchema(scanNode.getOutSchema());
+    this.qual = scanNode.qual;
+    this.targets = scanNode.targets;
+
+    if (scanNode.hasAlias()) {
+      alias = scanNode.alias;
+    }
   }
 
   public void init(ScanNode scanNode, Path[] inputPaths) {
@@ -40,21 +50,12 @@ public class PartitionedTableScanNode extends ScanNode {
     setOutSchema(scanNode.getOutSchema());
     this.qual = scanNode.qual;
     this.targets = scanNode.targets;
-    this.inputPaths = inputPaths;
 
     if (scanNode.hasAlias()) {
       alias = scanNode.alias;
     }
   }
 
-  public void setInputPaths(Path [] paths) {
-    this.inputPaths = paths;
-  }
-
-  public Path [] getInputPaths() {
-    return inputPaths;
-  }
-	
 	public String toString() {
     StringBuilder sb = new StringBuilder("Partitions Scan (table=").append(getTableName());
     if (hasAlias()) {
@@ -81,8 +82,7 @@ public class PartitionedTableScanNode extends ScanNode {
 	    eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
 	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
 	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
-      eq = eq && TUtil.checkEquals(this.inputPaths, other.inputPaths);
-	    
+
 	    return eq;
 	  }	  
 	  
@@ -105,9 +105,6 @@ public class PartitionedTableScanNode extends ScanNode {
         unionScan.targets[i] = (Target) targets[i].clone();
       }
 	  }
-
-    unionScan.inputPaths = inputPaths;
-
     return unionScan;
 	}
 	
@@ -145,14 +142,6 @@ public class PartitionedTableScanNode extends ScanNode {
 
     planStr.addDetail("out schema: ").appendDetail(getOutSchema().toString());
     planStr.addDetail("in schema: ").appendDetail(getInSchema().toString());
-
-    if (inputPaths != null) {
-      planStr.addExplan("num of filtered paths: ").appendExplain(""+ inputPaths.length);
-      int i = 0;
-      for (Path path : inputPaths) {
-        planStr.addDetail((i++) + ": ").appendDetail(path.toString());
-      }
-    }
 
     return planStr;
   }

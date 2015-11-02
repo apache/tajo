@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -35,7 +36,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
@@ -46,6 +47,8 @@ import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArr
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 import org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
+import org.apache.tajo.plan.util.FilteredPartitionInfo;
+import org.apache.tajo.plan.util.PartitionedTableUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
@@ -53,6 +56,7 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.fragment.PartitionedFileFragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.StringUtils;
@@ -76,9 +80,11 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final int UNGENERATED_PID = -1;
 
   protected final TajoConf conf;
+  private final CatalogService catalog;
 
-  public PhysicalPlannerImpl(final TajoConf conf) {
+  public PhysicalPlannerImpl(final TajoConf conf, final CatalogService catalog) {
     this.conf = conf;
+    this.catalog = catalog;
   }
 
   public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan) {
@@ -99,6 +105,16 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       }
     } catch (IOException ioe) {
       throw new TajoInternalError(ioe);
+    } catch (UndefinedDatabaseException ude) {
+      throw new TajoInternalError(ude);
+    } catch (UndefinedTableException ute) {
+      throw new TajoInternalError(ute);
+    } catch (UndefinedPartitionMethodException upme) {
+      throw new TajoInternalError(upme);
+    } catch (UndefinedOperatorException uoe) {
+      throw new TajoInternalError(uoe);
+    } catch (UnsupportedException ue) {
+      throw new TajoInternalError(ue);
     }
   }
 
@@ -117,7 +133,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   }
 
   private PhysicalExec createPlanRecursive(TaskAttemptContext ctx, LogicalNode logicalNode, Stack<LogicalNode> stack)
-      throws IOException {
+      throws IOException, UndefinedDatabaseException, UndefinedTableException,
+    UndefinedPartitionMethodException, UndefinedOperatorException, UnsupportedException {
     PhysicalExec leftExec;
     PhysicalExec rightExec;
 
@@ -441,7 +458,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private MergeJoinExec createMergeInnerJoin(TaskAttemptContext context, JoinNode plan,
                                              PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
-        plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
+      plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
 
     SortNode leftSortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
     leftSortNode.setSortSpecs(sortSpecs[0]);
@@ -902,7 +919,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   }
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
-      throws IOException {
+      throws IOException, UndefinedDatabaseException, UndefinedTableException,
+    UndefinedPartitionMethodException, UndefinedOperatorException, UnsupportedException {
     // check if an input is sorted in the same order to the subsequence sort operator.
     // TODO - it works only if input files are raw files. We should check the file format.
     // Since the default intermediate file format is raw file, it is not problem right now.
@@ -924,24 +942,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         }
       }
 
-      if (scanNode instanceof PartitionedTableScanNode
-          && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
-          ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
-
+      if (scanNode instanceof PartitionedTableScanNode) {
         if (broadcastFlag) {
-          PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<Fragment> fileFragments = TUtil.newList();
-
-          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
-          for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(TUtil.newList(space.split(scanNode.getCanonicalName(), path)));
+          FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
+          if (fragments == null) {
+            return new SeqScanExec(ctx, scanNode, null);
+          } else {
+            return new PartitionMergeScanExec(ctx, scanNode, fragments);
           }
-
-          FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
-
-          ctx.addFragments(scanNode.getCanonicalName(), fragments);
-          return new PartitionMergeScanExec(ctx, scanNode, fragments);
         }
       }
 

@@ -129,7 +129,7 @@ public class TestSortExec {
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     Tuple tuple;

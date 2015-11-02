@@ -282,7 +282,7 @@ public class TestLeftOuterHashJoinExec {
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
@@ -315,7 +315,7 @@ public class TestLeftOuterHashJoinExec {
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
@@ -350,7 +350,7 @@ public class TestLeftOuterHashJoinExec {
     Expr expr = analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
@@ -385,7 +385,7 @@ public class TestLeftOuterHashJoinExec {
     Expr expr = analyzer.parse(QUERIES[3]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;
@@ -420,7 +420,7 @@ public class TestLeftOuterHashJoinExec {
     Expr expr = analyzer.parse(QUERIES[4]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     ProjectionExec proj = (ProjectionExec) exec;

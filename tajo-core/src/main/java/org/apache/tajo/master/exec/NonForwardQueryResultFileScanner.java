@@ -28,6 +28,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableDesc;
@@ -80,14 +81,15 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private ExecutorService executor;
   private MemoryRowBlock rowBlock;
   private Future<MemoryRowBlock> nextFetch;
+  private CatalogService catalog;
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-                                          int maxRow) throws IOException {
-    this(tajoConf, sessionId, queryId, scanNode, maxRow, null);
+                                          int maxRow, CatalogService catalog) throws IOException {
+    this(tajoConf, sessionId, queryId, scanNode, maxRow, null, catalog);
   }
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-      int maxRow, CodecType codecType) throws IOException {
+      int maxRow, CodecType codecType, CatalogService catalog) throws IOException {
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
     this.queryId = queryId;
@@ -96,6 +98,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.maxRow = maxRow;
     this.rowEncoder = RowStoreUtil.createEncoder(scanNode.getOutSchema());
     this.codecType = codecType;
+    this.catalog = catalog;
   }
 
   public void init() throws IOException, TajoException {
@@ -108,7 +111,8 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     List<Fragment> fragments = Lists.newArrayList();
     if (tableDesc.hasPartition()) {
       FileTablespace fileTablespace = TUtil.checkTypeAndGet(tablespace, FileTablespace.class);
-      fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(fileTablespace, scanNode, tableDesc));
+      fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(catalog, tajoConf, fileTablespace, scanNode,
+        tableDesc));
     } else {
       fragments.addAll(tablespace.getSplits(tableDesc.getName(), tableDesc, scanNode.getQual()));
     }

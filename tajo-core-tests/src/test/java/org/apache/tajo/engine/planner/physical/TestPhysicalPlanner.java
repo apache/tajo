@@ -251,7 +251,7 @@ public class TestPhysicalPlanner {
     optimizer.optimize(plan);
 
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     Tuple tuple;
@@ -282,7 +282,7 @@ public class TestPhysicalPlanner {
     optimizer.optimize(plan);
 
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     Tuple tuple;
@@ -310,7 +310,7 @@ public class TestPhysicalPlanner {
     optimizer.optimize(plan);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int i = 0;
@@ -341,7 +341,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int i = 0;
@@ -370,7 +370,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan.getRootBlock().getRoot());
 
     /*HashAggregateExec hashAgg = (HashAggregateExec) exec;
@@ -437,7 +437,7 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -488,7 +488,7 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode = optimizer.optimize(plan);
 
     // executing StoreTableExec
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -534,7 +534,7 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta("RCFILE");
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -572,7 +572,7 @@ public class TestPhysicalPlanner {
     Expr context = analyzer.parse(CreateTableAsStmts[2]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     assertTrue(exec instanceof SortBasedColPartitionStoreExec);
   }
@@ -596,7 +596,7 @@ public class TestPhysicalPlanner {
     ctx.setEnforcer(enforcer);
     ctx.setOutputPath(new Path(workDir, "grouped4"));
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     assertTrue(exec instanceof HashBasedColPartitionStoreExec);
   }
@@ -620,7 +620,7 @@ public class TestPhysicalPlanner {
     ctx.setEnforcer(enforcer);
     ctx.setOutputPath(new Path(workDir, "grouped5"));
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     assertTrue(exec instanceof SortBasedColPartitionStoreExec);
   }
@@ -651,7 +651,7 @@ public class TestPhysicalPlanner {
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();
     ExecutionBlockId ebId = id.getTaskId().getExecutionBlockId();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -715,7 +715,7 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode = optimizer.optimize(plan);
 
     // Executing CREATE TABLE PARTITION BY
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -785,7 +785,7 @@ public class TestPhysicalPlanner {
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();
     ExecutionBlockId ebId = id.getTaskId().getExecutionBlockId();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -844,7 +844,7 @@ public class TestPhysicalPlanner {
       function.setFirstPhase();
     }
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     exec.init();
@@ -875,7 +875,7 @@ public class TestPhysicalPlanner {
       function.setFirstPhase();
     }
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     Tuple tuple = exec.next();
@@ -897,7 +897,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int count = 0;
@@ -927,7 +927,7 @@ public class TestPhysicalPlanner {
     union.setRightChild((LogicalNode) root.getChild().clone());
     root.setChild(union);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, root);
 
     int count = 0;
@@ -949,7 +949,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     Tuple tuple;
     exec.init();
@@ -962,7 +962,7 @@ public class TestPhysicalPlanner {
     plan = planner.createPlan(defaultContext, expr);
     rootNode = optimizer.optimize(plan);
 
-    phyPlanner = new PhysicalPlannerImpl(conf);
+    phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     tuple = exec.next();
@@ -992,7 +992,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     while (exec.next() != null) {
@@ -1021,7 +1021,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     Tuple tuple;
 
@@ -1061,7 +1061,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -1083,7 +1083,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    phyPlanner = new PhysicalPlannerImpl(conf);
+    phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -1111,7 +1111,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
@@ -1133,7 +1133,7 @@ public class TestPhysicalPlanner {
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(enforcer);
 
-    phyPlanner = new PhysicalPlannerImpl(conf);
+    phyPlanner = new PhysicalPlannerImpl(conf, catalog);
     exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();

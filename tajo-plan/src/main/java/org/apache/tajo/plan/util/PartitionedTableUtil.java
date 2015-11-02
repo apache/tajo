@@ -36,6 +36,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -60,8 +61,6 @@ public class PartitionedTableUtil {
     // if a query statement has a search condition, try to find indexable predicates
     if (scanNode.hasQual()) {
       EvalNode [] conjunctiveForms = AlgebraicUtil.toConjunctiveNormalFormArray(scanNode.getQual());
-      Set<EvalNode> remainExprs = Sets.newHashSet(conjunctiveForms);
-
       // add qualifier to schema for qual
       paritionValuesSchema.setQualifier(scanNode.getCanonicalName());
       for (Column column : paritionValuesSchema.getRootColumns()) {
@@ -70,17 +69,6 @@ public class PartitionedTableUtil {
             indexablePredicateSet.add(simpleExpr);
           }
         }
-      }
-
-      // Partitions which are not matched to the partition filter conditions are pruned immediately.
-      // So, the partition filter conditions are not necessary later, and they are removed from
-      // original search condition for simplicity and efficiency.
-      remainExprs.removeAll(indexablePredicateSet);
-      if (remainExprs.isEmpty()) {
-        scanNode.setQual(null);
-      } else {
-        scanNode.setQual(
-          AlgebraicUtil.createSingletonExprFromCNF(remainExprs.toArray(new EvalNode[remainExprs.size()])));
       }
     }
 
@@ -170,7 +158,8 @@ public class PartitionedTableUtil {
         partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
         if (partitions.isEmpty()) {
           filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-          filteredPartitionInfo = new FilteredPartitionInfo(filteredPaths, getTotalVolume(fs, filteredPaths));
+          filteredPartitionInfo = new FilteredPartitionInfo(filteredPaths);
+          setFilteredPartitionInfo(filteredPartitionInfo, fs, partitionColumns);
         } else {
           filteredPartitionInfo = findFilteredPartitionInfoByPartitionDesc(partitions);
         }
@@ -181,7 +170,8 @@ public class PartitionedTableUtil {
           filteredPartitionInfo = findFilteredPartitionInfoByPartitionDesc(partitions);
         } else {
           filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-          filteredPartitionInfo = new FilteredPartitionInfo(filteredPaths, getTotalVolume(fs, filteredPaths));
+          filteredPartitionInfo = new FilteredPartitionInfo(filteredPaths);
+          setFilteredPartitionInfo(filteredPartitionInfo, fs, partitionColumns);
         }
       }
     } catch (UnsupportedException ue) {
@@ -191,7 +181,8 @@ public class PartitionedTableUtil {
       partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
       if (partitions.isEmpty()) {
         filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-        filteredPartitionInfo = new FilteredPartitionInfo(filteredPaths, getTotalVolume(fs, filteredPaths));
+        filteredPartitionInfo = new FilteredPartitionInfo(filteredPaths);
+        setFilteredPartitionInfo(filteredPartitionInfo, fs, partitionColumns);
       } else {
         filteredPartitionInfo = findFilteredPartitionInfoByPartitionDesc(partitions);
       }
@@ -214,12 +205,14 @@ public class PartitionedTableUtil {
     partitions) {
     long totalVolume = 0L;
     Path[] filteredPaths = new Path[partitions.size()];
+    String[] partitionNames = new String[partitions.size()];
     for (int i = 0; i < partitions.size(); i++) {
       CatalogProtos.PartitionDescProto partition = partitions.get(i);
       filteredPaths[i] = new Path(partition.getPath());
+      partitionNames[i] = partition.getPartitionName();
       totalVolume += partition.getNumBytes();
     }
-    return new FilteredPartitionInfo(filteredPaths, totalVolume);
+    return new FilteredPartitionInfo(filteredPaths, partitionNames, totalVolume);
   }
 
   /**
@@ -338,7 +331,7 @@ public class PartitionedTableUtil {
    * @param partitionColumns The partition columns schema
    * @return The array of path filter, accpeting all partition paths.
    */
-  private static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
+  public static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
     Column target;
     PathFilter [] filters = new PathFilter[partitionColumns.size()];
     List<EvalNode> accumulatedFilters = Lists.newArrayList();
@@ -362,19 +355,26 @@ public class PartitionedTableUtil {
     return paths;
   }
 
-  private static long getTotalVolume(FileSystem fs, Path[] inputPaths) {
+  private static void setFilteredPartitionInfo(FilteredPartitionInfo filteredPartitionInfo, FileSystem fs,
+    Schema partitionColumnSchema) {
     long totalVolume = 0L;
-    if (inputPaths.length > 0) {
+    String[] partitionNames = null;
+    if (filteredPartitionInfo.getPartitionPaths().length > 0) {
       try {
-        for (Path input : inputPaths) {
+        partitionNames = new String[filteredPartitionInfo.getPartitionPaths().length];
+        for (int i = 0; i < filteredPartitionInfo.getPartitionPaths().length; i++) {
+          Path input = filteredPartitionInfo.getPartitionPaths()[i];
+          int startIdx = input.toString().indexOf(getColumnPartitionPathPrefix(partitionColumnSchema));
           ContentSummary summary = fs.getContentSummary(input);
+          partitionNames[i] = input.toString().substring(startIdx);
           totalVolume += summary.getLength();
         }
       } catch (Throwable e) {
         throw new TajoInternalError(e);
       }
     }
-    return totalVolume;
+    filteredPartitionInfo.setPartitionNames(partitionNames);
+    filteredPartitionInfo.setTotalVolume(totalVolume);
   }
 
   private static class PartitionPathFilter implements PathFilter {
@@ -467,4 +467,32 @@ public class PartitionedTableUtil {
     sb.append(partitionColumn.getColumn(0).getSimpleName()).append("=");
     return sb.toString();
   }
+
+  public static Tuple buildTupleFromPartitionName(Schema partitionColumnSchema, String partitionName,
+                                                  boolean beNullIfFile) {
+    String [] columnValues = partitionName.split("/");
+
+    // true means this is a file.
+    if (beNullIfFile && partitionColumnSchema.size() < columnValues.length) {
+      return null;
+    }
+
+    Tuple tuple = new VTuple(partitionColumnSchema.size());
+
+    for (int i = 0; i < tuple.size(); i++) {
+      tuple.put(i, NullDatum.get());
+    }
+
+    for (int i = 0; i < columnValues.length; i++) {
+      String [] parts = columnValues[i].split("=");
+      if (parts.length == 2) {
+        int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
+        Column keyColumn = partitionColumnSchema.getColumn(columnId);
+        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
+      }
+    }
+
+    return tuple;
+  }
+
 }
