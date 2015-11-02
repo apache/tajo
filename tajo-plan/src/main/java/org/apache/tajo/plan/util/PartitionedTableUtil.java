@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.util;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -468,14 +469,23 @@ public class PartitionedTableUtil {
     return sb.toString();
   }
 
-  public static Tuple buildTupleFromPartitionName(Schema partitionColumnSchema, String partitionName,
-                                                  boolean beNullIfFile) {
-    String [] columnValues = partitionName.split("/");
+  /**
+   * This transforms a partition name into a tupe with a given partition column schema. When a file path
+   * Assume that an user gives partition name 'country=KOREA/city=SEOUL'.
+   *
+   * The first datum of tuple : KOREA
+   * The second datum of tuple : SEOUL
+   *
+   * @param partitionColumnSchema The partition column schema
+   * @param partitionName The partition name
+   * @return The tuple transformed from a column values part.
+   */
+  public static Tuple buildTupleFromPartitionName(Schema partitionColumnSchema, String partitionName) {
+    Preconditions.checkNotNull(partitionColumnSchema);
+    Preconditions.checkNotNull(partitionName);
 
-    // true means this is a file.
-    if (beNullIfFile && partitionColumnSchema.size() < columnValues.length) {
-      return null;
-    }
+    String [] columnValues = partitionName.split("/");
+    Preconditions.checkArgument(partitionColumnSchema.size() < columnValues.length, "Invalid Partition Name");
 
     Tuple tuple = new VTuple(partitionColumnSchema.size());
 
@@ -488,7 +498,8 @@ public class PartitionedTableUtil {
       if (parts.length == 2) {
         int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
         Column keyColumn = partitionColumnSchema.getColumn(columnId);
-        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
+        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(),
+          StringUtils.unescapePathName(parts[1])));
       }
     }
 
