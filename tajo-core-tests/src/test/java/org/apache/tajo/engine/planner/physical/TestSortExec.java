@@ -27,6 +27,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
@@ -74,6 +75,7 @@ public class TestSortExec {
   public static void setUp() throws Exception {
     conf = new TajoConf();
     conf.setBoolVar(TajoConf.ConfVars.$TEST_MODE, true);
+    conf.setIntVar(ConfVars.$SORT_HASH_TABLE_SIZE, 100);
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);

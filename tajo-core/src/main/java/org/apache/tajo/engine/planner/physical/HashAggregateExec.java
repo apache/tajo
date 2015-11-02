@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.GroupbyNode;
@@ -42,7 +43,7 @@ public class HashAggregateExec extends AggregationExec {
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
     hashKeyProjector = new KeyProjector(inSchema, plan.getGroupingColumns());
-    hashTable = new TupleMap<>(10000);
+    hashTable = new TupleMap<>(ctx.getQueryContext().getInt(SessionVars.AGG_HASH_TABLE_SIZE));
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
 

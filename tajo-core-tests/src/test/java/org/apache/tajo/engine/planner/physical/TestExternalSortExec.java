@@ -138,17 +138,6 @@ public class TestExternalSortExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     
     ProjectionExec proj = (ProjectionExec) exec;
-
-    // TODO - should be planed with user's optimization hint
-    ExternalSortExec extSort;
-    if (!(proj.getChild() instanceof ExternalSortExec)) {
-      UnaryPhysicalExec sortExec = proj.getChild();
-      SeqScanExec scan = sortExec.getChild();
-
-      extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
-      proj.setChild(extSort);
-    }
-
     Tuple tuple;
     Tuple preVal = null;
     Tuple curVal;
