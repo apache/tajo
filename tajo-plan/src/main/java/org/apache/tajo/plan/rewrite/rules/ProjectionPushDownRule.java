@@ -955,7 +955,9 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets(new ArrayList<>(projectedTargets));
+    List<Target> input = new ArrayList<>();
+    input.addAll(projectedTargets);
+    node.setTargets(input);
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1093,7 +1095,9 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets(new ArrayList<>(projectedTargets));
+    List<Target> input = new ArrayList<>();
+    input.addAll(projectedTargets);
+    node.setTargets(input);
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1127,7 +1131,9 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets(new ArrayList<>(projectedTargets));
+    List<Target> input = new ArrayList<>();
+    input.addAll(projectedTargets);
+    node.setTargets(input);
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1169,7 +1175,9 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets(new ArrayList<>(projectedTargets));
+    List<Target> input = new ArrayList<>();
+    input.addAll(projectedTargets);
+    node.setTargets(input);
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
