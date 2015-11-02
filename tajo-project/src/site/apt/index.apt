@@ -29,7 +29,7 @@ Features
 
     * Fully distributed SQL query processing engine
 
-    * Advanced Query Optimization such as cost-based and progressive query optimization
+    * Advanced query optimization such as cost-based and progressive query optimization
 
     * Interactive analysis on reasonable data set
 
@@ -47,7 +47,7 @@ Features
 
     * JDBC driver support
 
-    * Various file formats support, such as CSV, JSON, RCFile, SequenceFile and Parquet
+    * Various file formats support, such as CSV, JSON, RCFile, SequenceFile, ORC and Parquet
 
   * <<Easy>>
 
@@ -61,6 +61,8 @@ Features
 
 Releases
 
+  * <<[2015-10-27]>> {{{./downloads.html}Tajo 0.11.0}} ({{{./releases/0.11.0/announcement.html}Announcement}}, {{{./releases/0.11.0/relnotes.html}Release Notes}})
+
   * <<[2015-06-29]>> {{{./downloads.html}Tajo 0.10.1}} ({{{./releases/0.10.1/announcement.html}Announcement}}, {{{./releases/0.10.1/relnotes.html}Release Notes}})
 
   * <<[2015-03-08]>> {{{./downloads.html}Tajo 0.10.0}} ({{{./releases/0.10.0/announcement.html}Announcement}}, {{{./releases/0.10.0/relnotes.html}Release Notes}})
@@ -72,6 +74,12 @@ Releases
   * <<[2013-11-20]>> {{{./downloads.html}Tajo 0.2.0-incubating}} ({{{http://s.apache.org/tajo-0.2-release-notes}Release Notes}})
 
 News
+
+  * <<[2015-10-27]>> Tajo 0.11.0 released.
+
+  * <<[2015-10-01]>> Jihoon Son had a talk at Apache: Big Data Europe 2015 (Slide).
+
+  * <<[2015-09-19]>> DaeMyung Kang was invited to a new committer.
 
   * <<[2015-06-27]>> Hyunsik Choi had a talk at Big Data Day LA 2015.
 

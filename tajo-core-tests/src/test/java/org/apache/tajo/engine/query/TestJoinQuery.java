@@ -68,6 +68,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
 
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$JOIN_HASH_TABLE_SIZE.keyname(), "100");
+
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,

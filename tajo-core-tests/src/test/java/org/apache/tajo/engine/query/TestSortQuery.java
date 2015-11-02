@@ -28,6 +28,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -36,6 +38,10 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   public TestSortQuery() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
+
+    Map<String, String> variables = new HashMap<>();
+    variables.put(SessionVars.SORT_HASH_TABLE_SIZE.keyname(), "100");
+    client.updateSessionVariables(variables);
   }
 
   @Test

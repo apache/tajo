@@ -20,8 +20,8 @@ package org.apache.tajo.ws.rs.responses;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.util.TUtil;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class NewSessionResponse {
@@ -57,7 +57,7 @@ public class NewSessionResponse {
 
   public Map<String, String> getVariables() {
     if (variables == null) {
-      variables = TUtil.newHashMap();
+      variables = new HashMap<>();
     }
     return variables;
   }

@@ -170,8 +170,8 @@ public class LogicalOptimizer {
       LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
       if (topParent.getType() == NodeType.SELECTION) {
         SelectionNode topParentSelect = (SelectionNode) topParent;
-        Set<EvalNode> filters = TUtil.newHashSet();
-        filters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(topParentSelect.getQual())));
+        Set<EvalNode> filters = new HashSet<>();
+        filters.addAll(new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(topParentSelect.getQual()))));
         filters.addAll(remainingQuals);
         topParentSelect.setQual(AlgebraicUtil.createSingletonExprFromCNF(
             filters.toArray(new EvalNode[filters.size()])));
@@ -304,7 +304,7 @@ public class LogicalOptimizer {
         JoinEdge edge = context.getJoinGraph().addJoin(context, joinNode.getJoinSpec(), leftVertex, rightVertex);
 
         // find all possible predicates for this join edge
-        Set<EvalNode> joinConditions = TUtil.newHashSet();
+        Set<EvalNode> joinConditions = new HashSet<>();
         if (joinNode.hasJoinQual()) {
           Set<EvalNode> originPredicates = joinNode.getJoinSpec().getPredicates();
           for (EvalNode predicate : joinNode.getJoinSpec().getPredicates()) {
@@ -483,7 +483,7 @@ public class LogicalOptimizer {
   }
 
   private static class RelationNodeFinderContext {
-    private Set<RelationNode> founds = TUtil.newHashSet();
+    private Set<RelationNode> founds = new HashSet<>();
     private boolean findMostLeft;
     private boolean findMostRight;
   }

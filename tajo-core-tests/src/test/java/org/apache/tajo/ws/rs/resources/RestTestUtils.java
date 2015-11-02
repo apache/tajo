@@ -19,6 +19,7 @@
 package org.apache.tajo.ws.rs.resources;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -41,12 +42,11 @@ import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.serder.EvalNodeAdapter;
 import org.apache.tajo.plan.serder.LogicalNodeAdapter;
-import org.apache.tajo.util.TUtil;
 
 public class RestTestUtils {
   
   public static Map<Type, GsonSerDerAdapter<?>> registerTypeAdapterMap() {
-    Map<Type, GsonSerDerAdapter<?>> adapters = TUtil.newHashMap();
+    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
     adapters.put(Path.class, new PathSerializer());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(LogicalNode.class, new LogicalNodeAdapter());

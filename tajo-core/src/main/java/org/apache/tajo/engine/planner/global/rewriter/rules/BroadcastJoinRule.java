@@ -155,7 +155,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private static class Context {
     private final long thresholdForNonCrossJoin;
     private final long thresholdForCrossJoin;
-    private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = TUtil.newHashMap();
+    private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = new HashMap<>();
 
     public Context(long thresholdForNonCrossJoin, long thresholdForCrossJoin) {
       this.thresholdForNonCrossJoin = thresholdForNonCrossJoin;

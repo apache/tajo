@@ -18,12 +18,13 @@
 
 package org.apache.tajo.validation;
 
-import org.apache.tajo.util.TUtil;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class Validators {
   
   public static Validator groups(Validator...validators) {
-    return new GroupValidator(TUtil.newHashSet(validators));
+    return new GroupValidator(new HashSet<>(Arrays.asList(validators)));
   }
   
   public static Validator length(int maxLength) {

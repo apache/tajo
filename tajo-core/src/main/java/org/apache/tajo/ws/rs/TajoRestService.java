@@ -43,7 +43,6 @@ import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.serder.EvalNodeAdapter;
 import org.apache.tajo.plan.serder.LogicalNodeAdapter;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.ws.rs.netty.NettyRestServer;
 import org.apache.tajo.ws.rs.netty.NettyRestServerFactory;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
@@ -54,6 +53,7 @@ import org.glassfish.jersey.server.ServerProperties;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -71,7 +71,7 @@ public class TajoRestService extends CompositeService {
   }
   
   private Map<Type, GsonSerDerAdapter<?>> registerTypeAdapterMap() {
-    Map<Type, GsonSerDerAdapter<?>> adapters = TUtil.newHashMap();
+    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
     adapters.put(Path.class, new PathSerializer());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(LogicalNode.class, new LogicalNodeAdapter());
