@@ -290,7 +290,7 @@ public class DistinctGroupbyBuilder {
     }
 
     DistinctGroupbyNode baseDistinctNode = new DistinctGroupbyNode(context.getPlan().getLogicalPlan().newPID());
-    baseDistinctNode.setTargets(new ArrayList<>(baseGroupByTargets));
+    baseDistinctNode.setTargets(baseGroupByTargets);
     baseDistinctNode.setGroupingColumns(groupbyNode.getGroupingColumns());
     baseDistinctNode.setInSchema(groupbyNode.getInSchema());
     baseDistinctNode.setChild(groupbyNode.getChild());
