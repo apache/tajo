@@ -1330,7 +1330,7 @@ public class GlobalPlanner {
             for (int i = 0; i < eachNodeTargets.size(); i++) {
               Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
               Target t = eachNodeTargets.get(i);
-              t.setAlias(eachNodeTargets.get(i).getNamedColumn().getQualifiedName());
+              t.setAlias(t.getNamedColumn().getQualifiedName());
               eachNodeTargets.set(i, t);
               EvalNode evalNode = eachNodeTargets.get(i).getEvalTree();
               if (evalNode.getType() != EvalType.FIELD) {

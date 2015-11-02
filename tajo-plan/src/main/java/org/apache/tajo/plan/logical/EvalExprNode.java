@@ -21,16 +21,15 @@
  */
 package org.apache.tajo.plan.logical;
 
-import java.util.List;
-import java.util.Objects;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
+
+import java.util.List;
+import java.util.Objects;
 
 public class EvalExprNode extends LogicalNode implements Projectable {
   @Expose private List<Target> exprs;

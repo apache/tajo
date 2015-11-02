@@ -653,10 +653,10 @@ public class PlannerUtil {
   }
 
   public static Schema targetToSchema(Collection<Target> targets) {
-    return targetToSchema(targets.toArray(new Target[targets.size()]));
+    return targetToSchema(targets);
   }
 
-  public static Schema targetToSchema(Target[] targets) {
+  public static Schema targetToSchema(List<Target> targets) {
     Schema schema = new Schema();
     for (Target t : targets) {
       DataType type = t.getEvalTree().getValueType();

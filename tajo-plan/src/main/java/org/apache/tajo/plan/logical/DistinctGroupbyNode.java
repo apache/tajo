@@ -132,8 +132,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     }
 
     if (targets != null) {
-      cloneNode.targets = new ArrayList<>();
-      cloneNode.targets.addAll(targets);
+      cloneNode.targets = new ArrayList<>(targets);
     }
 
     if (groupbyPlan != null) {

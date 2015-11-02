@@ -148,7 +148,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	public void setTargets(List<Target> targets) {
 	  this.targets = targets;
     setOutSchema(PlannerUtil.targetToSchema(targets));
-	}
+  }
 
   @Override
 	public List<Target> getTargets() {
@@ -182,68 +182,68 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     return tableDesc;
   }
 	
-	public String toString() {
-    StringBuilder sb = new StringBuilder("Scan (table=").append(getTableName());
-    if (hasAlias()) {
-      sb.append(", alias=").append(alias);
-    }
-    if (hasQual()) {
-      sb.append(", filter=").append(qual);
-    }
-    sb.append(", path=").append(getTableDesc().getUri()).append(")");
-    return sb.toString();
-	}
+  public String toString() {
+  StringBuilder sb = new StringBuilder("Scan (table=").append(getTableName());
+  if (hasAlias()) {
+    sb.append(", alias=").append(alias);
+  }
+  if (hasQual()) {
+    sb.append(", filter=").append(qual);
+  }
+  sb.append(", path=").append(getTableDesc().getUri()).append(")");
+  return sb.toString();
+  }
 
   @Override
   public int hashCode() {
     return Objects.hashCode(this.tableDesc, this.qual, this.targets);
   }
 	
-	@Override
-	public boolean equals(Object obj) {
-	  if (obj instanceof ScanNode) {
-	    ScanNode other = (ScanNode) obj;
-	    
-	    boolean eq = super.equals(other); 
-	    eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
-	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
-	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
-      eq = eq && TUtil.checkEquals(this.alias, other.alias);
-	    
-	    return eq;
-	  }	  
-	  
-	  return false;
-	}	
-	
-	@Override
-	public Object clone() throws CloneNotSupportedException {
-    ScanNode scanNode = (ScanNode) super.clone();
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof ScanNode) {
+      ScanNode other = (ScanNode) obj;
 
-    scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
+      boolean eq = super.equals(other);
+      eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
+      eq = eq && TUtil.checkEquals(this.qual, other.qual);
+      eq = eq && TUtil.checkEquals(this.targets, other.targets);
+    eq = eq && TUtil.checkEquals(this.alias, other.alias);
 
-    if (hasQual()) {
-      scanNode.qual = (EvalNode) this.qual.clone();
+      return eq;
     }
 
-    if (hasTargets()) {
-      scanNode.targets = new ArrayList<>();
-      scanNode.targets.addAll(targets);
-    }
+    return false;
+  }
 
-    if (hasAlias()) {
-      scanNode.alias = alias;
-    }
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+  ScanNode scanNode = (ScanNode) super.clone();
 
-    return scanNode;
-	}
+  scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
+
+  if (hasQual()) {
+    scanNode.qual = (EvalNode) this.qual.clone();
+  }
+
+  if (hasTargets()) {
+    scanNode.targets = new ArrayList<>();
+    scanNode.targets.addAll(targets);
+  }
+
+  if (hasAlias()) {
+    scanNode.alias = alias;
+  }
+
+  return scanNode;
+  }
 	
   @Override
   public void preOrder(LogicalNodeVisitor visitor) {
     visitor.visit(this);
   }
 	
-	public void postOrder(LogicalNodeVisitor visitor) {        
+  public void postOrder(LogicalNodeVisitor visitor) {
     visitor.visit(this);
   }
 
