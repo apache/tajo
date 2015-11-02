@@ -105,7 +105,7 @@ public class ExecutionBlockContext {
 
     // Setup QueryEngine according to the query plan
     // Here, we can setup row-based query engine or columnar query engine.
-    this.queryEngine = new TajoQueryEngine(systemConf, workerContext.getCatalog());
+    this.queryEngine = new TajoQueryEngine(systemConf);
     this.queryContext = new QueryContext(workerContext.getConf(), request.getQueryContext());
     this.plan = request.getPlanJson();
     this.resource = new ExecutionBlockSharedResource();

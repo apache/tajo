@@ -18,7 +18,6 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
@@ -31,8 +30,8 @@ public class TajoQueryEngine {
 
   private final PhysicalPlanner phyPlanner;
 
-  public TajoQueryEngine(TajoConf conf, CatalogService catalog) throws IOException {
-    this.phyPlanner = new PhysicalPlannerImpl(conf, catalog);
+  public TajoQueryEngine(TajoConf conf) throws IOException {
+    this.phyPlanner = new PhysicalPlannerImpl(conf);
   }
   
   public PhysicalExec createPlan(TaskAttemptContext ctx, LogicalNode plan) {
