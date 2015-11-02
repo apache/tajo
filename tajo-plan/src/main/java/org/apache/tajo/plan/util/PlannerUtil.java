@@ -537,7 +537,7 @@ public class PlannerUtil {
   }
 
   public static List<Target> schemaToTargets(Schema schema) {
-    List<Target> targets = new ArrayList<>();
+    List<Target> targets = new ArrayList<>(schema.size());
 
     FieldEval eval;
     for (int i = 0; i < schema.size(); i++) {
@@ -652,10 +652,6 @@ public class PlannerUtil {
     }
   }
 
-  public static Schema targetToSchema(Collection<Target> targets) {
-    return targetToSchema(targets);
-  }
-
   public static Schema targetToSchema(List<Target> targets) {
     Schema schema = new Schema();
     for (Target t : targets) {
@@ -681,7 +677,7 @@ public class PlannerUtil {
    * @return The stripped targets
    */
   public static List<Target> stripTarget(List<Target> sourceTargets) {
-    List<Target> copy = new ArrayList<>();
+    List<Target> copy = new ArrayList<>(sourceTargets.size());
     for (int i = 0; i < sourceTargets.size(); i++) {
       try {
         copy.add(i, (Target) sourceTargets.get(i).clone());

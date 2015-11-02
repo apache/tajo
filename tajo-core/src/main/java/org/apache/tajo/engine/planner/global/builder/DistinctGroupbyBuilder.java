@@ -250,7 +250,7 @@ public class DistinctGroupbyBuilder {
       GroupbyNode eachGroupbyNode = buildInfo.getGroupbyNode();
       List<AggregationFunctionCallEval> groupbyAggFunctions = buildInfo.getAggFunctions();
 
-      List<Target> targets = new ArrayList<>();
+      List<Target> targets = new ArrayList<>(eachGroupbyNode.getGroupingColumns().length + groupbyAggFunctions.size());
       int targetIdx = 0;
 
       for (Column column : eachGroupbyNode.getGroupingColumns()) {
@@ -274,7 +274,7 @@ public class DistinctGroupbyBuilder {
       // finally this aggregation output tuple's order is GROUP_BY_COL1, COL2, .... + AGG_VALUE, SUM_VALUE, ...
       GroupbyNode otherGroupbyNode = new GroupbyNode(context.getPlan().getLogicalPlan().newPID());
 
-      List<Target> targets = new ArrayList<>();
+      List<Target> targets = new ArrayList<>(otherAggregationFunctionTargets.size());
       int targetIdx = 0;
       for (Target eachTarget : otherAggregationFunctionTargets) {
         targets.add(targetIdx++, eachTarget);
@@ -414,7 +414,7 @@ public class DistinctGroupbyBuilder {
     for (DistinctGroupbyNodeBuildInfo buildInfo: distinctNodeBuildInfos.values()) {
       GroupbyNode eachGroupbyNode = buildInfo.getGroupbyNode();
       List<AggregationFunctionCallEval> groupbyAggFunctions = buildInfo.getAggFunctions();
-      List<Target> targets = new ArrayList<>();
+      List<Target> targets = new ArrayList<>(eachGroupbyNode.getGroupingColumns().length + groupbyAggFunctions.size());
       int targetIdx = 0;
 
       for (Column column : eachGroupbyNode.getGroupingColumns()) {
@@ -437,7 +437,7 @@ public class DistinctGroupbyBuilder {
       // finally this aggregation output tuple's order is GROUP_BY_COL1, COL2, .... + AGG_VALUE, SUM_VALUE, ...
       GroupbyNode otherGroupbyNode = new GroupbyNode(context.getPlan().getLogicalPlan().newPID());
 
-      List<Target> targets = new ArrayList<>();
+      List<Target> targets = new ArrayList<>(originalGroupingColumns.size() + otherAggregationFunctionTargets.size());
       int targetIdx = 0;
       for (Column column : originalGroupingColumns) {
         Target target = new Target(new FieldEval(column));
@@ -612,7 +612,7 @@ public class DistinctGroupbyBuilder {
       lastSecondStageGroupbyNode = secondStageGroupbyNodes.get(secondStageGroupbyNodes.size() - 2);
       secondStageGroupbyNodes.remove(secondStageGroupbyNodes.size() - 1);
 
-      List<Target> targets = new ArrayList<>();
+      List<Target> targets = new ArrayList<>(lastSecondStageGroupbyNode.getTargets().size() + otherGroupbyNode.getTargets().size());
       targets.addAll(lastSecondStageGroupbyNode.getTargets());
       targets.addAll(otherGroupbyNode.getTargets());
 

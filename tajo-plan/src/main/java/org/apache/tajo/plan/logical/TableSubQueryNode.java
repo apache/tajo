@@ -167,7 +167,8 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     newTableSubQueryNode.tableName = tableName;
     newTableSubQueryNode.subQuery = (LogicalNode) subQuery.clone();
     if (hasTargets()) {
-      newTableSubQueryNode.targets = new ArrayList<>(targets);
+      newTableSubQueryNode.targets = new ArrayList<>(targets.size());
+      newTableSubQueryNode.targets.addAll(targets);
     }
     return newTableSubQueryNode;
   }

@@ -35,11 +35,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ScanNode extends RelationNode implements Projectable, SelectableNode, Cloneable {
-	@Expose protected TableDesc tableDesc;
+  @Expose protected TableDesc tableDesc;
   @Expose protected String alias;
   @Expose protected Schema logicalSchema;
-	@Expose protected EvalNode qual;
-	@Expose protected List<Target> targets;
+  @Expose protected EvalNode qual;
+  @Expose protected List<Target> targets;
   @Expose protected boolean broadcastTable;
   @Expose protected long limit = -1; // -1 means no set
 
@@ -68,7 +68,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     logicalSchema = SchemaUtil.getQualifiedLogicalSchema(tableDesc, null);
   }
   
-	public void init(TableDesc desc, String alias) {
+  public void init(TableDesc desc, String alias) {
     this.tableDesc = desc;
     this.alias = alias;
 
@@ -83,14 +83,14 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     this.getInSchema().setQualifier(qualifiedAlias);
     this.setOutSchema(new Schema(getInSchema()));
     logicalSchema = SchemaUtil.getQualifiedLogicalSchema(tableDesc, qualifiedAlias);
-	}
+  }
 	
-	public String getTableName() {
+  public String getTableName() {
 	  return tableDesc.getName();
 	}
 
   @Override
-	public boolean hasAlias() {
+  public boolean hasAlias() {
 	  return alias != null;
 	}
 
@@ -125,28 +125,28 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
   }
 
   @Override
-	public boolean hasQual() {
+  public boolean hasQual() {
 	  return qual != null;
 	}
 
   @Override
-	public EvalNode getQual() {
+  public EvalNode getQual() {
 	  return this.qual;
 	}
 
   @Override
-	public void setQual(EvalNode evalTree) {
+  public void setQual(EvalNode evalTree) {
 	  this.qual = evalTree;
 	}
 
   @Override
-	public boolean hasTargets() {
+  public boolean hasTargets() {
 	  return this.targets != null;
 	}
 
   @Override
-	public void setTargets(List<Target> targets) {
-	  this.targets = targets;
+  public void setTargets(List<Target> targets) {
+    this.targets = targets;
     setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
@@ -208,7 +208,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
       eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
       eq = eq && TUtil.checkEquals(this.qual, other.qual);
       eq = eq && TUtil.checkEquals(this.targets, other.targets);
-    eq = eq && TUtil.checkEquals(this.alias, other.alias);
+      eq = eq && TUtil.checkEquals(this.alias, other.alias);
 
       return eq;
     }
@@ -218,23 +218,24 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-  ScanNode scanNode = (ScanNode) super.clone();
+    ScanNode scanNode = (ScanNode) super.clone();
 
-  scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
+    scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
 
-  if (hasQual()) {
-    scanNode.qual = (EvalNode) this.qual.clone();
-  }
+    if (hasQual()) {
+      scanNode.qual = (EvalNode) this.qual.clone();
+    }
 
-  if (hasTargets()) {
-    scanNode.targets = new ArrayList<>(targets);
-  }
+    if (hasTargets()) {
+      scanNode.targets = new ArrayList<>(targets.size());
+      scanNode.targets.addAll(targets);
+    }
 
-  if (hasAlias()) {
-    scanNode.alias = alias;
-  }
+    if (hasAlias()) {
+      scanNode.alias = alias;
+    }
 
-  return scanNode;
+    return scanNode;
   }
 	
   @Override

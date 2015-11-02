@@ -388,7 +388,7 @@ public class GlobalPlanner {
 
     public RewrittenFunctions(int firstStageEvalNum) {
       firstStageEvals = new AggregationFunctionCallEval[firstStageEvalNum];
-      firstStageTargets = new ArrayList<>();
+      firstStageTargets = new ArrayList<>(firstStageEvalNum);
     }
   }
 
@@ -551,7 +551,7 @@ public class GlobalPlanner {
     int firstStageGroupingKeyNum = firstStageGroupingColumns.size();
 
     int i = 0;
-    List<Target> firstStageTargets = new ArrayList<>();
+    List<Target> firstStageTargets = new ArrayList<>(firstStageGroupingKeyNum + firstStageAggFunctionNum);
     for (Column column : firstStageGroupingColumns) {
       Target target = new Target(new FieldEval(column));
       firstStageTargets.add(i++, target);
@@ -1331,7 +1331,7 @@ public class GlobalPlanner {
               Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
               Target t = eachNodeTargets.get(i);
               t.setAlias(t.getNamedColumn().getQualifiedName());
-              eachNodeTargets.set(i, t);
+              eachNodeTargets.add(i, t);
               EvalNode evalNode = eachNodeTargets.get(i).getEvalTree();
               if (evalNode.getType() != EvalType.FIELD) {
                 throw new TajoInternalError("Target of a UnionNode's subquery should be FieldEval.");
