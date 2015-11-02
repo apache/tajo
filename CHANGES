@@ -6,6 +6,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1920: Calling 'Collection.toArray()' with zero-length array argument 
+    makes performance worse. (Dongkyu Hwangbo via hyunsik)
+
     TAJO-1911: Change guava's Optional to Java's Optional. (hyunsik)
 
     TAJO-1850: Using TUtil.newHash(Set/Map) should be replaced by Java's 

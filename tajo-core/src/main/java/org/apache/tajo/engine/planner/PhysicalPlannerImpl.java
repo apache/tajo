@@ -1110,7 +1110,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         sortSpecs.add(new SortSpec(eachColumn));
       }
     }
-    sortNode.setSortSpecs(sortSpecs.toArray(new SortSpec[]{}));
+    sortNode.setSortSpecs(sortSpecs.toArray(new SortSpec[sortSpecs.size()]));
     sortNode.setInSchema(distinctNode.getInSchema());
     sortNode.setOutSchema(distinctNode.getInSchema());
     ExternalSortExec sortExec = new ExternalSortExec(context, sortNode, subOp);
