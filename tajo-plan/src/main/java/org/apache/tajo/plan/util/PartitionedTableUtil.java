@@ -77,7 +77,8 @@ public class PartitionedTableUtil {
       return findFilteredPartitionInfo(catalog, conf, table.getName(), paritionValuesSchema,
         indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()), scanNode);
     } else { // otherwise, we will get all partition paths.
-      return findFilteredPartitionInfo(catalog, conf, table.getName(), paritionValuesSchema, null, new Path(table.getUri()));
+      return findFilteredPartitionInfo(catalog, conf, table.getName(), paritionValuesSchema, null,
+        new Path(table.getUri()));
     }
   }
 
@@ -166,7 +167,8 @@ public class PartitionedTableUtil {
         }
       } else {
         if (catalog.existPartitions(splits[0], splits[1])) {
-          CatalogProtos.PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
+          CatalogProtos.PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1],
+            conjunctiveForms);
           partitions = catalog.getPartitionsByAlgebra(request);
           filteredPartitionInfo = findFilteredPartitionInfoByPartitionDesc(partitions);
         } else {
@@ -190,7 +192,7 @@ public class PartitionedTableUtil {
       scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
     }
 
-    LOG.info("Filtered directory or files: " + filteredPartitionInfo.getPartitionPaths().length +
+    LOG.info("### Filtered directory or files: " + filteredPartitionInfo.getPartitionPaths().length +
       ", totalVolume:" + filteredPartitionInfo.getTotalVolume());
 
     return filteredPartitionInfo;
@@ -448,7 +450,8 @@ public class PartitionedTableUtil {
       }
       int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
-      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
+      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(),
+        StringUtils.unescapePathName(parts[1])));
     }
     for (; i < partitionColumnSchema.size(); i++) {
       tuple.put(i, NullDatum.get());
