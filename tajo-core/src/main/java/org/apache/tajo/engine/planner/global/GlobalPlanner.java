@@ -1326,9 +1326,12 @@ public class GlobalPlanner {
             if (eachNodeTargets.size() != targetMappings.length) {
               throw new TajoInternalError("Union query can't have different number of target columns.");
             }
+
             for (int i = 0; i < eachNodeTargets.size(); i++) {
               Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
-              eachNodeTargets.get(i).setAlias(eachNodeTargets.get(i).getNamedColumn().getQualifiedName());
+              Target t = eachNodeTargets.get(i);
+              t.setAlias(eachNodeTargets.get(i).getNamedColumn().getQualifiedName());
+              eachNodeTargets.set(i, t);
               EvalNode evalNode = eachNodeTargets.get(i).getEvalTree();
               if (evalNode.getType() != EvalType.FIELD) {
                 throw new TajoInternalError("Target of a UnionNode's subquery should be FieldEval.");
