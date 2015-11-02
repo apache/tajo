@@ -31,6 +31,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertTrue;
@@ -150,9 +151,9 @@ public class TestHAServiceHDFSImpl  {
     TajoClient client = null;
     try {
       client = new TajoClientImpl(tracker);
-      client.existDatabase("default");
-      client.existTable("default.ha_test1");
-      client.existTable("default.ha_test2");
+      Assert.assertTrue(client.existDatabase("default"));
+      Assert.assertTrue(client.existTable("default.ha_test1"));
+      Assert.assertTrue(client.existTable("default.ha_test2"));
     } finally {
       IOUtils.cleanup(null, client);
     }

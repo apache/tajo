@@ -68,10 +68,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     for(int i = 0; i < resultColumnIds.length; i++) {
       resultColumnIdIndexes[resultColumnIds[i]] = i;
     }
-
-    for (SortAggregateExec eachExec: aggregateExecs) {
-      eachExec.init();
-    }
   }
 
   boolean first = true;
@@ -172,6 +168,13 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
 
   @Override
   public void init() throws IOException {
+    super.init();
+
+    if (aggregateExecs != null) {
+      for (SortAggregateExec eachExec: aggregateExecs) {
+        eachExec.init();
+      }
+    }
   }
 
   @Override
