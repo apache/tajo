@@ -114,11 +114,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
 
   @Override
   public List<Target> getTargets() {
-    List<Target> targetList = new ArrayList<>();
-    for(int i=0; i<this.targets.length; i++) {
-      targetList.add(this.targets[i]);
-    }
-    return targetList;
+    return Arrays.asList(this.targets);
   }
   
   public void setChild(LogicalNode subNode) {

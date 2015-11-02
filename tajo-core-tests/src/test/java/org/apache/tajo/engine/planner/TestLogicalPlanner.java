@@ -1247,7 +1247,7 @@ public class TestLogicalPlanner {
     InsertNode insertNode = getInsertNode(plan);
 
     ProjectionNode subquery = insertNode.getChild();
-    Target[] targets = subquery.getTargets();
+    Target[] targets = subquery.getTargets().toArray(new Target[]{});
     // targets MUST be manager, NULL as empid, deptname
     assertEquals(targets[0].getNamedColumn().getQualifiedName(), "default.dept.manager");
     assertEquals(targets[1].getAlias(), "empid");
@@ -1408,7 +1408,7 @@ public class TestLogicalPlanner {
     testCloneLogicalNode(projectionNode);
 
     // projection column test
-    Target[] targets = projectionNode.getTargets();
+    Target[] targets = projectionNode.getTargets().toArray(new Target[]{});
     Arrays.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {
@@ -1423,7 +1423,7 @@ public class TestLogicalPlanner {
     // scan column test
     assertEquals(NodeType.SCAN, projectionNode.getChild().getType());
     ScanNode scanNode = projectionNode.getChild();
-    targets = scanNode.getTargets();
+    targets = scanNode.getTargets().toArray(new Target[]{});
     Arrays.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {
@@ -1463,7 +1463,7 @@ public class TestLogicalPlanner {
     testCloneLogicalNode(projectionNode);
 
     // projection column test
-    Target[] targets = projectionNode.getTargets();
+    Target[] targets = projectionNode.getTargets().toArray(new Target[]{});
     Arrays.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {
@@ -1482,7 +1482,7 @@ public class TestLogicalPlanner {
     // scan column test
     assertEquals(NodeType.SCAN, selectionNode.getChild().getType());
     ScanNode scanNode = selectionNode.getChild();
-    targets = scanNode.getTargets();
+    targets = scanNode.getTargets().toArray(new Target[]{});
     Arrays.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {

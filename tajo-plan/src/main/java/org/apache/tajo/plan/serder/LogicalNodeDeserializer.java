@@ -206,7 +206,7 @@ public class LogicalNodeDeserializer {
 
     EvalExprNode evalExpr = new EvalExprNode(protoNode.getNodeId());
     evalExpr.setInSchema(convertSchema(protoNode.getInSchema()));
-    evalExpr.setTargets(convertTargets(context, evalContext, evalExprProto.getTargetsList()));
+    evalExpr.setTargets(Arrays.asList(convertTargets(context, evalContext, evalExprProto.getTargetsList())));
 
     return evalExpr;
   }
@@ -287,7 +287,7 @@ public class LogicalNodeDeserializer {
     }
 
     if (windowAggProto.getTargetsCount() > 0) {
-      windowAgg.setTargets(convertTargets(context, evalContext, windowAggProto.getTargetsList()));
+      windowAgg.setTargets(Arrays.asList(convertTargets(context, evalContext, windowAggProto.getTargetsList())));
     }
 
     windowAgg.setInSchema(convertSchema(protoNode.getInSchema()));
@@ -311,7 +311,7 @@ public class LogicalNodeDeserializer {
       groupby.setAggFunctions(convertAggFuncCallEvals(context, evalContext, groupbyProto.getAggFunctionsList()));
     }
     if (groupbyProto.getTargetsCount() > 0) {
-      groupby.setTargets(convertTargets(context, evalContext, groupbyProto.getTargetsList()));
+      groupby.setTargets(Arrays.asList(convertTargets(context, evalContext, groupbyProto.getTargetsList())));
     }
 
     groupby.setInSchema(convertSchema(protoNode.getInSchema()));
@@ -349,7 +349,7 @@ public class LogicalNodeDeserializer {
           distinctGroupbyProto.getAggFunctionsList()));
     }
     if (distinctGroupbyProto.getTargetsCount() > 0) {
-      distinctGroupby.setTargets(convertTargets(context, evalContext, distinctGroupbyProto.getTargetsList()));
+      distinctGroupby.setTargets(Arrays.asList(convertTargets(context, evalContext, distinctGroupbyProto.getTargetsList())));
     }
     int [] resultColumnIds = new int[distinctGroupbyProto.getResultIdCount()];
     for (int i = 0; i < distinctGroupbyProto.getResultIdCount(); i++) {
@@ -378,7 +378,7 @@ public class LogicalNodeDeserializer {
       join.setJoinQual(EvalNodeDeserializer.deserialize(context, evalContext, joinProto.getJoinQual()));
     }
     if (joinProto.getExistsTargets()) {
-      join.setTargets(convertTargets(context, evalContext, joinProto.getTargetsList()));
+      join.setTargets(Arrays.asList(convertTargets(context, evalContext, joinProto.getTargetsList())));
     }
 
     return join;
@@ -426,7 +426,7 @@ public class LogicalNodeDeserializer {
     }
 
     if (scanProto.getExistTargets()) {
-      scan.setTargets(convertTargets(context, evalContext, scanProto.getTargetsList()));
+      scan.setTargets(Arrays.asList(convertTargets(context, evalContext, scanProto.getTargetsList())));
     }
 
     if (scanProto.hasQual()) {
@@ -481,7 +481,7 @@ public class LogicalNodeDeserializer {
     tableSubQuery.init(proto.getTableName(), nodeMap.get(proto.getChildSeq()));
     tableSubQuery.setInSchema(convertSchema(protoNode.getInSchema()));
     if (proto.getTargetsCount() > 0) {
-      tableSubQuery.setTargets(convertTargets(context, evalContext, proto.getTargetsList()));
+      tableSubQuery.setTargets(Arrays.asList(convertTargets(context, evalContext, proto.getTargetsList())));
     }
     tableSubQuery.setNameResolveBase(proto.getNameResolveBase());
 

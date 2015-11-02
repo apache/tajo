@@ -122,9 +122,9 @@ public class LogicalOptimizer {
       collector.visitJoin(targets, plan, block, old, new Stack<>());
 
       if (targets.size() == 0) {
-        newJoinNode.setTargets(PlannerUtil.schemaToTargets(old.getOutSchema()));
+        newJoinNode.setTargets(Arrays.asList(PlannerUtil.schemaToTargets(old.getOutSchema())));
       } else {
-        newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
+        newJoinNode.setTargets(new ArrayList<>(targets));
       }
       PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
       // End of replacement logic

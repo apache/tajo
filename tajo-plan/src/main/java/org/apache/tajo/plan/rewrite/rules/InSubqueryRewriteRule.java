@@ -128,7 +128,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
         joinNode.setOutSchema(node.getOutSchema());
 
         List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(inSchema));
-        joinNode.setTargets(targets.toArray(new Target[targets.size()]));
+        joinNode.setTargets(targets);
 
         block.addJoinType(joinType);
         block.registerNode(joinNode);
@@ -167,7 +167,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
         GroupbyNode dupRemoval = plan.createNode(GroupbyNode.class);
         dupRemoval.setChild(child);
         dupRemoval.setInSchema(projectionNode.getInSchema());
-        dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
+        dupRemoval.setTargets(Arrays.asList(PlannerUtil.schemaToTargets(outSchema)));
         dupRemoval.setGroupingColumns(outSchema.toArray());
 
         block.registerNode(dupRemoval);

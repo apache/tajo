@@ -153,8 +153,8 @@ public class SQLBuilder {
   public void visitScan(SQLBuilderContext ctx, ScanNode scan, Stack<LogicalNode> stack) {
 
     StringBuilder selectClause = new StringBuilder("SELECT ");
-    if (scan.getTargets().length > 0) {
-      selectClause.append(generateTargetList(scan.getTargets()));
+    if (scan.getTargets().size() > 0) {
+      selectClause.append(generateTargetList(scan.getTargets().toArray(new Target[]{})));
     } else {
       selectClause.append("1");
     }

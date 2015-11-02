@@ -31,7 +31,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ScanNode extends RelationNode implements Projectable, SelectableNode, Cloneable {
@@ -151,13 +151,13 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	}
 
   @Override
-	public List<Target> getTargets() {
-      List<Target> targetList = new ArrayList<>();
-      for(int i=0; i<this.targets.length; i++) {
-        targetList.add(this.targets[i]);
-      }
-	  return targetList;
-	}
+  public List<Target> getTargets() {
+    if (hasTargets()) {
+      return Arrays.asList(this.targets);
+    } else {
+      return null;
+    }
+  }
 
   /**
    *

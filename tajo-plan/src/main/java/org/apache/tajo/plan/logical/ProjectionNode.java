@@ -25,7 +25,6 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,11 +61,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 
   @Override
   public List<Target> getTargets() {
-    List<Target> targetList = new ArrayList<>();
-    for(int i=0; i<this.targets.length; i++) {
-      targetList.add(this.targets[i]);
-    }
-    return targetList;
+    return Arrays.asList(this.targets);
   }
 	
 	public void setChild(LogicalNode subNode) {

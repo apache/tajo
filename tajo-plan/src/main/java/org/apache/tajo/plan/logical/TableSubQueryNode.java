@@ -27,6 +27,7 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.util.PlannerUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
@@ -118,11 +119,12 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
 
   @Override
   public List<Target> getTargets() {
-    List<Target> targetList = new ArrayList<>();
-    for(int i=0; i<targets.length; i++) {
-      targetList.add(targets[i]);
+    if (hasTargets()) {
+      return Arrays.asList(targets);
+    } else {
+      return new ArrayList<>();
     }
-    return targetList;
+
   }
 
   @Override

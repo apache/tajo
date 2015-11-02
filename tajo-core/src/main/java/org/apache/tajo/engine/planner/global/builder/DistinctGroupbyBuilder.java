@@ -261,7 +261,8 @@ public class DistinctGroupbyBuilder {
       for (Target eachAggFunctionTarget: buildInfo.getAggFunctionTargets()) {
         targets[targetIdx++] = eachAggFunctionTarget;
       }
-      eachGroupbyNode.setTargets(targets);
+
+      eachGroupbyNode.setTargets(Arrays.asList(targets));
       eachGroupbyNode.setAggFunctions(groupbyAggFunctions.toArray(new AggregationFunctionCallEval[groupbyAggFunctions.size()]));
       eachGroupbyNode.setDistinct(true);
       eachGroupbyNode.setInSchema(groupbyNode.getInSchema());
@@ -281,7 +282,7 @@ public class DistinctGroupbyBuilder {
         baseGroupByTargets.add(eachTarget);
       }
 
-      otherGroupbyNode.setTargets(targets);
+      otherGroupbyNode.setTargets(Arrays.asList(targets));
       otherGroupbyNode.setGroupingColumns(new Column[]{});
       otherGroupbyNode.setAggFunctions(otherAggregationFunctionCallEvals.toArray(new AggregationFunctionCallEval[otherAggregationFunctionCallEvals.size()]));
       otherGroupbyNode.setInSchema(groupbyNode.getInSchema());
@@ -290,7 +291,7 @@ public class DistinctGroupbyBuilder {
     }
 
     DistinctGroupbyNode baseDistinctNode = new DistinctGroupbyNode(context.getPlan().getLogicalPlan().newPID());
-    baseDistinctNode.setTargets(baseGroupByTargets.toArray(new Target[baseGroupByTargets.size()]));
+    baseDistinctNode.setTargets(baseGroupByTargets);
     baseDistinctNode.setGroupingColumns(groupbyNode.getGroupingColumns());
     baseDistinctNode.setInSchema(groupbyNode.getInSchema());
     baseDistinctNode.setChild(groupbyNode.getChild());
@@ -424,7 +425,8 @@ public class DistinctGroupbyBuilder {
       for (Target eachAggFunctionTarget: buildInfo.getAggFunctionTargets()) {
         targets[targetIdx++] = eachAggFunctionTarget;
       }
-      eachGroupbyNode.setTargets(targets);
+
+      eachGroupbyNode.setTargets(Arrays.asList(targets));
       eachGroupbyNode.setAggFunctions(groupbyAggFunctions.toArray(new AggregationFunctionCallEval[groupbyAggFunctions.size()]));
       eachGroupbyNode.setDistinct(true);
       eachGroupbyNode.setInSchema(groupbyNode.getInSchema());
@@ -447,7 +449,7 @@ public class DistinctGroupbyBuilder {
         targets[targetIdx++] = eachTarget;
       }
 
-      otherGroupbyNode.setTargets(targets);
+      otherGroupbyNode.setTargets(Arrays.asList(targets));
       otherGroupbyNode.setGroupingColumns(originalGroupingColumns.toArray(new Column[originalGroupingColumns.size()]));
       otherGroupbyNode.setAggFunctions(otherAggregationFunctionCallEvals.toArray(new AggregationFunctionCallEval[otherAggregationFunctionCallEvals.size()]));
       otherGroupbyNode.setInSchema(groupbyNode.getInSchema());
@@ -530,7 +532,7 @@ public class DistinctGroupbyBuilder {
           Target target = new Target(new FieldEval(column));
           firstGroupbyTargets.add(target);
         }
-        firstStageGroupbyNode.setTargets(firstGroupbyTargets.toArray(new Target[firstGroupbyTargets.size()]));
+        firstStageGroupbyNode.setTargets(firstGroupbyTargets);
 
         // SecondStage:
         //   Set grouping column with origin groupby's columns
@@ -567,7 +569,7 @@ public class DistinctGroupbyBuilder {
           }
           columnIdIndex++;
         }
-        secondStageGroupbyNode.setTargets(secondGroupbyTargets.toArray(new Target[secondGroupbyTargets.size()]));
+        secondStageGroupbyNode.setTargets(secondGroupbyTargets);
       } else {
         // FirstStage: Change target of aggFunction to function name expr
         List<Target> firstGroupbyTargets = new ArrayList<>();
@@ -597,7 +599,7 @@ public class DistinctGroupbyBuilder {
           columnIdIndex++;
           aggFuncIdx++;
         }
-        firstStageGroupbyNode.setTargets(firstGroupbyTargets.toArray(new Target[firstGroupbyTargets.size()]));
+        firstStageGroupbyNode.setTargets(firstGroupbyTargets);
         secondStageGroupbyNode.setInSchema(firstStageGroupbyNode.getOutSchema());
       }
       grpIdx++;
@@ -614,12 +616,12 @@ public class DistinctGroupbyBuilder {
 
       Target[] targets =
           new Target[lastSecondStageGroupbyNode.getTargets().size() + otherGroupbyNode.getTargets().size()];
-      System.arraycopy(lastSecondStageGroupbyNode.getTargets(), 0,
+      System.arraycopy(lastSecondStageGroupbyNode.getTargets().toArray(new Target[]{}), 0,
           targets, 0, lastSecondStageGroupbyNode.getTargets().size());
-      System.arraycopy(otherGroupbyNode.getTargets(), 0, targets,
+      System.arraycopy(otherGroupbyNode.getTargets().toArray(new Target[]{}), 0, targets,
           lastSecondStageGroupbyNode.getTargets().size(), otherGroupbyNode.getTargets().size());
 
-      lastSecondStageGroupbyNode.setTargets(targets);
+      lastSecondStageGroupbyNode.setTargets(Arrays.asList(targets));
 
       AggregationFunctionCallEval[] aggFunctions =
           new AggregationFunctionCallEval[lastSecondStageGroupbyNode.getAggFunctions().length + otherGroupbyNode.getAggFunctions().length];
@@ -656,7 +658,7 @@ public class DistinctGroupbyBuilder {
         }
       }
     }
-    firstStageDistinctNode.setTargets(firstTargets.toArray(new Target[firstTargets.size()]));
+    firstStageDistinctNode.setTargets(firstTargets);
     firstStageDistinctNode.setResultColumnIds(TUtil.toArray(firstStageColumnIds));
 
     //Set SecondStage ColumnId and Input schema

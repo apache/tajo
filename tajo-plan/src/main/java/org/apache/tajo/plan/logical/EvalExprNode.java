@@ -28,7 +28,6 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -62,11 +61,7 @@ public class EvalExprNode extends LogicalNode implements Projectable {
 
   @Override
   public List<Target> getTargets() {
-    List<Target> targetList = new ArrayList<>();
-    for(int i=0; i<exprs.length; i++) {
-      targetList.add(exprs[i]);
-    }
-    return targetList;
+    return Arrays.asList(exprs);
   }
 
   public Target[] getExprs() {

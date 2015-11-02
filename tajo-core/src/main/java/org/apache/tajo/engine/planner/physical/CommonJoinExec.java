@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.BinaryEval;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -78,7 +79,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
     this.hasJoinQual = joinQual != null;
 
     // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets().toArray(new Target[]{}));
 
     // for join
     this.frameTuple = new FrameTuple();

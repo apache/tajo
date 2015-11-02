@@ -212,7 +212,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       // If Non-from statement, it immediately returns.
       if (!expr.hasChild()) {
         EvalExprNode exprNode = ctx.getPlan().createNode(EvalExprNode.class);
-        exprNode.setTargets(buildTargets(ctx, expr.getNamedExprs()));
+        exprNode.setTargets(Arrays.asList(buildTargets(ctx, expr.getNamedExprs())));
         return exprNode;
       }
 

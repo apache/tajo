@@ -48,7 +48,7 @@ public class EvalExprExec extends PhysicalExec {
   @Override
   public Tuple next() throws IOException {
     if (!executedOnce) {
-      Target [] targets = plan.getTargets();
+      Target [] targets = plan.getTargets().toArray(new Target[]{});
       Tuple t = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         t.put(i, targets[i].getEvalTree().eval(null));

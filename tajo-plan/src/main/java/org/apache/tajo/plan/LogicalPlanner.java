@@ -331,7 +331,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       dupRemoval.setForDistinctBlock();
       dupRemoval.setChild(sortNode.getChild());
       dupRemoval.setInSchema(sortNode.getInSchema());
-      dupRemoval.setTargets(PlannerUtil.schemaToTargets(sortNode.getInSchema()));
+      dupRemoval.setTargets(Arrays.asList(PlannerUtil.schemaToTargets(sortNode.getInSchema())));
       dupRemoval.setGroupingColumns(sortNode.getInSchema().toArray());
 
       block.registerNode(dupRemoval);
@@ -349,7 +349,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       dupRemoval.setForDistinctBlock();
       dupRemoval.setChild(child);
       dupRemoval.setInSchema(projectionNode.getInSchema());
-      dupRemoval.setTargets(PlannerUtil.schemaToTargets(outSchema));
+      dupRemoval.setTargets(Arrays.asList(PlannerUtil.schemaToTargets(outSchema)));
       dupRemoval.setGroupingColumns(outSchema.toArray());
 
       block.registerNode(dupRemoval);
@@ -477,7 +477,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
     }
     EvalExprNode evalExprNode = context.queryBlock.getNodeFromExpr(projection);
-    evalExprNode.setTargets(targets);
+    evalExprNode.setTargets(Arrays.asList(targets));
     evalExprNode.setOutSchema(PlannerUtil.targetToSchema(targets));
     // it's for debugging or unit testing
     block.setRawTargets(targets);
@@ -523,8 +523,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         int groupingKeyNum = groupbyNode.getGroupingColumns().length;
 
         for (int i = 0; i < groupingKeyNum; i++) {
-          Target target = groupbyNode.getTargets()[i];
-          if (groupbyNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD) {
+          Target target = groupbyNode.getTargets().get(i);
+          if (groupbyNode.getTargets().get(i).getEvalTree().getType() == EvalType.FIELD) {
             FieldEval grpKeyEvalNode = target.getEvalTree();
             if (!groupbyNode.getInSchema().contains(grpKeyEvalNode.getColumnRef())) {
               throwCannotEvaluateException(projectable, grpKeyEvalNode.getName());
@@ -554,8 +554,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
 
       // verify targets except for function slots
-      for (int i = 0; i < windowAggNode.getTargets().length - windowAggNode.getWindowFunctions().length; i++) {
-        Target target = windowAggNode.getTargets()[i];
+      for (int i = 0; i < windowAggNode.getTargets().size() - windowAggNode.getWindowFunctions().length; i++) {
+        Target target = windowAggNode.getTargets().get(i);
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
         for (Column c : columns) {
           if (!windowAggNode.getInSchema().contains(c)) {
@@ -742,7 +742,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (int i = 0; i < winFuncRefs.size(); i++) {
       targets[targetIdx++] = block.namedExprsMgr.getTarget(winFuncRefs.get(i));
     }
-    windowAggNode.setTargets(targets);
+    windowAggNode.setTargets(Arrays.asList(targets));
     verifyProjectedFields(block, windowAggNode);
 
     block.registerNode(windowAggNode);
@@ -808,7 +808,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     groupbyNode.setAggFunctions(aggEvals.toArray(new AggregationFunctionCallEval[aggEvals.size()]));
     Target [] targets = ProjectionPushDownRule.buildGroupByTarget(groupbyNode, null,
         aggEvalNames.toArray(new String[aggEvalNames.size()]));
-    groupbyNode.setTargets(targets);
+    groupbyNode.setTargets(Arrays.asList(targets));
 
     // this inserted group-by node doesn't pass through preprocessor. So manually added.
     block.registerNode(groupbyNode);
@@ -1070,7 +1070,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       targets[targetIdx] = block.namedExprsMgr.getTarget(aggEvalNames.get(i));
     }
 
-    groupingNode.setTargets(targets);
+    groupingNode.setTargets(Arrays.asList(targets));
     block.unsetAggregationRequire();
 
     verifyProjectedFields(block, groupingNode);
@@ -1198,7 +1198,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
-    joinNode.setTargets(targets.toArray(new Target[targets.size()]));
+    joinNode.setTargets(targets);
 
     // Determine join conditions
     if (join.isNatural()) { // if natural join, it should have the equi-join conditions by common column names
@@ -1305,7 +1305,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
-    join.setTargets(targets.toArray(new Target[targets.size()]));
+    join.setTargets(targets);
     return join;
   }
 
@@ -1366,7 +1366,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       targets.add(new Target(evalNode, reference));
     }
 
-    scanNode.setTargets(targets.toArray(new Target[targets.size()]));
+    scanNode.setTargets(new ArrayList<>(targets));
 
     verifyProjectedFields(block, scanNode);
     return scanNode;
@@ -1463,7 +1463,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
 
-    subQueryNode.setTargets(targets.toArray(new Target[targets.size()]));
+    subQueryNode.setTargets(new ArrayList<>(targets));
   }
 
     /*===============================================================================================
@@ -1512,20 +1512,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     currentBlock.addRelation(setOpTableSubQueryNode);
 
     Schema setOpSchema = setOpTableSubQueryNode.getOutSchema();
-    Target[] setOpTarget = setOpTableSubQueryNode.getTargets();
+    Target[] setOpTarget = setOpTableSubQueryNode.getTargets().toArray(new Target[]{});
 
     // make group by node whose grouping keys are all columns of set operation
     GroupbyNode setOpGroupbyNode = context.plan.createNode(GroupbyNode.class);
     setOpGroupbyNode.setInSchema(setOpSchema);
     setOpGroupbyNode.setGroupingColumns(setOpSchema.toArray());
-    setOpGroupbyNode.setTargets(setOpTarget);
+    setOpGroupbyNode.setTargets(Arrays.asList(setOpTarget));
     setOpGroupbyNode.setChild(setOpTableSubQueryNode);
     currentBlock.registerNode(setOpGroupbyNode);
 
     // make projection node which projects all the union columns
     ProjectionNode setOpProjectionNode = context.plan.createNode(ProjectionNode.class);
     setOpProjectionNode.setInSchema(setOpSchema);
-    setOpProjectionNode.setTargets(setOpTarget);
+    setOpProjectionNode.setTargets(Arrays.asList(setOpTarget));
     setOpProjectionNode.setChild(setOpGroupbyNode);
     currentBlock.registerNode(setOpProjectionNode);
 
@@ -1759,8 +1759,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           continue;
         }
 
-        if (idxInProjectionNode >= 0 && idxInProjectionNode < projectionNode.getTargets().length) {
-          targets.add(projectionNode.getTargets()[idxInProjectionNode]);
+        if (idxInProjectionNode >= 0 && idxInProjectionNode < projectionNode.getTargets().size()) {
+          targets.add(projectionNode.getTargets().get(idxInProjectionNode));
         } else {
           targets.add(new Target(new ConstEval(NullDatum.get()), column.getSimpleName()));
         }
@@ -1780,7 +1780,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // add (projection - subquery) to RootBlock and create new QueryBlock for UnionNode
     TableSubQueryNode subQueryNode = context.plan.createNode(TableSubQueryNode.class);
     subQueryNode.init(context.queryBlock.getName(), child);
-    subQueryNode.setTargets(PlannerUtil.schemaToTargets(subQueryNode.getOutSchema()));
+    subQueryNode.setTargets(Arrays.asList(PlannerUtil.schemaToTargets(subQueryNode.getOutSchema())));
 
     ProjectionNode projectionNode = context.plan.createNode(ProjectionNode.class);
     projectionNode.setChild(subQueryNode);

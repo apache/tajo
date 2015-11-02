@@ -101,7 +101,7 @@ public class ExplainPlanPreprocessorForTest {
       super.visitScan(context, plan, block, node, stack);
       context.childNumbers.push(1);
       if (node.hasTargets()) {
-        node.setTargets(sortTargets(node.getTargets()));
+        node.setTargets(Arrays.asList(sortTargets(node.getTargets().toArray(new Target[]{}))));
       }
       if (node.hasQual()) {
         node.setQual(sortQual(node.getQual()));
@@ -120,7 +120,7 @@ public class ExplainPlanPreprocessorForTest {
       Arrays.sort(inputPaths);
       node.setInputPaths(inputPaths);
       if (node.hasTargets()) {
-        node.setTargets(sortTargets(node.getTargets()));
+        node.setTargets(Arrays.asList(sortTargets(node.getTargets().toArray(new Target[]{}))));
       }
       if (node.hasQual()) {
         node.setQual(sortQual(node.getQual()));
@@ -136,7 +136,7 @@ public class ExplainPlanPreprocessorForTest {
       int leftChildNum = context.childNumbers.pop();
 
       if (node.hasTargets()) {
-        node.setTargets(sortTargets(node.getTargets()));
+        node.setTargets(Arrays.asList(sortTargets(node.getTargets().toArray(new Target[]{}))));
       }
 
       if (node.hasJoinQual()) {

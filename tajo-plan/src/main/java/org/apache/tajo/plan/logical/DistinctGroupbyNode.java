@@ -67,13 +67,11 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   @Override
   public List<Target> getTargets() {
-    List<Target> targetList = new ArrayList<>();
     if (hasTargets()) {
-      for(int i=0; i<targets.length; i++) {
-        targetList.add(targets[i]);
-      }
+      return Arrays.asList(targets);
+    } else {
+      return new ArrayList<>();
     }
-    return targetList;
   }
 
   public void setSubPlans(List<GroupbyNode> groupByNodes) {

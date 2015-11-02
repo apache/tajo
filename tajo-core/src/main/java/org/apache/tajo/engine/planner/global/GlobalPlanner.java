@@ -564,7 +564,7 @@ public class GlobalPlanner {
     GroupbyNode firstStageGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
     firstStageGroupby.setGroupingColumns(TUtil.toArray(firstStageGroupingColumns, Column.class));
     firstStageGroupby.setAggFunctions(TUtil.toArray(firstStageAggFunctions, AggregationFunctionCallEval.class));
-    firstStageGroupby.setTargets(firstStageTargets);
+    firstStageGroupby.setTargets(Arrays.asList(firstStageTargets));
     firstStageGroupby.setChild(groupbyNode.getChild());
     firstStageGroupby.setInSchema(groupbyNode.getInSchema());
 
@@ -779,7 +779,7 @@ public class GlobalPlanner {
       firstPhaseGroupBy.setAggFunctions(firstPhaseEvals);
       Target [] firstPhaseTargets = ProjectionPushDownRule.buildGroupByTarget(firstPhaseGroupBy, null,
           firstPhaseEvalNames);
-      firstPhaseGroupBy.setTargets(firstPhaseTargets);
+      firstPhaseGroupBy.setTargets(Arrays.asList(firstPhaseTargets));
       secondPhaseGroupBy.setInSchema(PlannerUtil.targetToSchema(firstPhaseTargets));
     }
     return firstPhaseGroupBy;

@@ -84,7 +84,7 @@ public class BSTIndexScanExec extends ScanExec {
     TupleComparator comparator = new BaseTupleComparator(keySchema,
         keySortSpecs);
 
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets().toArray(new Target[]{}));
 
     Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(fragment));
     this.reader = new BSTIndex(context.getConf()).
@@ -177,7 +177,7 @@ public class BSTIndexScanExec extends ScanExec {
     // Why we should check nullity? See https://issues.apache.org/jira/browse/TAJO-1422
     if (fragment != null) {
 
-      Schema fileScanOutSchema = mergeSubSchemas(projected, keySchema, plan.getTargets(), qual);
+      Schema fileScanOutSchema = mergeSubSchemas(projected, keySchema, plan.getTargets().toArray(new Target[]{}), qual);
 
       this.fileScanner = OldStorageManager.getStorageManager(context.getConf(),
           plan.getTableDesc().getMeta().getDataFormat())
@@ -190,9 +190,9 @@ public class BSTIndexScanExec extends ScanExec {
       // If TRUE, the retrieved tuple will contain only projected fields.
       // If FALSE, the retrieved tuple will contain projected fields and NullDatum for non-projected fields.
       if (fileScanner.isProjectable()) {
-        this.projector = new Projector(context, projected, outSchema, plan.getTargets());
+        this.projector = new Projector(context, projected, outSchema, plan.getTargets().toArray(new Target[]{}));
       } else {
-        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets().toArray(new Target[]{}));
       }
     }
   }
