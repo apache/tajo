@@ -27,6 +27,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -35,6 +36,8 @@ public class CSVLineDeserializer extends TextLineDeserializer {
   private ByteBufProcessor processor;
   private FieldSerializerDeserializer fieldSerDer;
   private ByteBuf nullChars;
+  private final boolean hasQuoteChar;
+  private final byte quoteChar;
   private int delimiterCompensation;
 
   private int [] targetColumnIndexes;
@@ -42,6 +45,10 @@ public class CSVLineDeserializer extends TextLineDeserializer {
   public CSVLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
     super(schema, meta);
     targetColumnIndexes = PlannerUtil.getTargetIds(schema, projected);
+
+    // The quote char must be a single ASCII character.
+    hasQuoteChar = meta.containsOption(StorageConstants.QUOTE_CHAR);
+    quoteChar = meta.getOption(StorageConstants.QUOTE_CHAR, "\0").getBytes()[0];
   }
 
   @Override
@@ -86,7 +93,16 @@ public class CSVLineDeserializer extends TextLineDeserializer {
       }
 
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
-        lineBuf.setIndex(start, start + fieldLength);
+        final int terminalOffset = start + fieldLength;
+        lineBuf.setIndex(start, terminalOffset);
+
+        // See the issue TAJO-1955. This routine strips quote if the property 'quote_char' is specified
+        if (hasQuoteChar) {
+          if (lineBuf.getByte(start) == quoteChar && lineBuf.getByte(terminalOffset - 1) == quoteChar) {
+            lineBuf.setIndex(start + 1, terminalOffset - 1);
+          }
+        }
+
         try {
           Datum datum = fieldSerDer.deserialize(currentIndex, lineBuf, nullChars);
           output.put(currentTarget, datum);
