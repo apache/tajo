@@ -179,8 +179,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     }
 
     if (targets != null) {
-      grp.targets = new ArrayList<>();
-      grp.targets.addAll(targets);
+      grp.targets = new ArrayList<>(targets);
     }
 
     return grp;

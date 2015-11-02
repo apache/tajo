@@ -25,6 +25,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -101,7 +102,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     ProjectionNode projNode = (ProjectionNode) super.clone();
-    projNode.targets = targets;
+    projNode.targets = new ArrayList<>(targets);
 
     return projNode;
   }

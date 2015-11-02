@@ -142,8 +142,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     JoinNode join = (JoinNode) super.clone();
     join.joinSpec = (JoinSpec) this.joinSpec.clone();
     if (hasTargets()) {
-      join.targets = new ArrayList<>();
-      join.targets.addAll(targets);
+      join.targets = new ArrayList<>(targets);
     }
     return join;
   }
