@@ -44,18 +44,6 @@ public class PartitionedTableScanNode extends ScanNode {
     }
   }
 
-  public void init(ScanNode scanNode, Path[] inputPaths) {
-    tableDesc = scanNode.tableDesc;
-    setInSchema(scanNode.getInSchema());
-    setOutSchema(scanNode.getOutSchema());
-    this.qual = scanNode.qual;
-    this.targets = scanNode.targets;
-
-    if (scanNode.hasAlias()) {
-      alias = scanNode.alias;
-    }
-  }
-
 	public String toString() {
     StringBuilder sb = new StringBuilder("Partitions Scan (table=").append(getTableName());
     if (hasAlias()) {
