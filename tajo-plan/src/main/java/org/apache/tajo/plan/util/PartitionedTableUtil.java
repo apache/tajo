@@ -487,7 +487,8 @@ public class PartitionedTableUtil {
     Preconditions.checkNotNull(partitionName);
 
     String [] columnValues = partitionName.split("/");
-    Preconditions.checkArgument(partitionColumnSchema.size() < columnValues.length, "Invalid Partition Name");
+    Preconditions.checkArgument(partitionColumnSchema.size() >= columnValues.length,
+      "Invalid Partition Name :" + partitionName);
 
     Tuple tuple = new VTuple(partitionColumnSchema.size());
 
