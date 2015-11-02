@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -148,7 +149,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     // Groupby_Key2 | Distinct1_Column_V3 |                     |                          |
     //--------------------------------------------------------------------------------------
 
-    List<TupleList> tupleSlots = new ArrayList<TupleList>();
+    List<TupleList> tupleSlots = new ArrayList<>();
 
     // aggregation with single grouping key
     for (int i = 0; i < hashAggregators.length; i++) {
@@ -359,9 +360,9 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
     public HashAggregator(GroupbyNode groupbyNode, Schema schema) throws IOException {
 
-      hashTable = new TupleMap<TupleMap<FunctionContext[]>>(10000);
+      hashTable = new TupleMap<>(context.getQueryContext().getInt(SessionVars.AGG_HASH_TABLE_SIZE));
 
-      List<Column> groupingKeyColumnList = new ArrayList<Column>(distinctGroupingKeyColumnSet);
+      List<Column> groupingKeyColumnList = new ArrayList<>(distinctGroupingKeyColumnSet);
 
       Column[] keyColumns = groupbyNode.getGroupingColumns();
       Column col;
@@ -399,7 +400,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       TupleMap<FunctionContext[]> distinctEntry = hashTable.get(outerKeyTuple);
 
       if (distinctEntry == null) {
-        distinctEntry = new TupleMap<FunctionContext[]>();
+        distinctEntry = new TupleMap<>();
         hashTable.put(outerKeyTuple, distinctEntry);
       }
 
