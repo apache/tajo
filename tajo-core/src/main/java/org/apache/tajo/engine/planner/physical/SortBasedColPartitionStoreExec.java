@@ -102,6 +102,8 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
       context.setResultStats(aggregatedStats);
     }
+
+    super.close();
   }
 
   @Override
