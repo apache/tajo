@@ -124,7 +124,7 @@ public class LogicalOptimizer {
       if (targets.size() == 0) {
         newJoinNode.setTargets(PlannerUtil.schemaToTargets(old.getOutSchema()));
       } else {
-        List<Target> input = new ArrayList<>(targets.size());
+        List<Target> input = new ArrayList<>();
         input.addAll(targets);
         newJoinNode.setTargets(input);
       }

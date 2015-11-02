@@ -537,12 +537,12 @@ public class PlannerUtil {
   }
 
   public static List<Target> schemaToTargets(Schema schema) {
-    List<Target> targets = new ArrayList<>(schema.size());
+    List<Target> targets = new ArrayList<>();
 
     FieldEval eval;
     for (int i = 0; i < schema.size(); i++) {
       eval = new FieldEval(schema.getColumn(i));
-      targets.add(i, new Target(eval));
+      targets.add(new Target(eval));
     }
     return targets;
   }
@@ -677,10 +677,10 @@ public class PlannerUtil {
    * @return The stripped targets
    */
   public static List<Target> stripTarget(List<Target> sourceTargets) {
-    List<Target> copy = new ArrayList<>(sourceTargets.size());
+    List<Target> copy = new ArrayList<>();
     for (int i = 0; i < sourceTargets.size(); i++) {
       try {
-        copy.add(i, (Target) sourceTargets.get(i).clone());
+        copy.add((Target) sourceTargets.get(i).clone());
       } catch (CloneNotSupportedException e) {
         throw new InternalError(e.getMessage());
       }

@@ -824,22 +824,21 @@ public class ProjectionPushDownRule extends
         groupingKeyTargets == null ? groupbyNode.getGroupingColumns().length : groupingKeyTargets.size();
     final int aggrFuncNum = aggEvalNames != null ? aggEvalNames.length : 0;
     EvalNode [] aggEvalNodes = groupbyNode.getAggFunctions();
-    List<Target> targets = new ArrayList<>(groupingKeyNum + aggrFuncNum);
+    List<Target> targets = new ArrayList<>();
 
     if (groupingKeyTargets != null) {
       for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
-        targets.set(groupingKeyIdx, groupingKeyTargets.get(groupingKeyIdx));
+        targets.add(groupingKeyTargets.get(groupingKeyIdx));
       }
     } else {
       for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
-        targets.set(groupingKeyIdx, new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx])));
+        targets.add(new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx])));
       }
     }
 
     if (aggEvalNames != null) {
-      for (int aggrFuncIdx = 0, targetIdx = groupingKeyNum; aggrFuncIdx < aggrFuncNum; aggrFuncIdx++, targetIdx++) {
-        targets.set(targetIdx,
-                new Target(new FieldEval(aggEvalNames[aggrFuncIdx], aggEvalNodes[aggrFuncIdx].getValueType())));
+      for (int aggrFuncIdx = 0; aggrFuncIdx < aggrFuncNum; aggrFuncIdx++) {
+        targets.add(new Target(new FieldEval(aggEvalNames[aggrFuncIdx], aggEvalNodes[aggrFuncIdx].getValueType())));
       }
     }
 
@@ -954,7 +953,9 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    node.setTargets(new ArrayList<>(projectedTargets));
+    List<Target> input = new ArrayList<>();
+    input.addAll(projectedTargets);
+    node.setTargets(input);
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1092,10 +1093,9 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    List<Target> input = new ArrayList<>(projectedTargets.size());
+    List<Target> input = new ArrayList<>();
     input.addAll(projectedTargets);
     node.setTargets(input);
-
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
   }
@@ -1129,7 +1129,7 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    List<Target> input = new ArrayList<>(projectedTargets.size());
+    List<Target> input = new ArrayList<>();
     input.addAll(projectedTargets);
     node.setTargets(input);
     LogicalPlanner.verifyProjectedFields(block, node);
@@ -1173,7 +1173,7 @@ public class ProjectionPushDownRule extends
       }
     }
 
-    List<Target> input = new ArrayList<>(projectedTargets.size());
+    List<Target> input = new ArrayList<>();
     input.addAll(projectedTargets);
     node.setTargets(input);
     LogicalPlanner.verifyProjectedFields(block, node);

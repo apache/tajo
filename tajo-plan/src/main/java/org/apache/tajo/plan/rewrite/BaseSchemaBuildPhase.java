@@ -255,16 +255,16 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     }
 
     private List<Target> buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws TajoException {
-      List<Target> targets = new ArrayList<>(exprs.length);
+      List<Target> targets = new ArrayList<>();
       for (int i = 0; i < exprs.length; i++) {
         NamedExpr namedExpr = exprs[i];
         TajoDataTypes.DataType dataType = typeDeterminant.determineDataType(context, namedExpr.getExpr());
 
         if (namedExpr.hasAlias()) {
-          targets.add(i, new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType))));
+          targets.add(new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType))));
         } else {
           String generatedName = context.getPlan().generateUniqueColumnName(namedExpr.getExpr());
-          targets.add(i, new Target(new FieldEval(new Column(generatedName, dataType))));
+          targets.add(new Target(new FieldEval(new Column(generatedName, dataType))));
         }
       }
       return targets;
@@ -327,9 +327,9 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         EvalNode evalNode = annotator.createEvalNode(ctx, namedExpr.getExpr(), NameResolvingMode.SUBEXPRS_AND_RELS, true);
 
         if (namedExpr.hasAlias()) {
-          targets.add(i, new Target(evalNode, namedExpr.getAlias()));
+          targets.add(new Target(evalNode, namedExpr.getAlias()));
         } else {
-          targets.add(i, new Target(evalNode, "?name_" + i));
+          targets.add(new Target(evalNode, "?name_" + i));
         }
       }
       stack.pop();

@@ -388,7 +388,7 @@ public class GlobalPlanner {
 
     public RewrittenFunctions(int firstStageEvalNum) {
       firstStageEvals = new AggregationFunctionCallEval[firstStageEvalNum];
-      firstStageTargets = new ArrayList<>(firstStageEvalNum);
+      firstStageTargets = new ArrayList<>();
     }
   }
 
@@ -550,14 +550,13 @@ public class GlobalPlanner {
     int firstStageAggFunctionNum = firstStageAggFunctions.size();
     int firstStageGroupingKeyNum = firstStageGroupingColumns.size();
 
-    int i = 0;
-    List<Target> firstStageTargets = new ArrayList<>(firstStageGroupingKeyNum + firstStageAggFunctionNum);
+    List<Target> firstStageTargets = new ArrayList<>();
     for (Column column : firstStageGroupingColumns) {
       Target target = new Target(new FieldEval(column));
-      firstStageTargets.add(i++, target);
+      firstStageTargets.add(target);
     }
     for (Target target : firstPhaseEvalNodeTargets) {
-      firstStageTargets.add(i++, target);
+      firstStageTargets.add(target);
     }
 
     // Create the groupby node for the first stage and set all necessary descriptions

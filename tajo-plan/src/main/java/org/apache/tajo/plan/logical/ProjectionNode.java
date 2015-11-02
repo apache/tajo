@@ -102,7 +102,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     ProjectionNode projNode = (ProjectionNode) super.clone();
-    projNode.targets = new ArrayList<>(targets.size());
+    projNode.targets = new ArrayList<>();
     projNode.targets.addAll(targets);
 
     return projNode;
