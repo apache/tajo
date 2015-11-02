@@ -40,5 +40,6 @@ message PartitionedFileFragmentProto {
   required int64 length = 4;
   repeated string hosts = 5;
   repeated int32 disk_ids = 6;
-  required string partitionName = 7; /* it cosists of partition key and value */
+  // Partition Name: country=KOREA/city=SEOUL
+  required string partitionName = 7;
 }
