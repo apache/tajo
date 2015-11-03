@@ -168,9 +168,12 @@ public class TajoTestingCluster {
     conf.setInt("hbase.hconnection.threads.max", 10);
     conf.setInt("hbase.hconnection.meta.lookup.threads.core", 5);
     conf.setInt("hbase.hconnection.meta.lookup.threads.max", 10);
+
     //memory cache
     conf.setFloat("hfile.block.cache.size", 0.1f);
-    conf.setInt("hbase.bucketcache.size", 10);
+    conf.setBoolean("hbase.bucketcache.combinedcache.enabled", false);
+    conf.setInt("hbase.bucketcache.size", 100); //100 MB
+    conf.set("hbase.bucketcache.ioengine", "heap");
 
     /* Since Travis CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
