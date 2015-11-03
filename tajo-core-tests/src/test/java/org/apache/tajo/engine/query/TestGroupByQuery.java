@@ -773,7 +773,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-  @Test
+  /*@Test
   @Option(sort = true)
   @SimpleTest
   public final void testGroupbyWithPythonFunc() throws Exception {
@@ -821,7 +821,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
-  }
+  }*/
 
   // TODO: this test cannot be executed due to the bug of logical planner (TAJO-1588)
 //  @Test
