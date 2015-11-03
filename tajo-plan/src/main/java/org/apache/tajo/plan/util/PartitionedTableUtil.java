@@ -192,7 +192,7 @@ public class PartitionedTableUtil {
     }
 
     LOG.info("Total filtered input paths:" + filteredPartitionInfo.getPartitionPaths().length +
-      ", total filtered input volume:" + filteredPartitionInfo.getTotalVolume());
+      ", volume:" + filteredPartitionInfo.getTotalVolume());
 
     return filteredPartitionInfo;
   }

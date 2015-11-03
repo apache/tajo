@@ -18,6 +18,8 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.exception.*;
@@ -25,12 +27,17 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
+import org.apache.tajo.plan.util.FilteredPartitionInfo;
+import org.apache.tajo.plan.util.PartitionedTableUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
+import java.io.IOException;
 import java.util.*;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
+  private static final Log LOG = LogFactory.getLog(PartitionedTableRewriter.class);
+  private CatalogService catalog;
   private static final String NAME = "Partitioned Table Rewriter";
   private final Rewriter rewriter = new Rewriter();
 
@@ -58,8 +65,15 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws TajoException {
     LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
+    this.catalog = context.getCatalog();
     rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<>());
     return plan;
+  }
+
+  public FilteredPartitionInfo findFilteredPartitionInfo(OverridableConf conf,
+    PartitionedTableScanNode partitionedTableScanNode) throws IOException, UndefinedDatabaseException,
+    UndefinedTableException, UndefinedPartitionMethodException, UndefinedOperatorException, UnsupportedException {
+    return PartitionedTableUtil.findFilteredPartitionInfo(catalog, conf.getConf(), partitionedTableScanNode);
   }
 
   private final class Rewriter extends BasicLogicalPlanVisitor<OverridableConf, Object> {
@@ -74,6 +88,14 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
       PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
       rewrittenScanNode.init(scanNode);
+
+      try {
+        // If PartitionedTableScanNode doesn't have correct table volume, broadcast join might not run occasionally. 
+        FilteredPartitionInfo filteredPartitionInfo = findFilteredPartitionInfo(queryContext, rewrittenScanNode);
+        rewrittenScanNode.getTableDesc().getStats().setNumBytes(filteredPartitionInfo.getTotalVolume());
+      } catch (IOException e) {
+        throw new TajoInternalError("Partitioned Table Rewrite Failed: \n" + e.getMessage());
+      }
 
       // if it is topmost node, set it as the rootnode of this block.
       if (stack.empty() || block.getRoot().equals(scanNode)) {
