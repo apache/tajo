@@ -1544,7 +1544,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     // IN
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key IN ( to_date('1994-02-02', 'YYYY-MM-DD'), to_date('1993-11-09', 'YYYY-MM-DD')) order by col1, " +
+      + " WHERE key IN (DATE '1994-02-02',  DATE '1993-11-09') order by col1, " +
       "col2, key desc");
 
     expectedResult = "col1,col2,key\n" +
@@ -1626,7 +1626,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     // IN
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key IN (to_timestamp('1994-02-02', 'YYYY-MM-DD'), to_timestamp('1993-11-09', 'YYYY-MM-DD')) " +
+      + " WHERE key IN (TIMESTAMP '1994-02-02 00:00:00', TIMESTAMP '1993-11-09 00:00:00') " +
       " order by col1, col2, key desc");
 
     expectedResult = "col1,col2,key\n" +
@@ -1717,7 +1717,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     // IN
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key IN (cast('11:20:40' as time), cast('12:10:20' as time)) order by col1, col2, key desc");
+      + " WHERE key IN (TIME '11:20:40', TIME '12:10:20') order by col1, col2, key desc");
 
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
