@@ -449,7 +449,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       // Build record columns
       RecordColumnBuilder builder = new RecordColumnBuilder(schemaGraph);
       for (ColumnVertex eachRoot : rootVertexes) {
-        schemaGraph.accept(eachRoot, builder);
+        schemaGraph.accept(null, eachRoot, builder);
         schema.addColumn(eachRoot.column);
       }
 
@@ -511,7 +511,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       }
     }
 
-    private static class RecordColumnBuilder implements DirectedGraphVisitor<ColumnVertex> {
+    private static class RecordColumnBuilder implements DirectedGraphVisitor<Object, ColumnVertex> {
       private final SchemaGraph graph;
 
       public RecordColumnBuilder(SchemaGraph graph) {
@@ -519,7 +519,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       }
 
       @Override
-      public void visit(Stack<ColumnVertex> stack, ColumnVertex schemaVertex) {
+      public void visit(Object context, Stack<ColumnVertex> stack, ColumnVertex schemaVertex) {
         if (graph.isLeaf(schemaVertex)) {
           schemaVertex.column = new Column(schemaVertex.name, schemaVertex.type);
         } else {

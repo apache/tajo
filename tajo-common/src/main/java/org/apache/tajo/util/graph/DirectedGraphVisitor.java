@@ -20,6 +20,6 @@ package org.apache.tajo.util.graph;
 
 import java.util.Stack;
 
-public interface DirectedGraphVisitor<V> {
-  void visit(Stack<V> stack, V v);
+public interface DirectedGraphVisitor<CONTEXT, V> {
+  void visit(CONTEXT context, Stack<V> stack, V v);
 }

@@ -65,12 +65,10 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private BroadcastJoinPlanBuilder planBuilder;
   private BroadcastJoinPlanFinalizer planFinalizer;
 
-  protected void init(MasterPlan plan, long thresholdForNonCrossJoin, long thresholdForCrossJoin,
-                      boolean broadcastForNonCrossJoinEnabled) {
+  protected void init(MasterPlan plan) {
     GlobalPlanRewriteUtil.ParentFinder parentFinder = new GlobalPlanRewriteUtil.ParentFinder();
     RelationSizeComparator relSizeComparator = new RelationSizeComparator();
-    planBuilder = new BroadcastJoinPlanBuilder(plan, relSizeComparator, parentFinder, thresholdForNonCrossJoin,
-        thresholdForCrossJoin, broadcastForNonCrossJoinEnabled);
+    planBuilder = new BroadcastJoinPlanBuilder(plan, relSizeComparator, parentFinder);
     planFinalizer = new BroadcastJoinPlanFinalizer(plan, relSizeComparator);
   }
 
@@ -90,7 +88,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         (thresholdForNonCrossJoin > 0 || thresholdForCrossJoin > 0)) {
       for (LogicalPlan.QueryBlock block : plan.getLogicalPlan().getQueryBlocks()) {
         if (block.hasNode(NodeType.JOIN)) {
-          init(plan, thresholdForNonCrossJoin, thresholdForCrossJoin, broadcastJoinEnabled);
+          init(plan);
           return true;
         }
       }
@@ -99,9 +97,13 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   }
 
   @Override
-  public MasterPlan rewrite(MasterPlan plan) throws TajoException {
-    plan.accept(plan.getRoot().getId(), planBuilder);
-    plan.accept(plan.getRoot().getId(), planFinalizer);
+  public MasterPlan rewrite(OverridableConf queryContext, MasterPlan plan) throws TajoException {
+    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD) *
+        StorageUnit.KB;
+    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD) *
+        StorageUnit.KB;
+    plan.accept(new Context(thresholdForNonCrossJoin, thresholdForCrossJoin), plan.getRoot().getId(), planBuilder);
+    plan.accept(null, plan.getRoot().getId(), planFinalizer);
     return plan;
   }
 
@@ -125,7 +127,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
    * {@Link BroadcastJoinPlanFinalizer} checks whether every input is the broadcast candidate or not.
    * If so, it removes the broadcast property from the largest relation.
    */
-  private class BroadcastJoinPlanFinalizer implements DirectedGraphVisitor<ExecutionBlockId> {
+  private class BroadcastJoinPlanFinalizer implements DirectedGraphVisitor<Object, ExecutionBlockId> {
     private final MasterPlan plan;
     private final RelationSizeComparator relSizeComparator;
 
@@ -135,7 +137,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     }
 
     @Override
-    public void visit(Stack<ExecutionBlockId> stack, ExecutionBlockId currentId) {
+    public void visit(Object context, Stack<ExecutionBlockId> stack, ExecutionBlockId currentId) {
       ExecutionBlock current = plan.getExecBlock(currentId);
       if (!plan.isTerminal(current)) {
         // When every child is a broadcast candidate, enforce non-broadcast for the largest relation for the join to be
@@ -150,35 +152,37 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     }
   }
 
-  private class BroadcastJoinPlanBuilder implements DirectedGraphVisitor<ExecutionBlockId> {
-    private final MasterPlan plan;
-    private final RelationSizeComparator relSizeComparator;
+  private static class Context {
     private final long thresholdForNonCrossJoin;
     private final long thresholdForCrossJoin;
-    private final boolean broadcastForNonCrossJoinEnabled;
-    private final GlobalPlanRewriteUtil.ParentFinder parentFinder;
     private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = new HashMap<>();
 
-    public BroadcastJoinPlanBuilder(MasterPlan plan, RelationSizeComparator relationSizeComparator,
-                                    GlobalPlanRewriteUtil.ParentFinder parentFinder,
-                                    long thresholdForNonCrossJoin, long thresholdForCrossJoin,
-                                    boolean broadcastForNonCrossJoinEnabled) {
-      this.plan = plan;
-      this.relSizeComparator = relationSizeComparator;
+    public Context(long thresholdForNonCrossJoin, long thresholdForCrossJoin) {
       this.thresholdForNonCrossJoin = thresholdForNonCrossJoin;
       this.thresholdForCrossJoin = thresholdForCrossJoin;
+    }
+  }
+
+  private class BroadcastJoinPlanBuilder implements DirectedGraphVisitor<Context, ExecutionBlockId> {
+    private final MasterPlan plan;
+    private final RelationSizeComparator relSizeComparator;
+    private final GlobalPlanRewriteUtil.ParentFinder parentFinder;
+
+    public BroadcastJoinPlanBuilder(MasterPlan plan, RelationSizeComparator relationSizeComparator,
+                                    GlobalPlanRewriteUtil.ParentFinder parentFinder) {
+      this.plan = plan;
+      this.relSizeComparator = relationSizeComparator;
       this.parentFinder = parentFinder;
-      this.broadcastForNonCrossJoinEnabled = broadcastForNonCrossJoinEnabled;
     }
 
     @Override
-    public void visit(Stack<ExecutionBlockId> stack, ExecutionBlockId executionBlockId) {
+    public void visit(Context context, Stack<ExecutionBlockId> stack, ExecutionBlockId executionBlockId) {
       ExecutionBlock current = plan.getExecBlock(executionBlockId);
 
       if (plan.isLeaf(current)) {
-        visitLeafNode(current);
+        visitLeafNode(context, current);
       } else {
-        visitNonLeafNode(current);
+        visitNonLeafNode(context, current);
       }
     }
 
@@ -187,14 +191,14 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      *
      * @param current
      */
-    private void visitLeafNode(ExecutionBlock current) {
+    private void visitLeafNode(Context context, ExecutionBlock current) {
       // Preserved-row relations must not be broadcasted to avoid data duplication.
       if (!current.isPreservedRow()) {
         long totalVolume = 0;
         for (ScanNode scanNode : current.getScanNodes()) {
           totalVolume += GlobalPlanRewriteUtil.getTableVolume(scanNode);
         }
-        estimatedEbOutputSize.put(current.getId(), totalVolume);
+        context.estimatedEbOutputSize.put(current.getId(), totalVolume);
       }
     }
 
@@ -206,7 +210,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      *
      * @param current
      */
-    private void visitNonLeafNode(ExecutionBlock current) {
+    private void visitNonLeafNode(Context context, ExecutionBlock current) {
       // At non-leaf execution blocks, merge broadcastable children's plan with the current plan.
 
       if (!plan.isTerminal(current)) {
@@ -222,7 +226,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
           for (ExecutionBlock child : childs) {
             if (!child.isPreservedRow()) {
-              updateBroadcastableRelForChildEb(child, joinType);
+              updateBroadcastableRelForChildEb(context, child, joinType);
               updateInputBasedOnChildEb(child, current);
             }
           }
@@ -234,10 +238,10 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
               mergeTwoPhaseJoinIfPossible(plan, child, current);
             }
 
-            checkTotalSizeOfBroadcastableRelations(current);
+            checkTotalSizeOfBroadcastableRelations(context, current);
 
             long outputVolume = estimateOutputVolume(current);
-            estimatedEbOutputSize.put(current.getId(), outputVolume);
+            context.estimatedEbOutputSize.put(current.getId(), outputVolume);
           }
         } else {
           List<ScanNode> relations = TUtil.newList(current.getBroadcastRelations());
@@ -262,8 +266,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       }
     }
 
-    private void updateBroadcastableRelForChildEb(ExecutionBlock child, JoinType joinType) {
-      long threshold = joinType == JoinType.CROSS ? thresholdForCrossJoin : thresholdForNonCrossJoin;
+    private void updateBroadcastableRelForChildEb(Context context, ExecutionBlock child, JoinType joinType) {
+      long threshold = joinType == JoinType.CROSS ? context.thresholdForCrossJoin : context.thresholdForNonCrossJoin;
       for (ScanNode scanNode : child.getScanNodes()) {
         long volume = GlobalPlanRewriteUtil.getTableVolume(scanNode);
         if (volume >= 0 && volume <= threshold) {
@@ -382,14 +386,14 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      *
      * @param block
      */
-    private void checkTotalSizeOfBroadcastableRelations(ExecutionBlock block) {
+    private void checkTotalSizeOfBroadcastableRelations(Context context, ExecutionBlock block) {
       List<ScanNode> broadcastCandidates = TUtil.newList(block.getBroadcastRelations());
       Collections.sort(broadcastCandidates, relSizeComparator);
 
       // Enforce broadcast for candidates in ascending order of relation size
       long totalBroadcastVolume = 0;
-      long largeThreshold = thresholdForCrossJoin > thresholdForNonCrossJoin ?
-          thresholdForCrossJoin : thresholdForNonCrossJoin;
+      long largeThreshold = context.thresholdForCrossJoin > context.thresholdForNonCrossJoin ?
+          context.thresholdForCrossJoin : context.thresholdForNonCrossJoin;
       int i;
       for (i = 0; i < broadcastCandidates.size(); i++) {
         long volumeOfCandidate = GlobalPlanRewriteUtil.getTableVolume(broadcastCandidates.get(i));
