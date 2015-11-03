@@ -152,6 +152,15 @@ public class BufferPool {
     return null;
   }
 
+  public static BufferPoolMXBean getMappedBufferPool() {
+    for (BufferPoolMXBean pool : getBufferPools()) {
+      if (pool.getName().equals("mapped")) {
+        return pool;
+      }
+    }
+    return null;
+  }
+
   private static List<BufferPoolMXBean> getBufferPools() {
     return ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
   }

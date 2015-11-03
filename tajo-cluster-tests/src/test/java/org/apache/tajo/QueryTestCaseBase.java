@@ -250,12 +250,15 @@ public class QueryTestCaseBase {
   @Before
   public void printTestName() {
     /* protect a travis stalled build */
-    BufferPoolMXBean pool = BufferPool.getDirectBufferPool();
-    System.out.println(String.format("Used heap: %s/%s, Used direct:%s/%s, Active Threads: %d, Run: %s.%s",
+    BufferPoolMXBean direct = BufferPool.getDirectBufferPool();
+    BufferPoolMXBean mapped = BufferPool.getMappedBufferPool();
+    System.out.println(String.format("Used heap: %s/%s, direct:%s/%s, mapped:%s/%s, Active Threads: %d, Run: %s.%s",
         FileUtil.humanReadableByteCount(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory(), false),
         FileUtil.humanReadableByteCount(Runtime.getRuntime().maxMemory(), false),
-        FileUtil.humanReadableByteCount(pool.getMemoryUsed(), false),
-        FileUtil.humanReadableByteCount(pool.getTotalCapacity(), false),
+        FileUtil.humanReadableByteCount(direct.getMemoryUsed(), false),
+        FileUtil.humanReadableByteCount(direct.getTotalCapacity(), false),
+        FileUtil.humanReadableByteCount(mapped.getMemoryUsed(), false),
+        FileUtil.humanReadableByteCount(mapped.getTotalCapacity(), false),
         Thread.activeCount(),
         getClass().getSimpleName(),
         name.getMethodName()));
