@@ -32,7 +32,6 @@ import org.apache.tajo.service.BaseServiceTracker;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.NumberUtil;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.validation.ConstraintViolationException;
 import org.apache.tajo.validation.Validator;
@@ -41,6 +40,7 @@ import org.apache.tajo.validation.Validators;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +49,7 @@ public class TajoConf extends Configuration {
   private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
   
-  private static final Map<String, ConfVars> vars = TUtil.newHashMap();
+  private static final Map<String, ConfVars> vars = new HashMap<>();
 
   static {
     Configuration.addDefaultResource("catalog-default.xml");
@@ -344,6 +344,9 @@ public class TajoConf extends Configuration {
         Validators.min("0")),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
     $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation (todo this is broken)
+    $AGG_HASH_TABLE_SIZE("tajo.executor.aggregate.hash-table.size", 10000),
+    $SORT_HASH_TABLE_SIZE("tajo.executor.sort.hash-table.size", 100000),
+    $JOIN_HASH_TABLE_SIZE("tajo.executor.join.hash-table.size", 100000),
 
     // for index
     $INDEX_ENABLED("tajo.query.index.enabled", false),

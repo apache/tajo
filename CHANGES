@@ -4,7 +4,17 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
+
   IMPROVEMENT
+
+    TAJO-1920: Calling 'Collection.toArray()' with zero-length array argument 
+    makes performance worse. (Dongkyu Hwangbo via hyunsik)
+
+    TAJO-1911: Change guava's Optional to Java's Optional. (hyunsik)
+
+    TAJO-1850: Using TUtil.newHash(Set/Map) should be replaced by Java's 
+    diamond operator. (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
     TAJO-1883: Keep tajo-client and its dependent modules to be 1.7 target.
     (hyunsik)
@@ -19,6 +29,15 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1578: User configuration for pull server port is ignored.
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
+    TAJO-1954: Fix memory leak in physical operator. (jinho)
+
+    TAJO-1643: SQLParse can't parse parentheses table clause. (hyunsik)
+
+    TAJO-1924: Repair partition need to calculate partition volume. (jaehwa)
+    
     TAJO-1913: Timezone does not affect the constant folding. (hyunsik)
 
     TAJO-1895: Add a maven profile to skip the unit tests of 
@@ -27,6 +46,14 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-1904: Extend GraphVisitor to accept user-defined context. (jihoon)
+
+    TAJO-1906: Decrease the default size of hash map and array list for testing.
+    (jihoon)
+
+    TAJO-1934: Test failures in TestPgSQLQueryTests due to sort order. 
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
 
     TAJO-1916: 'How to contribute' link is broken. (jihoon)
 
@@ -44,6 +71,14 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1877: Adopt try-resource statement to AbstractDBStore. 
+    (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
+    TAJO-1653: Add 'INSERT INTO VALUES' statement for OLTP-like storages.
+    (hyunsik)
+
+    TAJO-1936: NPE when calling the query result REST api(DaeMyung Kang)
+
     TAJO-1909: Eliminate remained explicit diamond expressions.
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
@@ -51,7 +86,7 @@ Release 0.12.0 - unreleased
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
 
-Release 0.11.0 - unreleased
+Release 0.11.0 - Released
 
   NEW FEATURES
 
@@ -335,6 +370,17 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1933: When a simple query executed on partitioned tables, the number of 
+    result rows is always the number of rows of the whole table. (jihoon)
+
+    TAJO-1928: Can't read parquet on hive meta. (jinho)
+
+    TAJO-1923: Selecting on information_schema.table_stats throws an internal 
+    error. (jihoon)
+
+    TAJO-1917: Conflict on Parquet Libraries. (Contributed by Jongyoung Park.
+    Committed by jihoon)
 
     TAJO-1900: When a record column and its child column are retrieved together, 
     the record column might not be inferred as record type properly. (jihoon)

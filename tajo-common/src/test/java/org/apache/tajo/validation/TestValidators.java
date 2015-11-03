@@ -25,10 +25,7 @@ import static org.junit.Assert.fail;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 import org.apache.tajo.util.TUtil;
 import org.hamcrest.Description;
@@ -322,7 +319,7 @@ public class TestValidators {
     String httpUrl = "http://tajo.apache.org";
     Collection<Validator> validators = null;
     
-    validators = TUtil.newHashSet();
+    validators = new HashSet<>();
     validators.add(new PatternValidator("^[a-zA-Z]+://"));
     validators.add(new LengthValidator(255));
     assertThat(new GroupValidator(validators).validate(httpUrl).size(), is(0));
@@ -330,7 +327,7 @@ public class TestValidators {
     assertThat(new GroupValidator(validators).validate("tajo"),
         hasItem(hasAClass(equalTo(PatternValidator.class))));
     
-    validators = TUtil.newHashSet();
+    validators = new HashSet<>();
     validators.add(new PatternValidator("^[a-zA-Z]+://"));
     validators.add(new LengthValidator(7));
     assertThat(new GroupValidator(validators).validate(httpUrl).size(), is(1));
@@ -351,7 +348,7 @@ public class TestValidators {
   public void testExceptionThrow() {
     Collection<Validator> validators = null;
     
-    validators = TUtil.newHashSet();
+    validators = new HashSet<>();
     validators.add(new PatternValidator("^[a-zA-Z]+://"));
     validators.add(new LengthValidator(255));
     new GroupValidator(validators).validate("tajo", true);

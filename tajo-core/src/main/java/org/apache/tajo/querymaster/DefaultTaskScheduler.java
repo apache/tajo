@@ -218,7 +218,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           fragmentsForNonLeafTask = new FileFragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
           if (castEvent.hasRightFragments()) {
-            FileFragment[] rightFragments = castEvent.getRightFragments().toArray(new FileFragment[]{});
+            Collection<Fragment> var = castEvent.getRightFragments();
+            FileFragment[] rightFragments = var.toArray(new FileFragment[var.size()]);
             fragmentsForNonLeafTask[1] = rightFragments[0];
             if (rightFragments.length > 1) {
               broadcastFragmentsForNonLeafTask = new FileFragment[rightFragments.length - 1];

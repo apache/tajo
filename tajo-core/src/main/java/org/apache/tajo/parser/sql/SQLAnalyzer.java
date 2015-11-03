@@ -41,6 +41,7 @@ import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
@@ -1670,7 +1671,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     }
 
-    insertExpr.setSubQuery(visitQuery_expression(ctx.query_expression()));
+    if (checkIfExist(ctx.VALUES())) {
+      List<NamedExpr> values = ctx.row_value_predicand().stream()
+          .map(value -> new NamedExpr(visitRow_value_predicand(value)))
+          .collect(Collectors.toList());
+      Projection projection = new Projection();
+      projection.setNamedExprs(values.toArray(new NamedExpr[values.size()]));
+      insertExpr.setSubQuery(projection);
+    } else {
+      insertExpr.setSubQuery(visitQuery_expression(ctx.query_expression()));
+    }
 
     Preconditions.checkState(insertExpr.hasTableName() || insertExpr.hasLocation(),
         "Either a table name or a location should be given.");

@@ -78,9 +78,10 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     for(Integer eachValue: proto.getDiskIdsList()) {
       diskIds[i++] = eachValue;
     }
+    List<String> var = proto.getHostsList();
     this.set(proto.getId(), new Path(proto.getPath()),
         proto.getStartOffset(), proto.getLength(),
-        proto.getHostsList().toArray(new String[]{}),
+            var.toArray(new String[var.size()]),
         diskIds);
   }
 

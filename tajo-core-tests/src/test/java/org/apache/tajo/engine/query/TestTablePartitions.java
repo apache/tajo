@@ -1119,7 +1119,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
         index++;
       }
 
-      TajoTestingCluster.createTable("testscatteredhashshuffle", schema, tableOptions, data.toArray(new String[]{}), 3);
+      TajoTestingCluster.createTable("testscatteredhashshuffle", schema, tableOptions, data.toArray(new String[data.size()]), 3);
       CatalogService catalog = testingCluster.getMaster().getCatalog();
       assertTrue(catalog.existsTable("default", "testscatteredhashshuffle"));
 

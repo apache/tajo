@@ -44,7 +44,7 @@ public class GlobalPlanEqualityTester implements GlobalPlanRewriteRule {
   }
 
   @Override
-  public MasterPlan rewrite(MasterPlan plan) {
+  public MasterPlan rewrite(OverridableConf queryContext, MasterPlan plan) {
     try {
       ExecutionBlockCursor cursor = new ExecutionBlockCursor(plan);
       for (ExecutionBlock eb : cursor) {

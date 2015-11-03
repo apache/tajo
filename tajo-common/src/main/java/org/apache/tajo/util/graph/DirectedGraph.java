@@ -60,5 +60,5 @@ public interface DirectedGraph<V, E> extends Graph<V, E> {
   /**
    * It visits all vertices in a post-order traverse way.
    */
-  void accept(V src, DirectedGraphVisitor<V> visitor);
+  <CONTEXT> void accept(CONTEXT context, V src, DirectedGraphVisitor<CONTEXT, V> visitor);
 }

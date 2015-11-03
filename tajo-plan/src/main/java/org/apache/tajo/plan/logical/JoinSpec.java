@@ -22,11 +22,8 @@ import com.google.common.base.Objects;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.util.TUtil;
 
-import java.util.Comparator;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class JoinSpec implements Cloneable {
 
@@ -84,7 +81,7 @@ public class JoinSpec implements Cloneable {
   }
 
   public void setSingletonPredicate(EvalNode predicates) {
-    this.setPredicates(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(predicates)));
+    this.setPredicates(new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(predicates))));
   }
 
   public EvalNode getSingletonPredicate() {

@@ -951,16 +951,12 @@ parenthesized_boolean_value_expression
 
 /*
 ===============================================================================
-  7.2 <row value expression>
+  7.2 <row value expression> (p293)
 ===============================================================================
 */
 row_value_expression
   : row_value_special_case
   | explicit_row_value_constructor
-  ;
-
-row_value_special_case
-  : nonparenthesized_value_expression_primary
   ;
 
 explicit_row_value_constructor
@@ -976,6 +972,10 @@ row_value_constructor_predicand
   : common_value_expression
   | boolean_predicand
 //  | explicit_row_value_constructor
+  ;
+
+row_value_special_case
+  : nonparenthesized_value_expression_primary
   ;
 
 /*
@@ -1082,6 +1082,7 @@ named_columns_join
 
 table_primary
   : table_or_query_name ((AS)? alias=identifier)? (LEFT_PAREN column_name_list RIGHT_PAREN)?
+  | LEFT_PAREN table_or_query_name ((AS)? alias=identifier)? (LEFT_PAREN column_name_list RIGHT_PAREN)? RIGHT_PAREN
   | derived_table (AS)? name=identifier (LEFT_PAREN column_name_list RIGHT_PAREN)?
   ;
 
@@ -1605,6 +1606,8 @@ null_ordering
 
 insert_statement
   : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_reference_list RIGHT_PAREN)? query_expression
+  | INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_reference_list RIGHT_PAREN)? VALUES
+    LEFT_PAREN row_value_predicand (COMMA row_value_predicand)* RIGHT_PAREN
   | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING storage_type=identifier (param_clause)?)? query_expression
   ;
 

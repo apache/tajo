@@ -63,7 +63,6 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.RpcParameterFactory;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.FetchImpl;
@@ -501,7 +500,7 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   public Set<PartitionDescProto> getPartitions() {
-    Set<PartitionDescProto> partitions = TUtil.newHashSet();
+    Set<PartitionDescProto> partitions = new HashSet<>();
     for(Task eachTask : getTasks()) {
       if (eachTask.getLastAttempt() != null && !eachTask.getLastAttempt().getPartitions().isEmpty()) {
         partitions.addAll(eachTask.getLastAttempt().getPartitions());

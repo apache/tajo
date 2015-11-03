@@ -34,14 +34,14 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -70,7 +70,6 @@ import java.util.Set;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.plan.serder.PlanProto.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
-import static org.apache.tajo.plan.serder.PlanProto.SortEnforce.SortAlgorithm;
 import static org.junit.Assert.*;
 
 public class TestPhysicalPlanner {
@@ -1040,57 +1039,6 @@ public class TestPhysicalPlanner {
   public String [] SORT_QUERY = {
       "select name, empId from employee order by empId"
   };
-
-  @Test
-  public final void testSortEnforcer() throws IOException, TajoException {
-    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
-        new Path(employee.getUri()), Integer.MAX_VALUE);
-
-    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testSortEnforcer");
-    Expr context = analyzer.parse(SORT_QUERY[0]);
-    LogicalPlan plan = planner.createPlan(defaultContext, context);
-    optimizer.optimize(plan);
-    LogicalNode rootNode = plan.getRootBlock().getRoot();
-
-    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
-
-    Enforcer enforcer = new Enforcer();
-    enforcer.enforceSortAlgorithm(sortNode.getPID(), SortAlgorithm.IN_MEMORY_SORT);
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newTaskAttemptId(masterPlan),
-        new FileFragment[] {frags[0]}, workDir);
-    ctx.setEnforcer(enforcer);
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
-    exec.next();
-    exec.close();
-
-    assertTrue(exec instanceof MemSortExec);
-
-    context = analyzer.parse(SORT_QUERY[0]);
-    plan = planner.createPlan(defaultContext, context);
-    optimizer.optimize(plan);
-    rootNode = plan.getRootBlock().getRoot();
-
-    sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
-
-    enforcer = new Enforcer();
-    enforcer.enforceSortAlgorithm(sortNode.getPID(), SortAlgorithm.MERGE_SORT);
-    ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newTaskAttemptId(masterPlan),
-        new FileFragment[] {frags[0]}, workDir);
-    ctx.setEnforcer(enforcer);
-
-    phyPlanner = new PhysicalPlannerImpl(conf);
-    exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
-    exec.next();
-    exec.close();
-
-    assertTrue(exec instanceof ExternalSortExec);
-  }
 
   @Test
   public final void testGroupByEnforcer() throws IOException, TajoException {

@@ -57,7 +57,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private CatalogService catalog;
 
   static class FilterPushDownContext {
-    Set<EvalNode> pushingDownFilters = TUtil.newHashSet();
+    Set<EvalNode> pushingDownFilters = new HashSet<>();
 
     public void clear() {
       pushingDownFilters.clear();
@@ -129,7 +129,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitFilter(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  SelectionNode selNode, Stack<LogicalNode> stack) throws TajoException {
-    context.pushingDownFilters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
+    context.pushingDownFilters.addAll(new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual()))));
 
     stack.push(selNode);
     visit(context, plan, block, selNode.getChild(), stack);
@@ -147,7 +147,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     } else { // if there remain search conditions
 
       // check if it can be evaluated here
-      Set<EvalNode> matched = TUtil.newHashSet();
+      Set<EvalNode> matched = new HashSet<>();
       for (EvalNode eachEval : context.pushingDownFilters) {
         if (LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode)) {
           matched.add(eachEval);
@@ -168,9 +168,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitJoin(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                JoinNode joinNode, Stack<LogicalNode> stack) throws TajoException {
-    Set<EvalNode> onPredicates = TUtil.newHashSet();
+    Set<EvalNode> onPredicates = new HashSet<>();
     if (joinNode.hasJoinQual()) {
-      onPredicates.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
+      onPredicates.addAll(new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()))));
     }
     // clear join qual
     joinNode.clearJoinQual();
@@ -293,7 +293,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                                            final Set<EvalNode> onPredicates,
                                                            final Set<EvalNode> wherePredicates)
       throws TajoException {
-    Set<EvalNode> nonPushableQuals = TUtil.newHashSet();
+    Set<EvalNode> nonPushableQuals = new HashSet<>();
     // TODO: non-equi theta join quals must not be pushed until TAJO-742 is resolved.
     nonPushableQuals.addAll(extractNonEquiThetaJoinQuals(wherePredicates, block, joinNode));
     nonPushableQuals.addAll(extractNonEquiThetaJoinQuals(onPredicates, block, joinNode));
@@ -340,8 +340,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                                                 final Set<EvalNode> onPredicates,
                                                                 final Set<EvalNode> wherePredicates,
                                                                 final JoinNode joinNode) throws TajoException {
-    Set<String> nullSupplyingTableNameSet = TUtil.newHashSet();
-    Set<String> preservedTableNameSet = TUtil.newHashSet();
+    Set<String> nullSupplyingTableNameSet = new HashSet<>();
+    Set<String> preservedTableNameSet = new HashSet<>();
     String leftRelation = PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild());
     String rightRelation = PlannerUtil.getTopRelationInLineage(plan, joinNode.getRightChild());
 
@@ -359,7 +359,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       nullSupplyingTableNameSet.add(rightRelation);
     }
 
-    Set<EvalNode> nonPushableQuals = TUtil.newHashSet();
+    Set<EvalNode> nonPushableQuals = new HashSet<>();
     for (EvalNode eachQual : onPredicates) {
       for (String relName : preservedTableNameSet) {
         if (isEvalNeedRelation(eachQual, relName)) {
@@ -425,7 +425,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       LogicalPlan.QueryBlock block,
       LogicalNode node, LogicalNode childNode) throws TajoException {
     // transformed -> pushingDownFilters
-    Map<EvalNode, EvalNode> transformedMap = TUtil.newHashMap();
+    Map<EvalNode, EvalNode> transformedMap = new HashMap<>();
 
     if (originEvals.isEmpty()) {
       return transformedMap;
@@ -483,7 +483,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     // node in column -> child out column
-    Map<String, String> columnMap = TUtil.newHashMap();
+    Map<String, String> columnMap = new HashMap<>();
 
     for (int i = 0; i < node.getInSchema().size(); i++) {
       String inColumnName = node.getInSchema().getColumn(i).getQualifiedName();
@@ -643,7 +643,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private Collection<EvalNode> reverseTransform(BiMap<EvalNode, EvalNode> map, Set<EvalNode> remainFilters) {
-    Set<EvalNode> reversed = TUtil.newHashSet();
+    Set<EvalNode> reversed = new HashSet<>();
     for (EvalNode evalNode : remainFilters) {
       reversed.add(map.get(evalNode));
     }
@@ -655,7 +655,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       LogicalNode childNode, List<EvalNode> notMatched,
       Set<String> partitionColumns, int columnOffset) throws TajoException {
     // canonical name -> target
-    Map<String, Target> nodeTargetMap = TUtil.newHashMap();
+    Map<String, Target> nodeTargetMap = new HashMap<>();
     for (Target target : node.getTargets()) {
       nodeTargetMap.put(target.getCanonicalName(), target);
     }
@@ -780,8 +780,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                        HavingNode havingNode,
                                        GroupbyNode groupByNode) throws TajoException {
     // find aggregation column
-    Set<Column> groupingColumns = TUtil.newHashSet(groupByNode.getGroupingColumns());
-    Set<String> aggrFunctionOutColumns = TUtil.newHashSet();
+    Set<Column> groupingColumns = new HashSet<>(Arrays.asList(groupByNode.getGroupingColumns()));
+    Set<String> aggrFunctionOutColumns = new HashSet<>();
     for (Column column : groupByNode.getOutSchema().getRootColumns()) {
       if (!groupingColumns.contains(column)) {
         aggrFunctionOutColumns.add(column.getQualifiedName());
@@ -896,7 +896,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     List<EvalNode> matched = TUtil.newList();
 
     // find partition column and check matching
-    Set<String> partitionColumns = TUtil.newHashSet();
+    Set<String> partitionColumns = new HashSet<>();
     TableDesc table = scanNode.getTableDesc();
     boolean hasQualifiedName = false;
     if (table.hasPartition()) {
@@ -905,7 +905,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         hasQualifiedName = c.hasQualifier();
       }
     }
-    Set<EvalNode> partitionEvals = TUtil.newHashSet();
+    Set<EvalNode> partitionEvals = new HashSet<>();
     for (EvalNode eval : context.pushingDownFilters) {
       if (table.hasPartition()) {
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(eval);
@@ -969,7 +969,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       String databaseName, tableName;
       databaseName = CatalogUtil.extractQualifier(table.getName());
       tableName = CatalogUtil.extractSimpleName(table.getName());
-      Set<Predicate> predicates = TUtil.newHashSet();
+      Set<Predicate> predicates = new HashSet<>();
       for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
         BinaryEval binaryEval = (BinaryEval) eval;
         // TODO: consider more complex predicates
@@ -1023,7 +1023,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   private static SimplePredicate[] getSimplePredicates(IndexDesc desc, Set<Predicate> predicates) {
     SimplePredicate[] simplePredicates = new SimplePredicate[predicates.size()];
-    Map<Column, Datum> colToValue = TUtil.newHashMap();
+    Map<Column, Datum> colToValue = new HashMap<>();
     for (Predicate predicate : predicates) {
       colToValue.put(predicate.column, predicate.value);
     }

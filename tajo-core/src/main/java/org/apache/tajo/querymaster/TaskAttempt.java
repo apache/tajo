@@ -36,7 +36,6 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 import java.util.concurrent.locks.Lock;
@@ -192,7 +191,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     this.writeLock = readWriteLock.writeLock();
 
     stateMachine = stateMachineFactory.make(this);
-    this.partitions = TUtil.newHashSet();
+    this.partitions = new HashSet<>();
   }
 
   public TaskAttemptState getState() {

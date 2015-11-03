@@ -17,7 +17,6 @@ package org.apache.tajo.engine.planner.global;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -42,7 +41,7 @@ public class ExecutionBlock {
   private boolean hasUnionPlan;
   private boolean isUnionOnly;
 
-  private Map<String, ScanNode> broadcastRelations = TUtil.newHashMap();
+  private Map<String, ScanNode> broadcastRelations = new HashMap<>();
 
   /*
    * An execution block is null-supplying or preserved-row when its output is used as an input for outer join.

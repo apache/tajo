@@ -89,6 +89,14 @@
       <timezone>-8</timezone>
     </developer>
     <developer>
+      <id>charsyam</id>
+      <name>DaeMyung Kang</name>
+      <email>charsyam@naver.com</email>
+      <organization>Kakao</organization>
+      <roles><role>Committer</role></roles>
+      <timezone>+9</timezone>
+    </developer>
+    <developer>
       <id>ereisman</id>
       <name>Eli Reisman</name>
       <email>ereisman@apache.org</email>
@@ -242,11 +250,6 @@
   <contributors>
     <contributor>
       <name>Camelia</name>
-      <roles><role>Contributor</role></roles>
-    </contributor>
-    <contributor>
-      <name>DaeMyung Kang</name>
-      <organization>Kakao</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>

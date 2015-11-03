@@ -46,6 +46,6 @@ public class TruncateTable extends Expr {
   @Override
   boolean equalsTo(Expr expr) {
     TruncateTable another = (TruncateTable) expr;
-    return Arrays.equals(tableNames.toArray(new String[]{}), another.tableNames.toArray(new String[]{}));
+    return Arrays.equals(tableNames.toArray(new String[tableNames.size()]), another.tableNames.toArray(new String[another.tableNames.size()]));
   }
 }

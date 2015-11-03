@@ -114,7 +114,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     }
 
     if (!fragments.isEmpty()) {
-      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[]{}));
+      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[fragments.size()]));
       this.taskContext = new TaskAttemptContext(
           new QueryContext(tajoConf), null,
           new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0),
@@ -252,6 +252,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       }
       return resultSetBuilder.build();
     } catch (Throwable t) {
+      close();
       throw new TajoInternalError(t.getCause());
     }
   }

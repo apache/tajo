@@ -279,7 +279,7 @@ public class Task implements EventHandler<TaskEvent> {
         fragmentList.add("ERROR: " + eachFragment.getDataFormat() + "," + eachFragment.getId() + ": " + e.getMessage());
       }
     }
-    taskHistory.setFragments(fragmentList.toArray(new String[]{}));
+    taskHistory.setFragments(fragmentList.toArray(new String[fragmentList.size()]));
 
     List<String[]> fetchList = new ArrayList<>();
     for (Map.Entry<String, Set<FetchImpl>> e : getFetchMap().entrySet()) {
@@ -297,7 +297,7 @@ public class Task implements EventHandler<TaskEvent> {
       dataLocationList.add(eachLocation.toString());
     }
 
-    taskHistory.setDataLocations(dataLocationList.toArray(new String[]{}));
+    taskHistory.setDataLocations(dataLocationList.toArray(new String[dataLocationList.size()]));
     return taskHistory;
   }
 

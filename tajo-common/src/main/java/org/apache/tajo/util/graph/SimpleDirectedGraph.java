@@ -219,18 +219,19 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   }
 
   @Override
-  public void accept(V source, DirectedGraphVisitor<V> visitor) {
+  public <CONTEXT> void accept(CONTEXT context, V source, DirectedGraphVisitor<CONTEXT, V> visitor) {
     Stack<V> stack = new Stack<>();
-    visitRecursive(stack, source, visitor);
+    visitRecursive(context, stack, source, visitor);
   }
 
-  private void visitRecursive(Stack<V> stack, V current, DirectedGraphVisitor<V> visitor) {
+  private <CONTEXT> void visitRecursive(CONTEXT context, Stack<V> stack, V current,
+                                        DirectedGraphVisitor<CONTEXT, V> visitor) {
     stack.push(current);
     for (V child : getChilds(current)) {
-      visitRecursive(stack, child, visitor);
+      visitRecursive(context, stack, child, visitor);
     }
     stack.pop();
-    visitor.visit(stack, current);
+    visitor.visit(context, stack, current);
   }
 
   public String toString() {
@@ -248,7 +249,7 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   public String toStringGraph(V vertex) {
     StringBuilder sb = new StringBuilder();
     QueryGraphTopologyStringBuilder visitor = new QueryGraphTopologyStringBuilder();
-    accept(vertex, visitor);
+    accept(null, vertex, visitor);
     Stack<DepthString> depthStrings = visitor.getDepthStrings();
     while(!depthStrings.isEmpty()) {
       sb.append(printDepthString(depthStrings.pop()));
@@ -266,11 +267,11 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
     }
   }
 
-  private class QueryGraphTopologyStringBuilder implements DirectedGraphVisitor<V> {
+  private class QueryGraphTopologyStringBuilder implements DirectedGraphVisitor<Object, V> {
     Stack<DepthString> depthString = new Stack<>();
 
     @Override
-    public void visit(Stack<V> stack, V vertex) {
+    public void visit(Object context, Stack<V> stack, V vertex) {
       depthString.push(new DepthString(stack.size(), vertex.toString()));
     }
 

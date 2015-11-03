@@ -67,7 +67,7 @@ public class SortedInsertRewriter implements LogicalPlanRewriteRule {
       }
     }
 
-    return indexColumns.toArray(new Column[]{});
+    return indexColumns.toArray(new Column[indexColumns.size()]);
   }
 
   @Override

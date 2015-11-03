@@ -45,6 +45,7 @@ public class StorageConstants {
   public static final String TEXT_DELIMITER = "text.delimiter";
   public static final String TEXT_NULL = "text.null";
   public static final String TEXT_SERDE_CLASS = "text.serde";
+  public static final String QUOTE_CHAR = "quote_char";
   public static final String DEFAULT_TEXT_SERDE_CLASS = "org.apache.tajo.storage.text.CSVLineSerDe";
 
   public static final String TEXT_SKIP_HEADER_LINE = "text.skip.headerlines";
@@ -85,7 +86,7 @@ public class StorageConstants {
   public static final String ORC_STRIPE_SIZE = "orc.stripe.size";
   public static final String DEFAULT_ORC_STRIPE_SIZE = "67108864"; // 64MB
 
-  public static final String ORC_COMPRESSION_KIND = "orc.compression.kind";
+  public static final String ORC_COMPRESSION = "orc.compress";
   public static final String ORC_COMPRESSION_KIND_NONE = "none";
   public static final String ORC_COMPRESSION_KIND_SNAPPY = "snappy";
   public static final String ORC_COMPRESSION_KIND_LZO = "lzo";

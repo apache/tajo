@@ -55,8 +55,6 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
       return visitHaving(context, (HavingExec) exec, stack);
     } else if (exec instanceof LimitExec) {
       return visitLimit(context, (LimitExec) exec, stack);
-    } else if (exec instanceof MemSortExec) {
-      return visitMemSort(context, (MemSortExec) exec, stack);
     } else if (exec instanceof MergeFullOuterJoinExec) {
       return visitMergeFullOuterJoin(context, (MergeFullOuterJoinExec) exec, stack);
     } else if (exec instanceof MergeJoinExec) {
@@ -176,12 +174,6 @@ public class BasicPhysicalExecutorVisitor<CONTEXT, RESULT> implements PhysicalEx
   @Override
   public RESULT visitLimit(CONTEXT context, LimitExec exec, Stack<PhysicalExec> stack)
       throws PhysicalPlanningException {
-    return visitUnaryExecutor(context, exec, stack);
-  }
-
-  @Override
-  public RESULT visitMemSort(CONTEXT context, MemSortExec exec, Stack<PhysicalExec> stack) throws
-      PhysicalPlanningException {
     return visitUnaryExecutor(context, exec, stack);
   }
 
