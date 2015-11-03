@@ -236,8 +236,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
   private static JoinEdge swapLeftAndRightIfNecessary(JoinEdge edge) {
     if (PlannerUtil.isCommutativeJoinType(edge.getJoinType())) {
-      double leftCost = getCostWithVertex(edge.getLeftVertex());
-      double rightCost = getCostWithVertex(edge.getRightVertex());
+      double leftCost = getCostOfVertex(edge.getLeftVertex());
+      double rightCost = getCostOfVertex(edge.getRightVertex());
       if (leftCost < rightCost) {
         return new JoinEdge(edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
       } else if (leftCost == rightCost) {
@@ -393,18 +393,18 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           break;
       }
       // cost = estimated input size * filter factor * (output tuple width / input tuple width)
-      cost = getCostWithVertex(joinEdge.getLeftVertex()) *
-          getCostWithVertex(joinEdge.getRightVertex()) * factor;
+      cost = getCostOfVertex(joinEdge.getLeftVertex()) *
+          getCostOfVertex(joinEdge.getRightVertex()) * factor;
     } else {
       // make cost bigger if cross join
-      cost = Math.pow(getCostWithVertex(joinEdge.getLeftVertex()) *
-          getCostWithVertex(joinEdge.getRightVertex()), 2);
+      cost = Math.pow(getCostOfVertex(joinEdge.getLeftVertex()) *
+          getCostOfVertex(joinEdge.getRightVertex()), 2);
     }
 
     return checkInfinity(cost * COMPUTATION_FACTOR);
   }
 
-  public static double getCostWithVertex(JoinVertex joinVertex) {
+  public static double getCostOfVertex(JoinVertex joinVertex) {
     double cost;
     if (joinVertex instanceof RelationVertex) {
       cost = getCost(((RelationVertex) joinVertex).getRelationNode());
