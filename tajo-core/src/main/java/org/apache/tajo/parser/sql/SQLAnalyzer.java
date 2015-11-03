@@ -299,7 +299,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     for (int i = 0; i < targets.length; i++) {
       targets[i] = visitSelect_sublist(ctx.select_sublist(i));
     }
-    projection.setNamedExprs(targets);
+    projection.setNamedExprs(Arrays.asList(targets));
 
     return projection;
   }
@@ -1241,7 +1241,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     for (SortSpec sortSpec : sortSpecs) {
       targets[i++] = new NamedExpr(sortSpec.getKey());
     }
-    projection.setNamedExprs(targets);
+    projection.setNamedExprs(Arrays.asList(targets));
     projection.setChild(relation);
 
     CreateIndex createIndex = new CreateIndex(indexName, sortSpecs);
@@ -1678,7 +1678,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           .map(value -> new NamedExpr(visitRow_value_predicand(value)))
           .collect(Collectors.toList());
       Projection projection = new Projection();
-      projection.setNamedExprs(values.toArray(new NamedExpr[values.size()]));
+      projection.setNamedExprs(values);
       insertExpr.setSubQuery(projection);
     } else {
       insertExpr.setSubQuery(visitQuery_expression(ctx.query_expression()));
