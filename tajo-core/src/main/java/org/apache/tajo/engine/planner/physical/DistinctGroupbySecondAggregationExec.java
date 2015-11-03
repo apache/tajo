@@ -125,7 +125,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       if (eachGroupby.isDistinct()) {
         numDistinct++;
       } else {
-        nonDistinctAggrFunctions = eachGroupby.getAggFunctions();
+        nonDistinctAggrFunctions = eachGroupby.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
         if (nonDistinctAggrFunctions != null) {
           for (AggregationFunctionCallEval eachFunction: nonDistinctAggrFunctions) {
             eachFunction.bind(context.getEvalContext(), inSchema);

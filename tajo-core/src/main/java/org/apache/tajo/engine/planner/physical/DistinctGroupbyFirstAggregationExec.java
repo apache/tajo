@@ -239,7 +239,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       nonDistinctAggrDatas = new TupleMap<>();
 
       if (groupbyNode.hasAggFunctions()) {
-        aggFunctions = groupbyNode.getAggFunctions();
+        aggFunctions = groupbyNode.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
         aggFunctionsNum = aggFunctions.length;
       } else {
         aggFunctions = new AggregationFunctionCallEval[0];

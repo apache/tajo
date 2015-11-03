@@ -732,12 +732,12 @@ public class ProjectionPushDownRule extends
 
       // Getting eval names
       if (node.hasAggFunctions()) {
-        final int evalNum = node.getAggFunctions().length;
+        final int evalNum = node.getAggFunctions().size();
         aggEvalNames = new String[evalNum];
         for (int evalIdx = 0, targetIdx = node.getGroupingColumns().length; targetIdx < node.getTargets().length;
              evalIdx++, targetIdx++) {
           Target target = node.getTargets()[targetIdx];
-          EvalNode evalNode = node.getAggFunctions()[evalIdx];
+          EvalNode evalNode = node.getAggFunctions().get(evalIdx);
           aggEvalNames[evalIdx] = newContext.addExpr(new Target(evalNode, target.getCanonicalName()));
         }
       }
@@ -807,7 +807,7 @@ public class ProjectionPushDownRule extends
         }
       }
       if (aggEvals.length > 0) {
-        node.setAggFunctions(aggEvals);
+        node.setAggFunctions(Arrays.asList(aggEvals));
       }
     }
     Target [] finalTargets = buildGroupByTarget(node, targets, aggEvalNames);
@@ -823,7 +823,7 @@ public class ProjectionPushDownRule extends
     final int groupingKeyNum =
         groupingKeyTargets == null ? groupbyNode.getGroupingColumns().length : groupingKeyTargets.size();
     final int aggrFuncNum = aggEvalNames != null ? aggEvalNames.length : 0;
-    EvalNode [] aggEvalNodes = groupbyNode.getAggFunctions();
+    EvalNode [] aggEvalNodes = groupbyNode.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
     Target [] targets = new Target[groupingKeyNum + aggrFuncNum];
 
     if (groupingKeyTargets != null) {

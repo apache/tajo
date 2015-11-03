@@ -375,7 +375,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       Column[] groupingKeyColumns = groupingKeyColumnList.toArray(new Column[groupingKeyColumnList.size()]);
 
       if (groupbyNode.hasAggFunctions()) {
-        aggFunctions = groupbyNode.getAggFunctions();
+        aggFunctions = groupbyNode.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
         aggFunctionsNum = aggFunctions.length;
       } else {
         aggFunctions = new AggregationFunctionCallEval[0];

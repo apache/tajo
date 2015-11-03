@@ -563,7 +563,7 @@ public class GlobalPlanner {
     // Create the groupby node for the first stage and set all necessary descriptions
     GroupbyNode firstStageGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
     firstStageGroupby.setGroupingColumns(TUtil.toArray(firstStageGroupingColumns, Column.class));
-    firstStageGroupby.setAggFunctions(TUtil.toArray(firstStageAggFunctions, AggregationFunctionCallEval.class));
+    firstStageGroupby.setAggFunctions(firstStageAggFunctions);
     firstStageGroupby.setTargets(firstStageTargets);
     firstStageGroupby.setChild(groupbyNode.getChild());
     firstStageGroupby.setInSchema(groupbyNode.getInSchema());
@@ -574,7 +574,7 @@ public class GlobalPlanner {
     // Create the groupby node for the second stage.
     GroupbyNode secondPhaseGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
     secondPhaseGroupby.setGroupingColumns(originalGroupingColumns);
-    secondPhaseGroupby.setAggFunctions(TUtil.toArray(secondPhaseEvalNodes, AggregationFunctionCallEval.class));
+    secondPhaseGroupby.setAggFunctions(secondPhaseEvalNodes);
     secondPhaseGroupby.setTargets(groupbyNode.getTargets());
 
     ExecutionBlock secondStage = context.plan.newExecutionBlock();
@@ -755,8 +755,8 @@ public class GlobalPlanner {
 
     // Set first phase expressions
     if (secondPhaseGroupBy.hasAggFunctions()) {
-      int evalNum = secondPhaseGroupBy.getAggFunctions().length;
-      AggregationFunctionCallEval [] secondPhaseEvals = secondPhaseGroupBy.getAggFunctions();
+      int evalNum = secondPhaseGroupBy.getAggFunctions().size();
+      AggregationFunctionCallEval [] secondPhaseEvals = secondPhaseGroupBy.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
       AggregationFunctionCallEval [] firstPhaseEvals = new AggregationFunctionCallEval[evalNum];
 
       String [] firstPhaseEvalNames = new String[evalNum];
@@ -775,8 +775,8 @@ public class GlobalPlanner {
         secondPhaseEvals[i].setArgs(new EvalNode[]{param});
       }
 
-      secondPhaseGroupBy.setAggFunctions(secondPhaseEvals);
-      firstPhaseGroupBy.setAggFunctions(firstPhaseEvals);
+      secondPhaseGroupBy.setAggFunctions(Arrays.asList(secondPhaseEvals));
+      firstPhaseGroupBy.setAggFunctions(Arrays.asList(firstPhaseEvals));
       Target [] firstPhaseTargets = ProjectionPushDownRule.buildGroupByTarget(firstPhaseGroupBy, null,
           firstPhaseEvalNames);
       firstPhaseGroupBy.setTargets(firstPhaseTargets);

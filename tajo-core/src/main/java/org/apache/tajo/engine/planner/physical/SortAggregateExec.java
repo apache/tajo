@@ -51,7 +51,7 @@ public class SortAggregateExec extends AggregationExec {
 
   public SortAggregateExec(TaskAttemptContext context, GroupbyNode plan, PhysicalExec child) throws IOException {
     super(context, plan, child);
-    contexts = new FunctionContext[plan.getAggFunctions() == null ? 0 : plan.getAggFunctions().length];
+    contexts = new FunctionContext[plan.getAggFunctions() == null ? 0 : plan.getAggFunctions().size()];
 
     final Column [] keyColumns = plan.getGroupingColumns();
     groupingKeyIds = new int[groupingKeyNum];
