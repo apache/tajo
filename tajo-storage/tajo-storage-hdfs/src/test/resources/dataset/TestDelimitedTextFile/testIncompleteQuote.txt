@@ -1,0 +1,1 @@
+"true,hyunsik","17,59","23,77.9","271.9,"hyunsik,"aHl1bnNpaw==,192.168.0.1"
