@@ -78,6 +78,7 @@ public class RawFile {
       super(conf, schema, meta, fragment);
     }
 
+    @Override
     public void init() throws IOException {
       File file;
       try {
@@ -99,8 +100,10 @@ public class RawFile {
             + ", fragment length :" + fragment.getLength());
       }
 
-      buf = BufferPool.directBuffer(conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
-      buffer = buf.nioBuffer(0, buf.capacity());
+      if(buf == null) {
+        buf = BufferPool.directBuffer(conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
+        buffer = buf.nioBuffer(0, buf.capacity());
+      }
 
       columnTypes = new DataType[schema.size()];
       for (int i = 0; i < schema.size(); i++) {

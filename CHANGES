@@ -6,6 +6,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1920: Calling 'Collection.toArray()' with zero-length array argument 
+    makes performance worse. (Dongkyu Hwangbo via hyunsik)
+
     TAJO-1911: Change guava's Optional to Java's Optional. (hyunsik)
 
     TAJO-1850: Using TUtil.newHash(Set/Map) should be replaced by Java's 
@@ -23,6 +26,11 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-1578: User configuration for pull server port is ignored.
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
+    TAJO-1954: Fix memory leak in physical operator. (jinho)
 
     TAJO-1643: SQLParse can't parse parentheses table clause. (hyunsik)
 
@@ -74,7 +82,7 @@ Release 0.12.0 - unreleased
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
 
-Release 0.11.0 - unreleased
+Release 0.11.0 - Released
 
   NEW FEATURES
 

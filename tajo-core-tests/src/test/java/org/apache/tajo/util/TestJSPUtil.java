@@ -59,24 +59,24 @@ public class TestJSPUtil {
 
     Collections.shuffle(tasks);
 
-    Task[] taskArray = tasks.toArray(new Task[]{});
+    Task[] taskArray = tasks.toArray(new Task[tasks.size()]);
     JSPUtil.sortTaskArray(taskArray, "id", "asc");
     for (int i = 0; i < 10; i++) {
       assertEquals(i, taskArray[i].getId().getId());
     }
 
-    taskArray = tasks.toArray(new Task[]{});
+    taskArray = tasks.toArray(new Task[tasks.size()]);
     JSPUtil.sortTaskArray(taskArray, "id", "desc");
     for (int i = 0; i < 10; i++) {
       assertEquals(9 - i, taskArray[i].getId().getId());
     }
 
-    taskArray = tasks.toArray(new Task[]{});
+    taskArray = tasks.toArray(new Task[tasks.size()]);
     JSPUtil.sortTaskArray(taskArray, "runTime", "asc");
     assertEquals(0, taskArray[0].getId().getId());
     assertEquals(9, taskArray[9].getId().getId());
 
-    taskArray = tasks.toArray(new Task[]{});
+    taskArray = tasks.toArray(new Task[tasks.size()]);
     JSPUtil.sortTaskArray(taskArray, "runTime", "desc");
     assertEquals(8, taskArray[0].getId().getId());
     assertEquals(9, taskArray[9].getId().getId());
