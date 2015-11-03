@@ -80,17 +80,6 @@ public class TestDelimitedTextFile {
     return new Path(resultBaseURL.toString(), suffix);
   }
 
-  public static Path getResultPath(Class clazz, String fileName) {
-    return new Path (getResourcePath("results", clazz.getSimpleName()), fileName);
-  }
-
-  public static String getResultText(Class clazz, String fileName) throws IOException {
-    FileSystem localFS = FileSystem.getLocal(new Configuration());
-    Path path = getResultPath(clazz, fileName);
-    Preconditions.checkState(localFS.exists(path) && localFS.isFile(path));
-    return FileUtil.readTextFile(new File(path.toUri()));
-  }
-
   private static final FileFragment getFileFragment(String fileName) throws IOException {
     TajoConf conf = new TajoConf();
     Path tablePath = new Path(getResourcePath("dataset", "TestDelimitedTextFile"), fileName);
@@ -100,9 +89,45 @@ public class TestDelimitedTextFile {
   }
 
   @Test
-  public void testIgnoreAllErrors() throws IOException {
-    TajoConf conf = new TajoConf();
+  public void testStripQuote() throws IOException, CloneNotSupportedException {
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    meta.putOption(StorageUtil.TEXT_DELIMITER, ",");
+    meta.putOption(StorageUtil.QUOTE_CHAR, "\"");
+    FileFragment fragment =  getFileFragment("testStripQuote.txt");
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
+    scanner.init();
 
+    Tuple tuple;
+    int i = 0;
+    while ((tuple = scanner.next()) != null) {
+      assertEquals(baseTuple, tuple);
+      i++;
+    }
+    assertEquals(6, i);
+    scanner.close();
+  }
+
+  @Test
+  public void testIncompleteQuote() throws IOException, CloneNotSupportedException {
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    meta.putOption(StorageUtil.TEXT_DELIMITER, ",");
+    meta.putOption(StorageUtil.QUOTE_CHAR, "\"");
+    FileFragment fragment =  getFileFragment("testIncompleteQuote.txt");
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
+    scanner.init();
+
+    Tuple tuple;
+    int i = 0;
+    while ((tuple = scanner.next()) != null) {
+      assertEquals("(f,hyunsik\",NULL,NULL,NULL,NULL,0.0,\"hyunsik,hyunsik,NULL)", tuple.toString());
+      i++;
+    }
+    assertEquals(1, i);
+    scanner.close();
+  }
+
+  @Test
+  public void testIgnoreAllErrors() throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "-1");
     FileFragment fragment =  getFileFragment("testErrorTolerance1.json");
@@ -121,10 +146,6 @@ public class TestDelimitedTextFile {
 
   @Test
   public void testIgnoreOneErrorTolerance() throws IOException {
-
-
-    TajoConf conf = new TajoConf();
-
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
     FileFragment fragment =  getFileFragment("testErrorTolerance1.json");
@@ -146,7 +167,6 @@ public class TestDelimitedTextFile {
 
   @Test
   public void testNoErrorTolerance() throws IOException {
-    TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "0");
     FileFragment fragment =  getFileFragment("testErrorTolerance2.json");
