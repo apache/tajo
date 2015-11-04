@@ -319,6 +319,13 @@ public class TajoTestingCluster {
   }
 
   public void shutdownCatalogCluster() {
+
+    try {
+      CatalogTestingUtil.shutdownCatalogStore(conf);
+    } catch (Exception e) {
+      //ignore
+    }
+
     if (catalogServer != null) {
       this.catalogServer.stop();
     }
