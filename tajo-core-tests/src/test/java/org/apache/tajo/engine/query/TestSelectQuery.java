@@ -750,7 +750,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     }
   }
 
-  @Test
+  /*@Test
   public void testSelectPythonFuncs() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -769,7 +769,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
-  }
+  }*/
 
   @Test
   public void testSelectWithParentheses1() throws Exception {
