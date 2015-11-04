@@ -77,7 +77,7 @@
           <systemProperties>
             <tajo.test.enabled>TRUE</tajo.test.enabled>
           </systemProperties>
-          <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
+          <argLine>-Xms512m -Xmx1024m -XX:MaxMetaspaceSize=128m -Dfile.encoding=UTF-8</argLine>
         </configuration>
       </plugin>
       <plugin>
