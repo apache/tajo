@@ -178,7 +178,7 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
         value = new NullLiteral();
         break;
       case BOOLEAN:
-        value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Boolean);
+        value = new BooleanLiteral(datum.asBool());
         break;
       case INT1:
       case INT2:
