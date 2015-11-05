@@ -74,7 +74,7 @@
           <systemProperties>
             <tajo.test.enabled>true</tajo.test.enabled>
           </systemProperties>
-          <argLine>-Xms512m -Xmx1024m -Dfile.encoding=UTF-8</argLine>
+          <argLine>-Xms128m -Xmx1024m -Dfile.encoding=UTF-8</argLine>
         </configuration>
       </plugin>
       <plugin>
