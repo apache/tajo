@@ -145,24 +145,24 @@ public class NettyServerBase {
     
     try {
       accepted.close();
+
+      if(bootstrap != null) {
+        if (bootstrap.childGroup() != null) {
+          bootstrap.childGroup().shutdownGracefully();
+          if (waitUntilThreadsStop) {
+            bootstrap.childGroup().terminationFuture().sync();
+          }
+        }
+
+        if (bootstrap.group() != null) {
+          bootstrap.group().shutdownGracefully();
+          if (waitUntilThreadsStop) {
+            bootstrap.childGroup().terminationFuture().sync();
+          }
+        }
+      }
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
-    }
-
-    if(bootstrap != null) {
-      if (bootstrap.childGroup() != null) {
-        bootstrap.childGroup().shutdownGracefully();
-        if (waitUntilThreadsStop) {
-          bootstrap.childGroup().terminationFuture().awaitUninterruptibly();
-        }
-      }
-
-      if (bootstrap.group() != null) {
-        bootstrap.group().shutdownGracefully();
-        if (waitUntilThreadsStop) {
-          bootstrap.childGroup().terminationFuture().awaitUninterruptibly();
-        }
-      }
     }
     
     for (RpcEventListener listener: listeners) {

@@ -141,7 +141,7 @@ public class TestBlockingRpc {
 
   public void tearDownRpcServer() throws Exception {
     if (server != null) {
-      server.shutdown();
+      server.shutdown(true);
       server = null;
     }
   }
@@ -274,7 +274,7 @@ public class TestBlockingRpc {
         } catch (InterruptedException e) {
         }
         try {
-          server.shutdown();
+          server.shutdown(true);
           server = null;
           latch.countDown();
         } catch (Throwable e) {
@@ -336,7 +336,7 @@ public class TestBlockingRpc {
     EchoMessage response = stub.echo(null, message);
     assertEquals(MESSAGE, response.getMessage());
     client.close();
-    server.shutdown();
+    server.shutdown(true);
   }
 
   @Test(timeout = 60000)

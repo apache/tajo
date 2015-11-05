@@ -151,7 +151,7 @@ public class TestAsyncRpc {
 
   public void tearDownRpcServer() throws Exception {
     if (server != null) {
-      server.shutdown();
+      server.shutdown(true);
       server = null;
     }
   }
@@ -370,7 +370,7 @@ public class TestAsyncRpc {
     assertEquals(echoMessage, future.get());
     assertTrue(future.isDone());
     client.close();
-    server.shutdown();
+    server.shutdown(true);
   }
 
 
