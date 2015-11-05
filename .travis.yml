@@ -34,14 +34,14 @@ notifications:
   irc: "chat.freenode.net#tajo"
 
 before_install: 
-  - ulimit -t unlimited -u 10000 -n 64000 
-  - ulimit -a
-  - free -m
-  - df -h
   # Disable services enabled by default
   # http://docs.travis-ci.com/user/database-setup/#MySQL
   - sudo /etc/init.d/mysql stop
   - sudo /etc/init.d/postgresql stop
+  - ulimit -t unlimited -u 10000 -n 64000
+  - ulimit -a
+  - free -m
+  - df -h
 
 install: ./dev-support/travis-install-dependencies.sh
 
