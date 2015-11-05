@@ -42,10 +42,11 @@ before_install:
   - ulimit -a
   - free -m
   - df -h
+  - sh -c "dmesg | grep -i OOM || exit 0"
 
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 
   - mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql -Dtest=!TestHBaseTable -DfailIfNoTests=false
   - mvn test -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dtest=TestHBaseTable -pl tajo-core-tests
-  - dmesg | grep -i kill
+  - sh -c "dmesg | grep -i OOM || exit 0"
