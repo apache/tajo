@@ -20,8 +20,6 @@
 package org.apache.tajo.plan.util;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
@@ -49,8 +47,6 @@ import java.util.TimeZone;
  *
  */
 public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, Expr> {
-  protected final Log LOG = LogFactory.getLog(getClass());
-
   private String tableAlias;
   private Column column;
   private boolean isHiveCatalog = false;
@@ -149,6 +145,9 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
 
+    // For Hive compatibility, Tajo need to convert TimeMeta to STRING literals which are accepted in the format
+    // YYYY-MM-DD HH:MM:SS.MS. Also if there is no fractional seconds, we should use '.0' for nanos value in
+    // accordance with Hive partition naming rule.
     String dateFormat = DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS");
     if (tm.fsecs == 0) {
       dateFormat += ".0";
