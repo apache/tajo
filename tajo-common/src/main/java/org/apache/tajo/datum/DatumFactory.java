@@ -19,6 +19,9 @@
 package org.apache.tajo.datum;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidValueForCastException;
@@ -35,6 +38,7 @@ import java.io.IOException;
 import java.util.TimeZone;
 
 public class DatumFactory {
+  protected static final Log LOG = LogFactory.getLog(DatumFactory.class);
 
   public static Class<? extends Datum> getDatumClass(Type type) {
     switch (type) {
@@ -362,6 +366,15 @@ public class DatumFactory {
         return parseTimestamp(datum.asChars(), tz);
       case TIMESTAMP:
         return (TimestampDatum) datum;
+      case INT8:
+        TimeMeta tm = new TimeMeta();
+        DateTimeUtil.toJulianTimeMeta(DateTimeUtil.javaTimeToJulianTime(datum.asInt8()), tm);
+        if (tz != null) {
+          DateTimeUtil.toUserTimezone(tm, tz);
+        } else {
+          DateTimeUtil.toUserTimezone(tm, TimeZone.getDefault());
+        }
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       default:
         throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.TIMESTAMP));
     }

@@ -28,8 +28,10 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
@@ -42,8 +44,10 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.*;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
@@ -464,7 +468,16 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
       int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
-      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
+
+      if (keyColumn.getDataType().getType() == TajoDataTypes.Type.TIMESTAMP) {
+        Timestamp timestamp = Timestamp.valueOf(StringUtils.unescapePathName(parts[1]));
+        long julianTime = DateTimeUtil.javaTimeToJulianTime(timestamp.getTime());
+        TimestampDatum timestampDatum = new TimestampDatum(julianTime);
+        tuple.put(columnId, timestampDatum);
+      } else {
+        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(),
+          StringUtils.unescapePathName(parts[1])));
+      }
     }
     for (; i < partitionColumnSchema.size(); i++) {
       tuple.put(i, NullDatum.get());
