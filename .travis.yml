@@ -46,7 +46,7 @@ before_install:
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 
-  - mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql -Dtest=!TestHBaseTable,!**/ws/rs/** -DfailIfNoTests=false
-  - mvn test -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dtest=TestHBaseTable,**/ws/rs/** -pl tajo-core-tests
+  - mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql -Dtest=!TestHBaseTable,!**/ws/rs/**,!**/engine/eval/** -DfailIfNoTests=false
+  - mvn test -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dtest=TestHBaseTable,**/ws/rs/**,**/engine/eval/** -pl tajo-core-tests
   - sh -c "dmesg | grep -i OOM || exit 0"
   - free -m
