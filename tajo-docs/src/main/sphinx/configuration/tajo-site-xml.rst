@@ -2,23 +2,455 @@
 The tajo-site.xml File
 **********************
 
-To the ``core-site.xml`` file on every host in your cluster, you must add the following information:
+You can add more configurations in the ``tajo-site.xml`` file. Note that you should replicate this file to the whole hosts in your cluster once you edited.
+If you are looking for the configurations for the master and the worker, please refer to :doc:`tajo_master_configuration` and :doc:`worker_configuration`.
+Also, catalog configurations are found here :doc:`catalog_configuration`.
+
+=========================
+Join Query Settings
+=========================
+
+""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.join.auto-broadcast`
+""""""""""""""""""""""""""""""""""""""
+
+A flag to enable or disable the use of broadcast join.
+
+  * Property value: Boolean
+  * Default value: true
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.join.auto-broadcast</name>
+    <value>true</value>
+  </property>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.broadcast.non-cross-join.threshold-kb`
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A threshold for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this threshold.
+
+  * Property value: Integer
+  * Unit: KB
+  * Default value: 5120
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.broadcast.non-cross-join.threshold-kb</name>
+    <value>5120</value>
+  </property>
+
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.broadcast.cross-join.threshold-kb`
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A threshold for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this threshold.
+
+  * Property value: Integer
+  * Unit: KB
+  * Default value: 1024
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.broadcast.cross-join.threshold-kb</name>
+    <value>1024</value>
+  </property>
+
+.. warning::
+  In Tajo, the broadcast join is only the way to perform cross joins. Since the cross join is a very expensive operation, this value need to be tuned carefully.
+
+""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.join.task-volume-mb`
+""""""""""""""""""""""""""""""""""""""
+
+The repartition join is executed in two stages. When a join query is executed with the repartition join, this value indicates the amount of input data processed by each task at the second stage.
+As a result, it determines the degree of the parallel processing of the join query.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 64
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.join.task-volume-mb</name>
+    <value>64</value>
+  </property>
+
+"""""""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.join.partition-volume-mb`
+"""""""""""""""""""""""""""""""""""""""""""
+
+The repartition join is executed in two stages. When a join query is executed with the repartition join,
+this value indicates the output size of each task at the first stage, which determines the number of partitions to be shuffled between two stages.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 128
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.join.partition-volume-mb</name>
+    <value>128</value>
+  </property>
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.executor.join.common.in-memory-hash-threshold-mb`
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This value provides the criterion to decide the algorithm to perform a join in a task.
+If the input data is smaller than this value, join is performed with the in-memory hash join.
+Otherwise, the sort-merge join is used.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 64
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.join.common.in-memory-hash-threshold-mb</name>
+    <value>64</value>
+  </property>
+
+.. warning::
+  This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
+  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  This value should be tuned carefully.
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.executor.join.inner.in-memory-hash-threshold-mb`
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This value provides the criterion to decide the algorithm to perform an inner join in a task.
+If the input data is smaller than this value, the inner join is performed with the in-memory hash join.
+Otherwise, the sort-merge join is used.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 64
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.join.inner.in-memory-hash-threshold-mb</name>
+    <value>64</value>
+  </property>
+
+.. warning::
+  This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
+  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  This value should be tuned carefully.
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.executor.join.outer.in-memory-hash-threshold-mb`
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This value provides the criterion to decide the algorithm to perform an outer join in a task.
+If the input data is smaller than this value, the outer join is performed with the in-memory hash join.
+Otherwise, the sort-merge join is used.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 64
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.join.outer.in-memory-hash-threshold-mb</name>
+    <value>64</value>
+  </property>
+
+.. warning::
+  This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
+  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  This value should be tuned carefully.
+
+"""""""""""""""""""""""""""""""""""""
+`tajo.executor.join.hash-table.size`
+"""""""""""""""""""""""""""""""""""""
+
+The initial size of hash table for in-memory hash join.
+
+  * Property value: Integer
+  * Default value: 100000
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.join.hash-table.size</name>
+    <value>100000</value>
+  </property>
 
 ======================
-System Config
+Sort Query Settings
 ======================
 
+""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.sort.task-volume-mb`
+""""""""""""""""""""""""""""""""""""""
 
+The sort operation is executed in two stages. When a sort query is executed, this value indicates the amount of input data processed by each task at the second stage.
+As a result, it determines the degree of the parallel processing of the sort query.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 64
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.sort.task-volume-mb</name>
+    <value>64</value>
+  </property>
+
+""""""""""""""""""""""""""""""""""""""""
+`tajo.executor.external-sort.buffer-mb`
+""""""""""""""""""""""""""""""""""""""""
+
+A threshold to choose the sort algorithm. If the input data is larger than this threshold, the external sort algorithm is used.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 200
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.external-sort.buffer-mb</name>
+    <value>200</value>
+  </property>
+
+""""""""""""""""""""""""""""""""""""""
+`tajo.executor.sort.list.size`
+""""""""""""""""""""""""""""""""""""""
+
+The initial size of list for in-memory sort.
+
+  * Property value: Integer
+  * Default value: 100000
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.sort.list.size</name>
+    <value>100000</value>
+  </property>
+
+=========================
+Group by Query Settings
+=========================
+
+""""""""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.groupby.multi-level-aggr`
+""""""""""""""""""""""""""""""""""""""""""""
+
+A flag to enable the multi-level algorithm for distinct aggregation. If this value is set, 3-phase aggregation algorithm is used.
+Otherwise, 2-phase aggregation algorithm is used.
+
+  * Property value: Boolean
+  * Default value: true
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.groupby.multi-level-aggr</name>
+    <value>true</value>
+  </property>
+
+""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.groupby.partition-volume-mb`
+""""""""""""""""""""""""""""""""""""""""""""""
+
+The aggregation is executed in two stages. When an aggregation query is executed,
+this value indicates the output size of each task at the first stage, which determines the number of partitions to be shuffled between two stages.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 256
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.groupby.partition-volume-mb</name>
+    <value>256</value>
+  </property>
+
+""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.groupby.task-volume-mb`
+""""""""""""""""""""""""""""""""""""""""""""""
+
+The aggregation operation is executed in two stages. When an aggregation query is executed, this value indicates the amount of input data processed by each task at the second stage.
+As a result, it determines the degree of the parallel processing of the aggregation query.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 64
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.groupby.partition-volume-mb</name>
+    <value>64</value>
+  </property>
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.executor.groupby.in-memory-hash-threshold-mb`
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This value provides the criterion to decide the algorithm to perform an aggregation in a task.
+If the input data is smaller than this value, the aggregation is performed with the in-memory hash aggregation.
+Otherwise, the sort-based aggregation is used.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 64
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.groupby.in-memory-hash-threshold-mb</name>
+    <value>64</value>
+  </property>
+
+.. warning::
+  This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
+  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  This value should be tuned carefully.
+
+""""""""""""""""""""""""""""""""""""""""""
+`tajo.executor.aggregate.hash-table.size`
+""""""""""""""""""""""""""""""""""""""""""
+
+The initial size of list for in-memory sort.
+
+  * Property value: Integer
+  * Default value: 10000
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.aggregate.hash-table.size</name>
+    <value>10000</value>
+  </property>
 
 ======================
 Date/Time Settings
 ======================
 
-+--------------------------+----------------+--------------------------------------------------------+
-| Property Name            | Property Value | Descriptions                                           |
-+==========================+================+========================================================+
-| tajo.timezone            | Time zone id   | Refer to :doc:`/time_zone`                             |
-+--------------------------+----------------+--------------------------------------------------------+
-| tajo.datetime.date-order | Date order     | Determine date order. It should be one of YMD, DMY, MDY|
-+--------------------------+----------------+--------------------------------------------------------+
+"""""""""""""""""""
+`tajo.timezone`
+"""""""""""""""""""
 
+Refer to :doc:`/time_zone`.
+
+  * Property value: Time zone id
+  * Default value: Default time zone of JVM
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.timezone</name>
+    <value>GMT+9</value>
+  </property>
+
+"""""""""""""""""""""""""""
+`tajo.datetime.date-order`
+"""""""""""""""""""""""""""
+
+Date order specification.
+
+  * Property value: One of YMD, DMY, MDY.
+  * Default value: YMD
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.datetime.date-order</name>
+    <value>YMD</value>
+  </property>
+
+======================
+Table partitions
+======================
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.partition.overwrite.even-if-no-result`
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+If this value is true, a partitioned table is overwritten even if a subquery leads to no result. Otherwise, the table data will be kept if there is no result.
+
+  * Property value: Boolean
+  * Default value: false
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.partition.overwrite.even-if-no-result</name>
+    <value>false</value>
+  </property>
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.dist-query.table-partition.task-volume-mb`
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+In Tajo, storing a partition table is executed in two stages.
+This value indicates the output size of a task of the former stage, which determines the number of partitions to be shuffled between two stages.
+
+  * Property value: Integer
+  * Unit: MB
+  * Default value: 256
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.dist-query.table-partition.task-volume-mb</name>
+    <value>256</value>
+  </property>
+
+======================
+Arithmetic Settings
+======================
+
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+`tajo.behavior.arithmetic-abort`
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A flag to indicate how to handle the errors caused by invalid arithmetic operations. If true, a running query will be terminated with an overflow or a divide-by-zero.
+
+  * Property value: Boolean
+  * Default value: false
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.behavior.arithmetic-abort</name>
+    <value>false</value>
+  </property>
