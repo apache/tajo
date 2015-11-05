@@ -1562,18 +1562,65 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
       executeString(
         "insert overwrite into " + tableName
-          + " select l_orderkey, l_partkey, to_timestamp(l_shipdate, 'YYYY-MM-DD') from lineitem");
+          + " select l_orderkey, l_partkey, to_timestamp(l_shipdate, 'YYYY-MM-DD') from lineitem " +
+          " where l_orderkey != 2");
     } else {
       executeString(
         "create table " + tableName + "(col1 int4, col2 int4) partition by column(key timestamp) "
-          + " as select l_orderkey, l_partkey, to_timestamp(l_shipdate, 'YYYY-MM-DD') from lineitem");
+          + " as select l_orderkey, l_partkey, to_timestamp(l_shipdate, 'YYYY-MM-DD') from lineitem " +
+          " where l_orderkey != 2");
     }
+
+    executeString(
+      "insert overwrite into " + tableName
+        + " select l_orderkey, l_partkey, TIMESTAMP '1997-01-28 02:50:08.037' from lineitem " +
+        " where l_orderkey = 2");
 
     assertTrue(client.existTable(tableName));
 
+    List<PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
+    assertEquals(5, partitions.size());
+
+    // Equals
+    res = executeString("SELECT * FROM " + tableName + " WHERE key = cast(760147200000 as timestamp)");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02 00:00:00\n" ;
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    res = executeString("SELECT * FROM " + tableName + " WHERE key = TIMESTAMP '1993-11-09 00:00:00.0'");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,3,1993-11-09 00:00:00\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    res = executeString("SELECT * FROM " + tableName + " WHERE key = to_timestamp(760147200)");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "3,2,1994-02-02 00:00:00\n" ;
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
+    res = executeString("SELECT * FROM " + tableName + " WHERE key = TIMESTAMP '1997-01-28 02:50:08.037'");
+
+    expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "2,2,1997-01-28 02:50:08.037\n";
+
+    assertEquals(expectedResult, resultSetToString(res));
+    res.close();
+
     // LessThanOrEquals
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key <= to_timestamp('1995-09-01', 'YYYY-MM-DD') order by col1, col2, key");
+      + " WHERE key <= TIMESTAMP '1995-09-01 00:00:00' order by col1, col2, key");
 
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
@@ -1585,8 +1632,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     // LessThan and GreaterThan
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key > to_timestamp('1993-01-01', 'YYYY-MM-DD') and " +
-      "key < to_timestamp('1996-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
+      + " WHERE key > TIMESTAMP '1993-01-01 00:00:00' and " +
+      "key < TIMESTAMP '1996-01-01 00:00:00' order by col1, col2, key desc");
 
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +
@@ -1598,8 +1645,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     // Between
     res = executeString("SELECT * FROM " + tableName
-      + " WHERE key between to_timestamp('1993-01-01', 'YYYY-MM-DD') " +
-      "and to_timestamp('1997-01-01', 'YYYY-MM-DD') order by col1, col2, key desc");
+      + " WHERE key between TIMESTAMP '1993-01-01 00:00:00' " +
+      "and TIMESTAMP '1997-01-01 00:00:00' order by col1, col2, key desc");
 
     expectedResult = "col1,col2,key\n" +
       "-------------------------------\n" +

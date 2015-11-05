@@ -186,6 +186,8 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
         timeValue = new TimeValue(""+timestampDatum.getHourOfDay()
         , ""+timestampDatum.getMinuteOfHour(), ""+timestampDatum.getSecondOfMinute());
 
+        timeValue.setSecondsFraction(Integer.toString(timestampDatum.getMillisOfSecond()));
+
         value = new TimestampLiteral(dateValue, timeValue);
         break;
       case TIME:

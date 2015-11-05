@@ -362,6 +362,17 @@ public class DatumFactory {
         return parseTimestamp(datum.asChars(), tz);
       case TIMESTAMP:
         return (TimestampDatum) datum;
+      case INT8:
+        // TimestampDatum use UTC based Julian time microseconds. So this need to convert long number to julian time
+        // microseconds. And if users set their timezone, this must apply the timezone for correct query result.
+        TimeMeta tm = new TimeMeta();
+        DateTimeUtil.toJulianTimeMeta(DateTimeUtil.javaTimeToJulianTime(datum.asInt8()), tm);
+        if (tz != null) {
+          DateTimeUtil.toUserTimezone(tm, tz);
+        } else {
+          DateTimeUtil.toUserTimezone(tm, TimeZone.getDefault());
+        }
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       default:
         throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.TIMESTAMP));
     }

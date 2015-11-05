@@ -56,7 +56,7 @@ public class TimeValue implements Cloneable {
   }
 
   public void setSecondsFraction(String secondsFraction) {
-    this.secondsFraction = StringUtils.rightPad(secondsFraction, 3, '0');
+    this.secondsFraction = StringUtils.leftPad(secondsFraction, 3, '0');
   }
 
   public String getSecondsFraction() {
