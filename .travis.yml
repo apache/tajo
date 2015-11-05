@@ -42,3 +42,4 @@ install: ./dev-support/travis-install-dependencies.sh
 
 script: 
   - mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql
+  - dmesg | grep -i kill
