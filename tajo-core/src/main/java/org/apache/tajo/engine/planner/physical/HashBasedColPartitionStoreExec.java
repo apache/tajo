@@ -68,7 +68,8 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
       Datum datum = tuple.asDatum(keyIds[i]);
 
       if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
-        // Converts TimeMeta to formatted string for Hive compatibility.
+        // Hive automatically converts TIMESTAMP value to STRING literals which are accepted in the format YYYY-MM-DD
+        // HH:MM:SS.MS. So Tajo need to convert TimestampDatum to formatted string for Hive compatibility.
         TimestampDatum timestampDatum = (TimestampDatum) datum;
         Timestamp timestamp = new Timestamp(timestampDatum.getJavaTimestamp());
         sb.append(StringUtils.escapePathName(timestamp.toString()));

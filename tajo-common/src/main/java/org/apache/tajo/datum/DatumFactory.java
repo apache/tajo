@@ -363,6 +363,8 @@ public class DatumFactory {
       case TIMESTAMP:
         return (TimestampDatum) datum;
       case INT8:
+        // TimestampDatum use UTC based Julian time microseconds. So this need to convert long number to julian time
+        // microseconds. And if users set their timezone, this must apply the timezone for correct query result.
         TimeMeta tm = new TimeMeta();
         DateTimeUtil.toJulianTimeMeta(DateTimeUtil.javaTimeToJulianTime(datum.asInt8()), tm);
         if (tz != null) {

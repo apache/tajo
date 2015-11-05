@@ -470,6 +470,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
 
       if (keyColumn.getDataType().getType() == TajoDataTypes.Type.TIMESTAMP) {
+        // TimestampDatum use UTC based Julian time microseconds. So this need to convert the number of milliseconds
+        // to julian time microseconds.
         Timestamp timestamp = Timestamp.valueOf(StringUtils.unescapePathName(parts[1]));
         long julianTime = DateTimeUtil.javaTimeToJulianTime(timestamp.getTime());
         TimestampDatum timestampDatum = new TimestampDatum(julianTime);

@@ -161,6 +161,10 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
       sb.append("?").append(" )");
       parameters.add(new Pair(Type.TEXT, dateFormat));
     } else {
+      // Currently, Hive doesn't support to use Timestamp type using partition api. As a result, if Tajo uses Timestamp
+      // type, Hive will throws MetaException. Also Hive doesn't allow cast operator using partition api. So if there
+      // is any Timestamp type on filter conditions, Tajo must get all list of partitions of the table and build
+      // correct query result with the list.
       throw new UnsupportedException("Timestamp type");
     }
     queries.push(sb.toString());
