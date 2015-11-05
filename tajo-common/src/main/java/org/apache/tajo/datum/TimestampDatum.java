@@ -19,8 +19,6 @@
 package org.apache.tajo.datum;
 
 import com.google.common.primitives.Longs;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
@@ -32,7 +30,6 @@ import org.apache.tajo.util.datetime.TimeMeta;
 import java.util.TimeZone;
 
 public class TimestampDatum extends Datum {
-  private static final Log LOG = LogFactory.getLog(TimestampDatum.class);
   public static final int SIZE = 8;
 
   private long timestamp;
@@ -204,7 +201,6 @@ public class TimestampDatum extends Datum {
     } else if (datum.isNull()) {
       return -1;
     } else {
-      LOG.info("### 2000 ### type:" + datum.type().name() + ", value:" + datum.asChars());
       throw new InvalidOperationException(datum.type());
     }
   }
