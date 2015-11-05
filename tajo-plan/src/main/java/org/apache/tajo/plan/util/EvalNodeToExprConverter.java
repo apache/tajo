@@ -18,8 +18,6 @@
 
 package org.apache.tajo.plan.util;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
@@ -34,8 +32,6 @@ import java.util.Stack;
  *
  */
 public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
-  protected final Log LOG = LogFactory.getLog(getClass());
-
   private Stack<Expr> exprs = new Stack<>();
 
   private String tableName;
