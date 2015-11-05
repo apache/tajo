@@ -48,5 +48,5 @@ public interface GlobalPlanRewriteRule {
    * @param plan Global Plan
    * @return
    */
-  MasterPlan rewrite(MasterPlan plan) throws TajoException;
+  MasterPlan rewrite(OverridableConf queryContext, MasterPlan plan) throws TajoException;
 }

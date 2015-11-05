@@ -42,6 +42,7 @@ The ``WITH`` clause in the CREATE TABLE statement allows users to set those para
 * ``text.serde``: custom (De)serializer class. ``org.apache.tajo.storage.text.CSVLineSerDe`` is the default (De)serializer class.
 * ``timezone``: the time zone that the table uses for writting. When table rows are read or written, ```timestamp``` and ```time``` column values are adjusted by this timezone if it is set. Time zone can be an abbreviation form like 'PST' or 'DST'. Also, it accepts an offset-based form like 'UTC+9' or a location-based form like 'Asia/Seoul'.
 * ``text.error-tolerance.max-num``: the maximum number of permissible parsing errors. This value should be an integer value. By default, ``text.error-tolerance.max-num`` is ``0``. According to the value, parsing errors will be handled in different ways.
+* ``quote_char``:  quote character. If this property is specified, the quote characters in field values will be ignored. If the quote is incomplete, the quote character will be remain in the value. It may cause invalid parsing, probably leading to NULL value for some data types like INT and FLOAT.
 
   * If ``text.error-tolerance.max-num < 0``, all parsing errors are ignored.
   * If ``text.error-tolerance.max-num == 0``, any parsing error is not allowed. If any error occurs, the query will be failed. (default)

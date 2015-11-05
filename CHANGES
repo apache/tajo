@@ -4,7 +4,11 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
+
   IMPROVEMENT
+
+    TAJO-1941: PermGen elimination in JDK 8. (Dongkyu Hwangbo via hyunsik)
 
     TAJO-1920: Calling 'Collection.toArray()' with zero-length array argument 
     makes performance worse. (Dongkyu Hwangbo via hyunsik)
@@ -44,6 +48,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-1904: Extend GraphVisitor to accept user-defined context. (jihoon)
 
     TAJO-1906: Decrease the default size of hash map and array list for testing.
     (jihoon)
