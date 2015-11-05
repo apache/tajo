@@ -23,7 +23,6 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.google.protobuf.ServiceException;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleState;
@@ -94,7 +93,7 @@ public abstract class NettyClientBase<T> implements ProtoDeclaration, Closeable 
         .group(eventLoopGroup)
         .channel(NioSocketChannel.class)
         .handler(initializer)
-        .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+        .option(ChannelOption.ALLOCATOR, NettyUtils.ALLOCATOR)
         .option(ChannelOption.SO_REUSEADDR, true)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, (int) connTimeoutMillis)
         .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
