@@ -38,7 +38,7 @@
     <tajo.version>0.12.0-SNAPSHOT</tajo.version>
     <hbase.version>1.1.1</hbase.version>
     <hive.version>1.1.0</hive.version>
-    <netty.version>4.0.29.Final</netty.version>
+    <netty.version>4.0.33.Final</netty.version>
     <jersey.version>2.6</jersey.version>
     <jetty.version>6.1.14</jetty.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>

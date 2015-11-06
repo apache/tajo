@@ -130,7 +130,7 @@ public class TajoTestingCluster {
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES.varname, 4);
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 2000);
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM.varname, 3);
-    conf.setInt(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM.varname, 2);
+    conf.setInt(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM.varname, 1);
 
     // Client API RPC
     conf.setIntVar(ConfVars.RPC_CLIENT_WORKER_THREAD_NUM, 2);
@@ -159,6 +159,19 @@ public class TajoTestingCluster {
 
     // Query output file
     conf.setVar(ConfVars.QUERY_OUTPUT_DEFAULT_FILE_FORMAT, BuiltinStorages.DRAW);
+
+    /** decrease Hbase thread and memory cache for testing */
+    //server handler
+    conf.setInt("hbase.regionserver.handler.count", 5);
+    //client handler
+    conf.setInt("hbase.hconnection.threads.core", 5);
+    conf.setInt("hbase.hconnection.threads.max", 10);
+    conf.setInt("hbase.hconnection.meta.lookup.threads.core", 5);
+    conf.setInt("hbase.hconnection.meta.lookup.threads.max", 10);
+
+    //memory cache
+    conf.setFloat("hfile.block.cache.size", 0.0f);  //disable cache
+    conf.setBoolean("hbase.bucketcache.combinedcache.enabled", false);
 
     /* Since Travis CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
@@ -306,6 +319,13 @@ public class TajoTestingCluster {
   }
 
   public void shutdownCatalogCluster() {
+
+    try {
+      CatalogTestingUtil.shutdownCatalogStore(conf);
+    } catch (Exception e) {
+      //ignore
+    }
+
     if (catalogServer != null) {
       this.catalogServer.stop();
     }
@@ -489,7 +509,7 @@ public class TajoTestingCluster {
   public void startMiniCluster(final int numSlaves, final String [] dataNodeHosts) throws Exception {
 
     int numDataNodes = numSlaves;
-    if(dataNodeHosts != null && dataNodeHosts.length != 0) {
+    if (dataNodeHosts != null && dataNodeHosts.length != 0) {
       numDataNodes = dataNodeHosts.length;
     }
 
@@ -504,9 +524,6 @@ public class TajoTestingCluster {
 
     startMiniDFSCluster(numDataNodes, clusterTestBuildDir, dataNodeHosts);
     this.dfsCluster.waitClusterUp();
-
-    conf.setInt("hbase.hconnection.threads.core", 5);
-    conf.setInt("hbase.hconnection.threads.max", 50);
     hbaseUtil = new HBaseTestClusterUtil(conf, clusterTestBuildDir);
 
     startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, false);
