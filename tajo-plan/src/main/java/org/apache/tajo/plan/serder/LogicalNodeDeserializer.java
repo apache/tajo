@@ -206,7 +206,7 @@ public class LogicalNodeDeserializer {
 
     EvalExprNode evalExpr = new EvalExprNode(protoNode.getNodeId());
     evalExpr.setInSchema(convertSchema(protoNode.getInSchema()));
-    evalExpr.setTargets(Arrays.asList(convertTargets(context, evalContext, evalExprProto.getTargetsList())));
+    evalExpr.setTargets(convertTargets(context, evalContext, evalExprProto.getTargetsList()));
 
     return evalExpr;
   }
@@ -287,7 +287,7 @@ public class LogicalNodeDeserializer {
     }
 
     if (windowAggProto.getTargetsCount() > 0) {
-      windowAgg.setTargets(Arrays.asList(convertTargets(context, evalContext, windowAggProto.getTargetsList())));
+      windowAgg.setTargets(convertTargets(context, evalContext, windowAggProto.getTargetsList()));
     }
 
     windowAgg.setInSchema(convertSchema(protoNode.getInSchema()));
@@ -311,7 +311,7 @@ public class LogicalNodeDeserializer {
       groupby.setAggFunctions(convertAggFuncCallEvals(context, evalContext, groupbyProto.getAggFunctionsList()));
     }
     if (groupbyProto.getTargetsCount() > 0) {
-      groupby.setTargets(Arrays.asList(convertTargets(context, evalContext, groupbyProto.getTargetsList())));
+      groupby.setTargets(convertTargets(context, evalContext, groupbyProto.getTargetsList()));
     }
 
     groupby.setInSchema(convertSchema(protoNode.getInSchema()));
@@ -349,7 +349,7 @@ public class LogicalNodeDeserializer {
           distinctGroupbyProto.getAggFunctionsList()));
     }
     if (distinctGroupbyProto.getTargetsCount() > 0) {
-      distinctGroupby.setTargets(Arrays.asList(convertTargets(context, evalContext, distinctGroupbyProto.getTargetsList())));
+      distinctGroupby.setTargets(convertTargets(context, evalContext, distinctGroupbyProto.getTargetsList()));
     }
     int [] resultColumnIds = new int[distinctGroupbyProto.getResultIdCount()];
     for (int i = 0; i < distinctGroupbyProto.getResultIdCount(); i++) {
@@ -378,7 +378,7 @@ public class LogicalNodeDeserializer {
       join.setJoinQual(EvalNodeDeserializer.deserialize(context, evalContext, joinProto.getJoinQual()));
     }
     if (joinProto.getExistsTargets()) {
-      join.setTargets(Arrays.asList(convertTargets(context, evalContext, joinProto.getTargetsList())));
+      join.setTargets(convertTargets(context, evalContext, joinProto.getTargetsList()));
     }
 
     return join;
@@ -426,7 +426,7 @@ public class LogicalNodeDeserializer {
     }
 
     if (scanProto.getExistTargets()) {
-      scan.setTargets(Arrays.asList(convertTargets(context, evalContext, scanProto.getTargetsList())));
+      scan.setTargets(convertTargets(context, evalContext, scanProto.getTargetsList()));
     }
 
     if (scanProto.hasQual()) {
@@ -481,7 +481,7 @@ public class LogicalNodeDeserializer {
     tableSubQuery.init(proto.getTableName(), nodeMap.get(proto.getChildSeq()));
     tableSubQuery.setInSchema(convertSchema(protoNode.getInSchema()));
     if (proto.getTargetsCount() > 0) {
-      tableSubQuery.setTargets(Arrays.asList(convertTargets(context, evalContext, proto.getTargetsList())));
+      tableSubQuery.setTargets(convertTargets(context, evalContext, proto.getTargetsList()));
     }
     tableSubQuery.setNameResolveBase(proto.getNameResolveBase());
 
@@ -741,18 +741,19 @@ public class LogicalNodeDeserializer {
     return columns;
   }
 
-  public static Target[] convertTargets(OverridableConf context, EvalContext evalContext,
+  public static List<Target> convertTargets(OverridableConf context, EvalContext evalContext,
                                         List<PlanProto.Target> targetsProto) {
-    Target [] targets = new Target[targetsProto.size()];
-    for (int i = 0; i < targets.length; i++) {
-      PlanProto.Target targetProto = targetsProto.get(i);
+    List<Target> targets = new ArrayList<>();
+    for (PlanProto.Target targetProto : targetsProto) {
       EvalNode evalNode = EvalNodeDeserializer.deserialize(context, evalContext, targetProto.getExpr());
+
       if (targetProto.hasAlias()) {
-        targets[i] = new Target(evalNode, targetProto.getAlias());
+        targets.add(new Target(evalNode, targetProto.getAlias()));
       } else {
-        targets[i] = new Target((FieldEval) evalNode);
+        targets.add(new Target((FieldEval) evalNode));
       }
     }
+
     return targets;
   }
 

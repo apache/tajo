@@ -22,7 +22,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.Projectable;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -44,7 +43,7 @@ public class ProjectionExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-    this.projector = new Projector(context, inSchema, outSchema, this.plan.getTargets().toArray(new Target[]{}));
+    this.projector = new Projector(context, inSchema, outSchema, this.plan.getTargets());
   }
 
   @Override

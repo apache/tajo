@@ -211,18 +211,18 @@ public class SeqScanExec extends ScanExec {
   }
 
   protected void initializeProjector(Schema actualInSchema){
-    Target[] realTargets;
+    List<Target> realTargets;
     if (plan.getTargets() == null) {
       realTargets = PlannerUtil.schemaToTargets(outSchema);
     } else {
-      realTargets = plan.getTargets().toArray(new Target[]{});
+      realTargets = plan.getTargets();
     }
 
     //if all column is selected and there is no have expression, projection can be skipped
-    if (realTargets.length == inSchema.size()) {
+    if (realTargets.size() == inSchema.size()) {
       for (int i = 0; i < inSchema.size(); i++) {
-        if (realTargets[i].getEvalTree() instanceof FieldEval) {
-          FieldEval f = realTargets[i].getEvalTree();
+        if (realTargets.get(i).getEvalTree() instanceof FieldEval) {
+          FieldEval f = realTargets.get(i).getEvalTree();
           if(!f.getColumnRef().equals(inSchema.getColumn(i))) {
             needProjection = true;
             break;
@@ -237,7 +237,7 @@ public class SeqScanExec extends ScanExec {
     }
 
     if(needProjection) {
-      projector = new Projector(context, actualInSchema, outSchema, plan.getTargets().toArray(new Target[]{}));
+      projector = new Projector(context, actualInSchema, outSchema, plan.getTargets());
     }
   }
 

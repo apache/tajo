@@ -749,7 +749,7 @@ public class ProjectionPushDownRule extends
     node.setInSchema(child.getOutSchema());
     if (node.isForDistinctBlock()) { // the grouping columns should be updated according to the schema of child node.
       node.setGroupingColumns(child.getOutSchema().toArray());
-      node.setTargets(Arrays.asList(PlannerUtil.schemaToTargets(child.getOutSchema())));
+      node.setTargets(PlannerUtil.schemaToTargets(child.getOutSchema()));
 
       // Because it updates grouping columns and targets, it should refresh grouping key num and names.
       groupingKeyNum = node.getGroupingColumns().length;
@@ -810,36 +810,35 @@ public class ProjectionPushDownRule extends
         node.setAggFunctions(aggEvals);
       }
     }
-    Target [] finalTargets = buildGroupByTarget(node, targets, aggEvalNames);
-    node.setTargets(Arrays.asList(finalTargets));
+    List<Target> finalTargets = buildGroupByTarget(node, targets, aggEvalNames);
+    node.setTargets(finalTargets);
 
     LogicalPlanner.verifyProjectedFields(block, node);
 
     return node;
   }
 
-  public static Target [] buildGroupByTarget(GroupbyNode groupbyNode, @Nullable List<Target> groupingKeyTargets,
+  public static List<Target> buildGroupByTarget(GroupbyNode groupbyNode, @Nullable List<Target> groupingKeyTargets,
                                              String [] aggEvalNames) {
     final int groupingKeyNum =
         groupingKeyTargets == null ? groupbyNode.getGroupingColumns().length : groupingKeyTargets.size();
     final int aggrFuncNum = aggEvalNames != null ? aggEvalNames.length : 0;
     EvalNode [] aggEvalNodes = groupbyNode.getAggFunctions();
-    Target [] targets = new Target[groupingKeyNum + aggrFuncNum];
+    List<Target> targets = new ArrayList<>();
 
     if (groupingKeyTargets != null) {
       for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
-        targets[groupingKeyIdx] = groupingKeyTargets.get(groupingKeyIdx);
+        targets.add(groupingKeyTargets.get(groupingKeyIdx));
       }
     } else {
       for (int groupingKeyIdx = 0; groupingKeyIdx < groupingKeyNum; groupingKeyIdx++) {
-        targets[groupingKeyIdx] = new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx]));
+        targets.add(new Target(new FieldEval(groupbyNode.getGroupingColumns()[groupingKeyIdx])));
       }
     }
 
     if (aggEvalNames != null) {
       for (int aggrFuncIdx = 0, targetIdx = groupingKeyNum; aggrFuncIdx < aggrFuncNum; aggrFuncIdx++, targetIdx++) {
-        targets[targetIdx] =
-            new Target(new FieldEval(aggEvalNames[aggrFuncIdx], aggEvalNodes[aggrFuncIdx].getValueType()));
+        targets.add(new Target(new FieldEval(aggEvalNames[aggrFuncIdx], aggEvalNodes[aggrFuncIdx].getValueType())));
       }
     }
 
@@ -908,7 +907,7 @@ public class ProjectionPushDownRule extends
     if (node.hasTargets()) {
       referenceNames = new String[node.getTargets().size()];
       int i = 0;
-      for (Iterator<Target> it = getFilteredTarget(node.getTargets().toArray(new Target[]{}), context.requiredSet); it.hasNext();) {
+      for (Iterator<Target> it = getFilteredTarget(node.getTargets(), context.requiredSet); it.hasNext();) {
         Target target = it.next();
         referenceNames[i++] = newContext.addExpr(target);
       }
@@ -1000,14 +999,14 @@ public class ProjectionPushDownRule extends
     }
   }
 
-  static Iterator<Target> getFilteredTarget(Target[] targets, Set<String> required) {
+  static Iterator<Target> getFilteredTarget(List<Target> targets, Set<String> required) {
     return new FilteredIterator(targets, required);
   }
 
   static class FilteredIterator implements Iterator<Target> {
     Iterator<Target> iterator;
 
-    FilteredIterator(Target [] targets, Set<String> requiredReferences) {
+    FilteredIterator(List<Target> targets, Set<String> requiredReferences) {
       List<Target> filtered = TUtil.newList();
       Map<String, Target> targetSet = new HashMap<>();
       for (Target t : targets) {
@@ -1070,9 +1069,9 @@ public class ProjectionPushDownRule extends
 
     Context newContext = new Context(context);
 
-    Target [] targets;
+    List<Target> targets;
     if (node.hasTargets()) {
-      targets = node.getTargets().toArray(new Target[]{});
+      targets = node.getTargets();
     } else {
       targets = PlannerUtil.schemaToTargets(node.getLogicalSchema());
     }
@@ -1104,9 +1103,9 @@ public class ProjectionPushDownRule extends
 
     Context newContext = new Context(context);
 
-    Target [] targets;
+    List<Target> targets;
     if (node.hasTargets()) {
-      targets = node.getTargets().toArray(new Target[]{});
+      targets = node.getTargets();
     } else {
       targets = PlannerUtil.schemaToTargets(node.getOutSchema());
     }
@@ -1146,9 +1145,9 @@ public class ProjectionPushDownRule extends
     node.setSubQuery(child);
     stack.pop();
 
-    Target [] targets;
+    List<Target> targets;
     if (node.hasTargets()) {
-      targets = node.getTargets().toArray(new Target[]{});
+      targets = node.getTargets();
     } else {
       targets = PlannerUtil.schemaToTargets(node.getOutSchema());
     }

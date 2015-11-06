@@ -84,7 +84,7 @@ public class BSTIndexScanExec extends ScanExec {
     TupleComparator comparator = new BaseTupleComparator(keySchema,
         keySortSpecs);
 
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets().toArray(new Target[]{}));
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
     Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(fragment));
     this.reader = new BSTIndex(context.getConf()).
@@ -190,9 +190,9 @@ public class BSTIndexScanExec extends ScanExec {
       // If TRUE, the retrieved tuple will contain only projected fields.
       // If FALSE, the retrieved tuple will contain projected fields and NullDatum for non-projected fields.
       if (fileScanner.isProjectable()) {
-        this.projector = new Projector(context, projected, outSchema, plan.getTargets().toArray(new Target[]{}));
+        this.projector = new Projector(context, projected, outSchema, plan.getTargets());
       } else {
-        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets().toArray(new Target[]{}));
+        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
       }
     }
   }

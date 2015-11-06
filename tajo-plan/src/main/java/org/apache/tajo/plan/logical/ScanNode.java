@@ -31,7 +31,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ScanNode extends RelationNode implements Projectable, SelectableNode, Cloneable {
@@ -39,7 +39,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
   @Expose protected String alias;
   @Expose protected Schema logicalSchema;
 	@Expose protected EvalNode qual;
-	@Expose protected Target[] targets;
+	@Expose protected List<Target> targets;
   @Expose protected boolean broadcastTable;
   @Expose protected long limit = -1; // -1 means no set
 
@@ -146,14 +146,14 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 
   @Override
 	public void setTargets(List<Target> targets) {
-	  this.targets = targets.toArray(new Target[]{});
+	  this.targets = targets;
     setOutSchema(PlannerUtil.targetToSchema(targets));
 	}
 
   @Override
   public List<Target> getTargets() {
     if (hasTargets()) {
-      return Arrays.asList(this.targets);
+      return this.targets;
     } else {
       return null;
     }
@@ -231,9 +231,9 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     }
 
     if (hasTargets()) {
-      scanNode.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        scanNode.targets[i] = (Target) targets[i].clone();
+      scanNode.targets = new ArrayList<>();
+      for (Target t : targets) {
+        scanNode.targets.add((Target) t.clone());
       }
     }
 

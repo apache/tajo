@@ -740,7 +740,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       currentRow = 0;
       isClosed = false;
       
-      projector = new Projector(context, inSchema, outSchema, scanNode.getTargets().toArray(new Target[]{}));
+      projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
     }
 
     @Override
