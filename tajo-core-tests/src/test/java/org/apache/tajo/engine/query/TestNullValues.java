@@ -70,16 +70,13 @@ public class TestNullValues {
     };
     KeyValueSet opts = new KeyValueSet();
     opts.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    ResultSet res = TajoTestingCluster
-        .run(table, schemas, opts, new String[][]{data},
-            "select * from nulltable1 where col3 is null", client);
 
-    try {
+    try (ResultSet res = TajoTestingCluster
+            .run(table, schemas, opts, new String[][]{data},
+                    "select * from nulltable1 where col3 is null", client)) {
       assertTrue(res.next());
       assertEquals(2, res.getInt(1));
       assertFalse(res.next());
-    } finally {
-      res.close();
     }
   }
 
@@ -97,17 +94,14 @@ public class TestNullValues {
     };
     KeyValueSet opts = new KeyValueSet();
     opts.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    ResultSet res = TajoTestingCluster
-        .run(table, schemas, opts, new String[][]{data},
-            "select * from nulltable2 where col1 is not null", client);
-    try {
+    try (ResultSet res = TajoTestingCluster
+            .run(table, schemas, opts, new String[][]{data},
+                    "select * from nulltable2 where col1 is not null", client)) {
       assertTrue(res.next());
       assertEquals(1, res.getInt(1));
       assertTrue(res.next());
       assertEquals(3, res.getInt(1));
       assertFalse(res.next());
-    } finally {
-      res.close();
     }
   }
 
@@ -132,15 +126,12 @@ public class TestNullValues {
     };
     KeyValueSet opts = new KeyValueSet();
     opts.set(StorageConstants.TEXT_DELIMITER, ",");
-    ResultSet res = TajoTestingCluster
-        .run(table, schemas, opts, new String[][]{data},
-            "select * from nulltable3 where col1 is null and col2 is null and col3 is null and col4 = 43578", client);
-    try {
+    try (ResultSet res = TajoTestingCluster
+            .run(table, schemas, opts, new String[][]{data},
+                    "select * from nulltable3 where col1 is null and col2 is null and col3 is null and col4 = 43578", client)) {
       assertTrue(res.next());
       assertEquals(43578, res.getLong(4));
       assertFalse(res.next());
-    } finally {
-      res.close();
     }
   }
 
@@ -166,16 +157,13 @@ public class TestNullValues {
     KeyValueSet opts = new KeyValueSet();
     opts.set(StorageConstants.TEXT_DELIMITER, ",");
     opts.set(StorageConstants.TEXT_NULL, "\\\\N");
-    ResultSet res = TajoTestingCluster
-        .run(table, schemas, opts, new String[][]{data},
-            "select * from nulltable4 where col1 is null and col2 is null and col3 is null and col5 is null and col4 = 43578"
-            , client);
-    try {
+    try (ResultSet res = TajoTestingCluster
+            .run(table, schemas, opts, new String[][]{data},
+                    "select * from nulltable4 where col1 is null and col2 is null and col3 is null and col5 is null and col4 = 43578"
+                    , client)) {
       assertTrue(res.next());
       assertEquals(43578, res.getLong(4));
       assertFalse(res.next());
-    } finally {
-      res.close();
     }
   }
 

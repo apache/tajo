@@ -1092,8 +1092,7 @@ public class QueryTestCaseBase {
         continue;
       }
 
-      InputStream in = fs.open(file.getPath());
-      try {
+      try (InputStream in = fs.open(file.getPath())) {
         while (true) {
           int readBytes = in.read(buf);
           if (readBytes <= 0) {
@@ -1102,8 +1101,6 @@ public class QueryTestCaseBase {
 
           sb.append(new String(buf, 0, readBytes));
         }
-      } finally {
-        in.close();
       }
     }
 

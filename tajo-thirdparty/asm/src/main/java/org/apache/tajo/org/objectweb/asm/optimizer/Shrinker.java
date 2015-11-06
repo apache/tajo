@@ -134,11 +134,8 @@ public class Shrinker {
                     throw new IOException("Cannot create directory "
                             + g.getParentFile());
                 }
-                OutputStream os = new FileOutputStream(g);
-                try {
+                try (OutputStream os = new FileOutputStream(g)) {
                     os.write(cw.toByteArray());
-                } finally {
-                    os.close();
                 }
             }
         }

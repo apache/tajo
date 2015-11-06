@@ -161,12 +161,9 @@ public class TestTajoCli {
     assertEquals("tajo.executor.join.inner.in-memory-table-num=256", confValues[1]);
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    TajoCli testCli = new TajoCli(tajoConf, args, null, System.in, System.out);
-    try {
+    try (TajoCli testCli = new TajoCli(tajoConf, args, null, System.in, System.out)) {
       assertEquals("false", testCli.getContext().get(SessionVars.CLI_PAGING_ENABLED));
       assertEquals("256", testCli.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
-    } finally {
-      testCli.close();
     }
   }
 
@@ -327,14 +324,11 @@ public class TestTajoCli {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out);
-    try {
+    try (TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out)) {
       tajoCli.executeMetaCommand("\\getconf tajo.rootdir");
 
       String consoleResult = new String(out.toByteArray());
       assertEquals(consoleResult, tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.ROOT_DIR) + "\n");
-    } finally {
-      tajoCli.close();
     }
   }
 
@@ -453,14 +447,12 @@ public class TestTajoCli {
   @Test(timeout = 3000)
   public void testNonForwardQueryPause() throws Exception {
     final String sql = "select * from default.lineitem";
-    TajoCli cli = null;
-    try {
-      TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
-      assertNotNull(tableDesc);
-      assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
+    TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
+    assertNotNull(tableDesc);
+    assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
 
-      InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
-      cli = new TajoCli(cluster.getConfiguration(), new String[]{}, null, testInput, out);
+    InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
+    try (TajoCli cli = new TajoCli(cluster.getConfiguration(), new String[]{}, null, testInput, out)) {
       setVar(cli, SessionVars.CLI_PAGE_ROWS, "2");
       setVar(cli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
@@ -469,8 +461,6 @@ public class TestTajoCli {
       String consoleResult;
       consoleResult = new String(out.toByteArray());
       assertOutputResult(consoleResult);
-    } finally {
-      cli.close();
     }
   }
 

@@ -400,9 +400,8 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           TajoConstants.DEFAULT_DATABASE_NAME);
-      Connection conn = DriverManager.getConnection(connUri);
 
-      try {
+      try (Connection conn = DriverManager.getConnection(connUri)) {
         DatabaseMetaData meta = conn.getMetaData();
 
         ResultSet res = meta.getProcedures(null, null, null);
@@ -456,8 +455,6 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
         res = meta.getClientInfoProperties();
         assertNotNull(res);
         assertFalse(res.next());
-      } finally {
-        conn.close();
       }
     }
   }
@@ -467,9 +464,8 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           TajoConstants.DEFAULT_DATABASE_NAME);
-      Connection conn = DriverManager.getConnection(connUri);
 
-      try {
+      try (Connection conn = DriverManager.getConnection(connUri)) {
         DatabaseMetaData meta = conn.getMetaData();
 
         ResultSet res = meta.getTypeInfo();
@@ -479,9 +475,9 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
         int numTypes = 0;
 
         String[] columnNames = {"TYPE_NAME", "DATA_TYPE", "PRECISION", "LITERAL_PREFIX", "LITERAL_SUFFIX",
-            "CREATE_PARAMS", "NULLABLE", "CASE_SENSITIVE", "SEARCHABLE", "UNSIGNED_ATTRIBUTE",
-            "FIXED_PREC_SCALE", "AUTO_INCREMENT", "LOCAL_TYPE_NAME", "MINIMUM_SCALE", "MAXIMUM_SCALE",
-            "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "NUM_PREC_RADIX"};
+                "CREATE_PARAMS", "NULLABLE", "CASE_SENSITIVE", "SEARCHABLE", "UNSIGNED_ATTRIBUTE",
+                "FIXED_PREC_SCALE", "AUTO_INCREMENT", "LOCAL_TYPE_NAME", "MINIMUM_SCALE", "MAXIMUM_SCALE",
+                "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "NUM_PREC_RADIX"};
 
         while (res.next()) {
           for (int i = 0; i < columnNames.length; i++) {
@@ -496,8 +492,6 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
         }
 
         assertEquals(numTypes, TajoTypeUtil.getTypeInfos().size());
-      } finally {
-        conn.close();
       }
     }
   }

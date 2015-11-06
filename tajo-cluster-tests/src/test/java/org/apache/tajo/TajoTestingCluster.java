@@ -630,12 +630,9 @@ public class TajoTestingCluster {
       Thread.sleep(1000);
     }
     TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
 
-    try {
+    try (TajoClient client = new TajoClientImpl(ServiceTrackerFactory.get(conf))) {
       return run(names, schemas, tableOption, tables, query, client);
-    } finally {
-      client.close();
     }
   }
 
@@ -659,8 +656,7 @@ public class TajoTestingCluster {
                                  KeyValueSet tableOption, String[] tableDatas, int numDataFiles) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
     TajoTestingCluster util = instance.getTestingCluster();
-    TajoClient client = newTajoClient(util);
-    try {
+    try (TajoClient client = newTajoClient(util)) {
       FileSystem fs = util.getDefaultFileSystem();
       Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
       if (!fs.exists(rootDir)) {
@@ -697,8 +693,6 @@ public class TajoTestingCluster {
       }
       TableMeta meta = CatalogUtil.newTableMeta("TEXT", tableOption);
       client.createExternalTable(tableName, schema, tablePath.toUri(), meta);
-    } finally {
-      client.close();
     }
   }
 

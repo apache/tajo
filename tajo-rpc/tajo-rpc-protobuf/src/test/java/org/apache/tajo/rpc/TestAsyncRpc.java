@@ -421,23 +421,19 @@ public class TestAsyncRpc {
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
     boolean expected = false;
-    AsyncRpcClient client = null;
-    try {
-      RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionKey(address, DummyProtocol.class, true);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(address, DummyProtocol.class, true);
 
-      Properties connParams = new Properties();
-      connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, String.valueOf(retries));
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, String.valueOf(retries));
 
-      client = new AsyncRpcClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connParams);
+    try (AsyncRpcClient client = new AsyncRpcClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connParams)) {
       client.connect();
       fail();
     } catch (ConnectException e) {
       expected = true;
     } catch (Throwable throwable) {
       fail(throwable.getMessage());
-    } finally {
-      client.close();
     }
     assertTrue(expected);
 
