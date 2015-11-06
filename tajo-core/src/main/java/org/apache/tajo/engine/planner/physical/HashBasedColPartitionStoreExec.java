@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -29,14 +30,13 @@ import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class is a physical operator to store at column partitioned table.
@@ -68,11 +68,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
       Datum datum = tuple.asDatum(keyIds[i]);
 
       if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
-        // Hive automatically converts TIMESTAMP value to STRING literals which are accepted in the format YYYY-MM-DD
-        // HH:MM:SS.MS. So Tajo need to convert TimestampDatum to formatted string for Hive compatibility.
-        TimestampDatum timestampDatum = (TimestampDatum) datum;
-        Timestamp timestamp = new Timestamp(timestampDatum.getJavaTimestamp());
-        sb.append(StringUtils.escapePathName(timestamp.toString()));
+        sb.append(encodeTimestamp(tuple.getTimeDate(keyIds[i])));
       } else {
         sb.append(StringUtils.escapePathName(datum.asChars()));
       }
