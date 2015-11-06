@@ -245,7 +245,7 @@ public class TestBlockingRpc {
     assertTrue(expect);
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testServerShutdown3() throws Exception {
     final StringBuilder error = new StringBuilder();
     Thread callThread = new Thread() {
@@ -275,7 +275,6 @@ public class TestBlockingRpc {
         }
         try {
           server.shutdown(true);
-          server = null;
           latch.countDown();
         } catch (Throwable e) {
           e.printStackTrace();
@@ -284,9 +283,7 @@ public class TestBlockingRpc {
     };
     shutdownThread.start();
 
-    assertTrue(latch.await(5 * 1000, TimeUnit.MILLISECONDS));
-
-    assertTrue(latch.getCount() == 0);
+    latch.await();
 
     synchronized (error) {
       error.wait(5 * 1000);
@@ -558,7 +555,7 @@ public class TestBlockingRpc {
 
     boolean expected = false;
     try {
-      EchoMessage message = stub.busy(null, echoMessage); //30 sec delay
+      EchoMessage message = stub.busy(null, echoMessage); //10 sec delay
       fail();
     } catch (TajoServiceException e) {
       expected = true;

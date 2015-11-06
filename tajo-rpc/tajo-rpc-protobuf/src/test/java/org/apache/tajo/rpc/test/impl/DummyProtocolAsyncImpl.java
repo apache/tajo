@@ -83,7 +83,7 @@ public class DummyProtocolAsyncImpl implements Interface {
   public void busy(RpcController controller, EchoMessage request,
                    RpcCallback<EchoMessage> done) {
     try {
-      Thread.sleep(30000);
+      Thread.sleep(10000);
     } catch (InterruptedException e) {
       LOG.error(e.getMessage());
     }

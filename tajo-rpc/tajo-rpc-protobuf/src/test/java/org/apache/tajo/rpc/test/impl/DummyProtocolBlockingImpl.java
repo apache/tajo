@@ -79,7 +79,7 @@ public class DummyProtocolBlockingImpl implements BlockingInterface {
   @Override
   public EchoMessage busy(RpcController controller, EchoMessage request) {
     try {
-      Thread.sleep(30000);
+      Thread.sleep(10000);
     } catch (InterruptedException e) {
       LOG.error(e.getMessage());
     }
