@@ -263,7 +263,7 @@ Otherwise, the sort-based aggregation is used.
 
 .. describe:: AGG_HASH_TABLE_SIZE
 
-The initial size of list for in-memory sort.
+The initial size of list for in-memory aggregation.
 
   * Property value: Integer
   * Default value: 10000
@@ -435,7 +435,7 @@ Sets the output format class to display results.
 
 .. describe:: ON_ERROR_STOP
 
-tsql will exist if an error occurs.
+tsql will exit if an error occurs.
 
   * Property value: Boolean
   * Default value: false
@@ -447,7 +447,7 @@ tsql will exist if an error occurs.
 
 .. describe:: NULL_CHAR
 
-Null char of text file output.
+Null char of text file output. This value is used when the table property 'text.null' is not specified.
 
   * Property value: String
   * Default value: '\\N'
@@ -459,7 +459,7 @@ Null char of text file output.
 
 .. describe:: DEBUG_ENABLED
 
-Debug mode enabled.
+A flag to enable debug mode.
 
   * Property value: Boolean
   * Default value: false
@@ -471,7 +471,7 @@ Debug mode enabled.
 
 .. describe:: FETCH_ROWNUM
 
-Sets the number of rows at a time from Master.
+The number of rows to be fetched from Master at once.
 
   * Property value: Integer
   * Default value: 200

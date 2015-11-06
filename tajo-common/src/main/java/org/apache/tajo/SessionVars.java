@@ -68,7 +68,7 @@ public enum SessionVars implements ConfigKey {
   CLI_PAGING_ENABLED(ConfVars.$CLI_PRINT_PAUSE, "Enable paging of result display", CLI_SIDE_VAR),
   CLI_DISPLAY_ERROR_TRACE(ConfVars.$CLI_PRINT_ERROR_TRACE, "Enable display of error trace", CLI_SIDE_VAR),
 
-  ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exist if an error occurs.", CLI_SIDE_VAR),
+  ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exit if an error occurs.", CLI_SIDE_VAR),
 
   // Timezone & Date ----------------------------------------------------------
   TIMEZONE(ConfVars.$TIMEZONE, "Sets timezone", DEFAULT),
@@ -128,15 +128,18 @@ public enum SessionVars implements ConfigKey {
       DEFAULT, Long.class, Validators.min("0")),
   MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, "Maximum per-output file size (mb). 0 means infinite.", DEFAULT,
       Long.class, Validators.min("0")),
-  NULL_CHAR(ConfVars.$TEXT_NULL, "null char of text file output", DEFAULT),
+  NULL_CHAR(ConfVars.$TEXT_NULL, "Null char of text file output. " +
+      "This value is used when the table property 'text.null' is not specified.", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
-  AGG_HASH_TABLE_SIZE(ConfVars.$AGG_HASH_TABLE_SIZE, "Aggregation hash table size", DEFAULT),
-  SORT_LIST_SIZE(ConfVars.$SORT_LIST_SIZE, "Sort hash table size", DEFAULT),
-  JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, "Join hash table size", DEFAULT),
+  AGG_HASH_TABLE_SIZE(ConfVars.$AGG_HASH_TABLE_SIZE, "The initial size of list for in-memory aggregation", DEFAULT),
+  SORT_LIST_SIZE(ConfVars.$SORT_LIST_SIZE, "The initial size of list for in-memory sort", DEFAULT),
+  JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, "The initial size of hash table for in-memory hash join",
+      DEFAULT),
 
   // for index
   INDEX_ENABLED(ConfVars.$INDEX_ENABLED, "index scan enabled", DEFAULT),
-  INDEX_SELECTIVITY_THRESHOLD(ConfVars.$INDEX_SELECTIVITY_THRESHOLD, "the selectivity threshold for index scan", DEFAULT),
+  INDEX_SELECTIVITY_THRESHOLD(ConfVars.$INDEX_SELECTIVITY_THRESHOLD, "the selectivity threshold for index scan",
+      DEFAULT),
 
   // for partition overwrite
   PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$PARTITION_NO_RESULT_OVERWRITE_ENABLED,
@@ -148,7 +151,7 @@ public enum SessionVars implements ConfigKey {
       "If true, a running query will be terminated when an overflow or divide-by-zero occurs.", DEFAULT),
 
   // ResultSet ----------------------------------------------------------------
-  FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT,
+  FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "The number of rows to be fetched from Master at a time", DEFAULT,
       Integer.class, Validators.min("0")),
   BLOCK_ON_RESULT(ConfVars.$RESULT_SET_BLOCK_WAIT, "Whether to block result set on query execution", DEFAULT,
       Boolean.class, Validators.bool()),
