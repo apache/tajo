@@ -16,7 +16,7 @@ Join Query Settings
 
 A flag to enable or disable the use of broadcast join.
 
-  * Property value: Boolean
+  * Property value type: Boolean
   * Default value: true
   * Example
 
@@ -33,7 +33,7 @@ A flag to enable or disable the use of broadcast join.
 
 A threshold for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this threshold.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: KB
   * Default value: 5120
   * Example
@@ -51,7 +51,7 @@ A threshold for non-cross joins. When a non-cross join query is executed with th
 
 A threshold for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this threshold.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: KB
   * Default value: 1024
   * Example
@@ -73,7 +73,7 @@ A threshold for cross joins. When a cross join query is executed, the whole size
 The repartition join is executed in two stages. When a join query is executed with the repartition join, this value indicates the amount of input data processed by each task at the second stage.
 As a result, it determines the degree of the parallel processing of the join query.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 64
   * Example
@@ -92,7 +92,7 @@ As a result, it determines the degree of the parallel processing of the join que
 The repartition join is executed in two stages. When a join query is executed with the repartition join,
 this value indicates the output size of each task at the first stage, which determines the number of partitions to be shuffled between two stages.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 128
   * Example
@@ -112,7 +112,7 @@ This value provides the criterion to decide the algorithm to perform a join in a
 If the input data is smaller than this value, join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 64
   * Example
@@ -137,7 +137,7 @@ This value provides the criterion to decide the algorithm to perform an inner jo
 If the input data is smaller than this value, the inner join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 64
   * Example
@@ -162,7 +162,7 @@ This value provides the criterion to decide the algorithm to perform an outer jo
 If the input data is smaller than this value, the outer join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 64
   * Example
@@ -185,7 +185,7 @@ Otherwise, the sort-merge join is used.
 
 The initial size of hash table for in-memory hash join.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Default value: 100000
   * Example
 
@@ -207,7 +207,7 @@ Sort Query Settings
 The sort operation is executed in two stages. When a sort query is executed, this value indicates the amount of input data processed by each task at the second stage.
 As a result, it determines the degree of the parallel processing of the sort query.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 64
   * Example
@@ -225,7 +225,7 @@ As a result, it determines the degree of the parallel processing of the sort que
 
 A threshold to choose the sort algorithm. If the input data is larger than this threshold, the external sort algorithm is used.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 200
   * Example
@@ -243,7 +243,7 @@ A threshold to choose the sort algorithm. If the input data is larger than this 
 
 The initial size of list for in-memory sort.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Default value: 100000
   * Example
 
@@ -265,7 +265,7 @@ Group by Query Settings
 A flag to enable the multi-level algorithm for distinct aggregation. If this value is set, 3-phase aggregation algorithm is used.
 Otherwise, 2-phase aggregation algorithm is used.
 
-  * Property value: Boolean
+  * Property value type: Boolean
   * Default value: true
   * Example
 
@@ -283,7 +283,7 @@ Otherwise, 2-phase aggregation algorithm is used.
 The aggregation is executed in two stages. When an aggregation query is executed,
 this value indicates the output size of each task at the first stage, which determines the number of partitions to be shuffled between two stages.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 256
   * Example
@@ -302,7 +302,7 @@ this value indicates the output size of each task at the first stage, which dete
 The aggregation operation is executed in two stages. When an aggregation query is executed, this value indicates the amount of input data processed by each task at the second stage.
 As a result, it determines the degree of the parallel processing of the aggregation query.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 64
   * Example
@@ -310,7 +310,7 @@ As a result, it determines the degree of the parallel processing of the aggregat
 .. code-block:: xml
 
   <property>
-    <name>tajo.dist-query.groupby.partition-volume-mb</name>
+    <name>tajo.dist-query.groupby.task-volume-mb</name>
     <value>64</value>
   </property>
 
@@ -322,7 +322,7 @@ This value provides the criterion to decide the algorithm to perform an aggregat
 If the input data is smaller than this value, the aggregation is performed with the in-memory hash aggregation.
 Otherwise, the sort-based aggregation is used.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 64
   * Example
@@ -343,9 +343,9 @@ Otherwise, the sort-based aggregation is used.
 `tajo.executor.aggregate.hash-table.size`
 """"""""""""""""""""""""""""""""""""""""""
 
-The initial size of list for in-memory sort.
+The initial size of hash table for in-memory aggregation.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Default value: 10000
   * Example
 
@@ -366,7 +366,7 @@ Date/Time Settings
 
 Refer to :doc:`/time_zone`.
 
-  * Property value: Time zone id
+  * Property value type: Time zone id
   * Default value: Default time zone of JVM
   * Example
 
@@ -383,7 +383,7 @@ Refer to :doc:`/time_zone`.
 
 Date order specification.
 
-  * Property value: One of YMD, DMY, MDY.
+  * Property value type: One of YMD, DMY, MDY.
   * Default value: YMD
   * Example
 
@@ -404,7 +404,7 @@ Table partitions
 
 If this value is true, a partitioned table is overwritten even if a subquery leads to no result. Otherwise, the table data will be kept if there is no result.
 
-  * Property value: Boolean
+  * Property value type: Boolean
   * Default value: false
   * Example
 
@@ -422,7 +422,7 @@ If this value is true, a partitioned table is overwritten even if a subquery lea
 In Tajo, storing a partition table is executed in two stages.
 This value indicates the output size of a task of the former stage, which determines the number of partitions to be shuffled between two stages.
 
-  * Property value: Integer
+  * Property value type: Integer
   * Unit: MB
   * Default value: 256
   * Example
@@ -444,7 +444,7 @@ Arithmetic Settings
 
 A flag to indicate how to handle the errors caused by invalid arithmetic operations. If true, a running query will be terminated with an overflow or a divide-by-zero.
 
-  * Property value: Boolean
+  * Property value type: Boolean
   * Default value: false
   * Example
 
