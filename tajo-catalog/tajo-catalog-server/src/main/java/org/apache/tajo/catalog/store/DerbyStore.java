@@ -35,8 +35,8 @@ import java.sql.Statement;
 public class DerbyStore extends AbstractDBStore {
 
   private static final Log LOG = LogFactory.getLog(DerbyStore.class);
-
-  private static final String CATALOG_DRIVER="org.apache.derby.jdbc.EmbeddedDriver";
+  public static final String NAME = "derby";
+  public static final String CATALOG_DRIVER="org.apache.derby.jdbc.EmbeddedDriver";
 
   protected String getCatalogDriverName(){
     return CATALOG_DRIVER;

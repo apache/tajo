@@ -20,7 +20,6 @@ package org.apache.tajo.worker;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
@@ -92,7 +91,7 @@ public class Fetcher {
               NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER,
                   conf.getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM)))
           .channel(NioSocketChannel.class)
-          .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+          .option(ChannelOption.ALLOCATOR, NettyUtils.ALLOCATOR)
           .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
               conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CONNECT_TIMEOUT) * 1000)
           .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M

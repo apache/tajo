@@ -47,4 +47,7 @@ public class RpcConstants {
 
   public static final String CLIENT_HANG_DETECTION = "tajo.rpc.client.hang-detection";
   public final static boolean CLIENT_HANG_DETECTION_DEFAULT =  false;
+
+  public static final String TEST_KEY = "tajo.test.enabled";
+  public static final boolean IS_TEST_MODE = Boolean.parseBoolean(System.getProperty(TEST_KEY, "false"));
 }

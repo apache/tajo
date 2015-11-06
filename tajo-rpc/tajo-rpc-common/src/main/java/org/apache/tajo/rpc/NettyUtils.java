@@ -20,8 +20,12 @@ package org.apache.tajo.rpc;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.ResourceLeakDetector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -34,9 +38,10 @@ public final class NettyUtils {
   private static final Log LOG = LogFactory.getLog(NettyUtils.class);
   
   private static final int DEFAULT_THREAD_NUM = Runtime.getRuntime().availableProcessors() * 2;
-
   private static final Object lockObjectForLoopGroup = new Object();
-  private static AtomicInteger serverCount = new AtomicInteger(0);
+  private static final AtomicInteger serverCount = new AtomicInteger(0);
+
+  public static final ByteBufAllocator ALLOCATOR;
 
   public enum GROUP {
     DEFAULT,
@@ -45,6 +50,18 @@ public final class NettyUtils {
 
   private static final Map<GROUP, EventLoopGroup> eventLoopGroupMap =
           new ConcurrentHashMap<>();
+
+  static {
+    if (RpcConstants.IS_TEST_MODE) {
+      /* Disable pooling buffers for memory usage  */
+      ALLOCATOR = UnpooledByteBufAllocator.DEFAULT;
+
+      /* if you are finding memory leak, please enable this line */
+      ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+    } else {
+      ALLOCATOR = PooledByteBufAllocator.DEFAULT;
+    }
+  }
 
   private NettyUtils(){
   }

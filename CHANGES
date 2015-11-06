@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1966: Decrease memory usage of TajoTestingCluster. (jinho)
+
     TAJO-1941: PermGen elimination in JDK 8. (Dongkyu Hwangbo via hyunsik)
 
     TAJO-1920: Calling 'Collection.toArray()' with zero-length array argument 
