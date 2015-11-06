@@ -210,7 +210,7 @@ public class TablespaceManager implements StorageService {
     registerTableSpace(spaceName, uri, configs, true, override);
   }
 
-  private static void registerTableSpace(String spaceName, URI uri, JSONObject spaceDesc,
+  private static Tablespace registerTableSpace(String spaceName, URI uri, JSONObject spaceDesc,
                                          boolean visible, boolean override) {
     Tablespace tableSpace = initializeTableSpace(spaceName, uri, spaceDesc);
     tableSpace.setVisible(visible);
@@ -232,6 +232,7 @@ public class TablespaceManager implements StorageService {
         registerTableSpace(tmpName, rootUri, spaceDesc, false, override);
       }
     }
+    return tableSpace;
   }
 
   private static void putTablespace(Tablespace space, boolean override) {
@@ -313,7 +314,14 @@ public class TablespaceManager implements StorageService {
       existing = TABLE_SPACES.remove(space.getUri());
 
       // Add anotherone for test
-      registerTableSpace(space.name, space.uri, space.getConfig(), true, true);
+      Tablespace tablespace = registerTableSpace(space.name, space.uri, space.getConfig(), true, true);
+      try {
+        //override conf for test
+        if (space.conf != null)
+          tablespace.init(space.conf);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
     // if there is an existing one, return it.
     return Optional.ofNullable(existing);

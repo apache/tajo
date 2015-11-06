@@ -329,7 +329,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   }
 
   public void releaseTaskAttempt(TaskAttempt taskAttempt) {
-    if (taskAttempt.isLeafTask() && taskAttempt.getWorkerConnectionInfo() != null) {
+    if (taskAttempt != null && taskAttempt.isLeafTask() && taskAttempt.getWorkerConnectionInfo() != null) {
 
       HostVolumeMapping mapping =
           scheduledRequests.leafTaskHostMapping.get(taskAttempt.getWorkerConnectionInfo().getHost());
