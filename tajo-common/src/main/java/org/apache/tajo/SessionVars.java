@@ -131,7 +131,7 @@ public enum SessionVars implements ConfigKey {
   NULL_CHAR(ConfVars.$TEXT_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
   AGG_HASH_TABLE_SIZE(ConfVars.$AGG_HASH_TABLE_SIZE, "Aggregation hash table size", DEFAULT),
-  SORT_HASH_TABLE_SIZE(ConfVars.$SORT_HASH_TABLE_SIZE, "Sort hash table size", DEFAULT),
+  SORT_LIST_SIZE(ConfVars.$SORT_LIST_SIZE, "Sort hash table size", DEFAULT),
   JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, "Join hash table size", DEFAULT),
 
   // for index
