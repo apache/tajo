@@ -215,7 +215,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     DateTimeUtil.toUserTimezone(tm, tz);
 
     sb.append(StringUtils.escapePathName(DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS")));
-    
+
     if (tm.fsecs == 0) {
       sb.append(".0");
     } else {

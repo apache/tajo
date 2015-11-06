@@ -50,6 +50,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   private String tableAlias;
   private Column column;
   private boolean isHiveCatalog = false;
+  private String timezoneId;
 
   private Stack<String> queries = new Stack();
   private List<Pair<Type, Object>> parameters = TUtil.newList();
@@ -68,6 +69,14 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   public void setColumn(Column column) {
     this.column = column;
+  }
+
+  public String getTimezoneId() {
+    return timezoneId;
+  }
+
+  public void setTimezoneId(String timezoneId) {
+    this.timezoneId = timezoneId;
   }
 
   public boolean isHiveCatalog() {
@@ -145,20 +154,20 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
 
-    // For Hive compatibility, Tajo need to convert TimeMeta to STRING literals which are accepted in the format
-    // YYYY-MM-DD HH:MM:SS.MS. Also if there is no fractional seconds, we should use '.0' for nanos value in
-    // accordance with Hive partition naming rule.
-    String dateFormat = DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS");
+    TimeZone tz = TimeZone.getTimeZone(getTimezoneId());
+    DateTimeUtil.toUserTimezone(tm, tz);
+
+    String dateTime = DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS");
     if (tm.fsecs == 0) {
-      dateFormat += ".0";
+      dateTime += ".0";
     } else {
       int secondsFraction = tm.fsecs / 1000;
-      dateFormat += "." + StringUtils.leftPad(""+secondsFraction, 3, '0');
+      dateTime += "." + StringUtils.leftPad(""+secondsFraction, 3, '0');
     }
 
     if (!isHiveCatalog) {
       sb.append("?").append(" )");
-      parameters.add(new Pair(Type.TEXT, dateFormat));
+      parameters.add(new Pair(Type.TEXT, dateTime));
     } else {
       // Currently, Hive doesn't support to use Timestamp type using partition api. As a result, if Tajo uses Timestamp
       // type, Hive will throws MetaException. Also Hive doesn't allow cast operator using partition api. So if there
