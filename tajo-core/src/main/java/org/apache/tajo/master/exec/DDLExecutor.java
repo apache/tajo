@@ -665,7 +665,7 @@ public class DDLExecutor {
     partitionName = partitionName.substring(startIndex +  File.separator.length());
 
     CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
-    builder.setPartitionName(partitionName);
+    builder.setPartitionName(StringUtils.escapePathName(partitionName));
 
     String[] partitionKeyPairs = partitionName.split("/");
 
@@ -675,7 +675,7 @@ public class DDLExecutor {
 
       PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
       keyBuilder.setColumnName(split[0]);
-      keyBuilder.setPartitionValue(split[1]);
+      keyBuilder.setPartitionValue(StringUtils.unescapePathName(split[1]));
 
       builder.addPartitionKeys(keyBuilder.build());
     }
