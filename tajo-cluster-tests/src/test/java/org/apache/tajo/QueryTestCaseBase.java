@@ -38,7 +38,6 @@ import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InsufficientPrivilegeException;
 import org.apache.tajo.exception.TajoException;
@@ -46,12 +45,14 @@ import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.master.GlobalEngine;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
+import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.AfterClass;
@@ -67,6 +68,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.*;
+import java.lang.management.BufferPoolMXBean;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.sql.ResultSet;
@@ -248,9 +250,18 @@ public class QueryTestCaseBase {
   @Before
   public void printTestName() {
     /* protect a travis stalled build */
-    System.out.println("Run: " + name.getMethodName() +
-        " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
-        / (1024 * 1024)) + " MBytes, Active Threads:" + Thread.activeCount());
+    BufferPoolMXBean direct = BufferPool.getDirectBufferPool();
+    BufferPoolMXBean mapped = BufferPool.getMappedBufferPool();
+    System.out.println(String.format("Used heap: %s/%s, direct:%s/%s, mapped:%s/%s, Active Threads: %d, Run: %s.%s",
+        FileUtil.humanReadableByteCount(Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory(), false),
+        FileUtil.humanReadableByteCount(Runtime.getRuntime().maxMemory(), false),
+        FileUtil.humanReadableByteCount(direct.getMemoryUsed(), false),
+        FileUtil.humanReadableByteCount(direct.getTotalCapacity(), false),
+        FileUtil.humanReadableByteCount(mapped.getMemoryUsed(), false),
+        FileUtil.humanReadableByteCount(mapped.getTotalCapacity(), false),
+        Thread.activeCount(),
+        getClass().getSimpleName(),
+        name.getMethodName()));
   }
 
   public QueryTestCaseBase() {

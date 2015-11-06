@@ -211,6 +211,7 @@ public class JvmPauseMonitor {
    * log messages about the GC pauses.
    */
   public static void main(String []args) throws Exception {
+    Thread.setDefaultUncaughtExceptionHandler(new TajoUncaughtExceptionHandler());
     new JvmPauseMonitor(new Configuration()).start();
     List<String> list = Lists.newArrayList();
     int i = 0;

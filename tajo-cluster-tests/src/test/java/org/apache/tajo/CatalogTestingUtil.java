@@ -21,10 +21,15 @@ package org.apache.tajo;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogConstants;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.UnsupportedCatalogStore;
+
+import java.net.URI;
+import java.sql.Connection;
+import java.sql.DriverManager;
 
 public class CatalogTestingUtil {
 
@@ -37,6 +42,27 @@ public class CatalogTestingUtil {
 
     // TODO: if useDefaultCatalog is false, use external database as catalog
     return conf;
+  }
+
+  /**
+   * cleanup external catalog store resources
+   */
+  public static void shutdownCatalogStore(TajoConf conf) throws Exception {
+    String catalogUri = conf.get(CatalogConstants.CATALOG_URI);
+    URI uri = new URI(catalogUri);
+    String[] schemeSpecificPart = uri.getSchemeSpecificPart().split(":");
+
+    if(DerbyStore.NAME.equals(schemeSpecificPart[0]) && "memory".equals(schemeSpecificPart[1])) {
+      Connection conn = null;
+      try {
+        // Removing an in-memory database.
+        String removingUri = catalogUri.split(";")[0] + ";drop=true";
+        Class.forName(DerbyStore.CATALOG_DRIVER).newInstance();
+        conn = DriverManager.getConnection(removingUri);
+      } finally {
+        CatalogUtil.closeQuietly(conn);
+      }
+    }
   }
 
   static <T extends CatalogStore> boolean requireAuth(Class<T> clazz) {

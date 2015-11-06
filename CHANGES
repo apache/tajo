@@ -7,6 +7,8 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1966: Decrease memory usage of TajoTestingCluster. (jinho)
+
 
   BUG FIXES
 
