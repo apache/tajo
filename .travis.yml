@@ -33,8 +33,20 @@ notifications:
   - issues@tajo.apache.org
   irc: "chat.freenode.net#tajo"
 
-before_install: ulimit -t 514029 -u 2048 -n 3000
+before_install: 
+  # Disable services enabled by default
+  # http://docs.travis-ci.com/user/database-setup/#MySQL
+  - sudo /etc/init.d/mysql stop
+  - sudo /etc/init.d/postgresql stop
+  - ulimit -t unlimited -u 10000 -n 64000
+  - ulimit -a
+  - free -m
+  - df -h
+
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 
-  mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql
+  - mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql -Dtest=!TestHBaseTable,!**/ws/rs/**,!**/engine/eval/** -DfailIfNoTests=false
+  - mvn test -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dtest=TestHBaseTable,**/ws/rs/**,**/engine/eval/** -pl tajo-core-tests
+  - sh -c "dmesg | grep -i OOM || exit 0"
+  - free -m

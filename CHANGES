@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1966: Decrease memory usage of TajoTestingCluster. (jinho)
+
     TAJO-1941: PermGen elimination in JDK 8. (Dongkyu Hwangbo via hyunsik)
 
     TAJO-1920: Calling 'Collection.toArray()' with zero-length array argument 
@@ -30,6 +32,10 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-1896: Fix the travis test failure. (jinho)
+
+    TAJO-1964: TestKillQuery::testKillQueryFromInitState causes NPE. (jinho)
 
     TAJO-1578: User configuration for pull server port is ignored.
     (Contributed by Dongkyu Hwangbo, committed by jihoon)
