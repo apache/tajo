@@ -131,7 +131,7 @@ public enum SessionVars implements ConfigKey {
   NULL_CHAR(ConfVars.$TEXT_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
   AGG_HASH_TABLE_SIZE(ConfVars.$AGG_HASH_TABLE_SIZE, "Aggregation hash table size", DEFAULT),
-  SORT_HASH_TABLE_SIZE(ConfVars.$SORT_HASH_TABLE_SIZE, "Sort hash table size", DEFAULT),
+  SORT_LIST_SIZE(ConfVars.$SORT_LIST_SIZE, "List size for in-memory sort ", DEFAULT),
   JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, "Join hash table size", DEFAULT),
 
   // for index
@@ -140,7 +140,7 @@ public enum SessionVars implements ConfigKey {
 
   // for partition overwrite
   PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$PARTITION_NO_RESULT_OVERWRITE_ENABLED,
-    "If True, a partitioned table is overwritten even if a sub query leads to no result. "
+    "If true, a partitioned table is overwritten even if a sub query leads to no result. "
     + "Otherwise, the table data will be kept if there is no result", DEFAULT),
 
   // Behavior Control ---------------------------------------------------------
