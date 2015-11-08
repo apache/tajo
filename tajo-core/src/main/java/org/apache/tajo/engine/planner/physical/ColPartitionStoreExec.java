@@ -189,7 +189,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       // In CTAS, the uri would be null. So, it get the uri from staging directory.
       int endIndex = storeTablePath.toString().indexOf(FileTablespace.TMP_STAGING_DIR_PREFIX);
       String outputPath = storeTablePath.toString().substring(0, endIndex);
-      builder.setPath(outputPath +  partition);
+      builder.setPath(outputPath + partition);
     } else {
       builder.setPath(this.plan.getUri().toString() + "/" + partition);
     }
@@ -216,11 +216,17 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     sb.append(StringUtils.escapePathName(DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS")));
 
+    sb.append(".");
     if (tm.fsecs == 0) {
-      sb.append(".0");
+      sb.append("0");
     } else {
       int secondsFraction = tm.fsecs / 1000;
-      sb.append(".").append(org.apache.commons.lang.StringUtils.leftPad("" + secondsFraction, 3, '0'));
+
+      if (secondsFraction < 10) {
+        sb.append(secondsFraction);
+      } else {
+       sb.append(org.apache.commons.lang.StringUtils.leftPad("" + secondsFraction, 3, '0'));
+      }
     }
     return sb.toString();
   }

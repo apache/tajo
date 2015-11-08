@@ -31,6 +31,7 @@ import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -157,12 +158,11 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
     TimeZone tz = TimeZone.getTimeZone(getTimezoneId());
     DateTimeUtil.toUserTimezone(tm, tz);
 
-    String dateTime = DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS");
+    String dateTime = null;
     if (tm.fsecs == 0) {
-      dateTime += ".0";
+      dateTime = DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS") + ".0";
     } else {
-      int secondsFraction = tm.fsecs / 1000;
-      dateTime += "." + StringUtils.leftPad(""+secondsFraction, 3, '0');
+      dateTime = DateTimeUtil.encodeDateTime(tm, DateTimeConstants.DateStyle.ISO_DATES);
     }
 
     if (!isHiveCatalog) {
