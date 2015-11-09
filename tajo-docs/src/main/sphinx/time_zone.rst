@@ -70,7 +70,7 @@ The following ways use SQL statements. So, this way is available in ``tsql``, JD
 
 .. note::
 
-  When using a timestamp column a partition key with hive, you must set your time zone with the meta command. Because hive automatically converts TIMESTAMP value to STRING literals which are accepted in the format YYYY-MM-DD HH:MM:SS.MS with users local timezone.
+  When using a timestamp column as a partition key with hive, you must set your time zone with the meta command. Because hive automatically converts TIMESTAMP value to STRING literals which are accepted in the format YYYY-MM-DD HH:MM:SS.MS with users local timezone.
 
 ============
 Time Zone ID
