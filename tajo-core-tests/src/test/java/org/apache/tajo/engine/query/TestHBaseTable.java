@@ -792,7 +792,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(df.format(i) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -847,7 +847,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(i + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -906,7 +906,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(df.format(i) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -965,7 +965,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id1, id2, name from base_table ").close();
@@ -1020,7 +1020,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(i + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -1080,7 +1080,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       }
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select rk, col2_key, col2_value, col3 from base_table ").close();
@@ -1165,7 +1165,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(i + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     try {
       executeString("insert into hbase_mapped_table " +
@@ -1238,7 +1238,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(df.format(i) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString(
         "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
@@ -1360,7 +1360,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         datas.add(df.format(i) + "|value" + i + "|comment-" + i);
       }
       TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-          schema, tableOptions, datas.toArray(new String[]{}), 2);
+          schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
       executeString("insert into location '/tmp/hfile_test' " +
           "select id, name, comment from base_table ").close();

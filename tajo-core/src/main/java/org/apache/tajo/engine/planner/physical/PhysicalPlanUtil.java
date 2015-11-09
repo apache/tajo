@@ -120,7 +120,7 @@ public class PhysicalPlanUtil {
         fragments.add(fileFragment);
       }
     }
-    return FragmentConvertor.toFragmentProtoArray(fragments.toArray(new FileFragment[]{}));
+    return FragmentConvertor.toFragmentProtoArray(fragments.toArray(new FileFragment[fragments.size()]));
   }
 
   /**

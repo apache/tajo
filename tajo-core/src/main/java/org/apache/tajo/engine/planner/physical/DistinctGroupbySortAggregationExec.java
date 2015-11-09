@@ -168,8 +168,12 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
 
   @Override
   public void init() throws IOException {
-    for (SortAggregateExec eachExec: aggregateExecs) {
-      eachExec.init();
+    super.init();
+
+    if (aggregateExecs != null) {
+      for (SortAggregateExec eachExec: aggregateExecs) {
+        eachExec.init();
+      }
     }
   }
 

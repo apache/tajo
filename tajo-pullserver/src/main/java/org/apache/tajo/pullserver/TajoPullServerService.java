@@ -20,7 +20,6 @@ package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
@@ -189,13 +188,13 @@ public class TajoPullServerService extends AbstractService {
 
       selector = NettyUtils.createServerBootstrap("TajoPullServerService", workerNum)
                    .option(ChannelOption.TCP_NODELAY, true)
-                   .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                   .childOption(ChannelOption.ALLOCATOR, NettyUtils.ALLOCATOR)
                    .childOption(ChannelOption.TCP_NODELAY, true);
 
       localFS = new LocalFileSystem();
 
       conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
-          , TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal);
+          , conf.getInt(TajoConf.ConfVars.PULLSERVER_PORT.varname, TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal));
       super.init(conf);
       LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
     } catch (Throwable t) {

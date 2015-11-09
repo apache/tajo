@@ -215,8 +215,8 @@ public class MasterPlan {
     return getChild(executionBlock.getId(), idx);
   }
 
-  public void accept(ExecutionBlockId v, DirectedGraphVisitor<ExecutionBlockId> visitor) {
-    execBlockGraph.accept(v, visitor);
+  public <CONTEXT> void accept(CONTEXT context, ExecutionBlockId v, DirectedGraphVisitor<CONTEXT, ExecutionBlockId> visitor) {
+    execBlockGraph.accept(context, v, visitor);
   }
 
   @Override

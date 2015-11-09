@@ -25,9 +25,12 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 
+import java.lang.management.BufferPoolMXBean;
+import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.List;
 
 /* this class is PooledBuffer holder */
 public class BufferPool {
@@ -133,10 +136,38 @@ public class BufferPool {
   }
 
   /**
-   * deallocate the specified direct
+   * deallocate the specified direct memory
    * @param byteBuffer
    */
   public static void free(ByteBuffer byteBuffer) {
     PlatformDependent.freeDirectBuffer(byteBuffer);
+  }
+
+  /**
+   * get the specified direct memory bean
+   */
+  public static BufferPoolMXBean getDirectBufferPool() {
+    for (BufferPoolMXBean pool : getBufferPools()) {
+      if (pool.getName().equals("direct")) {
+        return pool;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * get the specified mapped memory bean
+   */
+  public static BufferPoolMXBean getMappedBufferPool() {
+    for (BufferPoolMXBean pool : getBufferPools()) {
+      if (pool.getName().equals("mapped")) {
+        return pool;
+      }
+    }
+    return null;
+  }
+
+  private static List<BufferPoolMXBean> getBufferPools() {
+    return ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
   }
 }

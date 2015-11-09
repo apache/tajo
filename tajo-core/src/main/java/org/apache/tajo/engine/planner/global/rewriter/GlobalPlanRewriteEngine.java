@@ -73,7 +73,7 @@ public class GlobalPlanRewriteEngine {
     for (Map.Entry<String, GlobalPlanRewriteRule> rewriteRule : rewriteRules.entrySet()) {
       rule = rewriteRule.getValue();
       if (rule.isEligible(queryContext, plan)) {
-        plan = rule.rewrite(plan);
+        plan = rule.rewrite(queryContext, plan);
         if (LOG.isDebugEnabled()) {
           LOG.debug("The rule \"" + rule.getName() + " \" rewrites the query.");
         }

@@ -716,7 +716,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         break;
       }
     }
-    TajoTestingCluster.createTable("testnumshufflepartition", schema, tableOptions, data.toArray(new String[]{}), 3);
+    TajoTestingCluster.createTable("testnumshufflepartition", schema, tableOptions, data.toArray(new String[data.size()]), 3);
 
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");
