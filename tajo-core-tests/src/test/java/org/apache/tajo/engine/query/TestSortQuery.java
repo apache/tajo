@@ -283,7 +283,7 @@ public class TestSortQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("testSortOnNullColumn3".toLowerCase(), schema, tableOptions, data, 1);
 
     try {
-      ResultSet res = executeString("select * from testSortOnNullColumn3 order by name null first");
+      ResultSet res = executeString("select * from testSortOnNullColumn3 order by name nulls first");
       String ascExpected = "id,name\n" +
           "-------------------------------\n" +
           "2,null\n" +
