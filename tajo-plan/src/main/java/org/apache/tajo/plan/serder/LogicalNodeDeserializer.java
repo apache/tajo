@@ -76,94 +76,94 @@ public class LogicalNodeDeserializer {
 
     for (PlanProto.LogicalNode protoNode : nodeList) {
       switch (protoNode.getType()) {
-        case ROOT:
-          current = convertRoot(nodeMap, protoNode);
-          break;
-        case SET_SESSION:
-          current = convertSetSession(protoNode);
-          break;
-        case EXPRS:
-          current = convertEvalExpr(context, evalContext, protoNode);
-          break;
-        case PROJECTION:
-          current = convertProjection(context, evalContext, nodeMap, protoNode);
-          break;
-        case LIMIT:
-          current = convertLimit(nodeMap, protoNode);
-          break;
-        case SORT:
-          current = convertSort(nodeMap, protoNode);
-          break;
-        case WINDOW_AGG:
-          current = convertWindowAgg(context, evalContext, nodeMap, protoNode);
-          break;
-        case HAVING:
-          current = convertHaving(context, evalContext, nodeMap, protoNode);
-          break;
-        case GROUP_BY:
-          current = convertGroupby(context, evalContext, nodeMap, protoNode);
-          break;
-        case DISTINCT_GROUP_BY:
-          current = convertDistinctGroupby(context, evalContext, nodeMap, protoNode);
-          break;
-        case SELECTION:
-          current = convertFilter(context, evalContext, nodeMap, protoNode);
-          break;
-        case JOIN:
-          current = convertJoin(context, evalContext, nodeMap, protoNode);
-          break;
-        case TABLE_SUBQUERY:
-          current = convertTableSubQuery(context, evalContext, nodeMap, protoNode);
-          break;
-        case UNION:
-          current = convertUnion(nodeMap, protoNode);
-          break;
-        case PARTITIONS_SCAN:
-          current = convertPartitionScan(context, evalContext, protoNode);
-          break;
-        case SCAN:
-          current = convertScan(context, evalContext, protoNode);
-          break;
-        case INDEX_SCAN:
-          current = convertIndexScan(context, evalContext, protoNode);
-          break;
+      case ROOT:
+        current = convertRoot(nodeMap, protoNode);
+        break;
+      case SET_SESSION:
+        current = convertSetSession(protoNode);
+        break;
+      case EXPRS:
+        current = convertEvalExpr(context, evalContext, protoNode);
+        break;
+      case PROJECTION:
+        current = convertProjection(context, evalContext, nodeMap, protoNode);
+        break;
+      case LIMIT:
+        current = convertLimit(nodeMap, protoNode);
+        break;
+      case SORT:
+        current = convertSort(nodeMap, protoNode);
+        break;
+      case WINDOW_AGG:
+        current = convertWindowAgg(context, evalContext, nodeMap, protoNode);
+        break;
+      case HAVING:
+        current = convertHaving(context, evalContext, nodeMap, protoNode);
+        break;
+      case GROUP_BY:
+        current = convertGroupby(context, evalContext, nodeMap, protoNode);
+        break;
+      case DISTINCT_GROUP_BY:
+        current = convertDistinctGroupby(context, evalContext, nodeMap, protoNode);
+        break;
+      case SELECTION:
+        current = convertFilter(context, evalContext, nodeMap, protoNode);
+        break;
+      case JOIN:
+        current = convertJoin(context, evalContext, nodeMap, protoNode);
+        break;
+      case TABLE_SUBQUERY:
+        current = convertTableSubQuery(context, evalContext, nodeMap, protoNode);
+        break;
+      case UNION:
+        current = convertUnion(nodeMap, protoNode);
+        break;
+      case PARTITIONS_SCAN:
+        current = convertPartitionScan(context, evalContext, protoNode);
+        break;
+      case SCAN:
+        current = convertScan(context, evalContext, protoNode);
+        break;
+      case INDEX_SCAN:
+        current = convertIndexScan(context, evalContext, protoNode);
+        break;
 
-        case CREATE_TABLE:
-          current = convertCreateTable(nodeMap, protoNode);
-          break;
-        case INSERT:
-          current = convertInsert(nodeMap, protoNode);
-          break;
-        case DROP_TABLE:
-          current = convertDropTable(protoNode);
-          break;
+      case CREATE_TABLE:
+        current = convertCreateTable(nodeMap, protoNode);
+        break;
+      case INSERT:
+        current = convertInsert(nodeMap, protoNode);
+        break;
+      case DROP_TABLE:
+        current = convertDropTable(protoNode);
+        break;
 
-        case CREATE_DATABASE:
-          current = convertCreateDatabase(protoNode);
-          break;
-        case DROP_DATABASE:
-          current = convertDropDatabase(protoNode);
-          break;
+      case CREATE_DATABASE:
+        current = convertCreateDatabase(protoNode);
+        break;
+      case DROP_DATABASE:
+        current = convertDropDatabase(protoNode);
+        break;
 
-        case ALTER_TABLESPACE:
-          current = convertAlterTablespace(protoNode);
-          break;
-        case ALTER_TABLE:
-          current = convertAlterTable(protoNode);
-          break;
-        case TRUNCATE_TABLE:
-          current = convertTruncateTable(protoNode);
-          break;
+      case ALTER_TABLESPACE:
+        current = convertAlterTablespace(protoNode);
+        break;
+      case ALTER_TABLE:
+        current = convertAlterTable(protoNode);
+        break;
+      case TRUNCATE_TABLE:
+        current = convertTruncateTable(protoNode);
+        break;
 
-        case CREATE_INDEX:
-          current = convertCreateIndex(nodeMap, protoNode);
-          break;
-        case DROP_INDEX:
-          current = convertDropIndex(protoNode);
-          break;
+      case CREATE_INDEX:
+        current = convertCreateIndex(nodeMap, protoNode);
+        break;
+      case DROP_INDEX:
+        current = convertDropIndex(protoNode);
+        break;
 
-        default:
-          throw new RuntimeException("Unknown NodeType: " + protoNode.getType().name());
+      default:
+        throw new RuntimeException("Unknown NodeType: " + protoNode.getType().name());
       }
 
       nodeMap.put(protoNode.getVisitSeq(), current);
