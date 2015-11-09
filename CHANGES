@@ -12,6 +12,8 @@ Release 0.11.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1972: Invalid sort order with NULLS FIRST|LAST. (jihoon)
+
     TAJO-1964: TestKillQuery::testKillQueryFromInitState causes NPE. (jinho)
 
     TAJO-1578: User configuration for pull server port is ignored.
