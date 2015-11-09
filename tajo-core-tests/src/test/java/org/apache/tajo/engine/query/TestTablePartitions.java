@@ -48,6 +48,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.sql.Timestamp;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -1582,15 +1583,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertEquals(5, partitions.size());
 
     // Equals
-    res = executeString("SELECT * FROM " + tableName + " WHERE key = cast(760147200000 as timestamp)");
-
-    expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
-      "3,2,1994-02-02 00:00:00\n" ;
-
-    assertEquals(expectedResult, resultSetToString(res));
-    res.close();
-
     res = executeString("SELECT * FROM " + tableName + " WHERE key = TIMESTAMP '1993-11-09 00:00:00.0'");
 
     expectedResult = "col1,col2,key\n" +

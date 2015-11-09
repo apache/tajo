@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.util;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -32,6 +33,8 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.junit.Test;
+
+import java.util.TimeZone;
 
 import static org.junit.Assert.*;
 
@@ -140,47 +143,48 @@ public class TestTupleUtil {
 
   @Test
   public void testBuildTupleFromPartitionPath() {
+    String timezoneId = TimeZone.getDefault().getID();
 
     Schema schema = new Schema();
     schema.addColumn("key1", Type.INT8);
     schema.addColumn("key2", Type.TEXT);
 
     Path path = new Path("hdfs://tajo/warehouse/partition_test/");
-    Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
+    Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true, timezoneId);
     assertNull(tuple);
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false, timezoneId);
     assertNull(tuple);
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123");
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true, timezoneId);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false, timezoneId);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/part-0000"); // wrong cases;
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true, timezoneId);
     assertNull(tuple);
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false, timezoneId);
     assertNull(tuple);
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/key2=abc");
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true, timezoneId);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false, timezoneId);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));
 
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/key2=abc/part-0001");
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true, timezoneId);
     assertNull(tuple);
 
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false, timezoneId);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));

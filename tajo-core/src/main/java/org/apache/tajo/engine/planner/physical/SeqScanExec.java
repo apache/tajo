@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TimeZone;
 
 
 public class SeqScanExec extends ScanExec {
@@ -100,9 +102,16 @@ public class SeqScanExec extends ScanExec {
     if (fragments != null && fragments.length > 0) {
       List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
 
+      String timezoneId = null;
+      if (context.getQueryContext().containsKey(SessionVars.TIMEZONE)) {
+        timezoneId = context.getQueryContext().get(SessionVars.TIMEZONE);
+      } else {
+        timezoneId = TimeZone.getDefault().getID();
+      }
+
       // Get a partition key value from a given path
       partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
-              columnPartitionSchema, fileFragments.get(0).getPath(), false);
+              columnPartitionSchema, fileFragments.get(0).getPath(), false, timezoneId);
     }
 
     // Targets or search conditions may contain column references.

@@ -20,6 +20,8 @@
 package org.apache.tajo.plan.util;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Column;
@@ -48,6 +50,7 @@ import java.util.TimeZone;
  *
  */
 public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, Expr> {
+  private static final Log LOG = LogFactory.getLog(PartitionFilterAlgebraVisitor.class);
   private String tableAlias;
   private Column column;
   private boolean isHiveCatalog = false;

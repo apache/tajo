@@ -362,13 +362,6 @@ public class DatumFactory {
         return parseTimestamp(datum.asChars(), tz);
       case TIMESTAMP:
         return (TimestampDatum) datum;
-      case INT8:
-        TimeMeta tm = new TimeMeta();
-        DateTimeUtil.toJulianTimeMeta(DateTimeUtil.javaTimeToJulianTime(datum.asInt8()), tm);
-        if (tz != null) {
-          DateTimeUtil.toUTCTimezone(tm, tz);
-        }
-        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       default:
         throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.TIMESTAMP));
     }

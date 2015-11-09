@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
@@ -54,6 +55,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 
@@ -599,8 +601,15 @@ public class DDLExecutor {
     PartitionMethodDesc partitionDesc = tableDesc.getPartitionMethod();
     Schema partitionColumns = partitionDesc.getExpressionSchema();
 
+    String timezoneId = null;
+    if (queryContext.containsKey(SessionVars.TIMEZONE)) {
+      timezoneId = queryContext.get(SessionVars.TIMEZONE);
+    } else {
+      timezoneId = TimeZone.getDefault().getID();
+    }
+
     // Get the array of path filter, accepting all partition paths.
-    PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns);
+    PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns, timezoneId);
 
     // loop from one to the number of partition columns
     Path [] filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
@@ -664,8 +673,12 @@ public class DDLExecutor {
     int startIndex = partitionName.indexOf(tablePath.toString()) + tablePath.toString().length();
     partitionName = partitionName.substring(startIndex +  File.separator.length());
 
+    String[] partitionNameParts = partitionName.split("=");
+    String partitionColumn = partitionNameParts[0];
+    String partitionValue = StringUtils.escapePathName(partitionNameParts[1]);
+
     CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
-    builder.setPartitionName(StringUtils.escapePathName(partitionName));
+    builder.setPartitionName(partitionColumn + "=" + partitionValue);
 
     String[] partitionKeyPairs = partitionName.split("/");
 
