@@ -242,25 +242,19 @@ public class TajoWorker extends CompositeService {
     workerSystemMetrics = new TajoSystemMetrics(systemConf, Node.class, workerContext.getWorkerName());
     workerSystemMetrics.start();
 
-    workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM, new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        if(queryMasterManagerService != null) {
-          return queryMasterManagerService.getQueryMaster().getQueryMasterTasks().size();
-        } else {
-          return 0;
-        }
+    workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM, () -> {
+      if(queryMasterManagerService != null) {
+        return queryMasterManagerService.getQueryMaster().getQueryMasterTasks().size();
+      } else {
+        return 0;
       }
     });
 
-    workerSystemMetrics.register(Node.Tasks.RUNNING_TASKS, new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        if(taskExecutor != null) {
-          return taskExecutor.getRunningTasks();
-        } else {
-          return 0;
-        }
+    workerSystemMetrics.register(Node.Tasks.RUNNING_TASKS, () -> {
+      if(taskExecutor != null) {
+        return taskExecutor.getRunningTasks();
+      } else {
+        return 0;
       }
     });
   }

@@ -48,14 +48,11 @@ public class HiveCatalogStoreClientPool {
 
     private HiveCatalogStoreClient(HiveConf hiveConf) {
       try {
-        HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
-          @Override
-          public HiveMetaHook getHook(Table table) throws MetaException {
-            /* metadata hook implementation, or null if this
-             * storage handler does not need any metadata notifications
-             */
-            return null;
-          }
+        HiveMetaHookLoader hookLoader = table -> {
+          /* metadata hook implementation, or null if this
+           * storage handler does not need any metadata notifications
+           */
+          return null;
         };
 
         this.hiveClient = RetryingMetaStoreClient.getProxy(hiveConf, hookLoader, HiveMetaStoreClient.class.getName());

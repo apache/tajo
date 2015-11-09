@@ -893,12 +893,7 @@ public class Repartitioner {
 
     // Sort fetchGroupMeta in a descending order of data volumes.
     List<FetchGroupMeta> fetchGroupMetaList = Lists.newArrayList(partitions.values());
-    Collections.sort(fetchGroupMetaList, new Comparator<FetchGroupMeta>() {
-      @Override
-      public int compare(FetchGroupMeta o1, FetchGroupMeta o2) {
-        return o1.getVolume() < o2.getVolume() ? 1 : (o1.getVolume() > o2.getVolume() ? -1 : 0);
-      }
-    });
+    Collections.sort(fetchGroupMetaList, (o1, o2) -> o1.getVolume() < o2.getVolume() ? 1 : (o1.getVolume() > o2.getVolume() ? -1 : 0));
 
     // Initialize containers
     Map<String, List<FetchImpl>>[] fetchesArray = new Map[num];

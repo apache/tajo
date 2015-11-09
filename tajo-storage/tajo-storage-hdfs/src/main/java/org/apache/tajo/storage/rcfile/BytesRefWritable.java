@@ -228,14 +228,7 @@ public class BytesRefWritable implements Writable, Comparable<BytesRefWritable> 
   }
 
   static {
-    WritableFactories.setFactory(BytesRefWritable.class, new WritableFactory() {
-
-      @Override
-      public Writable newInstance() {
-        return new BytesRefWritable();
-      }
-
-    });
+    WritableFactories.setFactory(BytesRefWritable.class, () -> new BytesRefWritable());
   }
 
   public int getLength() {

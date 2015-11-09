@@ -21,7 +21,6 @@ package org.apache.tajo.storage.rcfile;
 import com.google.common.base.Objects;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableFactories;
-import org.apache.hadoop.io.WritableFactory;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -249,13 +248,6 @@ public class BytesRefArrayWritable implements Writable,
 
   static {
     WritableFactories.setFactory(BytesRefArrayWritable.class,
-        new WritableFactory() {
-
-          @Override
-          public Writable newInstance() {
-            return new BytesRefArrayWritable();
-          }
-
-        });
+            () -> new BytesRefArrayWritable());
   }
 }

@@ -224,11 +224,8 @@ public class TajoMaster extends CompositeService {
     systemMetrics = new TajoSystemMetrics(systemConf, Master.class, getMasterName());
     systemMetrics.start();
 
-    systemMetrics.register(Master.Cluster.UPTIME, new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return context.getClusterUptime();
-      }
+    systemMetrics.register(Master.Cluster.UPTIME, () -> {
+      return context.getClusterUptime();
     });
 
     systemMetrics.register(Master.Cluster.class, new ClusterResourceMetricSet(context));
