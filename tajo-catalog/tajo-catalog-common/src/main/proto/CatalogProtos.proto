@@ -359,6 +359,7 @@ message FunctionSignatureProto {
   required string name = 2;
   required DataType return_type = 3;
   repeated DataType parameter_types = 4;
+  optional bool deterministic = 5;
 }
 
 message FunctionSupplementProto {

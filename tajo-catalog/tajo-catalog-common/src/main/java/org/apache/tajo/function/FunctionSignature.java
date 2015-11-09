@@ -39,6 +39,8 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
   private DataType[] paramTypes;
   @Expose
   private DataType returnType;
+  @Expose
+  private boolean deterministic = true;
 
   public FunctionSignature(FunctionType type, String name, DataType returnType, @NotNull DataType... params) {
     this.functionType = type;
@@ -52,6 +54,14 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
     this.name = proto.getName();
     this.paramTypes = proto.getParameterTypesList().toArray(new DataType[proto.getParameterTypesCount()]);
     this.returnType = proto.getReturnType();
+    if (proto.hasDeterministic()) {
+      this.deterministic = proto.getDeterministic();
+    }
+  }
+
+  public FunctionSignature(FunctionType type, String name, DataType returnType, boolean deterministic, @NotNull DataType... params) {
+    this(type, name, returnType, params);
+    this.deterministic = deterministic;
   }
 
   public FunctionType getFunctionType() {
@@ -68,6 +78,10 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
 
   public DataType getReturnType() {
     return returnType;
+  }
+
+  public boolean isDeterministic() {
+    return deterministic;
   }
 
   @Override

@@ -116,6 +116,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     return signature.getReturnType();
   }
 
+  public boolean isDeterministic() {
+    return signature.isDeterministic();
+  }
+
   ////////////////////////////////////////
   // Invocation
   ////////////////////////////////////////

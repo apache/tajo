@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -30,6 +31,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.function.*;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 
@@ -125,15 +127,19 @@ public class HiveFunctionLoader {
         }
       }
 
-      FunctionDesc funcDesc = new FunctionDesc(names[0], HiveGeneralFunctionHolder.class,
-          CatalogProtos.FunctionType.UDF, retType, params);
+      UDFType type = clazz.getDeclaredAnnotation(UDFType.class);
+      if (type != null) {
+        deterministic = type.deterministic();
+      }
+
+      FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, names[0], retType, deterministic, params);
+      FunctionInvocation invocation = new FunctionInvocation();
+      invocation.setLegacy(new ClassBaseInvocationDesc<>(HiveGeneralFunctionHolder.class));
+      FunctionSupplement supplement = new FunctionSupplement();
+      
+      FunctionDesc funcDesc = new FunctionDesc(signature, invocation, supplement);
 
       list.add(funcDesc);
-
-//      UDFType type = clazz.getDeclaredAnnotation(UDFType.class);
-//      if (type != null) {
-//        deterministic = type.deterministic();
-//      }
     }
   }
 
