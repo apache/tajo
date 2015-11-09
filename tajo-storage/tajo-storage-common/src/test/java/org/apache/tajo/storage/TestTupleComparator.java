@@ -110,9 +110,9 @@ public class TestTupleComparator {
     BaseTupleComparator descComp = new BaseTupleComparator(schema, new SortSpec[]{sortSpecDesc});
     Collections.sort(tupleList, descComp);
 
-    assertEquals(tuple3, tupleList.get(0));
-    assertEquals(tuple1, tupleList.get(1));
-    assertEquals(nullTuple, tupleList.get(2));
+    assertEquals(nullTuple, tupleList.get(0));
+    assertEquals(tuple3, tupleList.get(1));
+    assertEquals(tuple1, tupleList.get(2));
   }
 
   @Test
@@ -152,8 +152,8 @@ public class TestTupleComparator {
 
     Collections.sort(tupleList, descComp);
 
-    assertEquals(nullTuple, tupleList.get(0));
-    assertEquals(tuple3, tupleList.get(1));
-    assertEquals(tuple1, tupleList.get(2));
+    assertEquals(tuple3, tupleList.get(0));
+    assertEquals(tuple1, tupleList.get(1));
+    assertEquals(nullTuple, tupleList.get(2));
   }
 }

@@ -970,7 +970,7 @@ public class TestPhysicalPlanner {
   }
 
   public final String [] createIndexStmt = {
-      "create index idx_employee on employee using TWO_LEVEL_BIN_TREE (name null first, empId desc)"
+      "create index idx_employee on employee using TWO_LEVEL_BIN_TREE (name nulls first, empId desc)"
   };
 
   @Test

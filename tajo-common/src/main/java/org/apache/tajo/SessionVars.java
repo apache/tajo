@@ -96,7 +96,7 @@ public enum SessionVars implements ConfigKey {
       "restriction for the total size of broadcasted table for cross join (kb)", DEFAULT, Long.class,
       Validators.min("0")),
 
-  JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size (mb) ", DEFAULT,
+  JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size (mb)", DEFAULT,
       Integer.class, Validators.min("1")),
   SORT_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_SORT_TASK_VOLUME, "sort task input size (mb)", DEFAULT,
       Integer.class, Validators.min("1")),
@@ -143,7 +143,7 @@ public enum SessionVars implements ConfigKey {
 
   // for partition overwrite
   PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$PARTITION_NO_RESULT_OVERWRITE_ENABLED,
-    "If True, a partitioned table is overwritten even if a sub query leads to no result. "
+    "If true, a partitioned table is overwritten even if a sub query leads to no result. "
     + "Otherwise, the table data will be kept if there is no result", DEFAULT),
 
   // Behavior Control ---------------------------------------------------------
