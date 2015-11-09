@@ -69,7 +69,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
 
     if (tupleBuffer == null) {
       tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema),
-          conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE), true);
+          conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
     } else {
       tupleBuffer.clear();
     }

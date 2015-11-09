@@ -124,7 +124,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         partId = partitioner.getPartition(tuple);
         MemoryRowBlock rowBlock = partitionMemoryMap.get(partId);
         if (rowBlock == null) {
-          rowBlock = new MemoryRowBlock(dataTypes, initialBufferSize);
+          rowBlock = new MemoryRowBlock(dataTypes, initialBufferSize, true, plan.getStorageType());
           partitionMemoryMap.put(partId, rowBlock);
           totalBufferCapacity += rowBlock.capacity();
         }

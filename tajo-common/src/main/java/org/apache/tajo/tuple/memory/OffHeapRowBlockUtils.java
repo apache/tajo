@@ -100,14 +100,19 @@ public class OffHeapRowBlockUtils {
         writer.putInt2(tuple.getInt2(i));
         break;
       case INT4:
-      case DATE:
-      case INET4:
         writer.putInt4(tuple.getInt4(i));
         break;
+      case DATE:
+        writer.putDate(tuple.getInt4(i));
+        break;
       case INT8:
-      case TIMESTAMP:
-      case TIME:
         writer.putInt8(tuple.getInt8(i));
+        break;
+      case TIMESTAMP:
+        writer.putTimestamp(tuple.getInt8(i));
+        break;
+      case TIME:
+        writer.putTime(tuple.getInt8(i));
         break;
       case FLOAT4:
         writer.putFloat4(tuple.getFloat4(i));
@@ -127,6 +132,9 @@ public class OffHeapRowBlockUtils {
         break;
       case PROTOBUF:
         writer.putProtoDatum((ProtobufDatum) tuple.getProtobufDatum(i));
+        break;
+      case INET4:
+        writer.putInet4(tuple.getInt4(i));
         break;
       case NULL_TYPE:
         writer.skipField();

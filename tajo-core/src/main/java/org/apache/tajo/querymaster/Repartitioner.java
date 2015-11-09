@@ -196,8 +196,9 @@ public class Repartitioner {
       int maxStatsScanIdx = -1;
       StringBuilder nonLeafScanNamesBuilder = new StringBuilder();
       for (int i = 0; i < scans.length; i++) {
-
-        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.DRAW)) {
+        String dataFormat = scans[i].getTableDesc().getMeta().getDataFormat();
+        //TODO add flag for intermediate data format
+        if (dataFormat.equalsIgnoreCase(BuiltinStorages.DRAW) || dataFormat.equalsIgnoreCase(BuiltinStorages.RAW)) {
           // Intermediate data scan
           hasNonLeafNode = true;
           largeScanIndexList.add(i);

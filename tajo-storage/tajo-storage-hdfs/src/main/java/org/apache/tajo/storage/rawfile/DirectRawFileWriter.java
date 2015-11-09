@@ -60,8 +60,8 @@ public class DirectRawFileWriter extends FileAppender {
   private long pos;
 
   private TableStatistics stats;
-  private ShuffleType shuffleType;
   private MemoryRowBlock rowBlock;
+  private boolean analyzeField;
   private boolean hasExternalBuf;
 
   public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
@@ -102,9 +102,11 @@ public class DirectRawFileWriter extends FileAppender {
 
     if (enabledStats) {
       this.stats = new TableStatistics(this.schema);
-      this.shuffleType = PlannerUtil.getShuffleType(
+      if (ShuffleType.RANGE_SHUFFLE == PlannerUtil.getShuffleType(
           meta.getOption(StorageConstants.SHUFFLE_TYPE,
-              PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
+              PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)))) {
+        this.analyzeField = true;
+      }
     }
 
     if (rowBlock == null) {
@@ -137,7 +139,7 @@ public class DirectRawFileWriter extends FileAppender {
 
   @Override
   public void addTuple(Tuple t) throws IOException {
-    if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
+    if (analyzeField) {
       // it is to calculate min/max values, and it is only used for the intermediate file.
       for (int i = 0; i < schema.size(); i++) {
         stats.analyzeField(i, t);
