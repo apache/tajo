@@ -72,10 +72,7 @@ public class EvalNodeDeserializer {
     // So, it sequentially transforms each serialized node into a EvalNode instance in a postfix order of
     // the original eval tree.
 
-    Iterator<PlanProto.EvalNode> it = nodeList.iterator();
-    while (it.hasNext()) {
-      PlanProto.EvalNode protoNode = it.next();
-
+    for (PlanProto.EvalNode protoNode : nodeList) {
       EvalType type = EvalType.valueOf(protoNode.getType().name());
 
       if (EvalType.isUnaryOperator(type)) {
@@ -83,20 +80,20 @@ public class EvalNodeDeserializer {
         EvalNode child = evalNodeMap.get(unaryProto.getChildId());
 
         switch (type) {
-        case NOT:
-          current = new NotEval(child);
-          break;
-        case IS_NULL:
-          current = new IsNullEval(unaryProto.getNegative(), child);
-          break;
-        case CAST:
-          current = new CastEval(context, child, unaryProto.getCastingType());
-          break;
-        case SIGNED:
-          current = new SignedEval(unaryProto.getNegative(), child);
-          break;
-        default:
-          throw new RuntimeException("Unknown EvalType: " + type.name());
+          case NOT:
+            current = new NotEval(child);
+            break;
+          case IS_NULL:
+            current = new IsNullEval(unaryProto.getNegative(), child);
+            break;
+          case CAST:
+            current = new CastEval(context, child, unaryProto.getCastingType());
+            break;
+          case SIGNED:
+            current = new SignedEval(unaryProto.getNegative(), child);
+            break;
+          default:
+            throw new RuntimeException("Unknown EvalType: " + type.name());
         }
 
       } else if (EvalType.isBinaryOperator(type)) {
@@ -105,30 +102,30 @@ public class EvalNodeDeserializer {
         EvalNode rhs = evalNodeMap.get(binProto.getRhsId());
 
         switch (type) {
-        case IN:
-          current = new InEval(lhs, (ValueSetEval) rhs, binProto.getNegative());
-          break;
-        case LIKE: {
-          PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
-          current = new LikePredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
-              patternMatchProto.getCaseSensitive());
-          break;
-        }
-        case REGEX: {
-          PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
-          current = new RegexPredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
-              patternMatchProto.getCaseSensitive());
-          break;
-        }
-        case SIMILAR_TO: {
-          PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
-          current = new SimilarToPredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
-              patternMatchProto.getCaseSensitive());
-          break;
-        }
+          case IN:
+            current = new InEval(lhs, (ValueSetEval) rhs, binProto.getNegative());
+            break;
+          case LIKE: {
+            PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
+            current = new LikePredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
+                    patternMatchProto.getCaseSensitive());
+            break;
+          }
+          case REGEX: {
+            PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
+            current = new RegexPredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
+                    patternMatchProto.getCaseSensitive());
+            break;
+          }
+          case SIMILAR_TO: {
+            PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
+            current = new SimilarToPredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
+                    patternMatchProto.getCaseSensitive());
+            break;
+          }
 
-        default:
-          current = new BinaryEval(type, lhs, rhs);
+          default:
+            current = new BinaryEval(type, lhs, rhs);
         }
 
       } else if (type == EvalType.CONST) {
@@ -146,7 +143,7 @@ public class EvalNodeDeserializer {
       } else if (type == EvalType.SUBQUERY) {
         PlanProto.SubqueryEval subqueryProto = protoNode.getSubquery();
         TableSubQueryNode subQueryNode = (TableSubQueryNode) LogicalNodeDeserializer.deserialize(context, evalContext,
-            subqueryProto.getSubquery());
+                subqueryProto.getSubquery());
         current = new SubqueryEval(subQueryNode);
 
       } else if (type == EvalType.FIELD) {
@@ -156,9 +153,9 @@ public class EvalNodeDeserializer {
       } else if (type == EvalType.BETWEEN) {
         PlanProto.BetweenEval betweenProto = protoNode.getBetween();
         current = new BetweenPredicateEval(betweenProto.getNegative(), betweenProto.getSymmetric(),
-            evalNodeMap.get(betweenProto.getPredicand()),
-            evalNodeMap.get(betweenProto.getBegin()),
-            evalNodeMap.get(betweenProto.getEnd()));
+                evalNodeMap.get(betweenProto.getPredicand()),
+                evalNodeMap.get(betweenProto.getBegin()),
+                evalNodeMap.get(betweenProto.getEnd()));
 
       } else if (type == EvalType.CASE) {
         PlanProto.CaseWhenEval caseWhenProto = protoNode.getCasewhen();
@@ -174,12 +171,12 @@ public class EvalNodeDeserializer {
       } else if (type == EvalType.IF_THEN) {
         PlanProto.IfCondEval ifCondProto = protoNode.getIfCond();
         current = new CaseWhenEval.IfThenEval(evalNodeMap.get(ifCondProto.getCondition()),
-            evalNodeMap.get(ifCondProto.getThen()));
+                evalNodeMap.get(ifCondProto.getThen()));
 
       } else if (EvalType.isFunction(type)) {
         PlanProto.FunctionEval funcProto = protoNode.getFunction();
 
-        EvalNode [] params = new EvalNode[funcProto.getParamIdsCount()];
+        EvalNode[] params = new EvalNode[funcProto.getParamIdsCount()];
         for (int i = 0; i < funcProto.getParamIdsCount(); i++) {
           params[i] = evalNodeMap.get(funcProto.getParamIds(i));
         }
@@ -195,7 +192,7 @@ public class EvalNodeDeserializer {
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
             if (type == EvalType.AGG_FUNCTION) {
               AggregationFunctionCallEval aggFunc =
-                  new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), params);
+                      new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), params);
 
               PlanProto.AggFunctionEvalSpec aggFunctionProto = protoNode.getAggFunction();
               if (aggFunctionProto.getFirstPhase() && aggFunctionProto.getLastPhase()) {
@@ -214,15 +211,15 @@ public class EvalNodeDeserializer {
 
               if (evalContext != null && funcDesc.getInvocation().hasPythonAggregation()) {
                 evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc,
-                    aggFunc.isFirstPhase()  , aggFunc.isLastPhase()));
+                        aggFunc.isFirstPhase(), aggFunc.isLastPhase()));
               }
 
             } else {
               WinFunctionEvalSpec windowFuncProto = protoNode.getWinFunction();
 
               WindowFunctionEval winFunc =
-                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), params,
-                      convertWindowFrame(windowFuncProto.getWindowFrame()));
+                      new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), params,
+                              convertWindowFrame(windowFuncProto.getWindowFrame()));
 
               if (windowFuncProto.getSortSpecCount() > 0) {
                 SortSpec[] sortSpecs = LogicalNodeDeserializer.convertSortSpecs(windowFuncProto.getSortSpecList());
@@ -243,10 +240,10 @@ public class EvalNodeDeserializer {
             }
 
             parameterTypes = funcSignatureProto.getParameterTypesList().toArray(
-                new DataType[funcSignatureProto.getParameterTypesCount()]);
+                    new DataType[funcSignatureProto.getParameterTypesCount()]);
           }
           throw new TajoInternalError(
-              new UndefinedFunctionException(buildSimpleFunctionSignature(functionName, parameterTypes))
+                  new UndefinedFunctionException(buildSimpleFunctionSignature(functionName, parameterTypes))
           );
         }
       } else {

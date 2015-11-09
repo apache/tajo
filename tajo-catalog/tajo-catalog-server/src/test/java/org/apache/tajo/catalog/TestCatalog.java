@@ -274,10 +274,8 @@ public class TestCatalog {
     Map<String, List<String>> createdTablesMap = createBaseDatabaseAndTables();
 
     // Each time we drop one database, check all databases and their tables.
-    Iterator<String> it = new ArrayList<>(createdTablesMap.keySet()).iterator();
-    while(it.hasNext()) {
+    for (String databaseName : new ArrayList<>(createdTablesMap.keySet())) {
       // drop one database
-      String databaseName = it.next();
       assertTrue(catalog.existDatabase(databaseName));
       catalog.dropDatabase(databaseName);
       createdTablesMap.remove(databaseName);
