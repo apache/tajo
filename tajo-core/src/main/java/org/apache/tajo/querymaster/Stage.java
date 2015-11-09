@@ -658,7 +658,7 @@ public class Stage implements EventHandler<StageEvent> {
     for (ExecutionBlock block : masterPlan.getChilds(stage.getBlock())) {
       Stage childStage = stage.context.getStage(block.getId());
       TableStats[] childStatArray = new TableStats[]{
-              childStage.getInputStats(), childStage.getResultStats()
+          childStage.getInputStats(), childStage.getResultStats()
       };
       for (int i = 0; i < 2; i++) {
         if (childStatArray[i] == null) {
