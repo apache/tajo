@@ -673,15 +673,10 @@ public class DDLExecutor {
     int startIndex = partitionName.indexOf(tablePath.toString()) + tablePath.toString().length();
     partitionName = partitionName.substring(startIndex +  File.separator.length());
 
-    String[] partitionNameParts = partitionName.split("=");
-    String partitionColumn = partitionNameParts[0];
-    String partitionValue = StringUtils.escapePathName(partitionNameParts[1]);
-
     CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
-    builder.setPartitionName(partitionColumn + "=" + partitionValue);
-
     String[] partitionKeyPairs = partitionName.split("/");
 
+    StringBuilder sb = new StringBuilder();
     for(int i = 0; i < partitionKeyPairs.length; i++) {
       String partitionKeyPair = partitionKeyPairs[i];
       String[] split = partitionKeyPair.split("=");
@@ -690,8 +685,15 @@ public class DDLExecutor {
       keyBuilder.setColumnName(split[0]);
       keyBuilder.setPartitionValue(StringUtils.unescapePathName(split[1]));
 
+      if (i > 0) {
+        sb.append("/");
+      }
+      sb.append(split[0]).append("=");
+      sb.append(StringUtils.escapePathName(split[1]));
+
       builder.addPartitionKeys(keyBuilder.build());
     }
+    builder.setPartitionName(sb.toString());
 
     builder.setPath(partitionPath.toString());
 

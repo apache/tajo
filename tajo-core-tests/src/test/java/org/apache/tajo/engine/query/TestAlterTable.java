@@ -188,6 +188,9 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=2")));
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=3")));
 
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(getCurrentDatabase(),
+      simpleTableName);
+
     executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
     verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
 
