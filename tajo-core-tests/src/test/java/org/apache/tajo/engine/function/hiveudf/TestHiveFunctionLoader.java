@@ -73,5 +73,6 @@ public class TestHiveFunctionLoader {
     FunctionDesc desc = funcList.get(0);
 
     assertEquals(desc.getFunctionName(), "multiplestr");
+    assertEquals(desc.isDeterministic(), false);
   }
 }

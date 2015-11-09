@@ -20,9 +20,12 @@ package org.apache.tajo.engine.function.hiveudf;
 
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
+// Actually it's deterministic, but it is set as false to test
+@UDFType(deterministic = false)
 @Description(name="multiplestr")
 public class HiveUDFtest extends UDF {
   Text evaluate(Text str, IntWritable num) {
