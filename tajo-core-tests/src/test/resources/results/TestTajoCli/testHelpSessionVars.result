@@ -37,7 +37,7 @@ Available Session Variables:
 \set NULL_CHAR [text value] - null char of text file output
 \set CODEGEN [true or false] - Runtime code generation enabled (experiment)
 \set AGG_HASH_TABLE_SIZE [int value] - Aggregation hash table size
-\set SORT_LIST_SIZE [int value] - List size for in-memory sort 
+\set SORT_LIST_SIZE [int value] - List size for in-memory sort
 \set JOIN_HASH_TABLE_SIZE [int value] - Join hash table size
 \set INDEX_ENABLED [true or false] - index scan enabled
 \set INDEX_SELECTIVITY_THRESHOLD [real value] - the selectivity threshold for index scan
