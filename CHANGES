@@ -33,6 +33,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1896: Fix the travis test failure. (jinho)
+
     TAJO-1964: TestKillQuery::testKillQueryFromInitState causes NPE. (jinho)
 
     TAJO-1578: User configuration for pull server port is ignored.
