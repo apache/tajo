@@ -164,6 +164,7 @@ LIMIT : L I M I T;
 NATURAL : N A T U R A L;
 NOT : N O T;
 NULL : N U L L;
+NULLS : N U L L S;
 
 ON : O N;
 OR : O R;

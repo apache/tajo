@@ -69,7 +69,7 @@ public class TestIndexScan extends QueryTestCaseBase {
 
   @Test
   public final void testOnMultipleKeys() throws Exception {
-    executeString("create index multikey_idx on lineitem (l_shipdate asc null last, l_tax desc null first, l_shipmode, l_linenumber desc null last)");
+    executeString("create index multikey_idx on lineitem (l_shipdate asc nulls last, l_tax desc nulls first, l_shipmode, l_linenumber desc nulls last)");
     try {
       ResultSet res = executeString("select l_orderkey, l_shipdate, l_comment from lineitem " +
           "where l_shipdate = '1997-01-28' and l_tax = 0.05 and l_shipmode = 'RAIL' and l_linenumber = 1;");
@@ -82,7 +82,7 @@ public class TestIndexScan extends QueryTestCaseBase {
 
   @Test
   public final void testOnMultipleKeys2() throws Exception {
-    executeString("create index multikey_idx on lineitem (l_shipdate asc null last, l_tax desc null first)");
+    executeString("create index multikey_idx on lineitem (l_shipdate asc nulls last, l_tax desc nulls first)");
     try {
       ResultSet res = executeString("select l_orderkey, l_shipdate, l_comment from lineitem " +
           "where l_shipdate = '1997-01-28' and l_tax = 0.05 and l_shipmode = 'RAIL' and l_linenumber = 1;");
@@ -95,7 +95,7 @@ public class TestIndexScan extends QueryTestCaseBase {
 
   @Test
   public final void testOnMultipleExprs() throws Exception {
-    executeString("create index l_orderkey_100_l_linenumber_10_idx on lineitem (l_orderkey*100-l_linenumber*10 asc null first);");
+    executeString("create index l_orderkey_100_l_linenumber_10_idx on lineitem (l_orderkey*100-l_linenumber*10 asc nulls first);");
     try {
       ResultSet res = executeString("select l_orderkey, l_linenumber from lineitem where l_orderkey*100-l_linenumber*10 = 280");
       assertResultSet(res);

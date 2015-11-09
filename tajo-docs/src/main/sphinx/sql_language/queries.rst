@@ -15,7 +15,7 @@ Overview
     [WHERE <condition>]
     [GROUP BY <expression> [, ...]]
     [HAVING <condition>]
-    [ORDER BY <expression> [ASC|DESC] [NULL FIRST|NULL LAST] [, ...]]
+    [ORDER BY <expression> [ASC|DESC] [NULLS (FIRST|LAST)] [, ...]]
 
 
 
@@ -189,7 +189,7 @@ Orderby and Limit Clauses
 
 .. code-block:: sql
 
-  FROM ... ORDER BY <sort_expr> [(ASC|DESC)] [NULL (FIRST|LAST) [,...]
+  FROM ... ORDER BY <sort_expr> [(ASC|DESC)] [NULLS (FIRST|LAST) [,...]
 
 ``sort_expr`` can be a column reference, aliased column reference, or a complex expression. 
 ``ASC`` indicates an ascending order of ``sort_expr`` values. ``DESC`` indicates a descending order of ``sort_expr`` values.
