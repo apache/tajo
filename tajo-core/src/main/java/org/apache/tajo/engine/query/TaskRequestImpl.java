@@ -241,8 +241,8 @@ public class TaskRequestImpl implements TaskRequest {
 			builder.setId(this.id.getProto());
 		}
 		if (fragments != null) {
-			for (int i = 0; i < fragments.size(); i++) {
-				builder.addFragments(fragments.get(i));
+			for (FragmentProto fragment : fragments) {
+				builder.addFragments(fragment);
 			}
 		}
 		if (this.outputTable != null) {
@@ -258,9 +258,9 @@ public class TaskRequestImpl implements TaskRequest {
 		  builder.setInterQuery(this.interQuery);
 		}
     if (this.fetches != null) {
-      for (int i = 0; i < fetches.size(); i++) {
-        builder.addFetches(fetches.get(i).getProto());
-      }
+		for (FetchImpl fetche : fetches) {
+			builder.addFetches(fetche.getProto());
+		}
     }
     if (this.queryMasterHostAndPort != null) {
       builder.setQueryMasterHostAndPort(this.queryMasterHostAndPort);

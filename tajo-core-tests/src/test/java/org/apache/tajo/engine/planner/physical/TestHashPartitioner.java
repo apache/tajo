@@ -99,19 +99,19 @@ public class TestHashPartitioner {
     }
 
     int[] testNumPartitions = new int[]{31, 62, 124, 32, 63, 125};
-    for (int index = 0; index <  testNumPartitions.length; index++) {
-      Partitioner p = new HashPartitioner(new int[]{0, 1, 2}, testNumPartitions[index]);
+    for (int testNumPartition : testNumPartitions) {
+      Partitioner p = new HashPartitioner(new int[]{0, 1, 2}, testNumPartition);
 
       Set<Integer> ids = new TreeSet<>();
       for (int i = 0; i < data.length; i++) {
         Tuple tuple = new VTuple(
-            new Datum[]{new TextDatum(data[i][0]), new TextDatum(data[i][1]), new TextDatum(data[i][2])});
+                new Datum[]{new TextDatum(data[i][0]), new TextDatum(data[i][1]), new TextDatum(data[i][2])});
 
         ids.add(p.getPartition(tuple));
       }
 
       // The number of partitions isn't exactly matched.
-      assertTrue(ids.size() + 5 >= testNumPartitions[index]);
+      assertTrue(ids.size() + 5 >= testNumPartition);
     }
   }
 }

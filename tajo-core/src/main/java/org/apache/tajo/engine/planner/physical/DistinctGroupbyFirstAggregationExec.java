@@ -319,8 +319,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
       List<Column> distinctGroupingKeyIndexSet = new ArrayList<>();
       Column[] groupingColumns = groupbyNode.getGroupingColumns();
-      for (int idx = 0; idx < groupingColumns.length; idx++) {
-        Column col = groupingColumns[idx];
+      for (Column col : groupingColumns) {
         if (!groupingKeySet.contains(col)) {
           distinctGroupingKeyIndexSet.add(col);
         }

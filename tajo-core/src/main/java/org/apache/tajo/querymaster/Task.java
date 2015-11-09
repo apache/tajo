@@ -884,8 +884,7 @@ public class Task implements EventHandler<TaskEvent> {
       long currentBytes = 0;
 
       long realSplitVolume = firstSplitVolume > 0 ? firstSplitVolume : splitVolume;
-      for (int i = 0; i < pageSize; i++) {
-        Pair<Long, Integer> eachPage = pages.get(i);
+      for (Pair<Long, Integer> eachPage : pages) {
         if (currentOffset == -1) {
           currentOffset = eachPage.getFirst();
         }

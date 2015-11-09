@@ -245,8 +245,8 @@ public class Textifier extends Printer {
         }
         if (interfaces != null && interfaces.length > 0) {
             buf.append(" implements ");
-            for (int i = 0; i < interfaces.length; ++i) {
-                appendDescriptor(INTERNAL_NAME, interfaces[i]);
+            for (String anInterface : interfaces) {
+                appendDescriptor(INTERNAL_NAME, anInterface);
                 buf.append(' ');
             }
         }
@@ -408,8 +408,8 @@ public class Textifier extends Printer {
         appendDescriptor(METHOD_DESCRIPTOR, desc);
         if (exceptions != null && exceptions.length > 0) {
             buf.append(" throws ");
-            for (int i = 0; i < exceptions.length; ++i) {
-                appendDescriptor(INTERNAL_NAME, exceptions[i]);
+            for (String exception : exceptions) {
+                appendDescriptor(INTERNAL_NAME, exception);
                 buf.append(' ');
             }
         }
@@ -787,8 +787,7 @@ public class Textifier extends Printer {
             buf.append(" none");
         } else {
             buf.append('\n').append(tab3);
-            for (int i = 0; i < bsmArgs.length; i++) {
-                Object cst = bsmArgs[i];
+            for (Object cst : bsmArgs) {
                 if (cst instanceof String) {
                     Printer.appendString(buf, (String) cst);
                 } else if (cst instanceof Type) {

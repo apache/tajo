@@ -67,8 +67,8 @@ public class ProtoUtil {
    */
   public static <T> Iterable<T> toProtoObjects(ProtoObject[] protoObjects) {
     List<T> converted = Lists.newArrayList();
-    for (int i = 0; i < protoObjects.length; i++) {
-      converted.add((T) protoObjects[i].getProto());
+    for (ProtoObject protoObject : protoObjects) {
+      converted.add((T) protoObject.getProto());
     }
     return converted;
   }

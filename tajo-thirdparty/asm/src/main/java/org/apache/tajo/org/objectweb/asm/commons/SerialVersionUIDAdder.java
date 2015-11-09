@@ -370,8 +370,8 @@ public class SerialVersionUIDAdder extends ClassVisitor {
              * encoding.
              */
             Arrays.sort(interfaces);
-            for (int i = 0; i < interfaces.length; i++) {
-                dos.writeUTF(interfaces[i].replace('/', '.'));
+            for (String anInterface : interfaces) {
+                dos.writeUTF(anInterface.replace('/', '.'));
             }
 
             /*

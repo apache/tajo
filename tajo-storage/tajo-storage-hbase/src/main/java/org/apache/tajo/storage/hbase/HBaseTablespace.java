@@ -139,8 +139,8 @@ public class HBaseTablespace extends Tablespace {
     ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
     int numRowKeys = 0;
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
-    for (int i = 0; i < isRowKeyMappings.length; i++) {
-      if (isRowKeyMappings[i]) {
+    for (boolean isRowKeyMapping : isRowKeyMappings) {
+      if (isRowKeyMapping) {
         numRowKeys++;
       }
     }

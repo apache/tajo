@@ -152,8 +152,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     List<TupleList> tupleSlots = new ArrayList<>();
 
     // aggregation with single grouping key
-    for (int i = 0; i < hashAggregators.length; i++) {
-      HashAggregator hashAggregator = hashAggregators[i];
+    for (HashAggregator hashAggregator : hashAggregators) {
       if (!hashAggregator.iterator.hasNext()) {
         nullCount++;
         tupleSlots.add(new TupleList());
@@ -284,12 +283,12 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   private void loadChildHashTable() throws IOException {
     Tuple tuple;
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      for (int i = 0; i < hashAggregators.length; i++) {
-        hashAggregators[i].compute(tuple);
+      for (HashAggregator hashAggregator : hashAggregators) {
+        hashAggregator.compute(tuple);
       }
     }
-    for (int i = 0; i < hashAggregators.length; i++) {
-      hashAggregators[i].initFetch();
+    for (HashAggregator hashAggregator : hashAggregators) {
+      hashAggregator.initFetch();
     }
 
     totalNumRows = hashAggregators[0].hashTable.size();
@@ -298,8 +297,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   @Override
   public void close() throws IOException {
     if (hashAggregators != null) {
-      for (int i = 0; i < hashAggregators.length; i++) {
-        hashAggregators[i].close();
+      for (HashAggregator hashAggregator : hashAggregators) {
+        hashAggregator.close();
       }
     }
     if (child != null) {
@@ -316,8 +315,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
   public void rescan() throws IOException {
     finished = false;
-    for (int i = 0; i < hashAggregators.length; i++) {
-      hashAggregators[i].initFetch();
+    for (HashAggregator hashAggregator : hashAggregators) {
+      hashAggregator.initFetch();
     }
     if (currentAggregatedTuples != null) {
       currentAggregatedTuples.clear();
@@ -366,8 +365,8 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
       Column[] keyColumns = groupbyNode.getGroupingColumns();
       Column col;
-      for (int idx = 0; idx < keyColumns.length; idx++) {
-        col = keyColumns[idx];
+      for (Column keyColumn : keyColumns) {
+        col = keyColumn;
         if (!distinctGroupingKeyColumnSet.contains(col)) {
           groupingKeyColumnList.add(col);
         }

@@ -96,8 +96,7 @@ public class InfoSchemaMetadataDictionary {
     }
     
     tableName = tableName.toUpperCase();
-    for (int idx = 0; idx < schemaInfoTableDescriptors.size(); idx++) {
-      TableDescriptor testDescriptor = schemaInfoTableDescriptors.get(idx);
+    for (TableDescriptor testDescriptor : schemaInfoTableDescriptors) {
       if (testDescriptor.getTableNameString().equalsIgnoreCase(tableName)) {
         tableDescriptor = testDescriptor;
         break;

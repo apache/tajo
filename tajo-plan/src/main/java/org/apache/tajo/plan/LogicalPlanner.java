@@ -739,8 +739,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
       }
     }
-    for (int i = 0; i < winFuncRefs.size(); i++) {
-      targets[targetIdx++] = block.namedExprsMgr.getTarget(winFuncRefs.get(i));
+    for (String winFuncRef : winFuncRefs) {
+      targets[targetIdx++] = block.namedExprsMgr.getTarget(winFuncRef);
     }
     windowAggNode.setTargets(targets);
     verifyProjectedFields(block, windowAggNode);
@@ -1012,12 +1012,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Set grouping sets
     List<Column> groupingColumns = Lists.newArrayList();
-    for (int i = 0; i < groupingKeyRefNames.length; i++) {
-      String refName = groupingKeyRefNames[i];
+    for (String refName : groupingKeyRefNames) {
       if (context.getQueryBlock().isConstReference(refName)) {
         continue;
-      } else if (block.namedExprsMgr.isEvaluated(groupingKeyRefNames[i])) {
-        groupingColumns.add(block.namedExprsMgr.getTarget(groupingKeyRefNames[i]).getNamedColumn());
+      } else if (block.namedExprsMgr.isEvaluated(refName)) {
+        groupingColumns.add(block.namedExprsMgr.getTarget(refName).getNamedColumn());
       } else {
         throw makeSyntaxError("Each grouping column expression must be a scalar expression.");
       }
@@ -1701,11 +1700,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // It guarantees that the equivalence between the numbers of target and projected columns.
       ColumnReferenceExpr [] targets = expr.getTargetColumns();
       Schema targetColumns = new Schema();
-      for (int i = 0; i < targets.length; i++) {
-        Column targetColumn = desc.getLogicalSchema().getColumn(targets[i].getCanonicalName().replace(".", "/"));
+      for (ColumnReferenceExpr target : targets) {
+        Column targetColumn = desc.getLogicalSchema().getColumn(target.getCanonicalName().replace(".", "/"));
 
         if (targetColumn == null) {
-          throw makeSyntaxError("column '" + targets[i] + "' of relation '" + desc.getName() + "' does not exist");
+          throw makeSyntaxError("column '" + target + "' of relation '" + desc.getName() + "' does not exist");
         }
 
         targetColumns.addColumn(targetColumn);

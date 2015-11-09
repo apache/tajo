@@ -142,8 +142,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       if (eachGroupby.isDistinct()) {
         List<Integer> distinctGroupingKeyIndex = new ArrayList<>();
         Column[] distinctGroupingColumns = eachGroupby.getGroupingColumns();
-        for (int idx = 0; idx < distinctGroupingColumns.length; idx++) {
-          Column col = distinctGroupingColumns[idx];
+        for (Column col : distinctGroupingColumns) {
           int keyIndex;
           if (col.hasQualifier()) {
             keyIndex = inSchema.getColumnId(col.getQualifiedName());
