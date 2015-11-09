@@ -68,6 +68,10 @@ The following ways use SQL statements. So, this way is available in ``tsql``, JD
 
   SET SESSION TIMEZONE TO 'GMT+9';
 
+.. note::
+
+  When using a timestamp column a partition key with hive, you must set your time zone with the meta command. Because hive automatically converts TIMESTAMP value to STRING literals which are accepted in the format YYYY-MM-DD HH:MM:SS.MS with users local timezone.
+
 ============
 Time Zone ID
 ============
