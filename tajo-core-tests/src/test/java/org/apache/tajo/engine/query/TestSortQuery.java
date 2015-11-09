@@ -40,7 +40,7 @@ public class TestSortQuery extends QueryTestCaseBase {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
 
     Map<String, String> variables = new HashMap<>();
-    variables.put(SessionVars.SORT_HASH_TABLE_SIZE.keyname(), "100");
+    variables.put(SessionVars.SORT_LIST_SIZE.keyname(), "100");
     client.updateSessionVariables(variables);
   }
 

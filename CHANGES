@@ -26,6 +26,8 @@ Release 0.11.1 - unreleased
 
   TASKS
 
+    TAJO-1963: Add more configuration descriptions to document. (jihoon)
+
     TAJO-1970: Change the null first syntax. (jihoon)
 
     TAJO-1906: Decrease the default size of hash map and array list for 
