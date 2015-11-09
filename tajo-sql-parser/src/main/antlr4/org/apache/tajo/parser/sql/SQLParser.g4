@@ -1594,8 +1594,8 @@ limit_clause
   ;
 
 null_ordering
-  : NULL FIRST
-  | NULL LAST
+  : NULLS FIRST
+  | NULLS LAST
   ;
 
 /*
