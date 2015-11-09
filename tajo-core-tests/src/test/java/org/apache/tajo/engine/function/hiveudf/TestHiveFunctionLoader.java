@@ -19,21 +19,20 @@
 package org.apache.tajo.engine.function.hiveudf;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.ExprTestBase;
-import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
+import static org.junit.Assert.assertEquals;
+
 import java.net.URL;
-import java.util.Collection;
+import java.util.*;
 
 public class TestHiveFunctionLoader {
   private TajoConf conf = new TajoConf();
@@ -63,6 +62,16 @@ public class TestHiveFunctionLoader {
 
   @Test
   public void testAnalyzeUDFclass() {
-    HiveFunctionLoader.analyzeUDFclasses();
+    Set<Class<? extends UDF>> funcSet = new HashSet<>();
+    funcSet.add(HiveUDFtest.class);
+    List<FunctionDesc> funcList = new LinkedList<>();
+
+    HiveFunctionLoader.analyzeUDFclasses(funcSet, funcList);
+
+    assertEquals(funcList.size(), 1);
+
+    FunctionDesc desc = funcList.get(0);
+
+    assertEquals(desc.getFunctionName(), "multiplestr");
   }
 }
