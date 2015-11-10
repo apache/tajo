@@ -28,6 +28,7 @@ import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.FunctionDescBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -89,7 +90,6 @@ public class HiveFunctionLoader {
   static void analyzeUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list) {
     for (Class<? extends UDF> clazz: classes) {
       String [] names;
-      boolean deterministic = true;
 
       Description desc = clazz.getAnnotation(Description.class);
       if (desc != null) {
@@ -127,19 +127,16 @@ public class HiveFunctionLoader {
         }
       }
 
+      FunctionDescBuilder builder = new FunctionDescBuilder();
+
       UDFType type = clazz.getDeclaredAnnotation(UDFType.class);
       if (type != null) {
-        deterministic = type.deterministic();
+        builder.setDeterministic(type.deterministic());
       }
 
-      FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, names[0], retType, deterministic, params);
-      FunctionInvocation invocation = new FunctionInvocation();
-      invocation.setLegacy(new ClassBaseInvocationDesc<>(HiveGeneralFunctionHolder.class));
-      FunctionSupplement supplement = new FunctionSupplement();
-      
-      FunctionDesc funcDesc = new FunctionDesc(signature, invocation, supplement);
+      builder.setName(names[0]).setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params);
 
-      list.add(funcDesc);
+      list.add(builder.build());
     }
   }
 

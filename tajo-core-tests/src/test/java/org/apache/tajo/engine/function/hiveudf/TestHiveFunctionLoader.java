@@ -24,6 +24,7 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.junit.After;
 import org.junit.Before;
@@ -74,5 +75,8 @@ public class TestHiveFunctionLoader {
 
     assertEquals(desc.getFunctionName(), "multiplestr");
     assertEquals(desc.isDeterministic(), false);
+    assertEquals(desc.getReturnType().getType(), TajoDataTypes.Type.TEXT);
+    assertEquals(desc.getParamTypes()[0].getType(), TajoDataTypes.Type.TEXT);
+    assertEquals(desc.getParamTypes()[1].getType(), TajoDataTypes.Type.INT4);
   }
 }

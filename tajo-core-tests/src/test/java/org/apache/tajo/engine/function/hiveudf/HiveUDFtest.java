@@ -24,11 +24,18 @@ import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 
-// Actually it's deterministic, but it is set as false to test
+/**
+ * Hive UDF sample class for testing.
+ * Actually it's deterministic, but it is set as false to test.
+ */
 @UDFType(deterministic = false)
-@Description(name="multiplestr")
+@Description(
+    name="multiplestr",
+    value = "repeat string",
+    extended = "multiplestr(str, num)"
+)
 public class HiveUDFtest extends UDF {
-  Text evaluate(Text str, IntWritable num) {
+  public Text evaluate(Text str, IntWritable num) {
     String origin = str.toString();
 
     for (int i=0; i<num.get()-1; i++) {
