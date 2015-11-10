@@ -71,7 +71,7 @@ public class TestRpcClientManager {
       NettyClientBase clientBase = manager.getClient(address, DummyProtocol.class, false, new Properties());
       RpcClientManager.cleanup(clientBase);
     } finally {
-      server.shutdown();
+      server.shutdown(true);
       executor.shutdown();
       RpcClientManager.close();
     }
@@ -97,7 +97,7 @@ public class TestRpcClientManager {
       client.close();
       assertFalse(RpcClientManager.contains(key));
     } finally {
-      server.shutdown();
+      server.shutdown(true);
       RpcClientManager.close();
     }
   }
@@ -133,7 +133,7 @@ public class TestRpcClientManager {
         assertFalse(RpcClientManager.contains(key));
       }
     } finally {
-      server.shutdown();
+      server.shutdown(true);
       RpcClientManager.close();
     }
   }
@@ -172,7 +172,7 @@ public class TestRpcClientManager {
 
       RpcClientManager.cleanup(client1, client2);
     } finally {
-      server.shutdown();
+      server.shutdown(true);
     }
   }
 }
