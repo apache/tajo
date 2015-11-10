@@ -24,7 +24,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
@@ -195,10 +194,11 @@ public class Repartitioner {
       long maxStats = Long.MIN_VALUE;
       int maxStatsScanIdx = -1;
       StringBuilder nonLeafScanNamesBuilder = new StringBuilder();
+
+      String intermediateDataFormat = schedulerContext.getMasterContext().getConf().getVar(ConfVars.SHUFFLE_FILE_FORMAT);
       for (int i = 0; i < scans.length; i++) {
-        String dataFormat = scans[i].getTableDesc().getMeta().getDataFormat();
-        //TODO add flag for intermediate data format
-        if (dataFormat.equalsIgnoreCase(BuiltinStorages.DRAW) || dataFormat.equalsIgnoreCase(BuiltinStorages.RAW)) {
+
+        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase(intermediateDataFormat)) {
           // Intermediate data scan
           hasNonLeafNode = true;
           largeScanIndexList.add(i);
