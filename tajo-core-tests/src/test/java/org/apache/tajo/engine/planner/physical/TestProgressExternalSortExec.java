@@ -124,22 +124,24 @@ public class TestProgressExternalSortExec {
 
   @Test
   public void testExternalSortExecProgressWithMemTableScanner() throws Exception {
-    testProgress(testDataStats.getNumBytes() * 20);    //multiply 20 for memory fit
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    int bufferSize = (int) (testDataStats.getNumBytes() * 20) / StorageUnit.MB; //multiply 2 for memory fit
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, bufferSize);
+
+    testProgress(queryContext);
   }
 
   @Test
   public void testExternalSortExecProgressWithPairWiseMerger() throws Exception {
-    testProgress(testDataStats.getNumBytes());
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    int bufferSize = (int) Math.max((testDataStats.getNumBytes() / StorageUnit.MB), 1);
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, bufferSize);
+
+    testProgress(queryContext);
   }
 
-  private void testProgress(long sortBufferBytesNum) throws Exception {
+  private void testProgress(QueryContext queryContext) throws Exception {
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
-    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    if(sortBufferBytesNum > StorageUnit.MB) {
-      queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, (int)(sortBufferBytesNum / StorageUnit.MB));
-    } else {
-      queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 1);
-    }
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);

@@ -30,6 +30,8 @@ import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.Tuple;
@@ -99,6 +101,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     this.dataTypes = SchemaUtil.toDataTypes(outSchema);
 
     if(numShuffleOutputs > 0){
+      //calculate initial buffer by total partition. a buffer size will be 4Kb ~ 1MB
       this.initialBufferSize = Math.min(MAXIMUM_INITIAL_BUFFER_SIZE,
           Math.max(maxBufferSize / numShuffleOutputs, MINIMUM_INITIAL_BUFFER_SIZE));
     } else {
@@ -139,6 +142,8 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         totalBufferCapacity += rowBlock.capacity(); // calculate resizeable buffer capacity
         usedBufferSize += (rowBlock.usedMem() - prevUsedMem);
 
+        // if total buffer capacity are required more than maxBufferSize,
+        // all partitions are flushed and the buffers are released
         if (totalBufferCapacity > maxBufferSize) {
           if (LOG.isDebugEnabled()) {
             LOG.debug(String.format("Too low buffer usage. threshold: %s, total capacity: %s, used: %s",
@@ -223,12 +228,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
 
   @Override
   public void rescan() throws IOException {
-    if (partitionMemoryMap.size() > 0) {
-      for (RowBlock rowBlock : partitionMemoryMap.values()) {
-        rowBlock.release();
-      }
-      partitionMemoryMap.clear();
-    }
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override

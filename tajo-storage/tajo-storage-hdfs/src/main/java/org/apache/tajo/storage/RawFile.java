@@ -463,7 +463,6 @@ public class RawFile {
     }
   }
 
-  @Deprecated
   public static class RawFileAppender extends DirectRawFileWriter {
 
     public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,

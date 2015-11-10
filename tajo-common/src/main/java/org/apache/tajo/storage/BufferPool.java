@@ -42,10 +42,6 @@ public class BufferPool {
   }
 
   static {
-    /* TODO Enable thread cache
-    *  Create a pooled ByteBuf allocator but disables the thread-local cache.
-    *  Because the TaskRunner thread is newly created
-    * */
 
     if (TajoConstants.IS_TEST_MODE) {
       /* Disable pooling buffers for memory usage  */

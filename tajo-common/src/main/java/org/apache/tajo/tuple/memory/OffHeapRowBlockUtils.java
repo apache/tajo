@@ -85,6 +85,9 @@ public class OffHeapRowBlockUtils {
     return tuples;
   }
 
+  /**
+   * This class is tuple converter to the RowBlock
+   */
   public static class TupleConverter {
 
     public void convert(Tuple tuple, RowWriter writer) {

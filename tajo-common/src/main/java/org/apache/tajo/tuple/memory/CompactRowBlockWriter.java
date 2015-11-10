@@ -30,6 +30,16 @@ import org.apache.tajo.util.BitArray;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.UnsafeUtil;
 
+/**
+ * This class represent serialization of RawFile
+ *
+ * Row Record Structure
+ *
+ * | row length | null flags length | null flags | field 1 | field 2| ... | field N |;
+ *
+ * |  (4 bytes)        (2 bytes)      (N bytes)  |                                  |;
+ *                Header                                         values
+ */
 public class CompactRowBlockWriter implements RowWriter {
   private static final int RECORD_FIELD_SIZE = 4;
   // Maximum variant int32 size is 5
