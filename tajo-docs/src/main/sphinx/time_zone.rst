@@ -19,7 +19,7 @@ You can set the system time zone in *conf/tajo-site.xml* file as follows:
 .. code-block:: xml  
 
   <name>tajo.timezone</name>
-  <property>GMT+9</property>
+  <value>GMT+9</value>
 
 
 ==================
