@@ -153,13 +153,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     this.conf = conf;
     this.callback = callback;
     if (callback != null) {
-      callbackContext = new OrcFile.WriterContext(){
-
-        @Override
-        public Writer getWriter() {
-          return WriterImpl.this;
-        }
-      };
+      callbackContext = () -> WriterImpl.this;
     } else {
       callbackContext = null;
     }

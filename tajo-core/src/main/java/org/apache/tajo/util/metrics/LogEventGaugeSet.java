@@ -31,33 +31,13 @@ public class LogEventGaugeSet implements MetricSet {
   public Map<String, Metric> getMetrics() {
     final Map<String, Metric> gauges = new HashMap<>();
 
-    gauges.put("Fatal", new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return TajoLogEventCounter.getFatal();
-      }
-    });
+    gauges.put("Fatal", (Gauge<Long>) () -> TajoLogEventCounter.getFatal());
 
-    gauges.put("Error", new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return TajoLogEventCounter.getError();
-      }
-    });
+    gauges.put("Error", (Gauge<Long>) () -> TajoLogEventCounter.getError());
 
-    gauges.put("Warn", new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return TajoLogEventCounter.getWarn();
-      }
-    });
+    gauges.put("Warn", (Gauge<Long>) () -> TajoLogEventCounter.getWarn());
 
-    gauges.put("Info", new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return TajoLogEventCounter.getInfo();
-      }
-    });
+    gauges.put("Info", (Gauge<Long>) () -> TajoLogEventCounter.getInfo());
 
     return gauges;
   }

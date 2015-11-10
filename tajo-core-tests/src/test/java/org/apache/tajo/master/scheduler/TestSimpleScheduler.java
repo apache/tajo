@@ -267,13 +267,10 @@ public class TestSimpleScheduler {
 
     @Override
     protected boolean startQuery(final QueryId queryId, final AllocationResourceProto allocation) {
-      executorService.schedule(new Runnable() {
-        @Override
-        public void run() {
-          barrier.release();
-          qmAllocationMap.put(queryId, allocation);
-          rmContext.getDispatcher().getEventHandler().handle(new SchedulerEvent(SchedulerEventType.RESOURCE_UPDATE));
-        }
+      executorService.schedule((Runnable) () -> {
+        barrier.release();
+        qmAllocationMap.put(queryId, allocation);
+        rmContext.getDispatcher().getEventHandler().handle(new SchedulerEvent(SchedulerEventType.RESOURCE_UPDATE));
       }, testDelay, TimeUnit.MILLISECONDS);
       return true;
     }

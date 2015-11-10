@@ -285,12 +285,7 @@ public class MasterPlan {
         sb.append("\n[Enforcers]\n");
         int i = 0;
         List<EnforceProperty> enforceProperties = block.getEnforcer().getProperties();
-        Collections.sort(enforceProperties, new Comparator<EnforceProperty>() {
-          @Override
-          public int compare(EnforceProperty o1, EnforceProperty o2) {
-            return o1.toString().compareTo(o2.toString());
-          }
-        });
+        Collections.sort(enforceProperties, (o1, o2) -> o1.toString().compareTo(o2.toString()));
         for (EnforceProperty enforce : enforceProperties) {
           sb.append(" ").append(i++).append(": ");
           sb.append(Enforcer.toString(enforce));

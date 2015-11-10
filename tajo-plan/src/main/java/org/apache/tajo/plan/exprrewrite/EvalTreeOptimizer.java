@@ -56,13 +56,10 @@ public class EvalTreeOptimizer {
       rules.add(rule);
     }
 
-    Collections.sort(rules, new Comparator<EvalTreeOptimizationRule>() {
-      @Override
-      public int compare(EvalTreeOptimizationRule o1, EvalTreeOptimizationRule o2) {
-        int priority1 = o1.getClass().getAnnotation(Prioritized.class).priority();
-        int priority2 = o2.getClass().getAnnotation(Prioritized.class).priority();
-        return priority1 - priority2;
-      }
+    Collections.sort(rules, (o1, o2) -> {
+      int priority1 = o1.getClass().getAnnotation(Prioritized.class).priority();
+      int priority2 = o2.getClass().getAnnotation(Prioritized.class).priority();
+      return priority1 - priority2;
     });
   }
 

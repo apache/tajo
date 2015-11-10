@@ -276,35 +276,32 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       executor = Executors.newSingleThreadExecutor();
     }
 
-    executor.submit(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          rowBlock.clear();
-          int endRow = currentNumRows + fetchRowNum;
-          while (currentNumRows < endRow) {
-            Tuple tuple = scanExec.next();
-            if (tuple == null) {
+    executor.submit((Runnable) () -> {
+      try {
+        rowBlock.clear();
+        int endRow = currentNumRows + fetchRowNum;
+        while (currentNumRows < endRow) {
+          Tuple tuple = scanExec.next();
+          if (tuple == null) {
+            eof = true;
+            break;
+          } else {
+            rowBlock.getWriter().addTuple(tuple);
+            currentNumRows++;
+            if (currentNumRows >= maxRow) {
               eof = true;
               break;
-            } else {
-              rowBlock.getWriter().addTuple(tuple);
-              currentNumRows++;
-              if (currentNumRows >= maxRow) {
-                eof = true;
-                break;
-              }
             }
           }
-
-          if (rowBlock.rows() > 0) {
-            totalRows += rowBlock.rows();
-          }
-
-          future.set(rowBlock);
-        } catch (Throwable t) {
-          future.setException(t);
         }
+
+        if (rowBlock.rows() > 0) {
+          totalRows += rowBlock.rows();
+        }
+
+        future.set(rowBlock);
+      } catch (Throwable t) {
+        future.setException(t);
       }
     });
     return future;

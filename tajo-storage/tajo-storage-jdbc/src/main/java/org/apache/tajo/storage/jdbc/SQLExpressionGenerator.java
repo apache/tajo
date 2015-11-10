@@ -128,11 +128,8 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
 
   protected EvalNode visitRowConstant(Context context, RowConstantEval row, Stack<EvalNode> stack) {
     StringBuilder sb = new StringBuilder("(");
-    sb.append(StringUtils.join(row.getValues(), ",", new Function<Datum, String>() {
-      @Override
-      public String apply(Datum v) {
-        return convertDatumToSQLLiteral(v);
-      }
+    sb.append(StringUtils.join(row.getValues(), ",", v -> {
+      return convertDatumToSQLLiteral(v);
     }));
     sb.append(")");
     context.append(sb.toString());
