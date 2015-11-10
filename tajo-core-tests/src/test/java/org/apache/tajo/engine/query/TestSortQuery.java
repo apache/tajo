@@ -40,7 +40,7 @@ public class TestSortQuery extends QueryTestCaseBase {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
 
     Map<String, String> variables = new HashMap<>();
-    variables.put(SessionVars.SORT_HASH_TABLE_SIZE.keyname(), "100");
+    variables.put(SessionVars.SORT_LIST_SIZE.keyname(), "100");
     client.updateSessionVariables(variables);
   }
 
@@ -283,7 +283,7 @@ public class TestSortQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("testSortOnNullColumn3".toLowerCase(), schema, tableOptions, data, 1);
 
     try {
-      ResultSet res = executeString("select * from testSortOnNullColumn3 order by name null first");
+      ResultSet res = executeString("select * from testSortOnNullColumn3 order by name nulls first");
       String ascExpected = "id,name\n" +
           "-------------------------------\n" +
           "2,null\n" +
