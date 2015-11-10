@@ -112,8 +112,8 @@ public class HashShuffleAppenderManager {
         fs.mkdirs(dataFile.getParent());
       }
 
-      DirectRawFileWriter appender =
-          new DirectRawFileWriter(systemConf, null, outSchema, meta, dataFile, memoryRowBlock);
+      DirectRawFileWriter appender = new DirectRawFileWriter(systemConf, null, outSchema, meta, dataFile,
+          memoryRowBlock, memoryRowBlock.getDataFormat());
       appender.enableStats();
       appender.init();
 

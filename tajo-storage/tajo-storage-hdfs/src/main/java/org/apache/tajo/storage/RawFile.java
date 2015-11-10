@@ -27,7 +27,6 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -37,9 +36,8 @@ import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
@@ -47,7 +45,6 @@ import org.apache.tajo.util.BitArray;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
@@ -467,133 +464,16 @@ public class RawFile {
   }
 
   @Deprecated
-  public static class RawFileAppender extends FileAppender {
-    private static final float BUFFER_THRESHHOLD = 0.9f;
-
-    private FileChannel channel;
-    private RandomAccessFile randomAccessFile;
-    private DataType[] columnTypes;
-
-    private long pos;
-    private MemoryRowBlock rowBlock;
-    private boolean analyzeField;
-    private boolean hasExternalBuf;
-
-    private TableStatistics stats;
+  public static class RawFileAppender extends DirectRawFileWriter {
 
     public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
                            TableMeta meta, Path workDir) throws IOException {
-      this(conf, taskAttemptId, schema, meta, workDir, null);
+      super(conf, taskAttemptId, schema, meta, workDir, null, BuiltinStorages.RAW);
     }
 
     public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
                            TableMeta meta, Path workDir, MemoryRowBlock rowBlock) throws IOException {
-      super(conf, taskAttemptId, schema, meta, workDir);
-      this.rowBlock = rowBlock;
-    }
-
-    public void init() throws IOException {
-      File file;
-      try {
-        if (path.toUri().getScheme() != null) {
-          file = new File(path.toUri());
-        } else {
-          file = new File(path.toString());
-        }
-      } catch (IllegalArgumentException iae) {
-        throw new IOException(iae);
-      }
-
-      randomAccessFile = new RandomAccessFile(file, "rw");
-      channel = randomAccessFile.getChannel();
-
-      columnTypes = new DataType[schema.size()];
-      for (int i = 0; i < schema.size(); i++) {
-        columnTypes[i] = schema.getColumn(i).getDataType();
-      }
-
-      if (rowBlock == null) {
-        int bufferSize = conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
-        rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize, true, BuiltinStorages.RAW);
-      } else {
-        hasExternalBuf = true;
-      }
-
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
-        if (ShuffleType.RANGE_SHUFFLE == PlannerUtil.getShuffleType(
-            meta.getOption(StorageConstants.SHUFFLE_TYPE,
-                PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)))) {
-          this.analyzeField = true;
-        }
-      }
-
-      pos = 0;
-      super.init();
-    }
-
-    @Override
-    public long getOffset() throws IOException {
-      return hasExternalBuf ? pos : pos + rowBlock.getMemory().writerPosition();
-    }
-
-    public void writeRowBlock(MemoryRowBlock rowBlock) throws IOException {
-      pos += rowBlock.getMemory().writeTo(channel);
-
-      if (enabledStats) {
-        stats.incrementRows(rowBlock.rows());
-      }
-    }
-
-    @Override
-    public void addTuple(Tuple t) throws IOException {
-      if (analyzeField) {
-        // it is to calculate min/max values, and it is only used for the intermediate file.
-        for (int i = 0; i < schema.size(); i++) {
-          stats.analyzeField(i, t);
-        }
-      }
-
-      rowBlock.getWriter().putTuple(t);
-
-      if(rowBlock.usage() > BUFFER_THRESHHOLD) {
-        writeRowBlock(rowBlock);
-        rowBlock.clear();
-      }
-    }
-
-    @Override
-    public void flush() throws IOException {
-      if(!hasExternalBuf && rowBlock.getMemory().isReadable()) {
-        writeRowBlock(rowBlock);
-        rowBlock.clear();
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      flush();
-      if (enabledStats) {
-        stats.setNumBytes(getOffset());
-      }
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
-      }
-
-      IOUtils.cleanup(LOG, channel, randomAccessFile);
-      if(!hasExternalBuf && rowBlock != null) {
-        rowBlock.release();
-      }
-    }
-
-    @Override
-    public TableStats getStats() {
-      if (enabledStats) {
-        stats.setNumBytes(pos);
-        return stats.getTableStat();
-      } else {
-        return null;
-      }
+      super(conf, taskAttemptId, schema, meta, workDir, rowBlock, BuiltinStorages.RAW);
     }
   }
 }

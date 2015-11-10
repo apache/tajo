@@ -25,8 +25,6 @@ import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.BitArray;
 import org.apache.tajo.util.SizeOf;
@@ -400,7 +398,12 @@ public class CompactRowBlockWriter implements RowWriter {
   }
 
   @Override
-  public ZeroCopyTuple addTuple(Tuple tuple) {
-    throw new TajoRuntimeException(new UnsupportedException());
+  public Tuple addTuple(Tuple tuple) {
+    putTuple(tuple);
+    try {
+      return tuple.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new TajoInternalError(e);
+    }
   }
 }

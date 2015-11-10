@@ -78,6 +78,11 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
   }
 
   @Override
+  public String getDataFormat() {
+    return dataFormat;
+  }
+
+  @Override
   public void clear() {
     reset();
     memory.clear();

@@ -78,5 +78,5 @@ public interface RowWriter {
 
   void putTuple(Tuple tuple);
 
-  ZeroCopyTuple addTuple(Tuple tuple);
+  Tuple addTuple(Tuple tuple);
 }

@@ -26,11 +26,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FileAppender;
@@ -38,6 +41,9 @@ import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.TupleConverter;
+import org.apache.tajo.tuple.memory.RowWriter;
+import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
@@ -48,32 +54,42 @@ import java.nio.channels.FileChannel;
 public class DirectRawFileWriter extends FileAppender {
   private static final Log LOG = LogFactory.getLog(DirectRawFileWriter.class);
 
-  public static final String FILE_EXTENSION = "draw";
   public static final String WRITE_BUFFER_SIZE = "tajo.storage.raw.io.write-buffer.bytes";
   public static final int DEFAULT_BUFFER_SIZE = 128 * StorageUnit.KB;
-  private static final float BUFFER_THRESHHOLD = 0.9f;
+  public static final float BUFFER_THRESHHOLD = 0.9f;
 
-  private FileChannel channel;
-  private RandomAccessFile randomAccessFile;
-  private FSDataOutputStream fos;
-  private boolean isLocal;
-  private long pos;
+  protected FileChannel channel;
 
-  private TableStatistics stats;
-  private MemoryRowBlock rowBlock;
-  private boolean analyzeField;
-  private boolean hasExternalBuf;
+  protected RandomAccessFile randomAccessFile;
+  protected FSDataOutputStream fos;
+  protected long pos;
+  protected final String dataFormat;
+  protected TableStatistics stats;
+
+  protected TupleConverter tupleConverter;
+  protected MemoryRowBlock rowBlock;
+  protected boolean analyzeField;
+  protected boolean hasExternalBuf;
+  protected boolean isLocal;
 
   public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
                              final Schema schema, final TableMeta meta, final Path path) throws IOException {
-    this(conf, taskAttemptId, schema, meta, path, null);
+    this(conf, taskAttemptId, schema, meta, path, null, BuiltinStorages.DRAW);
+  }
+
+  public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
+                             final Schema schema, final TableMeta meta, final Path path, String dataFormat)
+      throws IOException {
+    this(conf, taskAttemptId, schema, meta, path, null, dataFormat);
   }
 
   public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
                              final Schema schema, final TableMeta meta, final Path path,
-                             MemoryRowBlock rowBlock) throws IOException {
+                             MemoryRowBlock rowBlock, String dataFormat) throws IOException {
     super(conf, taskAttemptId, schema, meta, path);
     this.rowBlock = rowBlock;
+    this.hasExternalBuf = rowBlock != null;
+    this.dataFormat = dataFormat;
   }
 
   @Override
@@ -111,13 +127,75 @@ public class DirectRawFileWriter extends FileAppender {
 
     if (rowBlock == null) {
       int bufferSize = conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
-      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize);
-    } else {
-      hasExternalBuf = true;
+      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize, true, dataFormat);
     }
+
+    tupleConverter = initConverter();
 
     pos = 0;
     super.init();
+  }
+
+  public TupleConverter initConverter() {
+    switch (dataFormat) {
+    case BuiltinStorages.DRAW:
+      return getDrawConverter();
+    case BuiltinStorages.RAW:
+      return getRawConverter();
+    default:
+      throw new TajoInternalError(new UnsupportedException());
+    }
+  }
+
+  private TupleConverter getDrawConverter() {
+    return new TupleConverter() {
+
+      @Override
+      public void convert(Tuple tuple, RowWriter writer) {
+        if (analyzeField) {
+          if (tuple instanceof UnSafeTuple) {
+
+            for (int i = 0; i < writer.dataTypes().length; i++) {
+              // it is to calculate min/max values, and it is only used for the intermediate file.
+              stats.analyzeField(i, tuple);
+            }
+            // write direct to memory
+            writer.putTuple(tuple);
+          } else {
+            writer.startRow();
+
+            for (int i = 0; i < writer.dataTypes().length; i++) {
+              // it is to calculate min/max values, and it is only used for the intermediate file.
+              stats.analyzeField(i, tuple);
+              writeField(i, tuple, writer);
+            }
+            writer.endRow();
+          }
+        } else {
+          // write direct to memory
+          writer.putTuple(tuple);
+        }
+      }
+    };
+  }
+
+  private TupleConverter getRawConverter() {
+    return new TupleConverter() {
+
+      @Override
+      public void convert(Tuple tuple, RowWriter writer) {
+        writer.startRow();
+
+        for (int i = 0; i < writer.dataTypes().length; i++) {
+          // it is to calculate min/max values, and it is only used for the intermediate file.
+          if (analyzeField) {
+            stats.analyzeField(i, tuple);
+          }
+          writeField(i, tuple, writer);
+        }
+        writer.endRow();
+      }
+    };
   }
 
   @Override
@@ -139,14 +217,8 @@ public class DirectRawFileWriter extends FileAppender {
 
   @Override
   public void addTuple(Tuple t) throws IOException {
-    if (analyzeField) {
-      // it is to calculate min/max values, and it is only used for the intermediate file.
-      for (int i = 0; i < schema.size(); i++) {
-        stats.analyzeField(i, t);
-      }
-    }
 
-    rowBlock.getWriter().putTuple(t);
+    tupleConverter.convert(t, rowBlock.getWriter());
 
     if(rowBlock.usage() > BUFFER_THRESHHOLD) {
       writeRowBlock(rowBlock);

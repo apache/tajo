@@ -26,6 +26,8 @@ import java.nio.channels.ScatteringByteChannel;
 
 public interface RowBlock {
 
+  String getDataFormat();
+
   void clear();
 
   int capacity();
