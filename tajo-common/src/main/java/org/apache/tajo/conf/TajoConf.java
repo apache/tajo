@@ -345,7 +345,7 @@ public class TajoConf extends Configuration {
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
     $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation (todo this is broken)
     $AGG_HASH_TABLE_SIZE("tajo.executor.aggregate.hash-table.size", 10000),
-    $SORT_HASH_TABLE_SIZE("tajo.executor.sort.hash-table.size", 100000),
+    $SORT_LIST_SIZE("tajo.executor.sort.list.size", 100000),
     $JOIN_HASH_TABLE_SIZE("tajo.executor.join.hash-table.size", 100000),
 
     // for index

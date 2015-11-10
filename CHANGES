@@ -33,6 +33,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1972: Invalid sort order with NULLS FIRST|LAST. (jihoon)
+
     TAJO-1896: Fix the travis test failure. (jinho)
 
     TAJO-1964: TestKillQuery::testKillQueryFromInitState causes NPE. (jinho)
@@ -54,6 +56,10 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-1963: Add more configuration descriptions to document. (jihoon)
+
+    TAJO-1970: Change the null first syntax. (jihoon)
 
     TAJO-1904: Extend GraphVisitor to accept user-defined context. (jihoon)
 

@@ -158,7 +158,7 @@ public class TestLogicalPlanner {
       "create table store1 as select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
       "select 7 + 8 as res1, 8 * 9 as res2, 10 * 10 as res3", // 10
-      "create index idx_employee on employee using bitmap_idx (name null first, empId desc) where empid > 100", // 11
+      "create index idx_employee on employee using bitmap_idx (name nulls first, empId desc) where empid > 100", // 11
       "select name, score from employee, score order by score limit 3", // 12
       "select length(name), length(deptname), *, empid+10 from employee where empId > 500", // 13
   };
