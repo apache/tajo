@@ -33,6 +33,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1965: TestBlockingRpc::testServerShutdown occassionally fails. (jinho)
+
     TAJO-1882: Clean up GreedyHeuristicJoinOrderAlgorithm::getCost APIs. (jihoon)
 
     TAJO-1972: Invalid sort order with NULLS FIRST|LAST. (jihoon)
