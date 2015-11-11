@@ -303,7 +303,7 @@ public class DistinctGroupbyBuilder {
   public ExecutionBlock buildPlan(GlobalPlanContext context,
                                   ExecutionBlock latestExecBlock,
                                   LogicalNode currentNode) {
-    try {
+//    try {
       GroupbyNode groupbyNode = (GroupbyNode)currentNode;
       LogicalPlan plan = context.getPlan().getLogicalPlan();
       DistinctGroupbyNode baseDistinctNode = buildBaseDistinctGroupByNode(context, latestExecBlock, groupbyNode);
@@ -348,9 +348,9 @@ public class DistinctGroupbyBuilder {
       }
 
       return secondStageBlock;
-    } catch (Exception e) {
-      throw new TajoInternalError(e);
-    }
+//    } catch (Exception e) {
+//      throw new TajoInternalError(e);
+//    }
   }
 
   private DistinctGroupbyNode buildBaseDistinctGroupByNode(GlobalPlanContext context,
@@ -610,10 +610,8 @@ public class DistinctGroupbyBuilder {
       secondStageGroupbyNodes.remove(secondStageGroupbyNodes.size() - 1);
 
       List<Target> targets = new ArrayList<>();
-      System.arraycopy(lastSecondStageGroupbyNode.getTargets(), 0,
-          targets, 0, lastSecondStageGroupbyNode.getTargets().size());
-      System.arraycopy(otherGroupbyNode.getTargets(), 0, targets,
-          lastSecondStageGroupbyNode.getTargets().size(), otherGroupbyNode.getTargets().size());
+      targets.addAll(lastSecondStageGroupbyNode.getTargets());
+      targets.addAll(otherGroupbyNode.getTargets());
 
       lastSecondStageGroupbyNode.setTargets(targets);
 

@@ -29,7 +29,11 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Stack;
+import java.util.List;
+import java.util.Collections;
 
 /**
  * Tajo's logical planner can generate different shapes of logical plans for the same query,

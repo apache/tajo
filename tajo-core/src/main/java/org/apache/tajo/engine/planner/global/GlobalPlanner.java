@@ -452,7 +452,7 @@ public class GlobalPlanner {
       rewritten.firstStageEvals[0] = createSumFunction(function.getArgs());
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets.add(new Target(fieldEval));
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
 
     } else if (function.getName().equals("max")) {
@@ -461,7 +461,7 @@ public class GlobalPlanner {
       rewritten.firstStageEvals[0] = createMaxFunction(function.getArgs());
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets.add(new Target(fieldEval));
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createMaxFunction(new EvalNode[]{fieldEval});
 
     } else if (function.getName().equals("min")) {
@@ -471,7 +471,7 @@ public class GlobalPlanner {
       rewritten.firstStageEvals[0] = createMinFunction(function.getArgs());
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets.add(new Target(fieldEval));
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
 
     } else {
