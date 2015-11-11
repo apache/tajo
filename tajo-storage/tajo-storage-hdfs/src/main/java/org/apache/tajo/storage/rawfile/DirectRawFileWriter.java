@@ -63,7 +63,6 @@ public class DirectRawFileWriter extends FileAppender {
   protected RandomAccessFile randomAccessFile;
   protected FSDataOutputStream fos;
   protected long pos;
-  protected final String dataFormat;
   protected TableStatistics stats;
 
   protected TupleConverter tupleConverter;
@@ -73,23 +72,17 @@ public class DirectRawFileWriter extends FileAppender {
   protected boolean isLocal;
 
   public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
-                             final Schema schema, final TableMeta meta, final Path path) throws IOException {
-    this(conf, taskAttemptId, schema, meta, path, null, BuiltinStorages.DRAW);
-  }
-
-  public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
-                             final Schema schema, final TableMeta meta, final Path path, String dataFormat)
+                             final Schema schema, final TableMeta meta, final Path path)
       throws IOException {
-    this(conf, taskAttemptId, schema, meta, path, null, dataFormat);
+    this(conf, taskAttemptId, schema, meta, path, null);
   }
 
   public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
                              final Schema schema, final TableMeta meta, final Path path,
-                             MemoryRowBlock rowBlock, String dataFormat) throws IOException {
+                             MemoryRowBlock rowBlock) throws IOException {
     super(conf, taskAttemptId, schema, meta, path);
     this.rowBlock = rowBlock;
     this.hasExternalBuf = rowBlock != null;
-    this.dataFormat = dataFormat;
   }
 
   @Override
@@ -127,7 +120,7 @@ public class DirectRawFileWriter extends FileAppender {
 
     if (rowBlock == null) {
       int bufferSize = conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
-      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize, true, dataFormat);
+      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize, true, meta.getDataFormat());
     }
 
     tupleConverter = initConverter();
@@ -137,7 +130,7 @@ public class DirectRawFileWriter extends FileAppender {
   }
 
   public TupleConverter initConverter() {
-    switch (dataFormat) {
+    switch (meta.getDataFormat()) {
     case BuiltinStorages.DRAW:
       return getDrawConverter();
     case BuiltinStorages.RAW:

@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -38,7 +37,6 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
-import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
 
@@ -467,12 +465,7 @@ public class RawFile {
 
     public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
                            TableMeta meta, Path workDir) throws IOException {
-      super(conf, taskAttemptId, schema, meta, workDir, null, BuiltinStorages.RAW);
-    }
-
-    public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
-                           TableMeta meta, Path workDir, MemoryRowBlock rowBlock) throws IOException {
-      super(conf, taskAttemptId, schema, meta, workDir, rowBlock, BuiltinStorages.RAW);
+      super(conf, taskAttemptId, schema, meta, workDir, null);
     }
   }
 }
