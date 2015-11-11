@@ -102,10 +102,6 @@ public class HiveFunctionLoader {
         names = new String [] {clazz.getName().replace('.','_')};
       }
 
-      for (String name: names) {
-        HiveFunctionRegistry.registerUDF(name, clazz);
-      }
-
       Class hiveUDFretType = null;
       Class [] hiveUDFparams = null;
 
@@ -134,7 +130,8 @@ public class HiveFunctionLoader {
         builder.setDeterministic(type.deterministic());
       }
 
-      builder.setName(names[0]).setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params);
+      builder.setName(names[0]).setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params)
+          .setClass(HiveGeneralFunctionHolder.class);
 
       list.add(builder.build());
     }

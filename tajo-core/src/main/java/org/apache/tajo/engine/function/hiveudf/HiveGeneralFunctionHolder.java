@@ -27,8 +27,8 @@ import org.apache.tajo.storage.Tuple;
  * Class to wrap Hive Scalar UDF
  */
 public class HiveGeneralFunctionHolder extends GeneralFunction {
-  public HiveGeneralFunctionHolder(Column[] definedArgs) {
-    super(definedArgs);
+  public HiveGeneralFunctionHolder() {
+    super(new Column[0]);
   }
 
   @Override

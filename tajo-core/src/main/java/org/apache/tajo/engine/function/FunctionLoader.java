@@ -36,6 +36,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.engine.function.hiveudf.HiveGeneralFunctionHolder;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
@@ -86,12 +87,11 @@ public class FunctionLoader {
    * Load functions defined by users.
    *
    * @param conf
-   * @param functionMap
+   * @param functionList
    * @return
    * @throws IOException
    */
-  public static Map<FunctionSignature, FunctionDesc> loadUserDefinedFunctions(TajoConf conf,
-                                                                              Map<FunctionSignature, FunctionDesc> functionMap)
+  public static List<FunctionDesc> loadUserDefinedFunctions(TajoConf conf, List<FunctionDesc> functionList)
       throws IOException {
 
     String[] codePaths = conf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);
@@ -117,14 +117,12 @@ public class FunctionLoader {
           filePaths.add(codePath);
         }
         for (Path filePath : filePaths) {
-          for (FunctionDesc f : PythonScriptEngine.registerFunctions(filePath.toUri(),
-              FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
-            functionMap.put(f.getSignature(), f);
-          }
+          PythonScriptEngine.registerFunctions(filePath.toUri(), FunctionLoader.PYTHON_FUNCTION_NAMESPACE)
+              .stream().map(functionList::add);
         }
       }
     }
-    return functionMap;
+    return functionList;
   }
 
   public static Set<FunctionDesc> findScalarFunctions() {
@@ -220,7 +218,7 @@ public class FunctionLoader {
     Set<Class> functionClasses = ClassUtil.findClasses(Function.class, "org.apache.tajo.engine.function");
 
     for (Class eachClass : functionClasses) {
-      if(eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers())) {
+      if(eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers()) || eachClass == HiveGeneralFunctionHolder.class) {
         continue;
       }
       Function function = null;

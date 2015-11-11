@@ -61,6 +61,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -95,8 +96,9 @@ public class ExprTestBase {
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
-    map = FunctionLoader.loadUserDefinedFunctions(conf, map);
-    for (FunctionDesc funcDesc : map.values()) {
+    List<FunctionDesc> list = new ArrayList<>(map.values());
+    list = FunctionLoader.loadUserDefinedFunctions(conf, list);
+    for (FunctionDesc funcDesc : list) {
       cat.createFunction(funcDesc);
     }
 

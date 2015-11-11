@@ -18,8 +18,8 @@
 
 package org.apache.tajo.master;
 
-import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.avro.generic.GenericData;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -46,6 +46,7 @@ import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.rm.TajoResourceManager;
@@ -76,7 +77,9 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -216,21 +219,18 @@ public class TajoMaster extends CompositeService {
   }
 
   private Collection<FunctionDesc> loadFunctions() throws IOException {
-    Map<FunctionSignature, FunctionDesc> functionMap = FunctionLoader.load();
-    return FunctionLoader.loadUserDefinedFunctions(systemConf, functionMap).values();
+    List<FunctionDesc> functionList = new ArrayList<>(FunctionLoader.load().values());
+    Collection<FunctionDesc> funcs = FunctionLoader.loadUserDefinedFunctions(systemConf, functionList);
+    funcs.addAll(HiveFunctionLoader.loadHiveUDFs(systemConf));
+
+    return funcs;
   }
 
   private void initSystemMetrics() {
     systemMetrics = new TajoSystemMetrics(systemConf, Master.class, getMasterName());
     systemMetrics.start();
 
-    systemMetrics.register(Master.Cluster.UPTIME, new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return context.getClusterUptime();
-      }
-    });
-
+    systemMetrics.register(Master.Cluster.UPTIME, () -> context.getClusterUptime());
     systemMetrics.register(Master.Cluster.class, new ClusterResourceMetricSet(context));
   }
 
