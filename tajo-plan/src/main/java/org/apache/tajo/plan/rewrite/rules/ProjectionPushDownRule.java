@@ -457,11 +457,11 @@ public class ProjectionPushDownRule extends
   public LogicalNode visitProjection(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      ProjectionNode node, Stack<LogicalNode> stack) throws TajoException {
     Context newContext = new Context(context);
-    Target [] targets = node.getTargets().toArray(new Target[]{});
-    int targetNum = targets.length;
+    List<Target> targets = node.getTargets();
+    int targetNum = targets.size();
     String [] referenceNames = new String[targetNum];
     for (int i = 0; i < targetNum; i++) {
-      referenceNames[i] = newContext.addExpr(targets[i]);
+      referenceNames[i] = newContext.addExpr(targets.get(i));
     }
 
     LogicalNode child = super.visitProjection(newContext, plan, block, node, stack);

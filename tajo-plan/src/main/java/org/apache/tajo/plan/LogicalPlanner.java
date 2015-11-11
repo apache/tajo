@@ -1510,20 +1510,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     currentBlock.addRelation(setOpTableSubQueryNode);
 
     Schema setOpSchema = setOpTableSubQueryNode.getOutSchema();
-    Target[] setOpTarget = setOpTableSubQueryNode.getTargets().toArray(new Target[]{});
+    List<Target> setOpTarget = setOpTableSubQueryNode.getTargets();
 
     // make group by node whose grouping keys are all columns of set operation
     GroupbyNode setOpGroupbyNode = context.plan.createNode(GroupbyNode.class);
     setOpGroupbyNode.setInSchema(setOpSchema);
     setOpGroupbyNode.setGroupingColumns(setOpSchema.toArray());
-    setOpGroupbyNode.setTargets(Arrays.asList(setOpTarget));
+    setOpGroupbyNode.setTargets(setOpTarget);
     setOpGroupbyNode.setChild(setOpTableSubQueryNode);
     currentBlock.registerNode(setOpGroupbyNode);
 
     // make projection node which projects all the union columns
     ProjectionNode setOpProjectionNode = context.plan.createNode(ProjectionNode.class);
     setOpProjectionNode.setInSchema(setOpSchema);
-    setOpProjectionNode.setTargets(Arrays.asList(setOpTarget));
+    setOpProjectionNode.setTargets(setOpTarget);
     setOpProjectionNode.setChild(setOpGroupbyNode);
     currentBlock.registerNode(setOpProjectionNode);
 

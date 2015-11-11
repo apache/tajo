@@ -29,9 +29,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Tajo's logical planner can generate different shapes of logical plans for the same query,
@@ -101,7 +99,7 @@ public class ExplainPlanPreprocessorForTest {
       super.visitScan(context, plan, block, node, stack);
       context.childNumbers.push(1);
       if (node.hasTargets()) {
-        node.setTargets(Arrays.asList(sortTargets(node.getTargets().toArray(new Target[]{}))));
+        node.setTargets(sortTargets(node.getTargets()));
       }
       if (node.hasQual()) {
         node.setQual(sortQual(node.getQual()));
@@ -120,7 +118,7 @@ public class ExplainPlanPreprocessorForTest {
       Arrays.sort(inputPaths);
       node.setInputPaths(inputPaths);
       if (node.hasTargets()) {
-        node.setTargets(Arrays.asList(sortTargets(node.getTargets().toArray(new Target[]{}))));
+        node.setTargets(sortTargets(node.getTargets()));
       }
       if (node.hasQual()) {
         node.setQual(sortQual(node.getQual()));
@@ -136,7 +134,7 @@ public class ExplainPlanPreprocessorForTest {
       int leftChildNum = context.childNumbers.pop();
 
       if (node.hasTargets()) {
-        node.setTargets(Arrays.asList(sortTargets(node.getTargets().toArray(new Target[]{}))));
+        node.setTargets(sortTargets(node.getTargets()));
       }
 
       if (node.hasJoinQual()) {
@@ -169,8 +167,8 @@ public class ExplainPlanPreprocessorForTest {
       return AlgebraicUtil.createSingletonExprFromCNF(cnf);
     }
 
-    private Target[] sortTargets(Target[] targets) {
-      Arrays.sort(targets, targetComparator);
+    private List<Target> sortTargets(List<Target> targets) {
+      Collections.sort(targets, targetComparator);
       return targets;
     }
   }
