@@ -36,24 +36,22 @@ import java.net.URL;
 import java.util.*;
 
 public class TestHiveFunctionLoader {
-  private TajoConf conf = new TajoConf();
-
   private CatalogService catService;
   private TajoTestingCluster cluster;
 
   @Before
   public final void setUp() throws Exception {
-    LocalTajoTestingUtility util = new LocalTajoTestingUtility();
     cluster = new TajoTestingCluster();
-    cluster.startCatalogCluster();
-    catService = cluster.getCatalogService();
+
+    TajoConf conf = cluster.getConfiguration();
 
     URL hiveUDFURL = ClassLoader.getSystemResource("hiveudf");
     Preconditions.checkNotNull(hiveUDFURL, "hive udf directory is absent.");
-
     conf.set("hive.udf.dir", hiveUDFURL.toString().substring("file:".length()));
 
-    HiveFunctionLoader.loadHiveUDFs(conf);
+    cluster.startMiniClusterInLocal(1);
+    cluster.startCatalogCluster();
+    catService = cluster.getCatalogService();
   }
 
   @After
@@ -73,10 +71,17 @@ public class TestHiveFunctionLoader {
 
     FunctionDesc desc = funcList.get(0);
 
-    assertEquals(desc.getFunctionName(), "multiplestr");
-    assertEquals(desc.isDeterministic(), false);
-    assertEquals(desc.getReturnType().getType(), TajoDataTypes.Type.TEXT);
-    assertEquals(desc.getParamTypes()[0].getType(), TajoDataTypes.Type.TEXT);
-    assertEquals(desc.getParamTypes()[1].getType(), TajoDataTypes.Type.INT4);
+    assertEquals("multiplestr", desc.getFunctionName());
+    assertEquals(false, desc.isDeterministic());
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
+    assertEquals(TajoDataTypes.Type.INT4, desc.getParamTypes()[1].getType());
+  }
+
+  @Test
+  public void testFindFunction() throws Exception {
+    Collection<FunctionDesc> descs = catService.getFunctions();
+
+    assertEquals(2, descs.size());
   }
 }
