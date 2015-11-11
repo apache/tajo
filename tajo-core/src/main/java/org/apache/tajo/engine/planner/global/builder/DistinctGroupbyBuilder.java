@@ -303,7 +303,7 @@ public class DistinctGroupbyBuilder {
   public ExecutionBlock buildPlan(GlobalPlanContext context,
                                   ExecutionBlock latestExecBlock,
                                   LogicalNode currentNode) {
-//    try {
+    try {
       GroupbyNode groupbyNode = (GroupbyNode)currentNode;
       LogicalPlan plan = context.getPlan().getLogicalPlan();
       DistinctGroupbyNode baseDistinctNode = buildBaseDistinctGroupByNode(context, latestExecBlock, groupbyNode);
@@ -348,9 +348,9 @@ public class DistinctGroupbyBuilder {
       }
 
       return secondStageBlock;
-//    } catch (Exception e) {
-//      throw new TajoInternalError(e);
-//    }
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
+    }
   }
 
   private DistinctGroupbyNode buildBaseDistinctGroupByNode(GlobalPlanContext context,
