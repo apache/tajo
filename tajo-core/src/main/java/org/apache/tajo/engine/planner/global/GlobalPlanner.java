@@ -444,7 +444,7 @@ public class GlobalPlanner {
       }
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets.add(new Target(fieldEval));
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
     } else if (function.getName().equalsIgnoreCase("sum")) {
       rewritten = new RewrittenFunctions(1);
