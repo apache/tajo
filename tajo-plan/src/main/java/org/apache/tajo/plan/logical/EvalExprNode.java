@@ -70,7 +70,7 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   
   @Override
   public String toString() {
-    return "EvalExprNode (" + StringUtils.join(exprs.toArray(new Target[]{})) + ")";
+    return "EvalExprNode (" + StringUtils.join(exprs.toArray(new Target[exprs.size()])) + ")";
   }
 
   @Override
