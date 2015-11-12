@@ -447,18 +447,19 @@ public class StringUtils {
     int endIndex = startIndex + length;
     Iterator itr = objects.iterator();
 
-    for(int count = 0; count < startIndex; count++) {
-      itr.next();
-    }
-
-    for(int i = startIndex; i + startIndex < endIndex; i++) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(delimiter);
+    for(int i = 0; i < endIndex; i++) {
+      if(i < startIndex) {
+        itr.next();
       }
+      else {
+        if (first) {
+          first = false;
+        } else {
+          sb.append(delimiter);
+        }
 
-      sb.append(f.apply((T) itr.next()));
+        sb.append(f.apply((T) itr.next()));
+      }
     }
 
     return sb.toString();
