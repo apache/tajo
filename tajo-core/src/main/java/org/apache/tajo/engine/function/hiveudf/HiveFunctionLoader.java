@@ -32,7 +32,6 @@ import org.apache.tajo.catalog.FunctionDescBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.function.*;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 
@@ -62,13 +61,13 @@ public class HiveFunctionLoader {
         // For UDF's decendants (legacy)
         Set<Class<? extends UDF>> udfClasses = getSubclassesFromJarEntry(urls, UDF.class);
         if (udfClasses != null) {
-          analyzeUDFclasses(udfClasses, funcList);
+          extractUDFclasses(udfClasses, funcList);
         }
 
         // For GenericUDF's decendants (newer interface)
         Set<Class<? extends GenericUDF>> genericUDFclasses = getSubclassesFromJarEntry(urls, GenericUDF.class);
         if (genericUDFclasses != null) {
-          analyzeGenericUDFclasses(genericUDFclasses, funcList);
+          extractGenericUDFclasses(genericUDFclasses, funcList);
         }
 
       }
@@ -87,7 +86,7 @@ public class HiveFunctionLoader {
     return refl.getSubTypesOf(targetCls);
   }
 
-  static void analyzeUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list) {
+  static void extractUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list) {
     for (Class<? extends UDF> clazz: classes) {
       String [] names;
 
@@ -137,7 +136,7 @@ public class HiveFunctionLoader {
     }
   }
 
-  private static void analyzeGenericUDFclasses(Set<Class<? extends GenericUDF>> classes, ArrayList<FunctionDesc> list) {
+  private static void extractGenericUDFclasses(Set<Class<? extends GenericUDF>> classes, ArrayList<FunctionDesc> list) {
   }
 
   private static TajoDataTypes.DataType convertHiveTypeToTajoType(Class hiveType) {
