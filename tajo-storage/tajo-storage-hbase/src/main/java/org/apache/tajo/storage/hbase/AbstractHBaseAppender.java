@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -35,10 +36,7 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * An abstract class for HBase appender.
@@ -53,7 +51,8 @@ public abstract class AbstractHBaseAppender implements Appender {
 
   protected ColumnMapping columnMapping;
   protected TableStatistics stats;
-  protected boolean enabledStats;
+  protected boolean tableStatsEnabled;
+  protected BitSet columnStatsEnabled;
 
   protected int columnNum;
 
@@ -88,8 +87,8 @@ public abstract class AbstractHBaseAppender implements Appender {
       throw new IllegalStateException("FileAppender is already initialized.");
     }
     inited = true;
-    if (enabledStats) {
-      stats = new TableStatistics(this.schema);
+    if (tableStatsEnabled) {
+      stats = new TableStatistics(this.schema, columnStatsEnabled);
     }
     try {
       columnMapping = new ColumnMapping(schema, meta.getOptions());
@@ -210,12 +209,23 @@ public abstract class AbstractHBaseAppender implements Appender {
 
   @Override
   public void enableStats() {
-    enabledStats = true;
+    if (inited) {
+      throw new IllegalStateException("Should enable this option before init()");
+    }
+
+    this.tableStatsEnabled = true;
+    this.columnStatsEnabled = new BitSet(schema.size());
+  }
+
+  @Override
+  public void enableStats(List<Column> columnList) {
+    enableStats();
+    columnList.forEach(column -> columnStatsEnabled.set(schema.getIndex(column)));
   }
 
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

@@ -81,8 +81,8 @@ public class AvroAppender extends FileAppender {
     dataFileWriter = new DataFileWriter<>(datumWriter);
     dataFileWriter.create(avroSchema, outputStream);
 
-    if (enabledStats) {
-      this.stats = new TableStatistics(schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(schema, columnStatsEnabled);
     }
     super.init();
   }
@@ -176,7 +176,7 @@ public class AvroAppender extends FileAppender {
     }
     dataFileWriter.append(record);
 
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
     }
   }
@@ -204,7 +204,7 @@ public class AvroAppender extends FileAppender {
    */
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

@@ -28,21 +28,24 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 
+import java.util.BitSet;
+
 /**
  * This class is not thread-safe.
  */
 public class TableStatistics {
   private static final Log LOG = LogFactory.getLog(TableStatistics.class);
-  private Schema schema;
-  private VTuple minValues;
-  private VTuple maxValues;
-  private long [] numNulls;
+  private final Schema schema;
+  private final VTuple minValues;
+  private final VTuple maxValues;
+  private final long [] numNulls;
   private long numRows = 0;
   private long numBytes = 0;
 
-  private boolean [] comparable;
+  private final boolean [] comparable;
+  private final BitSet columnStatsEnabled;
 
-  public TableStatistics(Schema schema) {
+  public TableStatistics(Schema schema, BitSet columnStatsEnabled) {
     this.schema = schema;
     minValues = new VTuple(schema.size());
     maxValues = new VTuple(schema.size());
@@ -59,6 +62,7 @@ public class TableStatistics {
         comparable[i] = true;
       }
     }
+    this.columnStatsEnabled = columnStatsEnabled;
   }
 
   public Schema getSchema() {
@@ -90,20 +94,22 @@ public class TableStatistics {
   }
 
   public void analyzeField(int idx, Tuple tuple) {
-    if (tuple.isBlankOrNull(idx)) {
-      numNulls[idx]++;
-      return;
-    }
-
-    Datum datum = tuple.asDatum(idx);
-    if (comparable[idx]) {
-      if (!maxValues.contains(idx) ||
-          maxValues.get(idx).compareTo(datum) < 0) {
-        maxValues.put(idx, datum);
+    if (columnStatsEnabled.get(idx)) {
+      if (tuple.isBlankOrNull(idx)) {
+        numNulls[idx]++;
+        return;
       }
-      if (!minValues.contains(idx) ||
-          minValues.get(idx).compareTo(datum) > 0) {
-        minValues.put(idx, datum);
+
+      Datum datum = tuple.asDatum(idx);
+      if (comparable[idx]) {
+        if (!maxValues.contains(idx) ||
+            maxValues.get(idx).compareTo(datum) < 0) {
+          maxValues.put(idx, datum);
+        }
+        if (!minValues.contains(idx) ||
+            minValues.get(idx).compareTo(datum) > 0) {
+          minValues.put(idx, datum);
+        }
       }
     }
   }
@@ -112,22 +118,24 @@ public class TableStatistics {
     TableStats stat = new TableStats();
 
     for (int i = 0; i < schema.size(); i++) {
-      Column column = schema.getColumn(i);
-      ColumnStats columnStats = new ColumnStats(column);
-      columnStats.setNumNulls(numNulls[i]);
-      if (minValues.isBlank(i) || column.getDataType().getType() == minValues.type(i)) {
-        columnStats.setMinValue(minValues.get(i));
-      } else {
-        LOG.warn("Wrong statistics column type (" + minValues.type(i) +
-            ", expected=" + column.getDataType().getType() + ")");
+      if (columnStatsEnabled.get(i)) {
+        Column column = schema.getColumn(i);
+        ColumnStats columnStats = new ColumnStats(column);
+        columnStats.setNumNulls(numNulls[i]);
+        if (minValues.isBlank(i) || column.getDataType().getType() == minValues.type(i)) {
+          columnStats.setMinValue(minValues.get(i));
+        } else {
+          LOG.warn("Wrong statistics column type (" + minValues.type(i) +
+              ", expected=" + column.getDataType().getType() + ")");
+        }
+        if (minValues.isBlank(i) || column.getDataType().getType() == maxValues.type(i)) {
+          columnStats.setMaxValue(maxValues.get(i));
+        } else {
+          LOG.warn("Wrong statistics column type (" + maxValues.type(i) +
+              ", expected=" + column.getDataType().getType() + ")");
+        }
+        stat.addColumnStat(columnStats);
       }
-      if (minValues.isBlank(i) || column.getDataType().getType() == maxValues.type(i)) {
-        columnStats.setMaxValue(maxValues.get(i));
-      } else {
-        LOG.warn("Wrong statistics column type (" + maxValues.type(i) +
-            ", expected=" + column.getDataType().getType() + ")");
-      }
-      stat.addColumnStat(columnStats);
     }
 
     stat.setNumRows(this.numRows);

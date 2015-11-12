@@ -82,8 +82,8 @@ public class ParquetAppender extends FileAppender {
                                    pageSize,
                                    enableDictionary,
                                    validating);
-    if (enabledStats) {
-      this.stats = new TableStatistics(schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(schema, columnStatsEnabled);
     }
     super.init();
   }
@@ -107,7 +107,7 @@ public class ParquetAppender extends FileAppender {
   @Override
   public void addTuple(Tuple tuple) throws IOException {
     writer.write(tuple);
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
     }
   }
@@ -138,7 +138,7 @@ public class ParquetAppender extends FileAppender {
    */
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

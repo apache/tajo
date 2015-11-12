@@ -89,7 +89,7 @@ public class HBasePutAppender extends AbstractHBaseAppender {
 
     htable.put(put);
 
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
       stats.setNumBytes(totalNumBytes);
     }
@@ -111,7 +111,7 @@ public class HBasePutAppender extends AbstractHBaseAppender {
       htable.flushCommits();
       htable.close();
     }
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.setNumBytes(totalNumBytes);
     }
   }

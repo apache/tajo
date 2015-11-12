@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.util.Pair;
 
@@ -32,14 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class HashShuffleAppender implements Appender {
-  private static Log LOG = LogFactory.getLog(HashShuffleAppender.class);
+public class HashShuffleAppenderWrapper implements Appender {
+  private static Log LOG = LogFactory.getLog(HashShuffleAppenderWrapper.class);
 
   private FileAppender appender;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private int partId;
-
-  private TableStats tableStats;
 
   //<taskId,<page start offset,<task start, task end>>>
   private Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> taskTupleIndexes;
@@ -59,7 +58,7 @@ public class HashShuffleAppender implements Appender {
 
   private ExecutionBlockId ebId;
 
-  public HashShuffleAppender(ExecutionBlockId ebId, int partId, int pageSize, FileAppender appender) {
+  public HashShuffleAppenderWrapper(ExecutionBlockId ebId, int partId, int pageSize, FileAppender appender) {
     this.ebId = ebId;
     this.partId = partId;
     this.appender = appender;
@@ -170,12 +169,16 @@ public class HashShuffleAppender implements Appender {
         }
       }
       closed.set(true);
-      tableStats = appender.getStats();
     }
   }
 
   @Override
   public void enableStats() {
+  }
+
+  @Override
+  public void enableStats(List<Column> columnList) {
+
   }
 
   @Override

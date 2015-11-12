@@ -83,7 +83,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     fs.mkdirs(storeTablePath);
     this.appender = (FileAppender) ((FileTablespace) TablespaceManager.getDefault())
         .getAppender(meta, outSchema, new Path(storeTablePath, "output"));
-    this.appender.enableStats();
+    this.appender.enableStats(keySchema.getAllColumns());
     this.appender.init();
     this.indexWriter = bst.getIndexWriter(new Path(storeTablePath, "index"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);

@@ -774,8 +774,8 @@ public class RCFile {
       writeFileHeader();
       finalizeFileHeader();
 
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
+      if (tableStatsEnabled) {
+        this.stats = new TableStatistics(this.schema, columnStatsEnabled);
       }
       super.init();
     }
@@ -866,7 +866,7 @@ public class RCFile {
       append(t);
       // Statistical section
 
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         stats.incrementRow();
       }
     }
@@ -1077,7 +1077,7 @@ public class RCFile {
 
     @Override
     public TableStats getStats() {
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         return stats.getTableStat();
       } else {
         return null;
@@ -1093,7 +1093,7 @@ public class RCFile {
 
       if (out != null) {
         // Statistical section
-        if (enabledStats) {
+        if (tableStatsEnabled) {
           stats.setNumBytes(getOffset());
         }
         // Close the underlying stream if we own it...
