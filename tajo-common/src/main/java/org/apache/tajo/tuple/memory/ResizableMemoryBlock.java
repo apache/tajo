@@ -145,7 +145,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
       throw new RuntimeException("Resize cannot exceed the capacity limit");
     }
 
-    if (newSize < buffer.capacity()) {
+    if (newSize < buffer.writableBytes()) {
       LOG.warn("The capacity reduction is ignored.");
     }
 
