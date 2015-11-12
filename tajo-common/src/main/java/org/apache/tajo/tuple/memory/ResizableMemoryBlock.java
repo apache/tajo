@@ -44,6 +44,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
   public ResizableMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
     this.buffer = buffer.order(ByteOrder.LITTLE_ENDIAN);
     this.limitSpec = limitSpec;
+    this.memoryAddress = this.buffer.hasMemoryAddress() ? this.buffer.memoryAddress() : 0;
   }
 
   public ResizableMemoryBlock(ByteBuf buffer) {
@@ -51,9 +52,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
   }
 
   public ResizableMemoryBlock(ByteBuffer buffer) {
-    this.buffer = Unpooled.wrappedBuffer(buffer).order(ByteOrder.LITTLE_ENDIAN);
-    this.memoryAddress = this.buffer.hasMemoryAddress() ? this.buffer.memoryAddress() : 0;
-    this.limitSpec = new ResizableLimitSpec(buffer.capacity());
+    this(Unpooled.wrappedBuffer(buffer), new ResizableLimitSpec(buffer.capacity(), buffer.capacity()));
   }
 
   public ResizableMemoryBlock(ResizableLimitSpec limitSpec, boolean isDirect) {
@@ -68,7 +67,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
 
   @Override
   public long address() {
-    return buffer.memoryAddress();
+    return memoryAddress;
   }
 
   @Override
@@ -133,7 +132,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
         throw new RuntimeException("Cannot increase RowBlock anymore.");
       }
 
-      int newBlockSize = limitSpec.increasedSize(Math.max(buffer.capacity(), size));
+      int newBlockSize = limitSpec.increasedSize(size);
       resize(newBlockSize);
       LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
     }
