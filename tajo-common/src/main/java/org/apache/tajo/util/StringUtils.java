@@ -447,7 +447,7 @@ public class StringUtils {
     int endIndex = startIndex + length;
     Iterator itr = objects.iterator();
 
-    for(int count = -1; count < startIndex; count++) {
+    for(int count = 0; count < startIndex; count++) {
       itr.next();
     }
 
