@@ -20,11 +20,11 @@ package org.apache.tajo.storage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 
@@ -40,9 +40,8 @@ public class TableStatistics {
   private final VTuple maxValues;
   private final long [] numNulls;
   private long numRows = 0;
-  private long numBytes = 0;
+  private long numBytes = TajoConstants.UNKNOWN_LENGTH;
 
-  private final boolean [] comparable;
   private final BitSet columnStatsEnabled;
 
   public TableStatistics(Schema schema, BitSet columnStatsEnabled) {
@@ -51,18 +50,13 @@ public class TableStatistics {
     maxValues = new VTuple(schema.size());
 
     numNulls = new long[schema.size()];
-    comparable = new boolean[schema.size()];
 
-    DataType type;
+    this.columnStatsEnabled = columnStatsEnabled;
     for (int i = 0; i < schema.size(); i++) {
-      type = schema.getColumn(i).getDataType();
-      if (type.getType() == Type.PROTOBUF) {
-        comparable[i] = false;
-      } else {
-        comparable[i] = true;
+      if (schema.getColumn(i).getDataType().getType().equals(Type.PROTOBUF)) {
+        columnStatsEnabled.clear(i);
       }
     }
-    this.columnStatsEnabled = columnStatsEnabled;
   }
 
   public Schema getSchema() {
@@ -89,10 +83,6 @@ public class TableStatistics {
     return this.numBytes;
   }
 
-  public void analyzeNull(int idx) {
-    numNulls[idx]++;
-  }
-
   public void analyzeField(int idx, Tuple tuple) {
     if (columnStatsEnabled.get(idx)) {
       if (tuple.isBlankOrNull(idx)) {
@@ -101,15 +91,13 @@ public class TableStatistics {
       }
 
       Datum datum = tuple.asDatum(idx);
-      if (comparable[idx]) {
-        if (!maxValues.contains(idx) ||
-            maxValues.get(idx).compareTo(datum) < 0) {
-          maxValues.put(idx, datum);
-        }
-        if (!minValues.contains(idx) ||
-            minValues.get(idx).compareTo(datum) > 0) {
-          minValues.put(idx, datum);
-        }
+      if (!maxValues.contains(idx) ||
+          maxValues.get(idx).compareTo(datum) < 0) {
+        maxValues.put(idx, datum);
+      }
+      if (!minValues.contains(idx) ||
+          minValues.get(idx).compareTo(datum) > 0) {
+        minValues.put(idx, datum);
       }
     }
   }

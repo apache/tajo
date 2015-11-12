@@ -22,10 +22,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.util.Pair;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class HashShuffleAppenderWrapper implements Appender {
+public class HashShuffleAppenderWrapper implements Closeable {
   private static Log LOG = LogFactory.getLog(HashShuffleAppenderWrapper.class);
 
   private FileAppender appender;
@@ -52,8 +52,6 @@ public class HashShuffleAppenderWrapper implements Appender {
 
   private int rowNumInPage;
 
-  private int totalRows;
-
   private long offset;
 
   private ExecutionBlockId ebId;
@@ -65,7 +63,6 @@ public class HashShuffleAppenderWrapper implements Appender {
     this.pageSize = pageSize;
   }
 
-  @Override
   public void init() throws IOException {
     currentPage = new Pair(0L, 0);
     taskTupleIndexes = new HashMap<>();
@@ -109,7 +106,6 @@ public class HashShuffleAppenderWrapper implements Appender {
         rowNumInPage = 0;
       }
 
-      totalRows += tuples.size();
       return writtenBytes;
     }
   }
@@ -128,12 +124,10 @@ public class HashShuffleAppenderWrapper implements Appender {
     currentPage = new Pair(pos, 0);
   }
 
-  @Override
   public void addTuple(Tuple t) throws IOException {
     throw new IOException("Not support addTuple, use addTuples()");
   }
 
-  @Override
   public void flush() throws IOException {
     synchronized(appender) {
       if (closed.get()) {
@@ -141,11 +135,6 @@ public class HashShuffleAppenderWrapper implements Appender {
       }
       appender.flush();
     }
-  }
-
-  @Override
-  public long getEstimatedOutputSize() throws IOException {
-    return pageSize * pages.size();
   }
 
   @Override
@@ -172,16 +161,6 @@ public class HashShuffleAppenderWrapper implements Appender {
     }
   }
 
-  @Override
-  public void enableStats() {
-  }
-
-  @Override
-  public void enableStats(List<Column> columnList) {
-
-  }
-
-  @Override
   public TableStats getStats() {
     synchronized(appender) {
       return appender.getStats();
@@ -190,10 +169,6 @@ public class HashShuffleAppenderWrapper implements Appender {
 
   public List<Pair<Long, Integer>> getPages() {
     return pages;
-  }
-
-  public Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> getTaskTupleIndexes() {
-    return taskTupleIndexes;
   }
 
   public List<Pair<Long, Pair<Integer, Integer>>> getMergedTupleIndexes() {

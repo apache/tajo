@@ -601,7 +601,6 @@ public class RCFile {
     boolean useNewMagic = true;
     private byte[] nullChars;
     private SerializerDeserializer serde;
-    private boolean isShuffle;
 
     // Insert a globally unique 16-byte value every few entries, so that one
     // can seek into the middle of a file and then synchronize with record
@@ -882,20 +881,12 @@ public class RCFile {
      * @throws java.io.IOException
      */
     public void append(Tuple tuple) throws IOException {
-      int size = schema.size();
-
-      for (int i = 0; i < size; i++) {
+      for (int i = 0; i < columnNumber; i++) {
+        if (tableStatsEnabled) {
+          stats.analyzeField(i, tuple);
+        }
         int length = columnBuffers[i].append(tuple, i);
         columnBufferSize += length;
-      }
-
-      if (size < columnNumber) {
-        for (int i = size; i < columnNumber; i++) {
-          columnBuffers[i].append(NullDatum.get());
-          if (isShuffle) {
-            stats.analyzeNull(i);
-          }
-        }
       }
 
       bufferedRecords++;

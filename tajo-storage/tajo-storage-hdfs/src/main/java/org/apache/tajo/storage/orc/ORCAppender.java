@@ -25,6 +25,7 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TableStatistics;
@@ -70,11 +71,6 @@ public class ORCAppender extends FileAppender {
   }
 
   @Override
-  public long getOffset() throws IOException {
-    return 0;
-  }
-
-  @Override
   public void addTuple(Tuple tuple) throws IOException {
     if (tableStatsEnabled) {
       for (int i = 0; i < schema.size(); ++i) {
@@ -94,6 +90,11 @@ public class ORCAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     writer.close();
+
+    // TODO: getOffset is not implemented yet
+//    if (tableStatsEnabled) {
+//      stats.setNumBytes(getOffset());
+//    }
   }
 
   @Override

@@ -89,17 +89,6 @@ public class ParquetAppender extends FileAppender {
   }
 
   /**
-   * Gets the current offset. Tracking offsets is currently not implemented, so
-   * this method always returns 0.
-   *
-   * @return 0
-   */
-  @Override
-  public long getOffset() throws IOException {
-    return 0;
-  }
-
-  /**
    * Write a Tuple to the Parquet file.
    *
    * @param tuple The Tuple to write.
@@ -125,6 +114,11 @@ public class ParquetAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     IOUtils.cleanup(null, writer);
+
+    // TODO: getOffset is not implemented yet
+//    if (tableStatsEnabled) {
+//      stats.setNumBytes(getOffset());
+//    }
   }
 
   public long getEstimatedOutputSize() throws IOException {

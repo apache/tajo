@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.NotImplementedException;
 
 import java.io.IOException;
 import java.util.BitSet;
@@ -94,5 +95,7 @@ public abstract class FileAppender implements Appender {
     return getOffset();
   }
 
-  public abstract long getOffset() throws IOException;
+  public long getOffset() throws IOException {
+    throw new IOException(new NotImplementedException());
+  }
 }

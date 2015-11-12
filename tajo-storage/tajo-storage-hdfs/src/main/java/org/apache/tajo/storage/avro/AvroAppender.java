@@ -32,6 +32,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
@@ -85,17 +86,6 @@ public class AvroAppender extends FileAppender {
       this.stats = new TableStatistics(schema, columnStatsEnabled);
     }
     super.init();
-  }
-
-  /**
-   * Gets the current offset. Tracking offsets is currently not implemented, so
-   * this method always returns 0.
-   *
-   * @return 0
-   */
-  @Override
-  public long getOffset() throws IOException {
-    return 0;
   }
 
   private Object getPrimitive(Tuple tuple, int i, Schema.Type avroType) {
@@ -173,6 +163,7 @@ public class AvroAppender extends FileAppender {
           throw new RuntimeException("Unknown type: " + avroType);
       }
       record.put(i, value);
+      stats.analyzeField(i, tuple);
     }
     dataFileWriter.append(record);
 
@@ -195,6 +186,11 @@ public class AvroAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     IOUtils.cleanup(null, dataFileWriter);
+
+    // TODO: getOffset is not implemented yet
+//    if (tableStatsEnabled) {
+//      stats.setNumBytes(getOffset());
+//    }
   }
 
   /**
