@@ -27,7 +27,6 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.util.PlannerUtil;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
@@ -120,7 +119,7 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   @Override
   public List<Target> getTargets() {
     if (hasTargets()) {
-      return Collections.unmodifiableList(targets);
+      return targets;
     } else {
       return null;
     }
