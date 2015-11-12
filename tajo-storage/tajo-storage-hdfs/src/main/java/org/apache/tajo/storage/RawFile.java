@@ -472,7 +472,6 @@ public class RawFile {
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
     private long pos;
-//    private ShuffleType shuffleType;
 
     private TableStatistics stats;
 
@@ -511,11 +510,7 @@ public class RawFile {
       headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
 
       if (tableStatsEnabled) {
-        // TODO: set keys only
         this.stats = new TableStatistics(this.schema, columnStatsEnabled);
-//        this.shuffleType = PlannerUtil.getShuffleType(
-//            meta.getOption(StorageConstants.SHUFFLE_TYPE,
-//                PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
       }
 
       super.init();
@@ -645,8 +640,6 @@ public class RawFile {
       // reset the null flags
       nullFlags.clear();
       for (int i = 0; i < schema.size(); i++) {
-//        if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
-//        }
         // it is to calculate min/max values, and it is only used for the intermediate file.
         if (tableStatsEnabled) {
           stats.analyzeField(i, t);
