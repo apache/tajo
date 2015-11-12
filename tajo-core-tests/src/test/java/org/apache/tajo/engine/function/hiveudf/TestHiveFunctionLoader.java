@@ -20,7 +20,6 @@ package org.apache.tajo.engine.function.hiveudf;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hive.ql.exec.UDF;
-import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -34,9 +33,10 @@ import static org.junit.Assert.assertEquals;
 
 import java.net.URL;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestHiveFunctionLoader {
-  private CatalogService catService;
   private TajoTestingCluster cluster;
 
   @Before
@@ -49,9 +49,7 @@ public class TestHiveFunctionLoader {
     Preconditions.checkNotNull(hiveUDFURL, "hive udf directory is absent.");
     conf.set("hive.udf.dir", hiveUDFURL.toString().substring("file:".length()));
 
-    cluster.startMiniClusterInLocal(1);
-    cluster.startCatalogCluster();
-    catService = cluster.getCatalogService();
+    cluster.startMiniClusterInLocal(0);
   }
 
   @After
@@ -65,7 +63,7 @@ public class TestHiveFunctionLoader {
     funcSet.add(HiveUDFtest.class);
     List<FunctionDesc> funcList = new LinkedList<>();
 
-    HiveFunctionLoader.analyzeUDFclasses(funcSet, funcList);
+    HiveFunctionLoader.extractUDFclasses(funcSet, funcList);
 
     assertEquals(funcList.size(), 1);
 
@@ -80,6 +78,7 @@ public class TestHiveFunctionLoader {
 
   @Test
   public void testFindFunction() throws Exception {
+    CatalogService catService = cluster.getMaster().getCatalog();
     Collection<FunctionDesc> descs = catService.getFunctions();
   }
 }
