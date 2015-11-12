@@ -72,7 +72,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
 	public String toString() {
 	  StringBuilder sb = new StringBuilder("Projection (distinct=").append(distinct);
     if (targets != null) {
-      sb.append(", exprs=").append(StringUtils.join(targets.toArray(new Target[targets.size()]))).append(")");
+      sb.append(", exprs=").append(StringUtils.join(targets)).append(")");
     }
 	  return sb.toString();
 	}

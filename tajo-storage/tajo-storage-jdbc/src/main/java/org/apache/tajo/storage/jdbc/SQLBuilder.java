@@ -174,7 +174,7 @@ public class SQLBuilder {
   }
 
   public String generateTargetList(List<Target> targets) {
-    return StringUtils.join(targets.toArray(new Target[targets.size()]), ",", new Function<Target, String>() {
+    return StringUtils.join(targets, ",", new Function<Target, String>() {
       @Override
       public String apply(@Nullable Target t) {
         StringBuilder sb = new StringBuilder(sqlExprGen.generate(t.getEvalTree()));

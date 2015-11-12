@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
@@ -29,13 +30,10 @@ import org.apache.hadoop.util.SignalLogger;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CoderResult;
-import java.nio.charset.CodingErrorAction;
+import java.nio.charset.*;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Iterator;
 
 public class StringUtils {
 
@@ -377,23 +375,86 @@ public class StringUtils {
   }
 
   /**
+   * Concatenate all objects' string with the delimiter ", "
+   *
+   * @param objects Iterable objects
+   * @return A joined string
+   */
+  public static String join(Iterable objects) {
+    return join(objects, ", ");
+  }
+
+  /**
    * Concatenate all objects' string with a delimiter string
    *
    * @param objects Iterable objects
    * @param delimiter Delimiter string
    * @return A joined string
    */
-  public static String join(Iterable objects, String delimiter) {
+  public static String join(Iterable objects, String delimiter)  {
+    return join(objects, delimiter, 0, Iterables.size(objects));
+  }
+
+  /**
+   * Concatenate all objects' string with a delimiter string
+   *
+   * @param objects object Iterable
+   * @param delimiter Delimiter string
+   * @param startIndex the begin index to join
+   * @return A joined string
+   */
+  public static String join(Iterable objects, String delimiter, int startIndex) {
+    return join(objects, delimiter, startIndex, Iterables.size(objects));
+  }
+
+  /**
+   * Concatenate all objects' string with a delimiter string
+   *
+   * @param objects object Iterable
+   * @param delimiter Delimiter string
+   * @param startIndex the begin index to join
+   * @param length the number of columns to be joined
+   * @return A joined string
+   */
+  public static String join(Iterable objects, String delimiter, int startIndex, int length) {
+    return join(objects, delimiter, startIndex, length, new Function<Object, String>() {
+      @Override
+      public String apply(Object input) {
+        return input.toString();
+      }
+    });
+  }
+
+  /**
+   * Concatenate all objects' string with a delimiter string
+   *
+   * @param objects object Iterable
+   * @param delimiter Delimiter string
+   * @param f convert from a type to string
+   * @return A joined string
+   */
+  public static <T> String join(Iterable<T> objects, String delimiter, Function<T, String> f) {
+    return join(objects, delimiter, 0, Iterables.size(objects), f);
+  }
+
+  public static <T> String join(Iterable<T> objects, String delimiter, int startIndex, int length, Function<T, String> f) {
     boolean first = true;
     StringBuilder sb = new StringBuilder();
-    for(Object object : objects) {
+    int endIndex = startIndex + length;
+    Iterator itr = objects.iterator();
+
+    for(int count = -1; count < startIndex; count++) {
+      itr.next();
+    }
+
+    for(int i = startIndex; i + startIndex < endIndex; i++) {
       if (first) {
         first = false;
       } else {
         sb.append(delimiter);
       }
 
-      sb.append(object.toString());
+      sb.append(f.apply((T) itr.next()));
     }
 
     return sb.toString();

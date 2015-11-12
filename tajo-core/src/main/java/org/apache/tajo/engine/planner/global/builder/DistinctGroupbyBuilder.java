@@ -257,9 +257,7 @@ public class DistinctGroupbyBuilder {
         targets.add(target);
         baseGroupByTargets.add(target);
       }
-      for (Target eachAggFunctionTarget: buildInfo.getAggFunctionTargets()) {
-        targets.add(eachAggFunctionTarget);
-      }
+      targets.addAll(buildInfo.getAggFunctionTargets());
 
       eachGroupbyNode.setTargets(targets);
       eachGroupbyNode.setAggFunctions(groupbyAggFunctions.toArray(new AggregationFunctionCallEval[groupbyAggFunctions.size()]));
@@ -275,11 +273,8 @@ public class DistinctGroupbyBuilder {
       GroupbyNode otherGroupbyNode = new GroupbyNode(context.getPlan().getLogicalPlan().newPID());
 
       List<Target> targets = new ArrayList<>();
-      int targetIdx = 0;
-      for (Target eachTarget : otherAggregationFunctionTargets) {
-        targets.add(eachTarget);
-        baseGroupByTargets.add(eachTarget);
-      }
+      targets.addAll(otherAggregationFunctionTargets);
+      baseGroupByTargets.addAll(otherAggregationFunctionTargets);
 
       otherGroupbyNode.setTargets(targets);
       otherGroupbyNode.setGroupingColumns(new Column[]{});
@@ -419,9 +414,7 @@ public class DistinctGroupbyBuilder {
       for (Column column : eachGroupbyNode.getGroupingColumns()) {
         targets.add(new Target(new FieldEval(column)));
       }
-      for (Target eachAggFunctionTarget: buildInfo.getAggFunctionTargets()) {
-        targets.add(eachAggFunctionTarget);
-      }
+      targets.addAll(buildInfo.getAggFunctionTargets());
 
       eachGroupbyNode.setTargets(targets);
       eachGroupbyNode.setAggFunctions(groupbyAggFunctions.toArray(new AggregationFunctionCallEval[groupbyAggFunctions.size()]));
@@ -440,9 +433,7 @@ public class DistinctGroupbyBuilder {
       for (Column column : originalGroupingColumns) {
         targets.add(new Target(new FieldEval(column)));
       }
-      for (Target eachTarget : otherAggregationFunctionTargets) {
-        targets.add(eachTarget);
-      }
+      targets.addAll(otherAggregationFunctionTargets);
 
       otherGroupbyNode.setTargets(targets);
       otherGroupbyNode.setGroupingColumns(originalGroupingColumns.toArray(new Column[originalGroupingColumns.size()]));
