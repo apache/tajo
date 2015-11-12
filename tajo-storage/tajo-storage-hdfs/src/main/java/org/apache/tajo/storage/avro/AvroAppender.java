@@ -163,7 +163,9 @@ public class AvroAppender extends FileAppender {
           throw new RuntimeException("Unknown type: " + avroType);
       }
       record.put(i, value);
-      stats.analyzeField(i, tuple);
+      if (tableStatsEnabled) {
+        stats.analyzeField(i, tuple);
+      }
     }
     dataFileWriter.append(record);
 
