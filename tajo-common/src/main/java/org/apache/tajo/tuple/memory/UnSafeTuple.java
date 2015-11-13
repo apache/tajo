@@ -46,23 +46,28 @@ public class UnSafeTuple extends ZeroCopyTuple {
   private DataType[] types;
 
   @Override
-  public void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types) {
+  public void set(MemoryBlock memoryBlock, int relativePos, DataType[] types) {
     Preconditions.checkArgument(memoryBlock.hasAddress());
 
     this.memoryBlock = memoryBlock;
     this.types = types;
-    super.set(relativePos, length);
+    super.set(relativePos);
   }
 
   public void set(UnSafeTuple tuple) {
     this.memoryBlock = tuple.memoryBlock;
     this.types = tuple.types;
-    super.set(tuple.getRelativePos(), tuple.getLength());
+    super.set(tuple.getRelativePos());
   }
 
   @Override
   public int size() {
     return types.length;
+  }
+
+  @Override
+  public int getLength() {
+    return PlatformDependent.getInt(address());
   }
 
   @Override
@@ -110,9 +115,9 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   public long getFieldAddr(int fieldId) {
     int fieldOffset = getFieldOffset(fieldId);
-    if (fieldOffset < 0 || fieldOffset > length) {
+    if (fieldOffset < 0 || fieldOffset > getLength()) {
       throw new RuntimeException("Invalid Access. Field : " + fieldId
-          + ", Offset:" + fieldOffset + ", Record length:" + length);
+          + ", Offset:" + fieldOffset + ", Record length:" + getLength());
     }
     return address() + fieldOffset;
   }

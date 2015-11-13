@@ -92,7 +92,7 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
 
   public UnSafeTuple buildToZeroCopyTuple() {
     UnSafeTuple zcTuple = new UnSafeTuple();
-    zcTuple.set(memoryBlock, memoryBlock.readerPosition(), memoryBlock.readableBytes(), dataTypes());
+    zcTuple.set(memoryBlock, memoryBlock.readerPosition(), dataTypes());
     return zcTuple;
   }
 

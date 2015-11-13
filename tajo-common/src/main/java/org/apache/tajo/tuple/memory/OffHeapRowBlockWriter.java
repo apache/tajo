@@ -82,7 +82,7 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
     putTuple(tuple);
 
     UnSafeTuple unSafeTuple = new UnSafeTuple();
-    unSafeTuple.set(rowBlock.getMemory(), prevPos, rowBlock.getMemory().writerPosition() - prevPos, dataTypes());
+    unSafeTuple.set(rowBlock.getMemory(), prevPos, dataTypes());
     return unSafeTuple;
   }
 }

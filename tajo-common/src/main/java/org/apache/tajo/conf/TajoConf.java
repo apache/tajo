@@ -341,7 +341,7 @@ public class TajoConf extends Configuration {
         Validators.min("0")),
     $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-mb", 64l,
         Validators.min("0")),
-    $EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE("tajo.executor.hash-shuffle.buffer-mb", 200, Validators.min("1")),
+    $EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE("tajo.executor.hash-shuffle.buffer-mb", 100, Validators.min("1")),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
     $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation (todo this is broken)
     $AGG_HASH_TABLE_SIZE("tajo.executor.aggregate.hash-table.size", 10000),
