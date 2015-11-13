@@ -18,20 +18,19 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Optional;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.NotImplementedException;
 
 import java.io.IOException;
+import java.util.List;
 
 public abstract class FileAppender implements Appender {
-  private static final Log LOG = LogFactory.getLog(FileAppender.class);
 
   protected boolean inited = false;
 
@@ -41,7 +40,8 @@ public abstract class FileAppender implements Appender {
   protected final Path workDir;
   protected final TaskAttemptId taskAttemptId;
 
-  protected boolean enabledStats;
+  protected boolean tableStatsEnabled;
+  protected boolean[] columnStatsEnabled;
   protected Path path;
 
   public FileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
@@ -66,6 +66,7 @@ public abstract class FileAppender implements Appender {
     }
   }
 
+  @Override
   public void init() throws IOException {
     if (inited) {
      throw new IllegalStateException("FileAppender is already initialized.");
@@ -73,17 +74,30 @@ public abstract class FileAppender implements Appender {
     inited = true;
   }
 
+  @Override
   public void enableStats() {
     if (inited) {
       throw new IllegalStateException("Should enable this option before init()");
     }
 
-    this.enabledStats = true;
+    this.tableStatsEnabled = true;
+    this.columnStatsEnabled = new boolean[schema.size()];
   }
 
+  @Override
+  public void enableStats(List<Column> columnList) {
+    enableStats();
+    for (Column eachColumn : columnList) {
+      columnStatsEnabled[schema.getIndex(eachColumn)] = true;
+    }
+  }
+
+  @Override
   public long getEstimatedOutputSize() throws IOException {
     return getOffset();
   }
 
-  public abstract long getOffset() throws IOException;
+  public long getOffset() throws IOException {
+    throw new IOException(new NotImplementedException());
+  }
 }

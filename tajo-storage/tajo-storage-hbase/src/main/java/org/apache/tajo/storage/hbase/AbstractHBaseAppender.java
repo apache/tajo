@@ -22,6 +22,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -55,7 +56,8 @@ public abstract class AbstractHBaseAppender implements Appender {
 
   protected ColumnMapping columnMapping;
   protected TableStatistics stats;
-  protected boolean enabledStats;
+  protected boolean tableStatsEnabled;
+  protected boolean[] columnStatsEnabled;
 
   protected int columnNum;
 
@@ -90,8 +92,8 @@ public abstract class AbstractHBaseAppender implements Appender {
       throw new IllegalStateException("FileAppender is already initialized.");
     }
     inited = true;
-    if (enabledStats) {
-      stats = new TableStatistics(this.schema);
+    if (tableStatsEnabled) {
+      stats = new TableStatistics(this.schema, columnStatsEnabled);
     }
     try {
       columnMapping = new ColumnMapping(schema, meta.getOptions());
@@ -212,12 +214,25 @@ public abstract class AbstractHBaseAppender implements Appender {
 
   @Override
   public void enableStats() {
-    enabledStats = true;
+    if (inited) {
+      throw new IllegalStateException("Should enable this option before init()");
+    }
+
+    this.tableStatsEnabled = true;
+    this.columnStatsEnabled = new boolean[schema.size()];
+  }
+
+  @Override
+  public void enableStats(List<Column> columnList) {
+    enableStats();
+    for (Column eachColumn : columnList) {
+      columnStatsEnabled[schema.getIndex(eachColumn)] = true;
+    }
   }
 
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

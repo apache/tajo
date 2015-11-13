@@ -104,7 +104,7 @@ public class HFileAppender extends AbstractHBaseAppender {
         }
         kvSet.clear();
         // Statistical section
-        if (enabledStats) {
+        if (tableStatsEnabled) {
           stats.incrementRow();
         }
       } catch (InterruptedException e) {
@@ -145,7 +145,7 @@ public class HFileAppender extends AbstractHBaseAppender {
         }
         kvSet.clear();
         // Statistical section
-        if (enabledStats) {
+        if (tableStatsEnabled) {
           stats.incrementRow();
         }
       } catch (InterruptedException e) {
@@ -153,7 +153,7 @@ public class HFileAppender extends AbstractHBaseAppender {
       }
     }
 
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.setNumBytes(totalNumBytes);
     }
     if (writer != null) {

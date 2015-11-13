@@ -20,11 +20,11 @@ package org.apache.tajo.storage;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 
@@ -33,30 +33,26 @@ import org.apache.tajo.datum.Datum;
  */
 public class TableStatistics {
   private static final Log LOG = LogFactory.getLog(TableStatistics.class);
-  private Schema schema;
-  private VTuple minValues;
-  private VTuple maxValues;
-  private long [] numNulls;
+  private final Schema schema;
+  private final VTuple minValues;
+  private final VTuple maxValues;
+  private final long [] numNulls;
   private long numRows = 0;
-  private long numBytes = 0;
+  private long numBytes = TajoConstants.UNKNOWN_LENGTH;
 
-  private boolean [] comparable;
+  private final boolean[] columnStatsEnabled;
 
-  public TableStatistics(Schema schema) {
+  public TableStatistics(Schema schema, boolean[] columnStatsEnabled) {
     this.schema = schema;
     minValues = new VTuple(schema.size());
     maxValues = new VTuple(schema.size());
 
     numNulls = new long[schema.size()];
-    comparable = new boolean[schema.size()];
 
-    DataType type;
+    this.columnStatsEnabled = columnStatsEnabled;
     for (int i = 0; i < schema.size(); i++) {
-      type = schema.getColumn(i).getDataType();
-      if (type.getType() == Type.PROTOBUF) {
-        comparable[i] = false;
-      } else {
-        comparable[i] = true;
+      if (schema.getColumn(i).getDataType().getType().equals(Type.PROTOBUF)) {
+        columnStatsEnabled[i] = false;
       }
     }
   }
@@ -85,18 +81,14 @@ public class TableStatistics {
     return this.numBytes;
   }
 
-  public void analyzeNull(int idx) {
-    numNulls[idx]++;
-  }
-
   public void analyzeField(int idx, Tuple tuple) {
-    if (tuple.isBlankOrNull(idx)) {
-      numNulls[idx]++;
-      return;
-    }
+    if (columnStatsEnabled[idx]) {
+      if (tuple.isBlankOrNull(idx)) {
+        numNulls[idx]++;
+        return;
+      }
 
-    Datum datum = tuple.asDatum(idx);
-    if (comparable[idx]) {
+      Datum datum = tuple.asDatum(idx);
       if (!maxValues.contains(idx) ||
           maxValues.get(idx).compareTo(datum) < 0) {
         maxValues.put(idx, datum);
@@ -112,22 +104,24 @@ public class TableStatistics {
     TableStats stat = new TableStats();
 
     for (int i = 0; i < schema.size(); i++) {
-      Column column = schema.getColumn(i);
-      ColumnStats columnStats = new ColumnStats(column);
-      columnStats.setNumNulls(numNulls[i]);
-      if (minValues.isBlank(i) || column.getDataType().getType() == minValues.type(i)) {
-        columnStats.setMinValue(minValues.get(i));
-      } else {
-        LOG.warn("Wrong statistics column type (" + minValues.type(i) +
-            ", expected=" + column.getDataType().getType() + ")");
+      if (columnStatsEnabled[i]) {
+        Column column = schema.getColumn(i);
+        ColumnStats columnStats = new ColumnStats(column);
+        columnStats.setNumNulls(numNulls[i]);
+        if (minValues.isBlank(i) || column.getDataType().getType() == minValues.type(i)) {
+          columnStats.setMinValue(minValues.get(i));
+        } else {
+          LOG.warn("Wrong statistics column type (" + minValues.type(i) +
+              ", expected=" + column.getDataType().getType() + ")");
+        }
+        if (minValues.isBlank(i) || column.getDataType().getType() == maxValues.type(i)) {
+          columnStats.setMaxValue(maxValues.get(i));
+        } else {
+          LOG.warn("Wrong statistics column type (" + maxValues.type(i) +
+              ", expected=" + column.getDataType().getType() + ")");
+        }
+        stat.addColumnStat(columnStats);
       }
-      if (minValues.isBlank(i) || column.getDataType().getType() == maxValues.type(i)) {
-        columnStats.setMaxValue(maxValues.get(i));
-      } else {
-        LOG.warn("Wrong statistics column type (" + maxValues.type(i) +
-            ", expected=" + column.getDataType().getType() + ")");
-      }
-      stat.addColumnStat(columnStats);
     }
 
     stat.setNumRows(this.numRows);

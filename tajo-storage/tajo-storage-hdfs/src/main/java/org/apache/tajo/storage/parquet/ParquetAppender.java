@@ -18,20 +18,19 @@
 
 package org.apache.tajo.storage.parquet;
 
-import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.storage.StorageConstants;
-import parquet.hadoop.ParquetOutputFormat;
-import parquet.hadoop.metadata.CompressionCodecName;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.storage.FileAppender;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
+import parquet.hadoop.ParquetOutputFormat;
+import parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
 
@@ -82,21 +81,10 @@ public class ParquetAppender extends FileAppender {
                                    pageSize,
                                    enableDictionary,
                                    validating);
-    if (enabledStats) {
-      this.stats = new TableStatistics(schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(schema, columnStatsEnabled);
     }
     super.init();
-  }
-
-  /**
-   * Gets the current offset. Tracking offsets is currently not implemented, so
-   * this method always returns 0.
-   *
-   * @return 0
-   */
-  @Override
-  public long getOffset() throws IOException {
-    return 0;
   }
 
   /**
@@ -107,7 +95,7 @@ public class ParquetAppender extends FileAppender {
   @Override
   public void addTuple(Tuple tuple) throws IOException {
     writer.write(tuple);
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
     }
   }
@@ -125,6 +113,11 @@ public class ParquetAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     IOUtils.cleanup(null, writer);
+
+    // TODO: getOffset is not implemented yet
+//    if (tableStatsEnabled) {
+//      stats.setNumBytes(getOffset());
+//    }
   }
 
   public long getEstimatedOutputSize() throws IOException {
@@ -138,7 +131,7 @@ public class ParquetAppender extends FileAppender {
    */
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

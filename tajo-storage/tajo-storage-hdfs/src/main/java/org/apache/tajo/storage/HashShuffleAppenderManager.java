@@ -62,8 +62,8 @@ public class HashShuffleAppenderManager {
     pageSize = systemConf.getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME) * 1024 * 1024;
   }
 
-  public HashShuffleAppender getAppender(TajoConf tajoConf, ExecutionBlockId ebId, int partId,
-                              TableMeta meta, Schema outSchema) throws IOException {
+  public HashShuffleAppenderWrapper getAppender(TajoConf tajoConf, ExecutionBlockId ebId, int partId,
+                                                TableMeta meta, Schema outSchema) throws IOException {
     synchronized (appenderMap) {
       Map<Integer, PartitionAppenderMeta> partitionAppenderMap = appenderMap.get(ebId);
 
@@ -93,7 +93,7 @@ public class HashShuffleAppenderManager {
         partitionAppenderMeta = new PartitionAppenderMeta();
         partitionAppenderMeta.partId = partId;
         partitionAppenderMeta.dataFile = dataFile;
-        partitionAppenderMeta.appender = new HashShuffleAppender(ebId, partId, pageSize, appender);
+        partitionAppenderMeta.appender = new HashShuffleAppenderWrapper(ebId, partId, pageSize, appender);
         partitionAppenderMeta.appender.init();
         partitionAppenderMap.put(partId, partitionAppenderMeta);
 
@@ -132,7 +132,7 @@ public class HashShuffleAppenderManager {
     }
 
     if (partitionAppenderMap == null) {
-      LOG.info("Close HashShuffleAppender:" + ebId + ", not a hash shuffle");
+      LOG.info("Close HashShuffleAppenderWrapper:" + ebId + ", not a hash shuffle");
       return null;
     }
 
@@ -152,7 +152,7 @@ public class HashShuffleAppenderManager {
       }
     }
 
-    LOG.info("Close HashShuffleAppender:" + ebId + ", intermediates=" + intermediateEntries.size());
+    LOG.info("Close HashShuffleAppenderWrapper:" + ebId + ", intermediates=" + intermediateEntries.size());
 
     return intermediateEntries;
   }
@@ -210,14 +210,14 @@ public class HashShuffleAppenderManager {
 
   static class PartitionAppenderMeta {
     int partId;
-    HashShuffleAppender appender;
+    HashShuffleAppenderWrapper appender;
     Path dataFile;
 
     public int getPartId() {
       return partId;
     }
 
-    public HashShuffleAppender getAppender() {
+    public HashShuffleAppenderWrapper getAppender() {
       return appender;
     }
 

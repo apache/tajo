@@ -134,8 +134,8 @@ public class SequenceFileAppender extends FileAppender {
       writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.NONE, codec);
     }
 
-    if (enabledStats) {
-      this.stats = new TableStatistics(this.schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(this.schema, columnStatsEnabled);
     }
 
     super.init();
@@ -203,7 +203,7 @@ public class SequenceFileAppender extends FileAppender {
     pos += writer.getLength();
     rowCount++;
 
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
     }
   }
@@ -221,7 +221,7 @@ public class SequenceFileAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     // Statistical section
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.setNumBytes(getOffset());
     }
 
@@ -230,7 +230,7 @@ public class SequenceFileAppender extends FileAppender {
 
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

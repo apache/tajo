@@ -36,8 +36,6 @@ import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
@@ -475,7 +473,6 @@ public class RawFile {
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
     private long pos;
-    private ShuffleType shuffleType;
 
     private TableStatistics stats;
 
@@ -513,11 +510,8 @@ public class RawFile {
       nullFlags = new BitArray(schema.size());
       headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
 
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
-        this.shuffleType = PlannerUtil.getShuffleType(
-            meta.getOption(StorageConstants.SHUFFLE_TYPE,
-                PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
+      if (tableStatsEnabled) {
+        this.stats = new TableStatistics(this.schema, columnStatsEnabled);
       }
 
       super.init();
@@ -647,8 +641,8 @@ public class RawFile {
       // reset the null flags
       nullFlags.clear();
       for (int i = 0; i < schema.size(); i++) {
-        if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
-          // it is to calculate min/max values, and it is only used for the intermediate file.
+        // it is to calculate min/max values, and it is only used for the intermediate file.
+        if (tableStatsEnabled) {
           stats.analyzeField(i, t);
         }
 
@@ -752,7 +746,7 @@ public class RawFile {
       pos += bufferPos - recordOffset;
       buffer.position(bufferPos);
 
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         stats.incrementRow();
       }
     }
@@ -767,7 +761,7 @@ public class RawFile {
     @Override
     public void close() throws IOException {
       flush();
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         stats.setNumBytes(getOffset());
       }
       if (LOG.isDebugEnabled()) {
@@ -787,7 +781,7 @@ public class RawFile {
 
     @Override
     public TableStats getStats() {
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         stats.setNumBytes(pos);
         return stats.getTableStat();
       } else {

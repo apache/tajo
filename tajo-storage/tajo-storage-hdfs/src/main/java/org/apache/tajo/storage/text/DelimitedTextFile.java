@@ -131,8 +131,8 @@ public class DelimitedTextFile {
 
     @Override
     public void init() throws IOException {
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
+      if (tableStatsEnabled) {
+        this.stats = new TableStatistics(this.schema, columnStatsEnabled);
       }
 
       if(serializer != null) {
@@ -189,7 +189,7 @@ public class DelimitedTextFile {
         flushBuffer();
       }
       // Statistical section
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         stats.incrementRow();
       }
     }
@@ -226,7 +226,7 @@ public class DelimitedTextFile {
         flush();
 
         // Statistical section
-        if (enabledStats) {
+        if (tableStatsEnabled) {
           stats.setNumBytes(getOffset());
         }
 
@@ -246,7 +246,7 @@ public class DelimitedTextFile {
 
     @Override
     public TableStats getStats() {
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         return stats.getTableStat();
       } else {
         return null;
