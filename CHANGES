@@ -61,6 +61,8 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1975: Gathering fine-grained column statistics for range shuffle. (jihoon)
+
     TAJO-1963: Add more configuration descriptions to document. (jihoon)
 
     TAJO-1970: Change the null first syntax. (jihoon)
