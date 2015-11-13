@@ -107,8 +107,8 @@ public class DirectRawFileWriter extends FileAppender {
       isLocal = false;
     }
 
-    if (enabledStats) {
-      this.stats = new TableStatistics(this.schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(this.schema, columnStatsEnabled);
       if (ShuffleType.RANGE_SHUFFLE == PlannerUtil.getShuffleType(
           meta.getOption(StorageConstants.SHUFFLE_TYPE,
               PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)))) {
@@ -201,7 +201,7 @@ public class DirectRawFileWriter extends FileAppender {
       pos += rowBlock.getMemory().writeTo(fos);
     }
 
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRows(rowBlock.rows());
     }
   }
@@ -229,7 +229,7 @@ public class DirectRawFileWriter extends FileAppender {
   public void close() throws IOException {
     flush();
 
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.setNumBytes(getOffset());
     }
     if (LOG.isDebugEnabled()) {
@@ -244,7 +244,7 @@ public class DirectRawFileWriter extends FileAppender {
 
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.setNumBytes(pos);
       return stats.getTableStat();
     } else {

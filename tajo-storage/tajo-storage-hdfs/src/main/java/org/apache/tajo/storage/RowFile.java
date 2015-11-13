@@ -366,8 +366,8 @@ public class RowFile {
 
       nullFlags = new BitArray(schema.size());
 
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
+      if (tableStatsEnabled) {
+        this.stats = new TableStatistics(this.schema, columnStatsEnabled);
         this.shuffleType = PlannerUtil.getShuffleType(
             meta.getOption(StorageConstants.SHUFFLE_TYPE,
                 PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
@@ -462,7 +462,7 @@ public class RowFile {
       out.write(bytes, 0, dataLen);
 
       // Statistical section
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         stats.incrementRow();
       }
     }
@@ -480,7 +480,7 @@ public class RowFile {
     @Override
     public void close() throws IOException {
       if (out != null) {
-        if (enabledStats) {
+        if (tableStatsEnabled) {
           stats.setNumBytes(out.getPos());
         }
         sync();
@@ -505,7 +505,7 @@ public class RowFile {
 
     @Override
     public TableStats getStats() {
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         return stats.getTableStat();
       } else {
         return null;

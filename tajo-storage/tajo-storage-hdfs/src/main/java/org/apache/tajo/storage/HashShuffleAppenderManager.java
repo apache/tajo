@@ -90,8 +90,10 @@ public class HashShuffleAppenderManager {
     return i;
   }
 
-  public synchronized HashShuffleAppender getAppender(MemoryRowBlock memoryRowBlock, ExecutionBlockId ebId, int partId,
-                                                      TableMeta meta, Schema outSchema) throws IOException {
+  public synchronized HashShuffleAppenderWrapper getAppender(MemoryRowBlock memoryRowBlock, ExecutionBlockId ebId, 
+                                                             int partId, TableMeta meta, Schema outSchema) 
+      throws IOException {
+    
     Map<Integer, PartitionAppenderMeta> partitionAppenderMap = appenderMap.get(ebId);
 
     if (partitionAppenderMap == null) {
@@ -121,7 +123,7 @@ public class HashShuffleAppenderManager {
       partitionAppenderMeta.partId = partId;
       partitionAppenderMeta.dataFile = dataFile;
       partitionAppenderMeta.appender =
-          new HashShuffleAppender(ebId, partId, pageSize, appender, getVolumeId(dataFile));
+          new HashShuffleAppenderWrapper(ebId, partId, pageSize, appender, getVolumeId(dataFile));
       partitionAppenderMeta.appender.init();
       partitionAppenderMap.put(partId, partitionAppenderMeta);
 
@@ -157,7 +159,7 @@ public class HashShuffleAppenderManager {
     Map<Integer, PartitionAppenderMeta> partitionAppenderMap = appenderMap.remove(ebId);
 
     if (partitionAppenderMap == null) {
-      LOG.info("Close HashShuffleAppender:" + ebId + ", not a hash shuffle");
+      LOG.info("Close HashShuffleAppenderWrapper:" + ebId + ", not a hash shuffle");
       return null;
     }
 
@@ -177,7 +179,7 @@ public class HashShuffleAppenderManager {
       }
     }
 
-    LOG.info("Close HashShuffleAppender:" + ebId + ", intermediates=" + intermediateEntries.size());
+    LOG.info("Close HashShuffleAppenderWrapper:" + ebId + ", intermediates=" + intermediateEntries.size());
 
     return intermediateEntries;
   }
@@ -201,7 +203,8 @@ public class HashShuffleAppenderManager {
                                                 final MemoryRowBlock rowBlock,
                                                 final boolean release) throws IOException {
 
-    HashShuffleAppender appender = getAppender(rowBlock, taskId.getTaskId().getExecutionBlockId(), partId, meta, schema);
+    HashShuffleAppenderWrapper appender =
+        getAppender(rowBlock, taskId.getTaskId().getExecutionBlockId(), partId, meta, schema);
     ExecutorService executor = executors.get(appender.getVolumeId());
     return executor.submit(new Callable<MemoryRowBlock>() {
       @Override
@@ -261,14 +264,14 @@ public class HashShuffleAppenderManager {
 
   static class PartitionAppenderMeta {
     int partId;
-    HashShuffleAppender appender;
+    HashShuffleAppenderWrapper appender;
     Path dataFile;
 
     public int getPartId() {
       return partId;
     }
 
-    public HashShuffleAppender getAppender() {
+    public HashShuffleAppenderWrapper getAppender() {
       return appender;
     }
 
