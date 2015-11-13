@@ -28,7 +28,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.NotImplementedException;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.List;
 
 public abstract class FileAppender implements Appender {
@@ -41,7 +40,7 @@ public abstract class FileAppender implements Appender {
   protected final TaskAttemptId taskAttemptId;
 
   protected boolean tableStatsEnabled;
-  protected BitSet columnStatsEnabled;
+  protected boolean[] columnStatsEnabled;
   protected Path path;
 
   public FileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
@@ -81,13 +80,13 @@ public abstract class FileAppender implements Appender {
     }
 
     this.tableStatsEnabled = true;
-    this.columnStatsEnabled = new BitSet(schema.size());
+    this.columnStatsEnabled = new boolean[schema.size()];
   }
 
   @Override
   public void enableStats(List<Column> columnList) {
     enableStats();
-    columnList.forEach(column -> columnStatsEnabled.set(schema.getIndex(column)));
+    columnList.forEach(column -> columnStatsEnabled[schema.getIndex(column)] = true);
   }
 
   @Override

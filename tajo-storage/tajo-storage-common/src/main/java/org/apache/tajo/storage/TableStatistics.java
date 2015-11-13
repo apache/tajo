@@ -28,8 +28,6 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 
-import java.util.BitSet;
-
 /**
  * This class is not thread-safe.
  */
@@ -42,9 +40,9 @@ public class TableStatistics {
   private long numRows = 0;
   private long numBytes = TajoConstants.UNKNOWN_LENGTH;
 
-  private final BitSet columnStatsEnabled;
+  private final boolean[] columnStatsEnabled;
 
-  public TableStatistics(Schema schema, BitSet columnStatsEnabled) {
+  public TableStatistics(Schema schema, boolean[] columnStatsEnabled) {
     this.schema = schema;
     minValues = new VTuple(schema.size());
     maxValues = new VTuple(schema.size());
@@ -54,7 +52,7 @@ public class TableStatistics {
     this.columnStatsEnabled = columnStatsEnabled;
     for (int i = 0; i < schema.size(); i++) {
       if (schema.getColumn(i).getDataType().getType().equals(Type.PROTOBUF)) {
-        columnStatsEnabled.clear(i);
+        columnStatsEnabled[i] = false;
       }
     }
   }
@@ -84,7 +82,7 @@ public class TableStatistics {
   }
 
   public void analyzeField(int idx, Tuple tuple) {
-    if (columnStatsEnabled.get(idx)) {
+    if (columnStatsEnabled[idx]) {
       if (tuple.isBlankOrNull(idx)) {
         numNulls[idx]++;
         return;
@@ -106,7 +104,7 @@ public class TableStatistics {
     TableStats stat = new TableStats();
 
     for (int i = 0; i < schema.size(); i++) {
-      if (columnStatsEnabled.get(i)) {
+      if (columnStatsEnabled[i]) {
         Column column = schema.getColumn(i);
         ColumnStats columnStats = new ColumnStats(column);
         columnStats.setNumNulls(numNulls[i]);

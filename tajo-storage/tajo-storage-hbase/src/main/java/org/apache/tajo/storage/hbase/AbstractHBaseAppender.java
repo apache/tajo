@@ -36,7 +36,10 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * An abstract class for HBase appender.
@@ -52,7 +55,7 @@ public abstract class AbstractHBaseAppender implements Appender {
   protected ColumnMapping columnMapping;
   protected TableStatistics stats;
   protected boolean tableStatsEnabled;
-  protected BitSet columnStatsEnabled;
+  protected boolean[] columnStatsEnabled;
 
   protected int columnNum;
 
@@ -214,13 +217,13 @@ public abstract class AbstractHBaseAppender implements Appender {
     }
 
     this.tableStatsEnabled = true;
-    this.columnStatsEnabled = new BitSet(schema.size());
+    this.columnStatsEnabled = new boolean[schema.size()];
   }
 
   @Override
   public void enableStats(List<Column> columnList) {
     enableStats();
-    columnList.forEach(column -> columnStatsEnabled.set(schema.getIndex(column)));
+    columnList.forEach(column -> columnStatsEnabled[schema.getIndex(column)] = true);
   }
 
   @Override
