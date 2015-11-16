@@ -56,6 +56,7 @@ public class DirectRawFileWriter extends FileAppender {
 
   public static final String WRITE_BUFFER_SIZE = "tajo.storage.raw.io.write-buffer.bytes";
   public static final int DEFAULT_BUFFER_SIZE = 128 * StorageUnit.KB;
+  private static final float OVERFLOW_RATIO = 1.1f;
   protected FileChannel channel;
 
   protected RandomAccessFile randomAccessFile;
@@ -117,7 +118,7 @@ public class DirectRawFileWriter extends FileAppender {
     }
 
     if (rowBlock == null) {
-      int bufferSize = (int) (conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE) * 1.1f);
+      int bufferSize = (int) (conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE) * OVERFLOW_RATIO);
       rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize, true, meta.getDataFormat());
     }
 
@@ -151,7 +152,7 @@ public class DirectRawFileWriter extends FileAppender {
               stats.analyzeField(i, tuple);
             }
             // write direct to memory
-            writer.putTuple(tuple);
+            writer.addTuple(tuple);
           } else {
             writer.startRow();
 
@@ -164,7 +165,7 @@ public class DirectRawFileWriter extends FileAppender {
           }
         } else {
           // write direct to memory
-          writer.putTuple(tuple);
+          writer.addTuple(tuple);
         }
       }
     };

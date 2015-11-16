@@ -342,7 +342,7 @@ public class QueryExecutor {
         MemoryRowBlock rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema));
 
         try {
-          rowBlock.getWriter().putTuple(outTuple);
+          rowBlock.getWriter().addTuple(outTuple);
 
           MemoryBlock memoryBlock = rowBlock.getMemory();
           ByteBuffer uncompressed = memoryBlock.getBuffer().nioBuffer(0, memoryBlock.readableBytes());

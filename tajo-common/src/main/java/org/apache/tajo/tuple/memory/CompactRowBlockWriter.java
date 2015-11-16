@@ -401,19 +401,8 @@ public class CompactRowBlockWriter implements RowWriter {
     putBlob(val.asByteArray());
   }
 
-
   @Override
-  public void putTuple(Tuple tuple) {
+  public void addTuple(Tuple tuple) {
     OffHeapRowBlockUtils.convert(tuple, this);
-  }
-
-  @Override
-  public Tuple addTuple(Tuple tuple) {
-    putTuple(tuple);
-    try {
-      return tuple.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new TajoInternalError(e);
-    }
   }
 }

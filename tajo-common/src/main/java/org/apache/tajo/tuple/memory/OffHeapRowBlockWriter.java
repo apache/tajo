@@ -65,24 +65,13 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
 
 
   @Override
-  public void putTuple(Tuple tuple) {
+  public void addTuple(Tuple tuple) {
     if (tuple instanceof UnSafeTuple) {
       UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
-      putTuple(unSafeTuple);
+      addTuple(unSafeTuple);
       rowBlock.setRows(rowBlock.rows() + 1);
     } else {
       OffHeapRowBlockUtils.convert(tuple, this);
     }
-  }
-
-  @Override
-  public ZeroCopyTuple addTuple(Tuple tuple) {
-    int prevPos = rowBlock.getMemory().writerPosition();
-
-    putTuple(tuple);
-
-    UnSafeTuple unSafeTuple = new UnSafeTuple();
-    unSafeTuple.set(rowBlock.getMemory(), prevPos, dataTypes());
-    return unSafeTuple;
   }
 }

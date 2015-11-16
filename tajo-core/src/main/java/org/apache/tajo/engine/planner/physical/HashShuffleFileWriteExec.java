@@ -136,7 +136,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         long prevUsedMem = rowBlock.usedMem();
         totalBufferCapacity -= rowBlock.capacity();
 
-        writer.putTuple(tuple);
+        writer.addTuple(tuple);
         numRows++;
 
         totalBufferCapacity += rowBlock.capacity(); // calculate resizeable buffer capacity

@@ -289,7 +289,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
   }
 
 
-  protected void putTuple(UnSafeTuple tuple) {
+  protected void addTuple(UnSafeTuple tuple) {
     int length = tuple.getLength();
     ensureSize(length);
     PlatformDependent.copyMemory(tuple.address(), address() + position(), length);

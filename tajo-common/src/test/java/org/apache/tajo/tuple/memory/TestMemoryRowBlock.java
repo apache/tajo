@@ -274,7 +274,7 @@ public class TestMemoryRowBlock {
     VTuple tuple = new VTuple(schema.length);
     for (int i = 0; i < rowNum; i++) {
       fillVTuple(i, tuple);
-      rowBlock.getWriter().putTuple(tuple);
+      rowBlock.getWriter().addTuple(tuple);
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("Writing takes " + (writeEnd - writeStart) + " msec");
