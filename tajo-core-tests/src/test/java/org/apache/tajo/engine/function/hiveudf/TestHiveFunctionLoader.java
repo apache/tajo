@@ -88,6 +88,7 @@ public class TestHiveFunctionLoader {
     assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
+    assertEquals("to uppercase", desc.getDescription());
 
     desc = catService.getFunction("test_upper", CatalogProtos.FunctionType.UDF,
         CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
@@ -96,5 +97,6 @@ public class TestHiveFunctionLoader {
     assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
+    assertEquals("to uppercase", desc.getDescription());
   }
 }

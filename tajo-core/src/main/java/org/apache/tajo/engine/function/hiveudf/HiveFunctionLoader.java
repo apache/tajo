@@ -89,6 +89,7 @@ public class HiveFunctionLoader {
   static void extractUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list) {
     for (Class<? extends UDF> clazz: classes) {
       String [] names;
+      String value = null, extended = null;
 
       Description desc = clazz.getAnnotation(Description.class);
       if (desc != null) {
@@ -96,6 +97,9 @@ public class HiveFunctionLoader {
         for (int i=0; i<names.length; i++) {
           names[i] = names[i].trim();
         }
+
+        value = desc.value();
+        extended = desc.extended();
       }
       else {
         names = new String [] {clazz.getName().replace('.','_')};
@@ -131,6 +135,14 @@ public class HiveFunctionLoader {
 
       builder.setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params)
           .setClass(HiveGeneralFunctionHolder.class);
+
+      if (value != null) {
+        builder.setDescription(value);
+      }
+
+      if (extended != null) {
+        builder.setExample(extended);
+      }
 
       for (String name: names) {
         builder.setName(name);

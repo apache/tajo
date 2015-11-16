@@ -29,6 +29,8 @@ public class FunctionDescBuilder {
   private DataType [] params = null;
   private Class<? extends Function> clazz = null;
   private boolean isDeterministic = true;
+  private String description = null;
+  private String example = null;
 
   public FunctionDescBuilder setName(String name) {
     this.name = name;
@@ -60,10 +62,28 @@ public class FunctionDescBuilder {
     return this;
   }
 
+  public FunctionDescBuilder setDescription(String desc) {
+    this.description = desc;
+    return this;
+  }
+
+  public FunctionDescBuilder setExample(String ex) {
+    this.example = ex;
+    return this;
+  }
+
   public FunctionDesc build() {
     FunctionInvocation invocation = new FunctionInvocation();
     invocation.setLegacy(new ClassBaseInvocationDesc<>(clazz));
     FunctionSupplement supplement = new FunctionSupplement();
+
+    if (description != null) {
+      supplement.setShortDescription(description);
+    }
+
+    if (example != null) {
+      supplement.setExample(example);
+    }
 
     FunctionSignature signature = new FunctionSignature(funcType, name, retType, isDeterministic, params);
 
