@@ -24,6 +24,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.junit.After;
@@ -79,17 +80,21 @@ public class TestHiveFunctionLoader {
   @Test
   public void testFindFunction() throws Exception {
     CatalogService catService = cluster.getMaster().getCatalog();
-    Collection<FunctionDesc> descs = catService.getFunctions();
 
-    Stream<FunctionDesc> upper = descs.stream().filter((FunctionDesc desc)->desc.getFunctionName().equals("my_upper"));
-
-    FunctionDesc desc = upper.findFirst().get();
+    FunctionDesc desc = catService.getFunction("my_upper", CatalogProtos.FunctionType.UDF,
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
 
     assertEquals(HiveGeneralFunctionHolder.class, desc.getLegacyFuncClass());
-    assertEquals(CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT), desc.getReturnType());
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
-    assertEquals(CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT), desc.getParamTypes()[0]);
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
 
-    upper.close();
+    desc = catService.getFunction("test_upper", CatalogProtos.FunctionType.UDF,
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
+
+    assertEquals(HiveGeneralFunctionHolder.class, desc.getLegacyFuncClass());
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
+    assertEquals(1, desc.getParamTypes().length);
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
   }
 }

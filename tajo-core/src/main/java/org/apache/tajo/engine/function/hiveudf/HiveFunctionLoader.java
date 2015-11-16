@@ -129,10 +129,13 @@ public class HiveFunctionLoader {
         builder.setDeterministic(type.deterministic());
       }
 
-      builder.setName(names[0]).setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params)
+      builder.setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params)
           .setClass(HiveGeneralFunctionHolder.class);
 
-      list.add(builder.build());
+      for (String name: names) {
+        builder.setName(name);
+        list.add(builder.build());
+      }
     }
   }
 
