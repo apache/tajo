@@ -37,6 +37,7 @@ public class ExitCommand extends TajoShellCommand {
   @Override
   public void invoke(String[] cmd) throws Exception {
     context.getOutput().println("bye!");
+    context.getOutput().close();
     System.exit(0);
   }
 

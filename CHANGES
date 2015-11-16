@@ -33,6 +33,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1978: Printout message before terminating TSQL.
+    (Contributed by Dongkyu Hwangbo, committed by jaehwa)
+
     TAJO-1965: TestBlockingRpc::testServerShutdown occassionally fails. (jinho)
 
     TAJO-1882: Clean up GreedyHeuristicJoinOrderAlgorithm::getCost APIs. (jihoon)
