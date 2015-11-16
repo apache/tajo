@@ -98,5 +98,14 @@ public class TestHiveFunctionLoader {
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
     assertEquals("to uppercase", desc.getDescription());
+
+    // Test for UDF without @Description
+    desc = catService.getFunction("com_example_hive_udf_MyLower", CatalogProtos.FunctionType.UDF,
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
+
+    assertEquals(HiveGeneralFunctionHolder.class, desc.getLegacyFuncClass());
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
+    assertEquals(1, desc.getParamTypes().length);
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
   }
 }
