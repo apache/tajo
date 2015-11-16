@@ -91,8 +91,9 @@ public class FunctionLoader {
    * @return
    * @throws IOException
    */
-  public static List<FunctionDesc> loadUserDefinedFunctions(TajoConf conf, List<FunctionDesc> functionList)
+  public static List<FunctionDesc> loadUserDefinedFunctions(TajoConf conf)
       throws IOException {
+    List<FunctionDesc> functionList = new LinkedList<>();
 
     String[] codePaths = conf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);
     if (codePaths != null) {

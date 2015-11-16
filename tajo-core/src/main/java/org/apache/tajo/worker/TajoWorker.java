@@ -200,7 +200,7 @@ public class TajoWorker extends CompositeService {
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
 
-    FunctionLoader.loadUserDefinedFunctions(systemConf, new ArrayList<>());
+    FunctionLoader.loadUserDefinedFunctions(systemConf);
     HiveFunctionLoader.loadHiveUDFs(systemConf);
 
     PythonScriptEngine.initPythonScriptEngineFiles();
