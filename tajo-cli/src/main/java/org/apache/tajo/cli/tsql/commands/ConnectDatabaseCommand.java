@@ -43,15 +43,15 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
 
     } else if (cmd.length >= 2) {
 
-      StringBuilder sb = new StringBuilder();
+      StringBuilder databaseNameMaker = new StringBuilder();
       for (int i = 1; i < cmd.length; i++) {
         if (i != 1) {
-          sb.append(" ");
+          databaseNameMaker.append(" ");
         }
-        sb.append(cmd[i]);
+        databaseNameMaker.append(cmd[i]);
       }
 
-      final String databaseName = sb.toString().replace("\"", "");
+      final String databaseName = databaseNameMaker.toString().replace("\"", "");
 
       try {
         client.selectDatabase(databaseName);
