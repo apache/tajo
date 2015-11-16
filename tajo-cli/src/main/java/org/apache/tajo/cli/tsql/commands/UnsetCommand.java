@@ -43,7 +43,7 @@ public class UnsetCommand extends TajoShellCommand {
 
   @Override
   public String getUsage() {
-    return "";
+    return "[NAME]";
   }
 
   @Override

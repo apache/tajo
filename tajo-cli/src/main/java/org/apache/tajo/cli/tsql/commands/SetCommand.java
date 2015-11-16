@@ -87,7 +87,7 @@ public class SetCommand extends TajoShellCommand {
 
   @Override
   public String getUsage() {
-    return "";
+    return "[[NAME] VALUE]";
   }
 
   @Override
