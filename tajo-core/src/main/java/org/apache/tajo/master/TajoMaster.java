@@ -76,8 +76,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -215,9 +214,30 @@ public class TajoMaster extends CompositeService {
     LOG.info("Tajo Master is initialized.");
   }
 
-  private Collection<FunctionDesc> loadFunctions() throws IOException {
-    Map<FunctionSignature, FunctionDesc> functionMap = FunctionLoader.load();
-    return FunctionLoader.loadUserDefinedFunctions(systemConf, functionMap).values();
+  private Collection<FunctionDesc> loadFunctions() throws IOException, AmbiguousFunctionException {
+    List<FunctionDesc> functionList = new ArrayList<>(FunctionLoader.load().values());
+    Collection<FunctionDesc> udfs = FunctionLoader.loadUserDefinedFunctions(systemConf);
+
+    HashMap<Integer, FunctionDesc> funcSet = new HashMap<>();
+
+    for (FunctionDesc desc: functionList) {
+      funcSet.put(desc.hashCodeWithoutType(), desc);
+    }
+
+    checkUDFduplicates(udfs, funcSet);
+
+    return funcSet.values();
+  }
+
+  private void checkUDFduplicates(Collection<FunctionDesc> udfs, HashMap<Integer, FunctionDesc> funcSet)
+      throws AmbiguousFunctionException {
+    for (FunctionDesc desc: udfs) {
+      if (funcSet.containsKey(desc.hashCodeWithoutType())) {
+        throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
+      }
+
+      funcSet.put(desc.hashCodeWithoutType(), desc);
+    }
   }
 
   private void initSystemMetrics() {

@@ -87,13 +87,12 @@ public class FunctionLoader {
    * Load functions defined by users.
    *
    * @param conf
-   * @param functionMap
    * @return
    * @throws IOException
    */
-  public static Map<FunctionSignature, FunctionDesc> loadUserDefinedFunctions(TajoConf conf,
-                                                                              Map<FunctionSignature, FunctionDesc> functionMap)
+  public static List<FunctionDesc> loadUserDefinedFunctions(TajoConf conf)
       throws IOException {
+    List<FunctionDesc> functionList = new LinkedList<>();
 
     String[] codePaths = conf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);
     if (codePaths != null) {
@@ -110,26 +109,20 @@ public class FunctionLoader {
 
         List<Path> filePaths = TUtil.newList();
         if (localFS.isDirectory(codePath)) {
-          for (FileStatus file : localFS.listStatus(codePath, new PathFilter() {
-            @Override
-            public boolean accept(Path path) {
-              return path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION);
-            }
-          })) {
+          for (FileStatus file : localFS.listStatus(codePath,
+              (Path path) -> path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION))) {
             filePaths.add(file.getPath());
           }
         } else {
           filePaths.add(codePath);
         }
         for (Path filePath : filePaths) {
-          for (FunctionDesc f : PythonScriptEngine.registerFunctions(filePath.toUri(),
-              FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
-            functionMap.put(f.getSignature(), f);
-          }
+              PythonScriptEngine.registerFunctions(filePath.toUri(), FunctionLoader.PYTHON_FUNCTION_NAMESPACE)
+                  .stream().map(functionList::add);
         }
       }
     }
-    return functionMap;
+    return functionList;
   }
 
   public static Set<FunctionDesc> findScalarFunctions() {
