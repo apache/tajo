@@ -1,0 +1,27 @@
+OK
+
+table name: default.TEST DESC TABLE
+table uri: ${table.path}
+store type: TEXT
+number of rows: 0
+volume: 0 B
+Options: 
+	'text.delimiter'='|'
+
+schema: 
+col1	INT4
+col2	INT4
+
+
+
+table name: default.TEST DESC TABLE
+table uri: ${table.path}
+store type: TEXT
+number of rows: 0
+volume: 0 B
+Options: 
+	'text.delimiter'='|'
+
+schema: 
+col1	INT4
+col2	INT4
