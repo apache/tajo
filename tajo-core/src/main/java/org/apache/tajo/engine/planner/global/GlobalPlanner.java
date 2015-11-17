@@ -1325,7 +1325,6 @@ public class GlobalPlanner {
               Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
               Target t = eachNodeTargets.get(i);
               t.setAlias(t.getNamedColumn().getQualifiedName());
-              eachNodeTargets.set(i, t);
               EvalNode evalNode = eachNodeTargets.get(i).getEvalTree();
               if (evalNode.getType() != EvalType.FIELD) {
                 throw new TajoInternalError("Target of a UnionNode's subquery should be FieldEval.");
