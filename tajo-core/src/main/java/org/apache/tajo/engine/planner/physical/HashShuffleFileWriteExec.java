@@ -19,37 +19,62 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
-import org.apache.tajo.storage.HashShuffleAppenderWrapper;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.tuple.memory.RowBlock;
+import org.apache.tajo.tuple.memory.RowWriter;
+import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  * <code>HashShuffleFileWriteExec</code> is a physical executor to store intermediate data into a number of
  * file outputs associated with shuffle keys. The file outputs are stored on local disks.
  */
 public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
-  private static Log LOG = LogFactory.getLog(HashShuffleFileWriteExec.class);
-  private ShuffleFileWriteNode plan;
+  private static final Log LOG = LogFactory.getLog(HashShuffleFileWriteExec.class);
+  private static final int MAXIMUM_INITIAL_BUFFER_SIZE = StorageUnit.MB;
+  private static final int MINIMUM_INITIAL_BUFFER_SIZE = 4 * StorageUnit.KB;
+  // Buffer usage is greater than threshold, it will be flush to local storage
+  private static final float BUFFER_THRESHOLD_FACTOR = 0.8f;
+
+  private final ShuffleFileWriteNode plan;
   private final TableMeta meta;
-  private Partitioner partitioner;
-  private Map<Integer, HashShuffleAppenderWrapper> appenderMap = new HashMap<>();
+  private final Partitioner partitioner;
   private final int numShuffleOutputs;
-  private final int [] shuffleKeyIds;
-  private HashShuffleAppenderManager hashShuffleAppenderManager;
-  private int numHashShuffleBufferTuples;
+  private final int[] shuffleKeyIds;
+  private final HashShuffleAppenderManager hashShuffleAppenderManager;
+  private final int maxBufferSize;
+  private final int bufferThreshold;
+  private final int initialBufferSize;
+  private final DataType[] dataTypes;
+
+  private final Map<Integer, MemoryRowBlock> partitionMemoryMap;
+  private long writtenBytes = 0;
+  private long usedBufferSize = 0;
+  private long totalBufferCapacity = 0;
 
   public HashShuffleFileWriteExec(TaskAttemptContext context,
                                   final ShuffleFileWriteNode plan, final PhysicalExec child) throws IOException {
@@ -71,105 +96,151 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     }
     this.partitioner = new HashPartitioner(shuffleKeyIds, numShuffleOutputs);
     this.hashShuffleAppenderManager = context.getHashShuffleAppenderManager();
-    this.numHashShuffleBufferTuples = context.getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_BUFFER_SIZE);
+    this.maxBufferSize = context.getQueryContext().getInt(SessionVars.HASH_SHUFFLE_BUFFER_SIZE) * StorageUnit.MB;
+    this.bufferThreshold = (int) (maxBufferSize * BUFFER_THRESHOLD_FACTOR);
+    this.dataTypes = SchemaUtil.toDataTypes(outSchema);
+
+    if(numShuffleOutputs > 0){
+      //calculate initial buffer by total partition. a buffer size will be 4Kb ~ 1MB
+      this.initialBufferSize = Math.min(MAXIMUM_INITIAL_BUFFER_SIZE,
+          Math.max(maxBufferSize / numShuffleOutputs, MINIMUM_INITIAL_BUFFER_SIZE));
+    } else {
+      this.initialBufferSize = MINIMUM_INITIAL_BUFFER_SIZE;
+    }
+
+    this.partitionMemoryMap = Maps.newHashMap();
   }
 
   @Override
   public void init() throws IOException {
     super.init();
   }
-  
-  private HashShuffleAppenderWrapper getAppender(int partId) throws IOException {
-    HashShuffleAppenderWrapper appender = appenderMap.get(partId);
-    if (appender == null) {
-      appender = hashShuffleAppenderManager.getAppender(context.getConf(),
-          context.getTaskId().getTaskId().getExecutionBlockId(), partId, meta, outSchema);
-      appenderMap.put(partId, appender);
-    }
-    return appender;
-  }
-
-  Map<Integer, TupleList> partitionTuples = new HashMap<>();
-  long writtenBytes = 0L;
 
   @Override
   public Tuple next() throws IOException {
     try {
       Tuple tuple;
       int partId;
-      int tupleCount = 0;
       long numRows = 0;
       while (!context.isStopped() && (tuple = child.next()) != null) {
-        tupleCount++;
-        numRows++;
 
         partId = partitioner.getPartition(tuple);
-        TupleList partitionTupleList = partitionTuples.get(partId);
-        if (partitionTupleList == null) {
-          partitionTupleList = new TupleList(1000);
-          partitionTuples.put(partId, partitionTupleList);
+        MemoryRowBlock rowBlock = partitionMemoryMap.get(partId);
+        if (rowBlock == null) {
+          rowBlock = new MemoryRowBlock(dataTypes, initialBufferSize, true, plan.getStorageType());
+          partitionMemoryMap.put(partId, rowBlock);
+          totalBufferCapacity += rowBlock.capacity();
         }
-        partitionTupleList.add(tuple);
-        if (tupleCount >= numHashShuffleBufferTuples) {
-          for (Map.Entry<Integer, TupleList> entry : partitionTuples.entrySet()) {
-            int appendPartId = entry.getKey();
-            HashShuffleAppenderWrapper appender = getAppender(appendPartId);
-            int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());
-            writtenBytes += appendedSize;
-            entry.getValue().clear();
+
+        RowWriter writer = rowBlock.getWriter();
+        long prevUsedMem = rowBlock.usedMem();
+        totalBufferCapacity -= rowBlock.capacity();
+
+        writer.addTuple(tuple);
+        numRows++;
+
+        totalBufferCapacity += rowBlock.capacity(); // calculate resizeable buffer capacity
+        usedBufferSize += (rowBlock.usedMem() - prevUsedMem);
+
+        // if total buffer capacity are required more than maxBufferSize,
+        // all partitions are flushed and the buffers are released
+        if (totalBufferCapacity > maxBufferSize) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug(String.format("Too low buffer usage. threshold: %s, total capacity: %s, used: %s",
+                FileUtil.humanReadableByteCount(maxBufferSize, false),
+                FileUtil.humanReadableByteCount(totalBufferCapacity, false),
+                FileUtil.humanReadableByteCount(usedBufferSize, false)));
           }
-          tupleCount = 0;
+
+          //flush and release buffer
+          flushBuffer(partitionMemoryMap, true);
+          writtenBytes += usedBufferSize;
+          totalBufferCapacity = usedBufferSize = 0;
+
+        } else if (usedBufferSize > bufferThreshold) {
+          //flush and reuse buffer
+          flushBuffer(partitionMemoryMap, false);
+          writtenBytes += usedBufferSize;
+          usedBufferSize = 0;
         }
       }
 
-      // processing remained tuples
-      for (Map.Entry<Integer, TupleList> entry : partitionTuples.entrySet()) {
-        int appendPartId = entry.getKey();
-        HashShuffleAppenderWrapper appender = getAppender(appendPartId);
-        int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());
-        writtenBytes += appendedSize;
-        entry.getValue().clear();
-      }
+      // flush remaining buffers
+      flushBuffer(partitionMemoryMap, true);
 
+      writtenBytes += usedBufferSize;
+      usedBufferSize = totalBufferCapacity = 0;
       TableStats aggregated = (TableStats) child.getInputStats().clone();
       aggregated.setNumBytes(writtenBytes);
       aggregated.setNumRows(numRows);
       context.setResultStats(aggregated);
 
-      partitionTuples.clear();
-
       return null;
     } catch (RuntimeException e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
+    }
+  }
+
+  /**
+   * flush all buffer to local storage
+   */
+  private void flushBuffer(Map<Integer, MemoryRowBlock> partitionMemoryMap, boolean releaseBuffer)
+      throws IOException, ExecutionException, InterruptedException {
+    List<Future<MemoryRowBlock>> resultList = Lists.newArrayList();
+    ArrayList<Integer> unusedBuffer = Lists.newArrayList();
+
+    for (Map.Entry<Integer, MemoryRowBlock> entry : partitionMemoryMap.entrySet()) {
+      int appendPartId = entry.getKey();
+
+      MemoryRowBlock memoryRowBlock = entry.getValue();
+      if (memoryRowBlock.getMemory().isReadable()) {
+        //flush and release buffer
+        resultList.add(hashShuffleAppenderManager.
+            writePartitions(meta, outSchema, context.getTaskId(), appendPartId, memoryRowBlock, releaseBuffer));
+      } else {
+        if (releaseBuffer) {
+          memoryRowBlock.release();
+        } else {
+          unusedBuffer.add(appendPartId);
+        }
+      }
+    }
+
+    // wait for flush to storage
+    for (Future<MemoryRowBlock> future : resultList) {
+      future.get();
+    }
+
+    if (releaseBuffer) {
+      partitionMemoryMap.clear();
+    } else {
+      // release the unused partition
+      for (Integer id : unusedBuffer) {
+        MemoryRowBlock memoryRowBlock = partitionMemoryMap.remove(id);
+        memoryRowBlock.release();
+      }
     }
   }
 
   @Override
   public void rescan() throws IOException {
-    // nothing to do   
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void close() throws IOException{
-    super.close();
-    if (appenderMap != null) {
-      appenderMap.clear();
-      appenderMap = null;
+    if (partitionMemoryMap.size() > 0) {
+      for (RowBlock rowBlock : partitionMemoryMap.values()) {
+        rowBlock.release();
+      }
+      partitionMemoryMap.clear();
     }
-
-    for (TupleList eachList : partitionTuples.values()) {
-      eachList.clear();
-    }
-    partitionTuples.clear();
-    partitionTuples = null;
-
-    partitioner = null;
-    plan = null;
 
     progress = 1.0f;
+    super.close();
   }
 }

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.tuple.memory;
 
-import io.netty.util.internal.PlatformDependent;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.tuple.RowBlockReader;
@@ -54,11 +53,8 @@ public class OffHeapRowBlockReader implements RowBlockReader<ZeroCopyTuple> {
   public boolean next(ZeroCopyTuple tuple) {
     if (curRowIdxForRead < rows) {
 
-      long recordStartPtr = memoryBlock.address() + curPosForRead;
-      int recordLen = PlatformDependent.getInt(recordStartPtr);
-      tuple.set(memoryBlock, curPosForRead, recordLen, dataTypes);
-
-      curPosForRead += recordLen;
+      tuple.set(memoryBlock, curPosForRead, dataTypes);
+      curPosForRead += tuple.getLength();
       curRowIdxForRead++;
       memoryBlock.readerPosition(curPosForRead);
 

@@ -20,10 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -42,6 +39,7 @@ import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
@@ -65,7 +63,7 @@ public class TestProgressExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 5000;
+  private final int numTuple = 50000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -87,8 +85,8 @@ public class TestProgressExternalSortExec {
     schema.addColumn("empid", TajoDataTypes.Type.INT4);
     schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("RAW");
-    Path employeePath = new Path(testDir, "employee.csv");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW);
+    Path employeePath = new Path(testDir, "employee.raw");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
@@ -126,18 +124,24 @@ public class TestProgressExternalSortExec {
 
   @Test
   public void testExternalSortExecProgressWithMemTableScanner() throws Exception {
-    testProgress(testDataStats.getNumBytes() * 20);    //multiply 20 for memory fit
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    int bufferSize = (int) (testDataStats.getNumBytes() * 20) / StorageUnit.MB; //multiply 2 for memory fit
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, bufferSize);
+
+    testProgress(queryContext);
   }
 
   @Test
   public void testExternalSortExecProgressWithPairWiseMerger() throws Exception {
-    testProgress(testDataStats.getNumBytes());
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    int bufferSize = (int) Math.max((testDataStats.getNumBytes() / StorageUnit.MB), 1);
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, bufferSize);
+
+    testProgress(queryContext);
   }
 
-  private void testProgress(long sortBufferBytesNum) throws Exception {
+  private void testProgress(QueryContext queryContext) throws Exception {
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
-    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, sortBufferBytesNum);
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
@@ -191,9 +195,9 @@ public class TestProgressExternalSortExec {
     TableStats tableStats = exec.getInputStats();
     assertNotNull(tableStats);
     assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getNumBytes().longValue());
-    assertEquals(cnt, testDataStats.getNumRows().longValue());
-    assertEquals(cnt, tableStats.getNumRows().longValue());
-    assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getReadBytes().longValue());
+    assertEquals(testDataStats.getNumRows().longValue(), cnt);
+    assertEquals(testDataStats.getNumRows().longValue(), tableStats.getNumRows().longValue());
+    assertTrue(testDataStats.getNumBytes().longValue() <= tableStats.getReadBytes().longValue());
 
     // for rescan test
     preVal = null;
@@ -216,9 +220,10 @@ public class TestProgressExternalSortExec {
     tableStats = exec.getInputStats();
     assertNotNull(tableStats);
     assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getNumBytes().longValue());
-    assertEquals(cnt, testDataStats.getNumRows().longValue());
-    assertEquals(cnt, tableStats.getNumRows().longValue());
-    assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getReadBytes().longValue());
+    assertEquals(testDataStats.getNumRows().longValue(), cnt);
+    assertEquals(testDataStats.getNumRows().longValue(), tableStats.getNumRows().longValue());
+    //'ReadBytes' is actual read bytes
+    assertTrue(testDataStats.getNumBytes().longValue() <= tableStats.getReadBytes().longValue());
 
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);
   }

@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -32,6 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -49,7 +51,6 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static org.apache.tajo.storage.RawFile.RawFileAppender;
-import static org.apache.tajo.storage.RawFile.RawFileScanner;
 
 /**
  * This external sort algorithm can be characterized by the followings:
@@ -69,7 +70,8 @@ public class ExternalSortExec extends SortExec {
   private static final String INTERMEDIATE_FILE_PREFIX = "@interFile_";
 
   private SortNode plan;
-  private final TableMeta meta;
+  /** the data format of intermediate file*/
+  private TableMeta intermediateMeta;
   /** the defaultFanout of external sort */
   private final int defaultFanout;
   /** It's the size of in-memory table. If memory consumption exceeds it, store the memory table into a disk. */
@@ -87,9 +89,9 @@ public class ExternalSortExec extends SortExec {
   /** local file system */
   private final RawLocalFileSystem localFS;
   /** final output files which are used for cleaning */
-  private List<FileFragment> finalOutputFiles = null;
+  private List<Chunk> finalOutputFiles = null;
   /** for directly merging sorted inputs */
-  private List<FileFragment> mergedInputFragments = null;
+  private List<Chunk> mergedInputFragments = null;
 
   ///////////////////////////////////////////////////
   // transient variables
@@ -108,8 +110,6 @@ public class ExternalSortExec extends SortExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
 
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta("ROWFILE");
-
     this.defaultFanout = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT);
     if (defaultFanout < 2) {
       throw new PhysicalPlanningException(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.varname + " cannot be lower than 2");
@@ -121,18 +121,19 @@ public class ExternalSortExec extends SortExec {
     this.inMemoryTable = new TupleList(context.getQueryContext().getInt(SessionVars.SORT_LIST_SIZE));
 
     this.sortTmpDir = getExecutorTmpDir();
-    localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
-    localFS = new RawLocalFileSystem();
+    this.localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
+    this.localFS = new RawLocalFileSystem();
+    this.intermediateMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW); //TODO change to SHUFFLE_FILE_FORMAT
   }
 
-  public ExternalSortExec(final TaskAttemptContext context,final SortNode plan,
+  public ExternalSortExec(final TaskAttemptContext context,final SortNode plan, final ScanNode scanNode,
                           final CatalogProtos.FragmentProto[] fragments) throws PhysicalPlanningException {
     this(context, plan);
 
     mergedInputFragments = TUtil.newList();
     for (CatalogProtos.FragmentProto proto : fragments) {
       FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);
-      mergedInputFragments.add(fragment);
+      mergedInputFragments.add(new Chunk(fragment, scanNode.getTableDesc().getMeta()));
     }
   }
 
@@ -154,9 +155,9 @@ public class ExternalSortExec extends SortExec {
   /**
    * Sort a tuple block and store them into a chunk file
    */
-  private Path sortAndStoreChunk(int chunkId, TupleList tupleBlock)
+  private Chunk sortAndStoreChunk(int chunkId, TupleList tupleBlock)
       throws IOException {
-    TableMeta meta = CatalogUtil.newTableMeta("RAW");
+
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
@@ -165,7 +166,9 @@ public class ExternalSortExec extends SortExec {
 
     long chunkWriteStart = System.currentTimeMillis();
     Path outputPath = getChunkPathForWrite(0, chunkId);
-    final RawFileAppender appender = new RawFileAppender(context.getConf(), null, inSchema, meta, outputPath);
+    final RawFileAppender appender =
+        new RawFileAppender(context.getConf(), null, inSchema, intermediateMeta, outputPath);
+
     appender.init();
     for (Tuple t : sorted) {
       appender.addTuple(t);
@@ -179,7 +182,10 @@ public class ExternalSortExec extends SortExec {
         FileUtil.humanReadableByteCount(appender.getOffset(), false) + " bytes, " + rowNum + " rows, " +
         "sort time: " + (sortEnd - sortStart) + " msec, " +
         "write time: " + (chunkWriteEnd - chunkWriteStart) + " msec)");
-    return outputPath;
+
+    FileFragment frag = new FileFragment("", outputPath, 0,
+        new File(localFS.makeQualified(outputPath).toUri()).length());
+    return new Chunk(frag, intermediateMeta);
   }
 
   /**
@@ -188,10 +194,10 @@ public class ExternalSortExec extends SortExec {
    * @return All paths of chunks
    * @throws java.io.IOException
    */
-  private List<Path> sortAndStoreAllChunks() throws IOException {
+  private List<Chunk> sortAndStoreAllChunks() throws IOException {
     Tuple tuple;
     long memoryConsumption = 0;
-    List<Path> chunkPaths = TUtil.newList();
+    List<Chunk> chunkPaths = TUtil.newList();
 
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
@@ -248,7 +254,8 @@ public class ExternalSortExec extends SortExec {
    * Get a local path from all temporal paths in round-robin manner.
    */
   private synchronized Path getChunkPathForWrite(int level, int chunkId) throws IOException {
-    return localDirAllocator.getLocalPathForWrite(sortTmpDir + "/" + level +"_" + chunkId, context.getConf());
+    return localFS.makeQualified(localDirAllocator.getLocalPathForWrite(
+        sortTmpDir + "/" + level + "_" + chunkId, context.getConf()));
   }
 
   @Override
@@ -266,7 +273,7 @@ public class ExternalSortExec extends SortExec {
       } else {
         // Try to sort all data, and store them as multiple chunks if memory exceeds
         long startTimeOfChunkSplit = System.currentTimeMillis();
-        List<Path> chunks = sortAndStoreAllChunks();
+        List<Chunk> chunks = sortAndStoreAllChunks();
         long endTimeOfChunkSplit = System.currentTimeMillis();
         info(LOG, "Chunks creation time: " + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec");
 
@@ -276,14 +283,7 @@ public class ExternalSortExec extends SortExec {
         } else { // if input data exceeds main-memory at least once
 
           try {
-            List<FileFragment> fragments = TUtil.newList();
-            for (Path chunk : chunks) {
-              FileFragment frag = new FileFragment("", chunk, 0,
-                  new File(localFS.makeQualified(chunk).toUri()).length());
-              fragments.add(frag);
-            }
-
-            this.result = externalMergeAndSort(fragments);
+            this.result = externalMergeAndSort(chunks);
           } catch (Exception e) {
             throw new PhysicalPlanningException(e);
           }
@@ -324,11 +324,11 @@ public class ExternalSortExec extends SortExec {
     return computedFanout;
   }
 
-  private Scanner externalMergeAndSort(List<FileFragment> chunks)
+  private Scanner externalMergeAndSort(List<Chunk> chunks)
       throws IOException, ExecutionException, InterruptedException {
     int level = 0;
-    final List<FileFragment> inputFiles = TUtil.newList(chunks);
-    final List<FileFragment> outputFiles = TUtil.newList();
+    final List<Chunk> inputFiles = TUtil.newList(chunks);
+    final List<Chunk> outputFiles = TUtil.newList();
     int remainRun = inputFiles.size();
     int chunksSize = chunks.size();
 
@@ -341,7 +341,7 @@ public class ExternalSortExec extends SortExec {
       int remainInputRuns = inputFiles.size();
       int outChunkId = 0;
       int outputFileNum = 0;
-      List<Future<FileFragment>> futures = TUtil.newList();
+      List<Future<Chunk>> futures = TUtil.newList();
       // the number of files being merged in threads.
       List<Integer> numberOfMergingFiles = TUtil.newList();
 
@@ -364,7 +364,7 @@ public class ExternalSortExec extends SortExec {
           info(LOG, "Unbalanced merge possibility detected: number of remain input (" + remainInputRuns
               + ") and output files (" + outputFileNum + ") <= " + defaultFanout);
 
-          List<FileFragment> switched = TUtil.newList();
+          List<Chunk> switched = TUtil.newList();
           // switch the remain inputs to the next outputs
           for (int j = startIdx; j < inputFiles.size(); j++) {
             switched.add(inputFiles.get(j));
@@ -379,7 +379,7 @@ public class ExternalSortExec extends SortExec {
       // wait for all sort runners
       int finishedMerger = 0;
       int index = 0;
-      for (Future<FileFragment> future : futures) {
+      for (Future<Chunk> future : futures) {
         outputFiles.add(future.get());
         // Getting the number of merged files
         finishedMerger += numberOfMergingFiles.get(index++);
@@ -405,12 +405,12 @@ public class ExternalSortExec extends SortExec {
        * deleted at this point. However, for the ease of future code maintenance, we delete only type-C fragments here
        */
       int numDeletedFiles = 0;
-      for (FileFragment frag : inputFiles) {
-        if (frag.getTableName().contains(INTERMEDIATE_FILE_PREFIX)) {
-          localFS.delete(frag.getPath(), true);
+      for (Chunk chunk : inputFiles) {
+        if (chunk.getFragment().getTableName().contains(INTERMEDIATE_FILE_PREFIX)) {
+          localFS.delete(chunk.getFragment().getPath(), true);
           numDeletedFiles++;
 
-          if(LOG.isDebugEnabled()) LOG.debug("Delete merged intermediate file: " + frag);
+          if(LOG.isDebugEnabled()) LOG.debug("Delete merged intermediate file: " + chunk.getFragment());
         }
       }
       info(LOG, numDeletedFiles + " merged intermediate files deleted");
@@ -436,15 +436,15 @@ public class ExternalSortExec extends SortExec {
   /**
    * Merge Thread
    */
-  private class KWayMergerCaller implements Callable<FileFragment> {
+  private class KWayMergerCaller implements Callable<Chunk> {
     final int level;
     final int nextRunId;
-    final List<FileFragment> inputFiles;
+    final List<Chunk> inputFiles;
     final int startIdx;
     final int mergeFanout;
     final boolean updateInputStats;
 
-    public KWayMergerCaller(final int level, final int nextRunId, final List<FileFragment> inputFiles,
+    public KWayMergerCaller(final int level, final int nextRunId, final List<Chunk> inputFiles,
                             final int startIdx, final int mergeFanout, final boolean updateInputStats) {
       this.level = level;
       this.nextRunId = nextRunId;
@@ -455,11 +455,12 @@ public class ExternalSortExec extends SortExec {
     }
 
     @Override
-    public FileFragment call() throws Exception {
+    public Chunk call() throws Exception {
       final Path outputPath = getChunkPathForWrite(level + 1, nextRunId);
       info(LOG, mergeFanout + " files are being merged to an output file " + outputPath.getName());
       long mergeStartTime = System.currentTimeMillis();
-      final RawFileAppender output = new RawFileAppender(context.getConf(), null, inSchema, meta, outputPath);
+      final RawFileAppender output =
+          new RawFileAppender(context.getConf(), null, inSchema, intermediateMeta, outputPath);
       output.init();
       final Scanner merger = createKWayMerger(inputFiles, startIdx, mergeFanout);
       merger.init();
@@ -475,7 +476,7 @@ public class ExternalSortExec extends SortExec {
           + " bytes, " + (mergeEndTime - mergeStartTime) + " msec)");
       File f = new File(localFS.makeQualified(outputPath).toUri());
       FileFragment frag = new FileFragment(INTERMEDIATE_FILE_PREFIX + outputPath.getName(), outputPath, 0, f.length());
-      return frag;
+      return new Chunk(frag, intermediateMeta);
     }
   }
 
@@ -489,7 +490,7 @@ public class ExternalSortExec extends SortExec {
   /**
    * Create a merged file scanner or k-way merge scanner.
    */
-  private Scanner createFinalMerger(List<FileFragment> inputs) throws IOException {
+  private Scanner createFinalMerger(List<Chunk> inputs) throws IOException {
     if (inputs.size() == 1) {
       this.result = getFileScanner(inputs.get(0));
     } else {
@@ -498,11 +499,11 @@ public class ExternalSortExec extends SortExec {
     return result;
   }
 
-  private Scanner getFileScanner(FileFragment frag) throws IOException {
-    return new RawFileScanner(context.getConf(), plan.getInSchema(), meta, frag);
+  private Scanner getFileScanner(Chunk chunk) throws IOException {
+    return TablespaceManager.getLocalFs().getScanner(chunk.getMeta(), inSchema, chunk.getFragment(), outSchema);
   }
 
-  private Scanner createKWayMerger(List<FileFragment> inputs, final int startChunkId, final int num) throws IOException {
+  private Scanner createKWayMerger(List<Chunk> inputs, final int startChunkId, final int num) throws IOException {
     final Scanner [] sources = new Scanner[num];
     for (int i = 0; i < num; i++) {
       sources[i] = getFileScanner(inputs.get(startChunkId + i));
@@ -773,6 +774,8 @@ public class ExternalSortExec extends SortExec {
 
   @Override
   public void close() throws IOException {
+    super.close();
+
     if (result != null) {
       result.close();
       try {
@@ -784,7 +787,8 @@ public class ExternalSortExec extends SortExec {
     }
 
     if (finalOutputFiles != null) {
-      for (FileFragment frag : finalOutputFiles) {
+      for (Chunk chunk : finalOutputFiles) {
+        FileFragment frag = chunk.getFragment();
         File tmpFile = new File(localFS.makeQualified(frag.getPath()).toUri());
         if (frag.getStartKey() == 0 && frag.getLength() == tmpFile.length()) {
           localFS.delete(frag.getPath(), true);
@@ -804,7 +808,6 @@ public class ExternalSortExec extends SortExec {
     }
 
     plan = null;
-    super.close();
   }
 
   @Override
@@ -831,6 +834,24 @@ public class ExternalSortExec extends SortExec {
       return result.getInputStats();
     } else {
       return inputStats;
+    }
+  }
+
+  private static class Chunk {
+    private FileFragment fragment;
+    private TableMeta meta;
+
+    public Chunk(FileFragment fragment, TableMeta meta) {
+      this.fragment = fragment;
+      this.meta = meta;
+    }
+
+    public FileFragment getFragment() {
+      return fragment;
+    }
+
+    public TableMeta getMeta() {
+      return meta;
     }
   }
 }
