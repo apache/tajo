@@ -12,6 +12,9 @@ Release 0.11.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1977: Cannot recognize the space-contained tablename and databasename.
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
     TAJO-1978: Printout message before terminating TSQL.
     (Contributed by Dongkyu Hwangbo, committed by jaehwa)
 
