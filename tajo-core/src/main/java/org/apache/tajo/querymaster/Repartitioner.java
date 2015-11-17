@@ -194,8 +194,11 @@ public class Repartitioner {
       long maxStats = Long.MIN_VALUE;
       int maxStatsScanIdx = -1;
       StringBuilder nonLeafScanNamesBuilder = new StringBuilder();
+
+      String intermediateDataFormat = schedulerContext.getMasterContext().getConf().getVar(ConfVars.SHUFFLE_FILE_FORMAT);
       for (int i = 0; i < scans.length; i++) {
-        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase("RAW")) {
+
+        if (scans[i].getTableDesc().getMeta().getDataFormat().equalsIgnoreCase(intermediateDataFormat)) {
           // Intermediate data scan
           hasNonLeafNode = true;
           largeScanIndexList.add(i);

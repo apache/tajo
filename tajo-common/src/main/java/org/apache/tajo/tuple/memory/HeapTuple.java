@@ -41,21 +41,26 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
   private DataType[] types;
 
   @Override
-  public void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types) {
+  public void set(MemoryBlock memoryBlock, int relativePos, DataType[] types) {
     this.buffer = memoryBlock.getBuffer();
     this.types = types;
-    super.set(relativePos, length);
+    super.set(relativePos);
   }
 
   protected void set(final byte[] bytes, final DataType[] types) {
     this.buffer = Unpooled.wrappedBuffer(bytes).order(ByteOrder.LITTLE_ENDIAN);
     this.types = types;
-    super.set(0, bytes.length);
+    super.set(0);
   }
 
   @Override
   public int size() {
     return types.length;
+  }
+
+  @Override
+  public int getLength() {
+    return buffer.getInt(getRelativePos());
   }
 
   @Override

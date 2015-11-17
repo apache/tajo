@@ -48,10 +48,9 @@ public class HeapRowBlockReader implements RowBlockReader<HeapTuple> {
   public boolean next(HeapTuple tuple) {
     if (curRowIdxForRead < rows) {
 
-      int recordLen = memoryBlock.getInt(curPosForRead);
-      tuple.set(memoryBlock, curPosForRead, recordLen, dataTypes);
+      tuple.set(memoryBlock, curPosForRead, dataTypes);
 
-      curPosForRead += recordLen;
+      curPosForRead += tuple.getLength();
       curRowIdxForRead++;
       memoryBlock.readerPosition(curPosForRead);
 

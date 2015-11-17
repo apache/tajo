@@ -26,11 +26,14 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FileAppender;
@@ -38,6 +41,9 @@ import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.TupleConverter;
+import org.apache.tajo.tuple.memory.RowWriter;
+import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
@@ -46,23 +52,36 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 public class DirectRawFileWriter extends FileAppender {
-  public static final String FILE_EXTENSION = "draw";
-  private static final int BUFFER_SIZE = 64 * StorageUnit.KB;
   private static final Log LOG = LogFactory.getLog(DirectRawFileWriter.class);
 
-  private FileChannel channel;
-  private RandomAccessFile randomAccessFile;
-  private FSDataOutputStream fos;
-  private boolean isLocal;
-  private long pos;
+  public static final String WRITE_BUFFER_SIZE = "tajo.storage.raw.io.write-buffer.bytes";
+  public static final int DEFAULT_BUFFER_SIZE = 128 * StorageUnit.KB;
+  private static final float OVERFLOW_RATIO = 1.1f;
+  protected FileChannel channel;
 
-  private TableStatistics stats;
-  private ShuffleType shuffleType;
-  private MemoryRowBlock memoryRowBlock;
+  protected RandomAccessFile randomAccessFile;
+  protected FSDataOutputStream fos;
+  protected long pos;
+  protected TableStatistics stats;
+
+  protected TupleConverter tupleConverter;
+  protected MemoryRowBlock rowBlock;
+  protected boolean analyzeField;
+  protected boolean hasExternalBuf;
+  protected boolean isLocal;
 
   public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
-                             final Schema schema, final TableMeta meta, final Path path) throws IOException {
+                             final Schema schema, final TableMeta meta, final Path path)
+      throws IOException {
+    this(conf, taskAttemptId, schema, meta, path, null);
+  }
+
+  public DirectRawFileWriter(Configuration conf, TaskAttemptId taskAttemptId,
+                             final Schema schema, final TableMeta meta, final Path path,
+                             MemoryRowBlock rowBlock) throws IOException {
     super(conf, taskAttemptId, schema, meta, path);
+    this.rowBlock = rowBlock;
+    this.hasExternalBuf = rowBlock != null;
   }
 
   @Override
@@ -91,19 +110,89 @@ public class DirectRawFileWriter extends FileAppender {
 
     if (tableStatsEnabled) {
       this.stats = new TableStatistics(this.schema, columnStatsEnabled);
-      this.shuffleType = PlannerUtil.getShuffleType(
+      if (ShuffleType.RANGE_SHUFFLE == PlannerUtil.getShuffleType(
           meta.getOption(StorageConstants.SHUFFLE_TYPE,
-              PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
+              PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)))) {
+        this.analyzeField = true;
+      }
     }
 
-    memoryRowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), BUFFER_SIZE, true);
+    if (rowBlock == null) {
+      int bufferSize = (int) (conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE) * OVERFLOW_RATIO);
+      rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), bufferSize, true, meta.getDataFormat());
+    }
+
+    tupleConverter = initConverter();
+
     pos = 0;
     super.init();
   }
 
+  public TupleConverter initConverter() {
+    switch (meta.getDataFormat()) {
+    case BuiltinStorages.DRAW:
+      return getDrawConverter();
+    case BuiltinStorages.RAW:
+      return getRawConverter();
+    default:
+      throw new TajoInternalError(new UnsupportedException());
+    }
+  }
+
+  private TupleConverter getDrawConverter() {
+    return new TupleConverter() {
+
+      @Override
+      public void convert(Tuple tuple, RowWriter writer) {
+        if (analyzeField) {
+          if (tuple instanceof UnSafeTuple) {
+
+            for (int i = 0; i < writer.dataTypes().length; i++) {
+              // it is to calculate min/max values, and it is only used for the intermediate file.
+              stats.analyzeField(i, tuple);
+            }
+            // write direct to memory
+            writer.addTuple(tuple);
+          } else {
+            writer.startRow();
+
+            for (int i = 0; i < writer.dataTypes().length; i++) {
+              // it is to calculate min/max values, and it is only used for the intermediate file.
+              stats.analyzeField(i, tuple);
+              writeField(i, tuple, writer);
+            }
+            writer.endRow();
+          }
+        } else {
+          // write direct to memory
+          writer.addTuple(tuple);
+        }
+      }
+    };
+  }
+
+  private TupleConverter getRawConverter() {
+    return new TupleConverter() {
+
+      @Override
+      public void convert(Tuple tuple, RowWriter writer) {
+        writer.startRow();
+
+        for (int i = 0; i < writer.dataTypes().length; i++) {
+          // it is to calculate min/max values, and it is only used for the intermediate file.
+          if (analyzeField) {
+            stats.analyzeField(i, tuple);
+          }
+          writeField(i, tuple, writer);
+        }
+        writer.endRow();
+      }
+    };
+  }
+
   @Override
   public long getOffset() throws IOException {
-    return pos + memoryRowBlock.getMemory().writerPosition();
+    return hasExternalBuf ? pos : pos + rowBlock.getMemory().writerPosition();
   }
 
   public void writeRowBlock(MemoryRowBlock rowBlock) throws IOException {
@@ -113,33 +202,27 @@ public class DirectRawFileWriter extends FileAppender {
       pos += rowBlock.getMemory().writeTo(fos);
     }
 
-    rowBlock.getMemory().clear();
-
     if (tableStatsEnabled) {
-      stats.incrementRows(rowBlock.rows() - stats.getNumRows());
+      stats.incrementRows(rowBlock.rows());
     }
   }
 
   @Override
   public void addTuple(Tuple t) throws IOException {
-    if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
-      // it is to calculate min/max values, and it is only used for the intermediate file.
-      for (int i = 0; i < schema.size(); i++) {
-        stats.analyzeField(i, t);
-      }
-    }
 
-    memoryRowBlock.getWriter().addTuple(t);
+    tupleConverter.convert(t, rowBlock.getWriter());
 
-    if(memoryRowBlock.getMemory().readableBytes() >= BUFFER_SIZE) {
-      writeRowBlock(memoryRowBlock);
+    if(rowBlock.usedMem() > DEFAULT_BUFFER_SIZE) {
+      writeRowBlock(rowBlock);
+      rowBlock.clear();
     }
   }
 
   @Override
   public void flush() throws IOException {
-    if(memoryRowBlock.getMemory().isReadable()) {
-      writeRowBlock(memoryRowBlock);
+    if(!hasExternalBuf && rowBlock.getMemory().isReadable()) {
+      writeRowBlock(rowBlock);
+      rowBlock.clear();
     }
   }
 
@@ -155,7 +238,9 @@ public class DirectRawFileWriter extends FileAppender {
     }
 
     IOUtils.cleanup(LOG, channel, randomAccessFile, fos);
-    memoryRowBlock.release();
+    if(!hasExternalBuf && rowBlock != null) {
+      rowBlock.release();
+    }
   }
 
   @Override

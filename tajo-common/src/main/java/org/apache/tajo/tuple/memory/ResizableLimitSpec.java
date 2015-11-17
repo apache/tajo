@@ -21,6 +21,8 @@ package org.apache.tajo.tuple.memory;
 import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.FileUtil;
 
 /**
@@ -29,7 +31,7 @@ import org.apache.tajo.util.FileUtil;
  * due to ByteBuffer.
  */
 public class ResizableLimitSpec {
-  private final Log LOG = LogFactory.getLog(ResizableLimitSpec.class);
+  private static final Log LOG = LogFactory.getLog(ResizableLimitSpec.class);
 
   public static final int MAX_SIZE_BYTES = Integer.MAX_VALUE;
   public static final ResizableLimitSpec DEFAULT_LIMIT = new ResizableLimitSpec(Integer.MAX_VALUE);
@@ -114,10 +116,11 @@ public class ResizableLimitSpec {
       return (int) initSize;
     }
 
-    if (currentSize > Integer.MAX_VALUE) {
-      LOG.warn("Current size already exceeds the maximum size (" + Integer.MAX_VALUE + " bytes)");
-      return Integer.MAX_VALUE;
+    if (currentSize == Integer.MAX_VALUE) {
+      throw new TajoRuntimeException(new UnsupportedException(
+          "Current size already exceeds the maximum size (" + Integer.MAX_VALUE + " bytes)"));
     }
+
     long nextSize = (long) (currentSize + ((float) currentSize * incRatio));
 
     if (nextSize > limitBytes) {
