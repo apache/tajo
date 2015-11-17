@@ -81,21 +81,10 @@ public class AvroAppender extends FileAppender {
     dataFileWriter = new DataFileWriter<>(datumWriter);
     dataFileWriter.create(avroSchema, outputStream);
 
-    if (enabledStats) {
-      this.stats = new TableStatistics(schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(schema, columnStatsEnabled);
     }
     super.init();
-  }
-
-  /**
-   * Gets the current offset. Tracking offsets is currently not implemented, so
-   * this method always returns 0.
-   *
-   * @return 0
-   */
-  @Override
-  public long getOffset() throws IOException {
-    return 0;
   }
 
   private Object getPrimitive(Tuple tuple, int i, Schema.Type avroType) {
@@ -173,10 +162,13 @@ public class AvroAppender extends FileAppender {
           throw new RuntimeException("Unknown type: " + avroType);
       }
       record.put(i, value);
+      if (tableStatsEnabled) {
+        stats.analyzeField(i, tuple);
+      }
     }
     dataFileWriter.append(record);
 
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
     }
   }
@@ -195,6 +187,11 @@ public class AvroAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     IOUtils.cleanup(null, dataFileWriter);
+
+    // TODO: getOffset is not implemented yet
+//    if (tableStatsEnabled) {
+//      stats.setNumBytes(getOffset());
+//    }
   }
 
   /**
@@ -204,7 +201,7 @@ public class AvroAppender extends FileAppender {
    */
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

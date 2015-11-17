@@ -47,9 +47,15 @@ public class DescTableCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] cmd) throws TajoException {
-    if (cmd.length == 2) {
-      String tableName = cmd[1];
-      tableName = tableName.replace("\"", "");
+    if (cmd.length >= 2) {
+      StringBuilder tableNameMaker = new StringBuilder();
+      for (int i = 1; i < cmd.length; i++) {
+        if (i != 1) {
+          tableNameMaker.append(" ");
+        }
+        tableNameMaker.append(cmd[i]);
+      }
+      String tableName = tableNameMaker.toString().replace("\"", "");
       TableDesc desc = client.getTableDesc(tableName);
       if (desc == null) {
         context.getOutput().println("Did not find any relation named \"" + tableName + "\"");

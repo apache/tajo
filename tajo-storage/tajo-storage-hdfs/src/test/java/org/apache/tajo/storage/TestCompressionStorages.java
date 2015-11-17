@@ -161,8 +161,7 @@ public class TestCompressionStorages {
     }
 
     int tupleCnt = 0;
-    Tuple tuple;
-    while ((tuple = scanner.next()) != null) {
+    while ((scanner.next()) != null) {
       tupleCnt++;
     }
     scanner.close();

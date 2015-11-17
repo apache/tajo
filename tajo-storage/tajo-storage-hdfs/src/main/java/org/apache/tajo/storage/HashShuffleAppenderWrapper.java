@@ -25,6 +25,7 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.util.Pair;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,14 +33,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class HashShuffleAppender implements Appender {
-  private static Log LOG = LogFactory.getLog(HashShuffleAppender.class);
+public class HashShuffleAppenderWrapper implements Closeable {
+  private static Log LOG = LogFactory.getLog(HashShuffleAppenderWrapper.class);
 
   private FileAppender appender;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private int partId;
-
-  private TableStats tableStats;
 
   //<taskId,<page start offset,<task start, task end>>>
   private Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> taskTupleIndexes;
@@ -53,20 +52,17 @@ public class HashShuffleAppender implements Appender {
 
   private int rowNumInPage;
 
-  private int totalRows;
-
   private long offset;
 
   private ExecutionBlockId ebId;
 
-  public HashShuffleAppender(ExecutionBlockId ebId, int partId, int pageSize, FileAppender appender) {
+  public HashShuffleAppenderWrapper(ExecutionBlockId ebId, int partId, int pageSize, FileAppender appender) {
     this.ebId = ebId;
     this.partId = partId;
     this.appender = appender;
     this.pageSize = pageSize;
   }
 
-  @Override
   public void init() throws IOException {
     currentPage = new Pair(0L, 0);
     taskTupleIndexes = new HashMap<>();
@@ -110,7 +106,6 @@ public class HashShuffleAppender implements Appender {
         rowNumInPage = 0;
       }
 
-      totalRows += tuples.size();
       return writtenBytes;
     }
   }
@@ -129,12 +124,10 @@ public class HashShuffleAppender implements Appender {
     currentPage = new Pair(pos, 0);
   }
 
-  @Override
   public void addTuple(Tuple t) throws IOException {
     throw new IOException("Not support addTuple, use addTuples()");
   }
 
-  @Override
   public void flush() throws IOException {
     synchronized(appender) {
       if (closed.get()) {
@@ -142,11 +135,6 @@ public class HashShuffleAppender implements Appender {
       }
       appender.flush();
     }
-  }
-
-  @Override
-  public long getEstimatedOutputSize() throws IOException {
-    return pageSize * pages.size();
   }
 
   @Override
@@ -170,15 +158,9 @@ public class HashShuffleAppender implements Appender {
         }
       }
       closed.set(true);
-      tableStats = appender.getStats();
     }
   }
 
-  @Override
-  public void enableStats() {
-  }
-
-  @Override
   public TableStats getStats() {
     synchronized(appender) {
       return appender.getStats();
@@ -187,10 +169,6 @@ public class HashShuffleAppender implements Appender {
 
   public List<Pair<Long, Integer>> getPages() {
     return pages;
-  }
-
-  public Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> getTaskTupleIndexes() {
-    return taskTupleIndexes;
   }
 
   public List<Pair<Long, Pair<Integer, Integer>>> getMergedTupleIndexes() {
