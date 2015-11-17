@@ -35,7 +35,7 @@ import java.util.Objects;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private JoinSpec joinSpec = new JoinSpec();
-  @Expose private List<Target> targets;
+  @Expose private List<Target> targets = null;
 
   public JoinNode(int pid) {
     super(pid, NodeType.JOIN);

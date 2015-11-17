@@ -44,7 +44,7 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
    * It's a list of targets. The partition key columns should be followed by window functions.
    * aggrFunctions keep actual aggregation functions, but it only contains field references.
    * */
-  @Expose private List<Target> targets;
+  @Expose private List<Target> targets = null;
   @Expose private boolean hasDistinct = false;
 
   public WindowAggNode(int pid) {

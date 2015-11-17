@@ -40,7 +40,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   private List<GroupbyNode> subGroupbyPlan;
 
   @Expose
-  private List<Target> targets;
+  private List<Target> targets = null;
 
   @Expose
   private Column[] groupingColumns = PlannerUtil.EMPTY_COLUMNS;

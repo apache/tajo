@@ -42,7 +42,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
    * It's a list of targets. The grouping columns should be followed by aggregation functions.
    * aggrFunctions keep actual aggregation functions, but it only contains field references.
    * */
-  @Expose private List<Target> targets;
+  @Expose private List<Target> targets = null;
   @Expose private boolean hasDistinct = false;
   /**
    * A flag to indicate if this groupby is for distinct block (i.e., SELECT DISTINCT x,y,z, ...)

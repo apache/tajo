@@ -39,7 +39,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
   @Expose protected String alias;
   @Expose protected Schema logicalSchema;
 	@Expose protected EvalNode qual;
-	@Expose protected List<Target> targets;
+	@Expose protected List<Target> targets = null;
   @Expose protected boolean broadcastTable;
   @Expose protected long limit = -1; // -1 means no set
 

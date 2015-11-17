@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Objects;
 
 public class EvalExprNode extends LogicalNode implements Projectable {
-  @Expose private List<Target> exprs;
+  @Expose private List<Target> exprs = null;
 
   public EvalExprNode(int pid) {
     super(pid, NodeType.EXPRS);

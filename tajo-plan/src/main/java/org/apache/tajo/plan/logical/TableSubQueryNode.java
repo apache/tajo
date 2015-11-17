@@ -32,7 +32,7 @@ import java.util.List;
 public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private String tableName;
   @Expose private LogicalNode subQuery;
-  @Expose private List<Target> targets; // unused
+  @Expose private List<Target> targets = null; // unused
 
   public TableSubQueryNode(int pid) {
     super(pid, NodeType.TABLE_SUBQUERY);

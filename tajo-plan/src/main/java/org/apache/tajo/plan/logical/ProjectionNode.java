@@ -35,7 +35,7 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   /**
    * the targets are always filled even if the query is 'select *'
    */
-  @Expose	private List<Target> targets;
+  @Expose	private List<Target> targets = null;
 
 	public ProjectionNode(int pid) {
 		super(pid, NodeType.PROJECTION);
