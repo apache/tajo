@@ -72,6 +72,8 @@ public class Sort extends UnaryOperator {
     @Expose @SerializedName("IsAsc")
     private boolean asc = true;
     @Expose @SerializedName("IsNullsFirst")
+    // The default value for nulls order is decided based on the sort order.
+    // That is, nulls appear at the bottom with asc and the top with desc.
     private Boolean nullsFirst = null;
 
     public SortSpec(final Expr key) {
@@ -102,7 +104,7 @@ public class Sort extends UnaryOperator {
 
     public final boolean isNullsFirst() {
       if (nullsFirst == null) {
-        return !asc; // nulls last for asc, nulls first for desc
+        return !asc;
       } else {
         return nullsFirst;
       }
@@ -142,7 +144,7 @@ public class Sort extends UnaryOperator {
 
     @Override
     public String toString() {
-      return key + " " + (asc ? "asc" : "desc") + " " + (nullsFirst ? "nulls first" : "nulls last");
+      return key + " " + (asc ? "asc" : "desc") + " " + (isNullsFirst() ? "nulls first" : "nulls last");
     }
 
     @Override

@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(4)
-  => Sort Keys: default.customer.c_custkey (INT4) (asc),default.orders.o_orderkey (INT4) (asc)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last),default.orders.o_orderkey (INT4) (asc, nulls last)
    SELECTION(3)
      => Search Cond: (default.orders.o_orderdate (TEXT) IS NOT NULL AND default.orders.o_orderdate (TEXT)LIKE'1996%')
       JOIN(7)(LEFT_OUTER)
@@ -44,7 +44,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
  0: type=Broadcast, tables=default.orders
 
 SORT(11)
-  => Sort Keys: default.customer.c_custkey (INT4) (asc),default.orders.o_orderkey (INT4) (asc)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last),default.orders.o_orderkey (INT4) (asc, nulls last)
    SELECTION(3)
      => Search Cond: (default.orders.o_orderdate (TEXT) IS NOT NULL AND default.orders.o_orderdate (TEXT)LIKE'1996%')
       JOIN(7)(LEFT_OUTER)
@@ -72,7 +72,7 @@ Block Id: eb_0000000000000_0000_000004 [ROOT]
  0: sorted input=eb_0000000000000_0000_000003
 
 SORT(4)
-  => Sort Keys: default.customer.c_custkey (INT4) (asc),default.orders.o_orderkey (INT4) (asc)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last),default.orders.o_orderkey (INT4) (asc, nulls last)
    SCAN(12) on eb_0000000000000_0000_000003
      => out schema: {(4) ?coalesce (TEXT), default.customer.c_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4)}
      => in schema: {(4) ?coalesce (TEXT), default.customer.c_custkey (INT4), default.orders.o_orderdate (TEXT), default.orders.o_orderkey (INT4)}
