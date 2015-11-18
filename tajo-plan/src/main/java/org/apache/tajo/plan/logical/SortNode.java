@@ -28,7 +28,7 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
 public final class SortNode extends UnaryNode implements Cloneable {
-  public static enum SortPurpose {
+  public enum SortPurpose {
     NORMAL,
     STORAGE_SPECIFIED
   }

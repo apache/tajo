@@ -39,10 +39,12 @@ public class ResizableMemoryBlock implements MemoryBlock {
 
   protected ByteBuf buffer;
   protected ResizableLimitSpec limitSpec;
+  private long memoryAddress;
 
   public ResizableMemoryBlock(ByteBuf buffer, ResizableLimitSpec limitSpec) {
     this.buffer = buffer.order(ByteOrder.LITTLE_ENDIAN);
     this.limitSpec = limitSpec;
+    this.memoryAddress = this.buffer.hasMemoryAddress() ? this.buffer.memoryAddress() : 0;
   }
 
   public ResizableMemoryBlock(ByteBuf buffer) {
@@ -50,13 +52,13 @@ public class ResizableMemoryBlock implements MemoryBlock {
   }
 
   public ResizableMemoryBlock(ByteBuffer buffer) {
-    this.buffer = Unpooled.wrappedBuffer(buffer).order(ByteOrder.LITTLE_ENDIAN);
-    this.limitSpec = new ResizableLimitSpec(buffer.capacity());
+    this(Unpooled.wrappedBuffer(buffer), new ResizableLimitSpec(buffer.capacity(), buffer.capacity()));
   }
 
   public ResizableMemoryBlock(ResizableLimitSpec limitSpec, boolean isDirect) {
     if (isDirect) {
       this.buffer = BufferPool.directBuffer((int) limitSpec.initialSize(), (int) limitSpec.limit());
+      this.memoryAddress = buffer.memoryAddress();
     } else {
       this.buffer = BufferPool.heapBuffer((int) limitSpec.initialSize(), (int) limitSpec.limit());
     }
@@ -65,7 +67,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
 
   @Override
   public long address() {
-    return buffer.memoryAddress();
+    return memoryAddress;
   }
 
   @Override
@@ -123,15 +125,14 @@ public class ResizableMemoryBlock implements MemoryBlock {
     return buffer.writerIndex();
   }
 
-
   @Override
   public void ensureSize(int size) {
     if (!buffer.isWritable(size)) {
-      if (!limitSpec.canIncrease(buffer.capacity())) {
+      if (!limitSpec.canIncrease(size)) {
         throw new RuntimeException("Cannot increase RowBlock anymore.");
       }
 
-      int newBlockSize = limitSpec.increasedSize(buffer.capacity());
+      int newBlockSize = limitSpec.increasedSize(size);
       resize(newBlockSize);
       LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
     }
@@ -144,17 +145,18 @@ public class ResizableMemoryBlock implements MemoryBlock {
       throw new RuntimeException("Resize cannot exceed the capacity limit");
     }
 
-    if (newSize < buffer.capacity()) {
+    if (newSize < buffer.writableBytes()) {
       LOG.warn("The capacity reduction is ignored.");
     }
 
     int newBlockSize = UnsafeUtil.alignedSize(newSize);
     buffer = BufferPool.ensureWritable(buffer, newBlockSize);
+    memoryAddress = buffer.memoryAddress();
   }
 
   @Override
   public void release() {
-    buffer.release();
+    if(buffer.refCnt() > 0) buffer.release();
   }
 
   @Override

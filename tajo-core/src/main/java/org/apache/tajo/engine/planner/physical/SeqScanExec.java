@@ -116,8 +116,8 @@ public class SeqScanExec extends ScanExec {
       }
       ConstEval constExpr = new ConstEval(datum);
 
-      for (int i = 0; i < plan.getTargets().length; i++) {
-        Target target = plan.getTargets()[i];
+      for (int i = 0; i < plan.getTargets().size(); i++) {
+        Target target = plan.getTargets().get(i);
 
         if (target.getEvalTree().equals(targetExpr)) {
           if (!target.hasAlias()) {
@@ -211,7 +211,7 @@ public class SeqScanExec extends ScanExec {
   }
 
   protected void initializeProjector(Schema actualInSchema){
-    Target[] realTargets;
+    List<Target> realTargets;
     if (plan.getTargets() == null) {
       realTargets = PlannerUtil.schemaToTargets(outSchema);
     } else {
@@ -219,10 +219,10 @@ public class SeqScanExec extends ScanExec {
     }
 
     //if all column is selected and there is no have expression, projection can be skipped
-    if (realTargets.length == inSchema.size()) {
+    if (realTargets.size() == inSchema.size()) {
       for (int i = 0; i < inSchema.size(); i++) {
-        if (realTargets[i].getEvalTree() instanceof FieldEval) {
-          FieldEval f = realTargets[i].getEvalTree();
+        if (realTargets.get(i).getEvalTree() instanceof FieldEval) {
+          FieldEval f = realTargets.get(i).getEvalTree();
           if(!f.getColumnRef().equals(inSchema.getColumn(i))) {
             needProjection = true;
             break;

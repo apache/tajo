@@ -85,7 +85,7 @@ public class TestTajoDump extends QueryTestCaseBase {
         "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
 
       executeString("CREATE INDEX test_idx on \"" + getCurrentDatabase()
-        + "\".\"TableName1\" ( \"Age\" asc null first, \"FirstName\" desc null last )");
+        + "\".\"TableName1\" ( \"Age\" asc nulls first, \"FirstName\" desc nulls last )");
 
       try {
         UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();

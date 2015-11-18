@@ -62,27 +62,22 @@ public class ORCAppender extends FileAppender {
         StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE)),
       timezone);
 
-    if (enabledStats) {
-      this.stats = new TableStatistics(schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(schema, columnStatsEnabled);
     }
 
     super.init();
   }
 
   @Override
-  public long getOffset() throws IOException {
-    return 0;
-  }
-
-  @Override
   public void addTuple(Tuple tuple) throws IOException {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       for (int i = 0; i < schema.size(); ++i) {
         stats.analyzeField(i, tuple);
       }
     }
     writer.addTuple(tuple);
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
     }
   }
@@ -94,11 +89,16 @@ public class ORCAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     writer.close();
+
+    // TODO: getOffset is not implemented yet
+//    if (tableStatsEnabled) {
+//      stats.setNumBytes(getOffset());
+//    }
   }
 
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;

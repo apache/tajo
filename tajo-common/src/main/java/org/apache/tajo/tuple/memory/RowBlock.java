@@ -25,10 +25,30 @@ import java.io.IOException;
 import java.nio.channels.ScatteringByteChannel;
 
 public interface RowBlock {
+  /**
+   * a data format for de/serialization
+   */
+  String getDataFormat();
 
+  /**
+   * reset the memory and writer
+   */
   void clear();
 
+  /**
+   * @return the number of bytes this memory block can contain.
+   */
   int capacity();
+
+  /**
+   * @return the number of written bytes in this memory block
+   */
+  int usedMem();
+
+  /**
+   * @return the percentage of written bytes in this memory block
+   */
+  float usage();
 
   void setRows(int rowNum);
 

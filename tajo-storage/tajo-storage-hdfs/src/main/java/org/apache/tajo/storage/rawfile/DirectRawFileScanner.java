@@ -35,7 +35,6 @@ import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.tuple.memory.RowBlock;
 import org.apache.tajo.tuple.memory.UnSafeTuple;
-import org.apache.tajo.tuple.memory.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
@@ -45,6 +44,9 @@ import java.io.IOException;
 public class DirectRawFileScanner extends FileScanner implements SeekableScanner {
   private static final Log LOG = LogFactory.getLog(DirectRawFileScanner.class);
 
+  public static final String READ_BUFFER_SIZE = "tajo.storage.raw.io.read-buffer.bytes";
+  public static final int DEFAULT_BUFFER_SIZE = 128 * StorageUnit.KB;
+
   private SeekableInputChannel channel;
 
   private boolean eos = false;
@@ -53,7 +55,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private long filePosition;
   private long endOffset;
 
-  private ZeroCopyTuple unSafeTuple = new UnSafeTuple();
+  private UnSafeTuple unSafeTuple = new UnSafeTuple();
   private RowBlock tupleBuffer;
   private RowBlockReader reader;
 
@@ -61,15 +63,19 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     super(conf, schema, meta, fragment);
   }
 
+  @Override
   public void init() throws IOException {
     initChannel();
 
-    tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema), 64 * StorageUnit.KB, true);
+    if (tupleBuffer == null) {
+      tupleBuffer = new MemoryRowBlock(SchemaUtil.toDataTypes(schema),
+          conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
+    } else {
+      tupleBuffer.clear();
+    }
 
-    reader = tupleBuffer.getReader();
-
-    fetchNeeded = !next(tupleBuffer);
-
+    fetchNeeded = true;
+    eos = false;
     super.init();
   }
 
@@ -121,12 +127,12 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public void seek(long offset) throws IOException {
     channel.seek(offset);
     filePosition = channel.position();
-    tupleBuffer.getMemory().clear();
+    tupleBuffer.clear();
     fetchNeeded = true;
   }
 
   public boolean next(RowBlock rowblock) throws IOException {
-    long reamin = reader.remainForRead();
+    long reamin = reader == null ? 0 : reader.remainForRead();
     boolean ret = rowblock.copyFromChannel(channel);
     reader = rowblock.getReader();
     filePosition += rowblock.getMemory().writerPosition() - reamin;
@@ -136,7 +142,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private boolean fetchNeeded = true;
 
   @Override
-  public Tuple next() throws IOException {
+  public UnSafeTuple next() throws IOException {
     if(eos) {
       return null;
     }
@@ -164,9 +170,9 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public void reset() throws IOException {
     // reload initial buffer
     filePosition = fragment.getStartKey();
+    recordCount = 0;
     seek(filePosition);
     eos = false;
-    reader.reset();
   }
 
   @Override

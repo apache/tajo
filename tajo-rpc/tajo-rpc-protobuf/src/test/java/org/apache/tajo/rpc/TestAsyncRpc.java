@@ -151,7 +151,7 @@ public class TestAsyncRpc {
 
   public void tearDownRpcServer() throws Exception {
     if (server != null) {
-      server.shutdown();
+      server.shutdown(true);
       server = null;
     }
   }
@@ -370,7 +370,7 @@ public class TestAsyncRpc {
     assertEquals(echoMessage, future.get());
     assertTrue(future.isDone());
     client.close();
-    server.shutdown();
+    server.shutdown(true);
   }
 
 
@@ -603,7 +603,7 @@ public class TestAsyncRpc {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
     CallFuture<EchoMessage> future = new CallFuture<>();
-    stub.busy(future.getController(), echoMessage, future); //30 sec delay
+    stub.busy(future.getController(), echoMessage, future); //10 sec delay
     assertFalse(future.isDone());
 
     EchoMessage result = null;

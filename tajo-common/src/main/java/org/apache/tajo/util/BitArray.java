@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class BitArray {
   private byte [] data;
@@ -60,9 +61,7 @@ public class BitArray {
   }
 
   public void clear() {
-    for (int i = 0; i < data.length; i++) {
-      data[i] = 0;
-    }
+    Arrays.fill(data, (byte) 0);
   }
 
   public int bytesLength() {

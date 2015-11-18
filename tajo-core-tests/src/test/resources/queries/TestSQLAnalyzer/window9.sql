@@ -6,4 +6,4 @@
 FROM
   sum_example
 WINDOW
-  window1 AS (partition by round(dt),dt2 order by ceil(dt) asc null last ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);
+  window1 AS (partition by round(dt),dt2 order by ceil(dt) asc nulls last ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);

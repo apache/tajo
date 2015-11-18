@@ -21,18 +21,18 @@
  */
 package org.apache.tajo.plan.logical;
 
-import java.util.Arrays;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.util.List;
+import java.util.Objects;
+
 public class EvalExprNode extends LogicalNode implements Projectable {
-  @Expose private Target[] exprs;
+  @Expose private List<Target> exprs = null;
 
   public EvalExprNode(int pid) {
     super(pid, NodeType.EXPRS);
@@ -54,17 +54,17 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   }
 
   @Override
-  public void setTargets(Target[] targets) {
+  public void setTargets(List<Target> targets) {
     this.exprs = targets;
     this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target[] getTargets() {
+  public List<Target> getTargets() {
     return exprs;
   }
 
-  public Target[] getExprs() {
+  public List<Target> getExprs() {
     return this.exprs;
   }
   
@@ -77,7 +77,7 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + Arrays.hashCode(exprs);
+    result = prime * result + Objects.hashCode(exprs);
     return result;
   }
 

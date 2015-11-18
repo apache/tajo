@@ -117,7 +117,9 @@ public enum SessionVars implements ConfigKey {
 
   // for physical Executors
   EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort (mb)", DEFAULT,
-      Long.class, Validators.min("0")),
+      Integer.class, Validators.min("0")),
+  HASH_SHUFFLE_BUFFER_SIZE(ConfVars.$EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE, "hash-shuffle buffer size for local disk I/O (mb)"
+      , DEFAULT, Integer.class, Validators.min("1")),
   HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash join (mb)", DEFAULT,
       Long.class, Validators.min("0")),
   INNER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD,
@@ -131,7 +133,7 @@ public enum SessionVars implements ConfigKey {
   NULL_CHAR(ConfVars.$TEXT_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
   AGG_HASH_TABLE_SIZE(ConfVars.$AGG_HASH_TABLE_SIZE, "Aggregation hash table size", DEFAULT),
-  SORT_HASH_TABLE_SIZE(ConfVars.$SORT_HASH_TABLE_SIZE, "Sort hash table size", DEFAULT),
+  SORT_LIST_SIZE(ConfVars.$SORT_LIST_SIZE, "List size for in-memory sort", DEFAULT),
   JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, "Join hash table size", DEFAULT),
 
   // for index
@@ -140,7 +142,7 @@ public enum SessionVars implements ConfigKey {
 
   // for partition overwrite
   PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$PARTITION_NO_RESULT_OVERWRITE_ENABLED,
-    "If True, a partitioned table is overwritten even if a sub query leads to no result. "
+    "If true, a partitioned table is overwritten even if a sub query leads to no result. "
     + "Otherwise, the table data will be kept if there is no result", DEFAULT),
 
   // Behavior Control ---------------------------------------------------------

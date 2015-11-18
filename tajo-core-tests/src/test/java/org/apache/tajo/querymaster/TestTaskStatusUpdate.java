@@ -106,7 +106,7 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       res = executeQuery();
 
       // in/out * stage(4)
-      long[] expectedNumRows = new long[]{5, 5, 2, 2, 7, 2, 2, 2};
+      long[] expectedNumRows = new long[]{5, 5, 2, 2, 2, 2, 2, 2};
       long[] expectedNumBytes = new long[]{20, 75, 8, 34, 109, 34, 34, 64};
       long[] expectedReadBytes = new long[]{20, 20, 8, 8, 109, 0, 34, 0};
 

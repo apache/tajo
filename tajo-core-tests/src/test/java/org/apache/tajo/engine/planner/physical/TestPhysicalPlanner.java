@@ -573,6 +573,7 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode = optimizer.optimize(plan);
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.close();
     assertTrue(exec instanceof SortBasedColPartitionStoreExec);
   }
 
@@ -597,6 +598,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.close();
     assertTrue(exec instanceof HashBasedColPartitionStoreExec);
   }
 
@@ -621,6 +623,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.close();
     assertTrue(exec instanceof SortBasedColPartitionStoreExec);
   }
 
@@ -970,7 +973,7 @@ public class TestPhysicalPlanner {
   }
 
   public final String [] createIndexStmt = {
-      "create index idx_employee on employee using TWO_LEVEL_BIN_TREE (name null first, empId desc)"
+      "create index idx_employee on employee using TWO_LEVEL_BIN_TREE (name nulls first, empId desc)"
   };
 
   @Test

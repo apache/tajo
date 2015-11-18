@@ -32,7 +32,6 @@ import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.RpcParameterFactory;
@@ -46,7 +45,6 @@ import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.apache.tajo.ResourceProtos.*;
 
@@ -168,11 +166,9 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
       CallFuture<NodeHeartbeatResponse> callBack = new CallFuture<>();
 
       resourceTracker.nodeHeartbeat(callBack.getController(), requestProto, callBack);
-      response = callBack.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+      response = callBack.get();
     } catch (InterruptedException e) {
       LOG.warn(e.getMessage());
-    } catch (TimeoutException te) {
-      LOG.warn("Heartbeat response is being delayed.", te);
     } catch (ExecutionException ee) {
       LOG.warn("TajoMaster failure: " + ee.getMessage());
       resourceTracker = null;

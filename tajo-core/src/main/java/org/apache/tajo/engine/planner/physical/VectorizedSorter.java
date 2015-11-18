@@ -26,6 +26,7 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Extract raw level values (primitive or String/byte[]) from each of key columns before sorting
@@ -35,7 +36,7 @@ public class VectorizedSorter extends ComparableVector implements IndexedSortabl
 
   private final int[] mappings;         // index indirection
 
-  public VectorizedSorter(TupleList source, SortSpec[] sortKeys, int[] keyIndex) {
+  public VectorizedSorter(List source, SortSpec[] sortKeys, int[] keyIndex) {
     super(source.size(), sortKeys, keyIndex);
     source.toArray(tuples);   // wish it's array list
     mappings = new int[tuples.length];
