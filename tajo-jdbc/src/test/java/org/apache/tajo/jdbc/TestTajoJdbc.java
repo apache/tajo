@@ -367,14 +367,14 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     conns[1] = DriverManager.getConnection(connUri);
 
     try {
-      for (int i = 0; i < conns.length; i++) {
+      for (Connection conn : conns) {
         Statement stmt = null;
         ResultSet res = null;
         try {
-          stmt = conns[i].createStatement();
+          stmt = conn.createStatement();
 
           res = stmt.executeQuery("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
-            "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
+                  "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
           try {
             Map<String, Integer> result = Maps.newHashMap();
@@ -425,14 +425,14 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     conns[1] = DriverManager.getConnection(connUri);
 
     try {
-      for (int i = 0; i < conns.length; i++) {
+      for (Connection conn : conns) {
         Statement stmt = null;
         ResultSet res = null;
         try {
-          stmt = conns[i].createStatement();
+          stmt = conn.createStatement();
 
           res = stmt.executeQuery("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
-            "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
+                  "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
           try {
             Map<String, Integer> result = Maps.newHashMap();
@@ -461,7 +461,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
           if (stmt != null) {
             stmt.close();
           }
-          conns[i].close();
+          conn.close();
         }
       }
     } finally {

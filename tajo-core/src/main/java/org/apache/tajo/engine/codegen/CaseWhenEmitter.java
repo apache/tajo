@@ -142,8 +142,8 @@ class CaseWhenEmitter {
   private static EvalNode extractCommonTerm(List<CaseWhenEval.IfThenEval> ifThenEvals) {
     EvalNode commonTerm = null;
 
-    for (int i = 0; i < ifThenEvals.size(); i++) {
-      EvalNode predicate = ifThenEvals.get(i).getCondition();
+    for (CaseWhenEval.IfThenEval ifThenEval : ifThenEvals) {
+      EvalNode predicate = ifThenEval.getCondition();
       if (!checkIfSimplePredicate(predicate)) {
         return null;
       }

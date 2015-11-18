@@ -988,8 +988,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       List<SortSpec> enforcedSortSpecList = Lists.newArrayList();
       int i = 0;
       outer:
-      for (int j = 0; j < sortSpecProtos.size(); j++) {
-        SortSpec enforcedSortSpecs = new SortSpec(sortSpecProtos.get(j));
+      for (SortSpecProto sortSpecProto : sortSpecProtos) {
+        SortSpec enforcedSortSpecs = new SortSpec(sortSpecProto);
 
         for (Column grpKey : grpColumns) { // if this sort key is included in grouping columns, skip it.
           if (enforcedSortSpecs.getSortKey().equals(grpKey)) {

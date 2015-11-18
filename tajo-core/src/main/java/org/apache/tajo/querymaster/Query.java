@@ -265,8 +265,8 @@ public class Query implements EventHandler<QueryEvent> {
       float totalProgress = 0.0f;
       float proportion = 1.0f / (float)(getExecutionBlockCursor().size() - 1); // minus one is due to
 
-      for (int i = 0; i < subProgresses.length; i++) {
-        totalProgress += subProgresses[i] * proportion;
+      for (float subProgress : subProgresses) {
+        totalProgress += subProgress * proportion;
       }
 
       return totalProgress;

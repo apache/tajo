@@ -138,50 +138,50 @@ final class AnnotationWriter extends AnnotationVisitor {
         } else if (value instanceof byte[]) {
             byte[] v = (byte[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('B', cw.newInteger(v[i]).index);
+            for (byte aV : v) {
+                bv.put12('B', cw.newInteger(aV).index);
             }
         } else if (value instanceof boolean[]) {
             boolean[] v = (boolean[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('Z', cw.newInteger(v[i] ? 1 : 0).index);
+            for (boolean aV : v) {
+                bv.put12('Z', cw.newInteger(aV ? 1 : 0).index);
             }
         } else if (value instanceof short[]) {
             short[] v = (short[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('S', cw.newInteger(v[i]).index);
+            for (short aV : v) {
+                bv.put12('S', cw.newInteger(aV).index);
             }
         } else if (value instanceof char[]) {
             char[] v = (char[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('C', cw.newInteger(v[i]).index);
+            for (char aV : v) {
+                bv.put12('C', cw.newInteger(aV).index);
             }
         } else if (value instanceof int[]) {
             int[] v = (int[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('I', cw.newInteger(v[i]).index);
+            for (int aV : v) {
+                bv.put12('I', cw.newInteger(aV).index);
             }
         } else if (value instanceof long[]) {
             long[] v = (long[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('J', cw.newLong(v[i]).index);
+            for (long aV : v) {
+                bv.put12('J', cw.newLong(aV).index);
             }
         } else if (value instanceof float[]) {
             float[] v = (float[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('F', cw.newFloat(v[i]).index);
+            for (float aV : v) {
+                bv.put12('F', cw.newFloat(aV).index);
             }
         } else if (value instanceof double[]) {
             double[] v = (double[]) value;
             bv.put12('[', v.length);
-            for (int i = 0; i < v.length; i++) {
-                bv.put12('D', cw.newDouble(v[i]).index);
+            for (double aV : v) {
+                bv.put12('D', cw.newDouble(aV).index);
             }
         } else {
             Item i = cw.newConstItem(value);

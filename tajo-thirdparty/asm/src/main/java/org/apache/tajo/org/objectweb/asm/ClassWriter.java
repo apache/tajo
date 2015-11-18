@@ -1200,8 +1200,7 @@ public class ClassWriter extends ClassVisitor {
         int argsLength = bsmArgs.length;
         bootstrapMethods.putShort(argsLength);
 
-        for (int i = 0; i < argsLength; i++) {
-            Object bsmArg = bsmArgs[i];
+        for (Object bsmArg : bsmArgs) {
             hashCode ^= bsmArg.hashCode();
             bootstrapMethods.putShort(newConst(bsmArg));
         }

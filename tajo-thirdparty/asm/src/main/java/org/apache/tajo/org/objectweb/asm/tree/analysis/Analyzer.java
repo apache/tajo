@@ -29,23 +29,14 @@
  */
 package org.apache.tajo.org.objectweb.asm.tree.analysis;
 
+import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.org.objectweb.asm.Type;
+import org.apache.tajo.org.objectweb.asm.tree.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.tajo.org.objectweb.asm.Type;
-import org.apache.tajo.org.objectweb.asm.Opcodes;
-import org.apache.tajo.org.objectweb.asm.tree.AbstractInsnNode;
-import org.apache.tajo.org.objectweb.asm.tree.IincInsnNode;
-import org.apache.tajo.org.objectweb.asm.tree.InsnList;
-import org.apache.tajo.org.objectweb.asm.tree.JumpInsnNode;
-import org.apache.tajo.org.objectweb.asm.tree.LabelNode;
-import org.apache.tajo.org.objectweb.asm.tree.LookupSwitchInsnNode;
-import org.apache.tajo.org.objectweb.asm.tree.MethodNode;
-import org.apache.tajo.org.objectweb.asm.tree.TableSwitchInsnNode;
-import org.apache.tajo.org.objectweb.asm.tree.TryCatchBlockNode;
-import org.apache.tajo.org.objectweb.asm.tree.VarInsnNode;
 
 /**
  * A semantic bytecode analyzer. <i>This class does not fully check that JSR and
@@ -164,9 +155,9 @@ public class Analyzer<V extends Value> implements Opcodes {
             Type ctype = Type.getObjectType(owner);
             current.setLocal(local++, interpreter.newValue(ctype));
         }
-        for (int i = 0; i < args.length; ++i) {
-            current.setLocal(local++, interpreter.newValue(args[i]));
-            if (args[i].getSize() == 2) {
+        for (Type arg : args) {
+            current.setLocal(local++, interpreter.newValue(arg));
+            if (arg.getSize() == 2) {
                 current.setLocal(local++, interpreter.newValue(null));
             }
         }
@@ -272,8 +263,7 @@ public class Analyzer<V extends Value> implements Opcodes {
 
                 List<TryCatchBlockNode> insnHandlers = handlers[insn];
                 if (insnHandlers != null) {
-                    for (int i = 0; i < insnHandlers.size(); ++i) {
-                        TryCatchBlockNode tcb = insnHandlers.get(i);
+                    for (TryCatchBlockNode tcb : insnHandlers) {
                         Type type;
                         if (tcb.type == null) {
                             type = Type.getObjectType("java/lang/Throwable");
@@ -342,8 +332,7 @@ public class Analyzer<V extends Value> implements Opcodes {
             // calls findSubroutine recursively on exception handler successors
             List<TryCatchBlockNode> insnHandlers = handlers[insn];
             if (insnHandlers != null) {
-                for (int i = 0; i < insnHandlers.size(); ++i) {
-                    TryCatchBlockNode tcb = insnHandlers.get(i);
+                for (TryCatchBlockNode tcb : insnHandlers) {
                     findSubroutine(insns.indexOf(tcb.handler), sub, calls);
                 }
             }
