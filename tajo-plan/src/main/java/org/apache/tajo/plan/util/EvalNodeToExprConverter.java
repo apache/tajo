@@ -24,6 +24,7 @@ import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.*;
 
 import java.util.Stack;
@@ -222,7 +223,7 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
         value = new TimeLiteral(timeValue);
         break;
       default:
-        throw new RuntimeException("Unsupported type: " + type.name());
+        throw new RuntimeException(new UnsupportedException(type.name()));
     }
 
     return value;
