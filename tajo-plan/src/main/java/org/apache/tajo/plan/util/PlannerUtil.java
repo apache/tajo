@@ -536,13 +536,13 @@ public class PlannerUtil {
     }
   }
 
-  public static Target[] schemaToTargets(Schema schema) {
-    Target[] targets = new Target[schema.size()];
+  public static List<Target> schemaToTargets(Schema schema) {
+    List<Target> targets = new ArrayList<>();
 
     FieldEval eval;
     for (int i = 0; i < schema.size(); i++) {
       eval = new FieldEval(schema.getColumn(i));
-      targets[i] = new Target(eval);
+      targets.add(new Target(eval));
     }
     return targets;
   }
@@ -653,10 +653,10 @@ public class PlannerUtil {
   }
 
   public static Schema targetToSchema(Collection<Target> targets) {
-    return targetToSchema(targets.toArray(new Target[targets.size()]));
+    return targetToSchema(targets);
   }
 
-  public static Schema targetToSchema(Target[] targets) {
+  public static Schema targetToSchema(List<Target> targets) {
     Schema schema = new Schema();
     for (Target t : targets) {
       DataType type = t.getEvalTree().getValueType();
@@ -680,16 +680,16 @@ public class PlannerUtil {
    * @param sourceTargets The targets to be stripped
    * @return The stripped targets
    */
-  public static Target[] stripTarget(Target[] sourceTargets) {
-    Target[] copy = new Target[sourceTargets.length];
-    for (int i = 0; i < sourceTargets.length; i++) {
+  public static List<Target> stripTarget(List<Target> sourceTargets) {
+    List<Target> copy = new ArrayList<>();
+    for (int i = 0; i < sourceTargets.size(); i++) {
       try {
-        copy[i] = (Target) sourceTargets[i].clone();
+        copy.add((Target) sourceTargets.get(i).clone());
       } catch (CloneNotSupportedException e) {
         throw new InternalError(e.getMessage());
       }
-      if (copy[i].getEvalTree().getType() == EvalType.FIELD) {
-        FieldEval fieldEval = copy[i].getEvalTree();
+      if (copy.get(i).getEvalTree().getType().equals(EvalType.FIELD)) {
+        FieldEval fieldEval = copy.get(i).getEvalTree();
         if (fieldEval.getColumnRef().hasQualifier()) {
           fieldEval.replaceColumnRef(fieldEval.getColumnName());
         }

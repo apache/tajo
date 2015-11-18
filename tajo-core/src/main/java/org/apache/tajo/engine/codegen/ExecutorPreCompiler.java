@@ -32,6 +32,7 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.Pair;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -91,7 +92,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   }
 
   private static void compileProjectableNode(CompilationContext context, Schema schema, Projectable node) {
-    Target[] targets;
+    List<Target> targets;
     if (node.hasTargets()) {
       targets = node.getTargets();
     } else {

@@ -101,6 +101,9 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1946: Change Projectable::setTargets and getTargets to set and get
+    List<Target>. (Contributed by Dongkyu Hwangbo, Committed by jihoon)
+
     TAJO-1877: Adopt try-resource statement to AbstractDBStore. 
     (Contributed by Dongkyu Hwangbo, Committed by jihoon)
 

@@ -1095,13 +1095,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     //3 phase: groupby columns, seq, distinct1 keys, distinct2 keys,
     List<SortSpec> sortSpecs = new ArrayList<>();
     if (phase == 2) {
-      sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
+      sortSpecs.add(new SortSpec(distinctNode.getTargets().get(0).getNamedColumn()));
     }
     for (Column eachColumn: distinctNode.getGroupingColumns()) {
       sortSpecs.add(new SortSpec(eachColumn));
     }
     if (phase == 3) {
-      sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
+      sortSpecs.add(new SortSpec(distinctNode.getTargets().get(0).getNamedColumn()));
     }
     for (GroupbyNode eachGroupbyNode: distinctNode.getSubPlans()) {
       for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {

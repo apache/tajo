@@ -18,11 +18,13 @@
 
 package org.apache.tajo.util;
 
-import java.nio.charset.Charset;
-
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.Test;
+
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -148,5 +150,15 @@ public class TestStringUtil {
     testStringArray = new char[] { '\ud0c0', '\uc870' };
     assertArrayEquals(new byte[] { (byte) 0xED, (byte) 0x83, (byte) 0x80, (byte) 0xEC, (byte) 0xA1, (byte) 0xB0 },
         StringUtils.convertCharsToBytes(testStringArray, Charset.forName("UTF-8")));
+  }
+
+  @Test
+  public void testJoinIterable() {
+    List<String> testList = new ArrayList<>();
+    testList.add("t");
+    testList.add("a");
+    testList.add("j");
+    testList.add("o");
+    assertTrue(StringUtils.join(testList).equals("t, a, j, o"));
   }
 }
