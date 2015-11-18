@@ -40,7 +40,7 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
     groupingKeyNum = keyColumns.length;
 
     if (plan.hasAggFunctions()) {
-      aggFunctions = plan.getAggFunctions();
+      aggFunctions = plan.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
       aggFunctionsNum = aggFunctions.length;
     } else {
       aggFunctions = new AggregationFunctionCallEval[0];

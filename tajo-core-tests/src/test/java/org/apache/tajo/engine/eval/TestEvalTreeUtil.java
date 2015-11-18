@@ -345,7 +345,7 @@ public class TestEvalTreeUtil {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
     GroupbyNode groupByNode = plan.getRootBlock().getNode(NodeType.GROUP_BY);
-    EvalNode [] aggEvals = groupByNode.getAggFunctions();
+    EvalNode [] aggEvals = groupByNode.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
 
     List<AggregationFunctionCallEval> list = new ArrayList<>();
     for (int i = 0; i < aggEvals.length; i++) {

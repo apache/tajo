@@ -534,7 +534,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
 
       if (groupbyNode.hasAggFunctions()) {
-        verifyIfEvalNodesCanBeEvaluated(projectable, groupbyNode.getAggFunctions());
+        verifyIfEvalNodesCanBeEvaluated(projectable, groupbyNode.getAggFunctions().toArray(new AggregationFunctionCallEval[]{}));
       }
 
     } else if (projectable instanceof WindowAggNode) {
@@ -805,7 +805,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     groupbyNode.setDistinct(includeDistinctFunction);
-    groupbyNode.setAggFunctions(aggEvals.toArray(new AggregationFunctionCallEval[aggEvals.size()]));
+    groupbyNode.setAggFunctions(new ArrayList<>(aggEvals));
     Target [] targets = ProjectionPushDownRule.buildGroupByTarget(groupbyNode, null,
         aggEvalNames.toArray(new String[aggEvalNames.size()]));
     groupbyNode.setTargets(targets);
@@ -1050,7 +1050,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
     // if there is at least one distinct aggregation function
     groupingNode.setDistinct(includeDistinctFunction);
-    groupingNode.setAggFunctions(aggEvalNodes.toArray(new AggregationFunctionCallEval[aggEvalNodes.size()]));
+    groupingNode.setAggFunctions(aggEvalNodes);
 
     Target [] targets = new Target[effectiveGroupingKeyNum + aggEvalNames.size()];
 

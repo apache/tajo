@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.NotImplementedException;
@@ -294,7 +295,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     }
     if (node.hasAggFunctions()) {
       groupbyBuilder.addAllAggFunctions(
-          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions()));
+          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions().toArray(new ProtoObject[]{})));
     }
     if (node.hasTargets()) {
       groupbyBuilder.addAllTargets(ProtoUtil.<PlanProto.Target>toProtoObjects(node.getTargets()));

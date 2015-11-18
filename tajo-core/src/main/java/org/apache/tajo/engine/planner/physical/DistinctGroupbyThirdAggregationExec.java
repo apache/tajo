@@ -84,12 +84,12 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
         Column[] distinctGroupingColumns = eachGroupby.getGroupingColumns();
         inTupleIndex += distinctGroupingColumns.length;
-        outTupleIndex += eachGroupby.getAggFunctions().length;
+        outTupleIndex += eachGroupby.getAggFunctions().size();
       } else {
         nonDistinctAggr = new DistinctFinalAggregator(-1, inTupleIndex, outTupleIndex, eachGroupby);
-        outTupleIndex += eachGroupby.getAggFunctions().length;
+        outTupleIndex += eachGroupby.getAggFunctions().size();
       }
-      resultTupleLength += eachGroupby.getAggFunctions().length;
+      resultTupleLength += eachGroupby.getAggFunctions().size();
     }
     aggregators = aggregatorList.toArray(new DistinctFinalAggregator[aggregatorList.size()]);
     outTuple = new VTuple(resultTupleLength);
@@ -243,7 +243,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       this.inTupleIndex = inTupleIndex;
       this.outTupleIndex = outTupleIndex;
 
-      aggrFunctions = groupbyNode.getAggFunctions();
+      aggrFunctions = groupbyNode.getAggFunctions().toArray(new AggregationFunctionCallEval[]{});
       if (aggrFunctions != null) {
         for (AggregationFunctionCallEval eachFunction: aggrFunctions) {
           eachFunction.bind(context.getEvalContext(), inSchema);

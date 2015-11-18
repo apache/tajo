@@ -22,13 +22,14 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   /** Grouping key sets */
@@ -62,7 +63,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     this.groupingKeys = groupingKeys;
   }
 
-	public final Column [] getGroupingColumns() {
+  public final Column [] getGroupingColumns() {
 	  return this.groupingKeys;
 	}
 
@@ -90,13 +91,13 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     return this.aggrFunctions.length;
   }
 
-  public AggregationFunctionCallEval[] getAggFunctions() {
-    return this.aggrFunctions;
+  public List<AggregationFunctionCallEval> getAggFunctions() {
+    return Arrays.asList(this.aggrFunctions);
   }
 
-  public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+  public void setAggFunctions(List<AggregationFunctionCallEval> evals) {
     Preconditions.checkNotNull(evals);
-    this.aggrFunctions = evals;
+    this.aggrFunctions = evals.toArray(new AggregationFunctionCallEval[]{});
   }
 
   @Override

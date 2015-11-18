@@ -308,7 +308,7 @@ public class LogicalNodeDeserializer {
       groupby.setGroupingColumns(convertColumns(groupbyProto.getGroupingKeysList()));
     }
     if (groupbyProto.getAggFunctionsCount() > 0) {
-      groupby.setAggFunctions(convertAggFuncCallEvals(context, evalContext, groupbyProto.getAggFunctionsList()));
+      groupby.setAggFunctions(Arrays.asList(convertAggFuncCallEvals(context, evalContext, groupbyProto.getAggFunctionsList())));
     }
     if (groupbyProto.getTargetsCount() > 0) {
       groupby.setTargets(convertTargets(context, evalContext, groupbyProto.getTargetsList()));
