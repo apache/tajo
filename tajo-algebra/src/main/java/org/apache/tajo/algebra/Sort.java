@@ -71,8 +71,10 @@ public class Sort extends UnaryOperator {
     private Expr key;
     @Expose @SerializedName("IsAsc")
     private boolean asc = true;
-    @Expose @SerializedName("IsNullFirst")
-    private boolean nullFirst = false;
+    @Expose @SerializedName("IsNullsFirst")
+    // The default value for nulls order is decided based on the sort order.
+    // That is, nulls appear at the bottom with asc and the top with desc.
+    private Boolean nullsFirst = null;
 
     public SortSpec(final Expr key) {
       this.key = key;
@@ -82,14 +84,14 @@ public class Sort extends UnaryOperator {
      *
      * @param sortKey a column to sort
      * @param asc true if the sort order is ascending order
-     * @param nullFirst
+     * @param nullsFirst
      * Otherwise, it should be false.
      */
     public SortSpec(final ColumnReferenceExpr sortKey, final boolean asc,
-                    final boolean nullFirst) {
+                    final boolean nullsFirst) {
       this(sortKey);
       this.asc = asc;
-      this.nullFirst = nullFirst;
+      this.nullsFirst = nullsFirst;
     }
 
     public final boolean isAscending() {
@@ -100,12 +102,20 @@ public class Sort extends UnaryOperator {
       this.asc = false;
     }
 
-    public final boolean isNullFirst() {
-      return this.nullFirst;
+    public final boolean isNullsFirst() {
+      if (nullsFirst == null) {
+        return !asc;
+      } else {
+        return nullsFirst;
+      }
     }
 
-    public final void setNullFirst() {
-      this.nullFirst = true;
+    public final void setNullsFirst() {
+      this.nullsFirst = true;
+    }
+
+    public final void setNullsLast() {
+      this.nullsFirst = false;
     }
 
     public void setKey(Expr expr) {
@@ -118,7 +128,7 @@ public class Sort extends UnaryOperator {
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(asc, key, nullFirst);
+      return Objects.hashCode(asc, key, nullsFirst);
     }
 
     @Override
@@ -127,14 +137,14 @@ public class Sort extends UnaryOperator {
         SortSpec other = (SortSpec) obj;
         return TUtil.checkEquals(key, other.key) &&
             TUtil.checkEquals(asc, other.asc) &&
-            TUtil.checkEquals(nullFirst, other.nullFirst);
+            TUtil.checkEquals(nullsFirst, other.nullsFirst);
       }
       return false;
     }
 
     @Override
     public String toString() {
-      return key + " " + (asc ? "asc" : "desc") + " " + (nullFirst ? "null first" :"");
+      return key + " " + (asc ? "asc" : "desc") + " " + (isNullsFirst() ? "nulls first" : "nulls last");
     }
 
     @Override
@@ -142,7 +152,7 @@ public class Sort extends UnaryOperator {
       SortSpec sortSpec = (SortSpec) super.clone();
       sortSpec.key = (Expr) key.clone();
       sortSpec.asc = asc;
-      sortSpec.nullFirst = nullFirst;
+      sortSpec.nullsFirst = nullsFirst;
       return sortSpec;
     }
   }

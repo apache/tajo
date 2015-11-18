@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(6)
-  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.nation.n_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
+  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last)
    JOIN(16)(INNER)
      => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
      => target list: default.nation.n_name (TEXT), default.part.p_mfgr (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_phone (TEXT)
@@ -215,7 +215,7 @@ Block Id: eb_0000000000000_0000_000009 [INTERMEDIATE]
 [q_0000000000000_0000] 9 => 10 (type=RANGE_SHUFFLE, key=default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), num=32)
 
 SORT(26)
-  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.nation.n_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
+  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last)
    JOIN(16)(INNER)
      => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
      => target list: default.nation.n_name (TEXT), default.part.p_mfgr (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_phone (TEXT)
@@ -239,7 +239,7 @@ Block Id: eb_0000000000000_0000_000010 [ROOT]
  0: sorted input=eb_0000000000000_0000_000009
 
 SORT(6)
-  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.nation.n_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
+  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last)
    SCAN(27) on eb_0000000000000_0000_000009
      => out schema: {(8) default.nation.n_name (TEXT), default.part.p_mfgr (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_phone (TEXT)}
      => in schema: {(8) default.nation.n_name (TEXT), default.part.p_mfgr (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_phone (TEXT)}

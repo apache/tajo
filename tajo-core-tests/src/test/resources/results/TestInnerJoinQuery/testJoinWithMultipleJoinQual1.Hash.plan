@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(10)
-  => Sort Keys: default.s.s_acctbal (FLOAT8) (asc),default.s.s_name (TEXT) (asc),default.n.n_name (TEXT) (asc),default.p.p_partkey (INT4) (asc)
+  => Sort Keys: default.s.s_acctbal (FLOAT8) (asc, nulls last),default.s.s_name (TEXT) (asc, nulls last),default.n.n_name (TEXT) (asc, nulls last),default.p.p_partkey (INT4) (asc, nulls last)
    JOIN(16)(INNER)
      => Join Cond: (default.n.n_regionkey (INT4) = default.ps.ps_suppkey (INT4) AND default.s.s_nationkey (INT4) = default.n.n_nationkey (INT4))
      => target list: default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)
@@ -72,7 +72,7 @@ Block Id: eb_0000000000000_0000_000009 [LEAF]
  3: type=Broadcast, tables=default.s
 
 SORT(26)
-  => Sort Keys: default.s.s_acctbal (FLOAT8) (asc),default.s.s_name (TEXT) (asc),default.n.n_name (TEXT) (asc),default.p.p_partkey (INT4) (asc)
+  => Sort Keys: default.s.s_acctbal (FLOAT8) (asc, nulls last),default.s.s_name (TEXT) (asc, nulls last),default.n.n_name (TEXT) (asc, nulls last),default.p.p_partkey (INT4) (asc, nulls last)
    JOIN(16)(INNER)
      => Join Cond: (default.n.n_regionkey (INT4) = default.ps.ps_suppkey (INT4) AND default.s.s_nationkey (INT4) = default.n.n_nationkey (INT4))
      => target list: default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)
@@ -125,7 +125,7 @@ Block Id: eb_0000000000000_0000_000010 [ROOT]
  0: sorted input=eb_0000000000000_0000_000009
 
 SORT(10)
-  => Sort Keys: default.s.s_acctbal (FLOAT8) (asc),default.s.s_name (TEXT) (asc),default.n.n_name (TEXT) (asc),default.p.p_partkey (INT4) (asc)
+  => Sort Keys: default.s.s_acctbal (FLOAT8) (asc, nulls last),default.s.s_name (TEXT) (asc, nulls last),default.n.n_name (TEXT) (asc, nulls last),default.p.p_partkey (INT4) (asc, nulls last)
    SCAN(27) on eb_0000000000000_0000_000009
      => out schema: {(8) default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)}
      => in schema: {(8) default.n.n_name (TEXT), default.p.p_mfgr (TEXT), default.p.p_partkey (INT4), default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_phone (TEXT)}

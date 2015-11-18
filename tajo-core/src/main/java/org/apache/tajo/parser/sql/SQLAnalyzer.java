@@ -559,7 +559,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
       if (specContext.null_ordering() != null) {
         if (specContext.null_ordering().FIRST() != null) {
-          specs[i].setNullFirst();
+          specs[i].setNullsFirst();
+        } else if (specContext.null_ordering().LAST() != null) {
+          specs[i].setNullsLast();
         }
       }
     }

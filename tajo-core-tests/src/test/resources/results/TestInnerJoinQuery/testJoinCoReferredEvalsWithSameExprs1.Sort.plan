@@ -5,7 +5,7 @@ PROJECTION(4)
   => out schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus2 (INT4), result (INT4), v1 (INT4)}
   => in  schema: {(5) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), v1 (INT4)}
    SORT(3)
-     => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+     => Sort Keys: v1 (INT4) (asc, nulls last),default.nation.n_regionkey (INT4) (asc, nulls last)
       JOIN(7)(INNER)
         => Join Cond: default.region.r_regionkey (INT4) = default.nation.n_regionkey (INT4)
         => target list: default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) / 2 as result, default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), v1 (INT4), default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) as plus1
@@ -47,7 +47,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
  0: type=Broadcast, tables=default.region
 
 SORT(11)
-  => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+  => Sort Keys: v1 (INT4) (asc, nulls last),default.nation.n_regionkey (INT4) (asc, nulls last)
    JOIN(7)(INNER)
      => Join Cond: default.region.r_regionkey (INT4) = default.nation.n_regionkey (INT4)
      => target list: default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) / 2 as result, default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), v1 (INT4), default.region.r_regionkey (INT4) + default.nation.n_regionkey (INT4) as plus1
@@ -78,7 +78,7 @@ PROJECTION(4)
   => out schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus2 (INT4), result (INT4), v1 (INT4)}
   => in  schema: {(5) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), v1 (INT4)}
    SORT(3)
-     => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+     => Sort Keys: v1 (INT4) (asc, nulls last),default.nation.n_regionkey (INT4) (asc, nulls last)
       SCAN(12) on eb_0000000000000_0000_000003
         => out schema: {(5) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), v1 (INT4)}
         => in schema: {(5) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), v1 (INT4)}

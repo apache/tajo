@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(8)
-  => Sort Keys: default.n.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n.n_nationkey (INT4) (asc, nulls last)
    SELECTION(11)
      => Search Cond: CAST (default.n.n_nationkey (INT4) AS INT8) > default.t.cnt (INT8)
       JOIN(13)(INNER)
@@ -164,7 +164,7 @@ Block Id: eb_0000000000000_0000_000006 [INTERMEDIATE]
 [q_0000000000000_0000] 6 => 7 (type=RANGE_SHUFFLE, key=default.n.n_nationkey (INT4), num=32)
 
 SORT(21)
-  => Sort Keys: default.n.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n.n_nationkey (INT4) (asc, nulls last)
    SELECTION(11)
      => Search Cond: CAST (default.n.n_nationkey (INT4) AS INT8) > default.t.cnt (INT8)
       JOIN(13)(INNER)
@@ -190,7 +190,7 @@ Block Id: eb_0000000000000_0000_000007 [ROOT]
  0: sorted input=eb_0000000000000_0000_000006
 
 SORT(8)
-  => Sort Keys: default.n.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n.n_nationkey (INT4) (asc, nulls last)
    SCAN(22) on eb_0000000000000_0000_000006
      => out schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
      => in schema: {(4) default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.t.cnt (INT8)}
