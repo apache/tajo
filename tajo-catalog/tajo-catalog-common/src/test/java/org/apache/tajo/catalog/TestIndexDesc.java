@@ -79,7 +79,7 @@ public class TestIndexDesc {
     assertEquals(1, desc1.getKeySortSpecs().length);
     assertEquals(new Column("id", Type.INT4), desc1.getKeySortSpecs()[0].getSortKey());
     assertEquals(true, desc1.getKeySortSpecs()[0].isAscending());
-    assertEquals(true, desc1.getKeySortSpecs()[0].isNullFirst());
+    assertEquals(true, desc1.getKeySortSpecs()[0].isNullsFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc1.getIndexMethod());
     assertEquals(new URI("idx_test"), desc1.getIndexPath());
     assertEquals(true, desc1.isUnique());
@@ -90,7 +90,7 @@ public class TestIndexDesc {
     assertEquals(1, desc2.getKeySortSpecs().length);
     assertEquals(new Column("score", Type.FLOAT8), desc2.getKeySortSpecs()[0].getSortKey());
     assertEquals(false, desc2.getKeySortSpecs()[0].isAscending());
-    assertEquals(false, desc2.getKeySortSpecs()[0].isNullFirst());
+    assertEquals(false, desc2.getKeySortSpecs()[0].isNullsFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc2.getIndexMethod());
     assertEquals(new URI("idx_test2"), desc2.getIndexPath());
     assertEquals(false, desc2.isUnique());

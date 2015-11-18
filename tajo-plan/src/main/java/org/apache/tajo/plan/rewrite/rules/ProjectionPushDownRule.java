@@ -573,14 +573,14 @@ public class ProjectionPushDownRule extends
       Target target = context.targetListMgr.getTarget(sortKey);
       if (context.targetListMgr.isEvaluated(sortKey)) {
         Column c = target.getNamedColumn();
-        SortSpec sortSpec = new SortSpec(c, node.getSortKeys()[i].isAscending(), node.getSortKeys()[i].isNullFirst());
+        SortSpec sortSpec = new SortSpec(c, node.getSortKeys()[i].isAscending(), node.getSortKeys()[i].isNullsFirst());
         if (!sortSpecs.contains(sortSpec)) {
           sortSpecs.add(sortSpec);
         }
       } else {
         if (target.getEvalTree().getType() == EvalType.FIELD) {
           Column c = ((FieldEval)target.getEvalTree()).getColumnRef();
-          SortSpec sortSpec = new SortSpec(c, node.getSortKeys()[i].isAscending(), node.getSortKeys()[i].isNullFirst());
+          SortSpec sortSpec = new SortSpec(c, node.getSortKeys()[i].isAscending(), node.getSortKeys()[i].isNullsFirst());
           if (!sortSpecs.contains(sortSpec)) {
             sortSpecs.add(sortSpec);
           }

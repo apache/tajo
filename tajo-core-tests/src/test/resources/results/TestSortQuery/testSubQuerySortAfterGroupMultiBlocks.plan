@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(6)
-  => Sort Keys: default.l2.l_orderkey (INT4) (asc)
+  => Sort Keys: default.l2.l_orderkey (INT4) (asc, nulls last)
    TABLE_SUBQUERY(5) as default.l2
      => Targets: default.l2.l_orderkey (INT4), default.l2.revenue (FLOAT8)
      => out schema: {(2) default.l2.l_orderkey (INT4), default.l2.revenue (FLOAT8)}
@@ -65,7 +65,7 @@ Block Id: eb_0000000000000_0000_000002 [INTERMEDIATE]
 [q_0000000000000_0000] 2 => 3 (type=RANGE_SHUFFLE, key=default.l2.l_orderkey (INT4), num=32)
 
 SORT(12)
-  => Sort Keys: default.l2.l_orderkey (INT4) (asc)
+  => Sort Keys: default.l2.l_orderkey (INT4) (asc, nulls last)
    TABLE_SUBQUERY(5) as default.l2
      => Targets: default.l2.l_orderkey (INT4), default.l2.revenue (FLOAT8)
      => out schema: {(2) default.l2.l_orderkey (INT4), default.l2.revenue (FLOAT8)}
@@ -102,7 +102,7 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
  0: sorted input=eb_0000000000000_0000_000002
 
 SORT(6)
-  => Sort Keys: default.l2.l_orderkey (INT4) (asc)
+  => Sort Keys: default.l2.l_orderkey (INT4) (asc, nulls last)
    SCAN(13) on eb_0000000000000_0000_000002
      => out schema: {(2) default.l2.l_orderkey (INT4), default.l2.revenue (FLOAT8)}
      => in schema: {(2) default.l2.l_orderkey (INT4), default.l2.revenue (FLOAT8)}
