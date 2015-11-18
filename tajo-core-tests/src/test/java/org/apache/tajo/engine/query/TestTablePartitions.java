@@ -126,6 +126,15 @@ public class TestTablePartitions extends QueryTestCaseBase {
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
         tableDesc.getStats().getNumRows());
 
+    res = executeString("SELECT * FROM " + tableName + " WHERE key in (17.0, 45.0) ORDER BY key");
+    String result = resultSetToString(res);
+    String expectedResult = "col1,col2,key\n" +
+      "-------------------------------\n" +
+      "1,1,17.0\n" +
+      "3,2,45.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
@@ -208,7 +217,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
-        tableDesc.getStats().getNumRows());
+      tableDesc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -739,6 +748,24 @@ public class TestTablePartitions extends QueryTestCaseBase {
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2"},
         desc.getStats().getNumRows());
 
+    res = executeString("SELECT * FROM " + tableName + " WHERE col2 in (2, 3) ORDER BY col3, col4");
+    String result = resultSetToString(res);
+    String expectedResult = "col3,col4,col1,col2\n" +
+      "-------------------------------\n" +
+      "38.0,N,2,2\n" +
+      "45.0,R,3,2\n" +
+      "49.0,R,3,3\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("SELECT * FROM " + tableName + " WHERE col1 in (1, 3) and col2 = 1 ORDER BY col3, col4");
+    result = resultSetToString(res);
+    expectedResult = "col3,col4,col1,col2\n" +
+      "-------------------------------\n" +
+      "17.0,N,1,1\n" +
+      "36.0,N,1,1\n";
+    res.close();
+    assertEquals(expectedResult, result);
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
