@@ -99,6 +99,14 @@
  </property>
 -->
 
+<!-- Partition -->
+<!--
+ <property>
+  <name>tajo.partition.timestamp.transform.dateformat</name>
+  <value>true</value>
+  <description>Set this to true for recent Hive version (1.2.0 and later). If set to true, Tajo will automatically convert TIMESTAMP values to STRING literals which are accepted in the format YYYY-MM-DD HH:MM:SS.MS.</description>
+ </property>
+ -->
 
 <!-- Debug -->
 <!--

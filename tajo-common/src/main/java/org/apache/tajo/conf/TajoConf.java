@@ -298,6 +298,7 @@ public class TajoConf extends Configuration {
 
     // Partition
     PARTITION_DYNAMIC_BULK_INSERT_BATCH_SIZE("tajo.partition.dynamic.bulk-insert.batch-size", 1000),
+    PARTITION_TIMESTAMP_TRAMSFORM_DATEFORMAT("tajo.partition.timestamp.transform.dateformat", true),
 
 
     /////////////////////////////////////////////////////////////////////////////////
