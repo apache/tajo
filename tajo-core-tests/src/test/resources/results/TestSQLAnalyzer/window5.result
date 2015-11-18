@@ -47,7 +47,7 @@
                 "OpType": "Function"
               },
               "IsAsc": true,
-              "IsNullFirst": false
+              "IsNullsFirst": false
             }
           ]
         },

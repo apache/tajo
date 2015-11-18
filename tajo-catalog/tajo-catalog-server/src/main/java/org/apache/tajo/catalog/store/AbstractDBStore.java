@@ -2532,7 +2532,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         columnNamesBuilder.append(columnSpec.getSortKey().getSimpleName()).append(",");
         dataTypesBuilder.append(columnSpec.getSortKey().getDataType().getType().name()).append(",");
         ordersBuilder.append(columnSpec.isAscending()).append(",");
-        nullOrdersBuilder.append(columnSpec.isNullFirst()).append(",");
+        nullOrdersBuilder.append(columnSpec.isNullsFirst()).append(",");
       }
       columnNamesBuilder.deleteCharAt(columnNamesBuilder.length()-1);
       dataTypesBuilder.deleteCharAt(dataTypesBuilder.length()-1);

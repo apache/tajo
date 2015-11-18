@@ -53,10 +53,8 @@ public class ComparableVector {
     vectors = new TupleVector[sortKeys.length];
     for (int i = 0; i < vectors.length; i++) {
       TajoDataTypes.Type type = sortKeys[i].getSortKey().getDataType().getType();
-      boolean nullFirst = sortKeys[i].isNullFirst();
-      boolean ascending = sortKeys[i].isAscending();
-      boolean nullInvert = nullFirst && ascending || !nullFirst && !ascending;
-      vectors[i] = new TupleVector(vectorType(type), tuples.length, nullInvert, ascending);
+      vectors[i] = new TupleVector(vectorType(type), tuples.length,
+          sortKeys[i].isNullsFirst(), sortKeys[i].isAscending());
     }
     this.keyIndex = keyIndex;
   }
@@ -81,7 +79,7 @@ public class ComparableVector {
 
     private final int type;
     private final BitSet nulls;
-    private final boolean nullInvert;
+    private final boolean nullsFirst;
     private final boolean ascending;
 
     private boolean[] booleans;
@@ -95,10 +93,10 @@ public class ComparableVector {
 
     private int index;
 
-    private TupleVector(int type, int length, boolean nullInvert, boolean ascending) {
+    private TupleVector(int type, int length, boolean nullsFirst, boolean ascending) {
       this.type = type;
       this.nulls = new BitSet(length);
-      this.nullInvert = nullInvert;
+      this.nullsFirst = nullsFirst;
       this.ascending = ascending;
       switch (type) {
         case 0: booleans = new boolean[length]; break;
@@ -148,8 +146,7 @@ public class ComparableVector {
         return 0;
       }
       if (n1 ^ n2) {
-        int compVal = n1 ? 1 : -1;
-        return nullInvert ? -compVal : compVal;
+        return nullsFirst ? (n1 ? -1 : 1) : (n1 ? 1 : -1);
       }
       int compare;
       switch (type) {

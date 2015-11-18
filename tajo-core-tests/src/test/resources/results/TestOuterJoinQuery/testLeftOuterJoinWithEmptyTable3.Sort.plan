@@ -5,7 +5,7 @@ PROJECTION(8)
   => out schema: {(1) ?count (INT8)}
   => in  schema: {(2) ?count (INT8), default.t1.c_custkey (INT4)}
    SORT(7)
-     => Sort Keys: default.t1.c_custkey (INT4) (asc)
+     => Sort Keys: default.t1.c_custkey (INT4) (asc, nulls last)
       GROUP_BY(6)(c_custkey)
         => exprs: (count())
         => target list: default.t1.c_custkey (INT4), ?count (INT8)
@@ -125,7 +125,7 @@ Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
 [q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.t1.c_custkey (INT4), num=32)
 
 SORT(18)
-  => Sort Keys: default.t1.c_custkey (INT4) (asc)
+  => Sort Keys: default.t1.c_custkey (INT4) (asc, nulls last)
    GROUP_BY(6)(c_custkey)
      => exprs: (count(?count_6 (INT8)))
      => target list: default.t1.c_custkey (INT4), ?count (INT8)
@@ -150,7 +150,7 @@ PROJECTION(8)
   => out schema: {(1) ?count (INT8)}
   => in  schema: {(2) ?count (INT8), default.t1.c_custkey (INT4)}
    SORT(7)
-     => Sort Keys: default.t1.c_custkey (INT4) (asc)
+     => Sort Keys: default.t1.c_custkey (INT4) (asc, nulls last)
       SCAN(19) on eb_0000000000000_0000_000005
         => out schema: {(2) ?count (INT8), default.t1.c_custkey (INT4)}
         => in schema: {(2) ?count (INT8), default.t1.c_custkey (INT4)}

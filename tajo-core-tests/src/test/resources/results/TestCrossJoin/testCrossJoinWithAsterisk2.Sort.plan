@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(2)
-  => Sort Keys: default.region.r_regionkey (INT4) (asc),default.region.r_name (TEXT) (asc),default.customer.c_custkey (INT4) (asc)
+  => Sort Keys: default.region.r_regionkey (INT4) (asc, nulls last),default.region.r_name (TEXT) (asc, nulls last),default.customer.c_custkey (INT4) (asc, nulls last)
    JOIN(6)(CROSS)
      => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)
      => out schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
@@ -41,7 +41,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
  0: type=Broadcast, tables=default.region
 
 SORT(10)
-  => Sort Keys: default.region.r_regionkey (INT4) (asc),default.region.r_name (TEXT) (asc),default.customer.c_custkey (INT4) (asc)
+  => Sort Keys: default.region.r_regionkey (INT4) (asc, nulls last),default.region.r_name (TEXT) (asc, nulls last),default.customer.c_custkey (INT4) (asc, nulls last)
    JOIN(6)(CROSS)
      => target list: default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)
      => out schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
@@ -66,7 +66,7 @@ Block Id: eb_0000000000000_0000_000004 [ROOT]
  0: sorted input=eb_0000000000000_0000_000003
 
 SORT(2)
-  => Sort Keys: default.region.r_regionkey (INT4) (asc),default.region.r_name (TEXT) (asc),default.customer.c_custkey (INT4) (asc)
+  => Sort Keys: default.region.r_regionkey (INT4) (asc, nulls last),default.region.r_name (TEXT) (asc, nulls last),default.customer.c_custkey (INT4) (asc, nulls last)
    SCAN(11) on eb_0000000000000_0000_000003
      => out schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
      => in schema: {(11) default.customer.c_acctbal (FLOAT8), default.customer.c_address (TEXT), default.customer.c_comment (TEXT), default.customer.c_custkey (INT4), default.customer.c_mktsegment (TEXT), default.customer.c_name (TEXT), default.customer.c_nationkey (INT4), default.customer.c_phone (TEXT), default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
