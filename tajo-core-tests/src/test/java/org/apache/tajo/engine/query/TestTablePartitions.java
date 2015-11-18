@@ -1559,7 +1559,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
   }
 
-  //TODO: This will recovered at TAJO-1925
+  @Test
   public final void testTimestampPartitionColumn() throws Exception {
     ResultSet res = null;
     String tableName = CatalogUtil.normalizeIdentifier("testTimestampPartitionColumn");
@@ -1583,18 +1583,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     assertTrue(client.existTable(tableName));
-
-    List<PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
-    for(PartitionDescProto partition : partitions) {
-      System.out.println("### partition:" + partition.getPartitionName());
-    }
-
-    expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
-      "3,2,1994-02-02 00:00:00\n" ;
-
-    assertEquals(expectedResult, resultSetToString(res));
-    res.close();
 
     // LessThanOrEquals
     res = executeString("SELECT * FROM " + tableName
@@ -1630,19 +1618,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "-------------------------------\n" +
       "1,1,1996-04-12 00:00:00\n" +
       "1,1,1996-03-13 00:00:00\n" +
-      "3,2,1994-02-02 00:00:00\n" +
-      "3,3,1993-11-09 00:00:00\n";
-
-    assertEquals(expectedResult, resultSetToString(res));
-    res.close();
-
-    // IN
-    res = executeString("SELECT * FROM " + tableName
-      + " WHERE key IN (TIMESTAMP '1994-02-02 00:00:00', TIMESTAMP '1993-11-09 00:00:00') " +
-      " order by col1, col2, key desc");
-
-    expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
       "3,2,1994-02-02 00:00:00\n" +
       "3,3,1993-11-09 00:00:00\n";
 
@@ -1723,18 +1698,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "1,1,11:20:40\n" +
       "2,2,12:10:20\n" +
       "3,2,12:10:30\n";
-
-    assertEquals(expectedResult, resultSetToString(res));
-    res.close();
-
-    // IN
-    res = executeString("SELECT * FROM " + tableName
-      + " WHERE key IN (TIME '11:20:40', TIME '12:10:20') order by col1, col2, key desc");
-
-    expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
-      "1,1,11:20:40\n" +
-      "2,2,12:10:20\n";
 
     assertEquals(expectedResult, resultSetToString(res));
     res.close();
