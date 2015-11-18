@@ -53,9 +53,6 @@ public class ComparableVector {
     vectors = new TupleVector[sortKeys.length];
     for (int i = 0; i < vectors.length; i++) {
       TajoDataTypes.Type type = sortKeys[i].getSortKey().getDataType().getType();
-//      boolean nullFirst = sortKeys[i].isNullsFirst();
-//      boolean ascending = sortKeys[i].isAscending();
-//      boolean nullsFirst = nullFirst && ascending || !nullFirst && !ascending;
       vectors[i] = new TupleVector(vectorType(type), tuples.length,
           sortKeys[i].isNullsFirst(), sortKeys[i].isAscending());
     }
@@ -149,8 +146,6 @@ public class ComparableVector {
         return 0;
       }
       if (n1 ^ n2) {
-//        int compVal = n1 ? 1 : -1;
-//        return nullsFirst ? -compVal : compVal;
         return nullsFirst ? (n1 ? -1 : 1) : (n1 ? 1 : -1);
       }
       int compare;

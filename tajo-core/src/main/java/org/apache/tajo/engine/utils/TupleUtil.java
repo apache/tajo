@@ -95,8 +95,6 @@ public class TupleUtil {
           Tuple rangeTuple = ranges[0].getStart();
           rangeTuple.put(i, NullDatum.get());
         } else {
-//          int rangeIndex = sortSpecs[i].isAscending() ? ranges.length - 1 : 0;
-//          VTuple rangeTuple = sortSpecs[i].isAscending() ? (VTuple) ranges[rangeIndex].getEnd() : (VTuple) ranges[rangeIndex].getStart();
           Tuple rangeTuple = ranges[ranges.length - 1].getEnd();
           if (LOG.isDebugEnabled()) {
             LOG.debug("Set null into range: " + col.getQualifiedName() + ", previous tuple is " + rangeTuple);
