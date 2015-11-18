@@ -19,6 +19,8 @@
 package org.apache.tajo.tuple.memory;
 
 import io.netty.util.internal.PlatformDependent;
+import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.tuple.RowBlockReader;
@@ -32,10 +34,12 @@ import java.nio.channels.ScatteringByteChannel;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
+@NotThreadSafe
 public class MemoryRowBlock implements RowBlock, Deallocatable {
   public static final int NULL_FIELD_OFFSET = -1;
 
-  private DataType[] dataTypes;
+  private final DataType[] dataTypes;
+  private final String dataFormat;
 
   // Basic States
   private int maxRowNum = Integer.MAX_VALUE; // optional
@@ -45,20 +49,20 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
   private MemoryBlock memory;
 
   public MemoryRowBlock(DataType[] dataTypes, ResizableLimitSpec limitSpec, boolean isDirect) {
+    this(dataTypes, limitSpec, isDirect, BuiltinStorages.DRAW);
+  }
+
+  public MemoryRowBlock(DataType[] dataTypes, ResizableLimitSpec limitSpec, boolean isDirect, String dataFormat) {
     this.memory = new ResizableMemoryBlock(limitSpec, isDirect);
     this.dataTypes = dataTypes;
+    this.dataFormat = dataFormat;
   }
 
   public MemoryRowBlock(MemoryRowBlock rowBlock) {
     this.memory = TUtil.checkTypeAndGet(rowBlock.getMemory().duplicate(), ResizableMemoryBlock.class);
     this.rowNum = rowBlock.rowNum;
     this.dataTypes = rowBlock.dataTypes;
-  }
-
-  public MemoryRowBlock(MemoryBlock memory, DataType[] dataTypes, int rowNum) {
-    this.memory = memory;
-    this.rowNum = rowNum;
-    this.dataTypes = dataTypes;
+    this.dataFormat = rowBlock.dataFormat;
   }
 
   public MemoryRowBlock(DataType[] dataTypes) {
@@ -69,8 +73,13 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
     this(dataTypes, new ResizableLimitSpec(bytes), true);
   }
 
-  public MemoryRowBlock(DataType[] dataTypes, int bytes, boolean isDirect) {
-    this(dataTypes, new ResizableLimitSpec(bytes), isDirect);
+  public MemoryRowBlock(DataType[] dataTypes, int bytes, boolean isDirect, String dataFormat) {
+    this(dataTypes, new ResizableLimitSpec(bytes), isDirect, dataFormat);
+  }
+
+  @Override
+  public String getDataFormat() {
+    return dataFormat;
   }
 
   @Override
@@ -89,6 +98,20 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
   @Override
   public int capacity() {
     return memory.capacity();
+  }
+
+  @Override
+  public int usedMem() {
+    return memory.writerPosition();
+  }
+
+  @Override
+  public float usage() {
+    if (usedMem() > 0) {
+      return (usedMem() / (float) capacity());
+    } else {
+      return 0.0f;
+    }
   }
 
   public int maxRowNum() {
@@ -112,6 +135,15 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
 
   @Override
   public boolean copyFromChannel(ScatteringByteChannel channel) throws IOException {
+    switch (dataFormat) {
+    case BuiltinStorages.DRAW:
+      return fillDrawBuffer(channel);
+    default:
+      throw new TajoInternalError(new NotImplementedException("Heap memory writer not implemented yet"));
+    }
+  }
+
+  protected boolean fillDrawBuffer(ScatteringByteChannel channel) throws IOException {
     reset();
 
     int readBytes = memory.writeBytes(channel);
@@ -143,13 +175,23 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
   @Override
   public RowWriter getWriter() {
 
+    if (!getMemory().hasAddress()) {
+      throw new TajoInternalError(new NotImplementedException("Heap memory writer not implemented yet"));
+    }
+
     if (builder == null) {
-      if (!getMemory().hasAddress()) {
-        throw new TajoInternalError(new NotImplementedException("Heap memory writer not implemented yet"));
-      } else {
+      switch (dataFormat) {
+      case BuiltinStorages.DRAW:
         this.builder = new OffHeapRowBlockWriter(this);
+        break;
+      case BuiltinStorages.RAW:
+        this.builder = new CompactRowBlockWriter(this);
+        break;
+      default:
+        throw new TajoInternalError(new NotImplementedException(dataFormat + " memory writer not implemented yet"));
       }
     }
+
     return builder;
   }
 
@@ -165,10 +207,17 @@ public class MemoryRowBlock implements RowBlock, Deallocatable {
 
   @Override
   public RowBlockReader getReader() {
-    if (!getMemory().hasAddress()) {
-      return new HeapRowBlockReader(this);
-    } else {
-      return new OffHeapRowBlockReader(this);
+
+    switch (dataFormat) {
+    case BuiltinStorages.DRAW: {
+      if (!getMemory().hasAddress()) {
+        return new HeapRowBlockReader(this);
+      } else {
+        return new OffHeapRowBlockReader(this);
+      }
+    }
+    default:
+      throw new TajoInternalError(new NotImplementedException(dataFormat + " memory writer not implemented yet"));
     }
   }
 }

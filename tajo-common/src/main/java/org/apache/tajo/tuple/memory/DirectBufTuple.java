@@ -28,11 +28,11 @@ import static org.apache.tajo.common.TajoDataTypes.DataType;
 public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
   private MemoryBlock memoryBlock;
 
-  public DirectBufTuple(int length, DataType[] types) {
-    ByteBuffer bb = ByteBuffer.allocateDirect(length).order(ByteOrder.LITTLE_ENDIAN);
+  public DirectBufTuple(DataType[] types) {
+    ByteBuffer bb = ByteBuffer.allocateDirect(getLength()).order(ByteOrder.LITTLE_ENDIAN);
     memoryBlock = new ResizableMemoryBlock(bb);
 
-    set(memoryBlock, 0, length, types);
+    set(memoryBlock, 0, types);
   }
 
   @Override

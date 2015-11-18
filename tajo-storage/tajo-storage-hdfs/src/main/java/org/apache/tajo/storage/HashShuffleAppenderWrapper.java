@@ -23,6 +23,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
+import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.Pair;
 
 import java.io.Closeable;
@@ -36,9 +38,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class HashShuffleAppenderWrapper implements Closeable {
   private static Log LOG = LogFactory.getLog(HashShuffleAppenderWrapper.class);
 
-  private FileAppender appender;
+  private DirectRawFileWriter appender;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private int partId;
+  private int volumeId;
 
   //<taskId,<page start offset,<task start, task end>>>
   private Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> taskTupleIndexes;
@@ -56,11 +59,13 @@ public class HashShuffleAppenderWrapper implements Closeable {
 
   private ExecutionBlockId ebId;
 
-  public HashShuffleAppenderWrapper(ExecutionBlockId ebId, int partId, int pageSize, FileAppender appender) {
+  public HashShuffleAppenderWrapper(ExecutionBlockId ebId, int partId, int pageSize,
+                                    DirectRawFileWriter appender, int volumeId) {
     this.ebId = ebId;
     this.partId = partId;
     this.appender = appender;
     this.pageSize = pageSize;
+    this.volumeId = volumeId;
   }
 
   public void init() throws IOException {
@@ -73,41 +78,36 @@ public class HashShuffleAppenderWrapper implements Closeable {
    * Write multiple tuples. Each tuple is written by a FileAppender which is responsible specified partition.
    * After writing if a current page exceeds pageSize, pageOffset will be added.
    * @param taskId
-   * @param tuples
+   * @param rowBlock
    * @return written bytes
    * @throws java.io.IOException
    */
-  public int addTuples(TaskAttemptId taskId, List<Tuple> tuples) throws IOException {
-    synchronized(appender) {
-      if (closed.get()) {
-        return 0;
-      }
-      long currentPos = appender.getOffset();
-
-      for (Tuple eachTuple: tuples) {
-        appender.addTuple(eachTuple);
-      }
-      long posAfterWritten = appender.getOffset();
-
-      int writtenBytes = (int)(posAfterWritten - currentPos);
-
-      int nextRowNum = rowNumInPage + tuples.size();
-      List<Pair<Long, Pair<Integer, Integer>>> taskIndexes = taskTupleIndexes.get(taskId);
-      if (taskIndexes == null) {
-        taskIndexes = new ArrayList<>();
-        taskTupleIndexes.put(taskId, taskIndexes);
-      }
-      taskIndexes.add(
-              new Pair<>(currentPage.getFirst(), new Pair(rowNumInPage, nextRowNum)));
-      rowNumInPage = nextRowNum;
-
-      if (posAfterWritten - currentPage.getFirst() > pageSize) {
-        nextPage(posAfterWritten);
-        rowNumInPage = 0;
-      }
-
-      return writtenBytes;
+  public MemoryRowBlock writeRowBlock(TaskAttemptId taskId, MemoryRowBlock rowBlock) throws IOException {
+    if (closed.get()) {
+      return rowBlock;
     }
+
+    appender.writeRowBlock(rowBlock);
+    appender.flush();
+
+    int rows = rowBlock.rows();
+    long posAfterWritten = appender.getOffset();
+
+    int nextRowNum = rowNumInPage + rows;
+    List<Pair<Long, Pair<Integer, Integer>>> taskIndexes = taskTupleIndexes.get(taskId);
+    if (taskIndexes == null) {
+      taskIndexes = new ArrayList<>();
+      taskTupleIndexes.put(taskId, taskIndexes);
+    }
+    taskIndexes.add(
+        new Pair<>(currentPage.getFirst(), new Pair(rowNumInPage, nextRowNum)));
+    rowNumInPage = nextRowNum;
+
+    if (posAfterWritten - currentPage.getFirst() > pageSize) {
+      nextPage(posAfterWritten);
+      rowNumInPage = 0;
+    }
+    return rowBlock;
   }
 
   public long getOffset() throws IOException {
@@ -129,42 +129,35 @@ public class HashShuffleAppenderWrapper implements Closeable {
   }
 
   public void flush() throws IOException {
-    synchronized(appender) {
-      if (closed.get()) {
-        return;
-      }
-      appender.flush();
+    if (closed.get()) {
+      return;
     }
+    appender.flush();
   }
 
   @Override
   public void close() throws IOException {
-    synchronized(appender) {
-      if (closed.get()) {
-        return;
+    if (closed.getAndSet(true)) {
+      return;
+    }
+    appender.flush();
+    offset = appender.getOffset();
+    if (offset > currentPage.getFirst()) {
+      nextPage(offset);
+    }
+    appender.close();
+    if (LOG.isDebugEnabled()) {
+      if (!pages.isEmpty()) {
+        LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size()
+            + ", lastPage=" + pages.get(pages.size() - 1));
+      } else {
+        LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size());
       }
-      appender.flush();
-      offset = appender.getOffset();
-      if (offset > currentPage.getFirst()) {
-        nextPage(offset);
-      }
-      appender.close();
-      if (LOG.isDebugEnabled()) {
-        if (!pages.isEmpty()) {
-          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size()
-              + ", lastPage=" + pages.get(pages.size() - 1));
-        } else {
-          LOG.info(ebId + ",partId=" + partId + " Appender closed: fileLen=" + offset + ", pages=" + pages.size());
-        }
-      }
-      closed.set(true);
     }
   }
 
   public TableStats getStats() {
-    synchronized(appender) {
-      return appender.getStats();
-    }
+    return appender.getStats();
   }
 
   public List<Pair<Long, Integer>> getPages() {
@@ -183,5 +176,9 @@ public class HashShuffleAppenderWrapper implements Closeable {
 
   public void taskFinished(TaskAttemptId taskId) {
     taskTupleIndexes.remove(taskId);
+  }
+
+  public int getVolumeId() {
+    return volumeId;
   }
 }

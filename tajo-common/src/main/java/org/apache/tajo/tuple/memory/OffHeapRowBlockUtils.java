@@ -32,6 +32,11 @@ import java.util.Comparator;
 import java.util.List;
 
 public class OffHeapRowBlockUtils {
+  private static TupleConverter tupleConverter;
+
+  static {
+    tupleConverter = new TupleConverter();
+  }
 
   public static List<Tuple> sort(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {
     List<Tuple> tupleList = Lists.newArrayList();
@@ -80,62 +85,86 @@ public class OffHeapRowBlockUtils {
     return tuples;
   }
 
-  public static void convert(Tuple tuple, RowWriter writer) {
-    writer.startRow();
+  /**
+   * This class is tuple converter to the RowBlock
+   */
+  public static class TupleConverter {
 
-    for (int i = 0; i < writer.dataTypes().length; i++) {
-      if (tuple.isBlankOrNull(i)) {
-        writer.skipField();
-        continue;
+    public void convert(Tuple tuple, RowWriter writer) {
+      writer.startRow();
+
+      for (int i = 0; i < writer.dataTypes().length; i++) {
+        writeField(i, tuple, writer);
       }
-      switch (writer.dataTypes()[i].getType()) {
-      case BOOLEAN:
-        writer.putBool(tuple.getBool(i));
-        break;
-      case BIT:
-        writer.putByte(tuple.getByte(i));
-        break;
-      case INT1:
-      case INT2:
-        writer.putInt2(tuple.getInt2(i));
-        break;
-      case INT4:
-      case DATE:
-      case INET4:
-        writer.putInt4(tuple.getInt4(i));
-        break;
-      case INT8:
-      case TIMESTAMP:
-      case TIME:
-        writer.putInt8(tuple.getInt8(i));
-        break;
-      case FLOAT4:
-        writer.putFloat4(tuple.getFloat4(i));
-        break;
-      case FLOAT8:
-        writer.putFloat8(tuple.getFloat8(i));
-        break;
-      case CHAR:
-      case TEXT:
-        writer.putText(tuple.getBytes(i));
-        break;
-      case BLOB:
-        writer.putBlob(tuple.getBytes(i));
-        break;
-      case INTERVAL:
-        writer.putInterval((IntervalDatum) tuple.getInterval(i));
-        break;
-      case PROTOBUF:
-        writer.putProtoDatum((ProtobufDatum) tuple.getProtobufDatum(i));
-        break;
-      case NULL_TYPE:
+
+      writer.endRow();
+    }
+
+    protected void writeField(int colIdx, Tuple tuple, RowWriter writer) {
+
+      if (tuple.isBlankOrNull(colIdx)) {
         writer.skipField();
-        break;
-      default:
-        throw new TajoRuntimeException(
-            new UnsupportedException("unknown data type '" + writer.dataTypes()[i].getType().name() + "'"));
+      } else {
+        switch (writer.dataTypes()[colIdx].getType()) {
+        case BOOLEAN:
+          writer.putBool(tuple.getBool(colIdx));
+          break;
+        case BIT:
+          writer.putByte(tuple.getByte(colIdx));
+          break;
+        case INT1:
+        case INT2:
+          writer.putInt2(tuple.getInt2(colIdx));
+          break;
+        case INT4:
+          writer.putInt4(tuple.getInt4(colIdx));
+          break;
+        case DATE:
+          writer.putDate(tuple.getInt4(colIdx));
+          break;
+        case INT8:
+          writer.putInt8(tuple.getInt8(colIdx));
+          break;
+        case TIMESTAMP:
+          writer.putTimestamp(tuple.getInt8(colIdx));
+          break;
+        case TIME:
+          writer.putTime(tuple.getInt8(colIdx));
+          break;
+        case FLOAT4:
+          writer.putFloat4(tuple.getFloat4(colIdx));
+          break;
+        case FLOAT8:
+          writer.putFloat8(tuple.getFloat8(colIdx));
+          break;
+        case CHAR:
+        case TEXT:
+          writer.putText(tuple.getBytes(colIdx));
+          break;
+        case BLOB:
+          writer.putBlob(tuple.getBytes(colIdx));
+          break;
+        case INTERVAL:
+          writer.putInterval((IntervalDatum) tuple.getInterval(colIdx));
+          break;
+        case PROTOBUF:
+          writer.putProtoDatum((ProtobufDatum) tuple.getProtobufDatum(colIdx));
+          break;
+        case INET4:
+          writer.putInet4(tuple.getInt4(colIdx));
+          break;
+        case NULL_TYPE:
+          writer.skipField();
+          break;
+        default:
+          throw new TajoRuntimeException(
+              new UnsupportedException("unknown data type '" + writer.dataTypes()[colIdx].getType().name() + "'"));
+        }
       }
     }
-    writer.endRow();
+  }
+
+  public static void convert(Tuple tuple, RowWriter writer) {
+    tupleConverter.convert(tuple, writer);
   }
 }
