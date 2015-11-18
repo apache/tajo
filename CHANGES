@@ -35,6 +35,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1935: Some Tasks don't work after they become TA_ASSIGNED. (jinho)
+
     TAJO-1977: Cannot recognize the space-contained tablename and databasename.
     (Contributed by Dongkyu Hwangbo, committed by jihoon)
 

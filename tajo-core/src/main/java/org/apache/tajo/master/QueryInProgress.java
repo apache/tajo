@@ -35,7 +35,6 @@ import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.NetUtils;
@@ -44,7 +43,6 @@ import org.apache.tajo.util.RpcParameterFactory;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -105,7 +103,7 @@ public class QueryInProgress {
       if (queryMasterRpcClient != null) {
         CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
         queryMasterRpcClient.killQuery(callFuture.getController(), queryId.getProto(), callFuture);
-        callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+        callFuture.get();
       }
     } catch (Throwable e) {
       catchException("Failed to kill query " + queryId + " by exception " + e, e);
@@ -222,7 +220,7 @@ public class QueryInProgress {
 
       CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
       queryMasterRpcClient.executeQuery(callFuture.getController(), builder.build(), callFuture);
-      callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+      callFuture.get();
 
       querySubmitted = true;
       getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_MASTER_LAUNCHED);

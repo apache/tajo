@@ -33,7 +33,6 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
@@ -44,7 +43,6 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.ResourceProtos.*;
 
@@ -125,8 +123,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
       CallFuture<ExecutionBlockContextResponse> callback = new CallFuture<>();
       stub.getExecutionBlockContext(callback.getController(), request.build(), callback);
 
-      ExecutionBlockContextResponse contextProto =
-          callback.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+      ExecutionBlockContextResponse contextProto = callback.get();
       ExecutionBlockContext context = new ExecutionBlockContext(getWorkerContext(), contextProto, client);
 
       context.init();

@@ -42,7 +42,10 @@ import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.QueryCoordinatorProtocolService;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.master.event.QueryStopEvent;
-import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.RpcParameterFactory;
@@ -56,7 +59,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class QueryMaster extends CompositeService implements EventHandler {
   private static final Log LOG = LogFactory.getLog(QueryMaster.class.getName());
@@ -180,8 +182,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       masterService.getAllWorkers(callBack.getController(),
           PrimitiveProtos.NullProto.getDefaultInstance(), callBack);
 
-      WorkerConnectionsResponse connectionsProto =
-          callBack.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+      WorkerConnectionsResponse connectionsProto = callBack.get();
       return connectionsProto.getWorkerList();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -300,7 +301,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
-        future.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+        future.get();
       }  catch (Exception e) {
         //this function will be closed in new thread.
         //When tajo do stop cluster, tajo master maybe throw closed connection exception
