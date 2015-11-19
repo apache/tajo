@@ -570,7 +570,7 @@ public class TestTajoCli {
     String tajoFullVersion = VersionInfo.getVersion();
     String tajoVersion;
 
-    int delimiterIdx = VersionInfo.getVersion().indexOf("-");
+    int delimiterIdx = tajoFullVersion.indexOf("-");
     if (delimiterIdx > -1) {
       tajoVersion = tajoFullVersion.substring(0, delimiterIdx);
     } else {
