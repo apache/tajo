@@ -297,11 +297,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
         res = executeString("select col3, col2, rk from external_hbase_mapped_table where rk > 95");
 
         String expected = "col3,col2,rk\n" +
-                "-------------------------------\n" +
-                "96,{\"k1\":\"k1-96\", \"k2\":\"k2-96\"},96\n" +
-                "97,{\"k1\":\"k1-97\", \"k2\":\"k2-97\"},97\n" +
-                "98,{\"k1\":\"k1-98\", \"k2\":\"k2-98\"},98\n" +
-                "99,{\"k1\":\"k1-99\", \"k2\":\"k2-99\"},99\n";
+            "-------------------------------\n" +
+            "96,{\"k1\":\"k1-96\", \"k2\":\"k2-96\"},96\n" +
+            "97,{\"k1\":\"k1-97\", \"k2\":\"k2-97\"},97\n" +
+            "98,{\"k1\":\"k1-98\", \"k2\":\"k2-98\"},98\n" +
+            "99,{\"k1\":\"k1-99\", \"k2\":\"k2-99\"},99\n";
 
         assertEquals(expected, resultSetToString(res));
         res.close();

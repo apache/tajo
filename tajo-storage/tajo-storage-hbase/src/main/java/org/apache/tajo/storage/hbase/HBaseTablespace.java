@@ -951,7 +951,7 @@ public class HBaseTablespace extends Tablespace {
           byte[][] rowKeyFields;
           if (sortSpecs.length > 1) {
             byte[][] splitValues = BytesUtils.splitPreserveAllTokens(
-                    eachEndKey, columnMapping.getRowKeyDelimiter(), columnMapping.getNumColumns());
+                eachEndKey, columnMapping.getRowKeyDelimiter(), columnMapping.getNumColumns());
             if (splitValues.length == sortSpecs.length) {
               rowKeyFields = splitValues;
             } else {
