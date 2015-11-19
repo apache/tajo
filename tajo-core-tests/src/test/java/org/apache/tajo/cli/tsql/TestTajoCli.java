@@ -38,6 +38,7 @@ import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.VersionInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -559,6 +560,18 @@ public class TestTajoCli {
     @Override
     public void printProgress(PrintWriter sout, QueryStatus status) {
       //nothing to do
+    }
+  }
+
+  @Test
+  public void testPrintVersion() {
+    tajoCli.executeMetaCommand("\\?");
+    String consoleResult = new String(out.toByteArray());
+
+    if (VersionInfo.getVersion().contains("SNAPSHOT")) {
+      assertTrue(consoleResult.contains("docs/current/"));
+    } else {
+      assertTrue(consoleResult.contains("docs/" + VersionInfo.getVersion() + "/"));
     }
   }
 }
