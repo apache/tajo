@@ -46,6 +46,7 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
+import java.util.Iterator;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
@@ -559,6 +560,28 @@ public class TestTajoCli {
     @Override
     public void printProgress(PrintWriter sout, QueryStatus status) {
       //nothing to do
+    }
+  }
+
+  @Test
+  public void testHelpCommand() throws IOException, NoSuchMethodException {
+    Iterator i = tajoCli.getContext().getCommands().keySet().iterator();
+
+    while (i.hasNext()) {
+      String command = i.next().toString();
+
+      if (tajoCli.getContext().getCommands().get(command).getClass().getMethod("printHelp")
+              .getDeclaringClass().toString().equals("class org.apache.tajo.cli.tsql.commands.TajoShellCommand")) {
+        tajoCli.executeMetaCommand("\\help " + command.replace("\\", ""));
+        String result = new String(out.toByteArray());
+        out.reset();
+
+        String expected = tajoCli.getContext().getCommands().get(command).getCommand()
+                + " " + tajoCli.getContext().getCommands().get(command).getUsage()
+                + " - " + tajoCli.getContext().getCommands().get(command).getDescription() + "\n";
+
+        assertEquals(result, expected);
+      }
     }
   }
 }
