@@ -567,11 +567,20 @@ public class TestTajoCli {
   public void testPrintVersion() {
     tajoCli.executeMetaCommand("\\?");
     String consoleResult = new String(out.toByteArray());
+    String tajoFullVersion = VersionInfo.getVersion();
+    String tajoVersion;
 
-    if (VersionInfo.getVersion().contains("SNAPSHOT")) {
+    int delimiterIdx = VersionInfo.getVersion().indexOf("-");
+    if (delimiterIdx > -1) {
+      tajoVersion = tajoFullVersion.substring(0, delimiterIdx);
+    } else {
+      tajoVersion = tajoFullVersion;
+    }
+
+    if (tajoVersion.equalsIgnoreCase("") || tajoFullVersion.contains("SNAPSHOT")) {
       assertTrue(consoleResult.contains("docs/current/"));
     } else {
-      assertTrue(consoleResult.contains("docs/" + VersionInfo.getVersion() + "/"));
+      assertTrue(consoleResult.contains("docs/" + tajoVersion + "/"));
     }
   }
 }
