@@ -117,7 +117,9 @@ public enum SessionVars implements ConfigKey {
 
   // for physical Executors
   EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort (mb)", DEFAULT,
-      Long.class, Validators.min("0")),
+      Integer.class, Validators.min("0")),
+  HASH_SHUFFLE_BUFFER_SIZE(ConfVars.$EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE, "hash-shuffle buffer size for local disk I/O (mb)"
+      , DEFAULT, Integer.class, Validators.min("1")),
   HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash join (mb)", DEFAULT,
       Long.class, Validators.min("0")),
   INNER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD,

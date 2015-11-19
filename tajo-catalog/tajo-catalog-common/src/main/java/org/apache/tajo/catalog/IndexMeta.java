@@ -64,7 +64,7 @@ public class IndexMeta implements Cloneable {
     this.keySortSpecs = new SortSpec[keySortSpecs.length];
     for (int i = 0; i < keySortSpecs.length; i++) {
       this.keySortSpecs[i] = new SortSpec(keySortSpecs[i].getSortKey(), keySortSpecs[i].isAscending(),
-          keySortSpecs[i].isNullFirst());
+          keySortSpecs[i].isNullsFirst());
     }
     Arrays.sort(this.keySortSpecs, new Comparator<SortSpec>() {
       @Override

@@ -24,22 +24,18 @@ import org.apache.tajo.storage.Tuple;
 public abstract class ZeroCopyTuple implements Tuple {
 
   protected int relativePos;
-  protected int length;
 
-  public abstract void set(MemoryBlock memoryBlock, int relativePos, int length, DataType[] types);
+  public abstract void set(MemoryBlock memoryBlock, int relativePos, DataType[] types);
 
-  void set(int relativePos, int length) {
+  void set(int relativePos) {
     this.relativePos = relativePos;
-    this.length = length;
   }
 
   public int getRelativePos() {
     return relativePos;
   }
 
-  public int getLength() {
-    return length;
-  }
+  public abstract int getLength();
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {

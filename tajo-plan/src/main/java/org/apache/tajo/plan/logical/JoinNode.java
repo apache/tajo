@@ -29,11 +29,13 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private JoinSpec joinSpec = new JoinSpec();
-  @Expose private Target[] targets;
+  @Expose private List<Target> targets = null;
 
   public JoinNode(int pid) {
     super(pid, NodeType.JOIN);
@@ -79,12 +81,12 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   }
 
   @Override
-  public Target[] getTargets() {
+  public List<Target> getTargets() {
     return this.targets;
   }
 
   @Override
-  public void setTargets(Target[] targets) {
+  public void setTargets(List<Target> targets) {
     this.targets = targets;
     this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
@@ -119,7 +121,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     final int prime = 31;
     int result = 1;
     result = prime * result + joinSpec.hashCode();
-    result = prime * result + Arrays.hashCode(targets);
+    result = prime * result + Objects.hashCode(targets);
     return result;
   }
 
@@ -140,9 +142,9 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     JoinNode join = (JoinNode) super.clone();
     join.joinSpec = (JoinSpec) this.joinSpec.clone();
     if (hasTargets()) {
-      join.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        join.targets[i] = (Target) targets[i].clone();
+      join.targets = new ArrayList<>();
+      for (Target t : targets) {
+        join.targets.add((Target) t.clone());
       }
     }
     return join;

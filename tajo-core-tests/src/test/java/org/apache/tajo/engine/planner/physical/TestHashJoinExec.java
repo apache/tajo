@@ -216,6 +216,7 @@ public class TestHashJoinExec {
     HashJoinExec joinExec = proj.getChild();
 
     assertCheckInnerJoinRelatedFunctions(ctx, phyPlanner, joinNode, joinExec);
+    exec.close();
   }
 
   /**

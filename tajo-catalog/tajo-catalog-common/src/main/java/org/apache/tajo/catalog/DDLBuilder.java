@@ -88,7 +88,7 @@ public class DDLBuilder {
     for (SortSpec sortSpec : desc.getKeySortSpecs()) {
       sb.append(sortSpec.getSortKey().getQualifiedName()).append(" ");
       sb.append(sortSpec.isAscending() ? "asc" : "desc").append(" ");
-      sb.append(sortSpec.isNullFirst() ? "null first" : "null last").append(", ");
+      sb.append(sortSpec.isNullsFirst() ? "null first" : "null last").append(", ");
     }
     sb.replace(sb.length() - 2, sb.length() - 1, " )");
 

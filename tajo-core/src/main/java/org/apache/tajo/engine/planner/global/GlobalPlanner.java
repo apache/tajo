@@ -383,12 +383,12 @@ public class GlobalPlanner {
    */
   private static class RewrittenFunctions {
     AggregationFunctionCallEval [] firstStageEvals;
-    Target[] firstStageTargets;
+    List<Target> firstStageTargets;
     AggregationFunctionCallEval secondStageEvals;
 
     public RewrittenFunctions(int firstStageEvalNum) {
       firstStageEvals = new AggregationFunctionCallEval[firstStageEvalNum];
-      firstStageTargets = new Target[firstStageEvalNum];
+      firstStageTargets = new ArrayList<>();
     }
   }
 
@@ -444,7 +444,7 @@ public class GlobalPlanner {
       }
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
     } else if (function.getName().equalsIgnoreCase("sum")) {
       rewritten = new RewrittenFunctions(1);
@@ -452,7 +452,7 @@ public class GlobalPlanner {
       rewritten.firstStageEvals[0] = createSumFunction(function.getArgs());
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createSumFunction(new EvalNode[]{fieldEval});
 
     } else if (function.getName().equals("max")) {
@@ -461,7 +461,7 @@ public class GlobalPlanner {
       rewritten.firstStageEvals[0] = createMaxFunction(function.getArgs());
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createMaxFunction(new EvalNode[]{fieldEval});
 
     } else if (function.getName().equals("min")) {
@@ -471,7 +471,7 @@ public class GlobalPlanner {
       rewritten.firstStageEvals[0] = createMinFunction(function.getArgs());
       String referenceName = plan.generateUniqueColumnName(rewritten.firstStageEvals[0]);
       FieldEval fieldEval = new FieldEval(referenceName, rewritten.firstStageEvals[0].getValueType());
-      rewritten.firstStageTargets[0] = new Target(fieldEval);
+      rewritten.firstStageTargets.add(0, new Target(fieldEval));
       rewritten.secondStageEvals = createMinFunction(new EvalNode[]{fieldEval});
 
     } else {
@@ -547,17 +547,12 @@ public class GlobalPlanner {
       }
     }
 
-    int firstStageAggFunctionNum = firstStageAggFunctions.size();
-    int firstStageGroupingKeyNum = firstStageGroupingColumns.size();
-
-    int i = 0;
-    Target [] firstStageTargets = new Target[firstStageGroupingKeyNum + firstStageAggFunctionNum];
+    List<Target> firstStageTargets = new ArrayList<>();
     for (Column column : firstStageGroupingColumns) {
-      Target target = new Target(new FieldEval(column));
-      firstStageTargets[i++] = target;
+      firstStageTargets.add(new Target(new FieldEval(column)));
     }
     for (Target target : firstPhaseEvalNodeTargets) {
-      firstStageTargets[i++] = target;
+      firstStageTargets.add(target);
     }
 
     // Create the groupby node for the first stage and set all necessary descriptions
@@ -777,7 +772,7 @@ public class GlobalPlanner {
 
       secondPhaseGroupBy.setAggFunctions(secondPhaseEvals);
       firstPhaseGroupBy.setAggFunctions(firstPhaseEvals);
-      Target [] firstPhaseTargets = ProjectionPushDownRule.buildGroupByTarget(firstPhaseGroupBy, null,
+      List<Target> firstPhaseTargets = ProjectionPushDownRule.buildGroupByTarget(firstPhaseGroupBy, null,
           firstPhaseEvalNames);
       firstPhaseGroupBy.setTargets(firstPhaseTargets);
       secondPhaseGroupBy.setInSchema(PlannerUtil.targetToSchema(firstPhaseTargets));
@@ -1298,21 +1293,21 @@ public class GlobalPlanner {
         }
         if (leftMostSubQueryNode != null) {
           // replace target column name
-          Target[] targets = leftMostSubQueryNode.getTargets();
-          int[] targetMappings = new int[targets.length];
-          for (int i = 0; i < targets.length; i++) {
-            if (targets[i].getEvalTree().getType() != EvalType.FIELD) {
+          List<Target> targets = leftMostSubQueryNode.getTargets();
+          int[] targetMappings = new int[targets.size()];
+          for (int i = 0; i < targets.size(); i++) {
+            if (targets.get(i).getEvalTree().getType() != EvalType.FIELD) {
               throw new TajoInternalError("Target of a UnionNode's subquery should be FieldEval.");
             }
-            int index = leftMostSubQueryNode.getInSchema().getColumnId(targets[i].getNamedColumn().getQualifiedName());
+            int index = leftMostSubQueryNode.getInSchema().getColumnId(targets.get(i).getNamedColumn().getQualifiedName());
             if (index < 0) {
               // If a target has alias, getNamedColumn() only returns alias
-              Set<Column> columns = EvalTreeUtil.findUniqueColumns(targets[i].getEvalTree());
+              Set<Column> columns = EvalTreeUtil.findUniqueColumns(targets.get(i).getEvalTree());
               Column column = columns.iterator().next();
               index = leftMostSubQueryNode.getInSchema().getColumnId(column.getQualifiedName());
             }
             if (index < 0) {
-              throw new TajoInternalError("Can't find matched Target in UnionNode's input schema: " + targets[i]
+              throw new TajoInternalError("Can't find matched Target in UnionNode's input schema: " + targets.get(i)
                   + "->" + leftMostSubQueryNode.getInSchema());
             }
             targetMappings[i] = index;
@@ -1322,14 +1317,15 @@ public class GlobalPlanner {
             if (eachNode.getPID() == leftMostSubQueryNode.getPID()) {
               continue;
             }
-            Target[] eachNodeTargets = eachNode.getTargets();
-            if (eachNodeTargets.length != targetMappings.length) {
+            List<Target> eachNodeTargets = eachNode.getTargets();
+            if (eachNodeTargets.size() != targetMappings.length) {
               throw new TajoInternalError("Union query can't have different number of target columns.");
             }
-            for (int i = 0; i < eachNodeTargets.length; i++) {
+            for (int i = 0; i < eachNodeTargets.size(); i++) {
               Column inColumn = eachNode.getInSchema().getColumn(targetMappings[i]);
-              eachNodeTargets[i].setAlias(eachNodeTargets[i].getNamedColumn().getQualifiedName());
-              EvalNode evalNode = eachNodeTargets[i].getEvalTree();
+              Target t = eachNodeTargets.get(i);
+              t.setAlias(t.getNamedColumn().getQualifiedName());
+              EvalNode evalNode = eachNodeTargets.get(i).getEvalTree();
               if (evalNode.getType() != EvalType.FIELD) {
                 throw new TajoInternalError("Target of a UnionNode's subquery should be FieldEval.");
               }

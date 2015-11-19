@@ -128,7 +128,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
         joinNode.setOutSchema(node.getOutSchema());
 
         List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(inSchema));
-        joinNode.setTargets(targets.toArray(new Target[targets.size()]));
+        joinNode.setTargets(targets);
 
         block.addJoinType(joinType);
         block.registerNode(joinNode);

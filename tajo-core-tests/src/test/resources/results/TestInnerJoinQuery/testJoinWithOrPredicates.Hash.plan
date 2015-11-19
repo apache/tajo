@@ -5,7 +5,7 @@ PROJECTION(4)
   => out schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
   => in  schema: {(4) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4)}
    SORT(3)
-     => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+     => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
       SELECTION(2)
         => Search Cond: (default.n1.n_nationkey (INT4) IN (1, 2) OR default.n2.n_nationkey (INT4) IN (2))
          JOIN(7)(INNER)
@@ -48,7 +48,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
  0: type=Broadcast, tables=default.n1
 
 SORT(11)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
    SELECTION(2)
      => Search Cond: (default.n1.n_nationkey (INT4) IN (1, 2) OR default.n2.n_nationkey (INT4) IN (2))
       JOIN(7)(INNER)
@@ -80,7 +80,7 @@ PROJECTION(4)
   => out schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
   => in  schema: {(4) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4)}
    SORT(3)
-     => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+     => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
       SCAN(12) on eb_0000000000000_0000_000003
         => out schema: {(4) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4)}
         => in schema: {(4) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4)}

@@ -5,7 +5,7 @@ PROJECTION(5)
   => out schema: {(7) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus2 (INT4), result (INT4), total (INT8), v1 (INT4)}
   => in  schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
    SORT(4)
-     => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+     => Sort Keys: v1 (INT4) (asc, nulls last),default.nation.n_regionkey (INT4) (asc, nulls last)
       GROUP_BY(3)(v1,n_regionkey,r_regionkey,?plus,result)
         => exprs: (sum(?plus (INT4)))
         => target list: v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4) as plus1, result (INT4), total (INT8)
@@ -111,7 +111,7 @@ Block Id: eb_0000000000000_0000_000004 [INTERMEDIATE]
 [q_0000000000000_0000] 4 => 5 (type=RANGE_SHUFFLE, key=default.nation.n_regionkey (INT4), v1 (INT4), num=32)
 
 SORT(14)
-  => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+  => Sort Keys: v1 (INT4) (asc, nulls last),default.nation.n_regionkey (INT4) (asc, nulls last)
    GROUP_BY(3)(v1,n_regionkey,r_regionkey,?plus,result)
      => exprs: (sum(?sum_3 (INT8)))
      => target list: v1 (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), ?plus (INT4) as plus1, result (INT4), total (INT8)
@@ -136,7 +136,7 @@ PROJECTION(5)
   => out schema: {(7) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), plus2 (INT4), result (INT4), total (INT8), v1 (INT4)}
   => in  schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
    SORT(4)
-     => Sort Keys: v1 (INT4) (asc),default.nation.n_regionkey (INT4) (asc)
+     => Sort Keys: v1 (INT4) (asc, nulls last),default.nation.n_regionkey (INT4) (asc, nulls last)
       SCAN(15) on eb_0000000000000_0000_000004
         => out schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}
         => in schema: {(6) default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), plus1 (INT4), result (INT4), total (INT8), v1 (INT4)}

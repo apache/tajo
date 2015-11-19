@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(5)
-  => Sort Keys: default.a.id (INT4) (asc),default.a.name (TEXT) (asc)
+  => Sort Keys: default.a.id (INT4) (asc, nulls last),default.a.name (TEXT) (asc, nulls last)
    JOIN(9)(LEFT_OUTER)
      => Join Cond: default.a.id (INT4) = default.b.id (INT4)
      => target list: CASE WHEN default.b.name (TEXT) IS NULL THEN 9991231 ELSE default.b.name (TEXT) END as c1, CASE WHEN default.c.name (TEXT) IS NULL THEN 9991231 ELSE default.c.name (TEXT) END as c2, default.a.id (INT4), default.a.name (TEXT), id2 (INT4), name2 (TEXT)
@@ -119,7 +119,7 @@ Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
 [q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.a.id (INT4), default.a.name (TEXT), num=32)
 
 SORT(15)
-  => Sort Keys: default.a.id (INT4) (asc),default.a.name (TEXT) (asc)
+  => Sort Keys: default.a.id (INT4) (asc, nulls last),default.a.name (TEXT) (asc, nulls last)
    JOIN(9)(LEFT_OUTER)
      => Join Cond: default.a.id (INT4) = default.b.id (INT4)
      => target list: CASE WHEN default.b.name (TEXT) IS NULL THEN 9991231 ELSE default.b.name (TEXT) END as c1, CASE WHEN default.c.name (TEXT) IS NULL THEN 9991231 ELSE default.c.name (TEXT) END as c2, default.a.id (INT4), default.a.name (TEXT), id2 (INT4), name2 (TEXT)
@@ -143,7 +143,7 @@ Block Id: eb_0000000000000_0000_000006 [ROOT]
  0: sorted input=eb_0000000000000_0000_000005
 
 SORT(5)
-  => Sort Keys: default.a.id (INT4) (asc),default.a.name (TEXT) (asc)
+  => Sort Keys: default.a.id (INT4) (asc, nulls last),default.a.name (TEXT) (asc, nulls last)
    SCAN(16) on eb_0000000000000_0000_000005
      => out schema: {(6) c1 (TEXT), c2 (TEXT), default.a.id (INT4), default.a.name (TEXT), id2 (INT4), name2 (TEXT)}
      => in schema: {(6) c1 (TEXT), c2 (TEXT), default.a.id (INT4), default.a.name (TEXT), id2 (INT4), name2 (TEXT)}

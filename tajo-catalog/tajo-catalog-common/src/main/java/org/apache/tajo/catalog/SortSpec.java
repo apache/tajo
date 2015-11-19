@@ -30,7 +30,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProto> {
   @Expose private Column sortKey;
   @Expose private boolean ascending = true;
-  @Expose private boolean nullFirst = false;
+  @Expose private boolean nullsFirst = false;
 
   public SortSpec(final Column sortKey) {
     this.sortKey = sortKey;
@@ -40,19 +40,19 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
    *
    * @param sortKey columns to sort
    * @param asc true if the sort order is ascending order
-   * @param nullFirst
+   * @param nullsFirst
    * Otherwise, it should be false.
    */
-  public SortSpec(final Column sortKey, final boolean asc, final boolean nullFirst) {
+  public SortSpec(final Column sortKey, final boolean asc, final boolean nullsFirst) {
     this(sortKey);
     this.ascending = asc;
-    this.nullFirst = nullFirst;
+    this.nullsFirst = nullsFirst;
   }
 
   public SortSpec(SortSpecProto sortSpec) {
     this.sortKey = new Column(sortSpec.getColumn());
     this.ascending = sortSpec.getAscending();
-    this.nullFirst = sortSpec.getNullFirst();
+    this.nullsFirst = sortSpec.getNullFirst();
   }
 
   public final boolean isAscending() {
@@ -63,12 +63,12 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
     this.ascending = false;
   }
 
-  public final boolean isNullFirst() {
-    return this.nullFirst;
+  public final boolean isNullsFirst() {
+    return this.nullsFirst;
   }
 
-  public final void setNullFirst() {
-    this.nullFirst = true;
+  public final void setNullsFirst() {
+    this.nullsFirst = true;
   }
 
   public final Column getSortKey() {
@@ -80,14 +80,14 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
     SortSpec key = (SortSpec) super.clone();
     key.sortKey = sortKey;
     key.ascending = ascending;
-    key.nullFirst = nullFirst;
+    key.nullsFirst = nullsFirst;
 
     return key;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(Objects.hashCode(sortKey), ascending, nullFirst);
+    return Objects.hashCode(Objects.hashCode(sortKey), ascending, nullsFirst);
   }
 
   @Override
@@ -96,7 +96,7 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
       SortSpec other = (SortSpec) object;
       return sortKey.equals(other.sortKey) &&
           ascending == other.ascending &&
-          nullFirst == other.nullFirst;
+          nullsFirst == other.nullsFirst;
     } else {
       return false;
     }
@@ -108,7 +108,7 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
   }
 
   public String toString() {
-    return sortKey + " ("+(ascending ? "asc" : "desc")+")";
+    return sortKey + " ("+(ascending ? "asc" : "desc") + ", " + (nullsFirst ? "nulls first" : "nulls last") +")";
   }
 
   @Override
@@ -116,7 +116,7 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
     SortSpecProto.Builder builder = SortSpecProto.newBuilder();
     builder.setColumn(sortKey.getProto());
     builder.setAscending(ascending);
-    builder.setNullFirst(nullFirst);
+    builder.setNullFirst(nullsFirst);
     return builder.build();
   }
 }

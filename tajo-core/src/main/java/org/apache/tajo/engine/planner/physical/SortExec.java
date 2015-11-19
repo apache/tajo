@@ -26,6 +26,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.List;
 
 public abstract class SortExec extends UnaryPhysicalExec {
 
@@ -39,7 +40,7 @@ public abstract class SortExec extends UnaryPhysicalExec {
     this.comparator = new BaseTupleComparator(inSchema, sortSpecs);
   }
 
-  protected TupleSorter getSorter(TupleList tupleSlots) {
+  protected TupleSorter getSorter(List tupleSlots) {
     if (!tupleSlots.isEmpty() && ComparableVector.isVectorizable(sortSpecs)) {
       return new VectorizedSorter(tupleSlots, sortSpecs, comparator.getSortKeyIds());
     }

@@ -21,15 +21,16 @@ package org.apache.tajo.plan.logical;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class DistinctGroupbyNode extends UnaryNode implements Projectable, Cloneable {
   @Expose
@@ -39,7 +40,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   private List<GroupbyNode> subGroupbyPlan;
 
   @Expose
-  private Target[] targets;
+  private List<Target> targets = null;
 
   @Expose
   private Column[] groupingColumns = PlannerUtil.EMPTY_COLUMNS;
@@ -56,21 +57,21 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   @Override
   public boolean hasTargets() {
-    return targets.length > 0;
+    return (targets != null && !targets.isEmpty());
   }
 
   @Override
-  public void setTargets(Target[] targets) {
+  public void setTargets(List<Target> targets) {
     this.targets = targets;
     setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override
-  public Target[] getTargets() {
+  public List<Target> getTargets() {
     if (hasTargets()) {
       return targets;
     } else {
-      return new Target[0];
+      return new ArrayList<>();
     }
   }
 
@@ -131,9 +132,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     }
 
     if (targets != null) {
-      cloneNode.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        cloneNode.targets[i] = (Target) targets[i].clone();
+      cloneNode.targets = new ArrayList<>();
+      for (Target t : targets) {
+        cloneNode.targets.add((Target) t.clone());
       }
     }
 
@@ -169,7 +170,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     result = prime * result + Arrays.hashCode(groupingColumns);
     result = prime * result + Arrays.hashCode(resultColumnIds);
     result = prime * result + ((subGroupbyPlan == null) ? 0 : subGroupbyPlan.hashCode());
-    result = prime * result + Arrays.hashCode(targets);
+    result = prime * result + Objects.hashCode(targets);
     return result;
   }
 
@@ -223,9 +224,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     planStr.appendExplain("exprs: ").appendExplain(sb.toString());
 
     sb = new StringBuilder("target list: ");
-    for (int i = 0; i < targets.length; i++) {
-      sb.append(targets[i]);
-      if( i < targets.length - 1) {
+    for (int i = 0; i < targets.size(); i++) {
+      sb.append(targets.get(i));
+      if( i < targets.size() - 1) {
         sb.append(", ");
       }
     }

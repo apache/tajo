@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(5)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
    JOIN(8)(INNER)
      => Join Cond: name1 (TEXT) = name2 (TEXT)
      => target list: default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)
@@ -46,7 +46,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
  0: type=Broadcast, tables=default.small_nation
 
 SORT(12)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
    JOIN(8)(INNER)
      => Join Cond: name1 (TEXT) = name2 (TEXT)
      => target list: default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)
@@ -80,7 +80,7 @@ Block Id: eb_0000000000000_0000_000004 [ROOT]
  0: sorted input=eb_0000000000000_0000_000003
 
 SORT(5)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
    SCAN(13) on eb_0000000000000_0000_000003
      => out schema: {(3) default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)}
      => in schema: {(3) default.n1.n_nationkey (INT4), name1 (TEXT), name2 (TEXT)}

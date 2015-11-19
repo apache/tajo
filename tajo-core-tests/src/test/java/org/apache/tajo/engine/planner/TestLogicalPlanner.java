@@ -54,7 +54,6 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1247,12 +1246,12 @@ public class TestLogicalPlanner {
     InsertNode insertNode = getInsertNode(plan);
 
     ProjectionNode subquery = insertNode.getChild();
-    Target[] targets = subquery.getTargets();
+    List<Target> targets = subquery.getTargets();
     // targets MUST be manager, NULL as empid, deptname
-    assertEquals(targets[0].getNamedColumn().getQualifiedName(), "default.dept.manager");
-    assertEquals(targets[1].getAlias(), "empid");
-    assertEquals(targets[1].getEvalTree().getType(), EvalType.CONST);
-    assertEquals(targets[2].getNamedColumn().getQualifiedName(), "default.dept.deptname");
+    assertEquals(targets.get(0).getNamedColumn().getQualifiedName(), "default.dept.manager");
+    assertEquals(targets.get(1).getAlias(), "empid");
+    assertEquals(targets.get(1).getEvalTree().getType(), EvalType.CONST);
+    assertEquals(targets.get(2).getNamedColumn().getQualifiedName(), "default.dept.deptname");
   }
 
   private static InsertNode getInsertNode(LogicalPlan plan) {
@@ -1408,32 +1407,32 @@ public class TestLogicalPlanner {
     testCloneLogicalNode(projectionNode);
 
     // projection column test
-    Target[] targets = projectionNode.getTargets();
-    Arrays.sort(targets, new Comparator<Target>() {
+    List<Target> targets = projectionNode.getTargets();
+    Collections.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {
         return o1.getCanonicalName().compareTo(o2.getCanonicalName());
       }
     });
-    assertEquals(3, targets.length);
-    assertEquals("default.self_desc_table1.dept", targets[0].getCanonicalName());
-    assertEquals("default.self_desc_table1.id", targets[1].getCanonicalName());
-    assertEquals("default.self_desc_table1.name", targets[2].getCanonicalName());
+    assertEquals(3, targets.size());
+    assertEquals("default.self_desc_table1.dept", targets.get(0).getCanonicalName());
+    assertEquals("default.self_desc_table1.id", targets.get(1).getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets.get(2).getCanonicalName());
 
     // scan column test
     assertEquals(NodeType.SCAN, projectionNode.getChild().getType());
     ScanNode scanNode = projectionNode.getChild();
     targets = scanNode.getTargets();
-    Arrays.sort(targets, new Comparator<Target>() {
+    Collections.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {
         return o1.getCanonicalName().compareTo(o2.getCanonicalName());
       }
     });
-    assertEquals(3, targets.length);
-    assertEquals("default.self_desc_table1.dept", targets[0].getCanonicalName());
-    assertEquals("default.self_desc_table1.id", targets[1].getCanonicalName());
-    assertEquals("default.self_desc_table1.name", targets[2].getCanonicalName());
+    assertEquals(3, targets.size());
+    assertEquals("default.self_desc_table1.dept", targets.get(0).getCanonicalName());
+    assertEquals("default.self_desc_table1.id", targets.get(1).getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets.get(2).getCanonicalName());
 
     catalog.dropTable("default.self_desc_table1");
   }
@@ -1463,16 +1462,16 @@ public class TestLogicalPlanner {
     testCloneLogicalNode(projectionNode);
 
     // projection column test
-    Target[] targets = projectionNode.getTargets();
-    Arrays.sort(targets, new Comparator<Target>() {
+    List<Target> targets = projectionNode.getTargets();
+    Collections.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {
         return o1.getCanonicalName().compareTo(o2.getCanonicalName());
       }
     });
-    assertEquals(2, targets.length);
-    assertEquals("default.self_desc_table1.dept", targets[0].getCanonicalName());
-    assertEquals("default.self_desc_table1.name", targets[1].getCanonicalName());
+    assertEquals(2, targets.size());
+    assertEquals("default.self_desc_table1.dept", targets.get(0).getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets.get(1).getCanonicalName());
 
     assertEquals(NodeType.SELECTION, projectionNode.getChild().getType());
     SelectionNode selectionNode = projectionNode.getChild();
@@ -1483,17 +1482,17 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.SCAN, selectionNode.getChild().getType());
     ScanNode scanNode = selectionNode.getChild();
     targets = scanNode.getTargets();
-    Arrays.sort(targets, new Comparator<Target>() {
+    Collections.sort(targets, new Comparator<Target>() {
       @Override
       public int compare(Target o1, Target o2) {
         return o1.getCanonicalName().compareTo(o2.getCanonicalName());
       }
     });
-    assertEquals(4, targets.length);
-    assertEquals("?greaterthan", targets[0].getCanonicalName());
-    assertEquals("default.self_desc_table1.dept", targets[1].getCanonicalName());
-    assertEquals("default.self_desc_table1.id", targets[2].getCanonicalName());
-    assertEquals("default.self_desc_table1.name", targets[3].getCanonicalName());
+    assertEquals(4, targets.size());
+    assertEquals("?greaterthan", targets.get(0).getCanonicalName());
+    assertEquals("default.self_desc_table1.dept", targets.get(1).getCanonicalName());
+    assertEquals("default.self_desc_table1.id", targets.get(2).getCanonicalName());
+    assertEquals("default.self_desc_table1.name", targets.get(3).getCanonicalName());
 
     catalog.dropTable("default.self_desc_table1");
   }

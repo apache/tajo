@@ -35,17 +35,16 @@ import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 
 public class RawFile {
@@ -101,7 +100,7 @@ public class RawFile {
       }
 
       if(buf == null) {
-        buf = BufferPool.directBuffer(conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
+        buf = BufferPool.directBuffer(conf.getInt(READ_BUFFER_SIZE, DEFAULT_BUFFER_SIZE)).order(ByteOrder.LITTLE_ENDIAN);
         buffer = buf.nioBuffer(0, buf.capacity());
       }
 
@@ -284,96 +283,94 @@ public class RawFile {
         }
 
         switch (columnTypes[i].getType()) {
-          case BOOLEAN :
-            outTuple.put(i, DatumFactory.createBool(buffer.get()));
-            break;
+        case BOOLEAN:
+          outTuple.put(i, DatumFactory.createBool(buffer.get()));
+          break;
 
-          case BIT :
-            outTuple.put(i, DatumFactory.createBit(buffer.get()));
-            break;
+        case BIT:
+          outTuple.put(i, DatumFactory.createBit(buffer.get()));
+          break;
 
-          case CHAR :
-            int realLen = readRawVarint32();
-            byte[] buf = new byte[realLen];
-            buffer.get(buf);
-            outTuple.put(i, DatumFactory.createChar(buf));
-            break;
+        case CHAR:
+          int realLen = readRawVarint32();
+          byte[] buf = new byte[realLen];
+          buffer.get(buf);
+          outTuple.put(i, DatumFactory.createChar(buf));
+          break;
 
-          case INT2 :
-            outTuple.put(i, DatumFactory.createInt2(buffer.getShort()));
-            break;
+        case INT2:
+          outTuple.put(i, DatumFactory.createInt2(buffer.getShort()));
+          break;
 
-          case INT4 :
-            outTuple.put(i, DatumFactory.createInt4(decodeZigZag32(readRawVarint32())));
-            break;
+        case INT4:
+          outTuple.put(i, DatumFactory.createInt4(decodeZigZag32(readRawVarint32())));
+          break;
 
-          case INT8 :
-            outTuple.put(i, DatumFactory.createInt8(decodeZigZag64(readRawVarint64())));
-            break;
+        case INT8:
+          outTuple.put(i, DatumFactory.createInt8(decodeZigZag64(readRawVarint64())));
+          break;
 
-          case FLOAT4 :
-            outTuple.put(i, DatumFactory.createFloat4(buffer.getFloat()));
-            break;
+        case FLOAT4:
+          outTuple.put(i, DatumFactory.createFloat4(buffer.getFloat()));
+          break;
 
-          case FLOAT8 :
-            outTuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
-            break;
+        case FLOAT8:
+          outTuple.put(i, DatumFactory.createFloat8(buffer.getDouble()));
+          break;
 
-          case TEXT : {
-            int len = readRawVarint32();
-            byte [] strBytes = new byte[len];
-            buffer.get(strBytes);
-            outTuple.put(i, DatumFactory.createText(strBytes));
-            break;
+        case TEXT: {
+          int len = readRawVarint32();
+          byte[] strBytes = new byte[len];
+          buffer.get(strBytes);
+          outTuple.put(i, DatumFactory.createText(strBytes));
+          break;
+        }
+
+        case BLOB: {
+          int len = readRawVarint32();
+          byte[] rawBytes = new byte[len];
+          buffer.get(rawBytes);
+          outTuple.put(i, DatumFactory.createBlob(rawBytes));
+          break;
+        }
+
+        case PROTOBUF: {
+          int len = readRawVarint32();
+          byte[] rawBytes = new byte[len];
+          buffer.get(rawBytes);
+
+          outTuple.put(i, ProtobufDatumFactory.createDatum(columnTypes[i], rawBytes));
+          break;
+        }
+
+        case INET4:
+          outTuple.put(i, DatumFactory.createInet4(buffer.getInt()));
+          break;
+
+        case DATE: {
+          int val = buffer.getInt();
+          if (val < Integer.MIN_VALUE + 1) {
+            outTuple.put(i, DatumFactory.createNullDatum());
+          } else {
+            outTuple.put(i, DatumFactory.createFromInt4(columnTypes[i], val));
           }
-
-          case BLOB : {
-            int len = readRawVarint32();
-            byte [] rawBytes = new byte[len];
-            buffer.get(rawBytes);
-            outTuple.put(i, DatumFactory.createBlob(rawBytes));
-            break;
+          break;
+        }
+        case TIME:
+        case TIMESTAMP: {
+          long val = buffer.getLong();
+          if (val < Long.MIN_VALUE + 1) {
+            outTuple.put(i, DatumFactory.createNullDatum());
+          } else {
+            outTuple.put(i, DatumFactory.createFromInt8(columnTypes[i], val));
           }
+          break;
+        }
+        case NULL_TYPE:
+          outTuple.put(i, NullDatum.get());
+          break;
 
-          case PROTOBUF: {
-            int len = readRawVarint32();
-            byte [] rawBytes = new byte[len];
-            buffer.get(rawBytes);
-
-            outTuple.put(i, ProtobufDatumFactory.createDatum(columnTypes[i], rawBytes));
-            break;
-          }
-
-          case INET4 :
-            byte [] ipv4Bytes = new byte[4];
-            buffer.get(ipv4Bytes);
-            outTuple.put(i, DatumFactory.createInet4(ipv4Bytes));
-            break;
-
-          case DATE: {
-            int val = buffer.getInt();
-            if (val < Integer.MIN_VALUE + 1) {
-              outTuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              outTuple.put(i, DatumFactory.createFromInt4(columnTypes[i], val));
-            }
-            break;
-          }
-          case TIME:
-          case TIMESTAMP: {
-            long val = buffer.getLong();
-            if (val < Long.MIN_VALUE + 1) {
-              outTuple.put(i, DatumFactory.createNullDatum());
-            } else {
-              outTuple.put(i, DatumFactory.createFromInt8(columnTypes[i], val));
-            }
-            break;
-          }
-          case NULL_TYPE:
-            outTuple.put(i, NullDatum.get());
-            break;
-
-          default:
+        default:
         }
       }
 
@@ -402,6 +399,7 @@ public class RawFile {
       buffer.clear();
       forceFillBuffer = true;
       filePosition = fragment.getStartKey();
+      recordCount = 0;
       channel.position(filePosition);
       eos = false;
     }
@@ -463,335 +461,11 @@ public class RawFile {
     }
   }
 
-  public static class RawFileAppender extends FileAppender {
-    private FileChannel channel;
-    private RandomAccessFile randomAccessFile;
-    private DataType[] columnTypes;
+  public static class RawFileAppender extends DirectRawFileWriter {
 
-    private ByteBuffer buffer;
-    private ByteBuf buf;
-    private BitArray nullFlags;
-    private int headerSize = 0;
-    private static final int RECORD_SIZE = 4;
-    private long pos;
-    private ShuffleType shuffleType;
-
-    private TableStatistics stats;
-
-    public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId,
-                           Schema schema, TableMeta meta, Path workDir) throws IOException {
-      super(conf, taskAttemptId, schema, meta, workDir);
-    }
-
-    public void init() throws IOException {
-      File file;
-      try {
-        if (path.toUri().getScheme() != null) {
-          file = new File(path.toUri());
-        } else {
-          file = new File(path.toString());
-        }
-      } catch (IllegalArgumentException iae) {
-        throw new IOException(iae);
-      }
-
-      randomAccessFile = new RandomAccessFile(file, "rw");
-      channel = randomAccessFile.getChannel();
-      pos = 0;
-
-      columnTypes = new DataType[schema.size()];
-      for (int i = 0; i < schema.size(); i++) {
-        columnTypes[i] = schema.getColumn(i).getDataType();
-      }
-
-      buf = BufferPool.directBuffer(conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE));
-      buffer = buf.nioBuffer(0, buf.capacity());
-
-      // comput the number of bytes, representing the null flags
-
-      nullFlags = new BitArray(schema.size());
-      headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
-
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
-        this.shuffleType = PlannerUtil.getShuffleType(
-            meta.getOption(StorageConstants.SHUFFLE_TYPE,
-                PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
-      }
-
-      super.init();
-    }
-
-    @Override
-    public long getOffset() throws IOException {
-      return pos;
-    }
-
-    private void flushBuffer() throws IOException {
-      buffer.flip();
-      channel.write(buffer);
-      buffer.clear();
-    }
-
-    private boolean flushBufferAndReplace(int recordOffset, int sizeToBeWritten)
-        throws IOException {
-
-      // if the buffer reaches the limit,
-      // write the bytes from 0 to the previous record.
-      if (buffer.remaining() < sizeToBeWritten) {
-
-        int limit = buffer.position();
-        buffer.limit(recordOffset);
-        buffer.flip();
-        channel.write(buffer);
-        buffer.position(recordOffset);
-        buffer.limit(limit);
-        buffer.compact();
-
-        //increase the write-buffer
-        if(buffer.remaining() < sizeToBeWritten) {
-          buf.setIndex(buffer.position(), buffer.limit());
-          buf.ensureWritable(sizeToBeWritten);
-          buffer = buf.nioBuffer(0, buf.capacity());
-          buffer.position(buf.readerIndex());
-        }
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    /**
-     * Encode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers
-     * into values that can be efficiently encoded with varint.  (Otherwise,
-     * negative values must be sign-extended to 64 bits to be varint encoded,
-     * thus always taking 10 bytes on the wire.)
-     *
-     * @param n A signed 32-bit integer.
-     * @return An unsigned 32-bit integer, stored in a signed int because
-     *         Java has no explicit unsigned support.
-     */
-    public static int encodeZigZag32(final int n) {
-      // Note:  the right-shift must be arithmetic
-      return (n << 1) ^ (n >> 31);
-    }
-
-    /**
-     * Encode a ZigZag-encoded 64-bit value.  ZigZag encodes signed integers
-     * into values that can be efficiently encoded with varint.  (Otherwise,
-     * negative values must be sign-extended to 64 bits to be varint encoded,
-     * thus always taking 10 bytes on the wire.)
-     *
-     * @param n A signed 64-bit integer.
-     * @return An unsigned 64-bit integer, stored in a signed int because
-     *         Java has no explicit unsigned support.
-     */
-    public static long encodeZigZag64(final long n) {
-      // Note:  the right-shift must be arithmetic
-      return (n << 1) ^ (n >> 63);
-    }
-
-    /**
-     * Encode and write a varint.  {@code value} is treated as
-     * unsigned, so it won't be sign-extended if negative.
-     */
-    public void writeRawVarint32(int value) throws IOException {
-      while (true) {
-        if ((value & ~0x7F) == 0) {
-          buffer.put((byte) value);
-          return;
-        } else {
-          buffer.put((byte) ((value & 0x7F) | 0x80));
-          value >>>= 7;
-        }
-      }
-    }
-
-    /**
-     * Compute the number of bytes that would be needed to encode a varint.
-     * {@code value} is treated as unsigned, so it won't be sign-extended if
-     * negative.
-     */
-    public static int computeRawVarint32Size(final int value) {
-      if ((value & (0xffffffff <<  7)) == 0) return 1;
-      if ((value & (0xffffffff << 14)) == 0) return 2;
-      if ((value & (0xffffffff << 21)) == 0) return 3;
-      if ((value & (0xffffffff << 28)) == 0) return 4;
-      return 5;
-    }
-
-    /** Encode and write a varint. */
-    public void writeRawVarint64(long value) throws IOException {
-      while (true) {
-        if ((value & ~0x7FL) == 0) {
-          buffer.put((byte) value);
-          return;
-        } else {
-          buffer.put((byte) ((value & 0x7F) | 0x80));
-          value >>>= 7;
-        }
-      }
-    }
-
-    @Override
-    public void addTuple(Tuple t) throws IOException {
-
-      if (buffer.remaining() < headerSize) {
-        flushBuffer();
-      }
-
-      // skip the row header
-      int recordOffset = buffer.position();
-      buffer.position(recordOffset + headerSize);
-      // reset the null flags
-      nullFlags.clear();
-      for (int i = 0; i < schema.size(); i++) {
-        if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
-          // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, t);
-        }
-
-        if (t.isBlankOrNull(i)) {
-          nullFlags.set(i);
-          continue;
-        }
-
-        // 10 is the maximum bytes size of all types
-        if (flushBufferAndReplace(recordOffset, 10)) {
-          recordOffset = 0;
-        }
-
-        switch(columnTypes[i].getType()) {
-          case NULL_TYPE:
-            nullFlags.set(i);
-            continue;
-
-          case BOOLEAN:
-          case BIT:
-            buffer.put(t.getByte(i));
-            break;
-
-          case INT2 :
-            buffer.putShort(t.getInt2(i));
-            break;
-
-          case INT4 :
-            writeRawVarint32(encodeZigZag32(t.getInt4(i)));
-            break;
-
-          case INT8 :
-            writeRawVarint64(encodeZigZag64(t.getInt8(i)));
-            break;
-
-          case FLOAT4 :
-            buffer.putFloat(t.getFloat4(i));
-            break;
-
-          case FLOAT8 :
-            buffer.putDouble(t.getFloat8(i));
-            break;
-
-          case CHAR:
-          case TEXT: {
-            byte [] strBytes = t.getBytes(i);
-            if (flushBufferAndReplace(recordOffset, strBytes.length + computeRawVarint32Size(strBytes.length))) {
-              recordOffset = 0;
-            }
-            writeRawVarint32(strBytes.length);
-            buffer.put(strBytes);
-            break;
-          }
-
-        case DATE:
-          buffer.putInt(t.getInt4(i));
-          break;
-
-        case TIME:
-        case TIMESTAMP:
-          buffer.putLong(t.getInt8(i));
-          break;
-
-          case BLOB : {
-            byte [] rawBytes = t.getBytes(i);
-            if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
-              recordOffset = 0;
-            }
-            writeRawVarint32(rawBytes.length);
-            buffer.put(rawBytes);
-            break;
-          }
-
-          case PROTOBUF: {
-            byte [] rawBytes = t.getBytes(i);
-            if (flushBufferAndReplace(recordOffset, rawBytes.length + computeRawVarint32Size(rawBytes.length))) {
-              recordOffset = 0;
-            }
-            writeRawVarint32(rawBytes.length);
-            buffer.put(rawBytes);
-            break;
-          }
-
-          case INET4 :
-            buffer.put(t.getBytes(i));
-            break;
-
-          default:
-            throw new IOException("Cannot support data type: " + columnTypes[i].getType());
-        }
-      }
-
-      // write a record header
-      int bufferPos = buffer.position();
-      buffer.position(recordOffset);
-      buffer.putInt(bufferPos - recordOffset);
-      byte [] flags = nullFlags.toArray();
-      buffer.putShort((short) flags.length);
-      buffer.put(flags);
-
-      pos += bufferPos - recordOffset;
-      buffer.position(bufferPos);
-
-      if (enabledStats) {
-        stats.incrementRow();
-      }
-    }
-
-    @Override
-    public void flush() throws IOException {
-      if(buffer != null){
-        flushBuffer();
-      }
-    }
-
-    @Override
-    public void close() throws IOException {
-      flush();
-      if (enabledStats) {
-        stats.setNumBytes(getOffset());
-      }
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
-      }
-
-      if(buf != null){
-        buffer.clear();
-        buffer = null;
-
-        buf.release();
-        buf = null;
-      }
-
-      IOUtils.cleanup(LOG, channel, randomAccessFile);
-    }
-
-    @Override
-    public TableStats getStats() {
-      if (enabledStats) {
-        stats.setNumBytes(pos);
-        return stats.getTableStat();
-      } else {
-        return null;
-      }
+    public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
+                           TableMeta meta, Path workDir) throws IOException {
+      super(conf, taskAttemptId, schema, meta, workDir, null);
     }
   }
 }

@@ -25,10 +25,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
@@ -548,6 +545,7 @@ public class TaskImpl implements Task {
 
   private FileFragment[] localizeFetchedData(File file, String name, TableMeta meta)
       throws IOException {
+
     Configuration c = new Configuration(systemConf);
     c.set(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, "file:///");
     FileSystem fs = FileSystem.get(c);
@@ -561,7 +559,7 @@ public class TaskImpl implements Task {
       if (f.getLen() == 0) {
         continue;
       }
-      tablet = new FileFragment(name, f.getPath(), 0l, f.getLen());
+      tablet = new FileFragment(name, fs.makeQualified(f.getPath()), 0l, f.getLen());
       listTablets.add(tablet);
     }
 
@@ -569,7 +567,7 @@ public class TaskImpl implements Task {
     synchronized (localChunks) {
       for (FileChunk chunk : localChunks) {
         if (name.equals(chunk.getEbId())) {
-          tablet = new FileFragment(name, new Path(chunk.getFile().getPath()), chunk.startOffset(), chunk.length());
+          tablet = new FileFragment(name, fs.makeQualified(new Path(chunk.getFile().getPath())), chunk.startOffset(), chunk.length());
           listTablets.add(tablet);
         }
       }
@@ -611,10 +609,9 @@ public class TaskImpl implements Task {
           try {
             FileChunk fetched = fetcher.get();
             if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null
-          && fetched.getFile() != null) {
+                && fetched.getFile() != null) {
               if (fetched.fromRemote() == false) {
-          localChunks.add(fetched);
-          LOG.info("Add a new FileChunk to local chunk list");
+                localChunks.add(fetched);
               }
               break;
             }

@@ -41,8 +41,17 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
       context.getOutput().write(String.format("You are now connected to database \"%s\" as user \"%s\".%n",
           client.getCurrentDatabase(), client.getUserInfo().getUserName()));
 
-    } else if (cmd.length == 2) {
-      final String databaseName = cmd[1].replace("\"", "");
+    } else if (cmd.length >= 2) {
+
+      StringBuilder databaseNameMaker = new StringBuilder();
+      for (int i = 1; i < cmd.length; i++) {
+        if (i != 1) {
+          databaseNameMaker.append(" ");
+        }
+        databaseNameMaker.append(cmd[i]);
+      }
+
+      final String databaseName = databaseNameMaker.toString().replace("\"", "");
 
       try {
         client.selectDatabase(databaseName);

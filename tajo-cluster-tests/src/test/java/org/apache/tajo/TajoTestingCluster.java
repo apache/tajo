@@ -157,8 +157,9 @@ public class TajoTestingCluster {
     // Python function path
     conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
 
-    // Query output file
-    conf.setVar(ConfVars.QUERY_OUTPUT_DEFAULT_FILE_FORMAT, BuiltinStorages.DRAW);
+    // Buffer size
+    conf.setInt(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE.varname, 1);
+    conf.setInt(ConfVars.$EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE.varname, 1);
 
     /** decrease Hbase thread and memory cache for testing */
     //server handler

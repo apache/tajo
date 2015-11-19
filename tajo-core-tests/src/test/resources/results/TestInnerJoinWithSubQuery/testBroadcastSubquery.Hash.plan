@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(6)
-  => Sort Keys: default.lineitem.l_orderkey (INT4) (asc),default.a.o_custkey (INT4) (asc),default.part.p_name (TEXT) (asc)
+  => Sort Keys: default.lineitem.l_orderkey (INT4) (asc, nulls last),default.a.o_custkey (INT4) (asc, nulls last),default.part.p_name (TEXT) (asc, nulls last)
    JOIN(12)(INNER)
      => Join Cond: default.lineitem.l_orderkey (INT4) = default.a.o_orderkey (INT4)
      => target list: default.a.o_custkey (INT4), default.lineitem.l_orderkey (INT4), default.part.p_name (TEXT)
@@ -56,7 +56,7 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
  1: type=Broadcast, tables=default.part
 
 SORT(18)
-  => Sort Keys: default.lineitem.l_orderkey (INT4) (asc),default.a.o_custkey (INT4) (asc),default.part.p_name (TEXT) (asc)
+  => Sort Keys: default.lineitem.l_orderkey (INT4) (asc, nulls last),default.a.o_custkey (INT4) (asc, nulls last),default.part.p_name (TEXT) (asc, nulls last)
    JOIN(12)(INNER)
      => Join Cond: default.lineitem.l_orderkey (INT4) = default.a.o_orderkey (INT4)
      => target list: default.a.o_custkey (INT4), default.lineitem.l_orderkey (INT4), default.part.p_name (TEXT)
@@ -99,7 +99,7 @@ Block Id: eb_0000000000000_0000_000006 [ROOT]
  0: sorted input=eb_0000000000000_0000_000005
 
 SORT(6)
-  => Sort Keys: default.lineitem.l_orderkey (INT4) (asc),default.a.o_custkey (INT4) (asc),default.part.p_name (TEXT) (asc)
+  => Sort Keys: default.lineitem.l_orderkey (INT4) (asc, nulls last),default.a.o_custkey (INT4) (asc, nulls last),default.part.p_name (TEXT) (asc, nulls last)
    SCAN(19) on eb_0000000000000_0000_000005
      => out schema: {(3) default.a.o_custkey (INT4), default.lineitem.l_orderkey (INT4), default.part.p_name (TEXT)}
      => in schema: {(3) default.a.o_custkey (INT4), default.lineitem.l_orderkey (INT4), default.part.p_name (TEXT)}

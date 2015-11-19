@@ -5,7 +5,7 @@ PROJECTION(6)
   => out schema: {(3) default.customer.c_custkey (INT4), default.o.o_orderkey (INT4), val (TEXT)}
   => in  schema: {(2) default.customer.c_custkey (INT4), default.o.o_orderkey (INT4)}
    SORT(5)
-     => Sort Keys: default.customer.c_custkey (INT4) (asc),default.o.o_orderkey (INT4) (asc)
+     => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last),default.o.o_orderkey (INT4) (asc, nulls last)
       JOIN(8)(LEFT_OUTER)
         => Join Cond: default.customer.c_custkey (INT4) = default.o.o_orderkey (INT4)
         => target list: default.customer.c_custkey (INT4), default.o.o_orderkey (INT4)
@@ -50,7 +50,7 @@ Block Id: eb_0000000000000_0000_000003 [LEAF]
  0: type=Broadcast, tables=default.orders
 
 SORT(12)
-  => Sort Keys: default.customer.c_custkey (INT4) (asc),default.o.o_orderkey (INT4) (asc)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last),default.o.o_orderkey (INT4) (asc, nulls last)
    JOIN(8)(LEFT_OUTER)
      => Join Cond: default.customer.c_custkey (INT4) = default.o.o_orderkey (INT4)
      => target list: default.customer.c_custkey (INT4), default.o.o_orderkey (INT4)
@@ -88,7 +88,7 @@ PROJECTION(6)
   => out schema: {(3) default.customer.c_custkey (INT4), default.o.o_orderkey (INT4), val (TEXT)}
   => in  schema: {(2) default.customer.c_custkey (INT4), default.o.o_orderkey (INT4)}
    SORT(5)
-     => Sort Keys: default.customer.c_custkey (INT4) (asc),default.o.o_orderkey (INT4) (asc)
+     => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last),default.o.o_orderkey (INT4) (asc, nulls last)
       SCAN(13) on eb_0000000000000_0000_000003
         => out schema: {(2) default.customer.c_custkey (INT4), default.o.o_orderkey (INT4)}
         => in schema: {(2) default.customer.c_custkey (INT4), default.o.o_orderkey (INT4)}

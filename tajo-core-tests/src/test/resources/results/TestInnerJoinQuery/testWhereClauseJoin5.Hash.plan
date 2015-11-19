@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(4)
-  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
+  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last)
    JOIN(10)(INNER)
      => Join Cond: default.part.p_partkey (INT4) = default.partsupp.ps_partkey (INT4)
      => target list: default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)
@@ -52,7 +52,7 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
  1: type=Broadcast, tables=default.supplier
 
 SORT(16)
-  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
+  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last)
    JOIN(10)(INNER)
      => Join Cond: default.part.p_partkey (INT4) = default.partsupp.ps_partkey (INT4)
      => target list: default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)
@@ -87,7 +87,7 @@ Block Id: eb_0000000000000_0000_000006 [ROOT]
  0: sorted input=eb_0000000000000_0000_000005
 
 SORT(4)
-  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc),default.supplier.s_name (TEXT) (asc),default.part.p_partkey (INT4) (asc)
+  => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last)
    SCAN(17) on eb_0000000000000_0000_000005
      => out schema: {(3) default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)}
      => in schema: {(3) default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)}
