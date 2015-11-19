@@ -564,7 +564,7 @@ public class TestTajoCli {
   }
 
   @Test
-  public void testHelpCommand() throws IOException, NoSuchMethodException {
+  public void testDefaultPrintHelp() throws IOException, NoSuchMethodException {
     Iterator i = tajoCli.getContext().getCommands().keySet().iterator();
 
     while (i.hasNext()) {
