@@ -167,7 +167,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
     @Override
     public LogicalNode visitProjection(ProcessorContext ctx, Stack<Expr> stack, Projection expr) throws TajoException {
-      if (PlannerUtil.hasAsterisk(expr.getNamedExprs())) {
+      if (PlannerUtil.hasAsterisk(expr.getNamedExprs().toArray(new NamedExpr[]{}))) {
         throw new UnsupportedException("Asterisk for self-describing data formats");
       }
 

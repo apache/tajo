@@ -212,7 +212,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       // If Non-from statement, it immediately returns.
       if (!expr.hasChild()) {
         EvalExprNode exprNode = ctx.getPlan().createNode(EvalExprNode.class);
-        exprNode.setTargets(buildTargets(ctx, expr.getNamedExprs()));
+        exprNode.setTargets(buildTargets(ctx, expr.getNamedExprs().toArray(new NamedExpr[]{})));
         return exprNode;
       }
 
@@ -220,12 +220,12 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       LogicalNode child = visit(ctx, stack, expr.getChild());
 
       // Resolve the asterisk expression
-      if (PlannerUtil.hasAsterisk(expr.getNamedExprs())) {
-        expr.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, expr.getNamedExprs()));
+      if (PlannerUtil.hasAsterisk(expr.getNamedExprs().toArray(new NamedExpr[]{}))) {
+        expr.setNamedExprs(Arrays.asList(voidResolveAsteriskNamedExpr(ctx, expr.getNamedExprs().toArray(new NamedExpr[]{}))));
       }
 
-      NamedExpr[] projectTargetExprs = expr.getNamedExprs();
-      for (int i = 0; i < expr.getNamedExprs().length; i++) {
+      NamedExpr[] projectTargetExprs = expr.getNamedExprs().toArray(new NamedExpr[]{});
+      for (int i = 0; i < expr.getNamedExprs().size(); i++) {
         NamedExpr namedExpr = projectTargetExprs[i];
 
         // 1) Normalize all field names occurred in each expr into full qualified names
@@ -242,7 +242,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         }
       }
 
-      List<Target> targets = buildTargets(ctx, expr.getNamedExprs());
+      List<Target> targets = buildTargets(ctx, expr.getNamedExprs().toArray(new NamedExpr[]{}));
 
       stack.pop(); // <--- Pop
 
@@ -314,15 +314,15 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       LogicalNode child = visit(ctx, stack, expr.getChild());
 
       Projection projection = ctx.getQueryBlock().getSingletonExpr(OpType.Projection);
-      int finalTargetNum = projection.getNamedExprs().length;
+      int finalTargetNum = projection.getNamedExprs().size();
       List<Target> targets = new ArrayList<>();
 
-      if (PlannerUtil.hasAsterisk(projection.getNamedExprs())) {
-        projection.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, projection.getNamedExprs()));
+      if (PlannerUtil.hasAsterisk(projection.getNamedExprs().toArray(new NamedExpr[]{}))) {
+        projection.setNamedExprs(Arrays.asList(voidResolveAsteriskNamedExpr(ctx, projection.getNamedExprs().toArray(new NamedExpr[]{}))));
       }
 
       for (int i = 0; i < finalTargetNum; i++) {
-        NamedExpr namedExpr = projection.getNamedExprs()[i];
+        NamedExpr namedExpr = projection.getNamedExprs().get(i);
         EvalNode evalNode = annotator.createEvalNode(ctx, namedExpr.getExpr(), NameResolvingMode.SUBEXPRS_AND_RELS, true);
 
         if (namedExpr.hasAlias()) {
