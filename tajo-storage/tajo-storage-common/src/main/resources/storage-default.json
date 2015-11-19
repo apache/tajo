@@ -17,19 +17,19 @@
       "default-format": "rowstore"
     },
     "s3": {
-      "handler": "org.apache.tajo.storage.FileTablespace",
+      "handler": "org.apache.tajo.storage.s3.S3TableSpace",
       "default-format": "text"
     },
     "s3a": {
-      "handler": "org.apache.tajo.storage.FileTablespace",
+      "handler": "org.apache.tajo.storage.s3.S3TableSpace",
       "default-format": "text"
     },
     "s3n": {
-      "handler": "org.apache.tajo.storage.FileTablespace",
+      "handler": "org.apache.tajo.storage.s3.S3TableSpace",
       "default-format": "text"
     },
     "swift": {
-      "handler": "org.apache.tajo.storage.FileTablespace",
+      "handler": "org.apache.tajo.storage.s3.S3TableSpace",
       "default-format": "text"
     }
   }
