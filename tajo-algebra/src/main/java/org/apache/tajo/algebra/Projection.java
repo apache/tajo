@@ -79,7 +79,7 @@ public class Projection extends UnaryOperator implements Cloneable {
     if (targets != null) {
       projection.targets = new ArrayList<>();
       for (int i = 0; i < targets.size(); i++) {
-        projection.targets.set(i, targets.get(i).clone());
+        projection.targets.add(targets.get(i).clone());
       }
     }
 
