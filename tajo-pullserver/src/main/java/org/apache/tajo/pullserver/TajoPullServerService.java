@@ -392,10 +392,7 @@ public class TajoPullServerService extends AbstractService {
 
     public void decrementRemainFiles(FileRegion filePart, long fileStartTime) {
       long fileSendTime = System.currentTimeMillis() - fileStartTime;
-      if (fileSendTime > 20 * 1000) {
-        LOG.info("PullServer send too long time: filePos=" + filePart.position() + ", fileLen=" + filePart.count());
-         SLOW_FILE_UPDATER.compareAndSet(this, numSlowFile, numSlowFile+ 1);
-      }
+
       if (fileSendTime > maxTime) {
         maxTime = fileSendTime;
       }
@@ -403,12 +400,20 @@ public class TajoPullServerService extends AbstractService {
         minTime = fileSendTime;
       }
 
+      if (fileSendTime > 20 * 1000) {
+        LOG.warn("PullServer send too long time: filePos:" + filePart.position()
+            + ", fileLen:" + filePart.count() + ", URI:" + requestUri);
+        SLOW_FILE_UPDATER.compareAndSet(this, numSlowFile, numSlowFile + 1);
+      }
+
       REMAIN_FILE_UPDATER.compareAndSet(this, remainFiles, remainFiles - 1);
       if (REMAIN_FILE_UPDATER.get(this) <= 0) {
         processingStatusMap.remove(requestUri);
-        LOG.info("PullServer processing status: totalTime=" + (System.currentTimeMillis() - startTime) + " ms, "
-            + "makeFileListTime=" + makeFileListTime + " ms, minTime=" + minTime + " ms, maxTime=" + maxTime + " ms, "
-            + "numFiles=" + numFiles + ", numSlowFile=" + numSlowFile);
+        if(LOG.isDebugEnabled()) {
+          LOG.debug("PullServer processing status: totalTime=" + (System.currentTimeMillis() - startTime) + " ms, "
+              + "makeFileListTime=" + makeFileListTime + " ms, minTime=" + minTime + " ms, maxTime=" + maxTime + " ms, "
+              + "numFiles=" + numFiles + ", numSlowFile=" + numSlowFile);
+        }
       }
     }
   }
@@ -431,7 +436,10 @@ public class TajoPullServerService extends AbstractService {
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
       accepted.add(ctx.channel());
-      LOG.info(String.format("Current number of shuffle connections (%d)", accepted.size()));
+
+      if(LOG.isDebugEnabled()) {
+        LOG.debug(String.format("Current number of shuffle connections (%d)", accepted.size()));
+      }
       super.channelRegistered(ctx);
     }
 

@@ -26,6 +26,7 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.ReferenceCountUtil;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
@@ -152,7 +153,9 @@ public class Fetcher {
       request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
       request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
-      LOG.info("Status: " + getState() + ", URI:" + uri);
+      if(LOG.isDebugEnabled()) {
+        LOG.info("Status: " + getState() + ", URI:" + uri);
+      }
       // Send the HTTP request.
       channel.writeAndFlush(request);
 
@@ -168,7 +171,17 @@ public class Fetcher {
       }
 
       this.finishTime = System.currentTimeMillis();
-      LOG.info("Fetcher finished:" + (finishTime - startTime) + " ms, " + getState() + ", URI:" + uri);
+      long elapsedMills = finishTime - startTime;
+      String transferSpeed;
+      if(elapsedMills > 1000) {
+        long bytePerSec = ((fileChunk.length() * 1000) / elapsedMills) / 1000;
+        transferSpeed = FileUtils.byteCountToDisplaySize(bytePerSec);
+      } else {
+        transferSpeed = FileUtils.byteCountToDisplaySize(Math.max(fileChunk.length(), 0));
+      }
+
+      LOG.info(String.format("Fetcher :%d ms elapsed. %s/sec, len:%d, state:%s, URL:%s",
+          elapsedMills, transferSpeed, fileChunk.length(), getState(), uri));
     }
   }
 

@@ -23,6 +23,7 @@ import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.RowBlockReader;
 
@@ -93,10 +94,14 @@ public class OffHeapRowBlockUtils {
     public void convert(Tuple tuple, RowWriter writer) {
       writer.startRow();
 
-      for (int i = 0; i < writer.dataTypes().length; i++) {
-        writeField(i, tuple, writer);
+      try {
+        for (int i = 0; i < writer.dataTypes().length; i++) {
+          writeField(i, tuple, writer);
+        }
+      } catch (ValueOutOfRangeException e) {
+        writer.cancelRow();
+        throw e;
       }
-
       writer.endRow();
     }
 
