@@ -43,7 +43,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
 
   private String[] hosts; // Datanode hostnames
 
-  @Expose private String partitionName; // required
+  @Expose private String partitionKeys; // required
 
   public PartitionedFileFragment(ByteString raw) throws InvalidProtocolBufferException {
     PartitionedFileFragmentProto.Builder builder = PartitionedFileFragmentProto.newBuilder();
@@ -87,17 +87,17 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
         proto.getStartOffset(), proto.getLength(),
         proto.getHostsList().toArray(new String[]{}),
         diskIds,
-        proto.getPartitionName());
+        proto.getPartitionKeys());
   }
 
   private void set(String tableName, Path path, long start,
-      long length, String[] hosts, int[] diskIds, String partitionName) {
+      long length, String[] hosts, int[] diskIds, String partitionKeys) {
     this.tableName = tableName;
     this.uri = path;
     this.startOffset = start;
     this.length = length;
     this.hosts = hosts;
-    this.partitionName = partitionName;
+    this.partitionKeys = partitionKeys;
   }
 
 
@@ -128,12 +128,12 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
     return this.startOffset;
   }
 
-  public String getPartitionName() {
-    return partitionName;
+  public String getPartitionKeys() {
+    return partitionKeys;
   }
 
-  public void setPartitionName(String partitionName) {
-    this.partitionName = partitionName;
+  public void setPartitionKeys(String partitionKeys) {
+    this.partitionKeys = partitionKeys;
   }
 
   @Override
@@ -204,7 +204,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
   public String toString() {
     return "\"fragment\": {\"id\": \""+ tableName +"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
-        + getLength() + "\", \"partitionName\":" + getPartitionName() + "}" ;
+        + getLength() + "\", \"partitionKeys\":" + getPartitionKeys() + "}" ;
   }
 
   public FragmentProto getProto() {
@@ -217,7 +217,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
     if(hosts != null) {
       builder.addAllHosts(TUtil.newList(hosts));
     }
-    builder.setPartitionName(this.partitionName);
+    builder.setPartitionKeys(this.partitionKeys);
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);

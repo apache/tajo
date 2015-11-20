@@ -48,7 +48,7 @@ public class TestPartitionedFileFragment {
 
     assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
-    assertEquals("col1=1", fragment1.getPartitionName());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
   }
@@ -61,7 +61,7 @@ public class TestPartitionedFileFragment {
     PartitionedFileFragment fragment1 = FragmentConvertor.convert(PartitionedFileFragment.class, fragment.getProto());
     assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
-    assertEquals("col1=1", fragment1.getPartitionName());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
   }
@@ -78,7 +78,7 @@ public class TestPartitionedFileFragment {
     Arrays.sort(tablets);
 
     for(int i = 0; i < num; i++) {
-      assertEquals("col1=" + i, tablets[i].getPartitionName());
+      assertEquals("col1=" + i, tablets[i].getPartitionKeys());
     }
   }
 
