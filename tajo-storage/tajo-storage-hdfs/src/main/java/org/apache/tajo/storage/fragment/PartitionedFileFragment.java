@@ -42,7 +42,6 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
   @Expose public Long length; // required
 
   private String[] hosts; // Datanode hostnames
-  @Expose private int[] diskIds;
 
   @Expose private String partitionName; // required
 
@@ -98,7 +97,6 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
     this.startOffset = start;
     this.length = length;
     this.hosts = hosts;
-    this.diskIds = diskIds;
     this.partitionName = partitionName;
   }
 
@@ -110,23 +108,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
     if (hosts == null) {
       this.hosts = new String[0];
     }
-    return hosts;
-  }
-
-  /**
-   * Get the list of Disk Ids
-   * Unknown disk is -1. Others 0 ~ N
-   */
-  public int[] getDiskIds() {
-    if (diskIds == null) {
-      this.diskIds = new int[getHosts().length];
-      Arrays.fill(this.diskIds, -1);
-    }
-    return diskIds;
-  }
-
-  public void setDiskIds(int[] diskIds){
-    this.diskIds = diskIds;
+    return this.hosts;
   }
 
   @Override
@@ -213,7 +195,6 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
     PartitionedFileFragment frag = (PartitionedFileFragment) super.clone();
     frag.tableName = tableName;
     frag.uri = uri;
-    frag.diskIds = diskIds;
     frag.hosts = hosts;
 
     return frag;
@@ -232,13 +213,6 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
     builder.setStartOffset(this.startOffset);
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
-    if(diskIds != null) {
-      List<Integer> idList = new ArrayList<>();
-      for(int eachId: diskIds) {
-        idList.add(eachId);
-      }
-      builder.addAllDiskIds(idList);
-    }
 
     if(hosts != null) {
       builder.addAllHosts(TUtil.newList(hosts));
