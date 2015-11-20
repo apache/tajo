@@ -28,7 +28,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -37,6 +36,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.exception.AmbiguousFunctionException;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
@@ -59,7 +59,7 @@ public class FunctionLoader {
    *
    * @return
    */
-  public static Map<FunctionSignature, FunctionDesc> load() {
+  public static Map<FunctionSignature, FunctionDesc> loadBuiltinFunctions() {
     Map<FunctionSignature, FunctionDesc> map = Maps.newHashMap();
 
     List<FunctionDesc> dd = Lists.newArrayList();
@@ -128,12 +128,8 @@ public class FunctionLoader {
   public static Set<FunctionDesc> findScalarFunctions() {
     Set<FunctionDesc> functions = Sets.newHashSet();
 
-    Set<Method> scalarFunctions = findPublicStaticMethods("org.apache.tajo.engine.function", new Predicate() {
-      @Override
-      public boolean evaluate(Object object) {
-        return ((Method) object).getAnnotation(ScalarFunction.class) != null;
-      }
-    });
+    Set<Method> scalarFunctions = findPublicStaticMethods("org.apache.tajo.engine.function",
+        (Object object) -> ((Method) object).getAnnotation(ScalarFunction.class) != null);
 
     for (Method method : scalarFunctions) {
       ScalarFunction annotation = method.getAnnotation(ScalarFunction.class);
@@ -163,12 +159,8 @@ public class FunctionLoader {
   }
 
   private static Set<Class> findFunctionCollections(String packageName) {
-    return ClassUtil.findClasses(null, packageName, new Predicate() {
-      @Override
-      public boolean evaluate(Object object) {
-        return ((Class)object).getAnnotation(FunctionCollection.class) != null;
-      }
-    });
+    return ClassUtil.findClasses(null, packageName, (Object object) ->
+        ((Class)object).getAnnotation(FunctionCollection.class) != null);
   }
 
   private static Collection<FunctionDesc> buildFunctionDescs(ScalarFunction annotation, Method method) {
@@ -291,5 +283,37 @@ public class FunctionLoader {
     }
 
     return sqlFuncs;
+  }
+
+  public static Collection<FunctionDesc> loadFunctions(TajoConf conf) throws IOException, AmbiguousFunctionException {
+    List<FunctionDesc> functionList = new ArrayList<>(loadBuiltinFunctions().values());
+    List<FunctionDesc> udfs = loadUserDefinedFunctions(conf);
+
+    return mergeFunctionLists(functionList, udfs);
+  }
+
+  @SafeVarargs
+  static Collection<FunctionDesc> mergeFunctionLists(List<FunctionDesc> ... functionLists)
+      throws AmbiguousFunctionException {
+
+    Map<Integer, FunctionDesc> funcMap = new HashMap<>();
+
+    // Build a map with a first list
+    for (FunctionDesc desc: functionLists[0]) {
+      funcMap.put(desc.hashCodeWithoutType(), desc);
+    }
+
+    // Check duplicates for other function lists
+    for (int i=1; i<functionLists.length; i++) {
+      for (FunctionDesc desc: functionLists[i]) {
+        if (funcMap.containsKey(desc.hashCodeWithoutType())) {
+          throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
+        }
+
+        funcMap.put(desc.hashCodeWithoutType(), desc);
+      }
+    }
+
+    return funcMap.values();
   }
 }

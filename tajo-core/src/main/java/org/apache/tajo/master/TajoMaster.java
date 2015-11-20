@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master;
 
-import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,7 +35,6 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
@@ -47,7 +45,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.exception.*;
-import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.metrics.ClusterResourceMetricSet;
 import org.apache.tajo.metrics.Master;
@@ -76,7 +73,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
-import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -179,7 +175,7 @@ public class TajoMaster extends CompositeService {
     checkAndInitializeSystemDirectories();
     diagnoseTajoMaster();
 
-    catalogServer = new CatalogServer(TablespaceManager.getMetadataProviders(), loadFunctions());
+    catalogServer = new CatalogServer(TablespaceManager.getMetadataProviders(), FunctionLoader.loadFunctions(systemConf));
     addIfService(catalogServer);
     catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
@@ -214,42 +210,11 @@ public class TajoMaster extends CompositeService {
     LOG.info("Tajo Master is initialized.");
   }
 
-  private Collection<FunctionDesc> loadFunctions() throws IOException, AmbiguousFunctionException {
-    List<FunctionDesc> functionList = new ArrayList<>(FunctionLoader.load().values());
-    Collection<FunctionDesc> udfs = FunctionLoader.loadUserDefinedFunctions(systemConf);
-
-    HashMap<Integer, FunctionDesc> funcSet = new HashMap<>();
-
-    for (FunctionDesc desc: functionList) {
-      funcSet.put(desc.hashCodeWithoutType(), desc);
-    }
-
-    checkUDFduplicates(udfs, funcSet);
-
-    return funcSet.values();
-  }
-
-  private void checkUDFduplicates(Collection<FunctionDesc> udfs, HashMap<Integer, FunctionDesc> funcSet)
-      throws AmbiguousFunctionException {
-    for (FunctionDesc desc: udfs) {
-      if (funcSet.containsKey(desc.hashCodeWithoutType())) {
-        throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
-      }
-
-      funcSet.put(desc.hashCodeWithoutType(), desc);
-    }
-  }
-
   private void initSystemMetrics() {
     systemMetrics = new TajoSystemMetrics(systemConf, Master.class, getMasterName());
     systemMetrics.start();
 
-    systemMetrics.register(Master.Cluster.UPTIME, new Gauge<Long>() {
-      @Override
-      public Long getValue() {
-        return context.getClusterUptime();
-      }
-    });
+    systemMetrics.register(Master.Cluster.UPTIME, () -> context.getClusterUptime());
 
     systemMetrics.register(Master.Cluster.class, new ClusterResourceMetricSet(context));
   }
