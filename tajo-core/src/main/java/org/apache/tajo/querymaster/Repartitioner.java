@@ -473,7 +473,7 @@ public class Repartitioner {
     FilteredPartitionInfo filteredPartitionInfo = PartitionedTableUtil.findFilteredPartitionInfo(catalog, conf,
       partitionsScan);
 
-    fragments.addAll(((FileTablespace) tsHandler).getSplits(
+    fragments.addAll(((FileTablespace) tsHandler).getPartitionSplits(
       scan.getCanonicalName(), table.getMeta(), table.getSchema(), filteredPartitionInfo.getPartitionNames(),
       filteredPartitionInfo.getPartitionPaths()));
 

@@ -498,17 +498,12 @@ public class FileTablespace extends Tablespace {
     return diskIds;
   }
 
-  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
-    throws IOException {
-    return getSplits(tableName, meta, schema, null, inputs);
-  }
-
   /**
    * Generate the list of files and make them into FileSplits.
    *
    * @throws IOException
    */
-  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, String[] partitions, Path... inputs)
+  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
       throws IOException {
     // generate splits'
 
@@ -537,11 +532,7 @@ public class FileTablespace extends Tablespace {
 
             if (splittable) {
               for (BlockLocation blockLocation : blkLocations) {
-                if (partitions != null) {
-                  volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitions[i]));
-                } else {
-                  volumeSplits.add(makeSplit(tableName, path, blockLocation));
-                }
+                volumeSplits.add(makeSplit(tableName, path, blockLocation));
               }
               blockLocations.addAll(Arrays.asList(blkLocations));
 
@@ -550,18 +541,10 @@ public class FileTablespace extends Tablespace {
               if (blockSize >= length) {
                 blockLocations.addAll(Arrays.asList(blkLocations));
                 for (BlockLocation blockLocation : blkLocations) {
-                  if (partitions != null) {
-                    volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitions[i]));
-                  } else {
-                    volumeSplits.add(makeSplit(tableName, path, blockLocation));
-                  }
+                  volumeSplits.add(makeSplit(tableName, path, blockLocation));
                 }
               } else {
-                if (partitions != null) {
-                  splits.add(makeNonSplit(tableName, path, 0, length, blkLocations, partitions[i]));
-                } else {
-                  splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
-                }
+                splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
               }
             }
 
@@ -578,33 +561,113 @@ public class FileTablespace extends Tablespace {
               while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
                 int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
 
-                if (partitions != null) {
-                  splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, splitSize,
-                    blkLocations[blkIndex].getHosts(), partitions[i]));
-                } else {
-                  splits.add(makeSplit(tableName, path, length - bytesRemaining, splitSize,
-                    blkLocations[blkIndex].getHosts()));
-                }
+                splits.add(makeSplit(tableName, path, length - bytesRemaining, splitSize,
+                  blkLocations[blkIndex].getHosts()));
 
                 bytesRemaining -= splitSize;
               }
               if (bytesRemaining > 0) {
                 int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
 
-                if (partitions != null) {
-                  splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, bytesRemaining,
-                    blkLocations[blkIndex].getHosts(), partitions[i]));
-                } else {
-                  splits.add(makeSplit(tableName, path, length - bytesRemaining, bytesRemaining,
-                    blkLocations[blkIndex].getHosts()));
-                }
+                splits.add(makeSplit(tableName, path, length - bytesRemaining, bytesRemaining,
+                  blkLocations[blkIndex].getHosts()));
               }
             } else { // Non splittable
-              if (partitions != null) {
-                splits.add(makeNonSplit(tableName, path, 0, length, blkLocations, partitions[i]));
-              } else {
-                splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
+              splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
+            }
+          }
+        }
+      }
+      if(LOG.isDebugEnabled()){
+        LOG.debug("# of splits per partition: " + (splits.size() - previousSplitSize));
+      }
+      i++;
+    }
+
+    // Combine original fileFragments with new VolumeId information
+    setVolumeMeta(volumeSplits, blockLocations);
+    splits.addAll(volumeSplits);
+    LOG.info("Total # of splits: " + splits.size());
+    return splits;
+  }
+
+
+  /**
+   * Generate the list of files and make them into PartitionedFileSplits.
+   *
+   * @throws IOException
+   */
+  public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitions,
+    Path... inputs) throws IOException {
+    // generate splits'
+
+    List<Fragment> splits = Lists.newArrayList();
+    List<Fragment> volumeSplits = Lists.newArrayList();
+    List<BlockLocation> blockLocations = Lists.newArrayList();
+
+    int i = 0;
+    for (Path p : inputs) {
+      ArrayList<FileStatus> files = Lists.newArrayList();
+      if (fs.isFile(p)) {
+        files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
+      } else {
+        files.addAll(listStatus(p));
+      }
+
+      int previousSplitSize = splits.size();
+      for (FileStatus file : files) {
+        Path path = file.getPath();
+        long length = file.getLen();
+        if (length > 0) {
+          // Get locations of blocks of file
+          BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
+          boolean splittable = isSplittable(meta, schema, path, file);
+          if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
+
+            if (splittable) {
+              for (BlockLocation blockLocation : blkLocations) {
+                volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitions[i]));
               }
+              blockLocations.addAll(Arrays.asList(blkLocations));
+
+            } else { // Non splittable
+              long blockSize = blkLocations[0].getLength();
+              if (blockSize >= length) {
+                blockLocations.addAll(Arrays.asList(blkLocations));
+                for (BlockLocation blockLocation : blkLocations) {
+                  volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitions[i]));
+                }
+              } else {
+                splits.add(makeNonSplit(tableName, path, 0, length, blkLocations, partitions[i]));
+              }
+            }
+
+          } else {
+            if (splittable) {
+
+              long minSize = Math.max(getMinSplitSize(), 1);
+
+              long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
+              long splitSize = Math.max(minSize, blockSize);
+              long bytesRemaining = length;
+
+              // for s3
+              while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
+                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+
+                splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, splitSize,
+                  blkLocations[blkIndex].getHosts(), partitions[i]));
+
+                bytesRemaining -= splitSize;
+              }
+              if (bytesRemaining > 0) {
+                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+
+                splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, bytesRemaining,
+                  blkLocations[blkIndex].getHosts(), partitions[i]));
+              }
+            } else { // Non splittable
+              splits.add(makeNonSplit(tableName, path, 0, length, blkLocations, partitions[i]));
             }
           }
         }
