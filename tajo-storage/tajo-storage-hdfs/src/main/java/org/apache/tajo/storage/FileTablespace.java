@@ -422,11 +422,6 @@ public class FileTablespace extends Tablespace {
   }
 
   protected PartitionedFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
-    String partitionName) {
-    return new PartitionedFileFragment(fragmentId, file, start, length, partitionName);
-  }
-
-  protected PartitionedFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
     String[] hosts, String partitionName) {
     return new PartitionedFileFragment(fragmentId, file, start, length, hosts, partitionName);
   }
