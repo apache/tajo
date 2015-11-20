@@ -30,6 +30,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.cli.tsql.commands.TajoShellCommand;
 import org.apache.tajo.client.ClientParameters;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
@@ -46,7 +47,7 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
-import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
@@ -565,20 +566,16 @@ public class TestTajoCli {
 
   @Test
   public void testDefaultPrintHelp() throws IOException, NoSuchMethodException {
-    Iterator i = tajoCli.getContext().getCommands().keySet().iterator();
-
-    while (i.hasNext()) {
-      String command = i.next().toString();
-
-      if (tajoCli.getContext().getCommands().get(command).getClass().getMethod("printHelp")
-              .getDeclaringClass().toString().equals("class org.apache.tajo.cli.tsql.commands.TajoShellCommand")) {
-        tajoCli.executeMetaCommand("\\help " + command.replace("\\", ""));
+    for (Map.Entry<String, TajoShellCommand> entry : tajoCli.getContext().getCommands().entrySet()) {
+      if (entry.getValue().getClass().getMethod("printHelp").getDeclaringClass().toString()
+              .equals("class org.apache.tajo.cli.tsql.commands.TajoShellCommand")) {
+        tajoCli.executeMetaCommand("\\help " + entry.getKey().replace("\\", ""));
         String result = new String(out.toByteArray());
         out.reset();
 
-        String expected = tajoCli.getContext().getCommands().get(command).getCommand()
-                + " " + tajoCli.getContext().getCommands().get(command).getUsage()
-                + " - " + tajoCli.getContext().getCommands().get(command).getDescription() + "\n";
+        String expected = entry.getValue().getCommand()
+                + " " + entry.getValue().getUsage()
+                + " - " + entry.getValue().getDescription() + "\n";
 
         assertEquals(result, expected);
       }
