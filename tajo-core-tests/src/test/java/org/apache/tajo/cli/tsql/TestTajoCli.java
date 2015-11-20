@@ -567,15 +567,16 @@ public class TestTajoCli {
   @Test
   public void testDefaultPrintHelp() throws IOException, NoSuchMethodException {
     for (Map.Entry<String, TajoShellCommand> entry : tajoCli.getContext().getCommands().entrySet()) {
-      if (entry.getValue().getClass().getMethod("printHelp").getDeclaringClass().toString()
-              .equals("class org.apache.tajo.cli.tsql.commands.TajoShellCommand")) {
+      TajoShellCommand shellCommand = entry.getValue();
+
+      if (!shellCommand.getClass().getMethod("printHelp").getDeclaringClass().equals(shellCommand.getClass())) {
         tajoCli.executeMetaCommand("\\help " + entry.getKey().replace("\\", ""));
         String result = new String(out.toByteArray());
         out.reset();
 
-        String expected = entry.getValue().getCommand()
-                + " " + entry.getValue().getUsage()
-                + " - " + entry.getValue().getDescription() + "\n";
+        String expected = shellCommand.getCommand()
+                + " " + shellCommand.getUsage()
+                + " - " + shellCommand.getDescription() + "\n";
 
         assertEquals(result, expected);
       }
