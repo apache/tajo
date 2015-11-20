@@ -65,7 +65,7 @@ The following example is to set a custom field delimiter, NULL character, and co
                    'text.null'='\\N',
                    'compression.codec'='org.apache.hadoop.io.compress.SnappyCodec');
 
-Each physical table layout has its own specialized properties. They will be addressed in :doc:`/table_management/file_formats`.
+Each physical table layout has its own specialized properties. They will be addressed in :doc:`/table_management/data_formats`.
 
 
 Common Table Properties

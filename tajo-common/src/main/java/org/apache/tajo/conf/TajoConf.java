@@ -368,7 +368,7 @@ public class TajoConf extends Configuration {
     $TIMEZONE("tajo.timezone", TimeZone.getDefault().getID()),
     $DATE_ORDER("tajo.datetime.date-order", "YMD"),
 
-    // FILE FORMAT
+    // DATA FORMAT
     $TEXT_NULL("tajo.text.null", "\\\\N"),
 
     // Only for Debug and Testing

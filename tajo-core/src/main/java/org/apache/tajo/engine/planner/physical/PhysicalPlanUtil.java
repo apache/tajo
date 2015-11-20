@@ -203,7 +203,7 @@ public class PhysicalPlanUtil {
   }
 
   /**
-   * Set nullChar to TableMeta according to file format
+   * Set nullChar to TableMeta according to data format
    *
    * @param meta TableMeta
    * @param nullChar A character for NULL representation
@@ -220,10 +220,10 @@ public class PhysicalPlanUtil {
   }
 
   /**
-   * Check if TableMeta contains NULL char property according to file format
+   * Check if TableMeta contains NULL char property according to data format
    *
    * @param meta Table Meta
-   * @return True if TableMeta contains NULL char property according to file format
+   * @return True if TableMeta contains NULL char property according to data format
    */
   public static boolean containsNullChar(TableMeta meta) {
     String dataFormat = meta.getDataFormat();
