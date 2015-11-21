@@ -14,6 +14,9 @@ Release 0.11.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1980: Printout the usage of TajoShellCommand.
+    (Contributed by Dongkyu Hwangbo, committed by jaehwa)
+
     TAJO-1981: Invalid nulls sort order in VectorizedSorter. (jihoon)
 
     TAJO-1935: Some Tasks don't work after they become TA_ASSIGNED. (jinho)
