@@ -42,7 +42,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.PartitionedFileFragment;
+import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.util.Bytes;
 
 import javax.annotation.Nullable;
@@ -421,14 +421,14 @@ public class FileTablespace extends Tablespace {
     return new FileFragment(fragmentId, file, blockLocation);
   }
 
-  protected PartitionedFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
+  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
     String[] hosts, String partitionName) {
-    return new PartitionedFileFragment(fragmentId, file, start, length, hosts, partitionName);
+    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
   }
 
-  protected PartitionedFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
+  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
     , String partitionName) throws IOException {
-    return new PartitionedFileFragment(fragmentId, file, blockLocation, partitionName);
+    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionName);
   }
 
   // for Non Splittable. eg, compressed gzip TextFile
@@ -468,7 +468,7 @@ public class FileTablespace extends Tablespace {
     }
 
     if (partitionName != null) {
-      return new PartitionedFileFragment(fragmentId, file, start, length, hosts, partitionName);
+      return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
     } else {
       return new FileFragment(fragmentId, file, start, length, hosts);
     }

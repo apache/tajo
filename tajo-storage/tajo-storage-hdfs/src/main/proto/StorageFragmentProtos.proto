@@ -33,7 +33,7 @@ message FileFragmentProto {
   repeated int32 disk_ids = 6;
 }
 
-message PartitionedFileFragmentProto {
+message PartitionFileFragmentProto {
   required string id = 1;
   required string path = 2;
   required int64 start_offset = 3;

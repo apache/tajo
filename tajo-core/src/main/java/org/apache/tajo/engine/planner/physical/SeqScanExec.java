@@ -33,13 +33,11 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PartitionedTableUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.storage.fragment.PartitionedFileFragment;
+import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -100,12 +98,12 @@ public class SeqScanExec extends ScanExec {
 
     Tuple partitionRow = null;
     if (fragments != null && fragments.length > 0) {
-      List<PartitionedFileFragment> partitionedFileFragments = FragmentConvertor.convert(PartitionedFileFragment
+      List<PartitionFileFragment> PartitionFileFragments = FragmentConvertor.convert(PartitionFileFragment
         .class, fragments);
 
       // Get first partition key from a given partition keys
       partitionRow = PartitionedTableUtil.buildTupleFromPartitionName(columnPartitionSchema,
-        partitionedFileFragments.get(0).getPartitionKeys());
+        PartitionFileFragments.get(0).getPartitionKeys());
     }
 
     // Targets or search conditions may contain column references.

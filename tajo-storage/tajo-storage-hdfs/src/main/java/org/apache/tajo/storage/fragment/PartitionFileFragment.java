@@ -25,17 +25,14 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
-import org.apache.tajo.storage.StorageFragmentProtos.PartitionedFileFragmentProto;
+import org.apache.tajo.storage.StorageFragmentProtos.PartitionFileFragmentProto;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class PartitionedFileFragment implements Fragment, Comparable<PartitionedFileFragment>, Cloneable {
+public class PartitionFileFragment implements Fragment, Comparable<PartitionFileFragment>, Cloneable {
   @Expose private String tableName; // required
   @Expose private Path uri; // required
   @Expose public Long startOffset; // required
@@ -45,39 +42,39 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
 
   @Expose private String partitionKeys; // required
 
-  public PartitionedFileFragment(ByteString raw) throws InvalidProtocolBufferException {
-    PartitionedFileFragmentProto.Builder builder = PartitionedFileFragmentProto.newBuilder();
+  public PartitionFileFragment(ByteString raw) throws InvalidProtocolBufferException {
+    PartitionFileFragmentProto.Builder builder = PartitionFileFragmentProto.newBuilder();
     builder.mergeFrom(raw);
     builder.build();
     init(builder.build());
   }
 
-  public PartitionedFileFragment(String tableName, Path uri, BlockLocation blockLocation, String partitionName)
+  public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation, String partitionName)
       throws IOException {
     this.set(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null,
       partitionName);
   }
 
-  public PartitionedFileFragment(String tableName, Path uri, long start, long length, String[] hosts, int[] diskIds,
-    String partitionName) {
+  public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts, int[] diskIds,
+                               String partitionName) {
     this.set(tableName, uri, start, length, hosts, diskIds, partitionName);
   }
 
   // Non splittable
-  public PartitionedFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
-    String partitionName) {
+  public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
+                               String partitionName) {
     this.set(tableName, uri, start, length, hosts, null, partitionName);
   }
 
-  public PartitionedFileFragment(String fragmentId, Path path, long start, long length, String partitionName) {
+  public PartitionFileFragment(String fragmentId, Path path, long start, long length, String partitionName) {
     this.set(fragmentId, path, start, length, null, null, partitionName);
   }
 
-  public PartitionedFileFragment(PartitionedFileFragmentProto proto) {
+  public PartitionFileFragment(PartitionFileFragmentProto proto) {
     init(proto);
   }
 
-  private void init(PartitionedFileFragmentProto proto) {
+  private void init(PartitionFileFragmentProto proto) {
     int[] diskIds = new int[proto.getDiskIdsList().size()];
     int i = 0;
     for(Integer eachValue: proto.getDiskIdsList()) {
@@ -158,7 +155,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
    * @return If the table paths are not same, return -1.
    */
   @Override
-  public int compareTo(PartitionedFileFragment t) {
+  public int compareTo(PartitionFileFragment t) {
     if (getPath().equals(t.getPath())) {
       long diff = this.getStartKey() - t.getStartKey();
       if (diff < 0) {
@@ -175,8 +172,8 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof PartitionedFileFragment) {
-      PartitionedFileFragment t = (PartitionedFileFragment) o;
+    if (o instanceof PartitionFileFragment) {
+      PartitionFileFragment t = (PartitionFileFragment) o;
       if (getPath().equals(t.getPath())
           && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
           && TUtil.checkEquals(t.getLength(), this.getLength())) {
@@ -192,7 +189,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
   }
   
   public Object clone() throws CloneNotSupportedException {
-    PartitionedFileFragment frag = (PartitionedFileFragment) super.clone();
+    PartitionFileFragment frag = (PartitionFileFragment) super.clone();
     frag.tableName = tableName;
     frag.uri = uri;
     frag.hosts = hosts;
@@ -208,7 +205,7 @@ public class PartitionedFileFragment implements Fragment, Comparable<Partitioned
   }
 
   public FragmentProto getProto() {
-    PartitionedFileFragmentProto.Builder builder = PartitionedFileFragmentProto.newBuilder();
+    PartitionFileFragmentProto.Builder builder = PartitionFileFragmentProto.newBuilder();
     builder.setId(this.tableName);
     builder.setStartOffset(this.startOffset);
     builder.setLength(this.length);
