@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.base.Preconditions;
+import com.google.common.primitives.*;
 import com.google.common.util.concurrent.SettableFuture;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,19 +29,24 @@ import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
+import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils;
+import org.apache.tajo.tuple.memory.UnSafeTuple;
+import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
@@ -47,7 +54,6 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -86,6 +92,10 @@ public class ExternalSortExec extends SortExec {
   private ExecutorService executorService;
   /** used for in-memory sort of each chunk. */
   private UnSafeTupleList inMemoryTable;
+  /** for zero copy tuple comparison */
+  private Comparator<UnSafeTuple> unSafeComparator;
+  /** for other type tuple comparison */
+  private Comparator<Tuple> primitiveComparator;
   /** temporal dir */
   private Path sortTmpDir;
   /** It enables round-robin disks allocation */
@@ -153,8 +163,9 @@ public class ExternalSortExec extends SortExec {
     this.sortTmpDir = getExecutorTmpDir();
 
     int initialArraySize = context.getQueryContext().getInt(SessionVars.SORT_LIST_SIZE);
-    this.inMemoryTable = new UnSafeTupleList(inSchema, initialArraySize);
-
+    this.inMemoryTable = new UnSafeTupleList(SchemaUtil.toDataTypes(inSchema), initialArraySize);
+    this.unSafeComparator = new UnSafeComparator(inSchema, sortSpecs);
+    this.primitiveComparator = new PrimitiveComparator(inSchema, sortSpecs);
 
     super.init();
   }
@@ -171,7 +182,7 @@ public class ExternalSortExec extends SortExec {
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
-    Collections.sort(tupleBlock, getUnSafeTupleComparator());
+    OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -209,7 +220,7 @@ public class ExternalSortExec extends SortExec {
     long runStartTime = System.currentTimeMillis();
 
     while (!context.isStopped() && (tuple = child.next()) != null) { // partition sort start
-      inMemoryTable.add(tuple);
+      inMemoryTable.addTuple(tuple);
 
       if (inMemoryTable.usedMem() > sortBufferBytesNum) { // if input data exceeds main-memory at least once
         long runEndTime = System.currentTimeMillis();
@@ -519,7 +530,7 @@ public class ExternalSortExec extends SortExec {
     if (chunk.isMemory()) {
       long sortStart = System.currentTimeMillis();
 
-      Collections.sort(inMemoryTable, getUnSafeTupleComparator());
+      OffHeapRowBlockUtils.sort(inMemoryTable, unSafeComparator);
       Scanner scanner = new MemTableScanner<>(inMemoryTable, inMemoryTable.size(), inMemoryTable.usedMem());
       if(LOG.isDebugEnabled()) {
         debug(LOG, "Memory Chunk sort (" + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false)
@@ -546,10 +557,7 @@ public class ExternalSortExec extends SortExec {
       final int mid = (int) Math.ceil((float)num / 2);
       Scanner left = createKWayMergerInternal(sources, startIdx, mid);
       Scanner right = createKWayMergerInternal(sources, startIdx + mid, num - mid);
-      if (ComparableVector.isVectorizable(sortSpecs)) {
-        return new VectorComparePairWiseMerger(inSchema, left, right, comparator);
-      }
-      return new PairWiseMerger(inSchema, left, right, comparator);
+      return new PairWiseMerger(inSchema, left, right, primitiveComparator);
     } else {
       return sources[startIdx];
     }
@@ -629,30 +637,6 @@ public class ExternalSortExec extends SortExec {
     CLOSED
   }
 
-  private static class VectorComparePairWiseMerger extends PairWiseMerger {
-
-    private ComparableVector comparable;
-
-    public VectorComparePairWiseMerger(Schema schema, Scanner leftScanner, Scanner rightScanner,
-                                       BaseTupleComparator comparator) throws IOException {
-      super(schema, leftScanner, rightScanner, null);
-      comparable = new ComparableVector(2, comparator.getSortSpecs(), comparator.getSortKeyIds());
-    }
-
-    @Override
-    protected Tuple prepare(int index, Tuple tuple) {
-      if (tuple != null) {
-        comparable.set(index, tuple);
-      }
-      return tuple;
-    }
-
-    @Override
-    protected int compare() {
-      return comparable.compare(0, 1);
-    }
-  }
-
   /**
    * Two-way merger scanner that reads two input sources and outputs one output tuples sorted in some order.
    */
@@ -703,10 +687,6 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
-    protected Tuple prepare(int index, Tuple tuple) {
-      return tuple;
-    }
-
     protected int compare() {
       return comparator.compare(leftTuple, rightTuple);
     }
@@ -715,12 +695,10 @@ public class ExternalSortExec extends SortExec {
     public Tuple next() throws IOException {
       if(!leftEOF && leftTuple == null) {
         leftTuple = leftScan.next();
-        prepare(0, leftTuple);
       }
 
       if(!rightEOF && rightTuple == null) {
         rightTuple = rightScan.next();
-        prepare(1, rightTuple);
       }
 
       if (leftTuple != null && rightTuple != null) {
@@ -939,6 +917,156 @@ public class ExternalSortExec extends SortExec {
 
     public Schema getSchema() {
       return schema;
+    }
+  }
+
+  /**
+   * The Comparator class for UnSafeTuples
+   *
+   * @see UnSafeTuple
+   */
+  static class UnSafeComparator implements Comparator<UnSafeTuple> {
+    private final int[] sortKeyIds;
+    private final TajoDataTypes.Type[] sortKeyTypes;
+    private final boolean[] asc;
+    private final boolean[] nullFirsts;
+
+    /**
+     * @param schema   The schema of input tuples
+     * @param sortKeys The description of sort keys
+     */
+    public UnSafeComparator(Schema schema, SortSpec[] sortKeys) {
+      Preconditions.checkArgument(sortKeys.length > 0,
+          "At least one sort key must be specified.");
+
+      this.sortKeyIds = new int[sortKeys.length];
+      this.sortKeyTypes = new TajoDataTypes.Type[sortKeys.length];
+      this.asc = new boolean[sortKeys.length];
+      this.nullFirsts = new boolean[sortKeys.length];
+      for (int i = 0; i < sortKeys.length; i++) {
+        if (sortKeys[i].getSortKey().hasQualifier()) {
+          this.sortKeyIds[i] = schema.getColumnId(sortKeys[i].getSortKey().getQualifiedName());
+        } else {
+          this.sortKeyIds[i] = schema.getColumnIdByName(sortKeys[i].getSortKey().getSimpleName());
+        }
+
+        this.asc[i] = sortKeys[i].isAscending();
+        this.nullFirsts[i] = sortKeys[i].isNullsFirst();
+        this.sortKeyTypes[i] = sortKeys[i].getSortKey().getDataType().getType();
+      }
+    }
+
+    @Override
+    public int compare(UnSafeTuple tuple1, UnSafeTuple tuple2) {
+      for (int i = 0; i < sortKeyIds.length; i++) {
+        int compare = OffHeapRowBlockUtils.compareColumn(tuple1, tuple2,
+            sortKeyIds[i], sortKeyTypes[i], asc[i], nullFirsts[i]);
+
+        if (compare != 0) {
+          return compare;
+        }
+      }
+      return 0;
+    }
+  }
+
+  /**
+   * The Comparator class for raw file
+   */
+  static class PrimitiveComparator implements Comparator<Tuple> {
+    private final int[] sortKeyIds;
+    private final TajoDataTypes.Type[] sortKeyTypes;
+    private final boolean[] asc;
+    private final boolean[] nullFirsts;
+
+    /**
+     * @param schema   The schema of input tuples
+     * @param sortKeys The description of sort keys
+     */
+    public PrimitiveComparator(Schema schema, SortSpec[] sortKeys) {
+      Preconditions.checkArgument(sortKeys.length > 0,
+          "At least one sort key must be specified.");
+
+      this.sortKeyIds = new int[sortKeys.length];
+      this.sortKeyTypes = new TajoDataTypes.Type[sortKeys.length];
+      this.asc = new boolean[sortKeys.length];
+      this.nullFirsts = new boolean[sortKeys.length];
+      for (int i = 0; i < sortKeys.length; i++) {
+        if (sortKeys[i].getSortKey().hasQualifier()) {
+          this.sortKeyIds[i] = schema.getColumnId(sortKeys[i].getSortKey().getQualifiedName());
+        } else {
+          this.sortKeyIds[i] = schema.getColumnIdByName(sortKeys[i].getSortKey().getSimpleName());
+        }
+
+        this.asc[i] = sortKeys[i].isAscending();
+        this.nullFirsts[i] = sortKeys[i].isNullsFirst();
+        this.sortKeyTypes[i] = sortKeys[i].getSortKey().getDataType().getType();
+      }
+    }
+
+    @Override
+    public int compare(Tuple tuple1, Tuple tuple2) {
+      for (int i = 0; i < sortKeyIds.length; i++) {
+        int compare = compareColumn(tuple1, tuple2,
+            sortKeyIds[i], sortKeyTypes[i], asc[i], nullFirsts[i]);
+
+        if (compare != 0) {
+          return compare;
+        }
+      }
+      return 0;
+    }
+
+    public int compareColumn(Tuple tuple1, Tuple tuple2, int index, TajoDataTypes.Type type,
+                             boolean ascending, boolean nullFirst) {
+      final boolean n1 = tuple1.isBlankOrNull(index);
+      final boolean n2 = tuple2.isBlankOrNull(index);
+      if (n1 && n2) {
+        return 0;
+      }
+
+      if (n1 ^ n2) {
+        return nullFirst ? (n1 ? -1 : 1) : (n1 ? 1 : -1);
+      }
+
+      int compare;
+      switch (type) {
+      case BOOLEAN:
+        compare = Booleans.compare(tuple1.getBool(index), tuple2.getBool(index));
+        break;
+      case BIT:
+        compare = tuple1.getByte(index) - tuple2.getByte(index);
+        break;
+      case INT1:
+      case INT2:
+        compare = Shorts.compare(tuple1.getInt2(index), tuple2.getInt2(index));
+        break;
+      case DATE:
+      case INET4:
+      case INT4:
+        compare = Ints.compare(tuple1.getInt4(index), tuple2.getInt4(index));
+        break;
+      case TIME:
+      case TIMESTAMP:
+      case INT8:
+        compare = Longs.compare(tuple1.getInt8(index), tuple2.getInt8(index));
+        break;
+      case FLOAT4:
+        compare = Floats.compare(tuple1.getFloat4(index), tuple2.getFloat4(index));
+        break;
+      case FLOAT8:
+        compare = Doubles.compare(tuple1.getFloat8(index), tuple2.getFloat8(index));
+        break;
+      case CHAR:
+      case TEXT:
+      case BLOB:
+        compare = TextDatum.COMPARATOR.compare(tuple1.getBytes(index), tuple2.getBytes(index));
+        break;
+      default:
+        throw new TajoRuntimeException(
+            new UnsupportedException("unknown data type '" + type.name() + "'"));
+      }
+      return ascending ? compare : -compare;
     }
   }
 }

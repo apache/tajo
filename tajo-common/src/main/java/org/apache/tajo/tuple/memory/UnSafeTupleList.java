@@ -16,16 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.physical;
+package org.apache.tajo.tuple.memory;
 
 import com.google.common.collect.Lists;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.tuple.memory.FixedSizeLimitSpec;
-import org.apache.tajo.tuple.memory.MemoryRowBlock;
-import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.util.ArrayList;
@@ -44,14 +39,14 @@ public class UnSafeTupleList extends ArrayList<UnSafeTuple> {
   private int totalUsedMem;
   private int pageSize;
 
-  public UnSafeTupleList(Schema schema, int initialArraySize) {
-    this(schema, initialArraySize, StorageUnit.MB);
+  public UnSafeTupleList(DataType[] dataTypes, int initialArraySize) {
+    this(dataTypes, initialArraySize, StorageUnit.MB);
 
   }
 
-  public UnSafeTupleList(Schema schema, int initialArraySize, int pageSize) {
+  public UnSafeTupleList(DataType[] dataTypes, int initialArraySize, int pageSize) {
     super(initialArraySize);
-    this.dataTypes = SchemaUtil.toDataTypes(schema);
+    this.dataTypes = dataTypes;
     this.pageSize = pageSize;
     this.rowBlocks = Lists.newArrayList();
     this.currentRowBlock = new MemoryRowBlock(dataTypes, new FixedSizeLimitSpec(pageSize), true);
@@ -61,10 +56,10 @@ public class UnSafeTupleList extends ArrayList<UnSafeTuple> {
 
   @Override
   public boolean add(UnSafeTuple tuple) {
-    return add(tuple);
+    return addTuple(tuple);
   }
 
-  public boolean add(Tuple tuple) {
+  public boolean addTuple(Tuple tuple) {
 
     int prevPos = currentRowBlock.getMemory().writerPosition();
     if (currentRowBlock.getWriter().addTuple(tuple)) {
@@ -75,7 +70,7 @@ public class UnSafeTupleList extends ArrayList<UnSafeTuple> {
       this.totalUsedMem += currentRowBlock.usedMem();
       this.currentRowBlock = new MemoryRowBlock(dataTypes, new FixedSizeLimitSpec(pageSize), true);
       this.rowBlocks.add(currentRowBlock);
-      return this.add(tuple);
+      return this.addTuple(tuple);
     }
   }
 
