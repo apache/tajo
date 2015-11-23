@@ -929,19 +929,18 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
         if (broadcastFlag) {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<PartitionFileFragment> fileFragments = TUtil.newList();
+          List<PartitionFileFragment> partitionFileFragments = TUtil.newList();
 
           FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
           for (int i = 0; i < partitionedTableScanNode.getInputPaths().length; i++) {
             Path path = partitionedTableScanNode.getInputPaths()[i];
-            String partitionKeys = partitionedTableScanNode.hasPartitionKeys() ? partitionedTableScanNode
-              .getPartitionKeys()[i] : "";
-            fileFragments.addAll(TUtil.newList(space.partitionSplit(scanNode.getCanonicalName(), path, partitionKeys)));
+            partitionFileFragments.addAll(TUtil.newList(space.partitionSplit(scanNode.getCanonicalName(), path,
+              partitionedTableScanNode.getPartitionKeys()[i])));
           }
 
           FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(
-                  new PartitionFileFragment[fileFragments.size()]));
+                FragmentConvertor.toFragmentProtoArray(partitionFileFragments.toArray(
+                  new PartitionFileFragment[partitionFileFragments.size()]));
 
           ctx.addFragments(scanNode.getCanonicalName(), fragments);
           return new PartitionMergeScanExec(ctx, scanNode, fragments);
