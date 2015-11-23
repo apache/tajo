@@ -35,6 +35,7 @@ public abstract class TajoShellCommand {
 
   public void printHelp() {
     context.getOutput().print(getCommand());
+    context.getOutput().print(" " + getUsage());
     context.getOutput().print(" - ");
     context.getOutput().println(getDescription());
   }
