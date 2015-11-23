@@ -124,7 +124,10 @@ public class PartitionedTableScanNode extends ScanNode {
     }
 
     unionScan.inputPaths = inputPaths;
-    unionScan.partitionKeys = partitionKeys;
+
+    if (hasPartitionKeys()) {
+      unionScan.partitionKeys = partitionKeys;
+    }
 
     return unionScan;
   }

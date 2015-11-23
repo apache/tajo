@@ -211,10 +211,13 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
 
-    if(hosts != null) {
+    if (hosts != null) {
       builder.addAllHosts(TUtil.newList(hosts));
     }
-    builder.setPartitionKeys(this.partitionKeys);
+
+    if (partitionKeys != null) {
+      builder.setPartitionKeys(this.partitionKeys);
+    }
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);

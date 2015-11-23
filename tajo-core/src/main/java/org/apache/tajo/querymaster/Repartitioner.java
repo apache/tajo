@@ -478,11 +478,14 @@ public class Repartitioner {
     }
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
+
     fragments.addAll(((FileTablespace) tsHandler).getPartitionSplits(
       scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getPartitionKeys(),
       partitionsScan.getInputPaths()));
+
     partitionsScan.setInputPaths(null);
     partitionsScan.setPartitionKeys(null);
+
     return fragments;
   }
 
@@ -515,13 +518,18 @@ public class Repartitioner {
 
       Collection<Fragment> scanFragments;
       Path[] partitionScanPaths = null;
-
+      String[] partitionKeys = null;
 
       Tablespace space = TablespaceManager.get(desc.getUri());
 
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scan;
         partitionScanPaths = partitionScan.getInputPaths();
+
+        if (partitionScan.hasPartitionKeys()) {
+          partitionKeys = partitionScan.getPartitionKeys();
+        }
+
         // set null to inputPaths in getFragmentsFromPartitionedTable()
         scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
       } else {
@@ -536,6 +544,9 @@ public class Repartitioner {
             PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
             // PhisicalPlanner make PartitionMergeScanExec when table is boradcast table and inputpaths is not empty
             partitionScan.setInputPaths(partitionScanPaths);
+            if (partitionKeys != null) {
+              partitionScan.setPartitionKeys(partitionKeys);
+            }
           } else {
             broadcastFragments.addAll(scanFragments);
           }

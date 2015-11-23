@@ -45,6 +45,7 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -135,7 +136,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       UndefinedOperatorException, UnsupportedException {
 
     PartitionContent partitionContent = null;
-    Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
@@ -144,8 +144,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       if (conjunctiveForms == null) {
         partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
         if (partitions.isEmpty()) {
-          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-          partitionContent = new PartitionContent(filteredPaths);
+          partitionContent = getPartitionContentByFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
         } else {
           partitionContent = getPartitionContentByPartitionDesc(partitions);
         }
@@ -155,8 +154,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           partitions = catalog.getPartitionsByAlgebra(request);
           partitionContent = getPartitionContentByPartitionDesc(partitions);
         } else {
-          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-          partitionContent = new PartitionContent(filteredPaths);
+          partitionContent = getPartitionContentByFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
         }
       }
     } catch (UnsupportedException ue) {
@@ -165,14 +163,14 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       LOG.warn(ue.getMessage());
       partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
       if (partitions.isEmpty()) {
-        filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
-        partitionContent = new PartitionContent(filteredPaths);
+        partitionContent = getPartitionContentByFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
       } else {
         partitionContent = getPartitionContentByPartitionDesc(partitions);
       }
       scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
     }
     LOG.info("Filtered directory or files: " + partitionContent.getPartitionPaths().length);
+    LOG.info("Filtered partition keys: " + partitionContent.getPartitionKeys().length);
 
     return partitionContent;
   }
@@ -207,10 +205,15 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private Path [] findFilteredPathsFromFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
+  private PartitionContent getPartitionContentByFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
                                                   FileSystem fs, Path tablePath) throws IOException{
+    PartitionContent partitionContent = new PartitionContent();
     Path [] filteredPaths = null;
     PathFilter [] filters;
+    int startIdx;
+    long totalVolume = 0L;
+    ContentSummary summary = null;
+    List<String> partitionKeysList = TUtil.newList();
 
     if (conjunctiveForms == null) {
       filters = buildAllAcceptingPathFilters(partitionColumns);
@@ -225,7 +228,20 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       // Get all file status matched to a ith level path filter.
       filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
-    return filteredPaths;
+
+    // Get partition keys and volume from the list of partition directories
+    for (Path path : filteredPaths) {
+      startIdx = path.toString().indexOf(getColumnPartitionPathPrefix(partitionColumns));
+      partitionKeysList.add(path.toString().substring(startIdx));
+      summary = fs.getContentSummary(path);
+      totalVolume += summary.getLength();
+    }
+
+    partitionContent.setPartitionPaths(filteredPaths);
+    partitionContent.setPartitionKeys(partitionKeysList.toArray(new String[partitionKeysList.size()]));
+    partitionContent.setTotalVolume(totalVolume);
+
+    return partitionContent;
   }
 
   /**
@@ -531,24 +547,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return tuple;
   }
 
-  private void updateTableStat(OverridableConf queryContext, PartitionedTableScanNode scanNode)
-    throws TajoException {
-    if (scanNode.getInputPaths().length > 0) {
-      try {
-        FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(queryContext.getConf());
-        long totalVolume = 0;
-
-        for (Path input : scanNode.getInputPaths()) {
-          ContentSummary summary = fs.getContentSummary(input);
-          totalVolume += summary.getLength();
-        }
-        scanNode.getTableDesc().getStats().setNumBytes(totalVolume);
-      } catch (Throwable e) {
-        throw new TajoInternalError(e);
-      }
-    }
-  }
-
   private final class Rewriter extends BasicLogicalPlanVisitor<OverridableConf, Object> {
     @Override
     public Object visitScan(OverridableConf queryContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
@@ -564,16 +562,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
         Path[] filteredPaths = partitionContent.getPartitionPaths();
         plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
+
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
-
-        String[] partitionKeys = partitionContent.getPartitionKeys();
-        rewrittenScanNode.init(scanNode, filteredPaths, partitionKeys);
-
-        if (partitionKeys != null) {
-          rewrittenScanNode.getTableDesc().getStats().setNumBytes(partitionContent.getTotalVolume());
-        } else {
-          updateTableStat(queryContext, rewrittenScanNode);
-        }
+        rewrittenScanNode.init(scanNode, filteredPaths, partitionContent.getPartitionKeys());
+        rewrittenScanNode.getTableDesc().getStats().setNumBytes(partitionContent.getTotalVolume());
 
         // if it is topmost node, set it as the rootnode of this block.
         if (stack.empty() || block.getRoot().equals(scanNode)) {

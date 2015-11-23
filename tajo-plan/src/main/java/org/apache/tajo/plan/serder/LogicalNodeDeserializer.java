@@ -469,6 +469,13 @@ public class LogicalNodeDeserializer {
       paths[i] = new Path(partitionScanProto.getPaths(i));
     }
     partitionedScan.setInputPaths(paths);
+
+    String[] partitionKeys = new String[partitionScanProto.getKeysCount()];
+    for (int i = 0; i < partitionScanProto.getKeysCount(); i++) {
+      partitionKeys[i] = partitionScanProto.getKeys(i);
+    }
+    partitionedScan.setPartitionKeys(partitionKeys);
+
     return partitionedScan;
   }
 

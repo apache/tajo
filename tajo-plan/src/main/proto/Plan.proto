@@ -117,6 +117,7 @@ message ScanNode {
 
 message PartitionScanSpec {
   repeated string paths = 1;
+  repeated string keys = 2;
 }
 
 message IndexScanSpec {
@@ -233,6 +234,7 @@ enum JoinType {
 
 message PartitionTableScanSpec {
   repeated string paths = 1;
+  repeated string partitionKeys = 2;
 }
 
 message PersistentStoreNode {

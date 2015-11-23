@@ -654,7 +654,7 @@ public class FileTablespace extends Tablespace {
    *
    * @throws IOException
    */
-  public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitions,
+  public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitionKeys,
                                            Path... inputs) throws IOException {
     // generate splits'
 
@@ -683,7 +683,7 @@ public class FileTablespace extends Tablespace {
 
             if (splittable) {
               for (BlockLocation blockLocation : blkLocations) {
-                volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitions[i]));
+                volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitionKeys[i]));
               }
               blockLocations.addAll(Arrays.asList(blkLocations));
 
@@ -692,10 +692,10 @@ public class FileTablespace extends Tablespace {
               if (blockSize >= length) {
                 blockLocations.addAll(Arrays.asList(blkLocations));
                 for (BlockLocation blockLocation : blkLocations) {
-                  volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitions[i]));
+                  volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitionKeys[i]));
                 }
               } else {
-                splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitions[i]));
+                splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitionKeys[i]));
               }
             }
 
@@ -713,18 +713,17 @@ public class FileTablespace extends Tablespace {
                 int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
 
                 splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, splitSize,
-                  blkLocations[blkIndex].getHosts(), partitions[i]));
+                  blkLocations[blkIndex].getHosts(), partitionKeys[i]));
 
                 bytesRemaining -= splitSize;
               }
               if (bytesRemaining > 0) {
                 int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-
                 splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, bytesRemaining,
-                  blkLocations[blkIndex].getHosts(), partitions[i]));
+                  blkLocations[blkIndex].getHosts(), partitionKeys[i]));
               }
             } else { // Non splittable
-              splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitions[i]));
+              splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitionKeys[i]));
             }
           }
         }
