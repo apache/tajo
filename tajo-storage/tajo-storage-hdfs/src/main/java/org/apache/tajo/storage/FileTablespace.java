@@ -421,19 +421,9 @@ public class FileTablespace extends Tablespace {
     return new FileFragment(fragmentId, file, blockLocation);
   }
 
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
-    String[] hosts, String partitionName) {
-    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
-  }
-
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
-    , String partitionName) throws IOException {
-    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionName);
-  }
-
   // for Non Splittable. eg, compressed gzip TextFile
-  protected Fragment makeNonSplit(String fragmentId, Path file, long start, long length,
-    BlockLocation[] blkLocations) throws IOException {
+  protected FileFragment makeNonSplit(String fragmentId, Path file, long start, long length,
+                                      BlockLocation[] blkLocations) throws IOException {
 
     Map<String, Integer> hostsBlockMap = new HashMap<>();
     for (BlockLocation blockLocation : blkLocations) {
@@ -461,41 +451,7 @@ public class FileTablespace extends Tablespace {
       Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
       hosts[i] = entry.getKey();
     }
-
     return new FileFragment(fragmentId, file, start, length, hosts);
-  }
-
-  protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
-                                  BlockLocation[] blkLocations, String partitionName) throws IOException {
-
-    Map<String, Integer> hostsBlockMap = new HashMap<>();
-    for (BlockLocation blockLocation : blkLocations) {
-      for (String host : blockLocation.getHosts()) {
-        if (hostsBlockMap.containsKey(host)) {
-          hostsBlockMap.put(host, hostsBlockMap.get(host) + 1);
-        } else {
-          hostsBlockMap.put(host, 1);
-        }
-      }
-    }
-
-    List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
-    Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
-
-      @Override
-      public int compare(Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2) {
-        return v1.getValue().compareTo(v2.getValue());
-      }
-    });
-
-    String[] hosts = new String[blkLocations[0].getHosts().length];
-
-    for (int i = 0; i < hosts.length; i++) {
-      Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
-      hosts[i] = entry.getKey();
-    }
-
-    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
   }
 
   /**
@@ -535,7 +491,6 @@ public class FileTablespace extends Tablespace {
     List<Fragment> volumeSplits = Lists.newArrayList();
     List<BlockLocation> blockLocations = Lists.newArrayList();
 
-    int i = 0;
     for (Path p : inputs) {
       ArrayList<FileStatus> files = Lists.newArrayList();
       if (fs.isFile(p)) {
@@ -584,17 +539,14 @@ public class FileTablespace extends Tablespace {
               // for s3
               while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
                 int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-
                 splits.add(makeSplit(tableName, path, length - bytesRemaining, splitSize,
-                  blkLocations[blkIndex].getHosts()));
-
+                    blkLocations[blkIndex].getHosts()));
                 bytesRemaining -= splitSize;
               }
               if (bytesRemaining > 0) {
                 int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-
                 splits.add(makeSplit(tableName, path, length - bytesRemaining, bytesRemaining,
-                  blkLocations[blkIndex].getHosts()));
+                    blkLocations[blkIndex].getHosts()));
               }
             } else { // Non splittable
               splits.add(makeNonSplit(tableName, path, 0, length, blkLocations));
@@ -605,7 +557,6 @@ public class FileTablespace extends Tablespace {
       if(LOG.isDebugEnabled()){
         LOG.debug("# of splits per partition: " + (splits.size() - previousSplitSize));
       }
-      i++;
     }
 
     // Combine original fileFragments with new VolumeId information
@@ -615,6 +566,48 @@ public class FileTablespace extends Tablespace {
     return splits;
   }
 
+  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
+                                                     String[] hosts, String partitionName) {
+    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
+  }
+
+  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
+    , String partitionName) throws IOException {
+    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionName);
+  }
+
+  protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
+                                           BlockLocation[] blkLocations, String partitionName) throws IOException {
+
+    Map<String, Integer> hostsBlockMap = new HashMap<>();
+    for (BlockLocation blockLocation : blkLocations) {
+      for (String host : blockLocation.getHosts()) {
+        if (hostsBlockMap.containsKey(host)) {
+          hostsBlockMap.put(host, hostsBlockMap.get(host) + 1);
+        } else {
+          hostsBlockMap.put(host, 1);
+        }
+      }
+    }
+
+    List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
+    Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
+
+      @Override
+      public int compare(Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2) {
+        return v1.getValue().compareTo(v2.getValue());
+      }
+    });
+
+    String[] hosts = new String[blkLocations[0].getHosts().length];
+
+    for (int i = 0; i < hosts.length; i++) {
+      Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
+      hosts[i] = entry.getKey();
+    }
+
+    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
+  }
 
   /**
    * Generate the list of files and make them into PartitionedFileSplits.
@@ -622,7 +615,7 @@ public class FileTablespace extends Tablespace {
    * @throws IOException
    */
   public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitions,
-    Path... inputs) throws IOException {
+                                           Path... inputs) throws IOException {
     // generate splits'
 
     List<Fragment> splits = Lists.newArrayList();
