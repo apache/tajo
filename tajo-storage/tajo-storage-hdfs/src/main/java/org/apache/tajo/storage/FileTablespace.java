@@ -566,6 +566,10 @@ public class FileTablespace extends Tablespace {
     return splits;
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  // The below code is for splitting partitioned table.
+  ////////////////////////////////////////////////////////////////////////////////
+
   public PartitionFileFragment[] partitionSplit(String tableName, Path tablePath, String partitionKeys)
     throws IOException {
     return partitionSplit(tableName, tablePath, fs.getDefaultBlockSize(), partitionKeys);
