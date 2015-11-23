@@ -434,11 +434,6 @@ public class FileTablespace extends Tablespace {
   // for Non Splittable. eg, compressed gzip TextFile
   protected Fragment makeNonSplit(String fragmentId, Path file, long start, long length,
     BlockLocation[] blkLocations) throws IOException {
-   return makeNonSplit(fragmentId, file, start, length, blkLocations, null);
-  }
-
-  protected Fragment makeNonSplit(String fragmentId, Path file, long start, long length,
-    BlockLocation[] blkLocations, String partitionName) throws IOException {
 
     Map<String, Integer> hostsBlockMap = new HashMap<>();
     for (BlockLocation blockLocation : blkLocations) {
@@ -467,11 +462,40 @@ public class FileTablespace extends Tablespace {
       hosts[i] = entry.getKey();
     }
 
-    if (partitionName != null) {
-      return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
-    } else {
-      return new FileFragment(fragmentId, file, start, length, hosts);
+    return new FileFragment(fragmentId, file, start, length, hosts);
+  }
+
+  protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
+                                  BlockLocation[] blkLocations, String partitionName) throws IOException {
+
+    Map<String, Integer> hostsBlockMap = new HashMap<>();
+    for (BlockLocation blockLocation : blkLocations) {
+      for (String host : blockLocation.getHosts()) {
+        if (hostsBlockMap.containsKey(host)) {
+          hostsBlockMap.put(host, hostsBlockMap.get(host) + 1);
+        } else {
+          hostsBlockMap.put(host, 1);
+        }
+      }
     }
+
+    List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
+    Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
+
+      @Override
+      public int compare(Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2) {
+        return v1.getValue().compareTo(v2.getValue());
+      }
+    });
+
+    String[] hosts = new String[blkLocations[0].getHosts().length];
+
+    for (int i = 0; i < hosts.length; i++) {
+      Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
+      hosts[i] = entry.getKey();
+    }
+
+    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
   }
 
   /**
@@ -638,7 +662,7 @@ public class FileTablespace extends Tablespace {
                   volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitions[i]));
                 }
               } else {
-                splits.add(makeNonSplit(tableName, path, 0, length, blkLocations, partitions[i]));
+                splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitions[i]));
               }
             }
 
@@ -667,7 +691,7 @@ public class FileTablespace extends Tablespace {
                   blkLocations[blkIndex].getHosts(), partitions[i]));
               }
             } else { // Non splittable
-              splits.add(makeNonSplit(tableName, path, 0, length, blkLocations, partitions[i]));
+              splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitions[i]));
             }
           }
         }
