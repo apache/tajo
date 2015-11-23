@@ -566,18 +566,54 @@ public class FileTablespace extends Tablespace {
     return splits;
   }
 
+  public PartitionFileFragment[] partitionSplit(String tableName, Path tablePath, String partitionKeys)
+    throws IOException {
+    return partitionSplit(tableName, tablePath, fs.getDefaultBlockSize(), partitionKeys);
+  }
+
+  private PartitionFileFragment[] partitionSplit(String tableName, Path tablePath, long size, String partitionKeys)
+    throws IOException {
+    FileSystem fs = tablePath.getFileSystem(conf);
+
+    long defaultBlockSize = size;
+    List<PartitionFileFragment> listTablets = new ArrayList<>();
+    PartitionFileFragment tablet;
+
+    FileStatus[] fileLists = fs.listStatus(tablePath);
+    for (FileStatus file : fileLists) {
+      long remainFileSize = file.getLen();
+      long start = 0;
+      if (remainFileSize > defaultBlockSize) {
+        while (remainFileSize > defaultBlockSize) {
+          tablet = new PartitionFileFragment(tableName, file.getPath(), start, defaultBlockSize, partitionKeys);
+          listTablets.add(tablet);
+          start += defaultBlockSize;
+          remainFileSize -= defaultBlockSize;
+        }
+        listTablets.add(new PartitionFileFragment(tableName, file.getPath(), start, remainFileSize, partitionKeys));
+      } else {
+        listTablets.add(new PartitionFileFragment(tableName, file.getPath(), 0, remainFileSize, partitionKeys));
+      }
+    }
+
+    PartitionFileFragment[] tablets = new PartitionFileFragment[listTablets.size()];
+    listTablets.toArray(tablets);
+
+    return tablets;
+  }
+
   protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
-                                                     String[] hosts, String partitionName) {
-    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
+                                                     String[] hosts, String partitionKeys) {
+    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
   }
 
   protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
-    , String partitionName) throws IOException {
-    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionName);
+    , String partitionKeys) throws IOException {
+    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionKeys);
   }
 
   protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
-                                           BlockLocation[] blkLocations, String partitionName) throws IOException {
+                                           BlockLocation[] blkLocations, String partitionKeys) throws IOException {
 
     Map<String, Integer> hostsBlockMap = new HashMap<>();
     for (BlockLocation blockLocation : blkLocations) {
@@ -606,7 +642,7 @@ public class FileTablespace extends Tablespace {
       hosts[i] = entry.getKey();
     }
 
-    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionName);
+    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
   }
 
   /**

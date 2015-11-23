@@ -49,25 +49,25 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
     init(builder.build());
   }
 
-  public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation, String partitionName)
+  public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation, String partitionKeys)
       throws IOException {
     this.set(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null,
-      partitionName);
+      partitionKeys);
   }
 
   public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts, int[] diskIds,
-                               String partitionName) {
-    this.set(tableName, uri, start, length, hosts, diskIds, partitionName);
+                               String partitionKeys) {
+    this.set(tableName, uri, start, length, hosts, diskIds, partitionKeys);
   }
 
   // Non splittable
   public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
-                               String partitionName) {
-    this.set(tableName, uri, start, length, hosts, null, partitionName);
+                               String partitionKeys) {
+    this.set(tableName, uri, start, length, hosts, null, partitionKeys);
   }
 
-  public PartitionFileFragment(String fragmentId, Path path, long start, long length, String partitionName) {
-    this.set(fragmentId, path, start, length, null, null, partitionName);
+  public PartitionFileFragment(String fragmentId, Path path, long start, long length, String partitionKeys) {
+    this.set(fragmentId, path, start, length, null, null, partitionKeys);
   }
 
   public PartitionFileFragment(PartitionFileFragmentProto proto) {

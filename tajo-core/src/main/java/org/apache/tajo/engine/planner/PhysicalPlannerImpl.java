@@ -53,6 +53,7 @@ import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.StringUtils;
@@ -441,7 +442,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private MergeJoinExec createMergeInnerJoin(TaskAttemptContext context, JoinNode plan,
                                              PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
-        plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
+      plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
 
     SortNode leftSortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
     leftSortNode.setSortSpecs(sortSpecs[0]);
@@ -922,14 +923,28 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         }
       }
 
-      if (scanNode instanceof PartitionedTableScanNode) {
+      if (scanNode instanceof PartitionedTableScanNode
+          && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
+          ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
+
         if (broadcastFlag) {
-          FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
-          if (fragments == null) {
-            return new SeqScanExec(ctx, scanNode, null);
-          } else {
-            return new PartitionMergeScanExec(ctx, scanNode, fragments);
+          PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
+          List<PartitionFileFragment> fileFragments = TUtil.newList();
+
+          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
+          for (int i = 0; i < partitionedTableScanNode.getInputPaths().length; i++) {
+            Path path = partitionedTableScanNode.getInputPaths()[i];
+            String partitionKeys = partitionedTableScanNode.hasPartitionKeys() ? partitionedTableScanNode
+              .getPartitionKeys()[i] : "";
+            fileFragments.addAll(TUtil.newList(space.partitionSplit(scanNode.getCanonicalName(), path, partitionKeys)));
           }
+
+          FragmentProto[] fragments =
+                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(
+                  new PartitionFileFragment[fileFragments.size()]));
+
+          ctx.addFragments(scanNode.getCanonicalName(), fragments);
+          return new PartitionMergeScanExec(ctx, scanNode, fragments);
         }
       }
 
