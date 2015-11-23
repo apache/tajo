@@ -40,7 +40,6 @@ import org.apache.tajo.plan.partition.PartitionContent;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.EvalNodeToExprConverter;
-import org.apache.tajo.plan.util.FilteredPartitionInfo;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
