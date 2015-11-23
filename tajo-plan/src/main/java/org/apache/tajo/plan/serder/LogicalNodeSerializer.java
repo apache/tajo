@@ -489,7 +489,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       for (String partitionKey : node.getPartitionKeys()) {
         partitionKeysStrs.add(partitionKey);
       }
-      partitionScan.addAllKeys(partitionKeysStrs);
+      partitionScan.addAllPartitionKeys(partitionKeysStrs);
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
