@@ -1042,9 +1042,11 @@ public class ExternalSortExec extends SortExec {
         compare = Shorts.compare(tuple1.getInt2(index), tuple2.getInt2(index));
         break;
       case DATE:
-      case INET4:
       case INT4:
         compare = Ints.compare(tuple1.getInt4(index), tuple2.getInt4(index));
+        break;
+      case INET4:
+        compare = UnsignedInts.compare(tuple1.getInt4(index), tuple2.getInt4(index));
         break;
       case TIME:
       case TIMESTAMP:
