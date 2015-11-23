@@ -213,7 +213,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     int startIdx;
     long totalVolume = 0L;
     ContentSummary summary = null;
-    List<String> partitionKeysList = TUtil.newList();
+    String[] partitionKeys = null;
 
     if (conjunctiveForms == null) {
       filters = buildAllAcceptingPathFilters(partitionColumns);
@@ -230,15 +230,17 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     // Get partition keys and volume from the list of partition directories
-    for (Path path : filteredPaths) {
+    partitionKeys = new String[filteredPaths.length];
+    for (int i = 0; i < partitionKeys.length; i++) {
+      Path path = filteredPaths[i];
       startIdx = path.toString().indexOf(getColumnPartitionPathPrefix(partitionColumns));
-      partitionKeysList.add(path.toString().substring(startIdx));
+      partitionKeys[i] = path.toString().substring(startIdx);
       summary = fs.getContentSummary(path);
       totalVolume += summary.getLength();
     }
 
     partitionContent.setPartitionPaths(filteredPaths);
-    partitionContent.setPartitionKeys(partitionKeysList.toArray(new String[partitionKeysList.size()]));
+    partitionContent.setPartitionKeys(partitionKeys);
     partitionContent.setTotalVolume(totalVolume);
 
     return partitionContent;
