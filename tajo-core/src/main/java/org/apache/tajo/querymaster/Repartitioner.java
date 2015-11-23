@@ -386,15 +386,12 @@ public class Repartitioner {
 
           PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
           partitionScanPaths = partitionScan.getInputPaths();
-          if (partitionScan.hasPartitionKeys()) {
-            partitionKeys = partitionScan.getPartitionKeys();
-          }
+          partitionKeys = partitionScan.getPartitionKeys();
+
           // set null to inputPaths in getFragmentsFromPartitionedTable()
           getFragmentsFromPartitionedTable((FileTablespace) space, eachScan, tableDesc);
           partitionScan.setInputPaths(partitionScanPaths);
-          if (partitionKeys != null) {
-            partitionScan.setPartitionKeys(partitionKeys);
-          }
+          partitionScan.setPartitionKeys(partitionKeys);
 
         } else {
 
@@ -525,10 +522,7 @@ public class Repartitioner {
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scan;
         partitionScanPaths = partitionScan.getInputPaths();
-
-        if (partitionScan.hasPartitionKeys()) {
-          partitionKeys = partitionScan.getPartitionKeys();
-        }
+        partitionKeys = partitionScan.getPartitionKeys();
 
         // set null to inputPaths in getFragmentsFromPartitionedTable()
         scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
@@ -544,9 +538,7 @@ public class Repartitioner {
             PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
             // PhisicalPlanner make PartitionMergeScanExec when table is boradcast table and inputpaths is not empty
             partitionScan.setInputPaths(partitionScanPaths);
-            if (partitionKeys != null) {
-              partitionScan.setPartitionKeys(partitionKeys);
-            }
+            partitionScan.setPartitionKeys(partitionKeys);
           } else {
             broadcastFragments.addAll(scanFragments);
           }
