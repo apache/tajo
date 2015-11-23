@@ -47,10 +47,14 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * This external sort algorithm can be characterized by the followings:
@@ -162,12 +166,12 @@ public class ExternalSortExec extends SortExec {
   /**
    * Sort a tuple block and store them into a chunk file
    */
-  private Chunk sortAndStoreChunk(int chunkId, List tupleBlock)
+  private Chunk sortAndStoreChunk(int chunkId, UnSafeTupleList tupleBlock)
       throws IOException {
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
-    Iterable<Tuple> sorted = getSorter(tupleBlock).sort();
+    Collections.sort(tupleBlock, getUnSafeTupleComparator());
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -175,7 +179,7 @@ public class ExternalSortExec extends SortExec {
     final DirectRawFileWriter appender =
         new DirectRawFileWriter(context.getConf(), null, inSchema, intermediateMeta, outputPath);
     appender.init();
-    for (Tuple t : sorted) {
+    for (Tuple t : tupleBlock) {
       appender.addTuple(t);
     }
     appender.close();
@@ -514,8 +518,9 @@ public class ExternalSortExec extends SortExec {
   private Scanner getScanner(Chunk chunk) throws IOException {
     if (chunk.isMemory()) {
       long sortStart = System.currentTimeMillis();
-      TupleSorter sorter = getSorter(inMemoryTable);
-      Scanner scanner = new MemTableScanner(sorter.sort(), inMemoryTable.size(), inMemoryTable.usedMem());
+
+      Collections.sort(inMemoryTable, getUnSafeTupleComparator());
+      Scanner scanner = new MemTableScanner<>(inMemoryTable, inMemoryTable.size(), inMemoryTable.usedMem());
       if(LOG.isDebugEnabled()) {
         debug(LOG, "Memory Chunk sort (" + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false)
             + " bytes, " + inMemoryTable.size() + " rows, sort time: "
@@ -550,18 +555,18 @@ public class ExternalSortExec extends SortExec {
     }
   }
 
-  private static class MemTableScanner extends AbstractScanner {
-    final Iterable<Tuple> iterable;
+  private static class MemTableScanner<T extends Tuple> extends AbstractScanner {
+    final Iterable<T> iterable;
     final long sortAndStoredBytes;
     final int totalRecords;
 
-    Iterator<Tuple> iterator;
+    Iterator<T> iterator;
     // for input stats
     float scannerProgress;
     int numRecords;
     TableStats scannerTableStats;
 
-    public MemTableScanner(Iterable<Tuple> iterable, int length, long inBytes) {
+    public MemTableScanner(Iterable<T> iterable, int length, long inBytes) {
       this.iterable = iterable;
       this.totalRecords = length;
       this.sortAndStoredBytes = inBytes;
