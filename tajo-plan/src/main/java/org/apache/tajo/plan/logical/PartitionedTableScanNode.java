@@ -67,10 +67,6 @@ public class PartitionedTableScanNode extends ScanNode {
     this.partitionKeys = partitionKeys;
   }
 
-  public boolean hasPartitionKeys() {
-    return this.partitionKeys != null;
-  }
-
   public String toString() {
     StringBuilder sb = new StringBuilder("Partitions Scan (table=").append(getTableName());
     if (hasAlias()) {
@@ -124,10 +120,7 @@ public class PartitionedTableScanNode extends ScanNode {
     }
 
     unionScan.inputPaths = inputPaths;
-
-    if (hasPartitionKeys()) {
-      unionScan.partitionKeys = partitionKeys;
-    }
+    unionScan.partitionKeys = partitionKeys;
 
     return unionScan;
   }
