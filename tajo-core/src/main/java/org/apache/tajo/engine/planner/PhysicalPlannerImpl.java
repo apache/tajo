@@ -24,7 +24,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
@@ -44,13 +43,11 @@ import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAgg
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
-import org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 import org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.fragment.PartitionFileFragment;
@@ -442,7 +439,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private MergeJoinExec createMergeInnerJoin(TaskAttemptContext context, JoinNode plan,
                                              PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(
-      plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
+        plan.getJoinQual(), leftExec.getSchema(), rightExec.getSchema());
 
     SortNode leftSortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
     leftSortNode.setSortSpecs(sortSpecs[0]);
@@ -933,14 +930,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
           FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
           for (int i = 0; i < partitionedTableScanNode.getInputPaths().length; i++) {
-            Path path = partitionedTableScanNode.getInputPaths()[i];
-            partitionFileFragments.addAll(TUtil.newList(space.partitionSplit(scanNode.getCanonicalName(), path,
+            partitionFileFragments.addAll(TUtil.newList(space.partitionSplit(scanNode.getCanonicalName(),
+              partitionedTableScanNode.getInputPaths()[i],
               partitionedTableScanNode.getPartitionKeys()[i])));
           }
 
           FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(partitionFileFragments.toArray(
-                  new PartitionFileFragment[partitionFileFragments.size()]));
+            FragmentConvertor.toFragmentProtoArray(partitionFileFragments.toArray(
+              new PartitionFileFragment[partitionFileFragments.size()]));
 
           ctx.addFragments(scanNode.getCanonicalName(), fragments);
           return new PartitionMergeScanExec(ctx, scanNode, fragments);
