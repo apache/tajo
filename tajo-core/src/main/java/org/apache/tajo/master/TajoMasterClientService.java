@@ -560,10 +560,10 @@ public class TajoMasterClientService extends AbstractService {
 
           if(request.hasCompressCodec()) {
             queryResultScanner = new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(),
-                queryId, scanNode, Integer.MAX_VALUE, request.getCompressCodec(), catalog);
+                queryId, scanNode, Integer.MAX_VALUE, request.getCompressCodec());
           } else {
             queryResultScanner = new NonForwardQueryResultFileScanner(context.getConf(),
-                session.getSessionId(), queryId, scanNode, Integer.MAX_VALUE, catalog);
+                session.getSessionId(), queryId, scanNode, Integer.MAX_VALUE);
           }
 
           queryResultScanner.init();

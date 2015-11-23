@@ -41,7 +41,6 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
-import org.apache.tajo.plan.util.PartitionedTableUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageUtil;
@@ -601,7 +600,7 @@ public class DDLExecutor {
     Schema partitionColumns = partitionDesc.getExpressionSchema();
 
     // Get the array of path filter, accepting all partition paths.
-    PathFilter[] filters = PartitionedTableUtil.buildAllAcceptingPathFilters(partitionColumns);
+    PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns);
 
     // loop from one to the number of partition columns
     Path [] filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
@@ -628,7 +627,7 @@ public class DDLExecutor {
     List<PartitionDescProto> targetPartitions = TUtil.newList();
     for(Path filteredPath : filteredPaths) {
 
-      int startIdx = filteredPath.toString().indexOf(PartitionedTableUtil.getColumnPartitionPathPrefix
+      int startIdx = filteredPath.toString().indexOf(PartitionedTableRewriter.getColumnPartitionPathPrefix
         (partitionColumns));
 
       // if there is partition column in the path

@@ -28,7 +28,10 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -1143,10 +1146,7 @@ public class Stage implements EventHandler<StageEvent> {
       // Also, we can ensure FileTableSpace if the type of ScanNode is PARTITIONS_SCAN.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
-        CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
-        TajoConf tajoConf = stage.getContext().getConf();
-        fragments = Repartitioner.getFragmentsFromPartitionedTable(catalog, tajoConf, (FileTablespace) tablespace,
-          scan, table);
+        fragments = Repartitioner.getFragmentsFromPartitionedTable((FileTablespace) tablespace, scan, table);
       } else {
         fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan.getQual());
       }

@@ -134,7 +134,7 @@ public class QueryResultResource {
       }
 
       resultScanner = new NonForwardQueryResultFileScanner(masterContext.getConf(), session.getSessionId(), queryId,
-          scanNode, Integer.MAX_VALUE, masterContext.getCatalog());
+          scanNode, Integer.MAX_VALUE);
       resultScanner.init();
       session.addNonForwardQueryResultScanner(resultScanner);
     }

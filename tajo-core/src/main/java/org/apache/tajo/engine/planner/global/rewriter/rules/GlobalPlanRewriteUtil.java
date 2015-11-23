@@ -97,6 +97,13 @@ public class GlobalPlanRewriteUtil {
   public static long getTableVolume(ScanNode scanNode) {
     if (scanNode.getTableDesc().hasStats()) {
       long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
+      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
+        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
+        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+          scanBytes = 0L;
+        }
+      }
+
       return scanBytes;
     } else {
       return -1;
@@ -126,7 +133,12 @@ public class GlobalPlanRewriteUtil {
             // broadcast method.
             return Long.MAX_VALUE;
           } else {
-            return pScanNode.getTableDesc().getStats().getNumBytes();
+            // if there is no selected partition
+            if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+              return 0;
+            } else {
+              return pScanNode.getTableDesc().getStats().getNumBytes();
+            }
           }
         case TABLE_SUBQUERY:
           return computeDescendentVolume(((TableSubQueryNode) node).getSubQuery());

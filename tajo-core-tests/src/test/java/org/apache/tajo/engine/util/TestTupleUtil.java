@@ -24,10 +24,10 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.plan.util.PartitionedTableUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
+import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -146,41 +146,41 @@ public class TestTupleUtil {
     schema.addColumn("key2", Type.TEXT);
 
     Path path = new Path("hdfs://tajo/warehouse/partition_test/");
-    Tuple tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, true);
+    Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
     assertNull(tuple);
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
     assertNull(tuple);
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123");
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/part-0000"); // wrong cases;
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
     assertNull(tuple);
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
     assertNull(tuple);
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/key2=abc");
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));
 
 
     path = new Path("hdfs://tajo/warehouse/partition_test/key1=123/key2=abc/part-0001");
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, true);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);
     assertNull(tuple);
 
-    tuple = PartitionedTableUtil.buildTupleFromPartitionPath(schema, path, false);
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, false);
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));
@@ -192,17 +192,17 @@ public class TestTupleUtil {
     schema.addColumn("key1", Type.INT8);
     schema.addColumn("key2", Type.TEXT);
 
-    Tuple tuple = PartitionedTableUtil.buildTupleFromPartitionName(schema, "key1=123");
+    Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionName(schema, "key1=123");
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createNullDatum(), tuple.asDatum(1));
 
-    tuple = PartitionedTableUtil.buildTupleFromPartitionName(schema, "key1=123/key2=abc");
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionName(schema, "key1=123/key2=abc");
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));
 
-    tuple = PartitionedTableUtil.buildTupleFromPartitionName(schema, "key2=abc");
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionName(schema, "key2=abc");
     assertNotNull(tuple);
     assertEquals(DatumFactory.createNullDatum(), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));

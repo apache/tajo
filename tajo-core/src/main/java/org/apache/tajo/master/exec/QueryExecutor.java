@@ -302,7 +302,7 @@ public class QueryExecutor {
         plan.getRootBlock().getRoot());
 
     final NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultFileScanner(
-        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, maxRow, catalog);
+        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, maxRow);
     queryResultScanner.init();
 
     session.addNonForwardQueryResultScanner(queryResultScanner);

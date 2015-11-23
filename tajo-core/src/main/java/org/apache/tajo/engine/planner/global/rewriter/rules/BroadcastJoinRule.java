@@ -333,7 +333,12 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
               // broadcast method.
               return Long.MAX_VALUE;
             } else {
-              return pScanNode.getTableDesc().getStats().getNumBytes();
+              // if there is no selected partition
+              if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
+                return 0;
+              } else {
+                return pScanNode.getTableDesc().getStats().getNumBytes();
+              }
             }
           case TABLE_SUBQUERY:
             return estimateOutputVolumeInternal(((TableSubQueryNode) node).getSubQuery());

@@ -33,7 +33,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.util.PartitionedTableUtil;
+import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -98,12 +98,18 @@ public class SeqScanExec extends ScanExec {
 
     Tuple partitionRow = null;
     if (fragments != null && fragments.length > 0) {
-      List<PartitionFileFragment> PartitionFileFragments = FragmentConvertor.convert(PartitionFileFragment
+      List<PartitionFileFragment> partitionFileFragments = FragmentConvertor.convert(PartitionFileFragment
         .class, fragments);
 
-      // Get first partition key from a given partition keys
-      partitionRow = PartitionedTableUtil.buildTupleFromPartitionName(columnPartitionSchema,
-        PartitionFileFragments.get(0).getPartitionKeys());
+      if (partitionFileFragments.get(0) != null) {
+        // Get first partition key from a given partition keys
+        partitionRow = PartitionedTableRewriter.buildTupleFromPartitionName(columnPartitionSchema,
+          partitionFileFragments.get(0).getPartitionKeys());
+      } else {
+        // Get a partition key value from a given path
+        partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
+          columnPartitionSchema, partitionFileFragments.get(0).getPath(), false);
+      }
     }
 
     // Targets or search conditions may contain column references.

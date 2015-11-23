@@ -73,6 +73,7 @@ message LogicalNode {
   optional SchemaProto out_schema = 5;
 
   optional ScanNode scan = 6;
+  optional PartitionScanSpec partitionScan = 7;
   optional IndexScanSpec indexScan = 8;
   optional JoinNode join = 9;
   optional FilterNode filter = 10;
@@ -112,6 +113,10 @@ message ScanNode {
   optional EvalNodeTree qual = 5;
   optional bool broadcast = 6;
   required bool nameResolveBase = 7;
+}
+
+message PartitionScanSpec {
+  repeated string paths = 1;
 }
 
 message IndexScanSpec {
@@ -224,6 +229,10 @@ enum JoinType {
   RIGHT_ANTI_JOIN = 7;
   LEFT_SEMI_JOIN = 8;
   RIGHT_SEMI_JOIN = 9;
+}
+
+message PartitionTableScanSpec {
+  repeated string paths = 1;
 }
 
 message PersistentStoreNode {
