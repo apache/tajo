@@ -2,20 +2,20 @@
 Compression
 ***********
 
-Using compression makes data size compact and network traffic low. Most of Tajo data types support data compression feature.
-Currently, compression configuration affcts only for stored data format and it is specified when a table is created as table meta information.
+Using compression can make data size compact, thereby enabling efficient use of network bandwidth and storage. Most of Tajo data formats support data compression feature.
+Currently, compression configuration affects only for stored data format and it is specified when a table is created as table meta information(See `Create Table <../sql_language/ddl.html#create-table>`_).
 Compression for intermidate data or others is not supported now.
 
 ===========================================
 Compression Properties for each Data Format
 ===========================================
 
- .. csv-table:: Compression Properties and Codec Class
+ .. csv-table:: Compression Properties
 
   **Data Format**,**Property Name**,**Avaliable Values**
-  text/json/rcfile/sequencefile [#f1]_,compression.codec,Fully Qualified Classname in Hadoop [#f2]_
-  parquet,parquet.compression,uncompressed/snappy/gzip/lzo
-  orc,orc.compression.kind,none/snappy/zlib
+  :doc:`text</table_management/text>`/:doc:`json</table_management/json>`/:doc:`rcfile</table_management/rcfile>`/:doc:`sequencefile</table_management/sequencefile>` [#f1]_,compression.codec,Fully Qualified Classname in Hadoop [#f2]_
+  :doc:`parquet</table_management/parquet>`,parquet.compression,uncompressed/snappy/gzip/lzo
+  :doc:`orc</table_management/orc>`,orc.compression.kind,none/snappy/zlib
 
 .. rubric:: Footnotes
 
