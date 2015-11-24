@@ -152,9 +152,8 @@ public class OffHeapRowBlockUtils {
   public static class TupleConverter {
 
     public void convert(Tuple tuple, RowWriter writer) {
-      writer.startRow();
-
       try {
+        writer.startRow();
         for (int i = 0; i < writer.dataTypes().length; i++) {
           writeField(i, tuple, writer);
         }
