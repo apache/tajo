@@ -90,9 +90,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
                                      ProjectionNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitProjection(state, plan, block, node, stack);
 
-    for (Target target : node.getTargets()) {
-      ExprsVerifier.verify(state.state, node, target.getEvalTree());
-    }
+    node.targets().forEach(t -> ExprsVerifier.verify(state.state, node, t.getEvalTree()));
 
     verifyProjectableOutputSchema(state, node);
 
@@ -196,9 +194,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
     super.visitTableSubQuery(context, plan, block, node, stack);
     if (node.hasTargets()) {
-      for (Target target : node.getTargets()) {
-        ExprsVerifier.verify(context.state, node, target.getEvalTree());
-      }
+      node.targets().forEach(t -> ExprsVerifier.verify(context.state, node, t.getEvalTree()));
     }
 
     verifyProjectableOutputSchema(context, node);
@@ -209,9 +205,7 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   public LogicalNode visitScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
                                Stack<LogicalNode> stack) throws TajoException {
     if (node.hasTargets()) {
-      for (Target target : node.getTargets()) {
-        ExprsVerifier.verify(context.state, node, target.getEvalTree());
-      }
+      node.targets().forEach(t -> ExprsVerifier.verify(context.state, node, t.getEvalTree()));
     }
 
     if (node.hasQual()) {

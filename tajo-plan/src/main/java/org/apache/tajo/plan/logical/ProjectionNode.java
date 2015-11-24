@@ -28,6 +28,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class ProjectionNode extends UnaryNode implements Projectable {
 
@@ -64,8 +65,13 @@ public class ProjectionNode extends UnaryNode implements Projectable {
   public List<Target> getTargets() {
     return this.targets;
   }
-	
-	public void setChild(LogicalNode subNode) {
+
+  @Override
+  public Stream<Target> targets() {
+    return getTargets().stream();
+  }
+
+  public void setChild(LogicalNode subNode) {
 	  super.setChild(subNode);
 	}
 	

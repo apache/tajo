@@ -190,9 +190,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
     stack.pop();
 
     if (node.hasTargets()) {
-      for (Target target : node.getTargets()) {
-        compileIfAbsent(context, node.getLogicalSchema(), target.getEvalTree());
-      }
+      node.targets().forEach(t -> compileIfAbsent(context, node.getLogicalSchema(), t.getEvalTree()));
     }
 
     return node;

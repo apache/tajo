@@ -30,6 +30,7 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class EvalExprNode extends LogicalNode implements Projectable {
   @Expose private List<Target> exprs = null;
@@ -62,6 +63,11 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   @Override
   public List<Target> getTargets() {
     return exprs;
+  }
+
+  @Override
+  public Stream<Target> targets() {
+    return getTargets().stream();
   }
 
   public List<Target> getExprs() {

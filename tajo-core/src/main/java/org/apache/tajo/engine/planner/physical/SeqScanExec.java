@@ -149,9 +149,7 @@ public class SeqScanExec extends ScanExec {
         columnSet.addAll(EvalTreeUtil.findUniqueColumns(qual));
       }
 
-      for (Target t : plan.getTargets()) {
-        columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
-      }
+      plan.targets().forEach(t -> columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree())));
 
       for (Column column : inSchema.getAllColumns()) {
         if (columnSet.contains(column)) {
