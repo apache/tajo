@@ -29,7 +29,7 @@ The following is an example for two tablespaces for hbase and hdfs:
 
   {
     "spaces": {
-      "hbase-cluster1": {
+      "hbase_cluster1": {
         "uri": "hbase://quorum1:port,quorum2:port/"
       },
 
