@@ -149,7 +149,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
                                    EvalExprNode exprEval, Stack<LogicalNode> stack) throws TajoException {
     PlanProto.EvalExprNode.Builder exprEvalBuilder = PlanProto.EvalExprNode.newBuilder();
     exprEvalBuilder.addAllTargets(
-        ProtoUtil.<PlanProto.Target>toProtoObjects(exprEval.getTargets().toArray(new ProtoObject[exprEval.getTargets().size()])));
+      ProtoUtil.<PlanProto.Target>toProtoObjects(exprEval.getTargets().toArray(new ProtoObject[exprEval.getTargets().size()])));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, exprEval);
     nodeBuilder.setExprEval(exprEvalBuilder);
@@ -474,30 +474,31 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
       throws TajoException {
 
-    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
+//    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
+//
+//    PlanProto.PartitionScanSpec.Builder partitionScan = PlanProto.PartitionScanSpec.newBuilder();
+//    List<String> pathStrs = TUtil.newList();
+//    if (node.getInputPaths() != null) {
+//      for (Path p : node.getInputPaths()) {
+//        pathStrs.add(p.toString());
+//      }
+//      partitionScan.addAllPaths(pathStrs);
+//    }
+//    List<String> partitionKeysStrs = TUtil.newList();
+//    if (node.getPartitionKeys() != null) {
+//      for (String partitionKey : node.getPartitionKeys()) {
+//        partitionKeysStrs.add(partitionKey);
+//      }
+//      partitionScan.addAllPartitionKeys(partitionKeysStrs);
+//    }
+//
+//    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+//    nodeBuilder.setScan(scanBuilder);
+//    nodeBuilder.setPartitionScan(partitionScan);
+//    context.treeBuilder.addNodes(nodeBuilder);
 
-    PlanProto.PartitionScanSpec.Builder partitionScan = PlanProto.PartitionScanSpec.newBuilder();
-    List<String> pathStrs = TUtil.newList();
-    if (node.getInputPaths() != null) {
-      for (Path p : node.getInputPaths()) {
-        pathStrs.add(p.toString());
-      }
-      partitionScan.addAllPaths(pathStrs);
-    }
-    List<String> partitionKeysStrs = TUtil.newList();
-    if (node.getPartitionKeys() != null) {
-      for (String partitionKey : node.getPartitionKeys()) {
-        partitionKeysStrs.add(partitionKey);
-      }
-      partitionScan.addAllPartitionKeys(partitionKeysStrs);
-    }
-
-    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
-    nodeBuilder.setScan(scanBuilder);
-    nodeBuilder.setPartitionScan(partitionScan);
-    context.treeBuilder.addNodes(nodeBuilder);
-
-    return node;
+    ScanNode scanNode = (ScanNode) node;
+    return visitScan(context, plan, block, scanNode, stack);
   }
 
   @Override

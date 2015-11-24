@@ -21,11 +21,15 @@ package org.apache.tajo.plan.rewrite.rules;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.PartitionedTableScanNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.plan.util.PlannerUtil;
 
 /**
  * It verifies the equality between the input and output of LogicalNodeTree(De)Serializer in logical planning.
@@ -50,7 +54,15 @@ public class LogicalPlanEqualityTester implements LogicalPlanRewriteRule {
     LogicalNode root = plan.getRootBlock().getRoot();
     PlanProto.LogicalNodeTree serialized = LogicalNodeSerializer.serialize(plan.getRootBlock().getRoot());
     LogicalNode deserialized = LogicalNodeDeserializer.deserialize(context.getQueryContext(), null, serialized);
-    assert root.deepEquals(deserialized);
+
+    // Error handling PartitionedTableScanNode because LogicalNodeDeserializer convert it to ScanNode.
+    PartitionedTableScanNode partitionedTableScanNode = PlannerUtil.findTopNode(root, NodeType.PARTITIONS_SCAN);
+    if (partitionedTableScanNode != null) {
+      ScanNode scanNode = PlannerUtil.findTopNode(deserialized, NodeType.SCAN);
+      assert scanNode != null;
+    } else {
+      assert root.deepEquals(deserialized);
+    }
     return plan;
   }
 }

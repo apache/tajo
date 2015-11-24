@@ -45,12 +45,10 @@ import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArr
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.StringUtils;
@@ -901,12 +899,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
       throws IOException {
+    FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
     // check if an input is sorted in the same order to the subsequence sort operator.
     if (checkIfSortEquivalance(ctx, scanNode, node)) {
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (fragments == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new ExternalSortExec(ctx, (SortNode) node.peek(), scanNode, fragments);
     } else {
       Enforcer enforcer = ctx.getEnforcer();
@@ -920,34 +918,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         }
       }
 
-      if (scanNode instanceof PartitionedTableScanNode
-          && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
-          ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
-
-        if (broadcastFlag) {
-          PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<PartitionFileFragment> partitionFileFragments = TUtil.newList();
-
-          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
-          for (int i = 0; i < partitionedTableScanNode.getInputPaths().length; i++) {
-            partitionFileFragments.addAll(TUtil.newList(space.partitionSplit(scanNode.getCanonicalName(),
-              partitionedTableScanNode.getInputPaths()[i],
-              partitionedTableScanNode.getPartitionKeys()[i])));
-          }
-
-          FragmentProto[] fragments =
-            FragmentConvertor.toFragmentProtoArray(partitionFileFragments.toArray(
-              new PartitionFileFragment[partitionFileFragments.size()]));
-
-          ctx.addFragments(scanNode.getCanonicalName(), fragments);
-          return new PartitionMergeScanExec(ctx, scanNode, fragments);
-        }
+      if (scanNode.getTableDesc().hasPartition() && broadcastFlag && fragments != null) {
+        ctx.addFragments(scanNode.getCanonicalName(), fragments);
+        return new PartitionMergeScanExec(ctx, scanNode, fragments);
       }
 
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (fragments == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
+
       return new SeqScanExec(ctx, scanNode, fragments);
     }
   }

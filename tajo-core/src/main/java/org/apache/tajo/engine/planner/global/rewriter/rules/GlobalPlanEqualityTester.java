@@ -18,15 +18,20 @@
 
 package org.apache.tajo.engine.planner.global.rewriter.rules;
 
+import org.apache.hadoop.hive.ql.plan.PlanUtils;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.PartitionedTableScanNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.plan.util.PlannerUtil;
 
 /**
  * It verifies the equality between the input and output of LogicalNodeTree(De)Serializer in global planning.
@@ -52,7 +57,15 @@ public class GlobalPlanEqualityTester implements GlobalPlanRewriteRule {
         if (node != null) {
           PlanProto.LogicalNodeTree tree = LogicalNodeSerializer.serialize(node);
           LogicalNode deserialize = LogicalNodeDeserializer.deserialize(plan.getContext(), null, tree);
-          assert node.deepEquals(deserialize);
+
+          // Error handling PartitionedTableScanNode because LogicalNodeDeserializer convert it to ScanNode.
+          PartitionedTableScanNode partitionedTableScanNode = PlannerUtil.findTopNode(node, NodeType.PARTITIONS_SCAN);
+          if (partitionedTableScanNode != null) {
+            ScanNode scanNode = PlannerUtil.findTopNode(deserialize, NodeType.SCAN);
+            assert scanNode != null;
+          } else {
+            assert node.deepEquals(deserialize);
+          }
         }
       }
       return plan;

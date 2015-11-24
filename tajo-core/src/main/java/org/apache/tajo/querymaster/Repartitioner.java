@@ -374,33 +374,19 @@ public class Repartitioner {
     if (broadcastFragments != null) {
       //In this phase a ScanNode has a single fragment.
       //If there are more than one data files, that files should be added to fragments or partition path
-
       for (ScanNode eachScan: broadcastScans) {
-
-        Path[] partitionScanPaths = null;
-        String[] partitionKeys = null;
         TableDesc tableDesc = masterContext.getTableDesc(eachScan);
         Tablespace space = TablespaceManager.get(tableDesc.getUri());
+        Collection<Fragment> scanFragments = null;
 
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
-
-          PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
-          partitionScanPaths = partitionScan.getInputPaths();
-          partitionKeys = partitionScan.getPartitionKeys();
-
-          // set null to inputPaths in getFragmentsFromPartitionedTable()
-          getFragmentsFromPartitionedTable((FileTablespace) space, eachScan, tableDesc);
-          partitionScan.setInputPaths(partitionScanPaths);
-          partitionScan.setPartitionKeys(partitionKeys);
-
+          scanFragments = getFragmentsFromPartitionedTable(space, eachScan, tableDesc);
         } else {
+          scanFragments = space.getSplits(eachScan.getCanonicalName(), tableDesc, eachScan.getQual());
+        }
 
-          Collection<Fragment> scanFragments =
-              space.getSplits(eachScan.getCanonicalName(), tableDesc, eachScan.getQual());
-          if (scanFragments != null) {
-            rightFragments.addAll(scanFragments);
-          }
-
+        if (scanFragments != null) {
+          rightFragments.addAll(scanFragments);
         }
       }
     }
@@ -480,9 +466,6 @@ public class Repartitioner {
       scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getPartitionKeys(),
       partitionsScan.getInputPaths()));
 
-    partitionsScan.setInputPaths(null);
-    partitionsScan.setPartitionKeys(null);
-
     return fragments;
   }
 
@@ -504,9 +487,9 @@ public class Repartitioner {
     // Broadcast table
     //  all fragments or paths assigned every Large table's scan task.
     //  -> PARTITIONS_SCAN
-    //     . add all partition paths to node's inputPaths variable
+    //     . add all PartitionFileFragments to broadcastFragments
     //  -> SCAN
-    //     . add all fragments to broadcastFragments
+    //     . add all FileFragments to broadcastFragments
     Collection<Fragment> baseFragments = null;
     List<Fragment> broadcastFragments = new ArrayList<>();
     for (int i = 0; i < scans.length; i++) {
@@ -514,17 +497,9 @@ public class Repartitioner {
       TableDesc desc = stage.getContext().getTableDesc(scan);
 
       Collection<Fragment> scanFragments;
-      Path[] partitionScanPaths = null;
-      String[] partitionKeys = null;
 
       Tablespace space = TablespaceManager.get(desc.getUri());
-
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scan;
-        partitionScanPaths = partitionScan.getInputPaths();
-        partitionKeys = partitionScan.getPartitionKeys();
-
-        // set null to inputPaths in getFragmentsFromPartitionedTable()
         scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
       } else {
         scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan.getQual());
@@ -534,14 +509,7 @@ public class Repartitioner {
         if (i == baseScanId) {
           baseFragments = scanFragments;
         } else {
-          if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-            PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
-            // PhisicalPlanner make PartitionMergeScanExec when table is boradcast table and inputpaths is not empty
-            partitionScan.setInputPaths(partitionScanPaths);
-            partitionScan.setPartitionKeys(partitionKeys);
-          } else {
-            broadcastFragments.addAll(scanFragments);
-          }
+          broadcastFragments.addAll(scanFragments);
         }
       }
     }
