@@ -149,7 +149,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
                                    EvalExprNode exprEval, Stack<LogicalNode> stack) throws TajoException {
     PlanProto.EvalExprNode.Builder exprEvalBuilder = PlanProto.EvalExprNode.newBuilder();
     exprEvalBuilder.addAllTargets(
-      ProtoUtil.<PlanProto.Target>toProtoObjects(exprEval.getTargets().toArray(new ProtoObject[exprEval.getTargets().size()])));
+        ProtoUtil.<PlanProto.Target>toProtoObjects(exprEval.getTargets().toArray(new ProtoObject[exprEval.getTargets().size()])));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, exprEval);
     nodeBuilder.setExprEval(exprEvalBuilder);
