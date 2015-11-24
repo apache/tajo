@@ -44,7 +44,7 @@ public class RestOutputFactory {
 
     private static Map<String, String> load() {
         Map<String, String> outputClasses = Maps.newHashMap();
-        Set<Class> restOutputClasses = ClassUtil.findClasses(AbstractStreamingOutput.class, "org.apache.tajo.ws.rs.resources.output");
+        Set<Class> restOutputClasses = ClassUtil.findClasses(AbstractStreamingOutput.class, "org.apache.tajo.ws.rs.resources.outputs");
 
         for (Class eachClass : restOutputClasses) {
             if (eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers())) {
