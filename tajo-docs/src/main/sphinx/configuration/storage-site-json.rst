@@ -3,7 +3,7 @@ The storage-site.json File
 **************************
 
 This file is for configuring :doc:`table spaces</table_management/tablespaces>`.
-The syntax of storage-site.json is like this basically:
+The syntax of ``storage-site.json`` is like this basically:
 
 .. code:: json
 
