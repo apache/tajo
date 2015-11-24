@@ -811,7 +811,7 @@ public class QueryTestCaseBase {
       throws UndefinedTableException {
 
     TableDesc tableDesc = getTableDesc(tableName);
-    assertEquals(expectedValue, tableDesc.getMeta().getOption(key));
+    assertEquals(expectedValue, tableDesc.getMeta().getProperty(key));
   }
 
   public String resultSetToString(ResultSet resultSet) throws SQLException {

@@ -369,7 +369,7 @@ public class RowFile {
       if (tableStatsEnabled) {
         this.stats = new TableStatistics(this.schema, columnStatsEnabled);
         this.shuffleType = PlannerUtil.getShuffleType(
-            meta.getOption(StorageConstants.SHUFFLE_TYPE,
+            meta.getProperty(StorageConstants.SHUFFLE_TYPE,
                 PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)));
       }
     }

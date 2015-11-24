@@ -94,7 +94,7 @@ public abstract class AbstractHBaseAppender implements Appender {
       stats = new TableStatistics(this.schema, columnStatsEnabled);
     }
     try {
-      columnMapping = new ColumnMapping(schema, meta.getOptions());
+      columnMapping = new ColumnMapping(schema, meta.getPropertySet());
     } catch (TajoException e) {
       throw new TajoInternalError(e);
     }

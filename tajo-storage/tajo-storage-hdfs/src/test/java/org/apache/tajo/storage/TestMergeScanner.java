@@ -107,9 +107,9 @@ public class TestMergeScanner {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
     if (dataFormat.equalsIgnoreCase("AVRO")) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MULTIPLE_FILES_AVRO_SCHEMA);
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MULTIPLE_FILES_AVRO_SCHEMA);
     }
 
     Path table1Path = new Path(testDir, dataFormat + "_1.data");
