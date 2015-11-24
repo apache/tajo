@@ -32,11 +32,11 @@ This is a section for registering table spaces. Some space config example is her
     ...
   }
 
-* space name : Your own table space name which indicates a specific table space. Alpha-numeric characters and underscore(_) are permitted.
-* uri : An URI address of a table space
-* config : It is optional. You can specify it as JSON object to pass to each table space handler.
+* **space name** : Your own table space name which indicates a specific table space. Alpha-numeric characters and underscore(_) are permitted.
+* **uri** : An URI address of a table space
+* **config** : It is optional. You can specify it as JSON object to pass to each table space handler.
 
-If you specify a table space, you can use it in `create table statement <../sql_language/ddl.html#create-table>`_.
+After you specify a table space, you can use it in `create table statement <../sql_language/ddl.html#create-table>`_.
 
 --------
 Storages
