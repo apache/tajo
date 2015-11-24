@@ -179,6 +179,37 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     ));
   }
 
+  public List<Tuple> getNextTupleRows(int fetchRowNum) throws IOException {
+    List<Tuple> rows = new ArrayList<>();
+    if (scanExec == null) {
+      return rows;
+    }
+    int rowCount = 0;
+    while (!eof) {
+      Tuple tuple = scanExec.next();
+      if (tuple == null) {
+        eof = true;
+        break;
+      }
+
+      rows.add(tuple);
+      rowCount++;
+      currentNumRows++;
+      if (rowCount >= fetchRowNum) {
+        break;
+      }
+      if (currentNumRows >= maxRow) {
+        eof = true;
+        break;
+      }
+    }
+
+    if(eof) {
+      close();
+    }
+    return rows;
+  }
+
   public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
     List<ByteString> rows = new ArrayList<>();
     if (scanExec == null) {
