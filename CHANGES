@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1984: Removed unused FileTablespace::getSplit methods. (hyunsik)
+
     TAJO-1271: Improve memory usage of Hash-shuffle. (jinho)
 
     TAJO-1966: Decrease memory usage of TajoTestingCluster. (jinho)
@@ -34,6 +36,9 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-1980: Printout the usage of TajoShellCommand.
+    (Contributed by Dongkyu Hwangbo, committed by jaehwa)
 
     TAJO-1981: Invalid nulls sort order in VectorizedSorter. (jihoon)
 

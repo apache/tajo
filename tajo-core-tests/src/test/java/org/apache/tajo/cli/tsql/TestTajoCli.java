@@ -30,6 +30,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.cli.tsql.commands.TajoShellCommand;
 import org.apache.tajo.client.ClientParameters;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
@@ -47,6 +48,7 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
@@ -581,6 +583,25 @@ public class TestTajoCli {
       assertTrue(consoleResult.contains("docs/current/"));
     } else {
       assertTrue(consoleResult.contains("docs/" + tajoVersion + "/"));
+    }
+  }
+
+  @Test
+  public void testDefaultPrintHelp() throws IOException, NoSuchMethodException {
+    for (Map.Entry<String, TajoShellCommand> entry : tajoCli.getContext().getCommands().entrySet()) {
+      TajoShellCommand shellCommand = entry.getValue();
+
+      if (!shellCommand.getClass().getMethod("printHelp").getDeclaringClass().equals(shellCommand.getClass())) {
+        tajoCli.executeMetaCommand("\\help " + entry.getKey().replace("\\", ""));
+        String result = new String(out.toByteArray());
+        out.reset();
+
+        String expected = shellCommand.getCommand()
+                + " " + shellCommand.getUsage()
+                + " - " + shellCommand.getDescription() + "\n";
+
+        assertEquals(result, expected);
+      }
     }
   }
 }
