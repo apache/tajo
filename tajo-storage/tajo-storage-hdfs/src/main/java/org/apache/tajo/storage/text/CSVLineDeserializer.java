@@ -47,8 +47,8 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     targetColumnIndexes = PlannerUtil.getTargetIds(schema, projected);
 
     // The quote char must be a single ASCII character.
-    hasQuoteChar = meta.containsOption(StorageConstants.QUOTE_CHAR);
-    quoteChar = meta.getOption(StorageConstants.QUOTE_CHAR, "\0").getBytes()[0];
+    hasQuoteChar = meta.containsProperty(StorageConstants.QUOTE_CHAR);
+    quoteChar = meta.getProperty(StorageConstants.QUOTE_CHAR, "\0").getBytes()[0];
   }
 
   @Override

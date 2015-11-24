@@ -203,7 +203,7 @@ public class TPCH extends BenchmarkSet {
 
   public void loadTable(String tableName) throws TajoException {
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
-    meta.putOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    meta.putProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
     PartitionMethodDesc partitionMethodDesc = null;
     if (tableName.equals(CUSTOMER_PARTS)) {
