@@ -701,7 +701,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           } else {
             throw new IllegalStateException("Unexpected State: " + StringUtils.join(sortSpecs));
           }
-          annotatedSortSpecs[i] = new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst());
+          annotatedSortSpecs[i] = new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullsFirst());
         }
 
         sortGroups[winSpecIdx] = annotatedSortSpecs;
@@ -928,7 +928,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } else {
         throw new IllegalStateException("Unexpected State: " + StringUtils.join(rawSortSpecs));
       }
-      annotatedSortSpecs.add(new SortSpec(column, rawSortSpecs[i].isAscending(), rawSortSpecs[i].isNullFirst()));
+      annotatedSortSpecs.add(new SortSpec(column, rawSortSpecs[i].isAscending(), rawSortSpecs[i].isNullsFirst()));
     }
     return annotatedSortSpecs.toArray(new SortSpec[annotatedSortSpecs.size()]);
   }

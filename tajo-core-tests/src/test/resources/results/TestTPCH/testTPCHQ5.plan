@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(8)
-  => Sort Keys: revenue (FLOAT8) (desc)
+  => Sort Keys: revenue (FLOAT8) (desc, nulls first)
    GROUP_BY(7)(n_name)
      => exprs: (sum(?multiply (FLOAT8)))
      => target list: default.nation.n_name (TEXT), revenue (FLOAT8)
@@ -301,7 +301,7 @@ Block Id: eb_0000000000000_0000_000012 [INTERMEDIATE]
 [q_0000000000000_0000] 12 => 13 (type=RANGE_SHUFFLE, key=revenue (FLOAT8), num=32)
 
 SORT(34)
-  => Sort Keys: revenue (FLOAT8) (desc)
+  => Sort Keys: revenue (FLOAT8) (desc, nulls first)
    GROUP_BY(7)(n_name)
      => exprs: (sum(?sum_7 (FLOAT8)))
      => target list: default.nation.n_name (TEXT), revenue (FLOAT8)
@@ -322,7 +322,7 @@ Block Id: eb_0000000000000_0000_000013 [ROOT]
  0: sorted input=eb_0000000000000_0000_000012
 
 SORT(8)
-  => Sort Keys: revenue (FLOAT8) (desc)
+  => Sort Keys: revenue (FLOAT8) (desc, nulls first)
    SCAN(35) on eb_0000000000000_0000_000012
      => out schema: {(2) default.nation.n_name (TEXT), revenue (FLOAT8)}
      => in schema: {(2) default.nation.n_name (TEXT), revenue (FLOAT8)}

@@ -54,7 +54,7 @@ Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
 [q_0000000000000_0000] 3 => 4 (type=RANGE_SHUFFLE, key=default.n1.n_nationkey (INT4), num=32)
 
 SORT(10)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
    JOIN(6)(INNER)
      => Join Cond: default.n1.n_name (TEXT) = ?upper_1 (TEXT)
      => target list: default.n1.n_nationkey (INT4), default.n1.n_name (TEXT), default.n2.n_name (TEXT)
@@ -78,7 +78,7 @@ Block Id: eb_0000000000000_0000_000004 [ROOT]
  0: sorted input=eb_0000000000000_0000_000003
 
 SORT(3)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last)
    SCAN(11) on eb_0000000000000_0000_000003
      => out schema: {(3) default.n1.n_nationkey (INT4), default.n1.n_name (TEXT), default.n2.n_name (TEXT)}
      => in schema: {(3) default.n1.n_nationkey (INT4), default.n1.n_name (TEXT), default.n2.n_name (TEXT)}
