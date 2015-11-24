@@ -134,6 +134,7 @@ public class ExternalSortExec extends SortExec {
     this.localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
     this.localFS = new RawLocalFileSystem();
     this.intermediateMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    this.inputStats = new TableStats();
   }
 
   public ExternalSortExec(final TaskAttemptContext context,final SortNode plan, final ScanNode scanNode,
@@ -155,7 +156,6 @@ public class ExternalSortExec extends SortExec {
 
   @Override
   public void init() throws IOException {
-    this.inputStats = new TableStats();
     if(allocatedCoreNum > 1) {
       this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
     }
@@ -807,13 +807,6 @@ public class ExternalSortExec extends SortExec {
 
     if (result != null) {
       result.close();
-      try {
-        inputStats = (TableStats)result.getInputStats().clone();
-        inputStats.setNumBytes(inputBytes);
-      } catch (CloneNotSupportedException e) {
-        LOG.warn(e.getMessage());
-      }
-      result = null;
     }
 
     if (finalOutputFiles != null) {
@@ -865,18 +858,13 @@ public class ExternalSortExec extends SortExec {
   @Override
   public TableStats getInputStats() {
     if (result != null) {
-      TableStats stats = null;
-      try {
-        stats = (TableStats) result.getInputStats().clone();
-        stats.setNumBytes(inputBytes);
-      } catch (CloneNotSupportedException e) {
-        LOG.error(e.getMessage(), e);
-      }
 
-      return stats;
-    } else {
-      return inputStats;
+      TableStats tableStats = result.getInputStats();
+      inputStats.setNumRows(tableStats.getNumRows());
+      inputStats.setNumBytes(inputBytes);
+      inputStats.setReadBytes(tableStats.getReadBytes());
     }
+    return inputStats;
   }
 
   private static class Chunk {
