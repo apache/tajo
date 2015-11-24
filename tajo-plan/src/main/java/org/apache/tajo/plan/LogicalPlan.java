@@ -456,7 +456,7 @@ public class LogicalPlan {
     /** It contains a planning log for this block */
     private final List<String> planingHistory = Lists.newArrayList();
     /** It is for debugging or unit tests */
-    private Target[] rawTargets;
+    private List<Target> rawTargets;
 
     public QueryBlock(String blockName) {
       this.blockName = blockName;
@@ -487,11 +487,11 @@ public class LogicalPlan {
       return rootType;
     }
 
-    public Target [] getRawTargets() {
+    public List<Target> getRawTargets() {
       return rawTargets;
     }
 
-    public void setRawTargets(Target[] rawTargets) {
+    public void setRawTargets(List<Target> rawTargets) {
       this.rawTargets = rawTargets;
     }
 

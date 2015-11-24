@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(5)
-  => Sort Keys: default.region.r_name (TEXT) (asc),s1 (TEXT) (asc)
+  => Sort Keys: default.region.r_name (TEXT) (asc, nulls last),s1 (TEXT) (asc, nulls last)
    JOIN(9)(LEFT_OUTER)
      => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
      => target list: CASE WHEN default.supplier.s_name (TEXT) IS NULL THEN N/O ELSE default.supplier.s_name (TEXT) END as s1, default.region.r_name (TEXT)
@@ -119,7 +119,7 @@ Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
 [q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.region.r_name (TEXT), s1 (TEXT), num=32)
 
 SORT(15)
-  => Sort Keys: default.region.r_name (TEXT) (asc),s1 (TEXT) (asc)
+  => Sort Keys: default.region.r_name (TEXT) (asc, nulls last),s1 (TEXT) (asc, nulls last)
    JOIN(9)(LEFT_OUTER)
      => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
      => target list: CASE WHEN default.supplier.s_name (TEXT) IS NULL THEN N/O ELSE default.supplier.s_name (TEXT) END as s1, default.region.r_name (TEXT)
@@ -143,7 +143,7 @@ Block Id: eb_0000000000000_0000_000006 [ROOT]
  0: sorted input=eb_0000000000000_0000_000005
 
 SORT(5)
-  => Sort Keys: default.region.r_name (TEXT) (asc),s1 (TEXT) (asc)
+  => Sort Keys: default.region.r_name (TEXT) (asc, nulls last),s1 (TEXT) (asc, nulls last)
    SCAN(16) on eb_0000000000000_0000_000005
      => out schema: {(2) default.region.r_name (TEXT), s1 (TEXT)}
      => in schema: {(2) default.region.r_name (TEXT), s1 (TEXT)}

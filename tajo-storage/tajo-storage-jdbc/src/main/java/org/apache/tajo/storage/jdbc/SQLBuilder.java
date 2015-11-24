@@ -29,6 +29,7 @@ import org.apache.tajo.util.StringUtils;
 
 import javax.annotation.Nullable;
 import java.sql.DatabaseMetaData;
+import java.util.List;
 import java.util.Stack;
 
 /**
@@ -153,7 +154,7 @@ public class SQLBuilder {
   public void visitScan(SQLBuilderContext ctx, ScanNode scan, Stack<LogicalNode> stack) {
 
     StringBuilder selectClause = new StringBuilder("SELECT ");
-    if (scan.getTargets().length > 0) {
+    if (scan.getTargets().size() > 0) {
       selectClause.append(generateTargetList(scan.getTargets()));
     } else {
       selectClause.append("1");
@@ -172,7 +173,7 @@ public class SQLBuilder {
     }
   }
 
-  public String generateTargetList(Target [] targets) {
+  public String generateTargetList(List<Target> targets) {
     return StringUtils.join(targets, ",", new Function<Target, String>() {
       @Override
       public String apply(@Nullable Target t) {

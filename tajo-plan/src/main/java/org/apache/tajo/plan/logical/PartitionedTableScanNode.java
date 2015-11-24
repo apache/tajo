@@ -27,6 +27,8 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
+
 public class PartitionedTableScanNode extends ScanNode {
   @Expose Path [] inputPaths;
 
@@ -72,44 +74,44 @@ public class PartitionedTableScanNode extends ScanNode {
     return Objects.hashCode(this.tableDesc, this.qual, this.targets);
   }
 	
-	@Override
-	public boolean equals(Object obj) {
-	  if (obj instanceof PartitionedTableScanNode) {
-	    PartitionedTableScanNode other = (PartitionedTableScanNode) obj;
-	    
-	    boolean eq = super.equals(other); 
-	    eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
-	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
-	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
-      eq = eq && TUtil.checkEquals(this.inputPaths, other.inputPaths);
-	    
-	    return eq;
-	  }	  
-	  
-	  return false;
-	}	
-	
-	@Override
-	public Object clone() throws CloneNotSupportedException {
-	  PartitionedTableScanNode unionScan = (PartitionedTableScanNode) super.clone();
-	  
-	  unionScan.tableDesc = (TableDesc) this.tableDesc.clone();
-	  
-	  if (hasQual()) {
-	    unionScan.qual = (EvalNode) this.qual.clone();
-	  }
-	  
-	  if (hasTargets()) {
-	    unionScan.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        unionScan.targets[i] = (Target) targets[i].clone();
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof PartitionedTableScanNode) {
+      PartitionedTableScanNode other = (PartitionedTableScanNode) obj;
+
+      boolean eq = super.equals(other);
+      eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
+      eq = eq && TUtil.checkEquals(this.qual, other.qual);
+      eq = eq && TUtil.checkEquals(this.targets, other.targets);
+    eq = eq && TUtil.checkEquals(this.inputPaths, other.inputPaths);
+
+      return eq;
+    }
+
+    return false;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    PartitionedTableScanNode unionScan = (PartitionedTableScanNode) super.clone();
+
+    unionScan.tableDesc = (TableDesc) this.tableDesc.clone();
+
+    if (hasQual()) {
+      unionScan.qual = (EvalNode) this.qual.clone();
+    }
+
+    if (hasTargets()) {
+      unionScan.targets = new ArrayList<>();
+      for (Target t : targets) {
+        unionScan.targets.add((Target) t.clone());
       }
-	  }
+    }
 
     unionScan.inputPaths = inputPaths;
 
     return unionScan;
-	}
+  }
 	
   @Override
   public void preOrder(LogicalNodeVisitor visitor) {

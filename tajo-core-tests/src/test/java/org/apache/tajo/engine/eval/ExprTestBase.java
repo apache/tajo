@@ -130,7 +130,7 @@ public class ExprTestBase {
    * @param condition this parameter means whether it is for success case or is not for failure case.
    * @return
    */
-  private static Target[] getRawTargets(QueryContext context, String query, boolean condition)
+  private static List<Target> getRawTargets(QueryContext context, String query, boolean condition)
       throws TajoException, InvalidStatementException {
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
@@ -154,7 +154,7 @@ public class ExprTestBase {
       assertFalse(state.getErrors().get(0).getMessage(), true);
     }
 
-    Target [] targets = plan.getRootBlock().getRawTargets();
+    List<Target> targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new RuntimeException("Wrong query statement or query plan: " + parsedResults.get(0).getHistoryStatement());
     }
@@ -270,7 +270,7 @@ public class ExprTestBase {
       }
     }
 
-    Target [] targets;
+    List<Target> targets;
 
     TajoClassLoader classLoader = new TajoClassLoader();
     EvalContext evalContext = new EvalContext();
@@ -284,9 +284,9 @@ public class ExprTestBase {
       }
 
       QueryExecutor.startScriptExecutors(queryContext, evalContext, targets);
-      Tuple outTuple = new VTuple(targets.length);
-      for (int i = 0; i < targets.length; i++) {
-        EvalNode eval = targets[i].getEvalTree();
+      Tuple outTuple = new VTuple(targets.size());
+      for (int i = 0; i < targets.size(); i++) {
+        EvalNode eval = targets.get(i).getEvalTree();
 
         if (queryContext.getBool(SessionVars.CODEGEN)) {
           eval = codegen.compile(inputSchema, eval);

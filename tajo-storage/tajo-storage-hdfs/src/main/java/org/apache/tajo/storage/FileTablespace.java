@@ -178,21 +178,6 @@ public class FileTablespace extends Tablespace {
     return getAppender(null, null, meta, schema, filePath);
   }
 
-  public FileFragment[] split(String tableName) throws IOException {
-    Path tablePath = new Path(spacePath, tableName);
-    return split(tableName, tablePath, fs.getDefaultBlockSize());
-  }
-
-  public FileFragment[] split(String tableName, long fragmentSize) throws IOException {
-    Path tablePath = new Path(spacePath, tableName);
-    return split(tableName, tablePath, fragmentSize);
-  }
-
-  public FileFragment[] split(Path tablePath) throws IOException {
-    FileSystem fs = tablePath.getFileSystem(conf);
-    return split(tablePath.getName(), tablePath, fs.getDefaultBlockSize());
-  }
-
   public FileFragment[] split(String tableName, Path tablePath) throws IOException {
     return split(tableName, tablePath, fs.getDefaultBlockSize());
   }

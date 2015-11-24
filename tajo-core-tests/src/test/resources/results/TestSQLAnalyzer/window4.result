@@ -17,8 +17,7 @@
                 "ColumnName": "dt",
                 "OpType": "Column"
               },
-              "IsAsc": true,
-              "IsNullFirst": false
+              "IsAsc": true
             }
           ]
         },

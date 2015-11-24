@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(4)
-  => Sort Keys: default.customer.c_custkey (INT4) (asc)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last)
    GROUP_BY(3)(c_custkey)
      => exprs: (sum(default.empty_orders.o_orderkey (INT4)),max(default.empty_orders.o_orderstatus (TEXT)),max(default.empty_orders.o_orderdate (TEXT)))
      => target list: default.customer.c_custkey (INT4), ?sum (INT8), ?max_1 (TEXT), ?max_2 (TEXT)
@@ -78,7 +78,7 @@ Block Id: eb_0000000000000_0000_000004 [INTERMEDIATE]
 [q_0000000000000_0000] 4 => 5 (type=RANGE_SHUFFLE, key=default.customer.c_custkey (INT4), num=32)
 
 SORT(13)
-  => Sort Keys: default.customer.c_custkey (INT4) (asc)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last)
    GROUP_BY(3)(c_custkey)
      => exprs: (sum(?sum_5 (INT8)),max(?max_6 (TEXT)),max(?max_7 (TEXT)))
      => target list: default.customer.c_custkey (INT4), ?sum (INT8), ?max_1 (TEXT), ?max_2 (TEXT)
@@ -99,7 +99,7 @@ Block Id: eb_0000000000000_0000_000005 [ROOT]
  0: sorted input=eb_0000000000000_0000_000004
 
 SORT(4)
-  => Sort Keys: default.customer.c_custkey (INT4) (asc)
+  => Sort Keys: default.customer.c_custkey (INT4) (asc, nulls last)
    SCAN(14) on eb_0000000000000_0000_000004
      => out schema: {(4) ?max_1 (TEXT), ?max_2 (TEXT), ?sum (INT8), default.customer.c_custkey (INT4)}
      => in schema: {(4) ?max_1 (TEXT), ?max_2 (TEXT), ?sum (INT8), default.customer.c_custkey (INT4)}

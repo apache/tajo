@@ -172,10 +172,10 @@ public class WindowAggExec extends UnaryPhysicalExec {
     }
 
     evaluatedTuple = new VTuple(schemaForOrderBy.size());
-    nonFunctionColumnNum = plan.getTargets().length - functionNum;
+    nonFunctionColumnNum = plan.getTargets().size() - functionNum;
     nonFunctionColumns = new int[nonFunctionColumnNum];
-    for (int idx = 0; idx < plan.getTargets().length - functionNum; idx++) {
-      nonFunctionColumns[idx] = inSchema.getColumnId(plan.getTargets()[idx].getCanonicalName());
+    for (int idx = 0; idx < plan.getTargets().size() - functionNum; idx++) {
+      nonFunctionColumns[idx] = inSchema.getColumnId(plan.getTargets().get(idx).getCanonicalName());
     }
 
     outputColumnNum = nonFunctionColumnNum + functionNum;

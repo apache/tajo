@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1984: Removed unused FileTablespace::getSplit methods. (hyunsik)
+
     TAJO-1271: Improve memory usage of Hash-shuffle. (jinho)
 
     TAJO-1966: Decrease memory usage of TajoTestingCluster. (jinho)
@@ -34,6 +36,13 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-1980: Printout the usage of TajoShellCommand.
+    (Contributed by Dongkyu Hwangbo, committed by jaehwa)
+
+    TAJO-1981: Invalid nulls sort order in VectorizedSorter. (jihoon)
+
+    TAJO-1935: Some Tasks don't work after they become TA_ASSIGNED. (jinho)
 
     TAJO-1977: Cannot recognize the space-contained tablename and databasename.
     (Contributed by Dongkyu Hwangbo, committed by jihoon)
@@ -98,6 +107,9 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-1946: Change Projectable::setTargets and getTargets to set and get
+    List<Target>. (Contributed by Dongkyu Hwangbo, Committed by jihoon)
 
     TAJO-1877: Adopt try-resource statement to AbstractDBStore. 
     (Contributed by Dongkyu Hwangbo, Committed by jihoon)

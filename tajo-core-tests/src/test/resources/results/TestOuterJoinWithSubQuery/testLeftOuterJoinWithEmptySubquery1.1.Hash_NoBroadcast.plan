@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(7)
-  => Sort Keys: default.a.id (INT4) (asc)
+  => Sort Keys: default.a.id (INT4) (asc, nulls last)
    JOIN(11)(LEFT_OUTER)
      => Join Cond: default.a.id (INT4) = default.b.id (INT4)
      => target list: default.a.id (INT4), default.b.id (INT4)
@@ -133,7 +133,7 @@ Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
 [q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.a.id (INT4), num=32)
 
 SORT(17)
-  => Sort Keys: default.a.id (INT4) (asc)
+  => Sort Keys: default.a.id (INT4) (asc, nulls last)
    JOIN(11)(LEFT_OUTER)
      => Join Cond: default.a.id (INT4) = default.b.id (INT4)
      => target list: default.a.id (INT4), default.b.id (INT4)
@@ -157,7 +157,7 @@ Block Id: eb_0000000000000_0000_000006 [ROOT]
  0: sorted input=eb_0000000000000_0000_000005
 
 SORT(7)
-  => Sort Keys: default.a.id (INT4) (asc)
+  => Sort Keys: default.a.id (INT4) (asc, nulls last)
    SCAN(18) on eb_0000000000000_0000_000005
      => out schema: {(2) default.a.id (INT4), default.b.id (INT4)}
      => in schema: {(2) default.a.id (INT4), default.b.id (INT4)}

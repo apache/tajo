@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(8)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc),default.n2.n_name (TEXT) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last),default.n2.n_name (TEXT) (asc, nulls last)
    JOIN(11)(INNER)
      => Join Cond: ?substr_1 (TEXT) = ?substr_2 (TEXT)
      => target list: default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)
@@ -111,7 +111,7 @@ Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
 [q_0000000000000_0000] 3 => 5 (type=RANGE_SHUFFLE, key=default.n1.n_nationkey (INT4), default.n2.n_name (TEXT), num=32)
 
 SORT(18)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc),default.n2.n_name (TEXT) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last),default.n2.n_name (TEXT) (asc, nulls last)
    JOIN(11)(INNER)
      => Join Cond: ?substr_1 (TEXT) = ?substr_2 (TEXT)
      => target list: default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)
@@ -135,7 +135,7 @@ Block Id: eb_0000000000000_0000_000005 [ROOT]
  0: sorted input=eb_0000000000000_0000_000003
 
 SORT(8)
-  => Sort Keys: default.n1.n_nationkey (INT4) (asc),default.n2.n_name (TEXT) (asc)
+  => Sort Keys: default.n1.n_nationkey (INT4) (asc, nulls last),default.n2.n_name (TEXT) (asc, nulls last)
    SCAN(19) on eb_0000000000000_0000_000003
      => out schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}
      => in schema: {(3) default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n2.n_name (TEXT)}

@@ -31,6 +31,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 
@@ -90,13 +91,11 @@ public class TupleUtil {
         continue;
       }
       if (columnStat.hasNullValue()) {
-        if (sortSpecs[i].isNullFirst()) {
-          int rangeIndex = 0;
-          VTuple rangeTuple = (VTuple) ranges[rangeIndex].getStart();
+        if (sortSpecs[i].isNullsFirst()) {
+          Tuple rangeTuple = ranges[0].getStart();
           rangeTuple.put(i, NullDatum.get());
         } else {
-          int rangeIndex = sortSpecs[i].isAscending() ? ranges.length - 1 : 0;
-          VTuple rangeTuple = sortSpecs[i].isAscending() ? (VTuple) ranges[rangeIndex].getEnd() : (VTuple) ranges[rangeIndex].getStart();
+          Tuple rangeTuple = ranges[ranges.length - 1].getEnd();
           if (LOG.isDebugEnabled()) {
             LOG.debug("Set null into range: " + col.getQualifiedName() + ", previous tuple is " + rangeTuple);
           }

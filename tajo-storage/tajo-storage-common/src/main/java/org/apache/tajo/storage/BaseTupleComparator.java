@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -68,7 +67,7 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
       }
           
       this.asc[i] = sortKeys[i].isAscending();
-      this.nullFirsts[i]= sortKeys[i].isNullFirst();
+      this.nullFirsts[i]= sortKeys[i].isNullsFirst();
     }
   }
 
