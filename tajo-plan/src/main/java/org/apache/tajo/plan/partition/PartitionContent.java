@@ -25,18 +25,6 @@ public class PartitionContent {
   private String[] partitionKeys;
   private long totalVolume;
 
-  public PartitionContent() {
-  }
-
-  public PartitionContent(Path[] partitionPaths) {
-    this.partitionPaths = partitionPaths;
-  }
-
-  public PartitionContent(Path[] partitionPaths, long totalVolume) {
-    this.partitionPaths = partitionPaths;
-    this.totalVolume = totalVolume;
-  }
-
   public PartitionContent(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
     this.partitionPaths = partitionPaths;
     this.partitionKeys = partitionKeys;
@@ -47,23 +35,11 @@ public class PartitionContent {
     return partitionPaths;
   }
 
-  public void setPartitionPaths(Path[] partitionPaths) {
-    this.partitionPaths = partitionPaths;
-  }
-
   public String[] getPartitionKeys() {
     return partitionKeys;
   }
 
-  public void setPartitionKeys(String[] partitionKeys) {
-    this.partitionKeys = partitionKeys;
-  }
-
   public long getTotalVolume() {
     return totalVolume;
-  }
-
-  public void setTotalVolume(long totalVolume) {
-    this.totalVolume = totalVolume;
   }
 }

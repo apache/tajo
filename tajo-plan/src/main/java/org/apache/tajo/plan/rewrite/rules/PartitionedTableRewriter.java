@@ -207,7 +207,6 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    */
   private PartitionContent getPartitionContentByFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
                                                   FileSystem fs, Path tablePath) throws IOException{
-    PartitionContent partitionContent = new PartitionContent();
     Path [] filteredPaths = null;
     PathFilter [] filters;
     int startIdx;
@@ -239,11 +238,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       totalVolume += summary.getLength();
     }
 
-    partitionContent.setPartitionPaths(filteredPaths);
-    partitionContent.setPartitionKeys(partitionKeys);
-    partitionContent.setTotalVolume(totalVolume);
-
-    return partitionContent;
+    return new PartitionContent(filteredPaths, partitionKeys, totalVolume);
   }
 
   /**
