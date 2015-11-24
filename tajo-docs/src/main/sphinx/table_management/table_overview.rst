@@ -75,7 +75,8 @@ There are some common table properties which are used in most tables.
 
 Compression
 -----------
-.. todo::
+
+See :doc:`compression`.
 
 Time zone
 ---------
