@@ -208,7 +208,7 @@ public class CatalogTestingUtil {
         new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
     desc.setStats(buildTableStats());
-    desc.getMeta().setOptions(buildOptions());
+    desc.getMeta().setPropertySet(buildOptions());
     return desc;
   }
 

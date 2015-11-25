@@ -36,48 +36,48 @@ import java.util.Map;
  */
 public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObject, Cloneable {
 	@Expose protected String dataFormat;
-	@Expose protected KeyValueSet options;
+	@Expose protected KeyValueSet propertySet;
 	
-	public TableMeta(String dataFormat, KeyValueSet options) {
+	public TableMeta(String dataFormat, KeyValueSet propertySet) {
     this.dataFormat = dataFormat;
-    this.options = new KeyValueSet(options);
+    this.propertySet = new KeyValueSet(propertySet);
   }
 	
 	public TableMeta(TableProto proto) {
     this.dataFormat = proto.getDataFormat();
-    this.options = new KeyValueSet(proto.getParams());
+    this.propertySet = new KeyValueSet(proto.getParams());
 	}
 	
 	public String getDataFormat() {
 		return this.dataFormat;
 	}
 	
-  public void setOptions(KeyValueSet options) {
-    this.options = options;
+  public void setPropertySet(KeyValueSet options) {
+    this.propertySet = options;
   }
 
-  public void putOption(String key, String val) {
-    options.set(key, val);
+  public KeyValueSet getPropertySet() {
+    return propertySet;
   }
 
-  public boolean containsOption(String key) {
-    return options.containsKey(key);
+  public void putProperty(String key, String val) {
+    propertySet.set(key, val);
   }
 
-  public String getOption(String key) {
-    return options.get(key);
+  public boolean containsProperty(String key) {
+    return propertySet.containsKey(key);
   }
 
-  public String getOption(String key, String defaultValue) {
-    return options.get(key, defaultValue);
+  public String getProperty(String key) {
+    return propertySet.get(key);
   }
 
-  public KeyValueSet getOptions() {
-    return options;
+  public String getProperty(String key, String defaultValue) {
+    return propertySet.get(key, defaultValue);
   }
 
   public Map<String,String> toMap() {
-    return getOptions().getAllKeyValus();
+    return getPropertySet().getAllKeyValus();
   }
 	
 	public boolean equals(Object object) {
@@ -85,7 +85,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 			TableMeta other = (TableMeta) object;
 
 			boolean eq = this.getDataFormat().equals(other.getDataFormat());
-			eq = eq && this.getOptions().equals(other.getOptions());
+			eq = eq && this.getPropertySet().equals(other.getPropertySet());
 			return eq;
 		}
 		
@@ -93,14 +93,14 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	}
 	
 	public int hashCode() {
-	  return Objects.hashCode(getDataFormat(), getOptions());
+	  return Objects.hashCode(getDataFormat(), getPropertySet());
 	}
 	
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 	  TableMeta meta = (TableMeta) super.clone();
     meta.dataFormat = getDataFormat();
-    meta.options = (KeyValueSet) (toMap() != null ? options.clone() : null);
+    meta.propertySet = (KeyValueSet) (toMap() != null ? propertySet.clone() : null);
     return meta;
 	}
 	
@@ -116,7 +116,7 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	public TableProto getProto() {
     TableProto.Builder builder = TableProto.newBuilder();
     builder.setDataFormat(dataFormat);
-    builder.setParams(options.getProto());
+    builder.setParams(propertySet.getProto());
     return builder.build();
 	}
 

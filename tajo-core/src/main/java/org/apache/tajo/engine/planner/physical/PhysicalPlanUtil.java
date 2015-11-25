@@ -211,11 +211,11 @@ public class PhysicalPlanUtil {
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
     String dataFormat = meta.getDataFormat();
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+      meta.putProperty(StorageConstants.TEXT_NULL, nullChar);
     }  else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
-      meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
+      meta.putProperty(StorageConstants.RCFILE_NULL, nullChar);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
-      meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
+      meta.putProperty(StorageConstants.SEQUENCEFILE_NULL, nullChar);
     }
   }
 
@@ -228,11 +228,11 @@ public class PhysicalPlanUtil {
   public static boolean containsNullChar(TableMeta meta) {
     String dataFormat = meta.getDataFormat();
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      return meta.containsOption(StorageConstants.TEXT_NULL);
+      return meta.containsProperty(StorageConstants.TEXT_NULL);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
-      return meta.containsOption(StorageConstants.RCFILE_NULL);
+      return meta.containsProperty(StorageConstants.RCFILE_NULL);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
-      return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
+      return meta.containsProperty(StorageConstants.SEQUENCEFILE_NULL);
     } else {
       return false;
     }
