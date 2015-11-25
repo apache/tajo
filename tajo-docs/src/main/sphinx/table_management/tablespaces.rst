@@ -8,9 +8,11 @@ Tablespaces in Tajo allow users to define locations in the storage system where 
 Configuration
 =============
 
-By default, Tajo use in ``${tajo.rootdir}/warehouse`` in ``conf/tajo-site.xml`` as a default tablespace. It also allows users to register additional tablespaces. 
+By default, Tajo use in ``${tajo.rootdir}/warehouse`` in :doc:`conf/tajo-site.xml</configuration/tajo-site-xml>` as a default tablespace. It also allows users to register additional tablespaces like below.
 
-``conf/storage-site.json`` file.
+---------------------------
+conf/storage-site.json file
+---------------------------
 
 The configuration file has the following struct:
 
@@ -39,6 +41,8 @@ The following is an example for two tablespaces for hbase and hdfs:
       }
     }
   }
+
+For more tails, see :doc:`conf/storage-site.json</configuration/storage-site-json>`.
 
 
 .. note::
