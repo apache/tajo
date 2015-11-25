@@ -1887,7 +1887,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setPartitionMethod(partitionDesc);
 
     createTableNode.setDataFormat(CatalogUtil.getBackwardCompitableDataFormat(baseTable.getMeta().getDataFormat()));
-    createTableNode.setOptions(baseTable.getMeta().getOptions());
+    createTableNode.setOptions(baseTable.getMeta().getPropertySet());
 
     createTableNode.setExternal(baseTable.isExternal());
     if(baseTable.isExternal()) {

@@ -83,10 +83,10 @@ public class SequenceFileAppender extends FileAppender {
 
     this.fs = path.getFileSystem(conf);
 
-    this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_DELIMITER,
+    this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getProperty(StorageConstants.SEQUENCEFILE_DELIMITER,
         StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
     this.columnNum = schema.size();
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL,
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getProperty(StorageConstants.SEQUENCEFILE_NULL,
         NullDatum.DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
@@ -94,8 +94,8 @@ public class SequenceFileAppender extends FileAppender {
       nullChars = nullCharacters.getBytes();
     }
 
-    if(this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
-      String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
+    if(this.meta.containsProperty(StorageConstants.COMPRESSION_CODEC)) {
+      String codecName = this.meta.getProperty(StorageConstants.COMPRESSION_CODEC);
       codecFactory = new CompressionCodecFactory(conf);
       codec = codecFactory.getCodecByClassName(codecName);
     } else {
@@ -105,7 +105,7 @@ public class SequenceFileAppender extends FileAppender {
     }
 
     try {
-      String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE,
+      String serdeClass = this.meta.getProperty(StorageConstants.SEQUENCEFILE_SERDE,
           TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       serde.init(schema);
@@ -125,7 +125,7 @@ public class SequenceFileAppender extends FileAppender {
       valueClass = Text.class;
     }
 
-    String type = this.meta.getOption(StorageConstants.COMPRESSION_TYPE, CompressionType.NONE.name());
+    String type = this.meta.getProperty(StorageConstants.COMPRESSION_TYPE, CompressionType.NONE.name());
     if (type.equals(CompressionType.BLOCK.name())) {
       writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.BLOCK, codec);
     } else if (type.equals(CompressionType.RECORD.name())) {
