@@ -82,8 +82,8 @@ public class TablePropertyUtil {
   private static void setProperty(OverridableConf context, SessionVars sessionVarKey,
                           TableMeta meta, String propertyKey) {
 
-    if (!meta.containsOption(propertyKey)) {
-      meta.putOption(propertyKey, context.get(sessionVarKey));
+    if (!meta.containsProperty(propertyKey)) {
+      meta.putProperty(propertyKey, context.get(sessionVarKey));
     }
   }
 }

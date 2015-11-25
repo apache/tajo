@@ -251,7 +251,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getDataFormat()));
 
 
-    KeyValueSet options = desc.getMeta().getOptions();
+    KeyValueSet options = desc.getMeta().getPropertySet();
     assertNotNull(options);
     assertEquals(StringEscapeUtils.escapeJava("\u0001"), options.get(StorageConstants.TEXT_DELIMITER));
   }

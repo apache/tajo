@@ -8,6 +8,11 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1986: Rename the name 'option' to 'property' in TableMeta. (hyunsik)
+
+    TAJO-1988: Remove some duplicated codes in toString() of Projectable.
+    (hyunsik)
+ 
     TAJO-1984: Removed unused FileTablespace::getSplit methods. (hyunsik)
 
     TAJO-1271: Improve memory usage of Hash-shuffle. (jinho)

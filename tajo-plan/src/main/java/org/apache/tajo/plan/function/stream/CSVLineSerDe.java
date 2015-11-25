@@ -36,7 +36,7 @@ public class CSVLineSerDe extends TextLineSerDe {
   }
 
   public static byte[] getFieldDelimiter(TableMeta meta) {
-    return StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_DELIMITER,
+    return StringEscapeUtils.unescapeJava(meta.getProperty(StorageConstants.TEXT_DELIMITER,
         StorageConstants.DEFAULT_FIELD_DELIMITER)).getBytes(Bytes.UTF8_CHARSET);
   }
 }
