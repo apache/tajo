@@ -43,6 +43,8 @@ Release 0.11.1 - unreleased
 
   TASKS
 
+    TAJO-1989: Upgrade Maven Surefire Plugin to 2.19. (jinho)
+
     TAJO-1975: Gathering fine-grained column statistics for range shuffle. (jihoon)
 
     TAJO-1963: Add more configuration descriptions to document. (jihoon)
