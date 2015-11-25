@@ -174,7 +174,7 @@ public class Fetcher {
       long elapsedMills = finishTime - startTime;
       String transferSpeed;
       if(elapsedMills > 1000) {
-        long bytePerSec = ((fileChunk.length() * 1000) / elapsedMills) / 1000;
+        long bytePerSec = (fileChunk.length() * 1000) / elapsedMills;
         transferSpeed = FileUtils.byteCountToDisplaySize(bytePerSec);
       } else {
         transferSpeed = FileUtils.byteCountToDisplaySize(Math.max(fileChunk.length(), 0));
