@@ -22,6 +22,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.Target;
@@ -99,15 +100,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     }
 
     if (hasTargets()) {
-      planStr.addExplan("target list: ");
-      boolean first = true;
-      for (Target target : targets) {
-        if (!first) {
-          planStr.appendExplain(", ");
-        }
-        planStr.appendExplain(target.toString());
-        first = false;
-      }
+      planStr.addExplan("target list: ").appendExplain(StringUtils.join(targets, ", "));
     }
 
     planStr.addDetail("out schema: " + getOutSchema());

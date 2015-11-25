@@ -59,12 +59,12 @@ public class TestAvroUtil {
   @Test
   public void testGetSchema() throws IOException, URISyntaxException {
     TableMeta meta = CatalogUtil.newTableMeta("AVRO");
-    meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, FileUtil.readTextFile(new File(schemaUrl.getPath())));
+    meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, FileUtil.readTextFile(new File(schemaUrl.getPath())));
     Schema schema = AvroUtil.getAvroSchema(meta, new TajoConf());
     assertEquals(expected, schema);
 
     meta = CatalogUtil.newTableMeta("AVRO");
-    meta.putOption(StorageConstants.AVRO_SCHEMA_URL, schemaUrl.getPath());
+    meta.putProperty(StorageConstants.AVRO_SCHEMA_URL, schemaUrl.getPath());
     schema = AvroUtil.getAvroSchema(meta, new TajoConf());
     assertEquals(expected, schema);
 
@@ -75,7 +75,7 @@ public class TestAvroUtil {
 
       String url = "http://127.0.0.1:" + addr.getPort() + schemaUrl.getPath();
       meta = CatalogUtil.newTableMeta("AVRO");
-      meta.putOption(StorageConstants.AVRO_SCHEMA_URL, url);
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_URL, url);
       schema = AvroUtil.getAvroSchema(meta, new TajoConf());
     } finally {
       server.stop();
