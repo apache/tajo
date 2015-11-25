@@ -126,15 +126,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
         tableDesc.getStats().getNumRows());
 
-    res = executeString("SELECT * FROM " + tableName + " WHERE key in (17.0, 45.0) ORDER BY key");
-    String result = resultSetToString(res);
-    String expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
-      "1,1,17.0\n" +
-      "3,2,45.0\n";
-    res.close();
-    assertEquals(expectedResult, result);
-
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
@@ -217,7 +208,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"key"},
-      tableDesc.getStats().getNumRows());
+        tableDesc.getStats().getNumRows());
 
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
@@ -748,24 +739,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     verifyPartitionDirectoryFromCatalog(DEFAULT_DATABASE_NAME, tableName, new String[]{"col1", "col2"},
         desc.getStats().getNumRows());
 
-    res = executeString("SELECT * FROM " + tableName + " WHERE col2 in (2, 3) ORDER BY col3, col4");
-    String result = resultSetToString(res);
-    String expectedResult = "col3,col4,col1,col2\n" +
-      "-------------------------------\n" +
-      "38.0,N,2,2\n" +
-      "45.0,R,3,2\n" +
-      "49.0,R,3,3\n";
-    res.close();
-    assertEquals(expectedResult, result);
-
-    res = executeString("SELECT * FROM " + tableName + " WHERE col1 in (1, 3) and col2 = 1 ORDER BY col3, col4");
-    result = resultSetToString(res);
-    expectedResult = "col3,col4,col1,col2\n" +
-      "-------------------------------\n" +
-      "17.0,N,1,1\n" +
-      "36.0,N,1,1\n";
-    res.close();
-    assertEquals(expectedResult, result);
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
 
@@ -1569,19 +1542,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertEquals(expectedResult, resultSetToString(res));
     res.close();
 
-    // IN
-    res = executeString("SELECT * FROM " + tableName
-      + " WHERE key IN (DATE '1994-02-02',  DATE '1993-11-09') order by col1, " +
-      "col2, key desc");
-
-    expectedResult = "col1,col2,key\n" +
-      "-------------------------------\n" +
-      "3,2,1994-02-02\n" +
-      "3,3,1993-11-09\n";
-
-    assertEquals(expectedResult, resultSetToString(res));
-    res.close();
-
     executeString("DROP TABLE " + tableName + " PURGE").close();
     res.close();
   }
@@ -1877,4 +1837,72 @@ public class TestTablePartitions extends QueryTestCaseBase {
     executeString("DROP TABLE " + externalTableName).close();
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
+
+  @Test
+  public final void testPartitionWithInOperator() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testPartitionWithInOperator");
+    String result, expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      res = testBase.execute(
+        "create table " + tableName + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
+      res.close();
+      TajoTestingCluster cluster = testBase.getTestingCluster();
+      CatalogService catalog = cluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+      res = executeString("insert overwrite into " + tableName
+        + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+    } else {
+      res = executeString( "create table " + tableName + " (col4 text) "
+        + " partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
+        "l_quantity from lineitem");
+    }
+    res.close();
+
+    res = executeString("select * from " + tableName);
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,17.0\n" +
+      "N,1,1,36.0\n" +
+      "N,2,2,38.0\n" +
+      "R,3,2,45.0\n" +
+      "R,3,3,49.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("select * from " + tableName + " WHERE col1 in (1, 2) order by col3");
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,17.0\n" +
+      "N,1,1,36.0\n" +
+      "N,2,2,38.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("select * from " + tableName + " WHERE col1 in (2, 3) and col2 = 2 order by col3");
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,2,2,38.0\n" +
+      "R,3,2,45.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("select * from " + tableName + " WHERE col1 in (1, 2, 3) and col2 in (1, 3) and col3 < 30 " +
+      " order by col3");
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,17.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+  }
+
 }
