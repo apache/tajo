@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util.metrics;
 
+import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
@@ -50,6 +51,8 @@ public class TajoSystemMetrics extends TajoMetrics {
   private boolean inited = false;
 
   private String metricsPropertyFileName;
+
+  private JmxReporter jmxReporter;
 
   public TajoSystemMetrics(TajoConf tajoConf, Class clazz, String hostAndPort) {
     super(MetricsUtil.getGroupName(clazz));
@@ -106,6 +109,7 @@ public class TajoSystemMetrics extends TajoMetrics {
 
       metricsReporters.clear();
     }
+    jmxReporter.close();
   }
 
   public void start() {
@@ -113,6 +117,9 @@ public class TajoSystemMetrics extends TajoMetrics {
 
     final String jvmMetricsName = metricsGroupName + "-JVM";
     setMetricsReporter(jvmMetricsName);
+    jmxReporter = JmxReporter.forRegistry(metricRegistry).inDomain("Tajo")
+            .createsObjectNamesWith(new TajoJMXObjectNameFactory()).build();
+    jmxReporter.start();
 
     if(!inited) {
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "MEMORY"), new MemoryUsageGaugeSet());
