@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -84,6 +85,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     this.catalog = context.getCatalog();
     rewriter.visit(context.getQueryContext(), plan, rootBlock, rootBlock.getRoot(), new Stack<>());
     return plan;
+  }
+
+  public void setCatalog(CatalogService catalog) {
+    this.catalog = catalog;
   }
 
   private static class PartitionPathFilter implements PathFilter {
@@ -348,6 +353,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return paths;
   }
 
+  @VisibleForTesting
   public PartitionContent getPartitionContent(OverridableConf queryContext, ScanNode scanNode) throws IOException,
     UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, UnsupportedException {
