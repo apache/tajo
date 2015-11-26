@@ -416,28 +416,25 @@ public class XMLCatalogSchemaManager {
     }
 
     URL jarFileURL = new URL(spec.substring(0, seperator));
-    JarFile jarFile = new JarFile(jarFileURL.toURI().getPath());
     Set<String> filesSet = new HashSet<>();
-    
-    try {
+
+    try (JarFile jarFile = new JarFile(jarFileURL.toURI().getPath())) {
       Enumeration<JarEntry> entries = jarFile.entries();
-      
+
       while (entries.hasMoreElements()) {
         JarEntry entry = entries.nextElement();
-        
+
         if (entry.isDirectory()) {
           continue;
         }
-        
+
         String entryName = entry.getName();
-        
+
         if (entryName.indexOf(schemaPath) > -1 &&
-            filter.accept(null, entryName)) {
+                filter.accept(null, entryName)) {
           filesSet.add(entryName);
         }
       }
-    } finally {
-      jarFile.close();
     }
     
     if (!filesSet.isEmpty()) {

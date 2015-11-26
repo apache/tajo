@@ -362,12 +362,9 @@ public class TajoMaster extends CompositeService {
     // In TajoMaster HA, some master might see LeaseExpiredException because of lease mismatch. Thus,
     // we need to create below xml file at HdfsServiceTracker::writeSystemConf.
     if (!systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      FSDataOutputStream out = FileSystem.create(defaultFS, systemConfPath,
-        new FsPermission(SYSTEM_CONF_FILE_PERMISSION));
-      try {
+      try (FSDataOutputStream out = FileSystem.create(defaultFS, systemConfPath,
+              new FsPermission(SYSTEM_CONF_FILE_PERMISSION))) {
         systemConf.writeXml(out);
-      } finally {
-        out.close();
       }
       defaultFS.setReplication(systemConfPath, (short) systemConf.getIntVar(ConfVars.SYSTEM_CONF_REPLICA_COUNT));
     }

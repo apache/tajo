@@ -378,23 +378,19 @@ public class TestBlockingRpc {
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
     boolean expected = false;
-    BlockingRpcClient client = null;
-    try {
-      RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionKey(address, DummyProtocol.class, true);
+    RpcConnectionKey rpcConnectionKey =
+        new RpcConnectionKey(address, DummyProtocol.class, true);
 
-      Properties connParams = new Properties();
-      connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, retries + "");
+    Properties connParams = new Properties();
+    connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, retries + "");
 
-      client = new BlockingRpcClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connParams);
+    try (BlockingRpcClient client = new BlockingRpcClient(NettyUtils.getDefaultEventLoopGroup(), rpcConnectionKey, connParams)) {
       client.connect();
       fail();
     } catch (ConnectException e) {
       expected = true;
     } catch (Throwable throwable) {
       fail(throwable.getMessage());
-    } finally {
-      client.close();
     }
     assertTrue(expected);
   }
