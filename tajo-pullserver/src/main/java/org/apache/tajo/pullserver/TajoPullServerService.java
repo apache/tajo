@@ -401,8 +401,8 @@ public class TajoPullServerService extends AbstractService {
       }
 
       if (fileSendTime > 20 * 1000) {
-        LOG.warn("PullServer send too long time: filePos:" + filePart.position()
-            + ", fileLen:" + filePart.count() + ", URI:" + requestUri);
+        LOG.warn("Sending data takes too long. " + fileSendTime + "ms elapsed, " +
+            "length:" + (filePart.count() - filePart.position()) + ", URI:" + requestUri);
         SLOW_FILE_UPDATER.compareAndSet(this, numSlowFile, numSlowFile + 1);
       }
 

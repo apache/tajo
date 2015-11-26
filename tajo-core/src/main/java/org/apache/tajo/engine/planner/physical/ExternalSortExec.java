@@ -112,8 +112,6 @@ public class ExternalSortExec extends SortExec {
   ///////////////////////////////////////////////////
   /** already sorted or not */
   private boolean sorted = false;
-  /** a flag to point whether sorted data resides in memory or not */
-  private boolean memoryResident = true;
   /** the final result */
   private Scanner result;
   /** total bytes of input data */
@@ -228,7 +226,6 @@ public class ExternalSortExec extends SortExec {
         runStartTime = runEndTime;
 
         info(LOG, "Memory consumption exceeds " + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false));
-        memoryResident = false;
 
         chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
         inMemoryTable.clear();
