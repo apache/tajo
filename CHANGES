@@ -8,6 +8,15 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1986: Rename the name 'option' to 'property' in TableMeta. (hyunsik)
+
+    TAJO-1988: Remove some duplicated codes in toString() of Projectable.
+    (hyunsik)
+ 
+    TAJO-1984: Removed unused FileTablespace::getSplit methods. (hyunsik)
+
+    TAJO-1271: Improve memory usage of Hash-shuffle. (jinho)
+
     TAJO-1966: Decrease memory usage of TajoTestingCluster. (jinho)
 
     TAJO-1941: PermGen elimination in JDK 8. (Dongkyu Hwangbo via hyunsik)
@@ -33,6 +42,26 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1862: TSQL gives user wrong URL of documentation. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
+    TAJO-1980: Printout the usage of TajoShellCommand.
+    (Contributed by Dongkyu Hwangbo, committed by jaehwa)
+
+    TAJO-1981: Invalid nulls sort order in VectorizedSorter. (jihoon)
+
+    TAJO-1935: Some Tasks don't work after they become TA_ASSIGNED. (jinho)
+
+    TAJO-1977: Cannot recognize the space-contained tablename and databasename.
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
+    TAJO-1978: Printout message before terminating TSQL.
+    (Contributed by Dongkyu Hwangbo, committed by jaehwa)
+
+    TAJO-1965: TestBlockingRpc::testServerShutdown occassionally fails. (jinho)
+
+    TAJO-1882: Clean up GreedyHeuristicJoinOrderAlgorithm::getCost APIs. (jihoon)
+
     TAJO-1972: Invalid sort order with NULLS FIRST|LAST. (jihoon)
 
     TAJO-1896: Fix the travis test failure. (jinho)
@@ -56,6 +85,12 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-1857: Rename the section of 'File Formats' to 'Data Formats' and fill 
+    compression section of the 'Table Management' chapter. 
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-1975: Gathering fine-grained column statistics for range shuffle. (jihoon)
 
     TAJO-1963: Add more configuration descriptions to document. (jihoon)
 
@@ -84,6 +119,9 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-1946: Change Projectable::setTargets and getTargets to set and get
+    List<Target>. (Contributed by Dongkyu Hwangbo, Committed by jihoon)
 
     TAJO-1877: Adopt try-resource statement to AbstractDBStore. 
     (Contributed by Dongkyu Hwangbo, Committed by jihoon)

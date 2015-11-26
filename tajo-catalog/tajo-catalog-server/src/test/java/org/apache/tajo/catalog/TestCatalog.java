@@ -986,12 +986,12 @@ public class TestCatalog {
     KeyValueSet options = new KeyValueSet();
     options.set("timezone", "GMT+9");   // Seoul, Korea
     setPropertyDesc.setMeta(new TableMeta("TEXT", options));
-    String prevTimeZone = setPropertyDesc.getMeta().getOption("timezone");
+    String prevTimeZone = setPropertyDesc.getMeta().getProperty("timezone");
     String newTimeZone = "GMT-7";       // Silicon Valley, California
     catalog.alterTable(createMockAlterTableSetProperty(newTimeZone));
     setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
-    assertNotEquals(prevTimeZone, setPropertyDesc.getMeta().getOption("timezone"));
-    assertEquals(newTimeZone, setPropertyDesc.getMeta().getOption("timezone"));
+    assertNotEquals(prevTimeZone, setPropertyDesc.getMeta().getProperty("timezone"));
+    assertEquals(newTimeZone, setPropertyDesc.getMeta().getProperty("timezone"));
   }
 
   private AlterTableDesc createMockAlterTableName(){

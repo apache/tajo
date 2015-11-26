@@ -117,7 +117,7 @@ public class HBaseScanner implements Scanner {
     }
 
     scanFetchSize = Integer.parseInt(
-        meta.getOption(HBaseStorageConstants.META_FETCH_ROWNUM_KEY, "" + DEFAULT_FETCH_SIZE));
+        meta.getProperty(HBaseStorageConstants.META_FETCH_ROWNUM_KEY, "" + DEFAULT_FETCH_SIZE));
     if (targets == null) {
       targets = schema.toArray();
     }
@@ -125,7 +125,7 @@ public class HBaseScanner implements Scanner {
     outTuple = new VTuple(targets.length);
 
     try {
-      columnMapping = new ColumnMapping(schema, meta.getOptions());
+      columnMapping = new ColumnMapping(schema, meta.getPropertySet());
     } catch (TajoException e) {
       new TajoInternalError(e);
     }

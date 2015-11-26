@@ -47,7 +47,7 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     if (desc.getUri() != null) {
       setUri(desc.getUri());
     }
-    setOptions(desc.getMeta().getOptions());
+    setOptions(desc.getMeta().getPropertySet());
     setDataFormat(desc.getMeta().getDataFormat());
 
     if (desc.hasPartition()) {

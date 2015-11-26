@@ -21,22 +21,28 @@ package org.apache.tajo.plan.logical;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.apache.commons.lang.StringUtils.capitalize;
 
 public class ScanNode extends RelationNode implements Projectable, SelectableNode, Cloneable {
 	@Expose protected TableDesc tableDesc;
   @Expose protected String alias;
   @Expose protected Schema logicalSchema;
 	@Expose protected EvalNode qual;
-	@Expose protected Target[] targets;
+	@Expose protected List<Target> targets = null;
   @Expose protected boolean broadcastTable;
   @Expose protected long limit = -1; // -1 means no set
 
@@ -142,15 +148,19 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	}
 
   @Override
-	public void setTargets(Target [] targets) {
+	public void setTargets(List<Target> targets) {
 	  this.targets = targets;
     setOutSchema(PlannerUtil.targetToSchema(targets));
 	}
 
   @Override
-	public Target [] getTargets() {
-	  return this.targets;
-	}
+  public List<Target> getTargets() {
+    if (hasTargets()) {
+      return this.targets;
+    } else {
+      return null;
+    }
+  }
 
   /**
    *
@@ -180,7 +190,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
   }
 	
 	public String toString() {
-    StringBuilder sb = new StringBuilder("Scan (table=").append(getTableName());
+    StringBuilder sb = new StringBuilder(capitalize(getType().name()) + " (table=").append(getTableName());
     if (hasAlias()) {
       sb.append(", alias=").append(alias);
     }
@@ -224,9 +234,9 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     }
 
     if (hasTargets()) {
-      scanNode.targets = new Target[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        scanNode.targets[i] = (Target) targets[i].clone();
+      scanNode.targets = new ArrayList<>();
+      for (Target t : targets) {
+        scanNode.targets.add((Target) t.clone());
       }
     }
 
@@ -258,15 +268,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     }
 
     if (hasTargets()) {
-      planStr.addExplan("target list: ");
-      boolean first = true;
-      for (Target target : targets) {
-        if (!first) {
-          planStr.appendExplain(", ");
-        }
-        planStr.appendExplain(target.toString());
-        first = false;
-      }
+      planStr.addExplan("target list: ").appendExplain(StringUtils.join(targets, ", "));
     }
 
     planStr.addDetail("out schema: ").appendDetail(getOutSchema().toString());

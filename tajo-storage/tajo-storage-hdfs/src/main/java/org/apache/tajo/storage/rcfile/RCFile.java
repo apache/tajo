@@ -601,7 +601,6 @@ public class RCFile {
     boolean useNewMagic = true;
     private byte[] nullChars;
     private SerializerDeserializer serde;
-    private boolean isShuffle;
 
     // Insert a globally unique 16-byte value every few entries, so that one
     // can seek into the middle of a file and then synchronize with record
@@ -727,8 +726,8 @@ public class RCFile {
     public void init() throws IOException {
       fs = path.getFileSystem(conf);
 
-      if (this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
-        String codecClassname = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
+      if (this.meta.containsProperty(StorageConstants.COMPRESSION_CODEC)) {
+        String codecClassname = this.meta.getProperty(StorageConstants.COMPRESSION_CODEC);
         try {
           Class<? extends CompressionCodec> codecClass = conf.getClassByName(
               codecClassname).asSubclass(CompressionCodec.class);
@@ -739,7 +738,7 @@ public class RCFile {
         }
       }
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.RCFILE_NULL,
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getProperty(StorageConstants.RCFILE_NULL,
           NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
@@ -753,7 +752,7 @@ public class RCFile {
 
       metadata.set(new Text(COLUMN_NUMBER_METADATA_STR), new Text("" + columnNumber));
 
-      String serdeClass = this.meta.getOption(StorageConstants.RCFILE_SERDE,
+      String serdeClass = this.meta.getProperty(StorageConstants.RCFILE_SERDE,
           BinarySerializerDeserializer.class.getName());
       try {
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
@@ -774,8 +773,8 @@ public class RCFile {
       writeFileHeader();
       finalizeFileHeader();
 
-      if (enabledStats) {
-        this.stats = new TableStatistics(this.schema);
+      if (tableStatsEnabled) {
+        this.stats = new TableStatistics(this.schema, columnStatsEnabled);
       }
       super.init();
     }
@@ -866,7 +865,7 @@ public class RCFile {
       append(t);
       // Statistical section
 
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         stats.incrementRow();
       }
     }
@@ -882,20 +881,12 @@ public class RCFile {
      * @throws java.io.IOException
      */
     public void append(Tuple tuple) throws IOException {
-      int size = schema.size();
-
-      for (int i = 0; i < size; i++) {
+      for (int i = 0; i < columnNumber; i++) {
+        if (tableStatsEnabled) {
+          stats.analyzeField(i, tuple);
+        }
         int length = columnBuffers[i].append(tuple, i);
         columnBufferSize += length;
-      }
-
-      if (size < columnNumber) {
-        for (int i = size; i < columnNumber; i++) {
-          columnBuffers[i].append(NullDatum.get());
-          if (isShuffle) {
-            stats.analyzeNull(i);
-          }
-        }
       }
 
       bufferedRecords++;
@@ -1077,7 +1068,7 @@ public class RCFile {
 
     @Override
     public TableStats getStats() {
-      if (enabledStats) {
+      if (tableStatsEnabled) {
         return stats.getTableStat();
       } else {
         return null;
@@ -1093,7 +1084,7 @@ public class RCFile {
 
       if (out != null) {
         // Statistical section
-        if (enabledStats) {
+        if (tableStatsEnabled) {
           stats.setNumBytes(getOffset());
         }
         // Close the underlying stream if we own it...
@@ -1186,7 +1177,7 @@ public class RCFile {
       rowId = new LongWritable();
       readBytes = 0;
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.RCFILE_NULL,
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getProperty(StorageConstants.RCFILE_NULL,
           NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
@@ -1366,7 +1357,7 @@ public class RCFile {
         if(text != null && !text.toString().isEmpty()){
           serdeClass = text.toString();
         } else{
-          serdeClass = this.meta.getOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
+          serdeClass = this.meta.getProperty(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
         }
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
         serde.init(schema);

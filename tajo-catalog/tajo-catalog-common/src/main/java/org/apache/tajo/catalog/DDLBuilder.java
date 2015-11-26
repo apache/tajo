@@ -88,7 +88,7 @@ public class DDLBuilder {
     for (SortSpec sortSpec : desc.getKeySortSpecs()) {
       sb.append(sortSpec.getSortKey().getQualifiedName()).append(" ");
       sb.append(sortSpec.isAscending() ? "asc" : "desc").append(" ");
-      sb.append(sortSpec.isNullFirst() ? "null first" : "null last").append(", ");
+      sb.append(sortSpec.isNullsFirst() ? "null first" : "null last").append(", ");
     }
     sb.replace(sb.length() - 2, sb.length() - 1, " )");
 
@@ -120,14 +120,14 @@ public class DDLBuilder {
   }
 
   private static void buildWithClause(final StringBuilder sb, TableMeta meta) {
-    KeyValueSet options = meta.getOptions();
+    KeyValueSet options = meta.getPropertySet();
     if (options != null && options.size() > 0) {
 
       sb.append(" WITH (");
 
       // sort table properties in an lexicographic order of the property keys.
-      Entry<String, String> [] entries = meta.getOptions().getAllKeyValus().entrySet().toArray(
-          new Entry[meta.getOptions().size()]);
+      Entry<String, String> [] entries = meta.getPropertySet().getAllKeyValus().entrySet().toArray(
+          new Entry[meta.getPropertySet().size()]);
 
       Arrays.sort(entries, new Comparator<Entry<String, String>>() {
         @Override

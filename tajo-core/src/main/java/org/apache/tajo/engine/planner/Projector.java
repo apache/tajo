@@ -27,6 +27,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
+import java.util.List;
+
 public class Projector {
   private final TaskAttemptContext context;
   private final Schema inSchema;
@@ -36,28 +38,28 @@ public class Projector {
 
   private final Tuple outTuple;
 
-  public Projector(TaskAttemptContext context, Schema inSchema, Schema outSchema, Target [] targets) {
+  public Projector(TaskAttemptContext context, Schema inSchema, Schema outSchema, List<Target> targets) {
     this.context = context;
     this.inSchema = inSchema;
-    Target[] realTargets;
+    List<Target> realTargets;
     if (targets == null) {
       realTargets = PlannerUtil.schemaToTargets(outSchema);
     } else {
       realTargets = targets;
     }
 
-    outTuple = new VTuple(realTargets.length);
-    evals = new EvalNode[realTargets.length];
+    outTuple = new VTuple(realTargets.size());
+    evals = new EvalNode[realTargets.size()];
 
     if (context.getQueryContext().getBool(SessionVars.CODEGEN)) {
       EvalNode eval;
-      for (int i = 0; i < realTargets.length; i++) {
-        eval = realTargets[i].getEvalTree();
+      for (int i = 0; i < realTargets.size(); i++) {
+        eval = realTargets.get(i).getEvalTree();
         evals[i] = context.getPrecompiledEval(inSchema, eval);
       }
     } else {
-      for (int i = 0; i < realTargets.length; i++) {
-        evals[i] = realTargets[i].getEvalTree();
+      for (int i = 0; i < realTargets.size(); i++) {
+        evals[i] = realTargets.get(i).getEvalTree();
       }
     }
     init();

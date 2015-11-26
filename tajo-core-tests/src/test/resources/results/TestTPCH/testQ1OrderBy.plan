@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(2)
-  => Sort Keys: default.lineitem.l_returnflag (TEXT) (asc),default.lineitem.l_linestatus (TEXT) (asc)
+  => Sort Keys: default.lineitem.l_returnflag (TEXT) (asc, nulls last),default.lineitem.l_linestatus (TEXT) (asc, nulls last)
    GROUP_BY(1)(l_returnflag,l_linestatus)
      => exprs: (count())
      => target list: default.lineitem.l_returnflag (TEXT), default.lineitem.l_linestatus (TEXT), count_order (INT8)
@@ -57,7 +57,7 @@ Block Id: eb_0000000000000_0000_000002 [INTERMEDIATE]
 [q_0000000000000_0000] 2 => 3 (type=RANGE_SHUFFLE, key=default.lineitem.l_linestatus (TEXT), default.lineitem.l_returnflag (TEXT), num=32)
 
 SORT(8)
-  => Sort Keys: default.lineitem.l_returnflag (TEXT) (asc),default.lineitem.l_linestatus (TEXT) (asc)
+  => Sort Keys: default.lineitem.l_returnflag (TEXT) (asc, nulls last),default.lineitem.l_linestatus (TEXT) (asc, nulls last)
    GROUP_BY(1)(l_returnflag,l_linestatus)
      => exprs: (count(?count (INT8)))
      => target list: default.lineitem.l_returnflag (TEXT), default.lineitem.l_linestatus (TEXT), count_order (INT8)
@@ -78,7 +78,7 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
  0: sorted input=eb_0000000000000_0000_000002
 
 SORT(2)
-  => Sort Keys: default.lineitem.l_returnflag (TEXT) (asc),default.lineitem.l_linestatus (TEXT) (asc)
+  => Sort Keys: default.lineitem.l_returnflag (TEXT) (asc, nulls last),default.lineitem.l_linestatus (TEXT) (asc, nulls last)
    SCAN(9) on eb_0000000000000_0000_000002
      => out schema: {(3) count_order (INT8), default.lineitem.l_linestatus (TEXT), default.lineitem.l_returnflag (TEXT)}
      => in schema: {(3) count_order (INT8), default.lineitem.l_linestatus (TEXT), default.lineitem.l_returnflag (TEXT)}

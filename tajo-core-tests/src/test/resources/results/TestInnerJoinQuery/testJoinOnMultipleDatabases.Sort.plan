@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SORT(6)
-  => Sort Keys: joins.supplier_.s_acctbal (FLOAT8) (asc),joins.supplier_.s_name (TEXT) (asc),default.nation.n_name (TEXT) (asc),joins.part_.p_partkey (INT4) (asc)
+  => Sort Keys: joins.supplier_.s_acctbal (FLOAT8) (asc, nulls last),joins.supplier_.s_name (TEXT) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last),joins.part_.p_partkey (INT4) (asc, nulls last)
    JOIN(16)(INNER)
      => Join Cond: joins.supplier_.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
      => target list: default.nation.n_name (TEXT), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT)
@@ -72,7 +72,7 @@ Block Id: eb_0000000000000_0000_000009 [LEAF]
  3: type=Broadcast, tables=joins.supplier_
 
 SORT(26)
-  => Sort Keys: joins.supplier_.s_acctbal (FLOAT8) (asc),joins.supplier_.s_name (TEXT) (asc),default.nation.n_name (TEXT) (asc),joins.part_.p_partkey (INT4) (asc)
+  => Sort Keys: joins.supplier_.s_acctbal (FLOAT8) (asc, nulls last),joins.supplier_.s_name (TEXT) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last),joins.part_.p_partkey (INT4) (asc, nulls last)
    JOIN(16)(INNER)
      => Join Cond: joins.supplier_.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
      => target list: default.nation.n_name (TEXT), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT)
@@ -125,7 +125,7 @@ Block Id: eb_0000000000000_0000_000010 [ROOT]
  0: sorted input=eb_0000000000000_0000_000009
 
 SORT(6)
-  => Sort Keys: joins.supplier_.s_acctbal (FLOAT8) (asc),joins.supplier_.s_name (TEXT) (asc),default.nation.n_name (TEXT) (asc),joins.part_.p_partkey (INT4) (asc)
+  => Sort Keys: joins.supplier_.s_acctbal (FLOAT8) (asc, nulls last),joins.supplier_.s_name (TEXT) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last),joins.part_.p_partkey (INT4) (asc, nulls last)
    SCAN(27) on eb_0000000000000_0000_000009
      => out schema: {(8) default.nation.n_name (TEXT), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT)}
      => in schema: {(8) default.nation.n_name (TEXT), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT)}

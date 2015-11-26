@@ -46,7 +46,7 @@ public class ORCAppender extends FileAppender {
                      TableMeta meta, Path workDir) {
     super(conf, taskAttemptId, schema, meta, workDir);
 
-    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
         TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
@@ -54,35 +54,30 @@ public class ORCAppender extends FileAppender {
   public void init() throws IOException {
     writer = OrcFile.createWriter(workDir.getFileSystem(conf), path, conf,
       ObjectInspectorFactory.buildStructObjectInspector(schema),
-      Long.parseLong(meta.getOption(StorageConstants.ORC_STRIPE_SIZE,
+      Long.parseLong(meta.getProperty(StorageConstants.ORC_STRIPE_SIZE,
         StorageConstants.DEFAULT_ORC_STRIPE_SIZE)), getCompressionKind(),
-      Integer.parseInt(meta.getOption(StorageConstants.ORC_BUFFER_SIZE,
+      Integer.parseInt(meta.getProperty(StorageConstants.ORC_BUFFER_SIZE,
         StorageConstants.DEFAULT_ORC_BUFFER_SIZE)),
-      Integer.parseInt(meta.getOption(StorageConstants.ORC_ROW_INDEX_STRIDE,
+      Integer.parseInt(meta.getProperty(StorageConstants.ORC_ROW_INDEX_STRIDE,
         StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE)),
       timezone);
 
-    if (enabledStats) {
-      this.stats = new TableStatistics(schema);
+    if (tableStatsEnabled) {
+      this.stats = new TableStatistics(schema, columnStatsEnabled);
     }
 
     super.init();
   }
 
   @Override
-  public long getOffset() throws IOException {
-    return 0;
-  }
-
-  @Override
   public void addTuple(Tuple tuple) throws IOException {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       for (int i = 0; i < schema.size(); ++i) {
         stats.analyzeField(i, tuple);
       }
     }
     writer.addTuple(tuple);
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       stats.incrementRow();
     }
   }
@@ -94,11 +89,16 @@ public class ORCAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     writer.close();
+
+    // TODO: getOffset is not implemented yet
+//    if (tableStatsEnabled) {
+//      stats.setNumBytes(getOffset());
+//    }
   }
 
   @Override
   public TableStats getStats() {
-    if (enabledStats) {
+    if (tableStatsEnabled) {
       return stats.getTableStat();
     } else {
       return null;
@@ -111,7 +111,7 @@ public class ORCAppender extends FileAppender {
   }
 
   private CompressionKind getCompressionKind() {
-    String kindstr = meta.getOption(StorageConstants.ORC_COMPRESSION, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
+    String kindstr = meta.getProperty(StorageConstants.ORC_COMPRESSION, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
 
     if (kindstr.equalsIgnoreCase(StorageConstants.ORC_COMPRESSION_KIND_ZIP)) {
       return CompressionKind.ZLIB;

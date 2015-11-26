@@ -144,7 +144,7 @@ public class EvalTreeUtil {
     return finder.getColumnRefs();
   }
   
-  public static Schema getSchemaByTargets(Schema inputSchema, Target[] targets) {
+  public static Schema getSchemaByTargets(Schema inputSchema, List<Target> targets) {
     Schema schema = new Schema();
     for (Target target : targets) {
       schema.addColumn(

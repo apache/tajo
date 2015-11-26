@@ -36,7 +36,10 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.pullserver.TajoPullServerService;
-import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.AsyncRpcClient;
+import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.Pair;
@@ -47,7 +50,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -253,7 +255,7 @@ public class ExecutionBlockContext {
       //If QueryMaster does not responding, current execution block should be stop
       CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
       getStub().fatalError(callFuture.getController(), builder.build(), callFuture);
-      callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+      callFuture.get();
     } catch (Exception e) {
       getWorkerContext().getTaskManager().getDispatcher().getEventHandler()
           .handle(new ExecutionBlockErrorEvent(taskAttemptId.getTaskId().getExecutionBlockId(), e));
@@ -300,7 +302,7 @@ public class ExecutionBlockContext {
 
         CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
         stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
-        callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+        callFuture.get();
         return;
       }
 
@@ -355,7 +357,7 @@ public class ExecutionBlockContext {
     try {
       CallFuture<PrimitiveProtos.NullProto> callFuture = new CallFuture<>();
       stub.doneExecutionBlock(callFuture.getController(), reporterBuilder.build(), callFuture);
-      callFuture.get(RpcConstants.FUTURE_TIMEOUT_SECONDS_DEFAULT, TimeUnit.SECONDS);
+      callFuture.get();
     } catch (Throwable e) {
       // can't send report to query master
       LOG.fatal(e.getMessage(), e);

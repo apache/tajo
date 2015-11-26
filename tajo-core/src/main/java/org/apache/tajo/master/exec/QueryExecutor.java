@@ -288,7 +288,7 @@ public class QueryExecutor {
     }
 
     final TableDesc resultDesc = new TableDesc("", scanNode.getOutSchema(),
-        new TableMeta(BuiltinStorages.DRAW, table.getMeta().getOptions()), null);
+        new TableMeta(BuiltinStorages.DRAW, table.getMeta().getPropertySet()), null);
 
     // push down limit
     int maxRow = Integer.MAX_VALUE;
@@ -319,16 +319,16 @@ public class QueryExecutor {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     EvalContext evalContext = new EvalContext();
-    Target[] targets = plan.getRootBlock().getRawTargets();
+    List<Target> targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new TajoInternalError("no targets");
     }
     try {
       // start script executor
       startScriptExecutors(queryContext, evalContext, targets);
-      final VTuple outTuple = new VTuple(targets.length);
-      for (int i = 0; i < targets.length; i++) {
-        EvalNode eval = targets[i].getEvalTree();
+      final VTuple outTuple = new VTuple(targets.size());
+      for (int i = 0; i < targets.size(); i++) {
+        EvalNode eval = targets.get(i).getEvalTree();
         eval.bind(evalContext, null);
         outTuple.put(i, eval.eval(null));
       }
@@ -371,10 +371,10 @@ public class QueryExecutor {
     }
   }
 
-  public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
+  public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, List<Target> targets)
       throws IOException {
-    for (int i = 0; i < targets.length; i++) {
-      EvalNode eval = targets[i].getEvalTree();
+    for (int i = 0; i < targets.size(); i++) {
+      EvalNode eval = targets.get(i).getEvalTree();
       if (eval instanceof GeneralFunctionEval) {
         GeneralFunctionEval functionEval = (GeneralFunctionEval) eval;
         if (functionEval.getFuncDesc().getInvocation().hasPython()) {
@@ -461,7 +461,7 @@ public class QueryExecutor {
       URI finalOutputUri = insertNode.getUri();
       Tablespace space = TablespaceManager.get(finalOutputUri);
       TableMeta tableMeta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
-      tableMeta.putOption(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
+      tableMeta.putProperty(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
 
       FormatProperty formatProperty = space.getFormatProperty(tableMeta);
 

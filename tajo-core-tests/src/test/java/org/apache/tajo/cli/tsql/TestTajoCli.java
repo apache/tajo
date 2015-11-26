@@ -30,6 +30,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.cli.tsql.commands.TajoShellCommand;
 import org.apache.tajo.client.ClientParameters;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
@@ -38,6 +39,7 @@ import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.VersionInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,6 +48,7 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.junit.Assert.*;
@@ -190,14 +193,13 @@ public class TestTajoCli {
     assertOutputResult(consoleResult);
   }
 
-  @Test
-  public void testConnectDatabase() throws Exception {
+  public void verifyConnectDatabase(String testDatabaseName) throws Exception {
     String databaseName;
 
     if (cluster.isHiveCatalogStoreRunning()) {
-      databaseName = "TEST_CONNECTION_DATABASE".toLowerCase();
+      databaseName = testDatabaseName.toLowerCase();
     } else {
-      databaseName = "TEST_CONNECTION_DATABASE";
+      databaseName = testDatabaseName;
     }
     String sql = "create database \"" + databaseName + "\";";
 
@@ -211,6 +213,16 @@ public class TestTajoCli {
 
     tajoCli.executeMetaCommand("\\c \"" + databaseName + "\"");
     assertEquals(databaseName, tajoCli.getContext().getCurrentDatabase());
+  }
+
+  @Test
+  public void testConnectDatabase() throws Exception {
+    verifyConnectDatabase("TEST_CONNECTION_DATABASE");
+  }
+
+  @Test
+  public void testConnectDatabaseNamedWithSpace() throws Exception {
+    verifyConnectDatabase("TEST CONNECTION DATABASE");
   }
 
   private void verifyDescTable(String sql, String tableName, String resultFileName) throws Exception {
@@ -228,17 +240,26 @@ public class TestTajoCli {
     }
   }
 
-  @Test
-  public void testDescTable() throws Exception {
+  public void testDescTable(String testTableName, String resultFileName) throws Exception {
     String tableName;
     if (cluster.isHiveCatalogStoreRunning()) {
-      tableName = "TEST_DESC_TABLE".toLowerCase();
+      tableName = testTableName.toLowerCase();
     } else {
-      tableName = "TEST_DESC_TABLE";
+      tableName = testTableName;
     }
 
     String sql = "create table \"" + tableName + "\" (col1 int4, col2 int4);";
-    verifyDescTable(sql, tableName, "testDescTable.result");
+    verifyDescTable(sql, tableName, resultFileName);
+  }
+
+  @Test
+  public void testDescTable() throws Exception {
+    testDescTable("TEST_DESC_TABLE", "testDescTable1.result");
+  }
+
+  @Test
+  public void testDescTableNamedWithSpace() throws Exception {
+    testDescTable("TEST DESC TABLE", "testDescTable2.result");
   }
 
   @Test
@@ -541,6 +562,46 @@ public class TestTajoCli {
     @Override
     public void printProgress(PrintWriter sout, QueryStatus status) {
       //nothing to do
+    }
+  }
+
+  @Test
+  public void testPrintVersion() {
+    tajoCli.executeMetaCommand("\\?");
+    String consoleResult = new String(out.toByteArray());
+    String tajoFullVersion = VersionInfo.getVersion();
+    String tajoVersion;
+
+    int delimiterIdx = tajoFullVersion.indexOf("-");
+    if (delimiterIdx > -1) {
+      tajoVersion = tajoFullVersion.substring(0, delimiterIdx);
+    } else {
+      tajoVersion = tajoFullVersion;
+    }
+
+    if (tajoVersion.equalsIgnoreCase("") || tajoFullVersion.contains("SNAPSHOT")) {
+      assertTrue(consoleResult.contains("docs/current/"));
+    } else {
+      assertTrue(consoleResult.contains("docs/" + tajoVersion + "/"));
+    }
+  }
+
+  @Test
+  public void testDefaultPrintHelp() throws IOException, NoSuchMethodException {
+    for (Map.Entry<String, TajoShellCommand> entry : tajoCli.getContext().getCommands().entrySet()) {
+      TajoShellCommand shellCommand = entry.getValue();
+
+      if (!shellCommand.getClass().getMethod("printHelp").getDeclaringClass().equals(shellCommand.getClass())) {
+        tajoCli.executeMetaCommand("\\help " + entry.getKey().replace("\\", ""));
+        String result = new String(out.toByteArray());
+        out.reset();
+
+        String expected = shellCommand.getCommand()
+                + " " + shellCommand.getUsage()
+                + " - " + shellCommand.getDescription() + "\n";
+
+        assertEquals(result, expected);
+      }
     }
   }
 }

@@ -27,7 +27,6 @@ public class RpcConstants {
 
   public static final String PING_PACKET = "TAJO";
   public static final int DEFAULT_PAUSE = 1000; // 1 sec
-  public static final int FUTURE_TIMEOUT_SECONDS_DEFAULT = 10;
 
   /** How many times the connect will retry */
   public static final String CLIENT_RETRY_NUM = "tajo.rpc.client.retry-num";

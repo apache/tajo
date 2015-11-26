@@ -448,7 +448,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       org.apache.hadoop.hive.metastore.api.Table table = new org.apache.hadoop.hive.metastore.api.Table();
       table.setDbName(databaseName);
       table.setTableName(tableName);
-      table.setParameters(new HashMap<>(tableDesc.getMeta().getOptions().getAllKeyValus()));
+      table.setParameters(new HashMap<>(tableDesc.getMeta().getPropertySet().getAllKeyValus()));
       // TODO: set owner
       //table.setOwner();
 
@@ -496,16 +496,16 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         sd.setInputFormat(descriptor.getInputFormat());
         sd.setOutputFormat(descriptor.getOutputFormat());
 
-        String serde = tableDesc.getMeta().getOption(StorageConstants.RCFILE_SERDE);
+        String serde = tableDesc.getMeta().getProperty(StorageConstants.RCFILE_SERDE);
         if (StorageConstants.DEFAULT_TEXT_SERDE.equals(serde)) {
           sd.getSerdeInfo().setSerializationLib(ColumnarSerDe.class.getName());
         } else {
           sd.getSerdeInfo().setSerializationLib(LazyBinaryColumnarSerDe.class.getName());
         }
 
-        if (tableDesc.getMeta().getOptions().containsKey(StorageConstants.RCFILE_NULL)) {
+        if (tableDesc.getMeta().getPropertySet().containsKey(StorageConstants.RCFILE_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
-              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL)));
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getProperty(StorageConstants.RCFILE_NULL)));
         }
       } else if (tableDesc.getMeta().getDataFormat().equals(BuiltinStorages.TEXT)) {
         // TextFileStorageFormatDescriptor has deprecated class. so the class name set directly
@@ -513,7 +513,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         sd.setOutputFormat(HiveIgnoreKeyTextOutputFormat.class.getName());
         sd.getSerdeInfo().setSerializationLib(LazySimpleSerDe.class.getName());
 
-        String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.TEXT_DELIMITER,
+        String fieldDelimiter = tableDesc.getMeta().getProperty(StorageConstants.TEXT_DELIMITER,
             StorageConstants.DEFAULT_FIELD_DELIMITER);
 
         // User can use an unicode for filed delimiter such as \u0001, \001.
@@ -527,9 +527,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
             StringEscapeUtils.unescapeJava(fieldDelimiter));
         table.getParameters().remove(StorageConstants.TEXT_DELIMITER);
 
-        if (tableDesc.getMeta().containsOption(StorageConstants.TEXT_NULL)) {
+        if (tableDesc.getMeta().containsProperty(StorageConstants.TEXT_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
-              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.TEXT_NULL)));
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getProperty(StorageConstants.TEXT_NULL)));
           table.getParameters().remove(StorageConstants.TEXT_NULL);
         }
       } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
@@ -537,12 +537,12 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         sd.setInputFormat(descriptor.getInputFormat());
         sd.setOutputFormat(descriptor.getOutputFormat());
 
-        String serde = tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE);
+        String serde = tableDesc.getMeta().getProperty(StorageConstants.SEQUENCEFILE_SERDE);
 
         if (StorageConstants.DEFAULT_TEXT_SERDE.equals(serde)) {
           sd.getSerdeInfo().setSerializationLib(LazySimpleSerDe.class.getName());
 
-          String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_DELIMITER,
+          String fieldDelimiter = tableDesc.getMeta().getProperty(StorageConstants.SEQUENCEFILE_DELIMITER,
               StorageConstants.DEFAULT_FIELD_DELIMITER);
 
           // User can use an unicode for filed delimiter such as \u0001, \001.
@@ -559,9 +559,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           sd.getSerdeInfo().setSerializationLib(LazyBinarySerDe.class.getName());
         }
 
-        if (tableDesc.getMeta().containsOption(StorageConstants.SEQUENCEFILE_NULL)) {
+        if (tableDesc.getMeta().containsProperty(StorageConstants.SEQUENCEFILE_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
-              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_NULL)));
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getProperty(StorageConstants.SEQUENCEFILE_NULL)));
           table.getParameters().remove(StorageConstants.SEQUENCEFILE_NULL);
         }
       } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.PARQUET)) {
@@ -570,9 +570,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         sd.setOutputFormat(descriptor.getOutputFormat());
         sd.getSerdeInfo().setSerializationLib(descriptor.getSerde());
 
-        if (tableDesc.getMeta().containsOption(ParquetOutputFormat.COMPRESSION)) {
+        if (tableDesc.getMeta().containsProperty(ParquetOutputFormat.COMPRESSION)) {
           table.putToParameters(ParquetOutputFormat.COMPRESSION,
-              tableDesc.getMeta().getOption(ParquetOutputFormat.COMPRESSION));
+              tableDesc.getMeta().getProperty(ParquetOutputFormat.COMPRESSION));
         }
       } else {
         throw new UnsupportedException(tableDesc.getMeta().getDataFormat() + " in HivecatalogStore");
