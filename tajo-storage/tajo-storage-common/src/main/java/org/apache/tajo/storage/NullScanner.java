@@ -59,7 +59,6 @@ public class NullScanner implements Scanner {
 
   @Override
   public Tuple next() throws IOException {
-    progress = 1.0f;
     return null;
   }
 

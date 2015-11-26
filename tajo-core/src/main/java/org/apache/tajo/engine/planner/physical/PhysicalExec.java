@@ -70,6 +70,10 @@ public abstract class PhysicalExec implements SchemaObject {
     log.info("["+ context.getTaskId() + "] " + message);
   }
 
+  protected void debug(Log log, String message) {
+    log.debug("["+ context.getTaskId() + "] " + message);
+  }
+
   protected void warn(Log log, String message) {
     log.warn("[" + context.getTaskId() + "] " + message);
   }

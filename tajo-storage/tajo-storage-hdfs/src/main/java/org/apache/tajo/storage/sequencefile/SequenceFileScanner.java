@@ -96,7 +96,7 @@ public class SequenceFileScanner extends FileScanner {
 
     reader = new SequenceFile.Reader(fs, fragment.getPath(), conf);
 
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL,
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getProperty(StorageConstants.SEQUENCEFILE_NULL,
         NullDatum.DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
@@ -104,7 +104,7 @@ public class SequenceFileScanner extends FileScanner {
       nullChars = nullCharacters.getBytes();
     }
 
-    String delim  = meta.getOption(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    String delim  = meta.getProperty(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
     this.start = fragment.getStartKey();
@@ -130,7 +130,7 @@ public class SequenceFileScanner extends FileScanner {
     prepareProjection(targets);
 
     try {
-      String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+      String serdeClass = this.meta.getProperty(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       serde.init(schema);
 

@@ -30,6 +30,11 @@ import org.apache.tajo.storage.Tuple;
  *   startRow() -->  skipField() or putXXX --> endRow()
  * </pre>
  *
+ * If you want to cancel the current row, should be as follows:
+ * <pre>
+ *   startRow() -->  skipField() or putXXX --> cancelRow()
+ * </pre>
+ *
  * The total number of skipField and putXXX invocations must be equivalent to the number of fields.
  */
 public interface RowWriter {
@@ -39,6 +44,8 @@ public interface RowWriter {
   boolean startRow();
 
   void endRow();
+
+  void cancelRow();
 
   void skipField();
 
@@ -76,5 +83,5 @@ public interface RowWriter {
 
   void putProtoDatum(ProtobufDatum datum);
 
-  void addTuple(Tuple tuple);
+  boolean addTuple(Tuple tuple);
 }

@@ -203,12 +203,9 @@ public class HdfsServiceTracker extends HAServiceTracker {
   private void writeSystemConf() throws IOException {
     Path systemConfPath = TajoConf.getSystemConfPath(conf);
 
-    FSDataOutputStream out = FileSystem.create(fs, systemConfPath,
-      new FsPermission(TajoMaster.SYSTEM_CONF_FILE_PERMISSION));
-    try {
+    try (FSDataOutputStream out = FileSystem.create(fs, systemConfPath,
+            new FsPermission(TajoMaster.SYSTEM_CONF_FILE_PERMISSION))) {
       conf.writeXml(out);
-    } finally {
-      out.close();
     }
     fs.setReplication(systemConfPath, (short) conf.getIntVar(ConfVars.SYSTEM_CONF_REPLICA_COUNT));
   }

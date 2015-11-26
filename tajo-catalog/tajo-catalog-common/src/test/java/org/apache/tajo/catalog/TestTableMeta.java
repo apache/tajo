@@ -98,7 +98,7 @@ public class TestTableMeta {
 
 		TableMeta meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
 		for (int i = 0; i < MAX_COUNT; i++) {
-			meta1.putOption("key"+i, "value"+i);
+			meta1.putProperty("key"+i, "value"+i);
 		}
 
 		PrimitiveProtos.KeyValueSetProto.Builder optionBuilder = PrimitiveProtos.KeyValueSetProto.newBuilder();

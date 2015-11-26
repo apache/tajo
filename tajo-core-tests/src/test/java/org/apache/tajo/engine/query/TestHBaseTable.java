@@ -139,11 +139,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     executeString("DROP TABLE hbase_mapped_table1 PURGE").close();
 
-    HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
-    try {
+    try (HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf())) {
       assertFalse(hAdmin.tableExists("hbase_table"));
-    } finally {
-      hAdmin.close();
     }
   }
 
@@ -202,13 +199,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       executeString("DROP TABLE external_hbase_mapped_table").close();
 
-      HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
-      try {
+      try (HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf())) {
         assertTrue(hAdmin.tableExists("external_hbase_table_not_purge"));
         hAdmin.disableTable("external_hbase_table_not_purge");
         hAdmin.deleteTable("external_hbase_table_not_purge");
-      } finally {
-        hAdmin.close();
       }
 
     } finally {
@@ -238,9 +232,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertTableExists("external_hbase_mapped_table");
 
       HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
-      HTableInterface htable = hconn.getTable("external_hbase_table");
 
-      try {
+      try (HTableInterface htable = hconn.getTable("external_hbase_table")) {
         for (int i = 0; i < 100; i++) {
           Put put = new Put(String.valueOf(i).getBytes());
           put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
@@ -256,7 +249,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         cleanupQuery(res);
       } finally {
         executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-        htable.close();
+
       }
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
@@ -284,9 +277,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertTableExists("external_hbase_mapped_table");
 
       HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
-      HTableInterface htable = hconn.getTable("external_hbase_table");
 
-      try {
+      try (HTableInterface htable = hconn.getTable("external_hbase_table")) {
         for (int i = 0; i < 100; i++) {
           Put put = new Put(Bytes.toBytes((long) i));
           put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
@@ -316,7 +308,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       } finally {
         executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-        htable.close();
+
       }
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
@@ -343,9 +335,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertTableExists("external_hbase_mapped_table");
 
       HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
-      HTableInterface htable = hconn.getTable("external_hbase_table");
 
-      try {
+      try (HTableInterface htable = hconn.getTable("external_hbase_table")) {
         for (int i = 0; i < 10; i++) {
           Put put = new Put(Bytes.toBytes("rk-" + i));
           for (int j = 0; j < 5; j++) {
@@ -360,7 +351,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         cleanupQuery(res);
       } finally {
         executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-        htable.close();
+
       }
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
@@ -387,9 +378,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
 
       HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
-      HTableInterface htable = hconn.getTable("external_hbase_table");
 
-      try {
+      try (HTableInterface htable = hconn.getTable("external_hbase_table")) {
         for (int i = 0; i < 100; i++) {
           Put put = new Put(("field1-" + i + "_field2-" + i).getBytes());
           put.add("col3".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
@@ -401,7 +391,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         cleanupQuery(res);
       } finally {
         executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
-        htable.close();
+
       }
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
@@ -616,9 +606,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
         "'hbase.split.rowkeys'='010,040,060,080')").close();
 
     assertTableExists("hbase_mapped_table1");
-    HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     HTable htable = null;
-    try {
+    try (HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf())) {
       hAdmin.tableExists("hbase_table1");
       htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table1");
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
@@ -640,7 +629,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       res.close();
     } finally {
       executeString("DROP TABLE hbase_mapped_table1 PURGE").close();
-      hAdmin.close();
+
       if (htable == null) {
         htable.close();
       }

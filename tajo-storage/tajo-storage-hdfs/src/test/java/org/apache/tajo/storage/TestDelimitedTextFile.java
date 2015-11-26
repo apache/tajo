@@ -18,10 +18,8 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -33,10 +31,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
@@ -91,8 +87,8 @@ public class TestDelimitedTextFile {
   @Test
   public void testStripQuote() throws IOException, CloneNotSupportedException {
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
-    meta.putOption(StorageUtil.TEXT_DELIMITER, ",");
-    meta.putOption(StorageUtil.QUOTE_CHAR, "\"");
+    meta.putProperty(StorageUtil.TEXT_DELIMITER, ",");
+    meta.putProperty(StorageUtil.QUOTE_CHAR, "\"");
     FileFragment fragment =  getFileFragment("testStripQuote.txt");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
@@ -110,8 +106,8 @@ public class TestDelimitedTextFile {
   @Test
   public void testIncompleteQuote() throws IOException, CloneNotSupportedException {
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
-    meta.putOption(StorageUtil.TEXT_DELIMITER, ",");
-    meta.putOption(StorageUtil.QUOTE_CHAR, "\"");
+    meta.putProperty(StorageUtil.TEXT_DELIMITER, ",");
+    meta.putProperty(StorageUtil.QUOTE_CHAR, "\"");
     FileFragment fragment =  getFileFragment("testIncompleteQuote.txt");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
@@ -129,7 +125,7 @@ public class TestDelimitedTextFile {
   @Test
   public void testIgnoreAllErrors() throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
-    meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "-1");
+    meta.putProperty(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "-1");
     FileFragment fragment =  getFileFragment("testErrorTolerance1.json");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
@@ -147,7 +143,7 @@ public class TestDelimitedTextFile {
   @Test
   public void testIgnoreOneErrorTolerance() throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
-    meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
+    meta.putProperty(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
     FileFragment fragment =  getFileFragment("testErrorTolerance1.json");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
@@ -168,7 +164,7 @@ public class TestDelimitedTextFile {
   @Test
   public void testNoErrorTolerance() throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
-    meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "0");
+    meta.putProperty(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "0");
     FileFragment fragment =  getFileFragment("testErrorTolerance2.json");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
@@ -187,7 +183,7 @@ public class TestDelimitedTextFile {
   public void testIgnoreTruncatedValueErrorTolerance() throws IOException {
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
-    meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
+    meta.putProperty(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
     FileFragment fragment = getFileFragment("testErrorTolerance3.json");
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
@@ -203,7 +199,7 @@ public class TestDelimitedTextFile {
   @Test
   public void testSkippingHeaderWithJson() throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("JSON");
-    meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
+    meta.putProperty(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
     FileFragment fragment = getFileFragment("testNormal.json");
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
 
@@ -229,8 +225,8 @@ public class TestDelimitedTextFile {
   @Test
   public void testSkippingHeaderWithText() throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
-    meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "1");
-    meta.putOption(StorageConstants.TEXT_DELIMITER, ",");
+    meta.putProperty(StorageConstants.TEXT_SKIP_HEADER_LINE, "1");
+    meta.putProperty(StorageConstants.TEXT_DELIMITER, ",");
     FileFragment fragment = getFileFragment("testSkip.txt");
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     

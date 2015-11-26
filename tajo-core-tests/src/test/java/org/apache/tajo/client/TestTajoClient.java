@@ -708,7 +708,7 @@ public class TestTajoClient {
   public void assertNullCharSessionVar(TableDesc resultDesc) throws Exception {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
 
-    assertEquals(resultDesc.getMeta().getOption(StorageConstants.TEXT_NULL), "\\\\T");
+    assertEquals(resultDesc.getMeta().getProperty(StorageConstants.TEXT_NULL), "\\\\T");
 
     Path path = new Path(resultDesc.getUri());
     FileSystem fs = path.getFileSystem(tajoConf);

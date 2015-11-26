@@ -811,7 +811,7 @@ public class QueryTestCaseBase {
       throws UndefinedTableException {
 
     TableDesc tableDesc = getTableDesc(tableName);
-    assertEquals(expectedValue, tableDesc.getMeta().getOption(key));
+    assertEquals(expectedValue, tableDesc.getMeta().getProperty(key));
   }
 
   public String resultSetToString(ResultSet resultSet) throws SQLException {
@@ -1092,8 +1092,7 @@ public class QueryTestCaseBase {
         continue;
       }
 
-      InputStream in = fs.open(file.getPath());
-      try {
+      try (InputStream in = fs.open(file.getPath())) {
         while (true) {
           int readBytes = in.read(buf);
           if (readBytes <= 0) {
@@ -1102,8 +1101,6 @@ public class QueryTestCaseBase {
 
           sb.append(new String(buf, 0, readBytes));
         }
-      } finally {
-        in.close();
       }
     }
 

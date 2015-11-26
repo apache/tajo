@@ -726,8 +726,8 @@ public class RCFile {
     public void init() throws IOException {
       fs = path.getFileSystem(conf);
 
-      if (this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
-        String codecClassname = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
+      if (this.meta.containsProperty(StorageConstants.COMPRESSION_CODEC)) {
+        String codecClassname = this.meta.getProperty(StorageConstants.COMPRESSION_CODEC);
         try {
           Class<? extends CompressionCodec> codecClass = conf.getClassByName(
               codecClassname).asSubclass(CompressionCodec.class);
@@ -738,7 +738,7 @@ public class RCFile {
         }
       }
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.RCFILE_NULL,
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getProperty(StorageConstants.RCFILE_NULL,
           NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
@@ -752,7 +752,7 @@ public class RCFile {
 
       metadata.set(new Text(COLUMN_NUMBER_METADATA_STR), new Text("" + columnNumber));
 
-      String serdeClass = this.meta.getOption(StorageConstants.RCFILE_SERDE,
+      String serdeClass = this.meta.getProperty(StorageConstants.RCFILE_SERDE,
           BinarySerializerDeserializer.class.getName());
       try {
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
@@ -1177,7 +1177,7 @@ public class RCFile {
       rowId = new LongWritable();
       readBytes = 0;
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.RCFILE_NULL,
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getProperty(StorageConstants.RCFILE_NULL,
           NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
@@ -1357,7 +1357,7 @@ public class RCFile {
         if(text != null && !text.toString().isEmpty()){
           serdeClass = text.toString();
         } else{
-          serdeClass = this.meta.getOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
+          serdeClass = this.meta.getProperty(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
         }
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
         serde.init(schema);
