@@ -86,6 +86,10 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1857: Rename the section of 'File Formats' to 'Data Formats' and fill 
+    compression section of the 'Table Management' chapter. 
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1975: Gathering fine-grained column statistics for range shuffle. (jihoon)
 
     TAJO-1963: Add more configuration descriptions to document. (jihoon)

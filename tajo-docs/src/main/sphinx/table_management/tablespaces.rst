@@ -1,6 +1,6 @@
-*************************************
+***********
 Tablespaces
-*************************************
+***********
 
 Tablespaces in Tajo allow users to define locations in the storage system where the files or data objects representing database objects can be stored. Once defined, a tablespace can be referred to by name when creating a database or a table. Especially, it is very useful when a Tajo cluster instance should use heterogeneous storage systems such as HDFS, MySQL, and Oracle.
 
