@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1983: Improve memory usage of ExternalSortExec. (jinho)
+
     TAJO-1986: Rename the name 'option' to 'property' in TableMeta. (hyunsik)
 
     TAJO-1988: Remove some duplicated codes in toString() of Projectable.
