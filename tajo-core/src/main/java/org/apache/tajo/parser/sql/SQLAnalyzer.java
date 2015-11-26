@@ -295,9 +295,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Projection visitSelect_list(Select_listContext ctx) {
     Projection projection = new Projection();
-    NamedExpr[] targets = new NamedExpr[ctx.select_sublist().size()];
-    for (int i = 0; i < targets.length; i++) {
-      targets[i] = visitSelect_sublist(ctx.select_sublist(i));
+    List<NamedExpr> targets = new ArrayList<>();
+    for (int i = 0; i < ctx.select_sublist().size(); i++) {
+      targets.add(visitSelect_sublist(ctx.select_sublist(i)));
     }
     projection.setNamedExprs(targets);
 
@@ -1235,11 +1235,11 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     String tableName = buildIdentifierChain(ctx.table_name().identifier());
     Relation relation = new Relation(tableName);
     SortSpec[] sortSpecs = buildSortSpecs(ctx.sort_specifier_list());
-    NamedExpr[] targets = new NamedExpr[sortSpecs.length];
+    List<NamedExpr> targets = new ArrayList<>();
     Projection projection = new Projection();
     int i = 0;
     for (SortSpec sortSpec : sortSpecs) {
-      targets[i++] = new NamedExpr(sortSpec.getKey());
+      targets.add(new NamedExpr(sortSpec.getKey()));
     }
     projection.setNamedExprs(targets);
     projection.setChild(relation);
@@ -1678,7 +1678,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           .map(value -> new NamedExpr(visitRow_value_predicand(value)))
           .collect(Collectors.toList());
       Projection projection = new Projection();
-      projection.setNamedExprs(values.toArray(new NamedExpr[values.size()]));
+      projection.setNamedExprs(values);
       insertExpr.setSubQuery(projection);
     } else {
       insertExpr.setSubQuery(visitQuery_expression(ctx.query_expression()));

@@ -423,11 +423,11 @@ public class TestCatalogAgainstCaseSensitivity {
     String tableName = "testTable1";
 
     TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
-    assertEquals("ThisIsTest", tableDesc.getMeta().getOption("testString"));
-    assertEquals("true", tableDesc.getMeta().getOption("testBool"));
-    assertEquals("0.2", tableDesc.getMeta().getOption("testFloat"));
-    assertEquals("60", tableDesc.getMeta().getOption("testInt"));
-    assertEquals("800", tableDesc.getMeta().getOption("testLong"));
+    assertEquals("ThisIsTest", tableDesc.getMeta().getProperty("testString"));
+    assertEquals("true", tableDesc.getMeta().getProperty("testBool"));
+    assertEquals("0.2", tableDesc.getMeta().getProperty("testFloat"));
+    assertEquals("60", tableDesc.getMeta().getProperty("testInt"));
+    assertEquals("800", tableDesc.getMeta().getProperty("testLong"));
   }
 
   @Test

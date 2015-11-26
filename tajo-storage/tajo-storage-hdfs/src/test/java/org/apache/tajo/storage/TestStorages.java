@@ -217,9 +217,9 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
     }
 
@@ -315,9 +315,9 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
     }
 
@@ -392,10 +392,10 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       String path = JavaResourceUtil.getResourceURL("dataset/testVariousTypes.avsc").toString();
-      meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -466,13 +466,13 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
-    meta.putOption(StorageConstants.TEXT_NULL, "\\\\N");
-    meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
-    meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
-    meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.putProperty(StorageConstants.TEXT_NULL, "\\\\N");
+    meta.putProperty(StorageConstants.RCFILE_NULL, "\\\\N");
+    meta.putProperty(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putProperty(StorageConstants.SEQUENCEFILE_NULL, "\\");
     if (dataFormat.equalsIgnoreCase("AVRO")) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
@@ -561,7 +561,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putProperty(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -630,7 +630,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
+    meta.putProperty(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -699,7 +699,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putProperty(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -771,7 +771,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
+    meta.putProperty(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -954,7 +954,7 @@ public class TestStorages {
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
     }
 
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.RAW)) {
@@ -1019,7 +1019,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -1083,7 +1083,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
 
     Path tablePath = new Path(testDir, "test_dataformat_oversize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -1168,9 +1168,9 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
-      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
     }
 

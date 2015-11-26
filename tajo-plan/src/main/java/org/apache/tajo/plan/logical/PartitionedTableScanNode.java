@@ -20,6 +20,7 @@ package org.apache.tajo.plan.logical;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.plan.PlanString;
@@ -56,18 +57,6 @@ public class PartitionedTableScanNode extends ScanNode {
   public Path [] getInputPaths() {
     return inputPaths;
   }
-	
-	public String toString() {
-    StringBuilder sb = new StringBuilder("Partitions Scan (table=").append(getTableName());
-    if (hasAlias()) {
-      sb.append(", alias=").append(alias);
-    }
-    if (hasQual()) {
-      sb.append(", filter=").append(qual);
-    }
-    sb.append(", uri=").append(getTableDesc().getUri()).append(")");
-	  return sb.toString();
-	}
 
   @Override
   public int hashCode() {
@@ -134,15 +123,7 @@ public class PartitionedTableScanNode extends ScanNode {
     }
 
     if (hasTargets()) {
-      planStr.addExplan("target list: ");
-      boolean first = true;
-      for (Target target : targets) {
-        if (!first) {
-          planStr.appendExplain(", ");
-        }
-        planStr.appendExplain(target.toString());
-        first = false;
-      }
+      planStr.addExplan("target list: ").appendExplain(StringUtils.join(targets, ", "));
     }
 
     planStr.addDetail("out schema: ").appendDetail(getOutSchema().toString());

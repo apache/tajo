@@ -23,18 +23,21 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Projection extends UnaryOperator implements Cloneable {
   @Expose @SerializedName("IsDistinct")
   private boolean distinct = false;
   @Expose @SerializedName("Projections")
-  private NamedExpr[] targets;
+  private List<NamedExpr> targets;
 
   public Projection() {
     super(OpType.Projection);
   }
 
   public int size() {
-    return targets.length;
+    return targets.size();
   }
 
   public boolean isDistinct() {
@@ -45,11 +48,11 @@ public class Projection extends UnaryOperator implements Cloneable {
     distinct = true;
   }
 
-	public NamedExpr[] getNamedExprs() {
+  public List<NamedExpr> getNamedExprs() {
 	  return this.targets;
 	}
 
-  public void setNamedExprs(NamedExpr[] targets) {
+  public void setNamedExprs(List<NamedExpr> targets) {
     this.targets = targets;
   }
 
@@ -74,9 +77,9 @@ public class Projection extends UnaryOperator implements Cloneable {
     Projection projection = (Projection)super.clone();
     projection.distinct = distinct;
     if (targets != null) {
-      projection.targets = new NamedExpr[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        projection.targets[i] = targets[i].clone();
+      projection.targets = new ArrayList<>();
+      for (int i = 0; i < targets.size(); i++) {
+        projection.targets.add(targets.get(i).clone());
       }
     }
 

@@ -78,7 +78,7 @@ public class DelimitedTextFile {
     String serDeClassName;
 
     // if there is no given serde class, it will use CSV line serder.
-    serDeClassName = meta.getOption(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_TEXT_SERDE_CLASS);
+    serDeClassName = meta.getProperty(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_TEXT_SERDE_CLASS);
 
     try {
       Class<? extends TextLineSerDe> serdeClass;
@@ -147,8 +147,8 @@ public class DelimitedTextFile {
       }
       os.reset();
 
-      if (this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
-        String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
+      if (this.meta.containsProperty(StorageConstants.COMPRESSION_CODEC)) {
+        String codecName = this.meta.getProperty(StorageConstants.COMPRESSION_CODEC);
         codecFactory = new CompressionCodecFactory(conf);
         codec = codecFactory.getCodecByClassName(codecName);
         compressor = CodecPool.getCompressor(codec);
@@ -294,7 +294,7 @@ public class DelimitedTextFile {
       endOffset = startOffset + fragment.getLength();
 
       errorTorrenceMaxNum =
-          Integer.parseInt(meta.getOption(TEXT_ERROR_TOLERANCE_MAXNUM, DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM));
+          Integer.parseInt(meta.getProperty(TEXT_ERROR_TOLERANCE_MAXNUM, DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM));
     }
 
 
@@ -329,7 +329,7 @@ public class DelimitedTextFile {
       } else { // skip header lines if it is defined
 
         // initialization for skipping header(max 20)
-        int headerLineNum = Math.min(Integer.parseInt(meta.getOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "0")), 20);
+        int headerLineNum = Math.min(Integer.parseInt(meta.getProperty(StorageConstants.TEXT_SKIP_HEADER_LINE, "0")), 20);
         if (headerLineNum > 0) {
           LOG.info(String.format("Skip %d header lines", headerLineNum));
           for (int i = 0; i < headerLineNum; i++) {
