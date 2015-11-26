@@ -42,6 +42,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1862: TSQL gives user wrong URL of documentation. 
+    (Contributed by Dongkyu Hwangbo, committed by hyunsik)
+
     TAJO-1980: Printout the usage of TajoShellCommand.
     (Contributed by Dongkyu Hwangbo, committed by jaehwa)
 
