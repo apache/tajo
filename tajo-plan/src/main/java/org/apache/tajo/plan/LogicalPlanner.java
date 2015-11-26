@@ -309,8 +309,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // It's for debugging or unit tests.
     List<Target> rawTargets = new ArrayList<>();
-    for (int i = 0; i < projection.getNamedExprs().length; i++) {
-      NamedExpr namedExpr = projection.getNamedExprs()[i];
+    for (int i = 0; i < projection.getNamedExprs().size(); i++) {
+      NamedExpr namedExpr = projection.getNamedExprs().get(i);
       EvalNode evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(),
           NameResolvingMode.RELS_AND_SUBEXPRS);
       rawTargets.add(new Target(evalNode, referenceNames[i]));
@@ -406,7 +406,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
                                  Matcher matcher) throws TajoException {
     List<Integer> targetIds = new ArrayList<>();
     for (int i = 0; i < projection.size(); i++) {
-      NamedExpr namedExpr = projection.getNamedExprs()[i];
+      NamedExpr namedExpr = projection.getNamedExprs().get(i);
 
       if (PlannerUtil.existsAggregationFunction(namedExpr)) {
         context.queryBlock.setAggregationRequire();
@@ -438,7 +438,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
                              List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList, Projection projection,
                              List<Integer> targetIds) throws TajoException {
     for (int i : targetIds) {
-      NamedExpr namedExpr = projection.getNamedExprs()[i];
+      NamedExpr namedExpr = projection.getNamedExprs().get(i);
       // Get all projecting references
       if (namedExpr.hasAlias()) {
         NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
@@ -464,11 +464,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
-    int finalTargetNum = projection.getNamedExprs().length;
+    int finalTargetNum = projection.getNamedExprs().size();
     List<Target> targets = new ArrayList<>();
 
     for (int i = 0; i < finalTargetNum; i++) {
-      NamedExpr namedExpr = projection.getNamedExprs()[i];
+      NamedExpr namedExpr = projection.getNamedExprs().get(i);
       EvalNode evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.RELS_ONLY);
       if (namedExpr.hasAlias()) {
         targets.add(new Target(evalNode, namedExpr.getAlias()));
