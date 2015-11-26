@@ -5,7 +5,7 @@ Session Variables
 Once a tajo client connects to the Tajo master, it assigns a unique session. This session is kept until the client is disconnected or it is expired.
 
 For the sake of more convenient user configuration, Tajo provides `session variables`.
-With session variables, various configurations are allowed for each session.
+With session variables, different configurations are allowed for each session.
 
 ``tsql`` provides the meta command ``\set`` to manipulate session variables. Just ``\set`` command shows all session variables. ::
 
@@ -36,6 +36,7 @@ Currently, tajo provides the following session variables.
 
 A threshold for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this threshold.
 
+  * Configuration name: :ref:`tajo.dist-query.broadcast.non-cross-join.threshold-kb`
   * Property value: Integer
   * Unit: KB
   * Default value: 5120
@@ -49,6 +50,7 @@ A threshold for non-cross joins. When a non-cross join query is executed with th
 
 A threshold for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this threshold.
 
+  * Configuration name: :ref:`tajo.dist-query.broadcast.cross-join.threshold-kb`
   * Property value: Integer
   * Unit: KB
   * Default value: 1024
@@ -66,6 +68,7 @@ A threshold for cross joins. When a cross join query is executed, the whole size
 The repartition join is executed in two stages. When a join query is executed with the repartition join, this value indicates the amount of input data processed by each task at the second stage.
 As a result, it determines the degree of the parallel processing of the join query.
 
+  * Configuration name: :ref:`tajo.dist-query.join.task-volume-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -80,6 +83,7 @@ As a result, it determines the degree of the parallel processing of the join que
 The repartition join is executed in two stages. When a join query is executed with the repartition join,
 this value indicates the output size of each task at the first stage, which determines the number of partitions to be shuffled between two stages.
 
+  * Configuration name: :ref:`tajo.dist-query.join.partition-volume-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 128
@@ -95,6 +99,7 @@ This value provides the criterion to decide the algorithm to perform a join in a
 If the input data is smaller than this value, join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
+  * Configuration name: :ref:`tajo.executor.join.common.in-memory-hash-threshold-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -115,6 +120,7 @@ This value provides the criterion to decide the algorithm to perform an inner jo
 If the input data is smaller than this value, the inner join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
+  * Configuration name: :ref:`tajo.executor.join.inner.in-memory-hash-threshold-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -135,6 +141,7 @@ This value provides the criterion to decide the algorithm to perform an outer jo
 If the input data is smaller than this value, the outer join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
+  * Configuration name: :ref:`tajo.executor.join.outer.in-memory-hash-threshold-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -153,6 +160,7 @@ Otherwise, the sort-merge join is used.
 
 The initial size of hash table for in-memory hash join.
 
+  * Configuration name: :ref:`tajo.executor.join.hash-table.size`
   * Property value: Integer
   * Default value: 100000
   * Example
@@ -166,6 +174,7 @@ The initial size of hash table for in-memory hash join.
 The sort operation is executed in two stages. When a sort query is executed, this value indicates the amount of input data processed by each task at the second stage.
 As a result, it determines the degree of the parallel processing of the sort query.
 
+  * Configuration name: :ref:`tajo.dist-query.sort.task-volume-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -179,6 +188,7 @@ As a result, it determines the degree of the parallel processing of the sort que
 
 A threshold to choose the sort algorithm. If the input data is larger than this threshold, the external sort algorithm is used.
 
+  * Configuration name: :ref:`tajo.executor.external-sort.buffer-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 200
@@ -192,6 +202,7 @@ A threshold to choose the sort algorithm. If the input data is larger than this 
 
 The initial size of list for in-memory sort.
 
+  * Configuration name: :ref:`tajo.executor.sort.list.size`
   * Property value: Integer
   * Default value: 100000
   * Example
@@ -205,6 +216,7 @@ The initial size of list for in-memory sort.
 A flag to enable the multi-level algorithm for distinct aggregation. If this value is set, 3-phase aggregation algorithm is used.
 Otherwise, 2-phase aggregation algorithm is used.
 
+  * Configuration name: :ref:`tajo.dist-query.groupby.multi-level-aggr`
   * Property value: Boolean
   * Default value: true
   * Example
@@ -218,6 +230,7 @@ Otherwise, 2-phase aggregation algorithm is used.
 The aggregation is executed in two stages. When an aggregation query is executed,
 this value indicates the output size of each task at the first stage, which determines the number of partitions to be shuffled between two stages.
 
+  * Configuration name: :ref:`tajo.dist-query.groupby.partition-volume-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 256
@@ -232,6 +245,7 @@ this value indicates the output size of each task at the first stage, which dete
 The aggregation operation is executed in two stages. When an aggregation query is executed, this value indicates the amount of input data processed by each task at the second stage.
 As a result, it determines the degree of the parallel processing of the aggregation query.
 
+  * Configuration name: :ref:`tajo.dist-query.groupby.task-volume-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -247,6 +261,7 @@ This value provides the criterion to decide the algorithm to perform an aggregat
 If the input data is smaller than this value, the aggregation is performed with the in-memory hash aggregation.
 Otherwise, the sort-based aggregation is used.
 
+  * Configuration name: :ref:`tajo.executor.groupby.in-memory-hash-threshold-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -265,6 +280,7 @@ Otherwise, the sort-based aggregation is used.
 
 The initial size of hash table for in-memory aggregation.
 
+  * Configuration name: :ref:`tajo.executor.aggregate.hash-table.size`
   * Property value: Integer
   * Default value: 10000
   * Example
@@ -277,6 +293,7 @@ The initial size of hash table for in-memory aggregation.
 
 Refer to :doc:`/time_zone`.
 
+  * Configuration name: :ref:`tajo.timezone`
   * Property value: Time zone id
   * Default value: Default time zone of JVM
   * Example
@@ -289,6 +306,7 @@ Refer to :doc:`/time_zone`.
 
 Date order specification.
 
+  * Configuration name: :ref:`tajo.datetime.date-order`
   * Property value: One of YMD, DMY, MDY.
   * Default value: YMD
   * Example
@@ -301,6 +319,7 @@ Date order specification.
 
 If this value is true, a partitioned table is overwritten even if a subquery leads to no result. Otherwise, the table data will be kept if there is no result.
 
+  * Configuration name: :ref:`tajo.partition.overwrite.even-if-no-result`
   * Property value: Boolean
   * Default value: false
   * Example
@@ -314,6 +333,7 @@ If this value is true, a partitioned table is overwritten even if a subquery lea
 In Tajo, storing a partition table is executed in two stages.
 This value indicates the output size of a task of the former stage, which determines the number of partitions to be shuffled between two stages.
 
+  * Configuration name: :ref:`tajo.dist-query.table-partition.task-volume-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 256
@@ -327,6 +347,7 @@ This value indicates the output size of a task of the former stage, which determ
 
 A flag to indicate how to handle the errors caused by invalid arithmetic operations. If true, a running query will be terminated with an overflow or a divide-by-zero.
 
+  * Configuration name: :ref:`tajo.behavior.arithmetic-abort`
   * Property value: Boolean
   * Default value: false
   * Example
