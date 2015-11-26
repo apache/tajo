@@ -45,6 +45,8 @@ Release 0.11.1 - unreleased
 
   TASKS
 
+    TAJO-1962: Add description for session variables. (jihoon)
+
     TAJO-1857: Rename the section of 'File Formats' to 'Data Formats' and fill 
     compression section of the 'Table Management' chapter.
     (Contributed by Jongyoung Park. Committed by jihoon)
