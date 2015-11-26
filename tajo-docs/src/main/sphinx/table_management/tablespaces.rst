@@ -16,7 +16,7 @@ Other one is managed table, which means internal table, that is created in a spe
 
 Tablespace is a pre-defined physical location where data stored on. It is supported for only managed tables.
 When you create a managed table, you can use the **tablespace** keyword to specify the location of data will be stored.
-If the tablespace is not specified, the default tablespace of the table's database is used. Default tablespace is specified with **tajo.rootdir** and **tajo.warehouse.directory** in tajo-site.xml.
+If the tablespace is not specified, the default tablespace of the table's database is used.
 
 .. note::
 
