@@ -22,7 +22,7 @@ package org.apache.tajo.storage;
  * Storage Properties
  */
 public class StorageProperty {
-  /** default file format */
+  /** default data format */
   private final String defaultFormat;
   /** if this storage supports move operator */
   private final boolean movable;
@@ -47,8 +47,8 @@ public class StorageProperty {
   }
 
   /**
-   * Return default file format
-   * @return Default file format
+   * Return default data format
+   * @return Default data format
    */
   public String defaultFormat() {
     return defaultFormat;
