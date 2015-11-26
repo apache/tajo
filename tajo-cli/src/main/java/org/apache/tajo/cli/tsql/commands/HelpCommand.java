@@ -107,15 +107,15 @@ public class HelpCommand extends TajoShellCommand {
 
     int delimiterIdx = tajoFullVersion.indexOf("-");
     if (delimiterIdx > -1) {
-      tajoVersion =  tajoFullVersion.substring(0, delimiterIdx);
+      tajoVersion = tajoFullVersion.substring(0, delimiterIdx);
     } else {
       tajoVersion = tajoFullVersion;
     }
     
-    if(tajoVersion.equalsIgnoreCase("")) {
+    if(tajoVersion.equalsIgnoreCase("") || tajoFullVersion.contains("SNAPSHOT")) {
       docVersion = docDefaultVersion;
     } else {
-    	docVersion = tajoVersion;
+      docVersion = tajoVersion;
     }
 
     return docVersion;
