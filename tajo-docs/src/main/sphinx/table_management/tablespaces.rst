@@ -20,7 +20,7 @@ The configuration file has the following struct:
 
   {
     "spaces": {
-      "${table_space_name}": {
+      "${tablespace_name}": {
         "uri": "hbase://quorum1:port,quorum2:port/"
       }
     }
@@ -42,7 +42,7 @@ The following is an example for two tablespaces for hbase and hdfs:
     }
   }
 
-For more tails, see :doc:`conf/storage-site.json</configuration/storage-site-json>`.
+For more details, see :doc:`conf/storage-site.json</configuration/storage-site-json>`.
 
 
 .. note::

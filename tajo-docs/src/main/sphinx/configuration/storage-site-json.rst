@@ -2,7 +2,7 @@
 The storage-site.json File
 **************************
 
-This file is for configuring :doc:`table spaces</table_management/tablespaces>`.
+This file is for configuring :doc:`/table_management/tablespaces`.
 The syntax of ``storage-site.json`` is like this basically:
 
 .. code:: json
@@ -20,23 +20,29 @@ The syntax of ``storage-site.json`` is like this basically:
 Spaces
 ------
 
-This is a section for registering table spaces. Some space config example is here:
+This is a section for registering tablespaces. Some space config example is here:
 
 .. code:: json
 
   "spaces": {
-    "hbase_cluster1": {
-      "uri": "hbase://quorum1:port,quorum2:port/",
-      "config": { ... }
+    "jdbc_mysql": {
+      "uri": "jdbc:mysql://127.0.0.1:3306",
+      "configs": {
+        "mapped_database":"mydb",
+        "connection_properties": {
+          "username":"tajouser",
+          "password":"123456"
+        }
+      }
     },
     ...
   }
 
-* **space name** : Your own table space name which indicates a specific table space. Alpha-numeric characters and underscore(_) are permitted.
-* **uri** : An URI address of a table space
-* **config** : It is optional. You can specify it as JSON object to pass to each table space handler.
+* **space name** : Your own tablespace name which indicates a specific tablespace. Alpha-numeric characters and underscore(_) are permitted.
+* **uri** : An URI address of a tablespace
+* **configs** : It is optional. You can specify it as JSON object to pass to each tablespace handler.
 
-After you specify a table space, you can use it in `create table statement <../sql_language/ddl.html#create-table>`_.
+After you specify a tablespace, you can use it in `create table statement <../sql_language/ddl.html#create-table>`_.
 
 --------
 Storages
