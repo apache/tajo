@@ -321,8 +321,8 @@ public class TajoMaster extends CompositeService {
     // check base tablespace and databases
     checkBaseTBSpaceAndDatabase();
 
-    initSystemMetrics();
     super.serviceStart();
+    initSystemMetrics();
 
     // Setting the system global configs
     systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
