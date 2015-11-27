@@ -40,8 +40,6 @@ public class TestS3TableSpace {
     S3TableSpace tablespace = new S3TableSpace(SPACENAME, URI.create(S3_URI), new JSONObject());
 
     TajoConf tajoConf = new TajoConf();
-    tajoConf.set("fs.s3n.awsSecretAccessKey", "test_secret_access_key");
-    tajoConf.set("fs.s3n.awsAccessKeyId", "test_access_key_id");
     tajoConf.set("fs.s3.impl", MockS3FileSystem.class.getName());
     tablespace.init(tajoConf);
 
