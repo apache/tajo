@@ -61,15 +61,13 @@ import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.index.bst.BSTIndex;
+import org.apache.tajo.util.Pair;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -314,6 +312,9 @@ public class TajoPullServerService extends AbstractService {
       }
 
       localFS.close();
+//      for (BSTIndexReader reader : indexRangeMap.values()) {
+//        reader.close();
+//      }
     } catch (Throwable t) {
       LOG.error(t, t);
     } finally {
@@ -508,7 +509,7 @@ public class TajoPullServerService extends AbstractService {
 
           FileChunk chunk;
           try {
-            chunk = getFileChunks(path, startKey, endKey, last);
+            chunk = getFileChunks(getConfig(), path, startKey, endKey, last);
           } catch (Throwable t) {
             LOG.error("ERROR Request: " + request.getUri(), t);
             sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
@@ -663,26 +664,51 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
-  public static FileChunk getFileChunks(Path outDir,
+  private static Schema keySchema = null;
+  private static TupleComparator comparator = null;
+  private static RowStoreDecoder decoder;
+  // map of (input path, (start key, end key))
+  private static Map<Path, Pair<Tuple, Tuple>> indexRangeMap = new HashMap<>(10000);
+
+  public static FileChunk getFileChunks(Configuration conf,
+                                        Path outDir,
                                         String startKey,
                                         String endKey,
                                         boolean last) throws IOException {
-    BSTIndex index = new BSTIndex(new TajoConf());
-    BSTIndex.BSTIndexReader idxReader =
-        index.getIndexReader(new Path(outDir, "index"));
-    idxReader.open();
-    Schema keySchema = idxReader.getKeySchema();
-    TupleComparator comparator = idxReader.getComparator();
+    LOG.info("outDir: " + outDir);
+    BSTIndex.BSTIndexReader idxReader = null;
+    Tuple indexedFirst, indexedLast;
+    if (indexRangeMap.containsKey(outDir)) {
+      Pair<Tuple, Tuple> startEndKeyPair = indexRangeMap.get(outDir);
+      indexedFirst = startEndKeyPair.getFirst();
+      indexedLast = startEndKeyPair.getSecond();
+    } else {
+      idxReader = new BSTIndex(conf).getIndexReader(new Path(outDir, "index"));
+      idxReader.open();
+      keySchema = idxReader.getKeySchema();
+      decoder = RowStoreUtil.createDecoder(keySchema);
+      comparator = idxReader.getComparator();
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() + ")");
+      indexRangeMap.put(outDir, new Pair<>(idxReader.getFirstKey(), idxReader.getLastKey()));
+      indexedFirst = idxReader.getFirstKey();
+      indexedLast = idxReader.getLastKey();
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() + ")");
+      }
     }
 
-    File data = new File(URI.create(outDir.toUri() + "/output"));
+    if (indexedFirst == null && indexedLast == null) { // if # of rows is zero
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("There is no contents");
+      }
+      return null;
+    }
+
     byte [] startBytes = Base64.decodeBase64(startKey);
     byte [] endBytes = Base64.decodeBase64(endKey);
 
-    RowStoreDecoder decoder = RowStoreUtil.createDecoder(keySchema);
+
     Tuple start;
     Tuple end;
     try {
@@ -699,25 +725,25 @@ public class TajoPullServerService extends AbstractService {
           + ", decoded byte size: " + endBytes.length, t);
     }
 
+    File data = new File(URI.create(outDir.toUri() + "/output"));
+
     if (LOG.isDebugEnabled()) {
       LOG.debug("GET Request for " + data.getAbsolutePath() + " (start=" + start + ", end=" + end +
           (last ? ", last=true" : "") + ")");
     }
 
-    if (idxReader.getFirstKey() == null && idxReader.getLastKey() == null) { // if # of rows is zero
+    if (comparator.compare(end, indexedFirst) < 0 ||
+        comparator.compare(indexedLast, start) < 0) {
       if (LOG.isDebugEnabled()) {
-        LOG.debug("There is no contents");
+        LOG.debug("Out of Scope (indexed data [" + indexedFirst + ", " + indexedLast +
+            "], but request start:" + start + ", end: " + end);
       }
       return null;
     }
 
-    if (comparator.compare(end, idxReader.getFirstKey()) < 0 ||
-        comparator.compare(idxReader.getLastKey(), start) < 0) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Out of Scope (indexed data [" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() +
-            "], but request start:" + start + ", end: " + end);
-      }
-      return null;
+    if (idxReader == null) {
+      idxReader = new BSTIndex(conf).getIndexReader(new Path(outDir, "index"));
+      idxReader.open();
     }
 
     long startOffset;

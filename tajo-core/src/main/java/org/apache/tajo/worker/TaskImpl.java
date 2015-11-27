@@ -782,11 +782,10 @@ public class TaskImpl implements Task {
         boolean last = params.get("final") != null;
 
         try {
-          FileChunk chunk = TajoPullServerService.getFileChunks(path, startKey, endKey, last);
+          FileChunk chunk = TajoPullServerService.getFileChunks(conf, path, startKey, endKey, last);
           chunkList.add(chunk);
         } catch (Throwable t) {
-          LOG.error("getFileChunks() throws exception");
-          return null;
+          throw new RuntimeException(t);
         }
       }
 
