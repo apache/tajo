@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestS3TableSpace {
   public static final String SPACENAME = "s3_cluster";
-  public static final String S3_URI = "s3n://tajo-test/";
+  public static final String S3_URI = "s3://tajo-test/";
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -42,6 +42,7 @@ public class TestS3TableSpace {
     TajoConf tajoConf = new TajoConf();
     tajoConf.set("fs.s3n.awsSecretAccessKey", "test_secret_access_key");
     tajoConf.set("fs.s3n.awsAccessKeyId", "test_access_key_id");
+    tajoConf.set("fs.s3.impl", MockS3FileSystem.class.getName());
     tablespace.init(tajoConf);
 
     TablespaceManager.addTableSpaceForTest(tablespace);
