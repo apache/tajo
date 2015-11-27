@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util.metrics;
 
+import com.codahale.metrics.JmxReporter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.FileDescriptorRatioGauge;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
@@ -50,6 +51,8 @@ public class TajoSystemMetrics extends TajoMetrics {
   private boolean inited = false;
 
   private String metricsPropertyFileName;
+
+  private JmxReporter jmxReporter;
 
   public TajoSystemMetrics(TajoConf tajoConf, Class clazz, String hostAndPort) {
     super(MetricsUtil.getGroupName(clazz));
@@ -96,6 +99,7 @@ public class TajoSystemMetrics extends TajoMetrics {
       propertyChangeChecker.interrupt();
     }
     stopAndClearReporter();
+    jmxReporter.close();
   }
 
   protected void stopAndClearReporter() {
@@ -120,6 +124,9 @@ public class TajoSystemMetrics extends TajoMetrics {
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "GC"), new GarbageCollectorMetricSet());
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "THREAD"), new ThreadStatesGaugeSet());
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "LOG"), new LogEventGaugeSet());
+      jmxReporter = JmxReporter.forRegistry(metricRegistry).inDomain("Tajo")
+              .createsObjectNamesWith(new TajoJMXObjectNameFactory()).build();
+      jmxReporter.start();
     }
     inited = true;
   }
