@@ -124,6 +124,10 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1856: Add a description about the relationship of tablespace, managed table, 
+    and external table to Tablespace section of Table Management chapter. 
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1922: Allow date types with IN operator for partition pruning. (jaehwa)
 
     TAJO-1967: Replace 'try finally' with 'try' with resources.
