@@ -819,7 +819,7 @@ public class TajoPullServerService extends AbstractService {
         && comparator.compare(idxReader.getLastKey(), end) < 0)) {
       endOffset = data.length();
     }
-    
+
     FileChunk chunk = new FileChunk(data, startOffset, endOffset - startOffset);
 
     if(LOG.isDebugEnabled()) LOG.debug("Retrieve File Chunk: " + chunk);

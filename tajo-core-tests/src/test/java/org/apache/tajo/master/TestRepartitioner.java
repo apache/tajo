@@ -247,8 +247,9 @@ public class TestRepartitioner {
       intermediateEntries.add(interm);
     }
 
+    ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     long splitVolume = 128 * 1024 * 1024;
-    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, intermediateEntries,
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", ebId, intermediateEntries,
         splitVolume, 10 * 1024 * 1024);
     assertEquals(32, fetches.size());
 
