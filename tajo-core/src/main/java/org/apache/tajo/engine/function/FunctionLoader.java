@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.GENERAL;
 
@@ -117,8 +118,7 @@ public class FunctionLoader {
           filePaths.add(codePath);
         }
         for (Path filePath : filePaths) {
-              PythonScriptEngine.registerFunctions(filePath.toUri(), FunctionLoader.PYTHON_FUNCTION_NAMESPACE)
-                  .stream().map(functionList::add);
+          PythonScriptEngine.registerFunctions(filePath.toUri(), FunctionLoader.PYTHON_FUNCTION_NAMESPACE).forEach(functionList::add);
         }
       }
     }
@@ -297,13 +297,14 @@ public class FunctionLoader {
       throws AmbiguousFunctionException {
 
     Map<Integer, FunctionDesc> funcMap = new HashMap<>();
+    List<FunctionDesc> baseFuncList = functionLists[0];
 
     // Build a map with a first list
-    for (FunctionDesc desc: functionLists[0]) {
+    for (FunctionDesc desc: baseFuncList) {
       funcMap.put(desc.hashCodeWithoutType(), desc);
     }
 
-    // Check duplicates for other function lists
+    // Check duplicates for other function lists(should be UDFs practically)
     for (int i=1; i<functionLists.length; i++) {
       for (FunctionDesc desc: functionLists[i]) {
         if (funcMap.containsKey(desc.hashCodeWithoutType())) {
@@ -311,9 +312,10 @@ public class FunctionLoader {
         }
 
         funcMap.put(desc.hashCodeWithoutType(), desc);
+        baseFuncList.add(desc);
       }
     }
 
-    return funcMap.values();
+    return baseFuncList;
   }
 }
