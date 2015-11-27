@@ -33,10 +33,8 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.metrics.Node;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
@@ -199,6 +197,7 @@ public class TajoWorker extends CompositeService {
       httpPort = initWebServer();
     }
 
+    initWorkerMetrics();
     super.serviceInit(conf);
 
     int pullServerPort;
@@ -327,7 +326,6 @@ public class TajoWorker extends CompositeService {
       initCleanupService();
     }
 
-    initWorkerMetrics();
     super.serviceStart();
     LOG.info("Tajo Worker is started");
   }

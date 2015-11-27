@@ -203,6 +203,8 @@ public class TajoMaster extends CompositeService {
     addIfService(restServer);
 
     PythonScriptEngine.initPythonScriptEngineFiles();
+
+    initSystemMetrics();
     
     // Try to start up all services in TajoMaster.
     // If anyone is failed, the master prints out the errors and immediately should shutdowns
@@ -334,8 +336,6 @@ public class TajoMaster extends CompositeService {
     }
 
     initWebServer();
-    initSystemMetrics();
-
     haService = ServiceTrackerFactory.get(systemConf);
     haService.register();
 
