@@ -46,7 +46,6 @@ import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.TaskHistory;
-import org.apache.tajo.worker.FetchImpl;
 
 import java.net.URI;
 import java.util.*;
@@ -55,8 +54,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.ResourceProtos.*;
+import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class Task implements EventHandler<TaskEvent> {
   /** Class Logger */
@@ -70,7 +69,7 @@ public class Task implements EventHandler<TaskEvent> {
 	private List<ScanNode> scan;
 	
 	private Map<String, Set<FragmentProto>> fragMap;
-	private Map<String, Set<FetchImpl>> fetchMap;
+	private Map<String, Set<FetchProto>> fetchMap;
 
   private int totalFragmentNum;
 
@@ -282,9 +281,9 @@ public class Task implements EventHandler<TaskEvent> {
     taskHistory.setFragments(fragmentList.toArray(new String[fragmentList.size()]));
 
     List<String[]> fetchList = new ArrayList<>();
-    for (Map.Entry<String, Set<FetchImpl>> e : getFetchMap().entrySet()) {
-      for (FetchImpl f : e.getValue()) {
-        for (URI uri : f.getSimpleURIs()){
+    for (Map.Entry<String, Set<FetchProto>> e : getFetchMap().entrySet()) {
+      for (FetchProto f : e.getValue()) {
+        for (URI uri : Repartitioner.createSimpleURIs(f)){
           fetchList.add(new String[] {e.getKey(), uri.toString()});
         }
       }
@@ -364,8 +363,8 @@ public class Task implements EventHandler<TaskEvent> {
     return succeededWorker;
   }
 	
-	public void addFetches(String tableId, Collection<FetchImpl> fetches) {
-	  Set<FetchImpl> fetchSet;
+	public void addFetches(String tableId, Collection<FetchProto> fetches) {
+	  Set<FetchProto> fetchSet;
     if (fetchMap.containsKey(tableId)) {
       fetchSet = fetchMap.get(tableId);
     } else {
@@ -375,7 +374,7 @@ public class Task implements EventHandler<TaskEvent> {
     fetchMap.put(tableId, fetchSet);
 	}
 	
-	public void setFetches(Map<String, Set<FetchImpl>> fetches) {
+	public void setFetches(Map<String, Set<FetchProto>> fetches) {
 	  this.fetchMap.clear();
 	  this.fetchMap.putAll(fetches);
 	}
@@ -395,27 +394,15 @@ public class Task implements EventHandler<TaskEvent> {
 	public TaskId getId() {
 		return taskId;
 	}
-	
-	public Collection<FetchImpl> getFetchHosts(String tableId) {
-	  return fetchMap.get(tableId);
-	}
-	
-	public Collection<Set<FetchImpl>> getFetches() {
+
+	public Collection<Set<FetchProto>> getFetches() {
 	  return fetchMap.values();
 	}
 
-  public Map<String, Set<FetchImpl>> getFetchMap() {
+  public Map<String, Set<FetchProto>> getFetchMap() {
     return fetchMap;
   }
-	
-	public Collection<FetchImpl> getFetch(ScanNode scan) {
-	  return this.fetchMap.get(scan.getTableName());
-	}
-	
-	public ScanNode[] getScanNodes() {
-	  return this.scan.toArray(new ScanNode[scan.size()]);
-	}
-	
+
 	@Override
 	public String toString() {
     StringBuilder builder = new StringBuilder();
@@ -426,10 +413,10 @@ public class Task implements EventHandler<TaskEvent> {
         builder.append(fragment).append(", ");
       }
 		}
-		for (Entry<String, Set<FetchImpl>> e : fetchMap.entrySet()) {
+		for (Entry<String, Set<FetchProto>> e : fetchMap.entrySet()) {
       builder.append(e.getKey()).append(" : ");
-      for (FetchImpl t : e.getValue()) {
-        for (URI uri : t.getURIs()){
+      for (FetchProto t : e.getValue()) {
+        for (URI uri : Repartitioner.createFullURIs(t)){
           builder.append(uri).append(" ");
         }
       }

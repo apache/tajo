@@ -20,6 +20,7 @@ package org.apache.tajo.pullserver;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.apache.commons.io.FileUtils;
 
 public class FileCloseListener implements GenericFutureListener<ChannelFuture> {
 

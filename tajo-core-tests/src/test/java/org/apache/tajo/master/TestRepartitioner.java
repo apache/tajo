@@ -29,8 +29,8 @@ import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
+import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
 import org.junit.Test;
 
@@ -70,10 +70,8 @@ public class TestRepartitioner {
             new HashMap<>();
 
     for (Map.Entry<Integer, List<IntermediateEntry>> eachEntry: intermediateEntries.entrySet()) {
-      FetchImpl fetch = new FetchImpl(new Task.PullHost(hostName, port), ShuffleType.HASH_SHUFFLE,
+      FetchImpl fetch = new FetchImpl(sid.toString(), new Task.PullHost(hostName, port), ShuffleType.HASH_SHUFFLE,
           sid, eachEntry.getKey(), eachEntry.getValue());
-
-      fetch.setName(sid.toString());
 
       FetchProto proto = fetch.getProto();
       fetch = new FetchImpl(proto);
@@ -84,7 +82,7 @@ public class TestRepartitioner {
 
       hashEntries.put(eachEntry.getKey(), ebEntries);
 
-      List<URI> uris = fetch.getURIs();
+      List<URI> uris = Repartitioner.createFullURIs(fetch.getProto());
       assertEquals(1, uris.size());   //In Hash Suffle, Fetcher return only one URI per partition.
 
       URI uri = uris.get(0);
@@ -119,7 +117,7 @@ public class TestRepartitioner {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     FetchImpl [] fetches = new FetchImpl[12];
     for (int i = 0; i < 12; i++) {
-      fetches[i] = new FetchImpl(new Task.PullHost("localhost", 10000 + i), HASH_SHUFFLE, ebId, i / 2);
+      fetches[i] = new FetchImpl(tableName, new Task.PullHost("localhost", 10000 + i), HASH_SHUFFLE, ebId, i / 2);
     }
 
     int [] VOLUMES = {100, 80, 70, 30, 10, 5};
@@ -128,37 +126,38 @@ public class TestRepartitioner {
       fetchGroups.put(i, new FetchGroupMeta(VOLUMES[i / 2], fetches[i]).addFetche(fetches[i + 1]));
     }
 
-    Pair<Long [], Map<String, List<FetchImpl>>[]> results;
+    FetchProto[] expectedProtos = (FetchProto[]) Arrays.stream(fetches).map(fetch -> fetch.getProto()).toArray();
+    Pair<Long [], Map<String, List<FetchProto>>[]> results;
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 1);
     long expected [] = {100 + 80 + 70 + 30 + 10 + 5};
     assertFetchVolumes(expected, results.getFirst());
-    assertFetchImpl(fetches, results.getSecond());
+    assertFetchProto(expectedProtos, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 2);
     long expected0 [] = {140, 155};
     assertFetchVolumes(expected0, results.getFirst());
-    assertFetchImpl(fetches, results.getSecond());
+    assertFetchProto(expectedProtos, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 3);
     long expected1 [] = {100, 95, 100};
     assertFetchVolumes(expected1, results.getFirst());
-    assertFetchImpl(fetches, results.getSecond());
+    assertFetchProto(expectedProtos, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 4);
     long expected2 [] = {100, 80, 70, 45};
     assertFetchVolumes(expected2, results.getFirst());
-    assertFetchImpl(fetches, results.getSecond());
+    assertFetchProto(expectedProtos, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 5);
     long expected3 [] = {100, 80, 70, 30, 15};
     assertFetchVolumes(expected3, results.getFirst());
-    assertFetchImpl(fetches, results.getSecond());
+    assertFetchProto(expectedProtos, results.getSecond());
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 6);
     long expected4 [] = {100, 80, 70, 30, 10, 5};
     assertFetchVolumes(expected4, results.getFirst());
-    assertFetchImpl(fetches, results.getSecond());
+    assertFetchProto(expectedProtos, results.getSecond());
   }
 
   private static void assertFetchVolumes(long [] expected, Long [] results) {
@@ -191,7 +190,7 @@ public class TestRepartitioner {
     }
 
     long splitVolume = 128 * 1024 * 1024;
-    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, intermediateEntries,
         splitVolume, 10 * 1024 * 1024);
     assertEquals(6, fetches.size());
 
@@ -199,10 +198,10 @@ public class TestRepartitioner {
     int index = 0;
     int numZeroPosFetcher = 0;
     long totalLength = 0;
-    for (List<FetchImpl> eachFetchList: fetches) {
+    for (List<FetchProto> eachFetchList: fetches) {
       totalInterms += eachFetchList.size();
       long eachFetchVolume = 0;
-      for (FetchImpl eachFetch: eachFetchList) {
+      for (FetchProto eachFetch: eachFetchList) {
         eachFetchVolume += eachFetch.getLength();
         if (eachFetch.getOffset() == 0) {
           numZeroPosFetcher++;
@@ -249,7 +248,7 @@ public class TestRepartitioner {
     }
 
     long splitVolume = 128 * 1024 * 1024;
-    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, intermediateEntries,
         splitVolume, 10 * 1024 * 1024);
     assertEquals(32, fetches.size());
 
@@ -258,15 +257,15 @@ public class TestRepartitioner {
     long totalLength = 0;
     Set<String> uniqPullHost = new HashSet<>();
 
-    for (List<FetchImpl> eachFetchList: fetches) {
+    for (List<FetchProto> eachFetchList: fetches) {
       long length = 0;
-      for (FetchImpl eachFetch: eachFetchList) {
+      for (FetchProto eachFetch: eachFetchList) {
         if (eachFetch.getOffset() == 0) {
           numZeroPosFetcher++;
         }
         totalLength += eachFetch.getLength();
         length += eachFetch.getLength();
-        uniqPullHost.add(eachFetch.getPullHost().toString());
+        uniqPullHost.add(new PullHost(eachFetch.getHost(), eachFetch.getPort()).toString());
       }
       assertTrue(length + " should be smaller than splitVolume", length < splitVolume);
       if (index < fetches.size() - 1) {
@@ -378,7 +377,7 @@ public class TestRepartitioner {
     }
 
     long splitVolume = 256 * 1024 * 1024;
-    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, entries, splitVolume,
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, entries, splitVolume,
         10 * 1024 * 1024);
 
 
@@ -393,13 +392,13 @@ public class TestRepartitioner {
         {728355084,121760359},
     };
     int index = 0;
-    for (List<FetchImpl> eachFetchList: fetches) {
+    for (List<FetchProto> eachFetchList: fetches) {
       if (index == 3) {
         assertEquals(2, eachFetchList.size());
       } else {
         assertEquals(1, eachFetchList.size());
       }
-      for (FetchImpl eachFetch: eachFetchList) {
+      for (FetchProto eachFetch: eachFetchList) {
         assertEquals(expected[index][0], eachFetch.getOffset());
         assertEquals(expected[index][1], eachFetch.getLength());
         index++;
@@ -438,13 +437,13 @@ public class TestRepartitioner {
     }
 
     long splitVolume = 128 * 1024 * 1024;
-    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, intermediateEntries,
         splitVolume, 10 * 1024 * 1024);
     assertEquals(32, fetches.size());
 
     int expectedSize = 0;
-    Set<FetchImpl> fetchSet = new HashSet<>();
-    for(List<FetchImpl> list : fetches){
+    Set<FetchProto> fetchSet = new HashSet<>();
+    for(List<FetchProto> list : fetches){
       expectedSize += list.size();
       fetchSet.addAll(list);
     }
@@ -456,15 +455,15 @@ public class TestRepartitioner {
     long totalLength = 0;
     Set<String> uniqPullHost = new HashSet<>();
 
-    for (List<FetchImpl> eachFetchList: fetches) {
+    for (List<FetchProto> eachFetchList: fetches) {
       long length = 0;
-      for (FetchImpl eachFetch: eachFetchList) {
+      for (FetchProto eachFetch: eachFetchList) {
         if (eachFetch.getOffset() == 0) {
           numZeroPosFetcher++;
         }
         totalLength += eachFetch.getLength();
         length += eachFetch.getLength();
-        uniqPullHost.add(eachFetch.getPullHost().toString());
+        uniqPullHost.add(new PullHost(eachFetch.getHost(), eachFetch.getPort()).toString());
       }
       assertTrue(length + " should be smaller than splitVolume", length < splitVolume);
       if (index < fetches.size() - 1) {
@@ -482,25 +481,25 @@ public class TestRepartitioner {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     Task.PullHost pullHost = new Task.PullHost("localhost", 0);
 
-    FetchImpl expected = new FetchImpl(pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);
-    FetchImpl fetch2 = new FetchImpl(pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);
+    FetchImpl expected = new FetchImpl("name", pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);
+    FetchImpl fetch2 = new FetchImpl("name", pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);
     assertEquals(expected, fetch2);
     fetch2.setOffset(5);
     fetch2.setLength(10);
     assertNotEquals(expected, fetch2);
   }
 
-  private static void assertFetchImpl(FetchImpl [] expected, Map<String, List<FetchImpl>>[] result) {
-    Set<FetchImpl> expectedURLs = Sets.newHashSet();
+  private static void assertFetchProto(FetchProto [] expected, Map<String, List<FetchProto>>[] result) {
+    Set<FetchProto> expectedURLs = Sets.newHashSet();
 
-    for (FetchImpl f : expected) {
+    for (FetchProto f : expected) {
       expectedURLs.add(f);
     }
 
-    Set<FetchImpl> resultURLs = Sets.newHashSet();
+    Set<FetchProto> resultURLs = Sets.newHashSet();
 
-    for (Map<String, List<FetchImpl>> e : result) {
-      for (List<FetchImpl> list : e.values()) {
+    for (Map<String, List<FetchProto>> e : result) {
+      for (List<FetchProto> list : e.values()) {
         resultURLs.addAll(list);
       }
     }

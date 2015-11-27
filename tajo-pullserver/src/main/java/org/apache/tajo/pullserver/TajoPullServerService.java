@@ -117,6 +117,8 @@ public class TajoPullServerService extends AbstractService {
   private static final AtomicIntegerFieldUpdater<ProcessingStatus> SLOW_FILE_UPDATER;
   private static final AtomicIntegerFieldUpdater<ProcessingStatus> REMAIN_FILE_UPDATER;
 
+  public static final String CHUNK_LENGTH_HEADER_NAME = "Chunk-Length";
+
   static {
     /* AtomicIntegerFieldUpdater can save the memory usage instead of AtomicInteger instance */
     SLOW_FILE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(ProcessingStatus.class, "numSlowFile");
@@ -491,27 +493,30 @@ public class TajoPullServerService extends AbstractService {
 
       // if a stage requires a range shuffle
       if (shuffleType.equals("r")) {
-        Path outputPath = StorageUtil.concatPath(queryBaseDir, taskIds.get(0), "output");
-        if (!lDirAlloc.ifExists(outputPath.toString(), conf)) {
-          LOG.warn(outputPath + "does not exist.");
-          sendError(ctx, HttpResponseStatus.NO_CONTENT);
-          return;
-        }
-        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(outputPath.toString(), conf));
-        String startKey = params.get("start").get(0);
-        String endKey = params.get("end").get(0);
-        boolean last = params.get("final") != null;
+        // TODO: iterating task ids
+        for (String eachTaskId : taskIds) {
+          Path outputPath = StorageUtil.concatPath(queryBaseDir, eachTaskId, "output");
+          if (!lDirAlloc.ifExists(outputPath.toString(), conf)) {
+            LOG.warn(outputPath + "does not exist.");
+            sendError(ctx, HttpResponseStatus.NO_CONTENT);
+            continue;
+          }
+          Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(outputPath.toString(), conf));
+          String startKey = params.get("start").get(0);
+          String endKey = params.get("end").get(0);
+          boolean last = params.get("final") != null;
 
-        FileChunk chunk;
-        try {
-          chunk = getFileChunks(path, startKey, endKey, last);
-        } catch (Throwable t) {
-          LOG.error("ERROR Request: " + request.getUri(), t);
-          sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
-          return;
-        }
-        if (chunk != null) {
-          chunks.add(chunk);
+          FileChunk chunk;
+          try {
+            chunk = getFileChunks(path, startKey, endKey, last);
+          } catch (Throwable t) {
+            LOG.error("ERROR Request: " + request.getUri(), t);
+            sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
+            return;
+          }
+          if (chunk != null) {
+            chunks.add(chunk);
+          }
         }
 
         // if a stage requires a hash shuffle or a scattered hash shuffle
@@ -536,7 +541,9 @@ public class TajoPullServerService extends AbstractService {
           sendError(ctx, errorMessage, HttpResponseStatus.BAD_REQUEST);
           return;
         }
-        LOG.info("RequestURL: " + request.getUri() + ", fileLen=" + file.length());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("RequestURL: " + request.getUri() + ", fileLen=" + file.length());
+        }
         FileChunk chunk = new FileChunk(file, startPos, readLen);
         chunks.add(chunk);
       } else {
@@ -545,8 +552,6 @@ public class TajoPullServerService extends AbstractService {
         return;
       }
 
-      processingStatus.setNumFiles(chunks.size());
-      processingStatus.makeFileListTime = System.currentTimeMillis() - processingStatus.startTime;
       // Write the content.
       if (chunks.size() == 0) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
@@ -564,6 +569,7 @@ public class TajoPullServerService extends AbstractService {
         long totalSize = 0;
         for (FileChunk chunk : file) {
           totalSize += chunk.length();
+          HttpHeaders.addHeader(response, CHUNK_LENGTH_HEADER_NAME, chunk.length());
         }
         HttpHeaders.setContentLength(response, totalSize);
 
@@ -580,6 +586,7 @@ public class TajoPullServerService extends AbstractService {
             return;
           }
         }
+
         if (ctx.pipeline().get(SslHandler.class) == null) {
           writeFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         } else {
@@ -617,7 +624,7 @@ public class TajoPullServerService extends AbstractService {
           writeFuture = ctx.write(new HttpChunkedInput(chunk));
         }
       } catch (FileNotFoundException e) {
-        LOG.info(file.getFile() + " not found");
+        LOG.fatal(file.getFile() + " not found");
         return null;
       } catch (Throwable e) {
         if (spill != null) {
@@ -692,18 +699,24 @@ public class TajoPullServerService extends AbstractService {
           + ", decoded byte size: " + endBytes.length, t);
     }
 
-    LOG.info("GET Request for " + data.getAbsolutePath() + " (start="+start+", end="+ end +
-        (last ? ", last=true" : "") + ")");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("GET Request for " + data.getAbsolutePath() + " (start=" + start + ", end=" + end +
+          (last ? ", last=true" : "") + ")");
+    }
 
     if (idxReader.getFirstKey() == null && idxReader.getLastKey() == null) { // if # of rows is zero
-      LOG.info("There is no contents");
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("There is no contents");
+      }
       return null;
     }
 
     if (comparator.compare(end, idxReader.getFirstKey()) < 0 ||
         comparator.compare(idxReader.getLastKey(), start) < 0) {
-      LOG.warn("Out of Scope (indexed data [" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() +
-          "], but request start:" + start + ", end: " + end);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Out of Scope (indexed data [" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() +
+            "], but request start:" + start + ", end: " + end);
+      }
       return null;
     }
 

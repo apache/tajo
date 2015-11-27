@@ -32,6 +32,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NettyUtils;
 
@@ -42,6 +43,8 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -67,6 +70,7 @@ public class Fetcher {
   private TajoProtos.FetcherState state;
 
   private Bootstrap bootstrap;
+  private List<Long> chunkLengths = new ArrayList<>();
 
   public Fetcher(TajoConf conf, URI uri, FileChunk chunk) {
     this.uri = uri;
@@ -123,12 +127,14 @@ public class Fetcher {
     return messageReceiveCount;
   }
 
-  public FileChunk get() throws IOException {
+  public List<FileChunk> get() throws IOException {
+    List<FileChunk> fileChunks = new ArrayList<>();
     if (useLocalFile) {
       startTime = System.currentTimeMillis();
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FINISHED;
-      return fileChunk;
+      fileChunks.add(fileChunk);
+      return fileChunks;
     }
 
     this.startTime = System.currentTimeMillis();
@@ -163,7 +169,17 @@ public class Fetcher {
       channel.closeFuture().syncUninterruptibly();
 
       fileChunk.setLength(fileChunk.getFile().length());
-      return fileChunk;
+
+      long start = 0;
+      for (int i = 0; i < chunkLengths.size(); i++) {
+        FileChunk chunk = new FileChunk(fileChunk.getFile(), start, chunkLengths.get(i));
+        chunk.setEbId(fileChunk.getEbId());
+        chunk.setFromRemote(fileChunk.fromRemote());
+        fileChunks.add(chunk);
+        start += chunkLengths.get(i);
+      }
+      return fileChunks;
+
     } finally {
       if(future != null && future.channel().isOpen()){
         // Close the channel to exit.
@@ -225,6 +241,9 @@ public class Fetcher {
                   this.length = Long.parseLong(value);
                 }
               }
+            }
+            for (String stringOffset : response.headers().getAll(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME)) {
+              chunkLengths.add(Long.parseLong(stringOffset));
             }
           }
           if (LOG.isDebugEnabled()) {

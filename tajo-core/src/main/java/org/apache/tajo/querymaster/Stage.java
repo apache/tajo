@@ -1191,7 +1191,7 @@ public class Stage implements EventHandler<StageEvent> {
         stage.getId(), leftFragment, rightFragments));
   }
 
-  public static void scheduleFetches(Stage stage, Map<String, List<FetchImpl>> fetches) {
+  public static void scheduleFetches(Stage stage, Map<String, List<FetchProto>> fetches) {
     stage.taskScheduler.handle(new FetchScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         stage.getId(), fetches));
   }
