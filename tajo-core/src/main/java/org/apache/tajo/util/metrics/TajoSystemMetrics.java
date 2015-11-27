@@ -99,6 +99,7 @@ public class TajoSystemMetrics extends TajoMetrics {
       propertyChangeChecker.interrupt();
     }
     stopAndClearReporter();
+    jmxReporter.close();
   }
 
   protected void stopAndClearReporter() {
@@ -109,7 +110,6 @@ public class TajoSystemMetrics extends TajoMetrics {
 
       metricsReporters.clear();
     }
-    jmxReporter.close();
   }
 
   public void start() {
@@ -117,9 +117,6 @@ public class TajoSystemMetrics extends TajoMetrics {
 
     final String jvmMetricsName = metricsGroupName + "-JVM";
     setMetricsReporter(jvmMetricsName);
-    jmxReporter = JmxReporter.forRegistry(metricRegistry).inDomain("Tajo")
-            .createsObjectNamesWith(new TajoJMXObjectNameFactory()).build();
-    jmxReporter.start();
 
     if(!inited) {
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "MEMORY"), new MemoryUsageGaugeSet());
@@ -127,6 +124,9 @@ public class TajoSystemMetrics extends TajoMetrics {
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "GC"), new GarbageCollectorMetricSet());
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "THREAD"), new ThreadStatesGaugeSet());
       metricRegistry.register(MetricRegistry.name(jvmMetricsName, "LOG"), new LogEventGaugeSet());
+      jmxReporter = JmxReporter.forRegistry(metricRegistry).inDomain("Tajo")
+              .createsObjectNamesWith(new TajoJMXObjectNameFactory()).build();
+      jmxReporter.start();
     }
     inited = true;
   }
