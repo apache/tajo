@@ -25,12 +25,12 @@ This is a section for registering tablespaces. Some space config example is here
 .. code:: json
 
   "spaces": {
-    "jdbc_mysql": {
-      "uri": "jdbc:mysql://127.0.0.1:3306",
+    "jdbc_pgsql": {
+      "uri": "jdbc:postgresql://127.0.0.1:5740/origin",
       "configs": {
-        "mapped_database":"mydb",
+        "mapped_database":"tajo_pgsql_origin",
         "connection_properties": {
-          "username":"tajouser",
+          "user":"tajouser",
           "password":"123456"
         }
       }
