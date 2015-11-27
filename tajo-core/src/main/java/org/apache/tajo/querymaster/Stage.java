@@ -65,7 +65,6 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
-import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

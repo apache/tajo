@@ -18,6 +18,10 @@
 
 package org.apache.tajo.pullserver;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.RemovalListener;
 import com.google.common.collect.Lists;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
@@ -61,14 +65,19 @@ import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.index.bst.BSTIndex;
-import org.apache.tajo.util.Pair;
+import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 public class TajoPullServerService extends AbstractService {
@@ -315,6 +324,8 @@ public class TajoPullServerService extends AbstractService {
 //      for (BSTIndexReader reader : indexRangeMap.values()) {
 //        reader.close();
 //      }
+
+      indexReaderCache.invalidateAll();
     } catch (Throwable t) {
       LOG.error(t, t);
     } finally {
@@ -666,37 +677,49 @@ public class TajoPullServerService extends AbstractService {
 
   private static Schema keySchema = null;
   private static TupleComparator comparator = null;
-  private static RowStoreDecoder decoder;
-  // map of (input path, (start key, end key))
-  private static Map<Path, Pair<Tuple, Tuple>> indexRangeMap = new HashMap<>(10000);
+  private static RowStoreDecoder decoder = null;
+
+  // TODO: move to constructor
+  private static LoadingCache<Path, BSTIndexReader> indexReaderCache = null;
+
+  private static final RemovalListener<Path, BSTIndexReader> removalListener = (removal) -> {
+    BSTIndexReader reader = removal.getValue();
+    try {
+      reader.close(); // tear down properly
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
 
   public static FileChunk getFileChunks(Configuration conf,
                                         Path outDir,
                                         String startKey,
                                         String endKey,
-                                        boolean last) throws IOException {
-    LOG.info("outDir: " + outDir);
-    BSTIndex.BSTIndexReader idxReader = null;
-    Tuple indexedFirst, indexedLast;
-    if (indexRangeMap.containsKey(outDir)) {
-      Pair<Tuple, Tuple> startEndKeyPair = indexRangeMap.get(outDir);
-      indexedFirst = startEndKeyPair.getFirst();
-      indexedLast = startEndKeyPair.getSecond();
-    } else {
-      idxReader = new BSTIndex(conf).getIndexReader(new Path(outDir, "index"));
-      idxReader.open();
-      keySchema = idxReader.getKeySchema();
-      decoder = RowStoreUtil.createDecoder(keySchema);
-      comparator = idxReader.getComparator();
+                                        boolean last) throws IOException, ExecutionException {
 
-      indexRangeMap.put(outDir, new Pair<>(idxReader.getFirstKey(), idxReader.getLastKey()));
-      indexedFirst = idxReader.getFirstKey();
-      indexedLast = idxReader.getLastKey();
-
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", " + idxReader.getLastKey() + ")");
-      }
+    if (indexReaderCache == null) {
+      indexReaderCache = CacheBuilder.newBuilder()
+          .maximumSize(10000)
+          .expireAfterWrite(30, TimeUnit.MINUTES)
+          .removalListener(removalListener)
+          .build(
+              new CacheLoader<Path, BSTIndexReader>() {
+                public BSTIndexReader load(Path key) throws IOException {
+                  BSTIndexReader idxReader = new BSTIndex(conf).getIndexReader(new Path(key, "index"));
+                  idxReader.open();
+                  return idxReader;
+                }
+              });
     }
+    LOG.info("Cache stats: " + indexReaderCache.stats());
+
+    BSTIndexReader idxReader = indexReaderCache.get(outDir);
+    keySchema = idxReader.getKeySchema();
+    decoder = RowStoreUtil.createDecoder(keySchema);
+    comparator = idxReader.getComparator();
+
+    Tuple indexedFirst = idxReader.getFirstKey();
+    Tuple indexedLast = idxReader.getLastKey();
 
     if (indexedFirst == null && indexedLast == null) { // if # of rows is zero
       if (LOG.isDebugEnabled()) {
@@ -796,9 +819,7 @@ public class TajoPullServerService extends AbstractService {
         && comparator.compare(idxReader.getLastKey(), end) < 0)) {
       endOffset = data.length();
     }
-
-    idxReader.close();
-
+    
     FileChunk chunk = new FileChunk(data, startOffset, endOffset - startOffset);
 
     if(LOG.isDebugEnabled()) LOG.debug("Retrieve File Chunk: " + chunk);

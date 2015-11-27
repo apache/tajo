@@ -28,11 +28,14 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.TupleRange;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 
@@ -171,8 +174,15 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     }
 
     Preconditions.checkArgument(taskIds.size() == attemptIds.size());
-    builder.addAllTaskId(taskIds);
-    builder.addAllAttemptId(attemptIds);
+    // TODO: move to repartitioner
+    // Sort to increase cache hit in pull server
+    IntStream.range(0, taskIds.size())
+        .mapToObj(i -> new Pair<Integer, Integer>(taskIds.get(i), attemptIds.get(i)))
+        .sorted((p1, p2) -> p1.getFirst() - p2.getFirst())
+        .forEach(p -> {
+          builder.addTaskId(p.getFirst());
+          builder.addAttemptId(p.getSecond());
+        });
 
     builder.setOffset(offset);
     builder.setLength(length);

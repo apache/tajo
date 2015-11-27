@@ -1158,8 +1158,11 @@ public class Repartitioner {
         // The below code transforms a long request to multiple requests.
         List<String> taskIdsParams = new ArrayList<>();
         StringBuilder taskIdListBuilder = new StringBuilder();
+
+        // NOTE: the below task ids and attempt ids are sorted in an increasing order of task ids
         List<Integer> taskIds = fetch.getTaskIdList();
         List<Integer> attemptIds = fetch.getAttemptIdList();
+
         boolean first = true;
 
         for (int i = 0; i < taskIds.size(); i++) {
