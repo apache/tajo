@@ -420,6 +420,8 @@ public class TajoPullServerService extends AbstractService {
         SLOW_FILE_UPDATER.compareAndSet(this, numSlowFile, numSlowFile + 1);
       }
 
+      LOG.info("Cache stats: " + indexReaderCache.stats());
+
       REMAIN_FILE_UPDATER.compareAndSet(this, remainFiles, remainFiles - 1);
       if (REMAIN_FILE_UPDATER.get(this) <= 0) {
         processingStatusMap.remove(requestUri);
@@ -436,7 +438,6 @@ public class TajoPullServerService extends AbstractService {
   class PullServer extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final TajoConf conf;
-//    private final IndexCache indexCache;
     private final LocalDirAllocator lDirAlloc =
       new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
@@ -699,7 +700,8 @@ public class TajoPullServerService extends AbstractService {
 
     if (indexReaderCache == null) {
       indexReaderCache = CacheBuilder.newBuilder()
-          .maximumSize(10000)
+          // TODO: make configurable
+          .maximumSize(1000)
           .expireAfterWrite(30, TimeUnit.MINUTES)
           .removalListener(removalListener)
           .build(
@@ -711,7 +713,6 @@ public class TajoPullServerService extends AbstractService {
                 }
               });
     }
-    LOG.info("Cache stats: " + indexReaderCache.stats());
 
     BSTIndexReader idxReader = indexReaderCache.get(outDir);
     keySchema = idxReader.getKeySchema();
@@ -764,10 +765,10 @@ public class TajoPullServerService extends AbstractService {
       return null;
     }
 
-    if (idxReader == null) {
-      idxReader = new BSTIndex(conf).getIndexReader(new Path(outDir, "index"));
-      idxReader.open();
-    }
+//    if (idxReader == null) {
+//      idxReader = new BSTIndex(conf).getIndexReader(new Path(outDir, "index"));
+//      idxReader.open();
+//    }
 
     long startOffset;
     long endOffset;
