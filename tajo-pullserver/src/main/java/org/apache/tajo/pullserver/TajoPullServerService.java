@@ -676,9 +676,9 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
-  private static Schema keySchema = null;
-  private static TupleComparator comparator = null;
-  private static RowStoreDecoder decoder = null;
+//  private static Schema keySchema = null;
+//  private static TupleComparator comparator = null;
+//  private static RowStoreDecoder decoder = null;
 
   // TODO: move to constructor
   private static LoadingCache<Path, BSTIndexReader> indexReaderCache = null;
@@ -715,9 +715,9 @@ public class TajoPullServerService extends AbstractService {
     }
 
     BSTIndexReader idxReader = indexReaderCache.get(outDir);
-    keySchema = idxReader.getKeySchema();
-    decoder = RowStoreUtil.createDecoder(keySchema);
-    comparator = idxReader.getComparator();
+    Schema keySchema = idxReader.getKeySchema();
+    RowStoreDecoder decoder = RowStoreUtil.createDecoder(keySchema);
+    TupleComparator comparator = idxReader.getComparator();
 
     Tuple indexedFirst = idxReader.getFirstKey();
     Tuple indexedLast = idxReader.getLastKey();
