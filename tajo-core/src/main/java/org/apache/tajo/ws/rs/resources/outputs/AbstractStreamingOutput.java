@@ -19,28 +19,25 @@
 package org.apache.tajo.ws.rs.resources.outputs;
 
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
-
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.StreamingOutput;
 
 public abstract class AbstractStreamingOutput implements StreamingOutput {
+  protected NonForwardQueryResultScanner scanner;
+  protected int count;
+  protected int startOffset;
 
-    protected NonForwardQueryResultScanner scanner;
-    protected int count;
-    protected int startOffset;
+  public AbstractStreamingOutput(NonForwardQueryResultScanner scanner, Integer count, Integer startoffset) {
+    this.scanner = scanner;
+    this.count = count;
+    this.startOffset = startoffset;
+  }
 
-    public AbstractStreamingOutput(NonForwardQueryResultScanner scanner, Integer count, Integer startoffset) {
-        this.scanner = scanner;
-        this.count = count;
-        this.startOffset = startoffset;
-    }
+  public abstract boolean hasLength();
+  public abstract int count();
+  public abstract int length();
 
-    public abstract boolean hasLength();
-    public abstract int count();
-    public abstract int length();
-
-    public String contentType() {
-        return MediaType.APPLICATION_OCTET_STREAM;
-    }
+  public String contentType() {
+    return MediaType.APPLICATION_OCTET_STREAM;
+  }
 }

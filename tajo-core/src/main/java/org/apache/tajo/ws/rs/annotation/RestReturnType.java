@@ -24,14 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Description.
- *
+ * Definition of RestApi result Return Type
+ * According to headerType, StramingOutput class will be choose.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface RestReturnType {
-
-    String description() default "";
-
     String headerType();
 }

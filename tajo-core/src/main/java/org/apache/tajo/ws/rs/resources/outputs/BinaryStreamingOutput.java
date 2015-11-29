@@ -30,50 +30,49 @@ import java.io.OutputStream;
 import java.util.List;
 
 @RestReturnType(
-        description = "default binary streaming output",
-        headerType = "application/octet-stream"
+  headerType = "application/octet-stream"
 )
 public class BinaryStreamingOutput extends AbstractStreamingOutput {
-    private List<ByteString> outputList = null;
+  private List<ByteString> outputList = null;
 
-    public BinaryStreamingOutput(NonForwardQueryResultScanner scanner, Integer count, Integer startOffset) throws IOException {
-        super(scanner, count, startOffset);
+  public BinaryStreamingOutput(NonForwardQueryResultScanner scanner, Integer count, Integer startOffset) throws IOException {
+    super(scanner, count, startOffset);
+  }
+
+  @Override
+  public boolean hasLength() {
+    return false;
+  }
+
+  @Override
+  public int length() {
+    return 0;
+  }
+
+  @Override
+  public int count() {
+    try {
+      fetch();
+      return outputList.size();
+    } catch (Exception e) {
+      return 0;
+    }
+  }
+
+  @Override
+  public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+    DataOutputStream streamingOutputStream = new DataOutputStream(new BufferedOutputStream(outputStream));
+
+    for (ByteString byteString: outputList) {
+      byte[] byteStringArray = byteString.toByteArray();
+      streamingOutputStream.writeInt(byteStringArray.length);
+      streamingOutputStream.write(byteStringArray);
     }
 
-    @Override
-    public boolean hasLength() {
-        return false;
-    }
+    streamingOutputStream.flush();
+  }
 
-    @Override
-    public int length() {
-        return 0;
-    }
-
-    @Override
-    public int count() {
-        try {
-            fetch();
-            return outputList.size();
-        } catch (Exception e) {
-            return 0;
-        }
-    }
-
-    @Override
-    public void write(OutputStream outputStream) throws IOException, WebApplicationException {
-        DataOutputStream streamingOutputStream = new DataOutputStream(new BufferedOutputStream(outputStream));
-
-        for (ByteString byteString: outputList) {
-            byte[] byteStringArray = byteString.toByteArray();
-            streamingOutputStream.writeInt(byteStringArray.length);
-            streamingOutputStream.write(byteStringArray);
-        }
-
-        streamingOutputStream.flush();
-    }
-
-    private void fetch() throws IOException {
-        outputList = scanner.getNextRows(count);
-    }
+  private void fetch() throws IOException {
+    outputList = scanner.getNextRows(count);
+  }
 }

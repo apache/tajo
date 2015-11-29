@@ -18,74 +18,68 @@
 
 package org.apache.tajo.ws.rs.resources.outputs;
 
-import com.facebook.presto.hive.shaded.com.google.common.collect.Maps;
-import com.facebook.presto.hive.shaded.org.apache.commons.lang.StringUtils;
+import com.google.common.collect.Maps;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.function.annotation.Description;
-import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.function.Function;
-import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
 import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.ws.rs.annotation.RestReturnType;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.Map;
 import java.util.Set;
 
 public class RestOutputFactory {
-    private static Log LOG = LogFactory.getLog(RestOutputFactory.class);
-    private static Map<String, String> restOutputClasses = load();
+  private static Log LOG = LogFactory.getLog(RestOutputFactory.class);
+  private static Map<String, String> restOutputClasses = load();
 
-    private static Map<String, String> load() {
-        Map<String, String> outputClasses = Maps.newHashMap();
-        Set<Class> restOutputClasses = ClassUtil.findClasses(AbstractStreamingOutput.class, "org.apache.tajo.ws.rs.resources.outputs");
+  private static Map<String, String> load() {
+    Map<String, String> outputClasses = Maps.newHashMap();
+    Set<Class> restOutputClasses = ClassUtil.findClasses(AbstractStreamingOutput.class, "org.apache.tajo.ws.rs.resources.outputs");
 
-        for (Class eachClass : restOutputClasses) {
-            if (eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers())) {
-                continue;
-            }
+    for (Class eachClass : restOutputClasses) {
+      if (eachClass.isInterface() || 
+          Modifier.isAbstract(eachClass.getModifiers())) {
+        continue;
+      }
 
-            AbstractStreamingOutput streamingOutput = null;
-            try {
-                streamingOutput = (AbstractStreamingOutput) eachClass.getDeclaredConstructor(
-                        new Class[]{NonForwardQueryResultScanner.class, Integer.class, Integer.class}).newInstance(null, 0, 0);
-            } catch (Exception e) {
-                LOG.warn(eachClass + " cannot instantiate Function class because of " + e.getMessage(), e);
-                continue;
-            }
-            String className = streamingOutput.getClass().getCanonicalName();
-            String headerType = streamingOutput.getClass().getAnnotation(RestReturnType.class).headerType();
-            String description = streamingOutput.getClass().getAnnotation(RestReturnType.class).description();
+      AbstractStreamingOutput streamingOutput = null;
+      try {
+        streamingOutput = (AbstractStreamingOutput) eachClass.getDeclaredConstructor(
+        new Class[]{NonForwardQueryResultScanner.class, Integer.class, Integer.class}).newInstance(null, 0, 0);
+      } catch (Exception e) {
+        LOG.warn(eachClass + " cannot instantiate Function class because of " + e.getMessage(), e);
+        continue;
+      }
+      String className = streamingOutput.getClass().getCanonicalName();
+      String headerType = streamingOutput.getClass().getAnnotation(RestReturnType.class).headerType();
 
-            if (StringUtils.isNotEmpty(headerType)) {
-                outputClasses.put(headerType, className);
-            }
-        }
-
-        return outputClasses;
+      if (StringUtils.isNotEmpty(headerType)) {
+        outputClasses.put(headerType, className);
+      }
     }
 
-    public static AbstractStreamingOutput get(String headerType, NonForwardQueryResultScanner scanner, Integer count, Integer startOffset) {
-        AbstractStreamingOutput output = null;
-        try {
-            if (restOutputClasses.containsKey(headerType)) {
-                String className = (String) restOutputClasses.get(headerType);
-                Class<?> clazz = Class.forName(className);
-                output = (AbstractStreamingOutput) clazz.getDeclaredConstructor(new Class[]{NonForwardQueryResultScanner.class,
-                        Integer.class, Integer.class}).newInstance(scanner, count, startOffset);
-            } else {
-                output = new BinaryStreamingOutput(scanner, count, startOffset);
-            }
-        } catch (Exception eh) {
-            LOG.error(eh);
-        }
+    return outputClasses;
+  }
 
-        return output;
+  public static AbstractStreamingOutput get(String headerType, NonForwardQueryResultScanner scanner, Integer count, Integer startOffset) {
+    AbstractStreamingOutput output = null;
+    try {
+      if (restOutputClasses.containsKey(headerType)) {
+        String className = (String) restOutputClasses.get(headerType);
+        Class<?> clazz = Class.forName(className);
+        output = (AbstractStreamingOutput) clazz.getDeclaredConstructor(
+                  new Class[]{NonForwardQueryResultScanner.class,
+                  Integer.class, Integer.class})
+                  .newInstance(scanner, count, startOffset);
+      } else {
+        output = new BinaryStreamingOutput(scanner, count, startOffset);
+      }
+    } catch (Exception eh) {
+        LOG.error(eh);
     }
+
+    return output;
+  }
 }
