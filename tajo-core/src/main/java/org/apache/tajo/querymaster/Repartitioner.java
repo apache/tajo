@@ -710,18 +710,20 @@ public class Repartitioner {
         new String[]{UNKNOWN_HOST});
     Stage.scheduleFragment(stage, dummyFragment);
 
-    Map<PullHost, FetchImpl> fetches = new HashMap<>();
+//    Map<PullHost, FetchImpl> fetches = new HashMap<>();\
+    Map<Pair<PullHost, ExecutionBlockId>, FetchImpl> fetches = new HashMap<>();
     List<ExecutionBlock> childBlocks = masterPlan.getChilds(stage.getId());
     for (ExecutionBlock childBlock : childBlocks) {
       Stage childExecSM = stage.getContext().getStage(childBlock.getId());
       for (Task qu : childExecSM.getTasks()) {
         for (IntermediateEntry p : qu.getIntermediateData()) {
-          if (fetches.containsKey(p.getPullHost())) {
-            fetches.get(p.getPullHost()).addPart(p.getTaskId(), p.getAttemptId());
+          Pair<PullHost, ExecutionBlockId> key = new Pair<>(p.getPullHost(), childBlock.getId());
+          if (fetches.containsKey(key)) {
+            fetches.get(key).addPart(p.getTaskId(), p.getAttemptId());
           } else {
             FetchImpl fetch = new FetchImpl(scan.getTableName(), p.getPullHost(), RANGE_SHUFFLE, childBlock.getId(), 0);
             fetch.addPart(p.getTaskId(), p.getAttemptId());
-            fetches.put(p.getPullHost(), fetch);
+            fetches.put(key, fetch);
           }
         }
       }

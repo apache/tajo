@@ -157,7 +157,7 @@ public class TaskRequestImpl implements TaskRequest {
 	  this.interQuery = true;
 	}
 
-	@Override
+  @Override
   public void addFetch(FetchProto fetch) {
     maybeInitBuilder();
     initFetches();
@@ -212,7 +212,7 @@ public class TaskRequestImpl implements TaskRequest {
     return this.enforcer;
   }
 
-	@Override
+  @Override
   public List<FetchProto> getFetches() {
 	  initFetches();    
 
