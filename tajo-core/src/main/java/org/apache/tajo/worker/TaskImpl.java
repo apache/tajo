@@ -254,6 +254,17 @@ public class TaskImpl implements Task {
 
   @Override
   public void fetch(ExecutorService fetcherExecutor) {
+    fetcherRunners.sort((f1, f2) -> {
+      String strUri = f1.getURI().toString();
+      int index = strUri.lastIndexOf("&ta");
+      String taskIdStr1 = strUri.substring(index + "&ta".length());
+
+      strUri = f2.getURI().toString();
+      index = strUri.lastIndexOf("&ta");
+      String taskIdStr2 = strUri.substring(index + "&ta".length());
+      return taskIdStr1.compareTo(taskIdStr2);
+    });
+
     for (Fetcher f : fetcherRunners) {
       fetcherExecutor.submit(new FetchRunner(context, f));
     }

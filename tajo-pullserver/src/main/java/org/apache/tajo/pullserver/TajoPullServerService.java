@@ -420,8 +420,6 @@ public class TajoPullServerService extends AbstractService {
         SLOW_FILE_UPDATER.compareAndSet(this, numSlowFile, numSlowFile + 1);
       }
 
-      LOG.info("Cache stats: " + indexReaderCache.stats());
-
       REMAIN_FILE_UPDATER.compareAndSet(this, remainFiles, remainFiles - 1);
       if (REMAIN_FILE_UPDATER.get(this) <= 0) {
         processingStatusMap.remove(requestUri);
@@ -713,6 +711,8 @@ public class TajoPullServerService extends AbstractService {
                 }
               });
     }
+
+    LOG.info("Cache stats: " + indexReaderCache.stats());
 
     BSTIndexReader idxReader = indexReaderCache.get(outDir);
     Schema keySchema = idxReader.getKeySchema();
