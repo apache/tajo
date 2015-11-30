@@ -240,8 +240,8 @@ public class SequenceFileScanner extends FileScanner {
         fieldLength[i] = elementSize;
         lastFieldByteEnd = fieldStart[i] + fieldLength[i];
 
-        for (int j = 0; j < projectionMap.length; j++) {
-          if (projectionMap[j] == i) {
+        for (int aProjectionMap : projectionMap) {
+          if (aProjectionMap == i) {
             Datum datum = serde.deserialize(i, bytes, fieldStart[i], fieldLength[i], nullChars);
             outTuple.put(i, datum);
           }

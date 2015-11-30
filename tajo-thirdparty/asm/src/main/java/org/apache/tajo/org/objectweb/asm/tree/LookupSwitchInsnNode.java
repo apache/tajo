@@ -80,8 +80,8 @@ public class LookupSwitchInsnNode extends AbstractInsnNode {
         this.labels = new ArrayList<>(labels == null ? 0
                 : labels.length);
         if (keys != null) {
-            for (int i = 0; i < keys.length; ++i) {
-                this.keys.add(new Integer(keys[i]));
+            for (int key : keys) {
+                this.keys.add(new Integer(key));
             }
         }
         if (labels != null) {

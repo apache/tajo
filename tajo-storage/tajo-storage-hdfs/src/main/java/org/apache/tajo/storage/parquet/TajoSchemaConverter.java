@@ -55,11 +55,10 @@ public class TajoSchemaConverter {
 
   private Schema convertFields(List<Type> parquetFields) {
     List<Column> columns = new ArrayList<>();
-    for (int i = 0; i < parquetFields.size(); ++i) {
-      Type fieldType = parquetFields.get(i);
+    for (Type fieldType : parquetFields) {
       if (fieldType.isRepetition(Type.Repetition.REPEATED)) {
         throw new RuntimeException("REPEATED not supported outside LIST or" +
-            " MAP. Type: " + fieldType);
+                " MAP. Type: " + fieldType);
       }
       columns.add(convertField(fieldType));
     }

@@ -212,8 +212,8 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     for (GroupbyNode eachNode: subGroupbyPlan) {
       if (eachNode.hasAggFunctions()) {
         List<AggregationFunctionCallEval> aggrFunctions = eachNode.getAggFunctions();
-        for (int j = 0; j < aggrFunctions.size(); j++) {
-          sb.append(prefix).append(aggrFunctions.get(j));
+        for (AggregationFunctionCallEval aggrFunction : aggrFunctions) {
+          sb.append(prefix).append(aggrFunction);
           prefix = ",";
         }
       }

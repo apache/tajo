@@ -268,8 +268,8 @@ public class EvalNodeSerializer
     // building itself
     PlanProto.FunctionEval.Builder funcBuilder = PlanProto.FunctionEval.newBuilder();
     funcBuilder.setFuncion(function.getFuncDesc().getProto());
-    for (int i = 0; i < childIds.length; i++) {
-      funcBuilder.addParamIds(childIds[i]);
+    for (int childId : childIds) {
+      funcBuilder.addParamIds(childId);
     }
 
     // registering itself and building EvalNode

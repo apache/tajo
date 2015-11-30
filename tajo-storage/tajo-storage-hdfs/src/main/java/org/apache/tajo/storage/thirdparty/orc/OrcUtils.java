@@ -117,8 +117,8 @@ public class OrcUtils {
               endIdx += 1;
               StructObjectInspector structInsp = (StructObjectInspector) sfOI;
               List<? extends StructField> structFields = structInsp.getAllStructFieldRefs();
-              for (int j = 0; j < structFields.size(); ++j) {
-                endIdx += getFlattenedColumnsCount(structFields.get(j).getFieldObjectInspector());
+              for (StructField structField : structFields) {
+                endIdx += getFlattenedColumnsCount(structField.getFieldObjectInspector());
               }
               break;
             case MAP:
@@ -136,8 +136,8 @@ public class OrcUtils {
               endIdx += 1;
               UnionObjectInspector unionInsp = (UnionObjectInspector) sfOI;
               List<ObjectInspector> choices = unionInsp.getObjectInspectors();
-              for (int j = 0; j < choices.size(); ++j) {
-                endIdx += getFlattenedColumnsCount(choices.get(j));
+              for (ObjectInspector choice : choices) {
+                endIdx += getFlattenedColumnsCount(choice);
               }
               break;
             default:
@@ -168,8 +168,8 @@ public class OrcUtils {
         numWriters += 1;
         StructObjectInspector structInsp = (StructObjectInspector) inspector;
         List<? extends StructField> fields = structInsp.getAllStructFieldRefs();
-        for (int i = 0; i < fields.size(); ++i) {
-          numWriters += getFlattenedColumnsCount(fields.get(i).getFieldObjectInspector());
+        for (StructField field : fields) {
+          numWriters += getFlattenedColumnsCount(field.getFieldObjectInspector());
         }
         break;
       case MAP:
@@ -187,8 +187,8 @@ public class OrcUtils {
         numWriters += 1;
         UnionObjectInspector unionInsp = (UnionObjectInspector) inspector;
         List<ObjectInspector> choices = unionInsp.getObjectInspectors();
-        for (int i = 0; i < choices.size(); ++i) {
-          numWriters += getFlattenedColumnsCount(choices.get(i));
+        for (ObjectInspector choice : choices) {
+          numWriters += getFlattenedColumnsCount(choice);
         }
         break;
       default:
