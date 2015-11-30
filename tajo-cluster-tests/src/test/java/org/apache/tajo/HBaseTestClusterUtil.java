@@ -163,20 +163,14 @@ public class HBaseTestClusterUtil {
   }
 
   public HTableDescriptor getTableDescriptor(String tableName) throws IOException {
-    HBaseAdmin admin = new HBaseAdmin(conf);
-    try {
+    try (HBaseAdmin admin = new HBaseAdmin(conf)) {
       return admin.getTableDescriptor(Bytes.toBytes(tableName));
-    } finally {
-      admin.close();
     }
   }
 
   public void createTable(HTableDescriptor hTableDesc) throws IOException {
-    HBaseAdmin admin = new HBaseAdmin(conf);
-    try {
+    try (HBaseAdmin admin = new HBaseAdmin(conf)) {
       admin.createTable(hTableDesc);
-    } finally {
-      admin.close();
     }
   }
 }
