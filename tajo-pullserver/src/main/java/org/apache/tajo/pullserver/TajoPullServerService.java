@@ -325,6 +325,7 @@ public class TajoPullServerService extends AbstractService {
 //        reader.close();
 //      }
 
+      LOG.info("Cache stats: " + indexReaderCache.stats());
       indexReaderCache.invalidateAll();
     } catch (Throwable t) {
       LOG.error(t, t);
@@ -711,8 +712,6 @@ public class TajoPullServerService extends AbstractService {
                 }
               });
     }
-
-    LOG.info("Cache stats: " + indexReaderCache.stats());
 
     BSTIndexReader idxReader = indexReaderCache.get(outDir);
     Schema keySchema = idxReader.getKeySchema();
