@@ -206,7 +206,7 @@ public class TajoMaster extends CompositeService {
     addIfService(restServer);
 
     PythonScriptEngine.initPythonScriptEngineFiles();
-    
+
     // Try to start up all services in TajoMaster.
     // If anyone is failed, the master prints out the errors and immediately should shutdowns
     try {
@@ -325,6 +325,7 @@ public class TajoMaster extends CompositeService {
     checkBaseTBSpaceAndDatabase();
 
     super.serviceStart();
+    initSystemMetrics();
 
     // Setting the system global configs
     systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
@@ -337,7 +338,6 @@ public class TajoMaster extends CompositeService {
     }
 
     initWebServer();
-    initSystemMetrics();
 
     haService = ServiceTrackerFactory.get(systemConf);
     haService.register();

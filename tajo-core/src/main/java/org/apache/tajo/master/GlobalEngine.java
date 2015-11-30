@@ -36,13 +36,13 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
 import org.apache.tajo.metrics.Master;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -54,6 +54,7 @@ import org.apache.tajo.plan.verifier.*;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.metrics.TajoSystemMetrics;
 
 import java.sql.SQLException;
 import java.util.concurrent.ExecutionException;
@@ -176,9 +177,9 @@ public class GlobalEngine extends AbstractService {
     LOG.info("Query: " + query);
     QueryContext queryContext = createQueryContext(session);
     Expr planningContext;
-
+    TajoSystemMetrics metrics = context.getMetrics();
     try {
-      context.getMetrics().counter(Master.Query.SUBMITTED).inc();
+      if(metrics != null) metrics.counter(Master.Query.SUBMITTED).inc();
 
       if (isJson) {
         planningContext = buildExpressionFromJson(query);
@@ -195,7 +196,7 @@ public class GlobalEngine extends AbstractService {
     } catch (Throwable t) {
       ExceptionUtil.printStackTraceIfError(LOG, t);
 
-      context.getMetrics().counter(Master.Query.ERROR).inc();
+      if(metrics != null) metrics.counter(Master.Query.ERROR).inc();
 
       SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
