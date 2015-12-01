@@ -20,6 +20,7 @@ package org.apache.tajo.function;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionInvocationProto;
@@ -36,7 +37,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   @Expose
   ClassBaseInvocationDesc<?> aggregationJIT;
   @Expose
-  PythonInvocationDesc python;
+  UDFInvocationDesc udf;
 
   public FunctionInvocation() {
   }
@@ -57,8 +58,8 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (proto.hasAggregationJit()) {
       this.aggregationJIT = new ClassBaseInvocationDesc(proto.getAggregation());
     }
-    if (proto.hasPython()) {
-      this.python = new PythonInvocationDesc(proto.getPython());
+    if (proto.hasUdfInvocation()) {
+      this.udf = new UDFInvocationDesc(proto.getUdfInvocation());
     }
   }
 
@@ -127,27 +128,19 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   }
 
   public boolean hasPython() {
-    return python != null && python.isScalarFunction();
+    return udf != null && udf.getType() == CatalogProtos.UDFtype.PYTHON && udf.isScalarFunction();
   }
 
-  public void setPython(PythonInvocationDesc python) {
-    this.python = python;
+  public void setUDF(UDFInvocationDesc udf) {
+    this.udf = udf;
   }
 
-  public PythonInvocationDesc getPython() {
-    return python;
+  public UDFInvocationDesc getUDF() {
+    return udf;
   }
 
   public boolean hasPythonAggregation() {
-    return python != null && !python.isScalarFunction();
-  }
-
-  public void setPythonAggregation(PythonInvocationDesc pythonAggregation) {
-    this.python = pythonAggregation;
-  }
-
-  public PythonInvocationDesc getPythonAggregation() {
-    return this.python;
+    return udf != null && udf.getType() == CatalogProtos.UDFtype.PYTHON && !udf.isScalarFunction();
   }
 
   @Override
@@ -169,14 +162,14 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
       builder.setAggregationJit(aggregationJIT.getProto());
     }
     if (hasPython() || hasPythonAggregation()) {
-      builder.setPython(python.getProto());
+      builder.setUdfInvocation(udf.getProto());
     }
     return builder.build();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(legacy, scalar, scalarJIT, python);
+    return Objects.hashCode(legacy, scalar, scalarJIT, udf);
   }
 
   public String toString() {

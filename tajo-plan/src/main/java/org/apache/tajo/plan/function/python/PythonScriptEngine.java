@@ -32,7 +32,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.FunctionSupplement;
-import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.plan.function.stream.*;
@@ -90,8 +90,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
           TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
           signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
               returnType, createParamTypes(scalarFuncInfo.paramNum));
-          PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
-          invocation.setPython(invocationDesc);
+          UDFInvocationDesc invocationDesc = new UDFInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
+          invocation.setUDF(invocationDesc);
           functionDescs.add(new FunctionDesc(signature, invocation, supplement));
         } else {
           AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
@@ -99,9 +99,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
             TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
             signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
                 returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
-            PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
+            UDFInvocationDesc invocationDesc = new UDFInvocationDesc(aggFuncInfo.className, path.getPath(), false);
 
-            invocation.setPythonAggregation(invocationDesc);
+            invocation.setUDF(invocationDesc);
             functionDescs.add(new FunctionDesc(signature, invocation, supplement));
           }
         }
@@ -281,7 +281,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private InputStream stderr; // stderr of the process
 
   private final FunctionSignature functionSignature;
-  private final PythonInvocationDesc invocationDesc;
+  private final UDFInvocationDesc invocationDesc;
   private Schema inSchema;
   private Schema outSchema;
   private int[] projectionCols;
@@ -297,7 +297,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
-    invocationDesc = functionDesc.getInvocation().getPython();
+    invocationDesc = functionDesc.getInvocation().getUDF();
     setSchema();
   }
 
@@ -306,7 +306,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
-    invocationDesc = functionDesc.getInvocation().getPython();
+    invocationDesc = functionDesc.getInvocation().getUDF();
     this.firstPhase = firstPhase;
     this.lastPhase = lastPhase;
     setSchema();
