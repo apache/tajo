@@ -28,6 +28,7 @@ public class FunctionDescBuilder {
   private DataType retType = null;
   private DataType [] params = null;
   private Class<? extends Function> clazz = null;
+  private UDFInvocationDesc udfInvocation = null;
   private boolean isDeterministic = true;
   private String description = null;
   private String example = null;
@@ -72,9 +73,21 @@ public class FunctionDescBuilder {
     return this;
   }
 
+  public FunctionDescBuilder setUDF(UDFInvocationDesc udf) {
+    this.udfInvocation = udf;
+    return this;
+  }
+
+
   public FunctionDesc build() {
     FunctionInvocation invocation = new FunctionInvocation();
-    invocation.setLegacy(new ClassBaseInvocationDesc<>(clazz));
+    if (funcType == FunctionType.UDF) {
+      invocation.setUDF(udfInvocation);
+    }
+    else {
+      invocation.setLegacy(new ClassBaseInvocationDesc<>(clazz));
+    }
+
     FunctionSupplement supplement = new FunctionSupplement();
 
     if (description != null) {

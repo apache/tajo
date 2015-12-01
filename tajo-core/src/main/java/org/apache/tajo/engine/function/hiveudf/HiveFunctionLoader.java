@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.FunctionDescBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.function.UDFInvocationDesc;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 
@@ -133,8 +134,7 @@ public class HiveFunctionLoader {
         builder.setDeterministic(type.deterministic());
       }
 
-      builder.setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params)
-          .setClass(HiveGeneralFunctionHolder.class);
+      builder.setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params);
 
       if (value != null) {
         builder.setDescription(value);
@@ -144,8 +144,11 @@ public class HiveFunctionLoader {
         builder.setExample(extended);
       }
 
+      UDFInvocationDesc udfInvocation = new UDFInvocationDesc(CatalogProtos.UDFtype.HIVE, clazz.getName(), true);
+
       for (String name: names) {
         builder.setName(name);
+        builder.setUDF(udfInvocation);
         list.add(builder.build());
       }
     }

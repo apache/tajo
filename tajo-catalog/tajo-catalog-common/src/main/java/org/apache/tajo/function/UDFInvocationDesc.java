@@ -32,8 +32,12 @@ import org.apache.tajo.util.TUtil;
 public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, Cloneable {
   @Expose private UDFtype type;
   @Expose private boolean isScalarFunction; // true if udf, false if udaf
-  @Expose private String funcOrClassName; // function name if udf, class name if udaf
+  @Expose private String funcOrClassName; // function name if python udf, class name if python udaf or others
   @Expose private String filePath; // file path to the python module
+
+  public UDFInvocationDesc(UDFtype type, String funcOrClassName, boolean isScalarFunction) {
+    this(type, funcOrClassName, null, isScalarFunction);
+  }
 
   /**
    * Constructor of {@link UDFInvocationDesc}.
