@@ -97,7 +97,8 @@ public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, C
 
   @Override
   public String toString() {
-    return isScalarFunction ? "[UDF] " : "[UDAF] " + funcOrClassName + " at " + filePath;
+    return '['+type.toString()+'/'+ (isScalarFunction ? "UDF] " : "UDAF] ") +
+        funcOrClassName + (filePath != null ? (" at " + filePath) : "");
   }
 
   @Override
