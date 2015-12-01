@@ -42,7 +42,8 @@ public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, C
    * @param filePath path to script file
    * @param isScalarFunction
    */
-  public UDFInvocationDesc(String funcOrClassName, String filePath, boolean isScalarFunction) {
+  public UDFInvocationDesc(UDFtype type, String funcOrClassName, String filePath, boolean isScalarFunction) {
+    this.type = type;
     this.funcOrClassName = funcOrClassName;
     this.filePath = filePath;
     this.isScalarFunction = isScalarFunction;
@@ -53,7 +54,7 @@ public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, C
   }
 
   public UDFInvocationDesc(UDFinvocationDescProto proto) {
-    this(proto.getFuncName(), proto.getFilePath(), proto.getIsScalarFunction());
+    this(proto.getType(), proto.getFuncName(), proto.getFilePath(), proto.getIsScalarFunction());
   }
 
   public UDFtype getType() {
@@ -75,7 +76,7 @@ public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, C
   @Override
   public UDFinvocationDescProto getProto() {
     UDFinvocationDescProto.Builder builder = UDFinvocationDescProto.newBuilder();
-    builder.setFuncName(funcOrClassName).setFilePath(filePath).setIsScalarFunction(isScalarFunction);
+    builder.setType(type).setFuncName(funcOrClassName).setFilePath(filePath).setIsScalarFunction(isScalarFunction);
     return builder.build();
   }
 

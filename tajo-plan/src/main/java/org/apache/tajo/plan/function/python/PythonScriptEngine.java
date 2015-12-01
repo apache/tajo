@@ -90,7 +90,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
           TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
           signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
               returnType, createParamTypes(scalarFuncInfo.paramNum));
-          UDFInvocationDesc invocationDesc = new UDFInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
+          UDFInvocationDesc invocationDesc = new UDFInvocationDesc(CatalogProtos.UDFtype.PYTHON, scalarFuncInfo.funcName, path.getPath(), true);
           invocation.setUDF(invocationDesc);
           functionDescs.add(new FunctionDesc(signature, invocation, supplement));
         } else {
@@ -99,7 +99,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
             TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
             signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
                 returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
-            UDFInvocationDesc invocationDesc = new UDFInvocationDesc(aggFuncInfo.className, path.getPath(), false);
+            UDFInvocationDesc invocationDesc = new UDFInvocationDesc(CatalogProtos.UDFtype.PYTHON, aggFuncInfo.className, path.getPath(), false);
 
             invocation.setUDF(invocationDesc);
             functionDescs.add(new FunctionDesc(signature, invocation, supplement));
