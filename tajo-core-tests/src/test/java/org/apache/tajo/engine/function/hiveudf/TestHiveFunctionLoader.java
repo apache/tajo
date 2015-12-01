@@ -25,8 +25,10 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.worker.TajoWorker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,6 +36,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 import java.net.URL;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -50,7 +53,7 @@ public class TestHiveFunctionLoader {
     Preconditions.checkNotNull(hiveUDFURL, "hive udf directory is absent.");
     conf.set("hive.udf.dir", hiveUDFURL.toString().substring("file:".length()));
 
-    cluster.startMiniClusterInLocal(0);
+    cluster.startMiniClusterInLocal(1);
   }
 
   @After
@@ -107,5 +110,18 @@ public class TestHiveFunctionLoader {
     assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
+  }
+
+  @Test
+  public void testRunFunctions() throws Exception {
+    TajoClient client = cluster.newTajoClient();
+
+    ResultSet rs = client.executeQueryAndGetResult("select my_upper('abcd')");
+    rs.beforeFirst();
+    String result = rs.getString(1);
+
+    assertEquals("ABCD", result);
+
+    rs.close();
   }
 }
