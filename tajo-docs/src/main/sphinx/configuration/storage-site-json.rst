@@ -49,8 +49,9 @@ Storages
 --------
 
 This is for registering storage format and custom storage handler class.
-Tajo already supports HDFS, HBase, PostgreSQL, Amazon S3, Openstack Swift, etc, thus in usual cases using mentioned storages, you don't have to use ``storages`` configuration.
-Anyway for your knowledge, here is one storage conf example(it's quoted from Tajo internal hdfs storage configuration which is already being used).
+Tajo already supports HDFS, HBase, PostgreSQL, Amazon S3, Openstack Swift, etc, thus in usual cases using mentioned storages, you don't have to add ``storages`` configuration.
+However, if you want to use your custom storage as one of Tajo's data source, you need to add a configuration for your storage. Here is an example of HDFS storage.
+See `:doc:storage_plugins/overview` for more information.
 
 .. code:: json
 
