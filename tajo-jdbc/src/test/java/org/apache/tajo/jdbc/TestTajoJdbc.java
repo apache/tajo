@@ -374,7 +374,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
           stmt = conn.createStatement();
 
           res = stmt.executeQuery("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
-                  "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
+            "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
           try {
             Map<String, Integer> result = Maps.newHashMap();
@@ -432,7 +432,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
           stmt = conn.createStatement();
 
           res = stmt.executeQuery("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
-                  "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
+            "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
           try {
             Map<String, Integer> result = Maps.newHashMap();

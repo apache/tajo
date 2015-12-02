@@ -45,7 +45,7 @@ public class TestHashPartitioner {
   }
 
   @Test
-  public final void testGetPartition() {   
+  public final void testGetPartition() {
     VTuple tuple1 = new VTuple(3);
     tuple1.put(new Datum[] {
         DatumFactory.createInt4(1),
@@ -76,16 +76,16 @@ public class TestHashPartitioner {
         DatumFactory.createInt4(2),
         DatumFactory.createInt4(4)
     });
-    
+
     int [] partKeys = {0,1};
     Partitioner p = new HashPartitioner(partKeys, 2);
-    
+
     int part1 = p.getPartition(tuple1);
     assertEquals(part1, p.getPartition(tuple2));
     assertEquals(part1, p.getPartition(tuple3));
-    
+
     int part2 = p.getPartition(tuple4);
-    assertEquals(part2, p.getPartition(tuple5));    
+    assertEquals(part2, p.getPartition(tuple5));
   }
 
   @Test
@@ -105,7 +105,7 @@ public class TestHashPartitioner {
       Set<Integer> ids = new TreeSet<>();
       for (int i = 0; i < data.length; i++) {
         Tuple tuple = new VTuple(
-                new Datum[]{new TextDatum(data[i][0]), new TextDatum(data[i][1]), new TextDatum(data[i][2])});
+            new Datum[]{new TextDatum(data[i][0]), new TextDatum(data[i][1]), new TextDatum(data[i][2])});
 
         ids.add(p.getPartition(tuple));
       }

@@ -360,7 +360,7 @@ public class HttpServer {
       for (Handler handler : handlers) {
         if (handler.isFailed()) {
           throw new IOException(
-                  "Problem in starting http server. Server handlers failed");
+              "Problem in starting http server. Server handlers failed");
         }
       }
     } catch (IOException e) {

@@ -58,7 +58,7 @@ public class TajoSchemaConverter {
     for (Type fieldType : parquetFields) {
       if (fieldType.isRepetition(Type.Repetition.REPEATED)) {
         throw new RuntimeException("REPEATED not supported outside LIST or" +
-                " MAP. Type: " + fieldType);
+            " MAP. Type: " + fieldType);
       }
       columns.add(convertField(fieldType));
     }
