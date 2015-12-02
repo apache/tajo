@@ -18,27 +18,26 @@
 
 package org.apache.tajo.util;
 
-import com.facebook.presto.hive.shaded.com.google.common.collect.Maps;
-import org.apache.tajo.SessionVars;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import org.apache.tajo.storage.StorageConstants;
-
 import java.util.Map;
 
 public class TimeZoneUtil {
-  static Map<String, String> timeZoneIdMap;
+  static ImmutableMap<String, String> timeZoneIdMap;
 
   static {
     timeZoneIdMap = load();
   }
 
-  private static Map<String, String> load() {
+  private static ImmutableMap<String, String> load() {
     Map<String, String> timeZoneMap = Maps.newHashMap();
     String[] timezoneIds = java.util.TimeZone.getAvailableIDs();
     for (String timezoneId : timezoneIds) {
       timeZoneMap.put(timezoneId.toUpperCase(), timezoneId);
     }
 
-    return timeZoneMap;
+    return ImmutableMap.<String, String>builder().putAll(timeZoneMap).build();
   }
 
   private static String find(String timezoneId) {
