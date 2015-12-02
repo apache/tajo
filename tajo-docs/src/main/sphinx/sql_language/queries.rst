@@ -1,10 +1,10 @@
-**************************
+*******
 Queries
-**************************
+*******
 
-=====================
+========
 Overview
-=====================
+========
 
 *Synopsis*
 
@@ -19,9 +19,9 @@ Overview
 
 
 
-=====================
+===========
 From Clause
-=====================
+===========
 
 *Synopsis*
 
@@ -120,18 +120,20 @@ both join tables. These common columns appear only once in the output table. If 
 
 **Subqueries**
 
-Subqueries allow users to specify a derived table. It requires enclosing a SQL statement in parentheses and an alias name. 
-For example:
+A subquery is a query that is nested inside another query. It can be embedded in the FROM and WHERE clauses.
+
+Example:
 
 .. code-block:: sql
 
-  FROM (SELECT * FROM table1) AS alias_name
+  FROM (SELECT col1, sum(col2) FROM table1 WHERE col3 > 0 group by col1 order by col1) AS alias_name
+  WHERE col1 IN (SELECT col1 FROM table1 WHERE col2 > 0 AND col2 < 100) AS alias_name
 
 For more detailed information, please refer to :doc:`joins`.
 
-=====================
+============
 Where Clause
-=====================
+============
 
 The syntax of the WHERE Clause is
 
@@ -181,9 +183,9 @@ Aggregation functions can be used with ``DISTINCT`` keywords. It forces an indiv
 
   SELECT l_partkey, COUNT(distinct l_quantity), SUM(distinct l_extendedprice) AS total FROM lineitem GROUP BY l_partkey;
 
-==========================
+=========================
 Orderby and Limit Clauses
-==========================
+=========================
 
 *Synopsis*
 
@@ -199,9 +201,9 @@ Orderby and Limit Clauses
 before or after non-null values in the sort ordering. By default, null values are dealt as if larger than any non-null value; 
 that is, ``NULLS FIRST`` is the default for ``DESC`` order, and ``NULLS LAST`` otherwise.
 
-==========================
+================
 Window Functions
-==========================
+================
 
 A window function performs a calculation across multiple table rows that belong to some window frame.
 
