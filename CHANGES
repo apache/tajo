@@ -49,6 +49,8 @@ Release 0.11.1 - unreleased
 
   TASKS
 
+    TAJO-1854: Add in-subquery document. (jihoon)
+
     TAJO-2003: Fix typo in worker configuration. (jinho)
 
     TAJO-1962: Add description for session variables. (jihoon)
