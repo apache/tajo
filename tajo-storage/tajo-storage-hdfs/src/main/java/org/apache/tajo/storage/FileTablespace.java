@@ -555,42 +555,6 @@ public class FileTablespace extends Tablespace {
   // The below code is for splitting partitioned table.
   ////////////////////////////////////////////////////////////////////////////////
 
-  public PartitionFileFragment[] partitionSplit(String tableName, Path tablePath, String partitionKeys)
-    throws IOException {
-    return partitionSplit(tableName, tablePath, fs.getDefaultBlockSize(), partitionKeys);
-  }
-
-  private PartitionFileFragment[] partitionSplit(String tableName, Path tablePath, long size, String partitionKeys)
-    throws IOException {
-    FileSystem fs = tablePath.getFileSystem(conf);
-
-    long defaultBlockSize = size;
-    List<PartitionFileFragment> listTablets = new ArrayList<>();
-    PartitionFileFragment tablet;
-
-    FileStatus[] fileLists = fs.listStatus(tablePath);
-    for (FileStatus file : fileLists) {
-      long remainFileSize = file.getLen();
-      long start = 0;
-      if (remainFileSize > defaultBlockSize) {
-        while (remainFileSize > defaultBlockSize) {
-          tablet = new PartitionFileFragment(tableName, file.getPath(), start, defaultBlockSize, partitionKeys);
-          listTablets.add(tablet);
-          start += defaultBlockSize;
-          remainFileSize -= defaultBlockSize;
-        }
-        listTablets.add(new PartitionFileFragment(tableName, file.getPath(), start, remainFileSize, partitionKeys));
-      } else {
-        listTablets.add(new PartitionFileFragment(tableName, file.getPath(), 0, remainFileSize, partitionKeys));
-      }
-    }
-
-    PartitionFileFragment[] tablets = new PartitionFileFragment[listTablets.size()];
-    listTablets.toArray(tablets);
-
-    return tablets;
-  }
-
   protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
                                                      String[] hosts, String partitionKeys) {
     return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
