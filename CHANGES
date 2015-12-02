@@ -46,6 +46,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1753: GlobalEngine causes NPE occurs occasionally. (jinho)
+
     TAJO-1862: TSQL gives user wrong URL of documentation. 
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)
 
@@ -89,6 +91,13 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-1855: Add document for tablespace configuration to the Configuration chapter.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-1854: Add in-subquery document. (jihoon)
+
+    TAJO-2003: Fix typo in worker configuration. (jinho)
 
     TAJO-1962: Add description for session variables. (jihoon)
 

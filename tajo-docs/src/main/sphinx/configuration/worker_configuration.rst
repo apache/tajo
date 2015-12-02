@@ -87,7 +87,7 @@ Assume that you want to give 15GB Jvm heap, 1GB memory per task, 4 disks, and 12
 .. code-block:: xml
 
   <property>
-    <name>tajo.worker.resource.tajo.worker.resource.cpu-cores</name>
+    <name>tajo.worker.resource.cpu-cores</name>
     <value>12</value>
   </property>
   
