@@ -19,10 +19,12 @@
 package org.apache.tajo.plan.util;
 
 import org.apache.tajo.algebra.*;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.*;
 
 import java.util.Stack;
@@ -143,63 +145,7 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
 
   @Override
   protected EvalNode visitConst(Object o, ConstEval evalNode, Stack<EvalNode> stack) {
-    Expr value = null;
-    DateValue dateValue;
-    TimeValue timeValue;
-
-    switch (evalNode.getValueType().getType()) {
-      case NULL_TYPE:
-        value = new NullLiteral();
-        break;
-      case BOOLEAN:
-        value = new LiteralValue(evalNode.getValue().asChars(), LiteralValue.LiteralType.Boolean);
-        break;
-      case INT1:
-      case INT2:
-      case INT4:
-        value = new LiteralValue(evalNode.getValue().asChars(), LiteralValue.LiteralType.Unsigned_Integer);
-        break;
-      case INT8:
-        value = new LiteralValue(evalNode.getValue().asChars(), LiteralValue.LiteralType.Unsigned_Large_Integer);
-        break;
-      case FLOAT4:
-      case FLOAT8:
-        value = new LiteralValue(evalNode.getValue().asChars(), LiteralValue.LiteralType.Unsigned_Float);
-        break;
-      case TEXT:
-        value = new LiteralValue(evalNode.getValue().asChars(), LiteralValue.LiteralType.String);
-        break;
-      case DATE:
-        DateDatum dateDatum = (DateDatum) evalNode.getValue();
-
-        dateValue = new DateValue(""+dateDatum.getYear(),
-          ""+dateDatum.getMonthOfYear(), ""+dateDatum.getDayOfMonth());
-        value = new DateLiteral(dateValue);
-
-        break;
-      case TIMESTAMP:
-        TimestampDatum timestampDatum = (TimestampDatum) evalNode.getValue();
-
-        dateValue = new DateValue(""+timestampDatum.getYear(),
-          ""+timestampDatum.getMonthOfYear(), ""+timestampDatum.getDayOfMonth());
-
-        timeValue = new TimeValue(""+timestampDatum.getHourOfDay()
-        , ""+timestampDatum.getMinuteOfHour(), ""+timestampDatum.getSecondOfMinute());
-
-        value = new TimestampLiteral(dateValue, timeValue);
-        break;
-      case TIME:
-        TimeDatum timeDatum = (TimeDatum) evalNode.getValue();
-        timeValue = new TimeValue(""+timeDatum.getHourOfDay()
-          , ""+timeDatum.getMinuteOfHour(), ""+timeDatum.getSecondOfMinute());
-
-        value = new TimeLiteral(timeValue);
-        break;
-      default:
-        throw new RuntimeException("Unsupported type: " + evalNode.getValueType().getType().name());
-    }
-    exprs.push(value);
-
+    exprs.push(convertDatumToExpr(evalNode.getValueType().getType(), evalNode.getValue()));
     return super.visitConst(o, evalNode, stack);
   }
 
@@ -208,35 +154,79 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
     Expr[] values = new Expr[evalNode.getValues().length];
     for (int i = 0; i < evalNode.getValues().length; i++) {
       Datum datum = evalNode.getValues()[i];
-      LiteralValue value;
-      switch (datum.type()) {
-        case BOOLEAN:
-          value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Boolean);
-          break;
-        case TEXT:
-          value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.String);
-          break;
-        case INT1:
-        case INT2:
-        case INT4:
-          value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Unsigned_Integer);
-          break;
-        case INT8:
-          value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Unsigned_Large_Integer);
-          break;
-        case FLOAT4:
-        case FLOAT8:
-          value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Unsigned_Float);
-          break;
-        default:
-          throw new RuntimeException("Unsupported type: " + datum.type().name());
-      }
-      values[i] = value;
+      values[i] = convertDatumToExpr(datum.type(), datum);
     }
     ValueListExpr expr = new ValueListExpr(values);
     exprs.push(expr);
 
     return super.visitRowConstant(o, evalNode, stack);
+  }
+
+  /**
+   * Convert specified Datum to Expr
+   *
+   * @param type value type
+   * @param datum target datum
+   * @return converted datum
+   */
+  private Expr convertDatumToExpr(TajoDataTypes.Type type, Datum datum) {
+    Expr value = null;
+    DateValue dateValue;
+    TimeValue timeValue;
+
+    switch (type) {
+      case NULL_TYPE:
+        value = new NullLiteral();
+        break;
+      case BOOLEAN:
+        value = new BooleanLiteral(datum.asBool());
+        break;
+      case INT1:
+      case INT2:
+      case INT4:
+        value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Unsigned_Integer);
+        break;
+      case INT8:
+        value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Unsigned_Large_Integer);
+        break;
+      case FLOAT4:
+      case FLOAT8:
+        value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.Unsigned_Float);
+        break;
+      case TEXT:
+        value = new LiteralValue(datum.asChars(), LiteralValue.LiteralType.String);
+        break;
+      case DATE:
+        DateDatum dateDatum = (DateDatum) datum;
+
+        dateValue = new DateValue(""+dateDatum.getYear(),
+          ""+dateDatum.getMonthOfYear(), ""+dateDatum.getDayOfMonth());
+        value = new DateLiteral(dateValue);
+
+        break;
+      case TIMESTAMP:
+        TimestampDatum timestampDatum = (TimestampDatum) datum;
+
+        dateValue = new DateValue(""+timestampDatum.getYear(),
+          ""+timestampDatum.getMonthOfYear(), ""+timestampDatum.getDayOfMonth());
+
+        timeValue = new TimeValue(""+timestampDatum.getHourOfDay()
+          , ""+timestampDatum.getMinuteOfHour(), ""+timestampDatum.getSecondOfMinute());
+
+        value = new TimestampLiteral(dateValue, timeValue);
+        break;
+      case TIME:
+        TimeDatum timeDatum = (TimeDatum) datum;
+        timeValue = new TimeValue(""+timeDatum.getHourOfDay()
+          , ""+timeDatum.getMinuteOfHour(), ""+timeDatum.getSecondOfMinute());
+
+        value = new TimeLiteral(timeValue);
+        break;
+      default:
+        throw new RuntimeException(new UnsupportedException(type.name()));
+    }
+
+    return value;
   }
 
   @Override

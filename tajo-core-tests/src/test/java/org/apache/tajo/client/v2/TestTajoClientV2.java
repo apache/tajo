@@ -264,14 +264,11 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
 
   @Test(expected = QueryFailedException.class)
   public void testFailedExecuteQueryAsync() throws Throwable {
-    QueryFuture future = clientv2.executeQueryAsync(
-            "select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem where l_orderkey > 0");
-    try {
+    try (QueryFuture future = clientv2.executeQueryAsync(
+            "select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem where l_orderkey > 0")) {
       future.get();
     } catch (ExecutionException e) {
       throw e.getCause();
-    } finally {
-      future.close();
     }
   }
 }

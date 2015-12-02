@@ -8,6 +8,10 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1985: Supporting Metric report via JMX. (Yongjun Park via jinho)
+
+    TAJO-1983: Improve memory usage of ExternalSortExec. (jinho)
+
     TAJO-1986: Rename the name 'option' to 'property' in TableMeta. (hyunsik)
 
     TAJO-1988: Remove some duplicated codes in toString() of Projectable.
@@ -41,6 +45,8 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-1753: GlobalEngine causes NPE occurs occasionally. (jinho)
 
     TAJO-1862: TSQL gives user wrong URL of documentation. 
     (Contributed by Dongkyu Hwangbo, committed by hyunsik)
@@ -86,7 +92,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
-    TAJO-1857: Rename the section of 'File Formats' to 'Data Formats' and fill 
+    TAJO-1962: Add description for session variables. (jihoon)
+
+    TAJO-1857: Rename the section of 'File Formats' to 'Data Formats' and fill
     compression section of the 'Table Management' chapter. 
     (Contributed by Jongyoung Park. Committed by jihoon)
 
@@ -119,6 +127,15 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-1856: Add a description about the relationship of tablespace, managed table, 
+    and external table to Tablespace section of Table Management chapter. 
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-1922: Allow date types with IN operator for partition pruning. (jaehwa)
+
+    TAJO-1967: Replace 'try finally' with 'try' with resources.
+    (Contributed by Dongkyu Hwangbo, Committed by jihoon)
 
     TAJO-1947: Change Projection::setNamedExprs and getNamedExprs to set and 
     get List<NamedExpr>. (Contributed by Dongkyu Hwangbo, Committed by hyunsik)

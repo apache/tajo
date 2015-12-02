@@ -203,7 +203,7 @@ public class TajoMaster extends CompositeService {
     addIfService(restServer);
 
     PythonScriptEngine.initPythonScriptEngineFiles();
-    
+
     // Try to start up all services in TajoMaster.
     // If anyone is failed, the master prints out the errors and immediately should shutdowns
     try {
@@ -322,6 +322,7 @@ public class TajoMaster extends CompositeService {
     checkBaseTBSpaceAndDatabase();
 
     super.serviceStart();
+    initSystemMetrics();
 
     // Setting the system global configs
     systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
@@ -334,7 +335,6 @@ public class TajoMaster extends CompositeService {
     }
 
     initWebServer();
-    initSystemMetrics();
 
     haService = ServiceTrackerFactory.get(systemConf);
     haService.register();
@@ -362,12 +362,9 @@ public class TajoMaster extends CompositeService {
     // In TajoMaster HA, some master might see LeaseExpiredException because of lease mismatch. Thus,
     // we need to create below xml file at HdfsServiceTracker::writeSystemConf.
     if (!systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      FSDataOutputStream out = FileSystem.create(defaultFS, systemConfPath,
-        new FsPermission(SYSTEM_CONF_FILE_PERMISSION));
-      try {
+      try (FSDataOutputStream out = FileSystem.create(defaultFS, systemConfPath,
+              new FsPermission(SYSTEM_CONF_FILE_PERMISSION))) {
         systemConf.writeXml(out);
-      } finally {
-        out.close();
       }
       defaultFS.setReplication(systemConfPath, (short) systemConf.getIntVar(ConfVars.SYSTEM_CONF_REPLICA_COUNT));
     }

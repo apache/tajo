@@ -161,9 +161,7 @@ public class HBaseTablespace extends Tablespace {
       }
     }
 
-    HBaseAdmin hAdmin =  new HBaseAdmin(getHbaseConf());
-
-    try {
+    try (HBaseAdmin hAdmin = new HBaseAdmin(getHbaseConf())) {
       if (isExternal) {
         // If tajo table is external table, only check validation.
         if (mappedColumns == null || mappedColumns.isEmpty()) {
@@ -178,7 +176,7 @@ public class HBaseTablespace extends Tablespace {
           tableColumnFamilies.add(eachColumn.getNameAsString());
         }
 
-        Collection<String> mappingColumnFamilies =columnMapping.getColumnFamilyNames();
+        Collection<String> mappingColumnFamilies = columnMapping.getColumnFamilyNames();
         if (mappingColumnFamilies.isEmpty()) {
           throw new MissingTablePropertyException(HBaseStorageConstants.META_COLUMNS_KEY, hbaseTableName);
         }
@@ -206,8 +204,6 @@ public class HBaseTablespace extends Tablespace {
           hAdmin.createTable(hTableDescriptor, splitKeys);
         }
       }
-    } finally {
-      hAdmin.close();
     }
   }
 
@@ -370,15 +366,12 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
-    HBaseAdmin hAdmin =  new HBaseAdmin(hbaseConf);
 
-    try {
+    try (HBaseAdmin hAdmin = new HBaseAdmin(hbaseConf)) {
       HTableDescriptor hTableDesc = parseHTableDescriptor(tableDesc.getMeta(), tableDesc.getSchema());
       LOG.info("Deleting hbase table: " + new String(hTableDesc.getName()));
       hAdmin.disableTable(hTableDesc.getName());
       hAdmin.deleteTable(hTableDesc.getName());
-    } finally {
-      hAdmin.close();
     }
   }
 
@@ -917,8 +910,7 @@ public class HBaseTablespace extends Tablespace {
     // insert into table
     String tableName = tableDesc.getMeta().getProperty(HBaseStorageConstants.META_TABLE_KEY);
 
-    HTable htable = new HTable(hbaseConf, tableName);
-    try {
+    try (HTable htable = new HTable(hbaseConf, tableName)) {
       LoadIncrementalHFiles loadIncrementalHFiles = null;
       try {
         loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
@@ -929,8 +921,6 @@ public class HBaseTablespace extends Tablespace {
       loadIncrementalHFiles.doBulkLoad(stagingResultDir, htable);
 
       return stagingResultDir;
-    } finally {
-      htable.close();
     }
   }
 
@@ -946,8 +936,7 @@ public class HBaseTablespace extends Tablespace {
 
       ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getPropertySet());
 
-      HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
-      try {
+      try (HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName())) {
         byte[][] endKeys = htable.getEndKeys();
         if (endKeys.length == 1) {
           return new TupleRange[]{dataRange};
@@ -984,12 +973,12 @@ public class HBaseTablespace extends Tablespace {
           for (int i = 0; i < sortSpecs.length; i++) {
             if (columnMapping.getIsBinaryColumns()[sortKeyIndexes[i]]) {
               endTuple.put(i,
-                  HBaseBinarySerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
-                      rowKeyFields[i]));
+                      HBaseBinarySerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                              rowKeyFields[i]));
             } else {
               endTuple.put(i,
-                  HBaseTextSerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
-                      rowKeyFields[i]));
+                      HBaseTextSerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                              rowKeyFields[i]));
             }
           }
           tupleRanges.add(new TupleRange(sortSpecs, previousTuple, endTuple));
@@ -1003,8 +992,6 @@ public class HBaseTablespace extends Tablespace {
           tupleRanges.remove(tupleRanges.size() - 1);
         }
         return tupleRanges.toArray(new TupleRange[tupleRanges.size()]);
-      } finally {
-        htable.close();
       }
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
@@ -1055,15 +1042,12 @@ public class HBaseTablespace extends Tablespace {
         return;
       }
 
-      HBaseAdmin hAdmin =  new HBaseAdmin(this.hbaseConf);
       TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
-      try {
+      try (HBaseAdmin hAdmin = new HBaseAdmin(this.hbaseConf)) {
         HTableDescriptor hTableDesc = parseHTableDescriptor(tableMeta, cNode.getTableSchema());
         LOG.info("Delete table cause query failed:" + new String(hTableDesc.getName()));
         hAdmin.disableTable(hTableDesc.getName());
         hAdmin.deleteTable(hTableDesc.getName());
-      } finally {
-        hAdmin.close();
       }
     }
   }

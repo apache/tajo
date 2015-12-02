@@ -726,10 +726,8 @@ public class TestInsertQuery extends QueryTestCaseBase {
     CompressionCodec codec = factory.getCodec(file.getPath());
     assertTrue(codec instanceof DeflateCodec);
 
-    BufferedReader reader = new BufferedReader(
-        new InputStreamReader(codec.createInputStream(fs.open(file.getPath()))));
-
-    try {
+    try (BufferedReader reader = new BufferedReader(
+            new InputStreamReader(codec.createInputStream(fs.open(file.getPath()))))) {
       String line = reader.readLine();
       assertNotNull(line);
 
@@ -739,8 +737,6 @@ public class TestInsertQuery extends QueryTestCaseBase {
       assertEquals("1", tokens[0]);
       assertEquals("2.1", tokens[1]);
       assertEquals("test", tokens[2]);
-    } finally {
-      reader.close();
     }
   }
 

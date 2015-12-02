@@ -195,12 +195,10 @@ public class TajoHAAdmin {
   public static void main(String [] args) throws Exception {
     TajoConf conf = new TajoConf();
 
-    Writer writer = new PrintWriter(System.out);
-    try {
+    try (Writer writer = new PrintWriter(System.out)) {
       TajoHAAdmin admin = new TajoHAAdmin(conf, writer);
       admin.runCommand(args);
     } finally {
-      writer.close();
       System.exit(0);
     }
   }
