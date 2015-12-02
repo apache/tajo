@@ -92,6 +92,8 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2003: Fix typo in worker configuration. (jinho)
+
     TAJO-1962: Add description for session variables. (jihoon)
 
     TAJO-1857: Rename the section of 'File Formats' to 'Data Formats' and fill
