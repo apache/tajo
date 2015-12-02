@@ -92,6 +92,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1855: Add document for tablespace configuration to the Configuration chapter.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1854: Add in-subquery document. (jihoon)
 
     TAJO-2003: Fix typo in worker configuration. (jinho)
