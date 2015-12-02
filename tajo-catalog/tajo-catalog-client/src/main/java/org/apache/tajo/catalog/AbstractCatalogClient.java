@@ -782,7 +782,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final IndexListResponse response = stub.getAllIndexesByTable(null, proto);
       ensureOk(response.getState());
 
-      List<IndexDesc> indexDescs = TUtil.newList();
+      List<IndexDesc> indexDescs = new ArrayList<>();
       for (IndexDescProto descProto : response.getIndexDescList()) {
         indexDescs.add(new IndexDesc(descProto));
       }

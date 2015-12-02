@@ -72,7 +72,7 @@
   String deadQueryMastersHtml = deadQueryMasters.isEmpty() ? "0": "<font color='red'>" + deadQueryMasters.size() + "</font>";
 
   ServiceTracker haService = master.getContext().getHAService();
-  List<TajoMasterInfo> masters = TUtil.newList();
+  List<TajoMasterInfo> masters = new ArrayList<>();
 
   String activeLabel = "";
   if (haService != null) {

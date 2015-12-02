@@ -363,7 +363,7 @@ public class ProjectionPushDownRule extends
     }
 
     class FilteredTargetIterator implements Iterator<Target> {
-      List<Target> filtered = TUtil.newList();
+      List<Target> filtered = new ArrayList<>();
       Iterator<Target> iterator;
 
       public FilteredTargetIterator(Set<String> required) {
@@ -469,7 +469,7 @@ public class ProjectionPushDownRule extends
     node.setInSchema(child.getOutSchema());
 
     int evaluationCount = 0;
-    List<Target> finalTargets = TUtil.newList();
+    List<Target> finalTargets = new ArrayList<>();
     for (String referenceName : referenceNames) {
       Target target = context.targetListMgr.getTarget(referenceName);
 
@@ -689,7 +689,9 @@ public class ProjectionPushDownRule extends
     if (node.hasAggFunctions() && aggEvalNames != null) {
       WindowFunctionEval [] aggEvals = new WindowFunctionEval[aggEvalNames.length];
       int i = 0;
-      for (Iterator<String> it = getFilteredReferences(aggEvalNames, TUtil.newList(aggEvalNames)); it.hasNext();) {
+      List inputList = new ArrayList<>();
+      inputList.addAll(Arrays.asList(aggEvalNames));
+      for (Iterator<String> it = getFilteredReferences(aggEvalNames, inputList); it.hasNext();) {
 
         String referenceName = it.next();
         Target target = context.targetListMgr.getTarget(referenceName);
@@ -795,7 +797,10 @@ public class ProjectionPushDownRule extends
     // Getting projected targets
     if (node.hasAggFunctions() && aggEvalNames != null) {
       List<AggregationFunctionCallEval> aggEvals = new ArrayList<>();
-      for (Iterator<String> it = getFilteredReferences(aggEvalNames, TUtil.newList(aggEvalNames)); it.hasNext();) {
+      int i = 0;
+      List inputList = new ArrayList<>();
+      inputList.addAll(Arrays.asList(aggEvalNames));
+      for (Iterator<String> it = getFilteredReferences(aggEvalNames, inputList); it.hasNext();) {
 
         String referenceName = it.next();
         Target target = context.targetListMgr.getTarget(referenceName);
@@ -962,14 +967,16 @@ public class ProjectionPushDownRule extends
   }
 
   static Iterator<String> getFilteredReferences(String [] targetNames, Collection<String> required) {
-    return new FilteredStringsIterator(targetNames, required);
+    List inputList = new ArrayList<>();
+    inputList.addAll(Arrays.asList(targetNames));
+    return new FilteredStringsIterator(inputList, required);
   }
 
   static class FilteredStringsIterator implements Iterator<String> {
     Iterator<String> iterator;
 
     FilteredStringsIterator(Collection<String> targetNames, Collection<String> required) {
-      List<String> filtered = TUtil.newList();
+      List<String> filtered = new ArrayList<>();
       for (String name : targetNames) {
         if (required.contains(name)) {
           filtered.add(name);
@@ -977,10 +984,6 @@ public class ProjectionPushDownRule extends
       }
 
       iterator = filtered.iterator();
-    }
-
-    FilteredStringsIterator(String [] targetNames, Collection<String> required) {
-      this(TUtil.newList(targetNames), required);
     }
 
     @Override
@@ -1006,7 +1009,7 @@ public class ProjectionPushDownRule extends
     Iterator<Target> iterator;
 
     FilteredIterator(List<Target> targets, Set<String> requiredReferences) {
-      List<Target> filtered = TUtil.newList();
+      List<Target> filtered = new ArrayList<>();
       Map<String, Target> targetSet = new HashMap<>();
       for (Target t : targets) {
         // Only should keep an raw target instead of field reference.

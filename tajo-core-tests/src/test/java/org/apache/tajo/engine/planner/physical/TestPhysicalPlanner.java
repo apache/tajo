@@ -674,7 +674,9 @@ public class TestPhysicalPlanner {
     }
 
     assertEquals(numPartitions, fragments.size());
-    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    List inputList = new ArrayList<>();
+    inputList.addAll(fragments);
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, inputList);
     scanner.init();
 
     Tuple tuple;
@@ -745,7 +747,9 @@ public class TestPhysicalPlanner {
       assertEquals(expectedFileNum, fileStatuses.length);
     }
     TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
-    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    List inputList = new ArrayList<>();
+    inputList.addAll(fragments);
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, inputList);
     scanner.init();
 
     long rowNum = 0;
@@ -809,7 +813,9 @@ public class TestPhysicalPlanner {
 
     assertEquals(numPartitions, fragments.size());
 
-    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    List inputList = new ArrayList<>();
+    inputList.addAll(fragments);
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, inputList);
     scanner.init();
     Tuple tuple;
     int i = 0;

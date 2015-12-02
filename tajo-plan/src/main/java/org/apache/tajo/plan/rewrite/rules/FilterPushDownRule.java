@@ -74,7 +74,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     public void setToOrigin(Map<EvalNode, EvalNode> evalMap) {
       //evalMap: copy -> origin
-      List<EvalNode> origins = TUtil.newList();
+      List<EvalNode> origins = new ArrayList<>();
       for (EvalNode eval : pushingDownFilters) {
         EvalNode origin = evalMap.get(eval);
         if (origin != null) {
@@ -188,7 +188,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     LogicalNode left = joinNode.getLeftChild();
     LogicalNode right = joinNode.getRightChild();
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
     // Join's input schema = right child output columns + left child output columns
     Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, block, joinNode, left, notMatched,
         null, 0);
@@ -210,7 +210,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     notMatched.clear();
     context.pushingDownFilters.addAll(nonPushableQuals);
-    List<EvalNode> matched = TUtil.newList();
+    List<EvalNode> matched = new ArrayList<>();
 
     // If the query involves a subquery, the stack can be empty.
     // In this case, this join is the top most one within a query block.
@@ -414,7 +414,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private static List<EvalNode> extractNonEquiThetaJoinQuals(final Set<EvalNode> predicates,
                                                              final LogicalPlan.QueryBlock block,
                                                              final JoinNode joinNode) {
-    List<EvalNode> nonEquiThetaJoinQuals = TUtil.newList();
+    List<EvalNode> nonEquiThetaJoinQuals = new ArrayList<>();
     for (EvalNode eachEval: predicates) {
       if (isNonEquiThetaJoinQual(block, joinNode, eachEval)) {
         nonEquiThetaJoinQuals.add(eachEval);
@@ -534,8 +534,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitTableSubQuery(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                         TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
-    List<EvalNode> matched = TUtil.newList();
-    List<EvalNode> unmatched = TUtil.newList();
+    List<EvalNode> matched = new ArrayList<>();
+    List<EvalNode> unmatched = new ArrayList<>();
     for (EvalNode eval : context.pushingDownFilters) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, node)) {
         matched.add(eval);
@@ -561,7 +561,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                 Stack<LogicalNode> stack) throws TajoException {
     LogicalNode leftNode = unionNode.getLeftChild();
 
-    List<EvalNode> origins = TUtil.newList(context.pushingDownFilters);
+    List<EvalNode> origins = new ArrayList<>();
+    origins.addAll(context.pushingDownFilters);
 
     // transformed -> pushingDownFilters
     Map<EvalNode, EvalNode> transformedMap = transformEvalsWidthByPassNode(origins, plan, block, unionNode, leftNode);
@@ -594,7 +595,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                      Stack<LogicalNode> stack) throws TajoException {
     LogicalNode childNode = projectionNode.getChild();
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
 
     //copy -> origin
     BiMap<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(
@@ -791,8 +792,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
     }
 
-    List<EvalNode> aggrEvalOrigins = TUtil.newList();
-    List<EvalNode> aggrEvals = TUtil.newList();
+    List<EvalNode> aggrEvalOrigins = new ArrayList<>();
+    List<EvalNode> aggrEvals = new ArrayList<>();
 
     for (EvalNode eval : context.pushingDownFilters) {
       EvalNode copy = null;
@@ -878,7 +879,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       context.pushingDownFilters.removeAll(aggrEvals);
     }
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
     // transform
     Map<EvalNode, EvalNode> transformed =
         findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, 0);
@@ -896,7 +897,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   public LogicalNode visitScan(FilterPushDownContext context, LogicalPlan plan,
                                LogicalPlan.QueryBlock block, final ScanNode scanNode,
                                Stack<LogicalNode> stack) throws TajoException {
-    List<EvalNode> matched = TUtil.newList();
+    List<EvalNode> matched = new ArrayList<>();
 
     // find partition column and check matching
     Set<String> partitionColumns = new HashSet<>();
@@ -942,7 +943,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     context.pushingDownFilters.removeAll(partitionEvals);
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
 
     // transform
     Map<EvalNode, EvalNode> transformed =

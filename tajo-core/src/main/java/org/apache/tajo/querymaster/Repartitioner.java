@@ -321,12 +321,16 @@ public class Repartitioner {
             if (tbNameToInterm.containsKey(scanEbId)) {
               tbNameToInterm.get(scanEbId).add(intermediateEntry);
             } else {
-              tbNameToInterm.put(scanEbId, TUtil.newList(intermediateEntry));
+              List listInput = new ArrayList<>();
+              listInput.addAll(Arrays.asList(intermediateEntry));
+              tbNameToInterm.put(scanEbId, listInput);
             }
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                     new HashMap<>();
-            tbNameToInterm.put(scanEbId, TUtil.newList(intermediateEntry));
+            List inputList = new ArrayList<>();
+            inputList.addAll(Arrays.asList(intermediateEntry));
+            tbNameToInterm.put(scanEbId, inputList);
             hashEntries.put(intermediateEntry.getPartId(), tbNameToInterm);
           }
         }
@@ -999,7 +1003,8 @@ public class Repartitioner {
         int partId = eachInterm.getPartId();
         List<IntermediateEntry> partitionInterms = partitionIntermMap.get(partId);
         if (partitionInterms == null) {
-          partitionInterms = TUtil.newList(eachInterm);
+          partitionInterms = new ArrayList<>();
+          partitionInterms.addAll(Arrays.asList(eachInterm));
           partitionIntermMap.put(partId, partitionInterms);
         } else {
           partitionInterms.add(eachInterm);
@@ -1077,8 +1082,10 @@ public class Repartitioner {
           fetchListForSingleTask = new ArrayList<>();
           fetchListVolume = 0;
         }
+        List listInput = new ArrayList<>();
+        listInput.addAll(Arrays.asList(currentInterm));
         FetchImpl fetch = new FetchImpl(fetchName, currentInterm.getPullHost(), SCATTERED_HASH_SHUFFLE,
-            ebId, currentInterm.getPartId(), TUtil.newList(currentInterm));
+            ebId, currentInterm.getPartId(), listInput);
         fetch.setOffset(eachSplit.getFirst());
         fetch.setLength(eachSplit.getSecond());
         fetchListForSingleTask.add(fetch.getProto());
@@ -1219,7 +1226,9 @@ public class Repartitioner {
       if (hashed.containsKey(entry.getPartId())) {
         hashed.get(entry.getPartId()).add(entry);
       } else {
-        hashed.put(entry.getPartId(), TUtil.newList(entry));
+        List listInput = new ArrayList<>();
+        listInput.addAll(Arrays.asList(entry));
+        hashed.put(entry.getPartId(), listInput);
       }
     }
 
@@ -1235,7 +1244,9 @@ public class Repartitioner {
       if (hashed.containsKey(host)) {
         hashed.get(host).add(entry);
       } else {
-        hashed.put(host, TUtil.newList(entry));
+        List listInput = new ArrayList<>();
+        listInput.addAll(Arrays.asList(entry));
+        hashed.put(host, listInput);
       }
     }
 

@@ -58,7 +58,9 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    client.unsetSessionVariables(TUtil.newList(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname()));
+    List listInput = new ArrayList<>();
+    listInput.addAll(Arrays.asList(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname()));
+    client.unsetSessionVariables(listInput);
   }
 
   @Parameters

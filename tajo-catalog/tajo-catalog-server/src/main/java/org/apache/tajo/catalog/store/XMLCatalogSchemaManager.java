@@ -336,7 +336,7 @@ public class XMLCatalogSchemaManager {
   public boolean catalogAlreadyExists(Connection conn) {
     boolean result = false;
     try {
-      List<String> constants = TUtil.newList();
+      List<String> constants = new ArrayList<>();
       constants.add(CatalogConstants.TB_META);
       constants.add(CatalogConstants.TB_SPACES);
       constants.add(CatalogConstants.TB_DATABASES);

@@ -41,8 +41,10 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -165,7 +167,9 @@ public class TestMergeScanner {
     targetSchema.addColumn(schema.getColumn(0));
     targetSchema.addColumn(schema.getColumn(2));
 
-    Scanner scanner = new MergeScanner(conf, schema, meta, TUtil.newList(fragment), targetSchema);
+    List inputList = new ArrayList<>();
+    inputList.addAll(Arrays.asList(fragment));
+    Scanner scanner = new MergeScanner(conf, schema, meta, inputList, targetSchema);
     assertEquals(isProjectableStorage(meta.getDataFormat()), scanner.isProjectable());
 
     scanner.init();

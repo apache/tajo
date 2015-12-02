@@ -42,6 +42,7 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -478,7 +479,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
 
     PlanProto.PartitionScanSpec.Builder partitionScan = PlanProto.PartitionScanSpec.newBuilder();
-    List<String> pathStrs = TUtil.newList();
+    List<String> pathStrs = new ArrayList<>();
     if (node.getInputPaths() != null) {
       for (Path p : node.getInputPaths()) {
         pathStrs.add(p.toString());

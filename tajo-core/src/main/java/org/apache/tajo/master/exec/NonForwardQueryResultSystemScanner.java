@@ -767,7 +767,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         this.qual.bind(null, inSchema);
       }
 
-      cachedData = TUtil.newList();
+      cachedData = new ArrayList<>();
       currentRow = 0;
       isClosed = false;
       

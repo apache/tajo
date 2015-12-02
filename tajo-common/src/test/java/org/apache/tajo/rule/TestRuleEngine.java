@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.Attributes;
@@ -68,7 +69,9 @@ public class TestRuleEngine {
 
     @Override
     public List<SelfDiagnosisRule> getDefinedRules() {
-      List<SelfDiagnosisRule> ruleList = TUtil.newList(new TestRule1(), new TestRule2());
+      List<SelfDiagnosisRule> ruleList = new ArrayList<>();
+      ruleList.add(new TestRule1());
+      ruleList.add(new TestRule2());
       return ruleList;
     }
     

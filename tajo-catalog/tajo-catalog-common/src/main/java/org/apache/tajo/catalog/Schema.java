@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.Expose;
+import org.apache.avro.generic.GenericData;
 import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -56,7 +57,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	public Schema(SchemaProto proto) {
     init();
 
-    List<Column> toBeAdded = TUtil.newList();
+    List<Column> toBeAdded = new ArrayList<>();
     for (int i = 0; i < proto.getFieldsCount(); i++) {
       deserializeColumn(toBeAdded, proto.getFieldsList(), i);
     }
@@ -83,7 +84,8 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       // where is start index of nested fields?
       int childStartIndex = tobeAdded.size() - childNum;
       // Extract nested fields
-      List<Column> nestedColumns = TUtil.newList(tobeAdded.subList(childStartIndex, childStartIndex + childNum));
+      List<Column> nestedColumns = new ArrayList<>();
+      nestedColumns.addAll(tobeAdded.subList(childStartIndex, childStartIndex + childNum));
 
       // Remove nested fields from the the current level
       for (int i = 0; i < childNum; i++) {
@@ -309,7 +311,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @return A list of all columns
    */
   public List<Column> getAllColumns() {
-    final List<Column> columnList = TUtil.newList();
+    final List<Column> columnList = new ArrayList<>();
 
     SchemaUtil.visitSchema(this, new ColumnVisitor() {
       @Override
@@ -423,7 +425,9 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     Column newCol = new Column(normalized, typeDesc);
     fields.add(newCol);
     fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
-    fieldsByName.put(newCol.getSimpleName(), TUtil.newList(fields.size() - 1));
+    List inputList = new ArrayList<>();
+    inputList.add(fields.size() - 1);
+    fieldsByName.put(newCol.getSimpleName(), inputList);
 
     return this;
   }

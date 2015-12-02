@@ -543,7 +543,7 @@ public class AlgebraicUtil {
    * @return An array of CNF-formed algebra expressions
    */
   public static Expr[] toConjunctiveNormalFormArray(Expr expr) {
-    List<Expr> list = TUtil.newList();
+    List<Expr> list = new ArrayList<>();
     toConjunctiveNormalFormArrayRecursive(expr, list);
     return list.toArray(new Expr[list.size()]);
   }
@@ -584,7 +584,7 @@ public class AlgebraicUtil {
     Column target;
 
     for (int i = 0; i < partitionColumns.size(); i++) {
-      List<Expr> accumulatedFilters = TUtil.newList();
+      List<Expr> accumulatedFilters = new ArrayList<>();
       target = new Column(partitionColumns.get(i));
       ColumnReferenceExpr columnReference = new ColumnReferenceExpr(tableName, target.getSimpleName());
 

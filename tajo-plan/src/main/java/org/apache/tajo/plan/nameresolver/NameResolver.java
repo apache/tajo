@@ -92,7 +92,7 @@ public abstract class NameResolver {
   public static RelationNode lookupTable(LogicalPlan.QueryBlock block, String tableName)
       throws AmbiguousTableException {
 
-    List<RelationNode> found = TUtil.newList();
+    List<RelationNode> found = new ArrayList<>();
 
     for (RelationNode relation : block.getRelations()) {
 
@@ -245,7 +245,7 @@ public abstract class NameResolver {
                                                String columnName, boolean includeSelfDescTable) throws AmbiguousColumnException {
     Preconditions.checkArgument(CatalogUtil.isSimpleIdentifier(columnName));
 
-    List<Column> candidates = TUtil.newList();
+    List<Column> candidates = new ArrayList<>();
 
     for (RelationNode rel : block.getRelations()) {
       if (rel.isNameResolveBase()) {
@@ -260,7 +260,7 @@ public abstract class NameResolver {
       return ensureUniqueColumn(candidates);
     } else {
       if (includeSelfDescTable) {
-        List<RelationNode> candidateRels = TUtil.newList();
+        List<RelationNode> candidateRels = new ArrayList<>();
         for (RelationNode rel : block.getRelations()) {
           if (describeSchemaByItself(rel)) {
             candidateRels.add(rel);

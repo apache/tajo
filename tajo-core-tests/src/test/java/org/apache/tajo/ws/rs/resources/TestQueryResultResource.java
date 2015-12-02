@@ -52,6 +52,7 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.tajo.exception.ErrorUtil.isOk;
@@ -208,7 +209,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     assertNotNull(queryResultSetInputStream);
 
     boolean isFinished = false;
-    List<Tuple> tupleList = TUtil.newList();
+    List<Tuple> tupleList = new ArrayList<>();
     RowStoreUtil.RowStoreDecoder decoder = RowStoreUtil.createDecoder(response.getSchema());
     while (!isFinished) {
       try {
@@ -274,7 +275,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     assertNotNull(queryResultSetInputStream);
 
     boolean isFinished = false;
-    List<Tuple> tupleList = TUtil.newList();
+    List<Tuple> tupleList = new ArrayList<>();
     int receviedSize = 0;
     RowStoreUtil.RowStoreDecoder decoder = RowStoreUtil.createDecoder(response.getSchema());
     while (!isFinished) {

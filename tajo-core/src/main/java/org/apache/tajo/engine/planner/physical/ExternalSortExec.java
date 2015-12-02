@@ -54,6 +54,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -139,7 +140,7 @@ public class ExternalSortExec extends SortExec {
                           final CatalogProtos.FragmentProto[] fragments) throws PhysicalPlanningException {
     this(context, plan);
 
-    mergedInputFragments = TUtil.newList();
+    mergedInputFragments = new ArrayList<>();
     for (CatalogProtos.FragmentProto proto : fragments) {
       FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);
       mergedInputFragments.add(new Chunk(inSchema, fragment, scanNode.getTableDesc().getMeta()));
@@ -212,7 +213,7 @@ public class ExternalSortExec extends SortExec {
    */
   private List<Chunk> sortAndStoreAllChunks() throws IOException {
     Tuple tuple;
-    List<Chunk> chunkPaths = TUtil.newList();
+    List<Chunk> chunkPaths = new ArrayList<>();
 
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
@@ -333,8 +334,9 @@ public class ExternalSortExec extends SortExec {
 
   private Scanner externalMergeAndSort(List<Chunk> chunks) throws Exception {
     int level = 0;
-    final List<Chunk> inputFiles = TUtil.newList(chunks);
-    final List<Chunk> outputFiles = TUtil.newList();
+    final List<Chunk> inputFiles = new ArrayList<>();
+    inputFiles.addAll(chunks);
+    final List<Chunk> outputFiles = new ArrayList<>();
     int remainRun = inputFiles.size();
     int chunksSize = chunks.size();
 
@@ -347,9 +349,9 @@ public class ExternalSortExec extends SortExec {
       int remainInputRuns = inputFiles.size();
       int outChunkId = 0;
       int outputFileNum = 0;
-      List<Future<Chunk>> futures = TUtil.newList();
+      List<Future<Chunk>> futures = new ArrayList<>();
       // the number of files being merged in threads.
-      List<Integer> numberOfMergingFiles = TUtil.newList();
+      List<Integer> numberOfMergingFiles = new ArrayList<>();
 
       for (int startIdx = 0; startIdx < inputFiles.size();) {
 
@@ -376,7 +378,7 @@ public class ExternalSortExec extends SortExec {
           info(LOG, "Unbalanced merge possibility detected: number of remain input (" + remainInputRuns
               + ") and output files (" + outputFileNum + ") <= " + defaultFanout);
 
-          List<Chunk> switched = TUtil.newList();
+          List<Chunk> switched = new ArrayList<>();
           // switch the remain inputs to the next outputs
           for (int j = startIdx; j < inputFiles.size(); j++) {
             switched.add(inputFiles.get(j));

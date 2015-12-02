@@ -523,7 +523,7 @@ public class EvalTreeUtil {
 
   public static class EvalFinder extends BasicEvalNodeVisitor<Object, Object> {
     private EvalType targetType;
-    List<EvalNode> evalNodes = TUtil.newList();
+    List<EvalNode> evalNodes = new ArrayList<>();
 
     public EvalFinder(EvalType targetType) {
       this.targetType = targetType;
@@ -546,7 +546,7 @@ public class EvalTreeUtil {
   }
 
   public static class OuterJoinSensitiveEvalFinder extends BasicEvalNodeVisitor<Object, Object> {
-    private List<EvalNode> evalNodes = TUtil.newList();
+    private List<EvalNode> evalNodes = new ArrayList<>();
 
     @Override
     public Object visit(Object context, EvalNode evalNode, Stack<EvalNode> stack) {

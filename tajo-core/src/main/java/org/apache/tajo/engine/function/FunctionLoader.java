@@ -108,7 +108,7 @@ public class FunctionLoader {
           continue;
         }
 
-        List<Path> filePaths = TUtil.newList();
+        List<Path> filePaths = new ArrayList<>();
         if (localFS.isDirectory(codePath)) {
           for (FileStatus file : localFS.listStatus(codePath,
               (Path path) -> path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION))) {

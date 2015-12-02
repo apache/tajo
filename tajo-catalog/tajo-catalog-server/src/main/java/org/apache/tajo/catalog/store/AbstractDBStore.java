@@ -431,7 +431,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   
   @Override
   public List<TablespaceProto> getTablespaces() {
-    List<TablespaceProto> tablespaces = TUtil.newList();
+    List<TablespaceProto> tablespaces = new ArrayList<>();
 
     String sql = "SELECT SPACE_ID, SPACE_NAME, SPACE_HANDLER, SPACE_URI FROM " + TB_SPACES ;
 
@@ -2138,7 +2138,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     String selectStatement = null;
     Pair<String, List<PartitionFilterSet>> pair = null;
 
-    List<PartitionDescProto> partitions = TUtil.newList();
+    List<PartitionDescProto> partitions = new ArrayList<>();
     List<PartitionFilterSet> filterSets = null;
 
     int databaseId = getDatabaseId(request.getDatabaseName());
@@ -2250,7 +2250,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Expr[] exprs = null;
 
     try {
-      List<PartitionFilterSet> filterSets = TUtil.newList();
+      List<PartitionFilterSet> filterSets = new ArrayList<>();
 
       if (json != null && !json.isEmpty()) {
         Expr algebra = JsonHelper.fromJson(json, Expr.class);
@@ -2297,7 +2297,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         PartitionFilterSet filterSet = new PartitionFilterSet();
         filterSet.setColumnName(target.getSimpleName());
 
-        List<Pair<Type, Object>> list = TUtil.newList();
+        List<Pair<Type, Object>> list = new ArrayList<>();
         list.addAll(visitor.getParameters());
         filterSet.addParameters(list);
 
@@ -2321,7 +2321,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       PartitionFilterSet filterSet = new PartitionFilterSet();
       filterSet.setColumnName(target.getSimpleName());
 
-      List<Pair<Type, Object>> list = TUtil.newList();
+      List<Pair<Type, Object>> list = new ArrayList<>();
       list.addAll(visitor.getParameters());
       filterSet.addParameters(list);
 
@@ -2872,7 +2872,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   @Override
   public List<IndexDescProto> getAllIndexes() throws UndefinedDatabaseException {
-    List<IndexDescProto> indexDescProtos = TUtil.newList();
+    List<IndexDescProto> indexDescProtos = new ArrayList<>();
     for (String databaseName : getAllDatabaseNames()) {
       for (String tableName : getAllTableNames(databaseName)) {
         try {
@@ -3029,7 +3029,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     private List<Pair<Type, Object>> parameters;
 
     public PartitionFilterSet() {
-      parameters = TUtil.newList();
+      parameters = new ArrayList<>();
     }
 
     public String getColumnName() {

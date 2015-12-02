@@ -72,7 +72,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-    distinctGroupingKeyColumnSet = TUtil.newList();
+    distinctGroupingKeyColumnSet = new ArrayList<>();
     for (Column col : plan.getGroupingColumns()) {
       if (!distinctGroupingKeyColumnSet.contains(col)) {
         distinctGroupingKeyColumnSet.add(col);

@@ -169,7 +169,8 @@ public class TajoDump {
     writer.write("\n\n");
 
     // returned list is immutable.
-    List<String> tableNames = TUtil.newList(client.getTableList(databaseName));
+    List<String> tableNames = new ArrayList<>();
+    tableNames.addAll(client.getTableList(databaseName));
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {

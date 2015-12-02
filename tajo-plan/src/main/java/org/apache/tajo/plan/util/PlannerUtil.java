@@ -765,7 +765,7 @@ public class PlannerUtil {
   }
 
   public static Collection<String> toQualifiedFieldNames(Collection<String> fieldNames, String qualifier) {
-    List<String> names = TUtil.newList();
+    List<String> names = new ArrayList<>();
     for (String n : fieldNames) {
       String[] parts = n.split("\\.");
       if (parts.length == 1) {
@@ -934,7 +934,7 @@ public class PlannerUtil {
    * @return
    */
   public static List<Expr> extractInSubquery(Expr qual) {
-    List<Expr> inSubqueries = TUtil.newList();
+    List<Expr> inSubqueries = new ArrayList<>();
     for (Expr eachIn : ExprFinder.findsInOrder(qual, OpType.InPredicate)) {
       InPredicate inPredicate = (InPredicate) eachIn;
       if (inPredicate.getInValue().getType() == OpType.SimpleTableSubquery) {

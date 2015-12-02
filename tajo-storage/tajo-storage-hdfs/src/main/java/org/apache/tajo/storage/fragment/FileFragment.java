@@ -226,7 +226,9 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     }
 
     if(hosts != null) {
-      builder.addAllHosts(TUtil.newList(hosts));
+      List inputList = new ArrayList<>();
+      inputList.addAll(Arrays.asList(hosts));
+      builder.addAllHosts(inputList);
     }
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();

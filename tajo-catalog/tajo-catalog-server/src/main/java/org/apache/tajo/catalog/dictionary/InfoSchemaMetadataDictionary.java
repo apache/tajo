@@ -79,7 +79,7 @@ public class InfoSchemaMetadataDictionary {
   }
   
   public List<String> getAllSystemTables() {
-    List<String> systemTableNames = TUtil.newList();
+    List<String> systemTableNames = new ArrayList<>();
     
     for (TableDescriptor descriptor: schemaInfoTableDescriptors) {
       systemTableNames.add(descriptor.getTableNameString());
