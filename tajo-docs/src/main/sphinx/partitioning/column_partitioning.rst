@@ -15,18 +15,26 @@ For example, assume a table with the following schema.
 
 .. code-block:: sql
 
-  id     INT,
-  name   TEXT,
-  grade  TEXT
+  id        INT,
+  name      TEXT,
+  gender    char(1),
+  grade     TEXT,
+  country   TEXT,
+  city      TEXT,
+  phone     TEXT
+  );
 
 Now you want to partition on country. Your Tajo definition would be this:
 
 .. code-block:: sql
 
   CREATE TABLE student (
-    id     INT,
-    name   TEXT,
-    grade  TEXT
+    id        INT,
+    name      TEXT,
+    gender    char(1),
+    grade     TEXT,
+    city      TEXT,
+    phone     TEXT
   ) PARTITION BY COLUMN (country TEXT);
 
 Now your users will still query on ``WHERE country = '...'`` but the 2nd column will be the original values.
@@ -35,9 +43,11 @@ Here's an example statement to create a table:
 .. code-block:: sql
 
   CREATE TABLE student (
-    id     INT,
-    name   TEXT,
-    grade  TEXT
+    id        INT,
+    name      TEXT,
+    gender    char(1),
+    grade     TEXT,
+    phone     TEXT
   ) USING PARQUET
   PARTITION BY COLUMN (country TEXT, city TEXT);
 
@@ -90,9 +100,11 @@ For example, assume there are both ``student_source`` and ``student`` tables com
   );
 
   CREATE TABLE student (
-    id     INT,
-    name   TEXT,
-    grade  TEXT
+    id        INT,
+    name      TEXT,
+    gender    char(1),
+    grade     TEXT,
+    phone     TEXT
   ) PARTITION BY COLUMN (country TEXT, city TEXT);
 
 
@@ -104,7 +116,7 @@ If you want to load an entire country or an entire city in one fell swoop:
 .. code-block:: sql
 
   INSERT OVERWRITE INTO student
-  SELECT id, name, grade, country, city
+  SELECT id, name, gender, grade, phone, country, city
   FROM   student_source;
 
 
@@ -118,11 +130,13 @@ when a partition table is created:
   DROP TABLE if exists student;
 
   CREATE TABLE student (
-    id     INT,
-    name   TEXT,
-    grade  TEXT
+    id        INT,
+    name      TEXT,
+    gender    char(1),
+    grade     TEXT,
+    phone     TEXT
   ) PARTITION BY COLUMN (country TEXT, city TEXT)
-  AS SELECT id, name, grade, country, city
+  AS SELECT id, name, gender, grade, phone, country, city
   FROM   student_source;
 
 
@@ -146,9 +160,11 @@ If you create a partition table as follows in Tajo:
 .. code-block:: sql
 
   default> CREATE TABLE student (
-    id     INT,
-    name   TEXT,
-    grade  TEXT
+    id        INT,
+    name      TEXT,
+    gender    char(1),
+    grade     TEXT,
+    phone     TEXT
   ) PARTITION BY COLUMN (country TEXT, city TEXT);
 
 
@@ -160,7 +176,9 @@ And then you can get table information in Hive:
   OK
   id                  	int
   name                	string
+  gender              	char(1)
   grade               	string
+  phone               	string
   country             	string
   city                	string
 
@@ -178,7 +196,9 @@ Or as you create the table in Hive:
   hive > CREATE TABLE student (
     id int,
     name string,
-    grade string
+    gender char(1),
+    grade string,
+    phone string
   ) PARTITIONED BY (country string, city string)
   ROW FORMAT DELIMITED
     FIELDS TERMINATED BY '|' ;
@@ -201,7 +221,9 @@ You will see table information in Tajo:
   schema:
   id	INT4
   name	TEXT
+  gender	CHAR(1)
   grade	TEXT
+  phone	TEXT
 
   Partitions:
   type:COLUMN
