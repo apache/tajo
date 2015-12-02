@@ -7,7 +7,7 @@ How to use index?
 ---------------
 
 The first step for utilizing index is to create an index. You can create an index using SQL (:doc:`/sql_language/ddl`) or Tajo API (:doc:`/tajo_client_api`).
-For example, the following SQL statement can be used to create a BST index on the lineitem table.
+For example, the following SQL statement will create a BST index on the lineitem table.
 
 .. code-block:: sql
 
@@ -53,7 +53,8 @@ For more information about index creation, please refer to the above links.
 2. Enable/disable index scans
 -----------------------------
 
-When an index is successfully created, you must enable index scan as follows:
+Reading data using index is disabled by default.
+So, exploiting the created index, you need a further step, enabling 'index scan' as following:
 
 .. code-block:: sql
 
@@ -67,7 +68,9 @@ If you don't want to use index scan anymore, you can simply disable it as follow
 
 .. note::
 
-     Once index scan is enabled, Tajo currently always performs index scan regardless of its efficiency. You should set this option when the expected number of retrieved tuples is sufficiently small.
+     Once index scan is enabled, Tajo will perform 'index scan' if possible. In some cases, it may cause performance
+     degradation. If you always want to get better performance, you should either enable or disable 'index scan'
+     according to selectivity. Usually, the performance gain of index will increase when the selectivity is low.
 
 ---------------------------
 3. Index backup and restore
