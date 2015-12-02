@@ -120,9 +120,9 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testInsertType1() throws Exception {
     // all columns
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample3");
-    List listInput = new ArrayList<>();
-    listInput.addAll(Arrays.asList("sample3"));
-    assertEquals(listInput, tables);
+    List inputList = new ArrayList<>();
+    inputList.addAll(Arrays.asList("sample3"));
+    assertEquals(inputList, tables);
 
     executeString("CREATE TABLE clone (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
 
@@ -136,9 +136,9 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testInsertType2() throws Exception {
     // some columns
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample4");
-    List listInput = new ArrayList<>();
-    listInput.addAll(Arrays.asList("sample4"));
-    assertEquals(listInput, tables);
+    List inputList = new ArrayList<>();
+    inputList.addAll(Arrays.asList("sample4"));
+    assertEquals(inputList, tables);
 
     executeString("CREATE TABLE clone2 (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
 

@@ -321,9 +321,9 @@ public class Repartitioner {
             if (tbNameToInterm.containsKey(scanEbId)) {
               tbNameToInterm.get(scanEbId).add(intermediateEntry);
             } else {
-              List listInput = new ArrayList<>();
-              listInput.addAll(Arrays.asList(intermediateEntry));
-              tbNameToInterm.put(scanEbId, listInput);
+              List inputList = new ArrayList<>();
+              inputList.addAll(Arrays.asList(intermediateEntry));
+              tbNameToInterm.put(scanEbId, inputList);
             }
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
@@ -1082,10 +1082,10 @@ public class Repartitioner {
           fetchListForSingleTask = new ArrayList<>();
           fetchListVolume = 0;
         }
-        List listInput = new ArrayList<>();
-        listInput.addAll(Arrays.asList(currentInterm));
+        List inputList = new ArrayList<>();
+        inputList.addAll(Arrays.asList(currentInterm));
         FetchImpl fetch = new FetchImpl(fetchName, currentInterm.getPullHost(), SCATTERED_HASH_SHUFFLE,
-            ebId, currentInterm.getPartId(), listInput);
+            ebId, currentInterm.getPartId(), inputList);
         fetch.setOffset(eachSplit.getFirst());
         fetch.setLength(eachSplit.getSecond());
         fetchListForSingleTask.add(fetch.getProto());
@@ -1226,9 +1226,9 @@ public class Repartitioner {
       if (hashed.containsKey(entry.getPartId())) {
         hashed.get(entry.getPartId()).add(entry);
       } else {
-        List listInput = new ArrayList<>();
-        listInput.addAll(Arrays.asList(entry));
-        hashed.put(entry.getPartId(), listInput);
+        List inputList = new ArrayList<>();
+        inputList.addAll(Arrays.asList(entry));
+        hashed.put(entry.getPartId(), inputList);
       }
     }
 
@@ -1244,9 +1244,9 @@ public class Repartitioner {
       if (hashed.containsKey(host)) {
         hashed.get(host).add(entry);
       } else {
-        List listInput = new ArrayList<>();
-        listInput.addAll(Arrays.asList(entry));
-        hashed.put(host, listInput);
+        List inputList = new ArrayList<>();
+        inputList.addAll(Arrays.asList(entry));
+        hashed.put(host, inputList);
       }
     }
 
