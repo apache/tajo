@@ -261,10 +261,12 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     int offset = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoOffsetHeaderName));
     int count = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoCountHeaderName));
     boolean eos = Boolean.valueOf(queryResultSetResponse.getHeaderString(tajoEOSHeaderName));
+    int contentLength = Integer.valueOf(queryResultSetResponse.getHeaderString(HttpHeaders.CONTENT_LENGTH));
 
     assertTrue(eos);
     assertEquals(0, offset);
     assertEquals(5, count);
+
 
     DataInputStream queryResultSetInputStream =
         new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));
@@ -273,10 +275,12 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     boolean isFinished = false;
     List<Tuple> tupleList = TUtil.newList();
+    int receviedSize = 0;
     RowStoreUtil.RowStoreDecoder decoder = RowStoreUtil.createDecoder(response.getSchema());
     while (!isFinished) {
       try {
         int length = queryResultSetInputStream.readInt();
+        receviedSize += (length + 4);
         byte[] dataByteArray = new byte[length];
         int readBytes = queryResultSetInputStream.read(dataByteArray);
 
@@ -288,6 +292,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
       }
     }
 
+    assertEquals(contentLength, receviedSize);
     assertEquals(5, tupleList.size());
 
     for (Tuple aTuple: tupleList) {

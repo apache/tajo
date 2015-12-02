@@ -27,13 +27,15 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestReturnType(
   headerType = "application/octet-stream"
 )
 public class BinaryStreamingOutput extends AbstractStreamingOutput {
-  private List<ByteString> outputList = null;
+  private List<byte[]> byteOutputLists = null;
+  private int length = -1;
 
   public BinaryStreamingOutput(NonForwardQueryResultScanner scanner, Integer count, Integer startOffset) throws IOException {
     super(scanner, count, startOffset);
@@ -41,19 +43,26 @@ public class BinaryStreamingOutput extends AbstractStreamingOutput {
 
   @Override
   public boolean hasLength() {
-    return false;
+    return true;
+  }
+
+  private void fetch() {
+    if (length == -1) {
+      length = fill();
+    }
   }
 
   @Override
   public int length() {
-    return 0;
+    fetch();
+    return length;
   }
 
   @Override
   public int count() {
     try {
       fetch();
-      return outputList.size();
+      return byteOutputLists.size();
     } catch (Exception e) {
       return 0;
     }
@@ -61,18 +70,33 @@ public class BinaryStreamingOutput extends AbstractStreamingOutput {
 
   @Override
   public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+    fetch();
+
     DataOutputStream streamingOutputStream = new DataOutputStream(new BufferedOutputStream(outputStream));
 
-    for (ByteString byteString: outputList) {
-      byte[] byteStringArray = byteString.toByteArray();
-      streamingOutputStream.writeInt(byteStringArray.length);
-      streamingOutputStream.write(byteStringArray);
+    for (byte[] bytes: byteOutputLists) {
+      streamingOutputStream.writeInt(bytes.length);
+      streamingOutputStream.write(bytes);
     }
 
     streamingOutputStream.flush();
   }
 
-  private void fetch() throws IOException {
-    outputList = scanner.getNextRows(count);
+  private int fill() {
+    int tmpLen = 0;
+    try {
+      byteOutputLists = new ArrayList<byte[]>();
+
+      List<ByteString> outputList = scanner.getNextRows(count);
+      for (ByteString byteString : outputList) {
+        byte[] byteStringArray = byteString.toByteArray();
+        byteOutputLists.add(byteStringArray);
+        tmpLen += 4;
+        tmpLen += byteStringArray.length;
+      }
+    } catch (IOException e) {
+    }
+
+    return tmpLen;
   }
 }
