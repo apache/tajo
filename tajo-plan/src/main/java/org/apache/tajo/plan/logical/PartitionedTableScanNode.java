@@ -32,18 +32,20 @@ import java.util.ArrayList;
 
 public class PartitionedTableScanNode extends ScanNode {
   @Expose Path [] inputPaths;
+  @Expose String[] partitionKeys;
 
   public PartitionedTableScanNode(int pid) {
     super(pid, NodeType.PARTITIONS_SCAN);
   }
 
-  public void init(ScanNode scanNode, Path[] inputPaths) {
+  public void init(ScanNode scanNode, Path[] inputPaths, String[] partitionKeys) {
     tableDesc = scanNode.tableDesc;
     setInSchema(scanNode.getInSchema());
     setOutSchema(scanNode.getOutSchema());
     this.qual = scanNode.qual;
     this.targets = scanNode.targets;
     this.inputPaths = inputPaths;
+    this.partitionKeys = partitionKeys;
 
     if (scanNode.hasAlias()) {
       alias = scanNode.alias;
@@ -56,6 +58,14 @@ public class PartitionedTableScanNode extends ScanNode {
 
   public Path [] getInputPaths() {
     return inputPaths;
+  }
+
+  public String[] getPartitionKeys() {
+    return partitionKeys;
+  }
+
+  public void setPartitionKeys(String[] partitionKeys) {
+    this.partitionKeys = partitionKeys;
   }
 
   @Override
@@ -72,7 +82,8 @@ public class PartitionedTableScanNode extends ScanNode {
       eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
       eq = eq && TUtil.checkEquals(this.qual, other.qual);
       eq = eq && TUtil.checkEquals(this.targets, other.targets);
-    eq = eq && TUtil.checkEquals(this.inputPaths, other.inputPaths);
+      eq = eq && TUtil.checkEquals(this.inputPaths, other.inputPaths);
+      eq = eq && TUtil.checkEquals(this.partitionKeys, other.partitionKeys);
 
       return eq;
     }
@@ -98,6 +109,7 @@ public class PartitionedTableScanNode extends ScanNode {
     }
 
     unionScan.inputPaths = inputPaths;
+    unionScan.partitionKeys = partitionKeys;
 
     return unionScan;
   }

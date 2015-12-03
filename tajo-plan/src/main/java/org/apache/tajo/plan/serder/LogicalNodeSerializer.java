@@ -473,24 +473,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   public LogicalNode visitPartitionedTableScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
       throws TajoException {
-
-    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
-
-    PlanProto.PartitionScanSpec.Builder partitionScan = PlanProto.PartitionScanSpec.newBuilder();
-    List<String> pathStrs = TUtil.newList();
-    if (node.getInputPaths() != null) {
-      for (Path p : node.getInputPaths()) {
-        pathStrs.add(p.toString());
-      }
-      partitionScan.addAllPaths(pathStrs);
-    }
-
-    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
-    nodeBuilder.setScan(scanBuilder);
-    nodeBuilder.setPartitionScan(partitionScan);
-    context.treeBuilder.addNodes(nodeBuilder);
-
-    return node;
+    ScanNode scanNode = (ScanNode) node;
+    return visitScan(context, plan, block, scanNode, stack);
   }
 
   @Override

@@ -122,8 +122,6 @@ public class LogicalNodeDeserializer {
         current = convertUnion(nodeMap, protoNode);
         break;
       case PARTITIONS_SCAN:
-        current = convertPartitionScan(context, evalContext, protoNode);
-        break;
       case SCAN:
         current = convertScan(context, evalContext, protoNode);
         break;
@@ -456,20 +454,6 @@ public class LogicalNodeDeserializer {
         TUtil.stringToURI(indexScanSpec.getIndexPath()));
 
     return indexScan;
-  }
-
-  private static PartitionedTableScanNode convertPartitionScan(OverridableConf context, EvalContext evalContext,
-                                                               PlanProto.LogicalNode protoNode) {
-    PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getNodeId());
-    fillScanNode(context, evalContext, protoNode, partitionedScan);
-
-    PlanProto.PartitionScanSpec partitionScanProto = protoNode.getPartitionScan();
-    Path [] paths = new Path[partitionScanProto.getPathsCount()];
-    for (int i = 0; i < partitionScanProto.getPathsCount(); i++) {
-      paths[i] = new Path(partitionScanProto.getPaths(i));
-    }
-    partitionedScan.setInputPaths(paths);
-    return partitionedScan;
   }
 
   private static TableSubQueryNode convertTableSubQuery(OverridableConf context, EvalContext evalContext,

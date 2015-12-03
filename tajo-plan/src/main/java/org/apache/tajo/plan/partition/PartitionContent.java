@@ -16,30 +16,30 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.storage";
-option java_outer_classname = "StorageFragmentProtos";
-option optimize_for = SPEED;
-option java_generic_services = false;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.plan.partition;
 
-import "CatalogProtos.proto";
+import org.apache.hadoop.fs.Path;
 
-message FileFragmentProto {
-  required string id = 1;
-  required string path = 2;
-  required int64 start_offset = 3;
-  required int64 length = 4;
-  repeated string hosts = 5;
-  repeated int32 disk_ids = 6;
-}
+public class PartitionContent {
+  private final Path[] partitionPaths;
+  private final String[] partitionKeys;
+  private final long totalVolume;
 
-message PartitionFileFragmentProto {
-  required string id = 1;
-  required string path = 2;
-  required int64 start_offset = 3;
-  required int64 length = 4;
-  repeated string hosts = 5;
-  repeated int32 disk_ids = 6;
-  // Partition Keys: country=KOREA/city=SEOUL
-  required string partitionKeys = 7;
+  public PartitionContent(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
+    this.partitionPaths = partitionPaths;
+    this.partitionKeys = partitionKeys;
+    this.totalVolume = totalVolume;
+  }
+
+  public Path[] getPartitionPaths() {
+    return partitionPaths;
+  }
+
+  public String[] getPartitionKeys() {
+    return partitionKeys;
+  }
+
+  public long getTotalVolume() {
+    return totalVolume;
+  }
 }
