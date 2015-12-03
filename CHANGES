@@ -18,6 +18,8 @@ Release 0.11.1 - unreleased
 
   BUG FIXES
 
+    TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
+
     TAJO-1753: GlobalEngine causes NPE occurs occasionally. (jinho)
 
     TAJO-1980: Printout the usage of TajoShellCommand.
