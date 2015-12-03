@@ -19,6 +19,7 @@
 package org.apache.tajo;
 
 import com.google.common.collect.Maps;
+import org.apache.tajo.validation.BooleanValidator;
 import org.apache.tajo.validation.Validator;
 import org.apache.tajo.validation.Validators;
 
@@ -87,6 +88,10 @@ public enum SessionVars implements ConfigKey {
 
 
   // Query and Optimization ---------------------------------------------------
+
+  // Optimizer
+  USE_TABLE_VOLUME(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD,
+      "Enable optimizer to get and use the table volume via storage handlers", DEFAULT),
 
   // for distributed query strategies
   BROADCAST_NON_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD,

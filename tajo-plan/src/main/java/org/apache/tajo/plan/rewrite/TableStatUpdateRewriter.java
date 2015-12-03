@@ -20,6 +20,9 @@ package org.apache.tajo.plan.rewrite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -28,6 +31,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.StorageService;
+import org.apache.tajo.unit.StorageUnit;
 
 import java.util.Stack;
 
@@ -57,33 +61,51 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
   }
 
   private final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
+    private final OverridableConf conf;
+    private final CatalogService catalog;
     private final StorageService storage;
 
 
-    private Rewriter(StorageService storage) {
+    private Rewriter(OverridableConf conf, CatalogService catalog, StorageService storage) {
+      this.conf = conf;
+      this.catalog = catalog;
       this.storage = storage;
     }
 
     @Override
     public Object visitScan(Object object, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
                             Stack<LogicalNode> stack) throws TajoException {
-      updatePhysicalInfo(scanNode.getTableDesc());
+      final TableDesc table = scanNode.getTableDesc();
+
+      if (!isVirtual(table)) {
+        final long tableSize = table.getStats().getNumBytes();
+
+        // If USE_TABLE_VOLUME is set, we will update the table volume through a storage handler.
+        // In addition, if the table size is zero, we will update too.
+        // It is a good workaround to avoid suboptimal join orders without cheap cost.
+        if (conf.getBool(SessionVars.USE_TABLE_VOLUME) || tableSize == 0) {
+          table.getStats().setNumBytes(getTableVolume(table));
+        }
+      }
+
       return scanNode;
     }
 
-    private void updatePhysicalInfo(TableDesc desc) {
-      // FAKEFILE is used for test
-      if (!desc.getMeta().getDataFormat().equals("SYSTEM") && !desc.getMeta().getDataFormat().equals("FAKEFILE")) {
-        try {
-          if (desc.getStats() != null) {
-            desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
-          }
-        } catch (UnsupportedException t) {
-          LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume()");
-          // -1 means unknown volume size.
-          desc.getStats().setNumBytes(-1);
+    private boolean isVirtual(TableDesc table) {
+      return table.getMeta().getDataFormat().equals("SYSTEM") || table.getMeta().getDataFormat().equals("FAKEFILE");
+    }
+
+    private long getTableVolume(TableDesc table) {
+      try {
+        if (table.getStats() != null) {
+          return storage.getTableVolumn(table.getUri());
         }
+      } catch (UnsupportedException t) {
+        LOG.warn(table.getName() + " does not support Tablespace::getTableVolume()");
+        // By default, return 1GB to avoid a single task
       }
+
+      return StorageUnit.GB;
     }
   }
 }
