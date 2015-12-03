@@ -92,6 +92,13 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1855: Add document for tablespace configuration to the Configuration chapter.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-1854: Add in-subquery document. (jihoon)
+
+    TAJO-2003: Fix typo in worker configuration. (jinho)
+
     TAJO-1962: Add description for session variables. (jihoon)
 
     TAJO-1857: Rename the section of 'File Formats' to 'Data Formats' and fill
@@ -127,6 +134,8 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-1960: Separate HDFS space handler and S3 space handler. (jaehwa)
 
     TAJO-1856: Add a description about the relationship of tablespace, managed table, 
     and external table to Tablespace section of Table Management chapter. 
