@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -55,20 +54,18 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
     LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
-    Rewriter r = new Rewriter(context.getStorage());
+    Rewriter r = new Rewriter(context.getQueryContext(), context.getStorage());
     r.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<>());
     return plan;
   }
 
   private final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
     private final OverridableConf conf;
-    private final CatalogService catalog;
     private final StorageService storage;
 
 
-    private Rewriter(OverridableConf conf, CatalogService catalog, StorageService storage) {
+    private Rewriter(OverridableConf conf, StorageService storage) {
       this.conf = conf;
-      this.catalog = catalog;
       this.storage = storage;
     }
 
