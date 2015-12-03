@@ -1,6 +1,6 @@
-************************
+*************
 Configuration
-************************
+*************
 
 .. toctree::
     :maxdepth: 1
@@ -14,3 +14,4 @@ Configuration
     configuration/service_config_defaults
     configuration/tajo-site-xml
     configuration/catalog-site-xml
+    configuration/storage-site-json
