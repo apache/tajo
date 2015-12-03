@@ -546,13 +546,8 @@ public class FileTablespace extends Tablespace {
     }
 
     List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
-    Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
-
-      @Override
-      public int compare(Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2) {
-        return v1.getValue().compareTo(v2.getValue());
-      }
-    });
+    Collections.sort(entries, (Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2)
+      -> v1.getValue().compareTo(v2.getValue()));
 
     String[] hosts = new String[blkLocations[0].getHosts().length];
 
