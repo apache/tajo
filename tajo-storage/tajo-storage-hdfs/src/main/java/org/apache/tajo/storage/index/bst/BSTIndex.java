@@ -160,6 +160,10 @@ public class BSTIndex implements IndexMethod {
       if (fs instanceof LocalFileSystem) {
         File outFile;
         try {
+          if (!fs.exists(fileName.getParent())) {
+            fs.mkdirs(fileName.getParent());
+          }
+
           if (fileName.toUri().getScheme() != null) {
             outFile = new File(fileName.toUri());
           } else {
