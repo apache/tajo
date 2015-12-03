@@ -23,10 +23,8 @@ import io.netty.buffer.Unpooled;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.storage.*;
@@ -36,11 +34,11 @@ import org.apache.tajo.storage.index.IndexMethod;
 import org.apache.tajo.storage.index.IndexWriter;
 import org.apache.tajo.storage.index.OrderIndexReader;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.FileUtil;
 
-import java.io.Closeable;
-import java.io.EOFException;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
@@ -91,9 +89,17 @@ public class BSTIndex implements IndexMethod {
   }
 
   public class BSTIndexWriter extends IndexWriter implements Closeable {
+    private FileChannel outChannel;
+    private RandomAccessFile outRandomAccessFile;
     private FSDataOutputStream out;
+    private long filePos;
+
+    private FileChannel rootOutChannel;
+    private RandomAccessFile rootOutRandomAccessFile;
     private FSDataOutputStream rootOut;
-    private FileSystem fs;
+
+    private boolean isLocal;
+
     private int level;
     private int loadNum;
     private Path fileName;
@@ -116,8 +122,6 @@ public class BSTIndex implements IndexMethod {
     private int entrySize;
     private int rootEntrySize;
 
-    // private Tuple lastestKey = null;
-
     /**
      * constructor
      *
@@ -136,8 +140,8 @@ public class BSTIndex implements IndexMethod {
       this.rootCollector = new KeyOffsetCollector(this.compartor);
       this.rowStoreEncoder = RowStoreUtil.createEncoder(keySchema);
       this.sorted = sorted;
-      this.indexBuffer = Unpooled.buffer(BUFFER_SIZE);
-      this.rootIndexBuffer = Unpooled.buffer(BUFFER_SIZE);
+      this.indexBuffer = BufferPool.directBuffer(BUFFER_SIZE, ByteOrder.nativeOrder());
+      this.rootIndexBuffer = BufferPool.directBuffer(BUFFER_SIZE, ByteOrder.nativeOrder());
       this.loadCount = loadNum = conf.getInt(WRITER_INDEX_LOAD, DEFAULT_INDEX_LOAD);
     }
 
@@ -147,18 +151,37 @@ public class BSTIndex implements IndexMethod {
     }
 
     public void init() throws IOException {
-      fs = fileName.getFileSystem(conf);
-      if (fs.exists(fileName)) {
-        throw new IOException("ERROR: index file (" + fileName + " already exists");
+      FileSystem fs = fileName.getFileSystem(conf);
+      Path rootPath = new Path(fileName + ".root");
+      if (fs.exists(fileName) || fs.exists(rootPath)) {
+        throw new IOException("ERROR: index file " + fileName + " or " + rootPath + " already exists");
       }
-      out = fs.create(fileName);
 
-      if(writeRootIndex) {
-        Path rootPath = new Path(fileName + ".root");
-        if (fs.exists(rootPath)) {
-          throw new IOException("ERROR: index file (" + rootPath + " already exists");
+      if (fs instanceof LocalFileSystem) {
+        File outFile;
+        try {
+          if (fileName.toUri().getScheme() != null) {
+            outFile = new File(fileName.toUri());
+          } else {
+            outFile = new File(fileName.toString());
+          }
+        } catch (IllegalArgumentException iae) {
+          throw new IOException(iae);
         }
-        rootOut = fs.create(rootPath);
+
+        outRandomAccessFile = new RandomAccessFile(outFile, "rw");
+        outChannel = outRandomAccessFile.getChannel();
+
+        if (writeRootIndex) {
+          rootOutRandomAccessFile = new RandomAccessFile(new File(outFile.getAbsolutePath() + ".root"), "rw");
+          rootOutChannel = rootOutRandomAccessFile.getChannel();
+        }
+        isLocal = true;
+      } else {
+        out = fs.create(fileName, true);
+        if (writeRootIndex) {
+          rootOut = fs.create(rootPath, true);
+        }
       }
     }
 
@@ -182,53 +205,78 @@ public class BSTIndex implements IndexMethod {
         if (writeRootIndex) {
           if (loadCount == loadNum) {
             loadCount = 0;
-            byte[] buf = rowStoreEncoder.toBytes(keyTuple);
-            int size = buf.length + 12;
-            if (!rootIndexBuffer.isWritable(size)) {
-              rootIndexBuffer.ensureWritable(size);
-            }
-
-            // key writing
-            rootIndexBuffer.writeInt(buf.length);
-            rootIndexBuffer.writeBytes(buf);
-
-            // leaf offset writing
-            rootIndexBuffer.writeLong(out.getPos() + indexBuffer.writerIndex());
-
-            rootEntrySize++;
-            if (rootIndexBuffer.writerIndex() >= BUFFER_SIZE) {
-              rootIndexBuffer.readBytes(rootOut, rootIndexBuffer.readableBytes());
-              rootIndexBuffer.clear();
-            }
+            writeRootIndex(rootIndexBuffer, keyTuple, filePos + indexBuffer.writerIndex());
           }
-
           loadCount++;
         }
 
         /* leaf index writing */
-        byte[] buf = rowStoreEncoder.toBytes(keyTuple);
-        int size = buf.length + 16;
-        if (!indexBuffer.isWritable(size)) {
-          indexBuffer.ensureWritable(size);
-        }
-
-        // key writing
-        indexBuffer.writeInt(buf.length);
-        indexBuffer.writeBytes(buf);
-
-        //offset num writing
-        indexBuffer.writeInt(1);
-        // offset writing
-        indexBuffer.writeLong(offset);
-
-        entrySize++;
-        if (indexBuffer.writerIndex() >= BUFFER_SIZE) {
-          indexBuffer.readBytes(out, indexBuffer.readableBytes());
-          indexBuffer.clear();
-        }
+        writeIndex(indexBuffer, keyTuple, offset);
       } else {
         collector.put(keyTuple, offset);
       }
+    }
+
+    private void writeIndex(ByteBuf byteBuf, Tuple tuple, Long... offsets) throws IOException {
+
+      byte[] buf = rowStoreEncoder.toBytes(tuple);
+      int size = buf.length + 8 + (offsets.length * 8);
+      if (!byteBuf.isWritable(size)) {
+        byteBuf.ensureWritable(size);
+      }
+
+      // key writing
+      byteBuf.writeInt(buf.length);
+      byteBuf.writeBytes(buf);
+
+      //offset num writing
+      byteBuf.writeInt(offsets.length);
+
+      /* offset writing */
+      for (long offset : offsets) {
+        byteBuf.writeLong(offset);
+      }
+
+      entrySize++;
+      // flush to file and reset buffer
+      if (byteBuf.writerIndex() >= BUFFER_SIZE) {
+        filePos += flushBuffer(byteBuf, outChannel, out);
+      }
+    }
+
+    private void writeRootIndex(ByteBuf byteBuf, Tuple tuple, long offset) throws IOException {
+      byte[] buf = rowStoreEncoder.toBytes(tuple);
+      int size = buf.length + 12;
+      if (!byteBuf.isWritable(size)) {
+        byteBuf.ensureWritable(size);
+      }
+
+      // key writing
+      byteBuf.writeInt(buf.length);
+      byteBuf.writeBytes(buf);
+
+      // leaf offset writing
+      byteBuf.writeLong(offset);
+
+      rootEntrySize++;
+      // flush to file and reset buffer
+      if (byteBuf.writerIndex() >= BUFFER_SIZE) {
+        flushBuffer(byteBuf, rootOutChannel, rootOut);
+      }
+    }
+
+    private int flushBuffer(ByteBuf byteBuf, FileChannel channel, FSDataOutputStream out) throws IOException {
+      // write buffer to file
+      int readableBytes = byteBuf.readableBytes();
+      if (readableBytes > 0) {
+        if (isLocal) {
+          byteBuf.readBytes(channel, readableBytes);
+        } else {
+          byteBuf.readBytes(out, readableBytes);
+        }
+        byteBuf.clear();
+      }
+      return readableBytes;
     }
 
     public TupleComparator getComparator() {
@@ -236,13 +284,21 @@ public class BSTIndex implements IndexMethod {
     }
 
     public void flush() throws IOException {
-      out.flush();
-      if(rootOut != null) rootOut.flush();
+      if (out != null) {
+        flushBuffer(indexBuffer, outChannel, out);
+        out.flush();
+      }
+
+      if (writeRootIndex && rootOut != null) {
+        flushBuffer(rootIndexBuffer, rootOutChannel, rootOut);
+        rootOut.flush();
+      }
     }
 
     public void writeFooter(int entryNum) throws IOException {
       indexBuffer.clear();
-      long startPosition = out.getPos();
+
+      long startPosition = filePos;
       // schema
       byte [] schemaBytes = keySchema.getProto().toByteArray();
       // comparator
@@ -267,10 +323,9 @@ public class BSTIndex implements IndexMethod {
         byte [] minBytes = rowStoreEncoder.toBytes(firstKey);
         byte [] maxBytes = rowStoreEncoder.toBytes(lastKey);
 
-        size = minBytes.length + maxBytes.length + 8;
+        size = minBytes.length + maxBytes.length + 12;
         if(!indexBuffer.isWritable(size)) {
-          indexBuffer.readBytes(out,indexBuffer.readableBytes());
-          indexBuffer.clear();
+          filePos += flushBuffer(indexBuffer, outChannel, out);
           indexBuffer.ensureWritable(size);
         }
 
@@ -279,11 +334,12 @@ public class BSTIndex implements IndexMethod {
         indexBuffer.writeInt(maxBytes.length);
         indexBuffer.writeBytes(maxBytes);
       }
-      // write buffer to file
-      indexBuffer.readBytes(out, indexBuffer.readableBytes());
-      indexBuffer.clear();
-      int footerSize = (int) (out.getPos() -  startPosition) + 4;
-      out.writeInt(footerSize);
+
+      // write footer length
+      int footerSize = (int) (filePos + indexBuffer.readableBytes() + 4 - startPosition);
+      indexBuffer.writeInt(footerSize);
+
+      filePos += flushBuffer(indexBuffer, outChannel, out);
     }
 
     public void close() throws IOException {
@@ -291,97 +347,65 @@ public class BSTIndex implements IndexMethod {
       try {
         if (sorted) {
           // write remaining data to file
-          if (indexBuffer.readableBytes() > 0) {
-            indexBuffer.readBytes(out, indexBuffer.readableBytes());
-            indexBuffer.clear();
-          }
+          filePos += flushBuffer(indexBuffer, outChannel, out);
         } else {
           // flush collected index data
           TreeMap<Tuple, LinkedList<Long>> keyOffsetMap = collector.getMap();
-          entrySize = keyOffsetMap.size();
-          for (Map.Entry<Tuple,LinkedList<Long>> entry : keyOffsetMap.entrySet()) {
+          for (Map.Entry<Tuple, LinkedList<Long>> entry : keyOffsetMap.entrySet()) {
 
             /* two level initialize */
             if (writeRootIndex) {
               if (loadCount == loadNum) {
-                rootCollector.put(entry.getKey(), out.getPos());
                 loadCount = 0;
+                rootCollector.put(entry.getKey(), filePos + indexBuffer.writerIndex());
               }
               loadCount++;
             }
-            /* key writing */
-            byte[] buf = rowStoreEncoder.toBytes(entry.getKey());
-            out.writeInt(buf.length);
-            out.write(buf);
 
             LinkedList<Long> offsetList = entry.getValue();
-            /* offset num writing */
-            int offsetSize = offsetList.size();
-            out.writeInt(offsetSize);
-            /* offset writing */
-            for (Long offset : offsetList) {
-              out.writeLong(offset);
-            }
+            writeIndex(indexBuffer, entry.getKey(), offsetList.toArray(new Long[offsetList.size()]));
           }
-
+          filePos += flushBuffer(indexBuffer, outChannel, out);
           collector.clear();
         }
-        writeFooter(entrySize);
-      } finally {
-        out.close();
-      }
 
-      /* root index creating phase */
-      if (writeRootIndex) {
-        try {
+        writeFooter(entrySize);
+
+        /* root index creating phase */
+        if (writeRootIndex) {
           if (sorted) {
+            //write root index header
             rootIndexBuffer.writeInt(loadNum);
             rootIndexBuffer.writeInt(rootEntrySize);
 
             // write remaining data to file
-            if (rootIndexBuffer.readableBytes() > 0) {
-              rootIndexBuffer.readBytes(rootOut, rootIndexBuffer.readableBytes());
-              rootIndexBuffer.clear();
-            }
+            flushBuffer(rootIndexBuffer, rootOutChannel, rootOut);
           } else {
             TreeMap<Tuple, LinkedList<Long>> rootMap = rootCollector.getMap();
-            rootEntrySize = rootMap.size();
             rootIndexBuffer.clear();
-
             /* root key writing */
             for (Map.Entry<Tuple, LinkedList<Long>> entry : rootMap.entrySet()) {
-              byte[] buf = rowStoreEncoder.toBytes(entry.getKey());
-              int size = buf.length + 12;
-              if (!rootIndexBuffer.isWritable(size)) {
-                rootIndexBuffer.ensureWritable(size);
-              }
-
-              rootIndexBuffer.writeInt(buf.length);
-              rootIndexBuffer.writeBytes(buf);
-
               LinkedList<Long> offsetList = entry.getValue();
               if (offsetList.size() != 1) {
                 throw new IOException("Why root index doen't have one offset? offsets:" + offsetList.size());
               }
-              rootIndexBuffer.writeLong(offsetList.getFirst());
-
-              if (rootIndexBuffer.writerIndex() >= BUFFER_SIZE) {
-                rootIndexBuffer.readBytes(rootOut, rootIndexBuffer.readableBytes());
-                rootIndexBuffer.clear();
-              }
+              writeRootIndex(rootIndexBuffer, entry.getKey(), offsetList.getFirst());
             }
+
+            //write root index header
             rootIndexBuffer.writeInt(this.loadNum);
             rootIndexBuffer.writeInt(rootEntrySize);
 
-            if (rootIndexBuffer.readableBytes() > 0) {
-              rootIndexBuffer.readBytes(rootOut, rootIndexBuffer.readableBytes());
-              rootIndexBuffer.clear();
-            }
+            flushBuffer(rootIndexBuffer, rootOutChannel, rootOut);
             rootCollector.clear();
           }
-        } finally {
-          rootOut.close();
         }
+      } finally {
+        indexBuffer.release();
+        rootIndexBuffer.release();
+
+        FileUtil.cleanupAndthrowIfFailed(outChannel, outRandomAccessFile, out,
+            rootOutChannel, rootOutRandomAccessFile, rootOut);
       }
     }
 
@@ -512,6 +536,7 @@ public class BSTIndex implements IndexMethod {
         byteBuf.readBytes(maxBytes);
         this.lastKey = rowStoreDecoder.toTuple(maxBytes);
       }
+      byteBuf.release();
     }
 
     public void init() throws IOException {
