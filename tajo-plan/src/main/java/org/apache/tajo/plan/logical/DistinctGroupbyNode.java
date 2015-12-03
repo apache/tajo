@@ -49,7 +49,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   private int[] resultColumnIds = new int[]{};
 
   /** Aggregation Functions */
-  @Expose private AggregationFunctionCallEval[] aggrFunctions = PlannerUtil.EMPTY_AGG_FUNCS;
+  @Expose private List<AggregationFunctionCallEval> aggrFunctions = PlannerUtil.EMPTY_AGG_FUNCS;
 
   public DistinctGroupbyNode(int pid) {
     super(pid, NodeType.DISTINCT_GROUP_BY);
@@ -99,11 +99,11 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     this.resultColumnIds = resultColumnIds;
   }
 
-  public AggregationFunctionCallEval [] getAggFunctions() {
+  public List<AggregationFunctionCallEval> getAggFunctions() {
     return this.aggrFunctions;
   }
 
-  public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+  public void setAggFunctions(List<AggregationFunctionCallEval> evals) {
     this.aggrFunctions = evals;
   }
 
@@ -165,7 +165,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + Arrays.hashCode(aggrFunctions);
+    result = prime * result + Objects.hashCode(aggrFunctions);
     result = prime * result + ((groupbyPlan == null) ? 0 : groupbyPlan.hashCode());
     result = prime * result + Arrays.hashCode(groupingColumns);
     result = prime * result + Arrays.hashCode(resultColumnIds);
@@ -213,9 +213,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     String prefix = "";
     for (GroupbyNode eachNode: subGroupbyPlan) {
       if (eachNode.hasAggFunctions()) {
-        AggregationFunctionCallEval[] aggrFunctions = eachNode.getAggFunctions();
-        for (int j = 0; j < aggrFunctions.length; j++) {
-          sb.append(prefix).append(aggrFunctions[j]);
+        List<AggregationFunctionCallEval> aggrFunctions = eachNode.getAggFunctions();
+        for (int j = 0; j < aggrFunctions.size(); j++) {
+          sb.append(prefix).append(aggrFunctions.get(j));
           prefix = ",";
         }
       }
