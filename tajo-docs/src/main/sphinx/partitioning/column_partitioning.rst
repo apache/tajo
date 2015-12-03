@@ -24,7 +24,7 @@ For example, assume a table with the following schema.
   phone     TEXT
   );
 
-Now you want to partition on country. Your Tajo definition would be this:
+If you want to make country as partitioned column, your Tajo definition would be this:
 
 .. code-block:: sql
 
