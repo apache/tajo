@@ -76,7 +76,7 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
 
   @Override
   public String getUsage() {
-    return "";
+    return "[database_name]";
   }
 
   @Override
