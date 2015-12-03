@@ -8,6 +8,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1948: Change GroupbyNode::setAggFunctions and getAggFunctions to set 
+    and get List. (Dongkyu Hwangbo via hyunsik)
+
     TAJO-1979: Usage of some TajoShellCommand is omitted.
     (Dongkyu Hwangbo via jaehwa)
 

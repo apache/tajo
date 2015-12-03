@@ -55,14 +55,14 @@ public class HashAggregateExec extends AggregationExec {
 
       FunctionContext [] contexts = hashTable.get(keyTuple);
       if(contexts != null) {
-        for(int i = 0; i < aggFunctions.length; i++) {
-          aggFunctions[i].merge(contexts[i], tuple);
+        for(int i = 0; i < aggFunctions.size(); i++) {
+          aggFunctions.get(i).merge(contexts[i], tuple);
         }
       } else { // if the key occurs firstly
         contexts = new FunctionContext[aggFunctionsNum];
         for(int i = 0; i < aggFunctionsNum; i++) {
-          contexts[i] = aggFunctions[i].newContext();
-          aggFunctions[i].merge(contexts[i], tuple);
+          contexts[i] = aggFunctions.get(i).newContext();
+          aggFunctions.get(i).merge(contexts[i], tuple);
         }
         hashTable.put(keyTuple, contexts);
       }
@@ -73,7 +73,7 @@ public class HashAggregateExec extends AggregationExec {
     if (groupingKeyNum == 0 && aggFunctionsNum > 0 && hashTable.entrySet().size() == 0) {
       FunctionContext[] contexts = new FunctionContext[aggFunctionsNum];
       for(int i = 0; i < aggFunctionsNum; i++) {
-        contexts[i] = aggFunctions[i].newContext();
+        contexts[i] = aggFunctions.get(i).newContext();
       }
       hashTable.put(null, contexts);
     }
@@ -99,7 +99,7 @@ public class HashAggregateExec extends AggregationExec {
         tuple.put(tupleIdx, keyTuple.asDatum(tupleIdx));
       }
       for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
-        tuple.put(tupleIdx, aggFunctions[funcIdx].terminate(contexts[funcIdx]));
+        tuple.put(tupleIdx, aggFunctions.get(funcIdx).terminate(contexts[funcIdx]));
       }
 
       return tuple;
