@@ -81,13 +81,13 @@ public class SetCommand extends TajoShellCommand {
     } else if (cmd.length == 3) {
       set(cmd[1], cmd[2]);
     } else {
-      context.getOutput().println("usage: \\set [[NAME] VALUE]");
+      context.getOutput().println("usage: \\set " + getUsage());
     }
   }
 
   @Override
   public String getUsage() {
-    return "";
+    return "[[NAME] VALUE]";
   }
 
   @Override
