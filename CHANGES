@@ -137,6 +137,8 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-2004: S3TableSpace needs to extend FileTableSpace. (jaehwa)
+
     TAJO-1960: Separate HDFS space handler and S3 space handler. (jaehwa)
 
     TAJO-1856: Add a description about the relationship of tablespace, managed table, 
