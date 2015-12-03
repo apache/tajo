@@ -594,4 +594,22 @@ public class TestTajoCli {
       }
     }
   }
+
+  @Test
+  public void testPrintUsageOfConnectDatabaseCommand() {
+    tajoCli.executeMetaCommand("\\help c");
+    assertTrue(new String(out.toByteArray()).contains("[database_name]"));
+  }
+
+  @Test
+  public void testPrintUsageOfSetCommand() {
+    tajoCli.executeMetaCommand("\\set a b c");
+    assertTrue(new String(out.toByteArray()).contains("[[NAME] VALUE]"));
+  }
+
+  @Test
+  public void testPrintUsageOfUnsetCommand() {
+    tajoCli.executeMetaCommand("\\help unset");
+    assertTrue(new String(out.toByteArray()).contains("[NAME]"));
+  }
 }
