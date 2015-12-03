@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
@@ -77,7 +78,8 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
       final TableDesc table = scanNode.getTableDesc();
 
       if (!isVirtual(table)) {
-        final long tableSize = table.getStats().getNumBytes();
+        final TableStats stats = getTableStat(table);
+        final long tableSize = stats.getNumBytes();
         final Optional<EvalNode> filter = scanNode.hasQual() ? Optional.of(scanNode.getQual()) : Optional.absent();
 
         // If USE_TABLE_VOLUME is set, we will update the table volume through a storage handler.
@@ -89,6 +91,17 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
       }
 
       return scanNode;
+    }
+
+    private TableStats getTableStat(TableDesc table) {
+      TableStats stats;
+      if (table.getStats() == null) {
+        stats = new TableStats();
+        table.setStats(stats);
+      } else {
+        stats = table.getStats();
+      }
+      return stats;
     }
 
     private boolean isVirtual(TableDesc table) {
