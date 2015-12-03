@@ -41,9 +41,7 @@ public class EvalExprExec extends PhysicalExec {
   public void init() throws IOException {
     super.init();
     progress = 0.0f;
-    for (Target target : plan.getTargets()) {
-      target.getEvalTree().bind(context.getEvalContext(), inSchema);
-    }
+    plan.targets().forEach(t -> t.getEvalTree().bind(context.getEvalContext(), inSchema));
   }
 
   @Override

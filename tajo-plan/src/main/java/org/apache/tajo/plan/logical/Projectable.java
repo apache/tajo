@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.Target;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Projectable is an interface for a LogicalNode which has a list of targets.
@@ -61,15 +62,22 @@ public interface Projectable {
   List<Target> getTargets();
 
   /**
+   * Get a stream pipeline for Targets
+   *
+   * @return Stream for Targets
+   */
+  Stream<Target> targets();
+
+  /**
    * Get an input schema
    * @return The input schema
    */
-  public Schema getInSchema();
+  Schema getInSchema();
 
   /**
    * Get an output schema
    *
    * @return The output schema
    */
-  public Schema getOutSchema();
+  Schema getOutSchema();
 }

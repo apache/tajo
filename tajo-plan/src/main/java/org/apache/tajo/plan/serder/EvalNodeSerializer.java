@@ -295,8 +295,7 @@ public class EvalNodeSerializer
       WinFunctionEvalSpec.Builder windowFuncBuilder = WinFunctionEvalSpec.newBuilder();
 
       if (winFunc.hasSortSpecs()) {
-        windowFuncBuilder.addAllSortSpec(ProtoUtil.<CatalogProtos.SortSpecProto>toProtoObjects
-            (winFunc.getSortSpecs()));
+        windowFuncBuilder.addAllSortSpec(LogicalNodeSerializer.toProtos(winFunc.getSortSpecs()));
       }
 
       windowFuncBuilder.setWindowFrame(buildWindowFrame(winFunc.getWindowFrame()));

@@ -41,6 +41,7 @@ import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownConte
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -655,10 +656,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       LogicalNode childNode, List<EvalNode> notMatched,
       Set<String> partitionColumns, int columnOffset) throws TajoException {
     // canonical name -> target
+
     Map<String, Target> nodeTargetMap = new HashMap<>();
-    for (Target target : node.getTargets()) {
-      nodeTargetMap.put(target.getCanonicalName(), target);
-    }
+    node.targets().forEach(t -> nodeTargetMap.put(t.getCanonicalName(), t));
 
     // copy -> origin
     BiMap<EvalNode, EvalNode> matched = HashBiMap.create();

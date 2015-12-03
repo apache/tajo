@@ -33,7 +33,9 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.apache.commons.lang.StringUtils.capitalize;
 
@@ -162,10 +164,19 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     }
   }
 
+  @Override
+  public Stream<Target> targets() {
+    if (hasTargets()) {
+      return this.targets.stream();
+    } else {
+      return Collections.EMPTY_LIST.stream();
+    }
+  }
+
   /**
+   * Has limit num or not.
    *
-   *
-   * @return
+   * @return true if limit is given. Otherwise, it will return false.
    */
   public boolean hasLimit() {
     return limit > 0;

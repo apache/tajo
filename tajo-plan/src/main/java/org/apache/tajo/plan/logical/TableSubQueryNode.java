@@ -28,6 +28,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private String tableName;
@@ -124,6 +125,11 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
       return null;
     }
 
+  }
+
+  @Override
+  public Stream<Target> targets() {
+    return getTargets().stream();
   }
 
   @Override

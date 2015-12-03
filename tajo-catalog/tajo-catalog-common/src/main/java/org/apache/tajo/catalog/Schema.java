@@ -35,6 +35,7 @@ import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
@@ -325,6 +326,10 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     });
 
     return columnList;
+  }
+
+  public Stream<Column> columns() {
+    return fields.stream();
   }
 
   public boolean contains(String name) {

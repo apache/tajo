@@ -31,6 +31,7 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
 	/** partition key sets */
@@ -110,7 +111,12 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
   public List<Target> getTargets() {
     return this.targets;
   }
-  
+
+  @Override
+  public Stream<Target> targets() {
+    return getTargets().stream();
+  }
+
   public void setChild(LogicalNode subNode) {
     super.setChild(subNode);
   }

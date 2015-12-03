@@ -33,6 +33,7 @@ import org.apache.tajo.util.TUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private JoinSpec joinSpec = new JoinSpec();
@@ -84,6 +85,11 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Override
   public List<Target> getTargets() {
     return this.targets;
+  }
+
+  @Override
+  public Stream<Target> targets() {
+    return getTargets().stream();
   }
 
   @Override

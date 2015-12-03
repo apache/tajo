@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   /** Grouping key sets */
@@ -117,7 +118,12 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   public List<Target> getTargets() {
     return this.targets;
   }
-  
+
+  @Override
+  public Stream<Target> targets() {
+    return getTargets().stream();
+  }
+
   public void setChild(LogicalNode subNode) {
     super.setChild(subNode);
   }
