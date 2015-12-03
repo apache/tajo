@@ -415,8 +415,8 @@ public class TestHiveCatalogStore {
 
     List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
     String[] partitionNames = partitionName.split("/");
-    for (String partitionName1 : partitionNames) {
-      String[] eachPartitionName = partitionName1.split("=");
+    for (String Name : partitionNames) {
+      String[] eachPartitionName = Name.split("=");
 
       PartitionKeyProto.Builder builder = PartitionKeyProto.newBuilder();
       builder.setColumnName(eachPartitionName[0]);
@@ -452,8 +452,8 @@ public class TestHiveCatalogStore {
       builder.setPath(path.toString());
 
       List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
-      String[] split = partitionName.split("/");
-      for (String aSplit : split) {
+      String[] splits = partitionName.split("/");
+      for (String aSplit : splits) {
         String[] eachPartitionName = aSplit.split("=");
 
         PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();
