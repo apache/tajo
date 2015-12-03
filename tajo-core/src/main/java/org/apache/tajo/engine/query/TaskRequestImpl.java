@@ -90,58 +90,58 @@ public class TaskRequestImpl implements TaskRequest {
     this.queryMasterHostAndPort = queryMasterHostAndPort;
   }
 
-  @Override
-  public TaskRequestProto getProto() {
-    mergeLocalToProto();
-    proto = viaProto ? proto : builder.build();
-    viaProto = true;
-    return proto;
-  }
+        @Override
+        public TaskRequestProto getProto() {
+          mergeLocalToProto();
+          proto = viaProto ? proto : builder.build();
+          viaProto = true;
+          return proto;
+        }
 
-  @Override
-  public TaskAttemptId getId() {
-    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (id != null) {
-      return this.id;
-    }
-    if (!p.hasId()) {
-      return null;
-    }
-    this.id = new TaskAttemptId(p.getId());
-    return this.id;
-  }
+        @Override
+        public TaskAttemptId getId() {
+          TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
+          if (id != null) {
+            return this.id;
+          }
+          if (!p.hasId()) {
+            return null;
+          }
+          this.id = new TaskAttemptId(p.getId());
+          return this.id;
+        }
 
-  @Override
-  public List<FragmentProto> getFragments() {
-    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (fragments != null) {
-      return fragments;
-    }
-    if (fragments == null) {
-      fragments = new ArrayList<>();
-    }
-    for (int i = 0; i < p.getFragmentsCount(); i++) {
-      fragments.add(p.getFragments(i));
-    }
-    return this.fragments;
-  }
+        @Override
+        public List<FragmentProto> getFragments() {
+          TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
+          if (fragments != null) {
+            return fragments;
+          }
+          if (fragments == null) {
+            fragments = new ArrayList<>();
+          }
+          for (int i = 0; i < p.getFragmentsCount(); i++) {
+            fragments.add(p.getFragments(i));
+          }
+          return this.fragments;
+        }
 
 
-  @Override
-  public PlanProto.LogicalNodeTree getPlan() {
-    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-    if (this.plan != null) {
-      return this.plan;
-    }
-    if (!p.hasPlan()) {
-      return null;
-    }
-    this.plan = p.getPlan();
-    return this.plan;
-  }
+        @Override
+        public PlanProto.LogicalNodeTree getPlan() {
+          TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
+          if (this.plan != null) {
+            return this.plan;
+          }
+          if (!p.hasPlan()) {
+            return null;
+          }
+          this.plan = p.getPlan();
+          return this.plan;
+        }
 
-  public boolean isInterQuery() {
-    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
+        public boolean isInterQuery() {
+          TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (interQuery != null) {
       return interQuery;
     }
@@ -150,12 +150,12 @@ public class TaskRequestImpl implements TaskRequest {
     }
     this.interQuery = p.getInterQuery();
     return this.interQuery;
-  }
+       }
 
-  public void setInterQuery() {
-    maybeInitBuilder();
-    this.interQuery = true;
-  }
+       public void setInterQuery() {
+         maybeInitBuilder();
+         this.interQuery = true;
+       }
 
   @Override
   public void addFetch(FetchProto fetch) {
@@ -216,10 +216,10 @@ public class TaskRequestImpl implements TaskRequest {
   public List<FetchProto> getFetches() {
 	  initFetches();
     return this.fetches;
-  }
+       }
 
-  private void initFetches() {
-    if (this.fetches != null) {
+       private void initFetches() {
+         if (this.fetches != null) {
       return;
     }
     TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
@@ -227,36 +227,36 @@ public class TaskRequestImpl implements TaskRequest {
     for(FetchProto fetch : p.getFetchesList()) {
       fetches.add(fetch);
     }
-  }
+       }
 
   private void maybeInitBuilder() {
-    if (viaProto || builder == null) {
-      builder = TaskRequestProto.newBuilder(proto);
-    }
-    viaProto = true;
-  }
+               if (viaProto || builder == null) {
+                       builder = TaskRequestProto.newBuilder(proto);
+               }
+               viaProto = true;
+       }
 
-  private void mergeLocalToBuilder() {
-    if (id != null) {
-      builder.setId(this.id.getProto());
-    }
-    if (fragments != null) {
-      for (FragmentProto fragment : fragments) {
-        builder.addFragments(fragment);
-      }
-    }
-    if (this.outputTable != null) {
-      builder.setOutputTable(this.outputTable);
-    }
-    if (this.isUpdated) {
-      builder.setClusteredOutput(this.clusteredOutput);
-    }
-    if (this.plan != null) {
-      builder.setPlan(this.plan);
-    }
-    if (this.interQuery != null) {
-      builder.setInterQuery(this.interQuery);
-    }
+       private void mergeLocalToBuilder() {
+               if (id != null) {
+                      builder.setId(this.id.getProto());
+               }
+               if (fragments != null) {
+                       for (FragmentProto fragment : fragments) {
+                              builder.addFragments(fragment);
+                       }
+              }
+              if (this.outputTable != null) {
+                      builder.setOutputTable(this.outputTable);
+              }
+              if (this.isUpdated) {
+                      builder.setClusteredOutput(this.clusteredOutput);
+              }
+              if (this.plan != null) {
+                      builder.setPlan(this.plan);
+              }
+              if (this.interQuery != null) {
+                builder.setInterQuery(this.interQuery);
+              }
     if (this.fetches != null) {
       for (FetchProto fetche : fetches) {
         builder.addFetches(fetche);
@@ -274,14 +274,14 @@ public class TaskRequestImpl implements TaskRequest {
     if (this.enforcer != null) {
       builder.setEnforcer(enforcer.getProto());
     }
-  }
+       }
 
-  private void mergeLocalToProto() {
-    if (viaProto) {
-      maybeInitBuilder();
-    }
-    mergeLocalToBuilder();
-    proto = builder.build();
-    viaProto = true;
-  }
+       private void mergeLocalToProto() {
+               if (viaProto) {
+                        maybeInitBuilder();
+               }
+               mergeLocalToBuilder();
+               proto = builder.build();
+               viaProto = true;
+       }
 }
