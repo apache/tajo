@@ -969,7 +969,7 @@ public class PlannerUtil {
     return finder.getEvalNodes();
   }
 
-  public static boolean hasAsterisk(NamedExpr [] namedExprs) {
+  public static boolean hasAsterisk(List<NamedExpr> namedExprs) {
     for (NamedExpr eachTarget : namedExprs) {
       if (eachTarget.getExpr().getType() == OpType.Asterisk) {
         return true;

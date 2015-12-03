@@ -35,17 +35,17 @@ public class AvroUtil {
   public static Schema getAvroSchema(TableMeta meta, Configuration conf)
       throws IOException {
 
-    boolean isSchemaLiteral = meta.containsOption(StorageConstants.AVRO_SCHEMA_LITERAL);
-    boolean isSchemaUrl = meta.containsOption(StorageConstants.AVRO_SCHEMA_URL);
+    boolean isSchemaLiteral = meta.containsProperty(StorageConstants.AVRO_SCHEMA_LITERAL);
+    boolean isSchemaUrl = meta.containsProperty(StorageConstants.AVRO_SCHEMA_URL);
     if (!isSchemaLiteral && !isSchemaUrl) {
       throw new RuntimeException("No Avro schema for table.");
     }
     if (isSchemaLiteral) {
-      String schema = meta.getOption(StorageConstants.AVRO_SCHEMA_LITERAL);
+      String schema = meta.getProperty(StorageConstants.AVRO_SCHEMA_LITERAL);
       return new Schema.Parser().parse(schema);
     }
 
-    String schemaURL = meta.getOption(StorageConstants.AVRO_SCHEMA_URL);
+    String schemaURL = meta.getProperty(StorageConstants.AVRO_SCHEMA_URL);
     if (schemaURL.toLowerCase().startsWith("http")) {
       return getAvroSchemaFromHttp(schemaURL);
     } else {

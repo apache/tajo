@@ -203,7 +203,7 @@ public class PhysicalPlanUtil {
   }
 
   /**
-   * Set nullChar to TableMeta according to file format
+   * Set nullChar to TableMeta according to data format
    *
    * @param meta TableMeta
    * @param nullChar A character for NULL representation
@@ -211,28 +211,28 @@ public class PhysicalPlanUtil {
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
     String dataFormat = meta.getDataFormat();
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+      meta.putProperty(StorageConstants.TEXT_NULL, nullChar);
     }  else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
-      meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
+      meta.putProperty(StorageConstants.RCFILE_NULL, nullChar);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
-      meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
+      meta.putProperty(StorageConstants.SEQUENCEFILE_NULL, nullChar);
     }
   }
 
   /**
-   * Check if TableMeta contains NULL char property according to file format
+   * Check if TableMeta contains NULL char property according to data format
    *
    * @param meta Table Meta
-   * @return True if TableMeta contains NULL char property according to file format
+   * @return True if TableMeta contains NULL char property according to data format
    */
   public static boolean containsNullChar(TableMeta meta) {
     String dataFormat = meta.getDataFormat();
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      return meta.containsOption(StorageConstants.TEXT_NULL);
+      return meta.containsProperty(StorageConstants.TEXT_NULL);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
-      return meta.containsOption(StorageConstants.RCFILE_NULL);
+      return meta.containsProperty(StorageConstants.RCFILE_NULL);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
-      return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
+      return meta.containsProperty(StorageConstants.SEQUENCEFILE_NULL);
     } else {
       return false;
     }

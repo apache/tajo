@@ -1837,4 +1837,72 @@ public class TestTablePartitions extends QueryTestCaseBase {
     executeString("DROP TABLE " + externalTableName).close();
     executeString("DROP TABLE " + tableName + " PURGE").close();
   }
+
+  @Test
+  public final void testPartitionWithInOperator() throws Exception {
+    ResultSet res = null;
+    String tableName = CatalogUtil.normalizeIdentifier("testPartitionWithInOperator");
+    String result, expectedResult;
+
+    if (nodeType == NodeType.INSERT) {
+      res = testBase.execute(
+        "create table " + tableName + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
+      res.close();
+      TajoTestingCluster cluster = testBase.getTestingCluster();
+      CatalogService catalog = cluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+      res = executeString("insert overwrite into " + tableName
+        + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+    } else {
+      res = executeString( "create table " + tableName + " (col4 text) "
+        + " partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
+        "l_quantity from lineitem");
+    }
+    res.close();
+
+    res = executeString("select * from " + tableName);
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,17.0\n" +
+      "N,1,1,36.0\n" +
+      "N,2,2,38.0\n" +
+      "R,3,2,45.0\n" +
+      "R,3,3,49.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("select * from " + tableName + " WHERE col1 in (1, 2) order by col3");
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,17.0\n" +
+      "N,1,1,36.0\n" +
+      "N,2,2,38.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("select * from " + tableName + " WHERE col1 in (2, 3) and col2 = 2 order by col3");
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,2,2,38.0\n" +
+      "R,3,2,45.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    res = executeString("select * from " + tableName + " WHERE col1 in (1, 2, 3) and col2 in (1, 3) and col3 < 30 " +
+      " order by col3");
+    result = resultSetToString(res);
+    expectedResult = "col4,col1,col2,col3\n" +
+      "-------------------------------\n" +
+      "N,1,1,17.0\n";
+    res.close();
+    assertEquals(expectedResult, result);
+
+    executeString("DROP TABLE " + tableName + " PURGE").close();
+    res.close();
+  }
+
 }

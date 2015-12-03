@@ -19,10 +19,13 @@
 package org.apache.tajo.tuple.memory;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.*;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.RowBlockReader;
 
@@ -62,6 +65,11 @@ public class OffHeapRowBlockUtils {
     return tupleList;
   }
 
+  public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator) {
+    Collections.sort(list, comparator);
+    return list;
+  }
+
   public static Tuple[] sortToArray(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {
     Tuple[] tuples = new Tuple[rowBlock.rows()];
 
@@ -85,18 +93,74 @@ public class OffHeapRowBlockUtils {
     return tuples;
   }
 
+  public static final int compareColumn(UnSafeTuple tuple1, UnSafeTuple tuple2, int index, TajoDataTypes.Type type,
+                                         boolean ascending, boolean nullFirst) {
+    final boolean n1 = tuple1.isBlankOrNull(index);
+    final boolean n2 = tuple2.isBlankOrNull(index);
+    if (n1 && n2) {
+      return 0;
+    }
+
+    if (n1 ^ n2) {
+      return nullFirst ? (n1 ? -1 : 1) : (n1 ? 1 : -1);
+    }
+
+    int compare;
+    switch (type) {
+    case BOOLEAN:
+      compare = Booleans.compare(tuple1.getBool(index), tuple2.getBool(index));
+      break;
+    case BIT:
+      compare = tuple1.getByte(index) - tuple2.getByte(index);
+      break;
+    case INT1:
+    case INT2:
+      compare = Shorts.compare(tuple1.getInt2(index), tuple2.getInt2(index));
+      break;
+    case DATE:
+    case INT4:
+      compare = Ints.compare(tuple1.getInt4(index), tuple2.getInt4(index));
+      break;
+    case INET4:
+      compare = UnsignedInts.compare(tuple1.getInt4(index), tuple2.getInt4(index));
+      break;
+    case TIME:
+    case TIMESTAMP:
+    case INT8:
+      compare = Longs.compare(tuple1.getInt8(index), tuple2.getInt8(index));
+      break;
+    case FLOAT4:
+      compare = Floats.compare(tuple1.getFloat4(index), tuple2.getFloat4(index));
+      break;
+    case FLOAT8:
+      compare = Doubles.compare(tuple1.getFloat8(index), tuple2.getFloat8(index));
+      break;
+    case CHAR:
+    case TEXT:
+    case BLOB:
+      compare = UnSafeTupleBytesComparator.compare(tuple1.getFieldAddr(index), tuple2.getFieldAddr(index));
+      break;
+    default:
+      throw new TajoRuntimeException(
+          new UnsupportedException("unknown data type '" + type.name() + "'"));
+    }
+    return ascending ? compare : -compare;
+  }
   /**
    * This class is tuple converter to the RowBlock
    */
   public static class TupleConverter {
 
     public void convert(Tuple tuple, RowWriter writer) {
-      writer.startRow();
-
-      for (int i = 0; i < writer.dataTypes().length; i++) {
-        writeField(i, tuple, writer);
+      try {
+        writer.startRow();
+        for (int i = 0; i < writer.dataTypes().length; i++) {
+          writeField(i, tuple, writer);
+        }
+      } catch (ValueOutOfRangeException e) {
+        writer.cancelRow();
+        throw e;
       }
-
       writer.endRow();
     }
 

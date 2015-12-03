@@ -20,6 +20,7 @@ package org.apache.tajo.tuple.memory;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
@@ -48,6 +49,11 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
     rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() + length);
   }
 
+  @Override
+  public void backward(int length) {
+    rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() - length);
+  }
+
   public void ensureSize(int size) {
     rowBlock.getMemory().ensureSize(size);
   }
@@ -65,13 +71,18 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
 
 
   @Override
-  public void addTuple(Tuple tuple) {
-    if (tuple instanceof UnSafeTuple) {
-      UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
-      addTuple(unSafeTuple);
-      rowBlock.setRows(rowBlock.rows() + 1);
-    } else {
-      OffHeapRowBlockUtils.convert(tuple, this);
+  public boolean addTuple(Tuple tuple) {
+    try {
+      if (tuple instanceof UnSafeTuple) {
+        UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
+        addTuple(unSafeTuple);
+        rowBlock.setRows(rowBlock.rows() + 1);
+      } else {
+        OffHeapRowBlockUtils.convert(tuple, this);
+      }
+    } catch (ValueOutOfRangeException e) {
+      return false;
     }
+    return true;
   }
 }

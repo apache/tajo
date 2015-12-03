@@ -437,8 +437,8 @@ public class TestCreateTable extends QueryTestCaseBase {
         return false;
       }
 
-      KeyValueSet origOptions = origMeta.getOptions();
-      KeyValueSet newOptions = newMeta.getOptions();
+      KeyValueSet origOptions = origMeta.getPropertySet();
+      KeyValueSet newOptions = newMeta.getPropertySet();
       if(origOptions.equals(newOptions) == false)  {
         fail("Meta options of input tables not equal");
         return false;

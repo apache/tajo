@@ -117,7 +117,7 @@ public class TestLineReader {
     schema.addColumn("comment2", Type.TEXT);
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
-    meta.putOption("compression.codec", DeflateCodec.class.getCanonicalName());
+    meta.putProperty("compression.codec", DeflateCodec.class.getCanonicalName());
 
     Path tablePath = new Path(testDir, "testLineDelimitedReaderWithCompression." + DeflateCodec.class.getSimpleName());
     FileAppender appender = (FileAppender) (TablespaceManager.getLocalFs()).getAppender(

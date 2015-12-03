@@ -110,6 +110,7 @@ public class TestProgressExternalSortExec {
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
+    employeePath.getFileSystem(conf).deleteOnExit(employeePath);
   }
 
   @After
@@ -125,9 +126,8 @@ public class TestProgressExternalSortExec {
   @Test
   public void testExternalSortExecProgressWithMemTableScanner() throws Exception {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    int bufferSize = (int) (testDataStats.getNumBytes() * 20) / StorageUnit.MB; //multiply 2 for memory fit
+    int bufferSize = (int) (testDataStats.getNumBytes() * 2) / StorageUnit.MB; //multiply 2 for memory fit
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, bufferSize);
-
     testProgress(queryContext);
   }
 
@@ -197,7 +197,7 @@ public class TestProgressExternalSortExec {
     assertEquals(testDataStats.getNumBytes().longValue(), tableStats.getNumBytes().longValue());
     assertEquals(testDataStats.getNumRows().longValue(), cnt);
     assertEquals(testDataStats.getNumRows().longValue(), tableStats.getNumRows().longValue());
-    assertTrue(testDataStats.getNumBytes().longValue() <= tableStats.getReadBytes().longValue());
+    assertTrue(testDataStats.getNumBytes() <= tableStats.getReadBytes());
 
     // for rescan test
     preVal = null;
@@ -223,7 +223,7 @@ public class TestProgressExternalSortExec {
     assertEquals(testDataStats.getNumRows().longValue(), cnt);
     assertEquals(testDataStats.getNumRows().longValue(), tableStats.getNumRows().longValue());
     //'ReadBytes' is actual read bytes
-    assertTrue(testDataStats.getNumBytes().longValue() <= tableStats.getReadBytes().longValue());
+    assertTrue(testDataStats.getNumBytes() <= tableStats.getReadBytes());
 
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);
   }

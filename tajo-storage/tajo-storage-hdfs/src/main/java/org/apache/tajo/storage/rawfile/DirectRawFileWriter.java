@@ -111,7 +111,7 @@ public class DirectRawFileWriter extends FileAppender {
     if (tableStatsEnabled) {
       this.stats = new TableStatistics(this.schema, columnStatsEnabled);
       if (ShuffleType.RANGE_SHUFFLE == PlannerUtil.getShuffleType(
-          meta.getOption(StorageConstants.SHUFFLE_TYPE,
+          meta.getProperty(StorageConstants.SHUFFLE_TYPE,
               PlannerUtil.getShuffleType(ShuffleType.NONE_SHUFFLE)))) {
         this.analyzeField = true;
       }

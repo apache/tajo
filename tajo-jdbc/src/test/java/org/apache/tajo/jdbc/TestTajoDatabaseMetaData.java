@@ -400,9 +400,8 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           TajoConstants.DEFAULT_DATABASE_NAME);
-      Connection conn = DriverManager.getConnection(connUri);
 
-      try {
+      try (Connection conn = DriverManager.getConnection(connUri)) {
         DatabaseMetaData meta = conn.getMetaData();
 
         ResultSet res = meta.getProcedures(null, null, null);
@@ -456,8 +455,6 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
         res = meta.getClientInfoProperties();
         assertNotNull(res);
         assertFalse(res.next());
-      } finally {
-        conn.close();
       }
     }
   }
@@ -467,9 +464,8 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     if (!testingCluster.isHiveCatalogStoreRunning()) {
       String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           TajoConstants.DEFAULT_DATABASE_NAME);
-      Connection conn = DriverManager.getConnection(connUri);
 
-      try {
+      try (Connection conn = DriverManager.getConnection(connUri)) {
         DatabaseMetaData meta = conn.getMetaData();
 
         ResultSet res = meta.getTypeInfo();
@@ -496,8 +492,6 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
         }
 
         assertEquals(numTypes, TajoTypeUtil.getTypeInfos().size());
-      } finally {
-        conn.close();
       }
     }
   }

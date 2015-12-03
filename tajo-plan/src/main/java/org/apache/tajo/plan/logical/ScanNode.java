@@ -21,6 +21,7 @@ package org.apache.tajo.plan.logical;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
@@ -36,6 +37,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.apache.commons.lang.StringUtils.capitalize;
 
 public class ScanNode extends RelationNode implements Projectable, SelectableNode, Cloneable {
 	@Expose protected TableDesc tableDesc;
@@ -199,7 +202,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
   }
 	
 	public String toString() {
-    StringBuilder sb = new StringBuilder("Scan (table=").append(getTableName());
+    StringBuilder sb = new StringBuilder(capitalize(getType().name()) + " (table=").append(getTableName());
     if (hasAlias()) {
       sb.append(", alias=").append(alias);
     }
@@ -277,15 +280,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     }
 
     if (hasTargets()) {
-      planStr.addExplan("target list: ");
-      boolean first = true;
-      for (Target target : targets) {
-        if (!first) {
-          planStr.appendExplain(", ");
-        }
-        planStr.appendExplain(target.toString());
-        first = false;
-      }
+      planStr.addExplan("target list: ").appendExplain(StringUtils.join(targets, ", "));
     }
 
     planStr.addDetail("out schema: ").appendDetail(getOutSchema().toString());
