@@ -46,6 +46,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
+
     TAJO-1753: GlobalEngine causes NPE occurs occasionally. (jinho)
 
     TAJO-1862: TSQL gives user wrong URL of documentation. 
@@ -134,6 +136,10 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-2004: S3TableSpace needs to extend FileTableSpace. (jaehwa)
+
+    TAJO-1960: Separate HDFS space handler and S3 space handler. (jaehwa)
 
     TAJO-1856: Add a description about the relationship of tablespace, managed table, 
     and external table to Tablespace section of Table Management chapter. 
