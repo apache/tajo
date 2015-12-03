@@ -80,7 +80,7 @@ public class TestExecutionBlockCursor {
 
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(conf, catalog);
+    optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
 
     dispatcher = new AsyncDispatcher();
     dispatcher.init(conf);
