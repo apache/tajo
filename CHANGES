@@ -7,6 +7,9 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1998: Waiting for gracefully stopping in tajo-deamon.sh is too short.
+    (jinho)
+
     TAJO-1985: Supporting Metric report via JMX. (Yongjun Park via jinho)
 
     TAJO-1983: Improve memory usage of ExternalSortExec. (jinho)
