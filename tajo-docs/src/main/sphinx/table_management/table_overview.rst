@@ -1,10 +1,12 @@
-*************************************
+***********************
 Overview of Tajo Tables
-*************************************
+***********************
 
+========
 Overview
 ========
 
+===========
 Tablespaces
 ===========
 
@@ -12,8 +14,9 @@ Tablespaces is a physical location where files or data objects representing data
 
 Please refer to :doc:`/table_management/tablespaces` if you want to know more information about tablespaces.
 
+=============
 Managed Table
-================
+=============
 
 ``CREATE TABLE`` statement lets you create a table located in the warehouse directory specified by the configuration property ``tajo.warehouse.directory`` or ``${tajo.root}/warehouse`` by default. For example:
 
@@ -26,8 +29,9 @@ Managed Table
  );
 
 
+==============
 External Table
-================
+==============
 
 ``CREATE EXTERNAL TABLE`` statement lets you create a table located in a specify location so that Tajo does not use a default data warehouse location for the table. External tables are in common used if you already have data generated. LOCATION clause must be required for an external table. 
 
@@ -65,7 +69,7 @@ The following example is to set a custom field delimiter, NULL character, and co
                    'text.null'='\\N',
                    'compression.codec'='org.apache.hadoop.io.compress.SnappyCodec');
 
-Each physical table layout has its own specialized properties. They will be addressed in :doc:`/table_management/file_formats`.
+Each physical table layout has its own specialized properties. They will be addressed in :doc:`/table_management/data_formats`.
 
 
 Common Table Properties
@@ -75,7 +79,8 @@ There are some common table properties which are used in most tables.
 
 Compression
 -----------
-.. todo::
+
+See :doc:`compression`.
 
 Time zone
 ---------

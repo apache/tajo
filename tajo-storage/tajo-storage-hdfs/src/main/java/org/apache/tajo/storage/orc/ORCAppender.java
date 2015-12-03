@@ -46,7 +46,7 @@ public class ORCAppender extends FileAppender {
                      TableMeta meta, Path workDir) {
     super(conf, taskAttemptId, schema, meta, workDir);
 
-    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
         TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
@@ -54,11 +54,11 @@ public class ORCAppender extends FileAppender {
   public void init() throws IOException {
     writer = OrcFile.createWriter(workDir.getFileSystem(conf), path, conf,
       ObjectInspectorFactory.buildStructObjectInspector(schema),
-      Long.parseLong(meta.getOption(StorageConstants.ORC_STRIPE_SIZE,
+      Long.parseLong(meta.getProperty(StorageConstants.ORC_STRIPE_SIZE,
         StorageConstants.DEFAULT_ORC_STRIPE_SIZE)), getCompressionKind(),
-      Integer.parseInt(meta.getOption(StorageConstants.ORC_BUFFER_SIZE,
+      Integer.parseInt(meta.getProperty(StorageConstants.ORC_BUFFER_SIZE,
         StorageConstants.DEFAULT_ORC_BUFFER_SIZE)),
-      Integer.parseInt(meta.getOption(StorageConstants.ORC_ROW_INDEX_STRIDE,
+      Integer.parseInt(meta.getProperty(StorageConstants.ORC_ROW_INDEX_STRIDE,
         StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE)),
       timezone);
 
@@ -111,7 +111,7 @@ public class ORCAppender extends FileAppender {
   }
 
   private CompressionKind getCompressionKind() {
-    String kindstr = meta.getOption(StorageConstants.ORC_COMPRESSION, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
+    String kindstr = meta.getProperty(StorageConstants.ORC_COMPRESSION, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
 
     if (kindstr.equalsIgnoreCase(StorageConstants.ORC_COMPRESSION_KIND_ZIP)) {
       return CompressionKind.ZLIB;

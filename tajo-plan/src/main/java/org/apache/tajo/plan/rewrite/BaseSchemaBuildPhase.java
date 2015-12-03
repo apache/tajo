@@ -185,8 +185,8 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       return newTargetExprs;
     }
 
-    private static NamedExpr [] voidResolveAsteriskNamedExpr(LogicalPlanner.PlanContext context,
-                                                             NamedExpr [] namedExprs) throws TajoException {
+    private static List<NamedExpr> voidResolveAsteriskNamedExpr(LogicalPlanner.PlanContext context,
+                                                             List<NamedExpr> namedExprs) throws TajoException {
       List<NamedExpr> rewrittenTargets = TUtil.newList();
       for (NamedExpr originTarget : namedExprs) {
         if (originTarget.getExpr().getType() == OpType.Asterisk) {
@@ -196,7 +196,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
           rewrittenTargets.add(originTarget);
         }
       }
-      return rewrittenTargets.toArray(new NamedExpr[rewrittenTargets.size()]);
+      return rewrittenTargets;
     }
 
     @Override
@@ -224,9 +224,9 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         expr.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, expr.getNamedExprs()));
       }
 
-      NamedExpr[] projectTargetExprs = expr.getNamedExprs();
-      for (int i = 0; i < expr.getNamedExprs().length; i++) {
-        NamedExpr namedExpr = projectTargetExprs[i];
+      List<NamedExpr> projectTargetExprs = expr.getNamedExprs();
+      for (int i = 0; i < expr.getNamedExprs().size(); i++) {
+        NamedExpr namedExpr = projectTargetExprs.get(i);
 
         // 1) Normalize all field names occurred in each expr into full qualified names
         NameRefInSelectListNormalizer.normalize(ctx, namedExpr.getExpr());
@@ -254,7 +254,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       return projectionNode;
     }
 
-    private List<Target> buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws TajoException {
+    private List<Target> buildTargets(LogicalPlanner.PlanContext context, List<NamedExpr> exprs) throws TajoException {
       List<Target> targets = new ArrayList<>();
       for (NamedExpr namedExpr : exprs) {
         TajoDataTypes.DataType dataType = typeDeterminant.determineDataType(context, namedExpr.getExpr());
@@ -314,7 +314,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       LogicalNode child = visit(ctx, stack, expr.getChild());
 
       Projection projection = ctx.getQueryBlock().getSingletonExpr(OpType.Projection);
-      int finalTargetNum = projection.getNamedExprs().length;
+      int finalTargetNum = projection.getNamedExprs().size();
       List<Target> targets = new ArrayList<>();
 
       if (PlannerUtil.hasAsterisk(projection.getNamedExprs())) {
@@ -322,7 +322,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       }
 
       for (int i = 0; i < finalTargetNum; i++) {
-        NamedExpr namedExpr = projection.getNamedExprs()[i];
+        NamedExpr namedExpr = projection.getNamedExprs().get(i);
         EvalNode evalNode = annotator.createEvalNode(ctx, namedExpr.getExpr(), NameResolvingMode.SUBEXPRS_AND_RELS, true);
 
         if (namedExpr.hasAlias()) {

@@ -62,7 +62,7 @@ public abstract class TextLineSerDe {
   public static byte[] getNullCharsAsBytes(TableMeta meta, String key, String defaultVal) {
     byte [] nullChars;
 
-    String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(key, defaultVal));
+    String nullCharacters = StringEscapeUtils.unescapeJava(meta.getProperty(key, defaultVal));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {

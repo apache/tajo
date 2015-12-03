@@ -46,7 +46,7 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
 			JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
     jsonObj.addProperty("store", src.getDataFormat());
-    jsonObj.add("options", context.serialize(src.getOptions(), KeyValueSet.class));
+    jsonObj.add("options", context.serialize(src.getPropertySet(), KeyValueSet.class));
 		return jsonObj;
 	}
 

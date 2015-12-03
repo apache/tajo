@@ -314,7 +314,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
       // This verification will be in LogicalPlanVerifier.
       if (!includeAsterisk) {
 
-        int projectColumnNum = projection.getNamedExprs().length;
+        int projectColumnNum = projection.getNamedExprs().size();
 
         if (expr.hasTargetColumns()) {
           int targetColumnNum = expr.getTargetColumns().length;

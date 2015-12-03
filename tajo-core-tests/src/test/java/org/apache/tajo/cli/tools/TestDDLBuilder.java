@@ -42,8 +42,8 @@ public class TestDDLBuilder {
     schema1.addColumn("addr", TajoDataTypes.Type.TEXT);
 
     meta1 = CatalogUtil.newTableMeta("TEXT");
-    meta1.putOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    meta1.putOption(StorageConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
+    meta1.putProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    meta1.putProperty(StorageConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
 
     Schema expressionSchema = new Schema();
     expressionSchema.addColumn("key", TajoDataTypes.Type.INT4);

@@ -638,7 +638,7 @@ public class Query implements EventHandler<QueryEvent> {
         TableMeta meta = lastStage.getTableMeta();
 
         String nullChar = queryContext.get(SessionVars.NULL_CHAR);
-        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+        meta.putProperty(StorageConstants.TEXT_NULL, nullChar);
 
         TableStats stats = lastStage.getResultStats();
 

@@ -166,6 +166,11 @@ public class ExecutionBlockContext {
       return;
     }
 
+    LOG.info("Worker's task counter - total:" + completedTasksNum.intValue() +
+        ", succeeded: " + succeededTasksNum.intValue()
+        + ", killed: " + killedTasksNum.intValue()
+        + ", failed: " + failedTasksNum.intValue());
+
     try {
       reporter.stop();
     } catch (InterruptedException e) {
