@@ -620,7 +620,6 @@ public class FileTablespace extends Tablespace {
         files.addAll(listStatus(p));
       }
 
-      int previousSplitSize = splits.size();
       for (FileStatus file : files) {
         Path path = file.getPath();
         long length = file.getLen();
@@ -678,7 +677,7 @@ public class FileTablespace extends Tablespace {
         }
       }
       if(LOG.isDebugEnabled()){
-        LOG.debug("# of splits per partition: " + (splits.size() - previousSplitSize));
+        LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
       }
       i++;
     }
