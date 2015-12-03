@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.rewrite;
 
+import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
@@ -26,10 +27,11 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.StorageService;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.util.Stack;
@@ -76,12 +78,13 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
 
       if (!isVirtual(table)) {
         final long tableSize = table.getStats().getNumBytes();
+        final Optional<EvalNode> filter = scanNode.hasQual() ? Optional.of(scanNode.getQual()) : Optional.absent();
 
         // If USE_TABLE_VOLUME is set, we will update the table volume through a storage handler.
         // In addition, if the table size is zero, we will update too.
         // It is a good workaround to avoid suboptimal join orders without cheap cost.
         if (conf.getBool(SessionVars.USE_TABLE_VOLUME) || tableSize == 0) {
-          table.getStats().setNumBytes(getTableVolume(table));
+          table.getStats().setNumBytes(getTableVolume(table, filter));
         }
       }
 
@@ -92,10 +95,10 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
       return table.getMeta().getDataFormat().equals("SYSTEM") || table.getMeta().getDataFormat().equals("FAKEFILE");
     }
 
-    private long getTableVolume(TableDesc table) {
+    private long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
       try {
         if (table.getStats() != null) {
-          return storage.getTableVolumn(table.getUri());
+          return storage.getTableVolumn(table.getUri(), filter);
         }
       } catch (UnsupportedException t) {
         LOG.warn(table.getName() + " does not support Tablespace::getTableVolume()");

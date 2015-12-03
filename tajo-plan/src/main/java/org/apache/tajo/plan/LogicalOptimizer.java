@@ -39,7 +39,6 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;

@@ -16,9 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.plan;
 
+import com.google.common.base.Optional;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalNode;
 
 import javax.annotation.Nullable;
 import java.net.URI;
@@ -38,5 +40,5 @@ public interface StorageService {
    */
   URI getTableURI(@Nullable String spaceName, String databaseName, String tableName);
 
-  long getTableVolumn(URI uri) throws UnsupportedException;
+  long getTableVolumn(URI uri, Optional<EvalNode> filter) throws UnsupportedException;
 }
