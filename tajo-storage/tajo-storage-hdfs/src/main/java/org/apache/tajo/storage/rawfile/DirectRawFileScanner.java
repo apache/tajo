@@ -27,6 +27,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.*;
@@ -50,7 +51,6 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private SeekableInputChannel channel;
 
   private boolean eos = false;
-  private long fileSize;
   private long recordCount;
   private long filePosition;
   private long endOffset;
@@ -95,19 +95,13 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       }
 
       channel = new LocalFileInputChannel(new FileInputStream(file));
-      fileSize = channel.size();
     } else {
       channel = new FSDataInputChannel(fs.open(fragment.getPath()));
-      fileSize = channel.size();
     }
 
     // initial set position
     if (fragment.getStartKey() > 0) {
       channel.seek(fragment.getStartKey());
-    }
-
-    if (tableStats != null) {
-      tableStats.setNumBytes(fileSize);
     }
 
     filePosition = fragment.getStartKey();
@@ -178,7 +172,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   @Override
   public void close() throws IOException {
     if (tableStats != null) {
-      tableStats.setReadBytes(fileSize);
+      tableStats.setReadBytes(filePosition - fragment.getStartKey());
       tableStats.setNumRows(recordCount);
     }
     if(tupleBuffer != null) {
@@ -211,30 +205,28 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   }
 
   @Override
+  public TableStats getInputStats() {
+    if(tableStats != null){
+      tableStats.setNumRows(recordCount);
+      tableStats.setReadBytes(filePosition - fragment.getStartKey()); // actual read bytes (scan + rescan * n)
+      tableStats.setNumBytes(fragment.getLength());
+    }
+    return tableStats;
+  }
+
+  @Override
   public float getProgress() {
     if(!inited) return 0.0f;
 
-    try {
-      tableStats.setNumRows(recordCount);
-      long filePos = 0;
-      if (channel != null) {
-        filePos = channel.position();
-        tableStats.setReadBytes(filePos);
-      }
+    if(eos) {
+      return 1.0f;
+    }
 
-      if(eos || channel == null) {
-        tableStats.setReadBytes(fileSize);
-        return 1.0f;
-      }
-
-      if (filePos == 0) {
-        return 0.0f;
-      } else {
-        return Math.min(1.0f, ((float)filePos / (float)fileSize));
-      }
-    } catch (IOException e) {
-      LOG.error(e.getMessage(), e);
+    long readBytes = filePosition - fragment.getStartKey();
+    if (readBytes == 0) {
       return 0.0f;
+    } else {
+      return Math.min(1.0f, ((float) readBytes / fragment.getLength()));
     }
   }
 }

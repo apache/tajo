@@ -27,6 +27,8 @@ A flag to enable or disable the use of broadcast join.
     <value>true</value>
   </property>
 
+.. _tajo.dist-query.broadcast.non-cross-join.threshold-kb:
+
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.dist-query.broadcast.non-cross-join.threshold-kb`
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -44,6 +46,8 @@ A threshold for non-cross joins. When a non-cross join query is executed with th
     <name>tajo.dist-query.broadcast.non-cross-join.threshold-kb</name>
     <value>5120</value>
   </property>
+
+.. _tajo.dist-query.broadcast.cross-join.threshold-kb:
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.dist-query.broadcast.cross-join.threshold-kb`
@@ -66,6 +70,8 @@ A threshold for cross joins. When a cross join query is executed, the whole size
 .. warning::
   In Tajo, the broadcast join is only the way to perform cross joins. Since the cross join is a very expensive operation, this value need to be tuned carefully.
 
+.. _tajo.dist-query.join.task-volume-mb:
+
 """"""""""""""""""""""""""""""""""""""
 `tajo.dist-query.join.task-volume-mb`
 """"""""""""""""""""""""""""""""""""""
@@ -85,6 +91,8 @@ As a result, it determines the degree of the parallel processing of the join que
     <value>64</value>
   </property>
 
+.. _tajo.dist-query.join.partition-volume-mb:
+
 """""""""""""""""""""""""""""""""""""""""""
 `tajo.dist-query.join.partition-volume-mb`
 """""""""""""""""""""""""""""""""""""""""""
@@ -103,6 +111,8 @@ this value indicates the output size of each task at the first stage, which dete
     <name>tajo.dist-query.join.partition-volume-mb</name>
     <value>128</value>
   </property>
+
+.. _tajo.executor.join.common.in-memory-hash-threshold-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.executor.join.common.in-memory-hash-threshold-mb`
@@ -129,6 +139,8 @@ Otherwise, the sort-merge join is used.
   its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
+.. _tajo.executor.join.inner.in-memory-hash-threshold-mb:
+
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.executor.join.inner.in-memory-hash-threshold-mb`
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -153,6 +165,8 @@ Otherwise, the sort-merge join is used.
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
   its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
+
+.. _tajo.executor.join.outer.in-memory-hash-threshold-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.executor.join.outer.in-memory-hash-threshold-mb`
@@ -179,6 +193,8 @@ Otherwise, the sort-merge join is used.
   its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
+.. _tajo.executor.join.hash-table.size:
+
 """""""""""""""""""""""""""""""""""""
 `tajo.executor.join.hash-table.size`
 """""""""""""""""""""""""""""""""""""
@@ -200,6 +216,8 @@ The initial size of hash table for in-memory hash join.
 Sort Query Settings
 ======================
 
+.. _tajo.dist-query.sort.task-volume-mb:
+
 """"""""""""""""""""""""""""""""""""""
 `tajo.dist-query.sort.task-volume-mb`
 """"""""""""""""""""""""""""""""""""""
@@ -219,6 +237,8 @@ As a result, it determines the degree of the parallel processing of the sort que
     <value>64</value>
   </property>
 
+.. _tajo.executor.external-sort.buffer-mb:
+
 """"""""""""""""""""""""""""""""""""""""
 `tajo.executor.external-sort.buffer-mb`
 """"""""""""""""""""""""""""""""""""""""
@@ -236,6 +256,8 @@ A threshold to choose the sort algorithm. If the input data is larger than this 
     <name>tajo.executor.external-sort.buffer-mb</name>
     <value>200</value>
   </property>
+
+.. _tajo.executor.sort.list.size:
 
 """"""""""""""""""""""""""""""""""""""
 `tajo.executor.sort.list.size`
@@ -258,6 +280,8 @@ The initial size of list for in-memory sort.
 Group by Query Settings
 =========================
 
+.. _tajo.dist-query.groupby.multi-level-aggr:
+
 """"""""""""""""""""""""""""""""""""""""""""
 `tajo.dist-query.groupby.multi-level-aggr`
 """"""""""""""""""""""""""""""""""""""""""""
@@ -275,6 +299,8 @@ Otherwise, 2-phase aggregation algorithm is used.
     <name>tajo.dist-query.groupby.multi-level-aggr</name>
     <value>true</value>
   </property>
+
+.. _tajo.dist-query.groupby.partition-volume-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""
 `tajo.dist-query.groupby.partition-volume-mb`
@@ -295,6 +321,8 @@ this value indicates the output size of each task at the first stage, which dete
     <value>256</value>
   </property>
 
+.. _tajo.dist-query.groupby.task-volume-mb:
+
 """"""""""""""""""""""""""""""""""""""""""""""
 `tajo.dist-query.groupby.task-volume-mb`
 """"""""""""""""""""""""""""""""""""""""""""""
@@ -313,6 +341,8 @@ As a result, it determines the degree of the parallel processing of the aggregat
     <name>tajo.dist-query.groupby.task-volume-mb</name>
     <value>64</value>
   </property>
+
+.. _tajo.executor.groupby.in-memory-hash-threshold-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.executor.groupby.in-memory-hash-threshold-mb`
@@ -339,6 +369,8 @@ Otherwise, the sort-based aggregation is used.
   its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
+.. _tajo.executor.aggregate.hash-table.size:
+
 """"""""""""""""""""""""""""""""""""""""""
 `tajo.executor.aggregate.hash-table.size`
 """"""""""""""""""""""""""""""""""""""""""
@@ -360,6 +392,8 @@ The initial size of hash table for in-memory aggregation.
 Date/Time Settings
 ======================
 
+.. _tajo.timezone:
+
 """""""""""""""""""
 `tajo.timezone`
 """""""""""""""""""
@@ -376,6 +410,8 @@ Refer to :doc:`/time_zone`.
     <name>tajo.timezone</name>
     <value>GMT+9</value>
   </property>
+
+.. _tajo.datetime.date-order:
 
 """""""""""""""""""""""""""
 `tajo.datetime.date-order`
@@ -398,6 +434,8 @@ Date order specification.
 Table partitions
 ======================
 
+.. _tajo.partition.overwrite.even-if-no-result:
+
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.partition.overwrite.even-if-no-result`
 """"""""""""""""""""""""""""""""""""""""""""""""""""
@@ -414,6 +452,8 @@ If this value is true, a partitioned table is overwritten even if a subquery lea
     <name>tajo.partition.overwrite.even-if-no-result</name>
     <value>false</value>
   </property>
+
+.. _tajo.dist-query.table-partition.task-volume-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.dist-query.table-partition.task-volume-mb`
@@ -437,6 +477,8 @@ This value indicates the output size of a task of the former stage, which determ
 ======================
 Arithmetic Settings
 ======================
+
+.. _tajo.behavior.arithmetic-abort:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""
 `tajo.behavior.arithmetic-abort`
