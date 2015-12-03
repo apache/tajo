@@ -37,7 +37,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   /** Grouping key sets */
   @Expose private Column [] groupingKeys = PlannerUtil.EMPTY_COLUMNS;
   /** Aggregation Functions */
-  @Expose private AggregationFunctionCallEval [] aggrFunctions = PlannerUtil.EMPTY_AGG_FUNCS;
+  @Expose private List<AggregationFunctionCallEval> aggrFunctions = PlannerUtil.EMPTY_AGG_FUNCS;
   /**
    * It's a list of targets. The grouping columns should be followed by aggregation functions.
    * aggrFunctions keep actual aggregation functions, but it only contains field references.
@@ -86,18 +86,18 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   }
 
   public boolean hasAggFunctions() {
-    return aggrFunctions.length > 0;
+    return aggrFunctions.size() > 0;
   }
 
   public int aggregationFunctionNum() {
-    return this.aggrFunctions.length;
+    return this.aggrFunctions.size();
   }
 
-  public AggregationFunctionCallEval[] getAggFunctions() {
+  public List<AggregationFunctionCallEval> getAggFunctions() {
     return this.aggrFunctions;
   }
 
-  public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+  public void setAggFunctions(List<AggregationFunctionCallEval> evals) {
     Preconditions.checkNotNull(evals);
     this.aggrFunctions = evals;
   }
@@ -139,7 +139,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + Arrays.hashCode(aggrFunctions);
+    result = prime * result + Objects.hashCode(aggrFunctions);
     result = prime * result + Arrays.hashCode(groupingKeys);
     result = prime * result + (hasDistinct ? 1231 : 1237);
     result = prime * result + Objects.hashCode(targets);
@@ -172,9 +172,9 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     }
 
     if (aggrFunctions != null) {
-      grp.aggrFunctions = new AggregationFunctionCallEval[aggrFunctions.length];
-      for (int i = 0; i < aggrFunctions.length; i++) {
-        grp.aggrFunctions[i] = (AggregationFunctionCallEval) aggrFunctions[i].clone();
+      grp.aggrFunctions = new ArrayList<>();
+      for (int i = 0; i < aggrFunctions.size(); i++) {
+        grp.aggrFunctions.add((AggregationFunctionCallEval) aggrFunctions.get(i).clone());
       }
     }
 
@@ -205,9 +205,9 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     if (hasAggFunctions()) {
       sb.append(", exprs: (");
 
-      for (int j = 0; j < aggrFunctions.length; j++) {
-        sb.append(aggrFunctions[j]);
-        if(j < aggrFunctions.length - 1) {
+      for (int j = 0; j < aggrFunctions.size(); j++) {
+        sb.append(aggrFunctions.get(j));
+        if(j < aggrFunctions.size() - 1) {
           sb.append(",");
         }
       }
@@ -253,9 +253,9 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
       sb = new StringBuilder();
       sb.append("(");
 
-      for (int j = 0; j < aggrFunctions.length; j++) {
-        sb.append(aggrFunctions[j]);
-        if(j < aggrFunctions.length - 1) {
+      for (int j = 0; j < aggrFunctions.size(); j++) {
+        sb.append(aggrFunctions.get(j));
+        if(j < aggrFunctions.size() - 1) {
           sb.append(",");
         }
       }

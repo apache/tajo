@@ -558,7 +558,7 @@ public class GlobalPlanner {
     // Create the groupby node for the first stage and set all necessary descriptions
     GroupbyNode firstStageGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
     firstStageGroupby.setGroupingColumns(TUtil.toArray(firstStageGroupingColumns, Column.class));
-    firstStageGroupby.setAggFunctions(TUtil.toArray(firstStageAggFunctions, AggregationFunctionCallEval.class));
+    firstStageGroupby.setAggFunctions(firstStageAggFunctions);
     firstStageGroupby.setTargets(firstStageTargets);
     firstStageGroupby.setChild(groupbyNode.getChild());
     firstStageGroupby.setInSchema(groupbyNode.getInSchema());
@@ -569,7 +569,7 @@ public class GlobalPlanner {
     // Create the groupby node for the second stage.
     GroupbyNode secondPhaseGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());
     secondPhaseGroupby.setGroupingColumns(originalGroupingColumns);
-    secondPhaseGroupby.setAggFunctions(TUtil.toArray(secondPhaseEvalNodes, AggregationFunctionCallEval.class));
+    secondPhaseGroupby.setAggFunctions(secondPhaseEvalNodes);
     secondPhaseGroupby.setTargets(groupbyNode.getTargets());
 
     ExecutionBlock secondStage = context.plan.newExecutionBlock();
@@ -750,24 +750,24 @@ public class GlobalPlanner {
 
     // Set first phase expressions
     if (secondPhaseGroupBy.hasAggFunctions()) {
-      int evalNum = secondPhaseGroupBy.getAggFunctions().length;
-      AggregationFunctionCallEval [] secondPhaseEvals = secondPhaseGroupBy.getAggFunctions();
-      AggregationFunctionCallEval [] firstPhaseEvals = new AggregationFunctionCallEval[evalNum];
+      int evalNum = secondPhaseGroupBy.getAggFunctions().size();
+      List<AggregationFunctionCallEval> secondPhaseEvals = secondPhaseGroupBy.getAggFunctions();
+      List<AggregationFunctionCallEval> firstPhaseEvals = new ArrayList<>();
 
       String [] firstPhaseEvalNames = new String[evalNum];
       for (int i = 0; i < evalNum; i++) {
         try {
-          firstPhaseEvals[i] = (AggregationFunctionCallEval) secondPhaseEvals[i].clone();
+          firstPhaseEvals.add((AggregationFunctionCallEval) secondPhaseEvals.get(i).clone());
         } catch (CloneNotSupportedException e) {
           throw new RuntimeException(e);
         }
 
-        firstPhaseEvals[i].setFirstPhase();
-        firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals[i]);
-        FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
+        firstPhaseEvals.get(i).setFirstPhase();
+        firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals.get(i));
+        FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals.get(i).getValueType());
 
-        secondPhaseEvals[i].setLastPhase();
-        secondPhaseEvals[i].setArgs(new EvalNode[]{param});
+        secondPhaseEvals.get(i).setLastPhase();
+        secondPhaseEvals.get(i).setArgs(new EvalNode[]{param});
       }
 
       secondPhaseGroupBy.setAggFunctions(secondPhaseEvals);

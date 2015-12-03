@@ -45,7 +45,7 @@ import java.util.*;
 public class PlannerUtil {
 
   public static final Column [] EMPTY_COLUMNS = new Column[] {};
-  public static final AggregationFunctionCallEval [] EMPTY_AGG_FUNCS = new AggregationFunctionCallEval[] {};
+  public static final List<AggregationFunctionCallEval> EMPTY_AGG_FUNCS = new ArrayList<>();
 
   public static boolean checkIfSetSession(LogicalNode node) {
     LogicalNode baseNode = node;
