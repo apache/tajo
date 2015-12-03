@@ -21,9 +21,9 @@ package org.apache.tajo.plan.partition;
 import org.apache.hadoop.fs.Path;
 
 public class PartitionContent {
-  private Path[] partitionPaths;
-  private String[] partitionKeys;
-  private long totalVolume;
+  private final Path[] partitionPaths;
+  private final String[] partitionKeys;
+  private final long totalVolume;
 
   public PartitionContent(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
     this.partitionPaths = partitionPaths;
