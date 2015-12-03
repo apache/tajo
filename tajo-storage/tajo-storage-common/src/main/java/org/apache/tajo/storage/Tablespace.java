@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Optional;
 import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
@@ -41,6 +40,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**

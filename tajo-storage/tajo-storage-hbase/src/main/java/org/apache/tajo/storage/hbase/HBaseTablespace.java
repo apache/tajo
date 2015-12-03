@@ -97,7 +97,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri, com.google.common.base.Optional<EvalNode> filter) throws UnsupportedException {
+  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
     throw new UnsupportedException();
   }
 

@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage.jdbc;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;
@@ -48,6 +47,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 /**

@@ -18,12 +18,12 @@
 
 package org.apache.tajo.plan;
 
-import com.google.common.base.Optional;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 
 import javax.annotation.Nullable;
 import java.net.URI;
+import java.util.Optional;
 
 /**
  * TablespaceManager interface for loosely coupled usages

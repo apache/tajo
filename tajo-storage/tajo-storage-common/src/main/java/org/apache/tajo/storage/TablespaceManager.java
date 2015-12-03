@@ -435,7 +435,7 @@ public class TablespaceManager implements StorageService {
   }
 
   @Override
-  public long getTableVolumn(URI tableUri, com.google.common.base.Optional<EvalNode> filter)
+  public long getTableVolumn(URI tableUri, Optional<EvalNode> filter)
       throws UnsupportedException {
     return get(tableUri).getTableVolume(tableUri, filter);
   }

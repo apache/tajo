@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.rewrite;
 
-import com.google.common.base.Optional;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
@@ -35,6 +34,7 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.unit.StorageUnit;
 
+import java.util.Optional;
 import java.util.Stack;
 
 public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
@@ -80,7 +80,7 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
       if (!isVirtual(table)) {
         final TableStats stats = getTableStat(table);
         final long tableSize = stats.getNumBytes();
-        final Optional<EvalNode> filter = scanNode.hasQual() ? Optional.of(scanNode.getQual()) : Optional.absent();
+        final Optional<EvalNode> filter = scanNode.hasQual() ? Optional.of(scanNode.getQual()) : Optional.empty();
 
         // If USE_TABLE_VOLUME is set, we will update the table volume through a storage handler.
         // In addition, if the table size is zero, we will update too.
