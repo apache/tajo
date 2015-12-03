@@ -31,13 +31,13 @@ public class TimeZoneUtil {
   }
 
   private static ImmutableMap<String, String> load() {
-    Map<String, String> timeZoneMap = Maps.newHashMap();
+    ImmutableMap.Builder<String, String> builder = ImmutableMap.<String, String>builder();
     String[] timezoneIds = java.util.TimeZone.getAvailableIDs();
     for (String timezoneId : timezoneIds) {
-      timeZoneMap.put(timezoneId.toUpperCase(), timezoneId);
+      builder.put(timezoneId.toUpperCase(), timezoneId);
     }
 
-    return ImmutableMap.<String, String>builder().putAll(timeZoneMap).build();
+    return builder.build();
   }
 
   private static String find(String timezoneId) {
