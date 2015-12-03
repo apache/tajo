@@ -409,33 +409,7 @@ public class FileTablespace extends Tablespace {
   // for Non Splittable. eg, compressed gzip TextFile
   protected FileFragment makeNonSplit(String fragmentId, Path file, long start, long length,
                                       BlockLocation[] blkLocations) throws IOException {
-
-    Map<String, Integer> hostsBlockMap = new HashMap<>();
-    for (BlockLocation blockLocation : blkLocations) {
-      for (String host : blockLocation.getHosts()) {
-        if (hostsBlockMap.containsKey(host)) {
-          hostsBlockMap.put(host, hostsBlockMap.get(host) + 1);
-        } else {
-          hostsBlockMap.put(host, 1);
-        }
-      }
-    }
-
-    List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
-    Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
-
-      @Override
-      public int compare(Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2) {
-        return v1.getValue().compareTo(v2.getValue());
-      }
-    });
-
-    String[] hosts = new String[blkLocations[0].getHosts().length];
-
-    for (int i = 0; i < hosts.length; i++) {
-      Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
-      hosts[i] = entry.getKey();
-    }
+    String[] hosts = getHosts(blkLocations);
     return new FileFragment(fragmentId, file, start, length, hosts);
   }
 
@@ -551,23 +525,15 @@ public class FileTablespace extends Tablespace {
     return splits;
   }
 
-  ////////////////////////////////////////////////////////////////////////////////
-  // The below code is for splitting partitioned table.
-  ////////////////////////////////////////////////////////////////////////////////
-
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
-                                                     String[] hosts, String partitionKeys) {
-    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
-  }
-
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
-    , String partitionKeys) throws IOException {
-    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionKeys);
-  }
-
-  protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
-                                           BlockLocation[] blkLocations, String partitionKeys) throws IOException {
-
+  /**
+   * Get the list of hosts (hostname) hosting specified blocks
+   *
+   *
+   * @param blkLocations locations of blocks
+   * @return the list of hosts
+   * @throws IOException
+   */
+  private String[] getHosts(BlockLocation[] blkLocations) throws IOException {
     Map<String, Integer> hostsBlockMap = new HashMap<>();
     for (BlockLocation blockLocation : blkLocations) {
       for (String host : blockLocation.getHosts()) {
@@ -595,18 +561,76 @@ public class FileTablespace extends Tablespace {
       hosts[i] = entry.getKey();
     }
 
+    return hosts;
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // The below code is for splitting partitioned table.
+  ////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * Build a fragment for partition table
+   *
+   * @param fragmentId fragment id
+   * @param file file path
+   * @param start offset
+   * @param length length
+   * @param hosts the list of hosts (names) hosting blocks
+   * @param partitionKeys partition keys
+   * @return PartitionFileFragment
+   */
+  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
+                                                     String[] hosts, String partitionKeys) {
     return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
   }
 
   /**
-   * Generate the list of files and make them into PartitionedFileSplits.
+   * Build a fragment for partition table
    *
+   * @param fragmentId fragment id
+   * @param file file path
+   * @param blockLocation location of block
+   * @param partitionKeys partition keys
+   * @return PartitionFileFragment
+   * @throws IOException
+   */
+  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
+    , String partitionKeys) throws IOException {
+    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionKeys);
+  }
+
+  /**
+   * Build a fragment for non splittable partition table
+   *
+   * @param fragmentId fragment id
+   * @param file file path
+   * @param start offset
+   * @param length length
+   * @param blkLocations locations of blocks
+   * @param partitionKeys partition keys
+   * @return PartitionFileFragment
+   * @throws IOException
+   */
+  protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
+                                           BlockLocation[] blkLocations, String partitionKeys) throws IOException {
+    String[] hosts = getHosts(blkLocations);
+    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
+  }
+
+  /**
+   * Build the list of fragments for partition table
+   *
+   * @param tableName table name
+   * @param meta all meta information for scanning a fragmented table
+   * @param schema table schema
+   * @param partitionKeys the list of partition keys
+   * @param inputs the list of paths
+   * @return the list of PartitionFileFragment
    * @throws IOException
    */
   public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitionKeys,
                                            Path... inputs) throws IOException {
     // generate splits'
-
     List<Fragment> splits = Lists.newArrayList();
     List<Fragment> volumeSplits = Lists.newArrayList();
     List<BlockLocation> blockLocations = Lists.newArrayList();
