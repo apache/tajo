@@ -44,7 +44,6 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.util.Bytes;
 
 import javax.annotation.Nullable;
@@ -424,7 +423,33 @@ public class S3TableSpace extends Tablespace {
   // for Non Splittable. eg, compressed gzip TextFile
   protected FileFragment makeNonSplit(String fragmentId, Path file, long start, long length,
                                       BlockLocation[] blkLocations) throws IOException {
-    String[] hosts = getHosts(blkLocations);
+
+    Map<String, Integer> hostsBlockMap = new HashMap<>();
+    for (BlockLocation blockLocation : blkLocations) {
+      for (String host : blockLocation.getHosts()) {
+        if (hostsBlockMap.containsKey(host)) {
+          hostsBlockMap.put(host, hostsBlockMap.get(host) + 1);
+        } else {
+          hostsBlockMap.put(host, 1);
+        }
+      }
+    }
+
+    List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
+    Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
+
+      @Override
+      public int compare(Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2) {
+        return v1.getValue().compareTo(v2.getValue());
+      }
+    });
+
+    String[] hosts = new String[blkLocations[0].getHosts().length];
+
+    for (int i = 0; i < hosts.length; i++) {
+      Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
+      hosts[i] = entry.getKey();
+    }
     return new FileFragment(fragmentId, file, start, length, hosts);
   }
 
@@ -531,189 +556,6 @@ public class S3TableSpace extends Tablespace {
       if(LOG.isDebugEnabled()){
         LOG.debug("# of splits per partition: " + (splits.size() - previousSplitSize));
       }
-    }
-
-    // Combine original fileFragments with new VolumeId information
-    setVolumeMeta(volumeSplits, blockLocations);
-    splits.addAll(volumeSplits);
-    LOG.info("Total # of splits: " + splits.size());
-    return splits;
-  }
-
-  /**
-   * Get the list of hosts (hostname) hosting specified blocks
-   *
-   *
-   * @param blkLocations locations of blocks
-   * @return the list of hosts
-   * @throws IOException
-   */
-  private String[] getHosts(BlockLocation[] blkLocations) throws IOException {
-    Map<String, Integer> hostsBlockMap = new HashMap<>();
-    for (BlockLocation blockLocation : blkLocations) {
-      for (String host : blockLocation.getHosts()) {
-        if (hostsBlockMap.containsKey(host)) {
-          hostsBlockMap.put(host, hostsBlockMap.get(host) + 1);
-        } else {
-          hostsBlockMap.put(host, 1);
-        }
-      }
-    }
-
-    List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
-    Collections.sort(entries, (Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2)
-      -> v1.getValue().compareTo(v2.getValue()));
-
-    String[] hosts = new String[blkLocations[0].getHosts().length];
-
-    for (int i = 0; i < hosts.length; i++) {
-      Map.Entry<String, Integer> entry = entries.get((entries.size() - 1) - i);
-      hosts[i] = entry.getKey();
-    }
-
-    return hosts;
-  }
-  
-  ////////////////////////////////////////////////////////////////////////////////
-  // The below code is for splitting partitioned table.
-  ////////////////////////////////////////////////////////////////////////////////
-
-  /**
-   * Build a fragment for partition table
-   *
-   * @param fragmentId fragment id
-   * @param file file path
-   * @param start offset
-   * @param length length
-   * @param hosts the list of hosts (names) hosting blocks
-   * @param partitionKeys partition keys
-   * @return PartitionFileFragment
-   */
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
-                                                     String[] hosts, String partitionKeys) {
-    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
-  }
-
-  /**
-   * Build a fragment for partition table
-   *
-   * @param fragmentId fragment id
-   * @param file file path
-   * @param blockLocation location of block
-   * @param partitionKeys partition keys
-   * @return PartitionFileFragment
-   * @throws IOException
-   */
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
-    , String partitionKeys) throws IOException {
-    return new PartitionFileFragment(fragmentId, file, blockLocation, partitionKeys);
-  }
-
-  /**
-   * Build a fragment for non splittable partition table
-   *
-   * @param fragmentId fragment id
-   * @param file file path
-   * @param start offset
-   * @param length length
-   * @param blkLocations locations of blocks
-   * @param partitionKeys partition keys
-   * @return PartitionFileFragment
-   * @throws IOException
-   */
-  protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
-                                           BlockLocation[] blkLocations, String partitionKeys) throws IOException {
-    String[] hosts = getHosts(blkLocations);
-    return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
-  }
-
-  /**
-   * Build the list of fragments for partition table
-   *
-   * @param tableName table name
-   * @param meta all meta information for scanning a fragmented table
-   * @param schema table schema
-   * @param partitionKeys the list of partition keys
-   * @param inputs the list of paths
-   * @return the list of PartitionFileFragment
-   * @throws IOException
-   */
-  public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitionKeys,
-                                           Path... inputs) throws IOException {
-    // generate splits'
-    List<Fragment> splits = Lists.newArrayList();
-    List<Fragment> volumeSplits = Lists.newArrayList();
-    List<BlockLocation> blockLocations = Lists.newArrayList();
-
-    int i = 0;
-    for (Path p : inputs) {
-      ArrayList<FileStatus> files = Lists.newArrayList();
-      if (fs.isFile(p)) {
-        files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
-      } else {
-        files.addAll(listStatus(p));
-      }
-
-      for (FileStatus file : files) {
-        Path path = file.getPath();
-        long length = file.getLen();
-        if (length > 0) {
-          // Get locations of blocks of file
-          BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
-          boolean splittable = isSplittable(meta, schema, path, file);
-          if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
-
-            if (splittable) {
-              for (BlockLocation blockLocation : blkLocations) {
-                volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitionKeys[i]));
-              }
-              blockLocations.addAll(Arrays.asList(blkLocations));
-
-            } else { // Non splittable
-              long blockSize = blkLocations[0].getLength();
-              if (blockSize >= length) {
-                blockLocations.addAll(Arrays.asList(blkLocations));
-                for (BlockLocation blockLocation : blkLocations) {
-                  volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitionKeys[i]));
-                }
-              } else {
-                splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitionKeys[i]));
-              }
-            }
-
-          } else {
-            if (splittable) {
-
-              long minSize = Math.max(getMinSplitSize(), 1);
-
-              long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
-              long splitSize = Math.max(minSize, blockSize);
-              long bytesRemaining = length;
-
-              // for s3
-              while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
-                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-
-                splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, splitSize,
-                  blkLocations[blkIndex].getHosts(), partitionKeys[i]));
-
-                bytesRemaining -= splitSize;
-              }
-              if (bytesRemaining > 0) {
-                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-                splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, bytesRemaining,
-                  blkLocations[blkIndex].getHosts(), partitionKeys[i]));
-              }
-            } else { // Non splittable
-              splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitionKeys[i]));
-            }
-          }
-        }
-      }
-      if(LOG.isDebugEnabled()){
-        LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
-      }
-      i++;
     }
 
     // Combine original fileFragments with new VolumeId information
