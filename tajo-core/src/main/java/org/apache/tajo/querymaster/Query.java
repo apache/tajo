@@ -513,10 +513,8 @@ public class Query implements EventHandler<QueryEvent> {
             Iterator<Stage> iterator = query.getStages().iterator();
             while(iterator.hasNext()) {
               Stage stage = iterator.next();
-              if (stage.getState() == StageState.SUCCEEDED) {
-                totalNumRows += stage.getResultStats().getNumRows();
-                totalNumBytes += stage.getResultStats().getNumBytes();
-              }
+              totalNumRows += stage.getResultStats().getNumRows();
+              totalNumBytes += stage.getResultStats().getNumBytes();
             }
             lastStage.getResultStats().setNumRows(totalNumRows);
             lastStage.getResultStats().setNumBytes(totalNumBytes);
