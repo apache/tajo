@@ -18,8 +18,8 @@
 
 package org.apache.tajo.storage.parquet;
 
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
 import parquet.io.api.GroupConverter;
 import parquet.io.api.RecordMaterializer;
@@ -35,24 +35,13 @@ class TajoRecordMaterializer extends RecordMaterializer<Tuple> {
    * Creates a new TajoRecordMaterializer.
    *
    * @param parquetSchema The Parquet schema of the projection.
-   * @param tajoSchema The Tajo schema of the projection.
+   * @param tajoRequestSchema The Tajo schema of the projection.
    * @param tajoReadSchema The Tajo schema of the table.
    */
-  public TajoRecordMaterializer(MessageType parquetSchema, Schema tajoSchema,
+  public TajoRecordMaterializer(MessageType parquetSchema, Schema tajoRequestSchema,
                                 Schema tajoReadSchema) {
-    int[] projectionMap = getProjectionMap(tajoReadSchema, tajoSchema);
-    this.root = new TajoRecordConverter(parquetSchema, tajoReadSchema,
-                                        projectionMap);
-  }
-
-  private int[] getProjectionMap(Schema schema, Schema projection) {
-    Column[] targets = projection.toArray();
-    int[] projectionMap = new int[targets.length];
-    for (int i = 0; i < targets.length; ++i) {
-      int tid = schema.getColumnId(targets[i].getQualifiedName());
-      projectionMap[i] = tid;
-    }
-    return projectionMap;
+    int[] projectionMap = PlannerUtil.getTargetIds(tajoReadSchema, tajoRequestSchema.toArray());
+    this.root = new TajoRecordConverter(parquetSchema, tajoReadSchema, projectionMap);
   }
 
   /**

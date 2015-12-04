@@ -35,6 +35,7 @@ import parquet.schema.GroupType;
 import parquet.schema.Type;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Converter to convert a Parquet record into a Tajo Tuple.
@@ -146,7 +147,9 @@ public class TajoRecordConverter extends GroupConverter {
    */
   @Override
   public void start() {
-    currentTuple = new VTuple(projectionMap.length);
+    Datum[] datums = new Datum[projectionMap.length];
+    Arrays.fill(datums, NullDatum.get());
+    currentTuple = new VTuple(datums);
   }
 
   /**
@@ -154,14 +157,6 @@ public class TajoRecordConverter extends GroupConverter {
    */
   @Override
   public void end() {
-    for (int i = 0; i < projectionMap.length; ++i) {
-      final int projectionIndex = projectionMap[i];
-      Column column = tajoReadSchema.getColumn(projectionIndex);
-      if (column.getDataType().getType() == TajoDataTypes.Type.NULL_TYPE
-          || currentTuple.isBlankOrNull(i)) {
-        set(projectionIndex, NullDatum.get());
-      }
-    }
   }
 
   /**
