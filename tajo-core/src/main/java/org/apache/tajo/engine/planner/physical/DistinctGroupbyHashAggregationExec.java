@@ -352,7 +352,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     private final KeyProjector innerKeyProjector;
 
     private final int aggFunctionsNum;
-    private final AggregationFunctionCallEval aggFunctions[];
+    private final List<AggregationFunctionCallEval> aggFunctions;
 
     private final Tuple aggregatedTuple;
 
@@ -376,9 +376,9 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
       if (groupbyNode.hasAggFunctions()) {
         aggFunctions = groupbyNode.getAggFunctions();
-        aggFunctionsNum = aggFunctions.length;
+        aggFunctionsNum = aggFunctions.size();
       } else {
-        aggFunctions = new AggregationFunctionCallEval[0];
+        aggFunctions = new ArrayList<>();
         aggFunctionsNum = 0;
       }
 
@@ -407,14 +407,14 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       KeyTuple innerKeyTuple = innerKeyProjector.project(tuple);
       FunctionContext[] contexts = distinctEntry.get(innerKeyTuple);
       if (contexts != null) {
-        for (int i = 0; i < aggFunctions.length; i++) {
-          aggFunctions[i].merge(contexts[i], tuple);
+        for (int i = 0; i < aggFunctions.size(); i++) {
+          aggFunctions.get(i).merge(contexts[i], tuple);
         }
       } else { // if the key occurs firstly
         contexts = new FunctionContext[aggFunctionsNum];
         for (int i = 0; i < aggFunctionsNum; i++) {
-          contexts[i] = aggFunctions[i].newContext();
-          aggFunctions[i].merge(contexts[i], tuple);
+          contexts[i] = aggFunctions.get(i).newContext();
+          aggFunctions.get(i).merge(contexts[i], tuple);
         }
         distinctEntry.put(innerKeyTuple, contexts);
       }
@@ -436,7 +436,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
         FunctionContext[] contexts = entry.getValue();
         for (int i = 0; i < aggFunctionsNum; i++, index++) {
-          aggregatedTuple.put(index, aggFunctions[i].terminate(contexts[i]));
+          aggregatedTuple.put(index, aggFunctions.get(i).terminate(contexts[i]));
         }
         aggregatedTuples.add(aggregatedTuple);
       }

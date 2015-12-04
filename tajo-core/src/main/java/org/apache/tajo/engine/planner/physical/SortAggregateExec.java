@@ -51,7 +51,7 @@ public class SortAggregateExec extends AggregationExec {
 
   public SortAggregateExec(TaskAttemptContext context, GroupbyNode plan, PhysicalExec child) throws IOException {
     super(context, plan, child);
-    contexts = new FunctionContext[plan.getAggFunctions() == null ? 0 : plan.getAggFunctions().length];
+    contexts = new FunctionContext[plan.getAggFunctions() == null ? 0 : plan.getAggFunctions().size()];
 
     final Column [] keyColumns = plan.getGroupingColumns();
     groupingKeyIds = new int[groupingKeyNum];
@@ -82,19 +82,19 @@ public class SortAggregateExec extends AggregationExec {
       if (lastKey == null || lastKey.equals(currentKey)) {
         if (lastKey == null) {
           for(int i = 0; i < aggFunctionsNum; i++) {
-            contexts[i] = aggFunctions[i].newContext();
+            contexts[i] = aggFunctions.get(i).newContext();
 
             // Merge when aggregator doesn't receive NullDatum
             if (!(groupingKeyNum == 0 && aggFunctionsNum == tuple.size()
                 && tuple.isBlankOrNull(i))) {
-              aggFunctions[i].merge(contexts[i], tuple);
+              aggFunctions.get(i).merge(contexts[i], tuple);
             }
           }
           lastKey = new VTuple(currentKey.getValues());
         } else {
           // aggregate
           for (int i = 0; i < aggFunctionsNum; i++) {
-            aggFunctions[i].merge(contexts[i], tuple);
+            aggFunctions.get(i).merge(contexts[i], tuple);
           }
         }
 
@@ -106,12 +106,12 @@ public class SortAggregateExec extends AggregationExec {
           outTuple.put(tupleIdx, lastKey.asDatum(tupleIdx));
         }
         for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
-          outTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));
+          outTuple.put(tupleIdx, aggFunctions.get(aggFuncIdx).terminate(contexts[aggFuncIdx]));
         }
 
         for(int evalIdx = 0; evalIdx < aggFunctionsNum; evalIdx++) {
-          contexts[evalIdx] = aggFunctions[evalIdx].newContext();
-          aggFunctions[evalIdx].merge(contexts[evalIdx], tuple);
+          contexts[evalIdx] = aggFunctions.get(evalIdx).newContext();
+          aggFunctions.get(evalIdx).merge(contexts[evalIdx], tuple);
         }
 
         lastKey.put(currentKey.getValues());
@@ -129,7 +129,7 @@ public class SortAggregateExec extends AggregationExec {
         outTuple.put(tupleIdx, lastKey.asDatum(tupleIdx));
       }
       for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
-        outTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));
+        outTuple.put(tupleIdx, aggFunctions.get(aggFuncIdx).terminate(contexts[aggFuncIdx]));
       }
       finished = true;
       return outTuple;
