@@ -11,12 +11,6 @@ Release 0.12.0 - unreleased
     TAJO-1948: Change GroupbyNode::setAggFunctions and getAggFunctions to set 
     and get List. (Dongkyu Hwangbo via hyunsik)
 
-    TAJO-1979: Usage of some TajoShellCommand is omitted.
-    (Dongkyu Hwangbo via jaehwa)
-
-    TAJO-1998: Waiting for gracefully stopping in tajo-deamon.sh is too short.
-    (jinho)
-
     TAJO-1985: Supporting Metric report via JMX. (Yongjun Park via jinho)
 
     TAJO-1983: Improve memory usage of ExternalSortExec. (jinho)
@@ -54,8 +48,6 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
-
-    TAJO-2010: Parquet can not read null value. (jinho)
 
     TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
 
