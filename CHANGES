@@ -55,6 +55,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2010: Parquet can not read null value. (jinho)
+
     TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
 
     TAJO-1753: GlobalEngine causes NPE occurs occasionally. (jinho)
