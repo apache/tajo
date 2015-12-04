@@ -565,13 +565,13 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
-    meta.putProperty(StorageConstants.TEXT_NULL, "\\\\N");
-    meta.putProperty(StorageConstants.RCFILE_NULL, "\\\\N");
-    meta.putProperty(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
-    meta.putProperty(StorageConstants.SEQUENCEFILE_NULL, "\\");
+    meta.setOptions(CatalogUtil.newDefaultProperty(dataFormat));
+    meta.putOption(StorageConstants.TEXT_NULL, "\\\\N");
+    meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
+    meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
     if (dataFormat.equalsIgnoreCase("AVRO")) {
-      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_NULL_HANDLING_TYPES_AVRO_SCHEMA);
     }
 
     Path tablePath = new Path(testDir, "testProjectedNullHandlingTypes.data");
