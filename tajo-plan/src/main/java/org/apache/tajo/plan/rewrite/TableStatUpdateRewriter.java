@@ -115,10 +115,10 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
         }
       } catch (UnsupportedException t) {
         LOG.warn(table.getName() + " does not support Tablespace::getTableVolume()");
-        // By default, return 1GB to avoid a single task
       }
 
-      return StorageUnit.GB;
+      // By default, return -1;
+      return -1;
     }
   }
 }
