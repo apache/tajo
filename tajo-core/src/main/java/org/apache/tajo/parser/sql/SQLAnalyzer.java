@@ -40,6 +40,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.parser.sql.SQLParser.*;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.TimeZoneUtil;
 
 import java.util.*;
 
@@ -1703,6 +1704,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     for (Map.Entry<String, String> entry : map.entrySet()) {
       if (entry.getKey().equals(StorageConstants.TEXT_DELIMITER)) {
         params.put(StorageConstants.TEXT_DELIMITER, StringUtils.unicodeEscapedDelimiter(entry.getValue()));
+      } else if (TimeZoneUtil.isTimezone(entry.getKey())) {
+        params.put(StorageConstants.TIMEZONE, TimeZoneUtil.getValidTimezone(entry.getValue()));
       } else {
         params.put(entry.getKey(), entry.getValue());
       }

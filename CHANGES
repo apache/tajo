@@ -26,6 +26,8 @@ Release 0.11.1 - unreleased
 
     TAJO-2000: BSTIndex can cause OOM. (jinho)
 
+    TAJO-1993: Table Timezone doesn't work when Timezone is not exactly same.(DaeMyung)
+
     TAJO-2010: Parquet can not read null value. (jinho)
 
     TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
