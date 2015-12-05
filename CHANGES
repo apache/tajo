@@ -57,6 +57,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1993: Table Timezone doesn't work when Timezone is not exactly same.(DaeMyung)
+
     TAJO-2010: Parquet can not read null value. (jinho)
 
     TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
