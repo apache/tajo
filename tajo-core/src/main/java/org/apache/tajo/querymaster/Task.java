@@ -43,6 +43,7 @@ import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.TaskHistory;
@@ -329,6 +330,8 @@ public class Task implements EventHandler<TaskEvent> {
     int[] diskIds = null;
     if (fragment instanceof FileFragment) {
       diskIds = ((FileFragment)fragment).getDiskIds();
+    } else if (fragment instanceof PartitionFileFragment) {
+      diskIds = ((PartitionFileFragment)fragment).getDiskIds();
     }
     for (int i = 0; i < hosts.length; i++) {
       dataLocations.add(new DataLocation(hosts[i], diskIds == null ? -1 : diskIds[i]));

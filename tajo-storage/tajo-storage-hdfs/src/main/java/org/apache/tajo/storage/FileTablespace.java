@@ -525,6 +525,41 @@ public class FileTablespace extends Tablespace {
     return splits;
   }
 
+  private void setVolumeMeta(List<Fragment> splits, final List<BlockLocation> blockLocations)
+      throws IOException {
+
+    int locationSize = blockLocations.size();
+    int splitSize = splits.size();
+    if (locationSize == 0 || splitSize == 0) return;
+
+    if (locationSize != splitSize) {
+      // splits and locations don't match up
+      LOG.warn("Number of block locations not equal to number of splits: "
+          + "#locations=" + locationSize
+          + " #splits=" + splitSize);
+      return;
+    }
+
+    DistributedFileSystem fs = (DistributedFileSystem) this.fs;
+    int lsLimit = conf.getInt(DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
+    int blockLocationIdx = 0;
+
+    Iterator<Fragment> iter = splits.iterator();
+    while (locationSize > blockLocationIdx) {
+
+      int subSize = Math.min(locationSize - blockLocationIdx, lsLimit);
+      List<BlockLocation> locations = blockLocations.subList(blockLocationIdx, blockLocationIdx + subSize);
+      //BlockStorageLocation containing additional volume location information for each replica of each block.
+      BlockStorageLocation[] blockStorageLocations = fs.getFileBlockStorageLocations(locations);
+
+      for (BlockStorageLocation blockStorageLocation : blockStorageLocations) {
+        ((FileFragment)iter.next()).setDiskIds(getDiskIds(blockStorageLocation.getVolumeIds()));
+        blockLocationIdx++;
+      }
+    }
+    LOG.info("# of splits with volumeId " + splitSize);
+  }
+
   /**
    * Get the list of hosts (hostname) hosting specified blocks
    *
@@ -702,14 +737,14 @@ public class FileTablespace extends Tablespace {
     }
 
     // Combine original fileFragments with new VolumeId information
-    setVolumeMeta(volumeSplits, blockLocations);
+    setPartitionVolumeMeta(volumeSplits, blockLocations);
     splits.addAll(volumeSplits);
     LOG.info("Total # of splits: " + splits.size());
     return splits;
   }
 
-  private void setVolumeMeta(List<Fragment> splits, final List<BlockLocation> blockLocations)
-      throws IOException {
+  private void setPartitionVolumeMeta(List<Fragment> splits, final List<BlockLocation> blockLocations)
+    throws IOException {
 
     int locationSize = blockLocations.size();
     int splitSize = splits.size();
@@ -718,8 +753,8 @@ public class FileTablespace extends Tablespace {
     if (locationSize != splitSize) {
       // splits and locations don't match up
       LOG.warn("Number of block locations not equal to number of splits: "
-          + "#locations=" + locationSize
-          + " #splits=" + splitSize);
+        + "#locations=" + locationSize
+        + " #splits=" + splitSize);
       return;
     }
 
@@ -736,12 +771,14 @@ public class FileTablespace extends Tablespace {
       BlockStorageLocation[] blockStorageLocations = fs.getFileBlockStorageLocations(locations);
 
       for (BlockStorageLocation blockStorageLocation : blockStorageLocations) {
-        ((FileFragment)iter.next()).setDiskIds(getDiskIds(blockStorageLocation.getVolumeIds()));
+        ((PartitionFileFragment)iter.next()).setDiskIds(getDiskIds(blockStorageLocation.getVolumeIds()));
         blockLocationIdx++;
       }
     }
     LOG.info("# of splits with volumeId " + splitSize);
   }
+
+  ////////////////////////////////////////////////////////////////////////////////
 
   private static class InvalidInputException extends IOException {
     List<IOException> errors;

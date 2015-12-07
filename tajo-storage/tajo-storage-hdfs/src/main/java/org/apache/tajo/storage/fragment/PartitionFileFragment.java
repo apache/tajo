@@ -29,6 +29,9 @@ import org.apache.tajo.storage.StorageFragmentProtos.PartitionFileFragmentProto;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
@@ -39,6 +42,7 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
   @Expose public Long length; // required
 
   private String[] hosts; // Datanode hostnames
+  @Expose private int[] diskIds;
 
   @Expose private String partitionKeys; // required
 
@@ -94,9 +98,9 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
     this.startOffset = start;
     this.length = length;
     this.hosts = hosts;
+    this.diskIds = diskIds;
     this.partitionKeys = partitionKeys;
   }
-
 
   /**
    * Get the list of hosts (hostname) hosting this block
@@ -106,6 +110,22 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
       this.hosts = new String[0];
     }
     return this.hosts;
+  }
+
+  /**
+   * Get the list of Disk Ids
+   * Unknown disk is -1. Others 0 ~ N
+   */
+  public int[] getDiskIds() {
+    if (diskIds == null) {
+      this.diskIds = new int[getHosts().length];
+      Arrays.fill(this.diskIds, -1);
+    }
+    return diskIds;
+  }
+
+  public void setDiskIds(int[] diskIds){
+    this.diskIds = diskIds;
   }
 
   @Override
@@ -192,6 +212,7 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
     PartitionFileFragment frag = (PartitionFileFragment) super.clone();
     frag.tableName = tableName;
     frag.uri = uri;
+    frag.diskIds = diskIds;
     frag.hosts = hosts;
 
     return frag;
@@ -210,6 +231,13 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
     builder.setStartOffset(this.startOffset);
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
+    if(diskIds != null) {
+      List<Integer> idList = new ArrayList<>();
+      for(int eachId: diskIds) {
+        idList.add(eachId);
+      }
+      builder.addAllDiskIds(idList);
+    }
 
     if (hosts != null) {
       builder.addAllHosts(TUtil.newList(hosts));
