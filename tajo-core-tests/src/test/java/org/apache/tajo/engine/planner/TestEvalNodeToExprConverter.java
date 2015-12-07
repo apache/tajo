@@ -119,7 +119,7 @@ public class TestEvalNodeToExprConverter {
     Expr expr = sqlAnalyzer.parse(QUERIES[0]);
 
     LogicalPlan plan = planner.createPlan(qc, expr);
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode node = plan.getRootBlock().getRoot();
@@ -149,7 +149,7 @@ public class TestEvalNodeToExprConverter {
     Expr expr = sqlAnalyzer.parse(QUERIES[1]);
 
     LogicalPlan plan = planner.createPlan(qc, expr);
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode node = plan.getRootBlock().getRoot();
@@ -178,7 +178,7 @@ public class TestEvalNodeToExprConverter {
     Expr expr = sqlAnalyzer.parse(QUERIES[2]);
 
     LogicalPlan plan = planner.createPlan(qc, expr);
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode node = plan.getRootBlock().getRoot();
@@ -236,7 +236,7 @@ public class TestEvalNodeToExprConverter {
     Expr expr = sqlAnalyzer.parse(QUERIES[3]);
 
     LogicalPlan plan = planner.createPlan(qc, expr);
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode node = plan.getRootBlock().getRoot();
@@ -291,7 +291,7 @@ public class TestEvalNodeToExprConverter {
     Expr expr = sqlAnalyzer.parse(QUERIES[4]);
 
     LogicalPlan plan = planner.createPlan(qc, expr);
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode node = plan.getRootBlock().getRoot();
@@ -346,7 +346,7 @@ public class TestEvalNodeToExprConverter {
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
 
     LogicalPlan plan = planner.createPlan(qc, expr);
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode node = plan.getRootBlock().getRoot();
