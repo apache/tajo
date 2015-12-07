@@ -768,8 +768,8 @@ public class TaskImpl implements Task {
 
       try {
         chunk = TajoPullServerService.getFileChunks(path, startKey, endKey, last);
-            } catch (Throwable t) {
-        LOG.error("getFileChunks() throws exception");
+      } catch (Throwable t) {
+        LOG.error(t.getMessage(), t);
         return null;
       }
 
