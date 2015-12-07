@@ -46,13 +46,13 @@ public class PartitionFileFragment extends FileFragment implements Cloneable {
   }
 
   public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation,
-                               String partitionKeys) throws IOException {
+    String partitionKeys) throws IOException {
     super(tableName, uri, blockLocation);
     this.partitionKeys = partitionKeys;
   }
 
   public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
-                               String partitionKeys) {
+    String partitionKeys) {
     super(tableName, uri, start, length, hosts);
     this.partitionKeys = partitionKeys;
   }
