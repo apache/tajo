@@ -34,8 +34,7 @@ import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class PartitionFileFragment extends FileFragment
-  implements Cloneable {
+public class PartitionFileFragment extends FileFragment implements Cloneable {
 
   @Expose private String partitionKeys; // required
 
