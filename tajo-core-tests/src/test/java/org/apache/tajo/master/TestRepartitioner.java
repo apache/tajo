@@ -36,6 +36,7 @@ import org.junit.Test;
 
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static junit.framework.Assert.assertEquals;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
@@ -126,7 +127,9 @@ public class TestRepartitioner {
       fetchGroups.put(i, new FetchGroupMeta(VOLUMES[i / 2], fetches[i]).addFetche(fetches[i + 1]));
     }
 
-    FetchProto[] expectedProtos = (FetchProto[]) Arrays.stream(fetches).map(fetch -> fetch.getProto()).toArray();
+    FetchProto[] expectedProtos = new FetchProto[fetches.length];
+    expectedProtos = Arrays.stream(fetches).map(fetch -> fetch.getProto()).collect(Collectors.toList())
+        .toArray(expectedProtos);
     Pair<Long [], Map<String, List<FetchProto>>[]> results;
 
     results = Repartitioner.makeEvenDistributedFetchImpl(fetchGroups, tableName, 1);
@@ -190,7 +193,8 @@ public class TestRepartitioner {
     }
 
     long splitVolume = 128 * 1024 * 1024;
-    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, intermediateEntries,
+    ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", ebId, intermediateEntries,
         splitVolume, 10 * 1024 * 1024);
     assertEquals(6, fetches.size());
 
@@ -378,7 +382,8 @@ public class TestRepartitioner {
     }
 
     long splitVolume = 256 * 1024 * 1024;
-    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, entries, splitVolume,
+    ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", ebId, entries, splitVolume,
         10 * 1024 * 1024);
 
 
@@ -438,7 +443,8 @@ public class TestRepartitioner {
     }
 
     long splitVolume = 128 * 1024 * 1024;
-    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", null, intermediateEntries,
+    ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
+    List<List<FetchProto>> fetches = Repartitioner.splitOrMergeIntermediates("name", ebId, intermediateEntries,
         splitVolume, 10 * 1024 * 1024);
     assertEquals(32, fetches.size());
 

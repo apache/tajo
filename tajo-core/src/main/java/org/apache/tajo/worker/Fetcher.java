@@ -134,6 +134,7 @@ public class Fetcher {
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FINISHED;
       fileChunks.add(fileChunk);
+      fileLen = fileChunk.getFile().length();
       return fileChunks;
     }
 

@@ -174,15 +174,9 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     }
 
     Preconditions.checkArgument(taskIds.size() == attemptIds.size());
-    // TODO: move to repartitioner
-    // Sort to increase cache hit in pull server
-    IntStream.range(0, taskIds.size())
-        .mapToObj(i -> new Pair<Integer, Integer>(taskIds.get(i), attemptIds.get(i)))
-        .sorted((p1, p2) -> p1.getFirst() - p2.getFirst())
-        .forEach(p -> {
-          builder.addTaskId(p.getFirst());
-          builder.addAttemptId(p.getSecond());
-        });
+
+    builder.addAllTaskId(taskIds);
+    builder.addAllAttemptId(attemptIds);
 
     builder.setOffset(offset);
     builder.setLength(length);

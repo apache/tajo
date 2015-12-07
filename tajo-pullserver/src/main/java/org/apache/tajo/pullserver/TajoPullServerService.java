@@ -107,19 +107,20 @@ public class TajoPullServerService extends AbstractService {
   private int readaheadLength;
   private ReadaheadPool readaheadPool = ReadaheadPool.getInstance();
 
-
   public static final String PULLSERVER_SERVICEID = "tajo.pullserver";
 
   private static final Map<String,String> userRsrc =
           new ConcurrentHashMap<>();
   private String userName;
 
+  private static LoadingCache<Path, BSTIndexReader> indexReaderCache = null;
+
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
     "tajo.pullserver.ssl.file.buffer.size";
 
   public static final int DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE = 60 * 1024;
 
-  private static boolean STANDALONE = false;
+  private static final boolean STANDALONE;
 
   private static final AtomicIntegerFieldUpdater<ProcessingStatus> SLOW_FILE_UPDATER;
   private static final AtomicIntegerFieldUpdater<ProcessingStatus> REMAIN_FILE_UPDATER;
@@ -132,9 +133,7 @@ public class TajoPullServerService extends AbstractService {
     REMAIN_FILE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(ProcessingStatus.class, "remainFiles");
 
     String standalone = System.getenv("TAJO_PULLSERVER_STANDALONE");
-    if (!StringUtils.isEmpty(standalone)) {
-      STANDALONE = standalone.equalsIgnoreCase("true");
-    }
+    STANDALONE = !StringUtils.isEmpty(standalone) && standalone.equalsIgnoreCase("true");
   }
 
   @Metrics(name="PullServerShuffleMetrics", about="PullServer output metrics", context="tajo")
@@ -228,20 +227,33 @@ public class TajoPullServerService extends AbstractService {
     bootstrap.childHandler(channelInitializer)
       .channel(NioServerSocketChannel.class);
 
-    port = conf.getInt(ConfVars.PULLSERVER_PORT.varname,
-        ConfVars.PULLSERVER_PORT.defaultIntVal);
+    port = tajoConf.getIntVar(ConfVars.PULLSERVER_PORT);
     ChannelFuture future = bootstrap.bind(new InetSocketAddress(port))
         .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE)
         .syncUninterruptibly();
 
     accepted.add(future.channel());
     port = ((InetSocketAddress)future.channel().localAddress()).getPort();
-    conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
+    tajoConf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
     LOG.info(getName() + " listening on port " + port);
 
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
                                     DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
 
+    int cacheSize = tajoConf.getIntVar(ConfVars.PULLSERVER_CACHE_SIZE);
+    int cacheTimeout = tajoConf.getIntVar(ConfVars.PULLSERVER_CACHE_TIMEOUT);
+
+    indexReaderCache = CacheBuilder.newBuilder()
+        .maximumSize(cacheSize)
+        .expireAfterWrite(cacheTimeout, TimeUnit.MINUTES)
+        .removalListener(removalListener)
+        .build(
+            new CacheLoader<Path, BSTIndexReader>() {
+              public BSTIndexReader load(Path key) throws IOException {
+                BSTIndexReader idxReader = new BSTIndex(tajoConf).getIndexReader(new Path(key, "index"));
+                return idxReader;
+              }
+            });
 
     if (STANDALONE) {
       File pullServerPortFile = getPullServerPortFile();
@@ -321,11 +333,6 @@ public class TajoPullServerService extends AbstractService {
       }
 
       localFS.close();
-//      for (BSTIndexReader reader : indexRangeMap.values()) {
-//        reader.close();
-//      }
-
-      LOG.info("Cache stats: " + indexReaderCache.stats());
       indexReaderCache.invalidateAll();
     } catch (Throwable t) {
       LOG.error(t, t);
@@ -514,7 +521,6 @@ public class TajoPullServerService extends AbstractService {
           Path outputPath = StorageUtil.concatPath(queryBaseDir, eachTaskId, "output");
           if (!lDirAlloc.ifExists(outputPath.toString(), conf)) {
             LOG.warn(outputPath + "does not exist.");
-//            sendError(ctx, HttpResponseStatus.NO_CONTENT);
             continue;
           }
           Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(outputPath.toString(), conf));
@@ -676,13 +682,6 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
-//  private static Schema keySchema = null;
-//  private static TupleComparator comparator = null;
-//  private static RowStoreDecoder decoder = null;
-
-  // TODO: move to constructor
-  private static LoadingCache<Path, BSTIndexReader> indexReaderCache = null;
-
   private static final RemovalListener<Path, BSTIndexReader> removalListener = (removal) -> {
     BSTIndexReader reader = removal.getValue();
     try {
@@ -698,22 +697,11 @@ public class TajoPullServerService extends AbstractService {
                                         String endKey,
                                         boolean last) throws IOException, ExecutionException {
 
-    if (indexReaderCache == null) {
-      indexReaderCache = CacheBuilder.newBuilder()
-          // TODO: make configurable
-          .maximumSize(1000)
-          .expireAfterWrite(30, TimeUnit.MINUTES)
-          .removalListener(removalListener)
-          .build(
-              new CacheLoader<Path, BSTIndexReader>() {
-                public BSTIndexReader load(Path key) throws IOException {
-                  BSTIndexReader idxReader = new BSTIndex(conf).getIndexReader(new Path(key, "index"));
-                  return idxReader;
-                }
-              });
-    }
-
     BSTIndexReader idxReader = indexReaderCache.get(outDir);
+
+    if (indexReaderCache.stats().hitRate() < 0.7) {
+      LOG.warn("Too low cache hit rate: " + indexReaderCache.stats());
+    }
 
     Tuple indexedFirst = idxReader.getFirstKey();
     Tuple indexedLast = idxReader.getLastKey();

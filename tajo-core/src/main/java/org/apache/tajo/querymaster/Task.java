@@ -283,7 +283,7 @@ public class Task implements EventHandler<TaskEvent> {
     List<String[]> fetchList = new ArrayList<>();
     for (Map.Entry<String, Set<FetchProto>> e : getFetchMap().entrySet()) {
       for (FetchProto f : e.getValue()) {
-        for (URI uri : Repartitioner.createFullURIs(f)) {
+        for (URI uri : Repartitioner.createSimpleURIs(f)) {
           fetchList.add(new String[] {e.getKey(), uri.toString()});
         }
       }
