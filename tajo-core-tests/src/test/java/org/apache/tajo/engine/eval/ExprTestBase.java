@@ -103,7 +103,7 @@ public class ExprTestBase {
     analyzer = new SQLAnalyzer();
     preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
     planner = new LogicalPlanner(cat, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(util.getConfiguration(), cat);
+    optimizer = new LogicalOptimizer(util.getConfiguration(), cat, TablespaceManager.getInstance());
     annotatedPlanVerifier = new LogicalPlanVerifier();
   }
 
