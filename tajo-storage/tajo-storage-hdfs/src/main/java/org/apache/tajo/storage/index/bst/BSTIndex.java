@@ -544,7 +544,6 @@ public class BSTIndex implements IndexMethod {
     }
 
     public void init() throws IOException {
-      open();
       fillData();
     }
 
