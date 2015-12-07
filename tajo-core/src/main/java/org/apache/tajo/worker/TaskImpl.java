@@ -796,6 +796,7 @@ public class TaskImpl implements Task {
           FileChunk chunk = TajoPullServerService.getFileChunks(conf, path, startKey, endKey, last);
           chunkList.add(chunk);
         } catch (Throwable t) {
+          LOG.error(t.getMessage(), t);
           throw new RuntimeException(t);
         }
       }
