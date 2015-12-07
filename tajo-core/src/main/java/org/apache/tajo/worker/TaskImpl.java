@@ -688,13 +688,13 @@ public class TaskImpl implements Task {
       List<Fetcher> runnerList = Lists.newArrayList();
 
       for (FetchProto f : fetches) {
-        storeChunkList.clear();
         storeDir = new File(inputDir.toString(), f.getName());
         if (!storeDir.exists()) {
           if (!storeDir.mkdirs()) throw new IOException("Failed to create " + storeDir);
         }
 
         for (URI uri : Repartitioner.createFullURIs(f)) {
+          storeChunkList.clear();
           defaultStoreFile = new File(storeDir, "in_" + i);
           InetAddress address = InetAddress.getByName(uri.getHost());
 
@@ -774,11 +774,15 @@ public class TaskImpl implements Task {
 
     // The working directory of Tajo worker for each query, including stage
     Path queryBaseDir = TajoPullServerService.getBaseOutputDir(queryId, sid);
-    List<String> taskIds = TajoPullServerService.splitMaps(taskIdList);
 
     List<FileChunk> chunkList = new ArrayList<>();
     // If the stage requires a range shuffle
     if (shuffleType.equals("r")) {
+
+      final String startKey = params.get("start").get(0);
+      final String endKey = params.get("end").get(0);
+      final boolean last = params.get("final") != null;
+      final List<String> taskIds = TajoPullServerService.splitMaps(taskIdList);
 
       for (String eachTaskId : taskIds) {
         Path outputPath = StorageUtil.concatPath(queryBaseDir, eachTaskId, "output");
@@ -788,9 +792,6 @@ public class TaskImpl implements Task {
         }
         Path path = executionBlockContext.getLocalFS().makeQualified(
             executionBlockContext.getLocalDirAllocator().getLocalPathToRead(outputPath.toString(), conf));
-        String startKey = params.get("start").get(0);
-        String endKey = params.get("end").get(0);
-        boolean last = params.get("final") != null;
 
         try {
           FileChunk chunk = TajoPullServerService.getFileChunks(conf, path, startKey, endKey, last);

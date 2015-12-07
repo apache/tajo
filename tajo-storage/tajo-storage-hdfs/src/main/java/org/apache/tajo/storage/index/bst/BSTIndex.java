@@ -546,7 +546,7 @@ public class BSTIndex implements IndexMethod {
       byteBuf.release();
     }
 
-    public void init() throws IOException {
+    public synchronized void init() throws IOException {
       if (inited.compareAndSet(false, true)) {
         fillData();
       }

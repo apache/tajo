@@ -475,6 +475,7 @@ public class TajoPullServerService extends AbstractService {
         params = decodeParams(request.getUri());
       } catch (Throwable e) {
         sendError(ctx, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
+        return;
       }
 
       String partId = params.get("p").get(0);
@@ -505,18 +506,18 @@ public class TajoPullServerService extends AbstractService {
 
       // if a stage requires a range shuffle
       if (shuffleType.equals("r")) {
-        // TODO: iterating task ids
+        final String startKey = params.get("start").get(0);
+        final String endKey = params.get("end").get(0);
+        final boolean last = params.get("final") != null;
+
         for (String eachTaskId : taskIds) {
           Path outputPath = StorageUtil.concatPath(queryBaseDir, eachTaskId, "output");
           if (!lDirAlloc.ifExists(outputPath.toString(), conf)) {
             LOG.warn(outputPath + "does not exist.");
-            sendError(ctx, HttpResponseStatus.NO_CONTENT);
+//            sendError(ctx, HttpResponseStatus.NO_CONTENT);
             continue;
           }
           Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(outputPath.toString(), conf));
-          String startKey = params.get("start").get(0);
-          String endKey = params.get("end").get(0);
-          boolean last = params.get("final") != null;
 
           FileChunk chunk;
           try {
@@ -732,7 +733,6 @@ public class TajoPullServerService extends AbstractService {
     Tuple end;
     Schema keySchema = idxReader.getKeySchema();
     RowStoreDecoder decoder = RowStoreUtil.createDecoder(keySchema);
-    TupleComparator comparator = idxReader.getComparator();
 
     try {
       start = decoder.toTuple(startBytes);
@@ -753,6 +753,8 @@ public class TajoPullServerService extends AbstractService {
       LOG.debug("GET Request for " + data.getAbsolutePath() + " (start=" + start + ", end=" + end +
           (last ? ", last=true" : "") + ")");
     }
+
+    TupleComparator comparator = idxReader.getComparator();
 
     if (comparator.compare(end, indexedFirst) < 0 ||
         comparator.compare(indexedLast, start) < 0) {
