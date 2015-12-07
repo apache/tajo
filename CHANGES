@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2005: Add TableStatUpdateRewriter. (hyunsik)
+
     TAJO-1948: Change GroupbyNode::setAggFunctions and getAggFunctions to set 
     and get List. (Dongkyu Hwangbo via hyunsik)
 
@@ -54,6 +56,12 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-1992: \set timezone in cli doesn't work because of casesensitive (DaeMyung)
+
+    TAJO-1993: Table Timezone doesn't work when Timezone is not exactly same.(DaeMyung)
+
+    TAJO-2010: Parquet can not read null value. (jinho)
 
     TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
 
