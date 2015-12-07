@@ -120,4 +120,26 @@ public class FileUtil {
       }
     }
   }
+
+  /**
+   * Close the Closeable objects and <b>throw</b> first {@link IOException}, if failed
+   * @param closeables the objects to close
+   */
+  public static void cleanupAndthrowIfFailed(java.io.Closeable... closeables) throws IOException {
+    IOException ioe = null;
+
+    for (java.io.Closeable c : closeables) {
+      if (c != null) {
+        try {
+          c.close();
+        } catch (IOException e) {
+          if (ioe == null) ioe = e;
+        }
+      }
+    }
+
+    if (ioe != null) {
+      throw ioe;
+    }
+  }
 }

@@ -94,17 +94,39 @@ public class BufferPool {
 
 
   public static ByteBuf directBuffer(int size) {
-    return ALLOCATOR.directBuffer(size);
+    return directBuffer(size, ByteOrder.LITTLE_ENDIAN);
   }
 
   /**
-   *
+   * @param size  the initial capacity
+   * @param order the endianness
+   * @return allocated ByteBuf from pool
+   */
+  public static ByteBuf directBuffer(int size, ByteOrder order) {
+    ByteBuf byteBuf = ALLOCATOR.directBuffer(size);
+    if (byteBuf.order() != order) byteBuf.order(order);
+    return byteBuf;
+  }
+
+  /**
    * @param size the initial capacity
-   * @param max the max capacity
+   * @param max  the max capacity
    * @return allocated ByteBuf from pool
    */
   public static ByteBuf directBuffer(int size, int max) {
-    return ALLOCATOR.directBuffer(size, max).order(ByteOrder.LITTLE_ENDIAN);
+    return directBuffer(size, max, ByteOrder.LITTLE_ENDIAN);
+  }
+
+  /**
+   * @param size  the initial capacity
+   * @param max   the max capacity
+   * @param order the endianness
+   * @return allocated ByteBuf from pool
+   */
+  public static ByteBuf directBuffer(int size, int max, ByteOrder order) {
+    ByteBuf byteBuf = ALLOCATOR.directBuffer(size, max);
+    if (byteBuf.order() != order) byteBuf.order(order);
+    return byteBuf;
   }
 
   /**
