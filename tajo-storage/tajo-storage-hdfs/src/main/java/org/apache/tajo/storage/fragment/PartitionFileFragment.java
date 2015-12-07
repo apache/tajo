@@ -30,119 +30,37 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class PartitionFileFragment implements Fragment, Comparable<PartitionFileFragment>, Cloneable {
-  @Expose private String tableName; // required
-  @Expose private Path uri; // required
-  @Expose public Long startOffset; // required
-  @Expose public Long length; // required
-
-  private String[] hosts; // Datanode hostnames
-  @Expose private int[] diskIds;
+public class PartitionFileFragment extends FileFragment
+  implements Cloneable {
 
   @Expose private String partitionKeys; // required
 
   public PartitionFileFragment(ByteString raw) throws InvalidProtocolBufferException {
+    super(raw);
     PartitionFileFragmentProto.Builder builder = PartitionFileFragmentProto.newBuilder();
     builder.mergeFrom(raw);
-    builder.build();
-    init(builder.build());
+    this.partitionKeys = builder.build().getPartitionKeys();
   }
 
-  public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation, String partitionKeys)
-      throws IOException {
-    this.set(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null,
-      partitionKeys);
-  }
-
-  public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts, int[] diskIds,
-                               String partitionKeys) {
-    this.set(tableName, uri, start, length, hosts, diskIds, partitionKeys);
-  }
-
-  // Non splittable
-  public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
-                               String partitionKeys) {
-    this.set(tableName, uri, start, length, hosts, null, partitionKeys);
-  }
-
-  public PartitionFileFragment(String fragmentId, Path path, long start, long length, String partitionKeys) {
-    this.set(fragmentId, path, start, length, null, null, partitionKeys);
-  }
-
-  public PartitionFileFragment(PartitionFileFragmentProto proto) {
-    init(proto);
-  }
-
-  private void init(PartitionFileFragmentProto proto) {
-    int[] diskIds = new int[proto.getDiskIdsList().size()];
-    int i = 0;
-    for(Integer eachValue: proto.getDiskIdsList()) {
-      diskIds[i++] = eachValue;
-    }
-    this.set(proto.getId(), new Path(proto.getPath()),
-        proto.getStartOffset(), proto.getLength(),
-        proto.getHostsList().toArray(new String[]{}),
-        diskIds,
-        proto.getPartitionKeys());
-  }
-
-  private void set(String tableName, Path path, long start,
-      long length, String[] hosts, int[] diskIds, String partitionKeys) {
-    this.tableName = tableName;
-    this.uri = path;
-    this.startOffset = start;
-    this.length = length;
-    this.hosts = hosts;
-    this.diskIds = diskIds;
+  public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation,
+                               String partitionKeys) throws IOException {
+    super(tableName, uri, blockLocation);
     this.partitionKeys = partitionKeys;
   }
 
-  /**
-   * Get the list of hosts (hostname) hosting this block
-   */
-  public String[] getHosts() {
-    if (hosts == null) {
-      this.hosts = new String[0];
-    }
-    return this.hosts;
+  public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
+                               String partitionKeys) {
+    super(tableName, uri, start, length, hosts);
+    this.partitionKeys = partitionKeys;
   }
 
-  /**
-   * Get the list of Disk Ids
-   * Unknown disk is -1. Others 0 ~ N
-   */
-  public int[] getDiskIds() {
-    if (diskIds == null) {
-      this.diskIds = new int[getHosts().length];
-      Arrays.fill(this.diskIds, -1);
-    }
-    return diskIds;
-  }
-
-  public void setDiskIds(int[] diskIds){
-    this.diskIds = diskIds;
-  }
-
-  @Override
-  public String getTableName() {
-    return this.tableName;
-  }
-
-  public Path getPath() {
-    return this.uri;
-  }
-
-  public void setPath(Path path) {
-    this.uri = path;
-  }
-
-  public Long getStartKey() {
-    return this.startOffset;
+  public PartitionFileFragment(String fragmentId, Path path, long start, long length, String partitionKeys) {
+    super(fragmentId, path, start, length);
+    this.partitionKeys = partitionKeys;
   }
 
   public String getPartitionKeys() {
@@ -154,93 +72,46 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
   }
 
   @Override
-  public String getKey() {
-    return this.uri.toString();
-  }
-
-  @Override
-  public long getLength() {
-    return this.length;
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return this.length <= 0;
-  }
-  /**
-   * 
-   * The offset range of tablets <b>MUST NOT</b> be overlapped.
-   * 
-   * @param t
-   * @return If the table paths are not same, return -1.
-   */
-  @Override
-  public int compareTo(PartitionFileFragment t) {
-    if (getPath().equals(t.getPath())) {
-      long diff = this.getStartKey() - t.getStartKey();
-      if (diff < 0) {
-        return -1;
-      } else if (diff > 0) {
-        return 1;
-      } else {
-        return 0;
-      }
-    } else {
-      return getPath().compareTo(t.getPath());
-    }
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o instanceof PartitionFileFragment) {
-      PartitionFileFragment t = (PartitionFileFragment) o;
-      if (getPath().equals(t.getPath())
-          && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
-          && TUtil.checkEquals(t.getLength(), this.getLength())) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @Override
   public int hashCode() {
-    return Objects.hashCode(tableName, uri, startOffset, length);
+    return Objects.hashCode(getTableName(), getPath(), getStartKey(), getLength(), getPartitionKeys());
   }
-  
+
+  @Override
   public Object clone() throws CloneNotSupportedException {
     PartitionFileFragment frag = (PartitionFileFragment) super.clone();
-    frag.tableName = tableName;
-    frag.uri = uri;
-    frag.diskIds = diskIds;
-    frag.hosts = hosts;
+    frag.setTableName(getTableName());
+    frag.setPath(getPath());
+    frag.setDiskIds(getDiskIds());
+    frag.setHosts(getHosts());
+    frag.setPartitionKeys(getPartitionKeys());
 
     return frag;
   }
 
   @Override
   public String toString() {
-    return "\"fragment\": {\"id\": \""+ tableName +"\", \"path\": "
+    return "\"fragment\": {\"id\": \""+ getTableName() +"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
         + getLength() + "\", \"partitionKeys\":" + getPartitionKeys() + "}" ;
   }
 
+  @Override
   public FragmentProto getProto() {
     PartitionFileFragmentProto.Builder builder = PartitionFileFragmentProto.newBuilder();
-    builder.setId(this.tableName);
+    builder.setId(getTableName());
     builder.setStartOffset(this.startOffset);
     builder.setLength(this.length);
-    builder.setPath(this.uri.toString());
-    if(diskIds != null) {
+    builder.setPath(getPath().toString());
+    if(getDiskIds() != null) {
       List<Integer> idList = new ArrayList<>();
-      for(int eachId: diskIds) {
+      for(int eachId: getDiskIds()) {
         idList.add(eachId);
       }
       builder.addAllDiskIds(idList);
     }
 
-    if (hosts != null) {
-      builder.addAllHosts(TUtil.newList(hosts));
+    if (getHosts() != null) {
+      builder.addAllHosts(TUtil.newList(getHosts()));
     }
 
     if (partitionKeys != null) {
@@ -248,7 +119,7 @@ public class PartitionFileFragment implements Fragment, Comparable<PartitionFile
     }
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
-    fragmentBuilder.setId(this.tableName);
+    fragmentBuilder.setId(getTableName());
     fragmentBuilder.setDataFormat(BuiltinStorages.TEXT);
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     return fragmentBuilder.build();
