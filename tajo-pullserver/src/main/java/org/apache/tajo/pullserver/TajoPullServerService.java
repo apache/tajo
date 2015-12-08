@@ -64,17 +64,13 @@ import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
-import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
 
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -113,8 +109,8 @@ public class TajoPullServerService extends AbstractService {
           new ConcurrentHashMap<>();
   private String userName;
 
-  private static LoadingCache<Path, BSTIndexReader> indexReaderCache = null;
-  private static int lowCacheHitThreshold;
+  private static LoadingCache<CacheKey, BSTIndexReader> indexReaderCache = null;
+  private static int lowCacheHitCheckThreshold;
 
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
     "tajo.pullserver.ssl.file.buffer.size";
@@ -127,6 +123,39 @@ public class TajoPullServerService extends AbstractService {
   private static final AtomicIntegerFieldUpdater<ProcessingStatus> REMAIN_FILE_UPDATER;
 
   public static final String CHUNK_LENGTH_HEADER_NAME = "Chunk-Length";
+
+  static class CacheKey implements Comparable {
+    private Path key;
+    private String queryId;
+    private String ebSeqId;
+
+    public CacheKey(Path key, String queryId, String ebSeqId) {
+      this.key = key;
+      this.queryId = queryId;
+      this.ebSeqId = ebSeqId;
+    }
+
+    @Override
+    public String toString() {
+      return null;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(queryId, ebSeqId);
+    }
+
+
+    @Override
+    public int compareTo(Object o) {
+      return 0;
+    }
+  }
 
   static {
     /* AtomicIntegerFieldUpdater can save the memory usage instead of AtomicInteger instance */
@@ -249,13 +278,14 @@ public class TajoPullServerService extends AbstractService {
         .expireAfterWrite(cacheTimeout, TimeUnit.MINUTES)
         .removalListener(removalListener)
         .build(
-            new CacheLoader<Path, BSTIndexReader>() {
-              public BSTIndexReader load(Path key) throws IOException {
-                BSTIndexReader idxReader = new BSTIndex(tajoConf).getIndexReader(new Path(key, "index"));
-                return idxReader;
+            new CacheLoader<CacheKey, BSTIndexReader>() {
+              @Override
+              public BSTIndexReader load(CacheKey key) throws Exception {
+                return null;
               }
-            });
-    lowCacheHitThreshold = (int) (cacheSize * 0.1f);
+            }
+        );
+    lowCacheHitCheckThreshold = (int) (cacheSize * 0.1f);
 
     if (STANDALONE) {
       File pullServerPortFile = getPullServerPortFile();
@@ -530,7 +560,7 @@ public class TajoPullServerService extends AbstractService {
 
           FileChunk chunk;
           try {
-            chunk = getFileChunks(getConfig(), path, startKey, endKey, last);
+            chunk = getFileChunks(queryId, sid, path, startKey, endKey, last);
           } catch (Throwable t) {
             LOG.error("ERROR Request: " + request.getUri(), t);
             sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
@@ -689,7 +719,7 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
-  private static final RemovalListener<Path, BSTIndexReader> removalListener = (removal) -> {
+  private static final RemovalListener<CacheKey, BSTIndexReader> removalListener = (removal) -> {
     BSTIndexReader reader = removal.getValue();
     try {
       reader.close(); // tear down properly
@@ -698,15 +728,16 @@ public class TajoPullServerService extends AbstractService {
     }
   };
 
-  public static FileChunk getFileChunks(Configuration conf,
+  public static FileChunk getFileChunks(String queryId,
+                                        String ebSeqId,
                                         Path outDir,
                                         String startKey,
                                         String endKey,
                                         boolean last) throws IOException, ExecutionException {
 
-    BSTIndexReader idxReader = indexReaderCache.get(outDir);
+    BSTIndexReader idxReader = indexReaderCache.get(new CacheKey(outDir, queryId, ebSeqId));
 
-    if (indexReaderCache.size() > lowCacheHitThreshold && indexReaderCache.stats().hitRate() < 0.7) {
+    if (indexReaderCache.size() > lowCacheHitCheckThreshold && indexReaderCache.stats().hitRate() < 0.5) {
       LOG.warn("Too low cache hit rate: " + indexReaderCache.stats());
     }
 
