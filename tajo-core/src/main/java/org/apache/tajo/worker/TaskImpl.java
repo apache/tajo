@@ -785,6 +785,7 @@ public class TaskImpl implements Task {
       final boolean last = params.get("final") != null;
       final List<String> taskIds = TajoPullServerService.splitMaps(taskIdList);
 
+      long before = System.currentTimeMillis();
       for (String eachTaskId : taskIds) {
         Path outputPath = StorageUtil.concatPath(queryBaseDir, eachTaskId, "output");
         if (!executionBlockContext.getLocalDirAllocator().ifExists(outputPath.toString(), conf)) {
@@ -801,6 +802,10 @@ public class TaskImpl implements Task {
           LOG.error(t.getMessage(), t);
           throw new RuntimeException(t);
         }
+      }
+      long after = System.currentTimeMillis();
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Index lookup time: " + (after - before) + " ms");
       }
 
       // If the stage requires a hash shuffle or a scattered hash shuffle

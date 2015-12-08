@@ -114,6 +114,7 @@ public class TajoPullServerService extends AbstractService {
   private String userName;
 
   private static LoadingCache<Path, BSTIndexReader> indexReaderCache = null;
+  private static int lowCacheHitThreshold;
 
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
     "tajo.pullserver.ssl.file.buffer.size";
@@ -254,6 +255,7 @@ public class TajoPullServerService extends AbstractService {
                 return idxReader;
               }
             });
+    lowCacheHitThreshold = (int) (cacheSize * 0.1f);
 
     if (STANDALONE) {
       File pullServerPortFile = getPullServerPortFile();
@@ -517,6 +519,7 @@ public class TajoPullServerService extends AbstractService {
         final String endKey = params.get("end").get(0);
         final boolean last = params.get("final") != null;
 
+        long before = System.currentTimeMillis();
         for (String eachTaskId : taskIds) {
           Path outputPath = StorageUtil.concatPath(queryBaseDir, eachTaskId, "output");
           if (!lDirAlloc.ifExists(outputPath.toString(), conf)) {
@@ -536,6 +539,10 @@ public class TajoPullServerService extends AbstractService {
           if (chunk != null) {
             chunks.add(chunk);
           }
+        }
+        long after = System.currentTimeMillis();
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Index lookup time: " + (after - before) + " ms");
         }
 
         // if a stage requires a hash shuffle or a scattered hash shuffle
@@ -699,7 +706,7 @@ public class TajoPullServerService extends AbstractService {
 
     BSTIndexReader idxReader = indexReaderCache.get(outDir);
 
-    if (indexReaderCache.stats().hitRate() < 0.7) {
+    if (indexReaderCache.size() > lowCacheHitThreshold && indexReaderCache.stats().hitRate() < 0.7) {
       LOG.warn("Too low cache hit rate: " + indexReaderCache.stats());
     }
 
