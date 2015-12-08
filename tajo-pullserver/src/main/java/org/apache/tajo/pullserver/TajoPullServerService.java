@@ -64,6 +64,7 @@ import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
+import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
 
 import java.io.*;
@@ -124,36 +125,31 @@ public class TajoPullServerService extends AbstractService {
 
   public static final String CHUNK_LENGTH_HEADER_NAME = "Chunk-Length";
 
-  static class CacheKey implements Comparable {
-    private Path key;
+  static class CacheKey {
+    private Path path;
     private String queryId;
     private String ebSeqId;
 
-    public CacheKey(Path key, String queryId, String ebSeqId) {
-      this.key = key;
+    public CacheKey(Path path, String queryId, String ebSeqId) {
+      this.path = path;
       this.queryId = queryId;
       this.ebSeqId = ebSeqId;
     }
 
     @Override
-    public String toString() {
-      return null;
-    }
-
-    @Override
     public boolean equals(Object o) {
+      if (o instanceof CacheKey) {
+        CacheKey other = (CacheKey) o;
+        return Objects.equals(this.path, other.path)
+            && Objects.equals(this.queryId, other.queryId)
+            && Objects.equals(this.ebSeqId, other.ebSeqId);
+      }
       return false;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(queryId, ebSeqId);
-    }
-
-
-    @Override
-    public int compareTo(Object o) {
-      return 0;
+      return Objects.hash(path, queryId, ebSeqId);
     }
   }
 
@@ -281,7 +277,7 @@ public class TajoPullServerService extends AbstractService {
             new CacheLoader<CacheKey, BSTIndexReader>() {
               @Override
               public BSTIndexReader load(CacheKey key) throws Exception {
-                return null;
+                return new BSTIndex(tajoConf).getIndexReader(new Path(key.path, "index"));
               }
             }
         );
@@ -719,12 +715,19 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
+  private static final ConcurrentHashMap<CacheKey, BSTIndexReader> waitForRemove = new ConcurrentHashMap<>();
+
   private static final RemovalListener<CacheKey, BSTIndexReader> removalListener = (removal) -> {
     BSTIndexReader reader = removal.getValue();
-    try {
-      reader.close(); // tear down properly
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    if (reader.getReferenceNum() == 0) {
+      try {
+        reader.close(); // tear down properly
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      waitForRemove.remove(removal.getKey());
+    } else {
+      waitForRemove.put(removal.getKey(), reader);
     }
   };
 
@@ -736,91 +739,69 @@ public class TajoPullServerService extends AbstractService {
                                         boolean last) throws IOException, ExecutionException {
 
     BSTIndexReader idxReader = indexReaderCache.get(new CacheKey(outDir, queryId, ebSeqId));
+    idxReader.hold();
 
-    if (indexReaderCache.size() > lowCacheHitCheckThreshold && indexReaderCache.stats().hitRate() < 0.5) {
-      LOG.warn("Too low cache hit rate: " + indexReaderCache.stats());
-    }
-
-    Tuple indexedFirst = idxReader.getFirstKey();
-    Tuple indexedLast = idxReader.getLastKey();
-
-    if (indexedFirst == null && indexedLast == null) { // if # of rows is zero
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("There is no contents");
-      }
-      return null;
-    }
-
-    byte [] startBytes = Base64.decodeBase64(startKey);
-    byte [] endBytes = Base64.decodeBase64(endKey);
-
-
-    Tuple start;
-    Tuple end;
-    Schema keySchema = idxReader.getKeySchema();
-    RowStoreDecoder decoder = RowStoreUtil.createDecoder(keySchema);
-
-    try {
-      start = decoder.toTuple(startBytes);
-    } catch (Throwable t) {
-      throw new IllegalArgumentException("StartKey: " + startKey
-          + ", decoded byte size: " + startBytes.length, t);
-    }
-
-    try {
-      end = decoder.toTuple(endBytes);
-    } catch (Throwable t) {
-      throw new IllegalArgumentException("EndKey: " + endKey
-          + ", decoded byte size: " + endBytes.length, t);
-    }
-
-    File data = new File(URI.create(outDir.toUri() + "/output"));
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("GET Request for " + data.getAbsolutePath() + " (start=" + start + ", end=" + end +
-          (last ? ", last=true" : "") + ")");
-    }
-
-    TupleComparator comparator = idxReader.getComparator();
-
-    if (comparator.compare(end, indexedFirst) < 0 ||
-        comparator.compare(indexedLast, start) < 0) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Out of Scope (indexed data [" + indexedFirst + ", " + indexedLast +
-            "], but request start:" + start + ", end: " + end);
-      }
-      return null;
-    }
-
+    File data;
     long startOffset;
     long endOffset;
     try {
-      idxReader.init();
-      startOffset = idxReader.find(start);
-    } catch (IOException ioe) {
-      LOG.error("State Dump (the requested range: "
-          + "[" + start + ", " + end + ")" + ", idx min: "
-          + idxReader.getFirstKey() + ", idx max: "
-          + idxReader.getLastKey());
-      throw ioe;
-    }
-    try {
-      endOffset = idxReader.find(end);
-      if (endOffset == -1) {
-        endOffset = idxReader.find(end, true);
+      if (indexReaderCache.size() > lowCacheHitCheckThreshold && indexReaderCache.stats().hitRate() < 0.5) {
+        LOG.warn("Too low cache hit rate: " + indexReaderCache.stats());
       }
-    } catch (IOException ioe) {
-      LOG.error("State Dump (the requested range: "
-          + "[" + start + ", " + end + ")" + ", idx min: "
-          + idxReader.getFirstKey() + ", idx max: "
-          + idxReader.getLastKey());
-      throw ioe;
-    }
 
-    // if startOffset == -1 then case 2-1 or case 3
-    if (startOffset == -1) { // this is a hack
-      // if case 2-1 or case 3
+      Tuple indexedFirst = idxReader.getFirstKey();
+      Tuple indexedLast = idxReader.getLastKey();
+
+      if (indexedFirst == null && indexedLast == null) { // if # of rows is zero
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("There is no contents");
+        }
+        return null;
+      }
+
+      byte[] startBytes = Base64.decodeBase64(startKey);
+      byte[] endBytes = Base64.decodeBase64(endKey);
+
+
+      Tuple start;
+      Tuple end;
+      Schema keySchema = idxReader.getKeySchema();
+      RowStoreDecoder decoder = RowStoreUtil.createDecoder(keySchema);
+
       try {
-        startOffset = idxReader.find(start, true);
+        start = decoder.toTuple(startBytes);
+      } catch (Throwable t) {
+        throw new IllegalArgumentException("StartKey: " + startKey
+            + ", decoded byte size: " + startBytes.length, t);
+      }
+
+      try {
+        end = decoder.toTuple(endBytes);
+      } catch (Throwable t) {
+        throw new IllegalArgumentException("EndKey: " + endKey
+            + ", decoded byte size: " + endBytes.length, t);
+      }
+
+      data = new File(URI.create(outDir.toUri() + "/output"));
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("GET Request for " + data.getAbsolutePath() + " (start=" + start + ", end=" + end +
+            (last ? ", last=true" : "") + ")");
+      }
+
+      TupleComparator comparator = idxReader.getComparator();
+
+      if (comparator.compare(end, indexedFirst) < 0 ||
+          comparator.compare(indexedLast, start) < 0) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Out of Scope (indexed data [" + indexedFirst + ", " + indexedLast +
+              "], but request start:" + start + ", end: " + end);
+        }
+        return null;
+      }
+
+      try {
+        idxReader.init();
+        startOffset = idxReader.find(start);
       } catch (IOException ioe) {
         LOG.error("State Dump (the requested range: "
             + "[" + start + ", " + end + ")" + ", idx min: "
@@ -828,19 +809,47 @@ public class TajoPullServerService extends AbstractService {
             + idxReader.getLastKey());
         throw ioe;
       }
-    }
+      try {
+        endOffset = idxReader.find(end);
+        if (endOffset == -1) {
+          endOffset = idxReader.find(end, true);
+        }
+      } catch (IOException ioe) {
+        LOG.error("State Dump (the requested range: "
+            + "[" + start + ", " + end + ")" + ", idx min: "
+            + idxReader.getFirstKey() + ", idx max: "
+            + idxReader.getLastKey());
+        throw ioe;
+      }
 
-    if (startOffset == -1) {
-      throw new IllegalStateException("startOffset " + startOffset + " is negative \n" +
-          "State Dump (the requested range: "
-          + "[" + start + ", " + end + ")" + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
-          + idxReader.getLastKey());
-    }
+      // if startOffset == -1 then case 2-1 or case 3
+      if (startOffset == -1) { // this is a hack
+        // if case 2-1 or case 3
+        try {
+          startOffset = idxReader.find(start, true);
+        } catch (IOException ioe) {
+          LOG.error("State Dump (the requested range: "
+              + "[" + start + ", " + end + ")" + ", idx min: "
+              + idxReader.getFirstKey() + ", idx max: "
+              + idxReader.getLastKey());
+          throw ioe;
+        }
+      }
 
-    // if greater than indexed values
-    if (last || (endOffset == -1
-        && comparator.compare(idxReader.getLastKey(), end) < 0)) {
-      endOffset = data.length();
+      if (startOffset == -1) {
+        throw new IllegalStateException("startOffset " + startOffset + " is negative \n" +
+            "State Dump (the requested range: "
+            + "[" + start + ", " + end + ")" + ", idx min: " + idxReader.getFirstKey() + ", idx max: "
+            + idxReader.getLastKey());
+      }
+
+      // if greater than indexed values
+      if (last || (endOffset == -1
+          && comparator.compare(idxReader.getLastKey(), end) < 0)) {
+        endOffset = data.length();
+      }
+    } finally {
+      idxReader.release();
     }
 
     FileChunk chunk = new FileChunk(data, startOffset, endOffset - startOffset);

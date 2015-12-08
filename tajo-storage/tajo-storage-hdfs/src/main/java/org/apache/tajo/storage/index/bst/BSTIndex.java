@@ -43,6 +43,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static org.apache.tajo.index.IndexProtos.TupleComparatorProto;
 
@@ -441,6 +442,9 @@ public class BSTIndex implements IndexMethod {
     }
   }
 
+  private static final AtomicIntegerFieldUpdater<BSTIndexReader> REFERENCE_UPDATER =
+      AtomicIntegerFieldUpdater.newUpdater(BSTIndexReader.class, "referenceNum");
+
   /**
    * BSTIndexReader is thread-safe.
    */
@@ -471,6 +475,8 @@ public class BSTIndex implements IndexMethod {
 
     private AtomicBoolean inited = new AtomicBoolean(false);
 
+    volatile int referenceNum;
+
     /**
      *
      * @param fileName
@@ -489,6 +495,18 @@ public class BSTIndex implements IndexMethod {
     public BSTIndexReader(final Path fileName) throws IOException {
       this.fileName = fileName;
       open();
+    }
+
+    public void hold() {
+      REFERENCE_UPDATER.compareAndSet(this, referenceNum, referenceNum + 1);
+    }
+
+    public void release() {
+      REFERENCE_UPDATER.compareAndSet(this, referenceNum, referenceNum - 1);
+    }
+
+    public int getReferenceNum() {
+      return referenceNum;
     }
 
     public Schema getKeySchema() {
@@ -807,7 +825,9 @@ public class BSTIndex implements IndexMethod {
 
     @Override
     public void close() throws IOException {
-      this.indexIn.close();
+      if (referenceNum == 0) {
+        this.indexIn.close();
+      }
     }
 
     @Override
