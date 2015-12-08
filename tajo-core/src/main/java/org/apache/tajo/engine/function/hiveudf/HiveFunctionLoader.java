@@ -62,7 +62,7 @@ public class HiveFunctionLoader {
         // For UDF's decendants (legacy)
         Set<Class<? extends UDF>> udfClasses = getSubclassesFromJarEntry(urls, UDF.class);
         if (udfClasses != null) {
-          extractUDFclasses(udfClasses, funcList);
+          extractUDFclasses(udfClasses, funcList, "jar:"+urls[0].getPath());
         }
 
         // For GenericUDF's decendants (newer interface)
@@ -87,7 +87,7 @@ public class HiveFunctionLoader {
     return refl.getSubTypesOf(targetCls);
   }
 
-  static void extractUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list) {
+  static void extractUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list, String jarurl) {
     for (Class<? extends UDF> clazz: classes) {
       String [] names;
       String value = null, extended = null;
@@ -144,7 +144,7 @@ public class HiveFunctionLoader {
         builder.setExample(extended);
       }
 
-      UDFInvocationDesc udfInvocation = new UDFInvocationDesc(CatalogProtos.UDFtype.HIVE, clazz.getName(), true);
+      UDFInvocationDesc udfInvocation = new UDFInvocationDesc(CatalogProtos.UDFtype.HIVE, clazz.getName(), jarurl, true);
 
       for (String name: names) {
         builder.setName(name);

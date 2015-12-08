@@ -67,7 +67,7 @@ public class TestHiveFunctionLoader {
     funcSet.add(HiveUDFtest.class);
     List<FunctionDesc> funcList = new LinkedList<>();
 
-    HiveFunctionLoader.extractUDFclasses(funcSet, funcList);
+    HiveFunctionLoader.extractUDFclasses(funcSet, funcList, null);
 
     assertEquals(funcList.size(), 1);
 
@@ -118,6 +118,7 @@ public class TestHiveFunctionLoader {
 
     ResultSet rs = client.executeQueryAndGetResult("select my_upper('abcd')");
     rs.beforeFirst();
+    rs.next();
     String result = rs.getString(1);
 
     assertEquals("ABCD", result);

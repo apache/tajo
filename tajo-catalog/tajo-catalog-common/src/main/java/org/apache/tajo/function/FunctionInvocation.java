@@ -131,6 +131,10 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     return udf != null && udf.getType() == CatalogProtos.UDFtype.PYTHON && udf.isScalarFunction();
   }
 
+  public boolean hasHiveUDF() {
+    return udf != null && udf.getType() == CatalogProtos.UDFtype.HIVE && udf.isScalarFunction();
+  }
+
   public void setUDF(UDFInvocationDesc udf) {
     this.udf = udf;
   }
@@ -161,7 +165,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (hasAggregationJIT()) {
       builder.setAggregationJit(aggregationJIT.getProto());
     }
-    if (hasPython() || hasPythonAggregation()) {
+    if (hasPython() || hasPythonAggregation() || hasHiveUDF()) {
       builder.setUdfInvocation(udf.getProto());
     }
     return builder.build();
@@ -175,6 +179,6 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   public String toString() {
     return "legacy=" + hasLegacy() + ",scalar=" + hasScalar() + ",agg=" + hasAggregation() +
         ",scalarJIT=" + hasScalarJIT() + ",aggJIT=" + hasAggregationJIT() + ",python=" + hasPython() +
-        ",aggPython=" + hasPythonAggregation();
+        ",aggPython=" + hasPythonAggregation() + ",hiveUDF="+hasHiveUDF();
   }
 }

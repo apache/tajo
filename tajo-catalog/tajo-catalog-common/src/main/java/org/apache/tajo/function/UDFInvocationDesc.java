@@ -33,7 +33,7 @@ public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, C
   @Expose private UDFtype type;
   @Expose private boolean isScalarFunction; // true if udf, false if udaf
   @Expose private String funcOrClassName; // function name if python udf, class name if python udaf or others
-  @Expose private String filePath; // file path to the python module
+  @Expose private String filePath; // file path to the python module, or jar path to hive udf
 
   public UDFInvocationDesc(UDFtype type, String funcOrClassName, boolean isScalarFunction) {
     this(type, funcOrClassName, null, isScalarFunction);
@@ -80,7 +80,10 @@ public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, C
   @Override
   public UDFinvocationDescProto getProto() {
     UDFinvocationDescProto.Builder builder = UDFinvocationDescProto.newBuilder();
-    builder.setType(type).setFuncName(funcOrClassName).setFilePath(filePath).setIsScalarFunction(isScalarFunction);
+    builder.setType(type).setFuncName(funcOrClassName).setIsScalarFunction(isScalarFunction);
+    if (filePath != null) {
+      builder.setFilePath(filePath);
+    }
     return builder.build();
   }
 
