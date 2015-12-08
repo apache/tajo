@@ -125,7 +125,7 @@ public class TestJoinOrderAlgorithm {
 
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
   }

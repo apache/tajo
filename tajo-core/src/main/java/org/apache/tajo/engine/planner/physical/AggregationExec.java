@@ -25,12 +25,14 @@ import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class AggregationExec extends UnaryPhysicalExec {
 
   protected final int groupingKeyNum;
   protected final int aggFunctionsNum;
-  protected final AggregationFunctionCallEval aggFunctions[];
+  protected final List<AggregationFunctionCallEval> aggFunctions;
 
   public AggregationExec(final TaskAttemptContext context, GroupbyNode plan,
                          PhysicalExec child) throws IOException {
@@ -41,9 +43,9 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
 
     if (plan.hasAggFunctions()) {
       aggFunctions = plan.getAggFunctions();
-      aggFunctionsNum = aggFunctions.length;
+      aggFunctionsNum = aggFunctions.size();
     } else {
-      aggFunctions = new AggregationFunctionCallEval[0];
+      aggFunctions = new ArrayList<>();
       aggFunctionsNum = 0;
     }
   }

@@ -86,9 +86,8 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     this.appender.enableStats(keySchema.getAllColumns());
     this.appender.init();
     this.indexWriter = bst.getIndexWriter(new Path(storeTablePath, "index"),
-        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
-    this.indexWriter.setLoadNum(100);
-    this.indexWriter.open();
+        BSTIndex.TWO_LEVEL_INDEX, keySchema, comp, true);
+    this.indexWriter.init();
 
     super.init();
   }
@@ -121,13 +120,11 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     super.close();
 
     appender.flush();
-    IOUtils.cleanup(LOG, appender);
-    indexWriter.flush();
-    IOUtils.cleanup(LOG, indexWriter);
-
     // Collect statistics data
     context.setResultStats(appender.getStats());
     context.addShuffleFileOutput(0, context.getTaskId().toString());
+    IOUtils.cleanup(LOG, appender);
+    indexWriter.close();
     appender = null;
     indexWriter = null;
   }

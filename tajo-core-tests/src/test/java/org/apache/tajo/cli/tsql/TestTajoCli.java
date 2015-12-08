@@ -442,6 +442,22 @@ public class TestTajoCli {
   }
 
   @Test
+  public void testTimeZoneSessionVars3() throws Exception {
+    tajoCli.executeMetaCommand("\\set timezone GMT+1");
+    tajoCli.executeMetaCommand("\\set");
+    String output = new String(out.toByteArray());
+    assertTrue(output.contains("'TIMEZONE'='GMT+1'"));
+  }
+
+  @Test
+  public void testTimeZoneSessionVars4() throws Exception {
+    tajoCli.executeMetaCommand("\\set timeZone GMT+2");
+    tajoCli.executeMetaCommand("\\set");
+    String output = new String(out.toByteArray());
+    assertTrue(output.contains("'TIMEZONE'='GMT+2'"));
+  }
+
+  @Test
   public void testTimeZoneTest1() throws Exception {
     String tableName = "test1";
     tajoCli.executeMetaCommand("\\set TIMEZONE GMT+0");
@@ -593,5 +609,23 @@ public class TestTajoCli {
         assertEquals(result, expected);
       }
     }
+  }
+
+  @Test
+  public void testPrintUsageOfConnectDatabaseCommand() {
+    tajoCli.executeMetaCommand("\\help c");
+    assertTrue(new String(out.toByteArray()).contains("[database_name]"));
+  }
+
+  @Test
+  public void testPrintUsageOfSetCommand() {
+    tajoCli.executeMetaCommand("\\set a b c");
+    assertTrue(new String(out.toByteArray()).contains("[[NAME] VALUE]"));
+  }
+
+  @Test
+  public void testPrintUsageOfUnsetCommand() {
+    tajoCli.executeMetaCommand("\\help unset");
+    assertTrue(new String(out.toByteArray()).contains("[NAME]"));
   }
 }

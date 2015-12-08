@@ -37,13 +37,13 @@ public class UnsetCommand extends TajoShellCommand {
     if (cmd.length == 2) {
       client.unsetSessionVariables(Lists.newArrayList(cmd[1]));
     } else {
-      context.getOutput().println("usage: \\unset NAME");
+      context.getOutput().println("usage: \\unset " + getUsage());
     }
   }
 
   @Override
   public String getUsage() {
-    return "";
+    return "[NAME]";
   }
 
   @Override

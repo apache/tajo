@@ -39,6 +39,7 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
@@ -55,21 +56,24 @@ import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.g
 public class LogicalOptimizer {
   private static final Log LOG = LogFactory.getLog(LogicalOptimizer.class.getName());
 
-  private CatalogService catalog;
+  private final CatalogService catalog;
+  private final StorageService storage;
   private BaseLogicalPlanRewriteEngine rulesBeforeJoinOpt;
   private BaseLogicalPlanRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
 
-  public LogicalOptimizer(TajoConf conf, CatalogService catalog) {
+  public LogicalOptimizer(TajoConf conf, CatalogService catalog, StorageService storage) {
 
     this.catalog = catalog;
+    this.storage = storage;
+
     // TODO: set the catalog instance to FilterPushdownRule
     Class clazz = conf.getClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);
     LogicalPlanRewriteRuleProvider provider = (LogicalPlanRewriteRuleProvider) ReflectionUtil.newInstance(clazz, conf);
 
-    rulesBeforeJoinOpt = new BaseLogicalPlanRewriteEngine();
+    rulesBeforeJoinOpt = new BaseLogicalPlanRewriteEngine(storage);
     rulesBeforeJoinOpt.addRewriteRule(provider.getPreRules());
-    rulesAfterToJoinOpt = new BaseLogicalPlanRewriteEngine();
+    rulesAfterToJoinOpt = new BaseLogicalPlanRewriteEngine(storage);
     rulesAfterToJoinOpt.addRewriteRule(provider.getPostRules());
   }
 
@@ -81,7 +85,7 @@ public class LogicalOptimizer {
   }
 
   public LogicalNode optimize(OverridableConf context, LogicalPlan plan) throws TajoException {
-    rulesBeforeJoinOpt.rewrite(new LogicalPlanRewriteRuleContext(context, plan, catalog));
+    rulesBeforeJoinOpt.rewrite(new LogicalPlanRewriteRuleContext(context, plan, catalog, storage));
 
     DirectedGraphCursor<String, BlockEdge> blockCursor =
             new DirectedGraphCursor<>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
@@ -94,7 +98,7 @@ public class LogicalOptimizer {
     } else {
       LOG.info("Skip join order optimization");
     }
-    rulesAfterToJoinOpt.rewrite(new LogicalPlanRewriteRuleContext(context, plan, catalog));
+    rulesAfterToJoinOpt.rewrite(new LogicalPlanRewriteRuleContext(context, plan, catalog, storage));
     return plan.getRootBlock().getRoot();
   }
 

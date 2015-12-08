@@ -95,7 +95,7 @@ fi
 export TAJO_LOGFILE=tajo-$TAJO_IDENT_STRING-$command-$HOSTNAME.log
 export TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-DRFA}"
 export TAJO_PULLSERVER_STANDALONE="${TAJO_PULLSERVER_STANDALONE:-false}"
-export TAJO_STOP_TIMEOUT=${TAJO_STOP_TIMEOUT:-2}
+export TAJO_STOP_TIMEOUT=${TAJO_STOP_TIMEOUT:-5}
 log=$TAJO_LOG_DIR/tajo-$TAJO_IDENT_STRING-$command-$HOSTNAME.out
 pid=$TAJO_PID_DIR/tajo-$TAJO_IDENT_STRING-$command.pid
 
@@ -137,7 +137,16 @@ case $startStop in
       if kill -0 $TARGET_PID > /dev/null 2>&1; then
         echo stopping $command
         kill $TARGET_PID
-        sleep $TAJO_STOP_TIMEOUT
+
+        for (( c=1; c<=$TAJO_STOP_TIMEOUT; c++ ))
+        do
+          if kill -0 $TARGET_PID > /dev/null 2>&1; then
+            sleep 1
+          else
+            break
+          fi
+        done
+
         if kill -0 $TARGET_PID > /dev/null 2>&1; then
           echo "$command did not stop gracefully after $TAJO_STOP_TIMEOUT seconds: killing with kill -9"
           kill -9 $TARGET_PID
