@@ -53,7 +53,7 @@ public class RestOutputFactory {
         continue;
       }
       String className = streamingOutput.getClass().getCanonicalName();
-      String headerType = streamingOutput.getClass().getAnnotation(RestReturnType.class).headerType();
+      String headerType = streamingOutput.getClass().getAnnotation(RestReturnType.class).mimeType();
 
       if (StringUtils.isNotEmpty(headerType)) {
         outputClasses.put(headerType, className);
@@ -63,11 +63,11 @@ public class RestOutputFactory {
     return outputClasses;
   }
 
-  public static AbstractStreamingOutput get(String headerType, NonForwardQueryResultScanner scanner, Integer count, Integer startOffset) {
+  public static AbstractStreamingOutput get(String mimeType, NonForwardQueryResultScanner scanner, Integer count, Integer startOffset) {
     AbstractStreamingOutput output = null;
     try {
-      if (restOutputClasses.containsKey(headerType)) {
-        String className = (String) restOutputClasses.get(headerType);
+      if (restOutputClasses.containsKey(mimeType)) {
+        String className = (String) restOutputClasses.get(mimeType);
         Class<?> clazz = Class.forName(className);
         output = (AbstractStreamingOutput) clazz.getDeclaredConstructor(
                   new Class[]{NonForwardQueryResultScanner.class,

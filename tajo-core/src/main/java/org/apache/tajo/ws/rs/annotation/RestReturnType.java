@@ -24,11 +24,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Definition of RestApi result Return Type
- * According to headerType, StramingOutput class will be choose.
+ * Definition of the return type of Rest API.
+ * According to the output type, Rest APIs return their results in text or binary.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface RestReturnType {
-    String headerType();
+    String mimeType();
 }
