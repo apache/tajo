@@ -700,7 +700,7 @@ public class TaskImpl implements Task {
           InetAddress address = InetAddress.getByName(uri.getHost());
 
           WorkerConnectionInfo conn = executionBlockContext.getWorkerContext().getConnectionInfo();
-          if (false && NetUtils.isLocalAddress(address) && conn.getPullServerPort() == uri.getPort()) {
+          if (NetUtils.isLocalAddress(address) && conn.getPullServerPort() == uri.getPort()) {
 
             List<FileChunk> localChunkCandidates = getLocalStoredFileChunk(uri, systemConf);
 
