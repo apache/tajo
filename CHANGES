@@ -113,6 +113,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1994: Some trivial modification is needed in compression document.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1973: Replace 'while' loop with 'foreach'. (Contributed by Dongkyu Hwangbo, i
     committed by jihoon)
 
