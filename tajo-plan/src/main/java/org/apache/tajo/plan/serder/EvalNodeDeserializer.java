@@ -72,10 +72,7 @@ public class EvalNodeDeserializer {
     // So, it sequentially transforms each serialized node into a EvalNode instance in a postfix order of
     // the original eval tree.
 
-    Iterator<PlanProto.EvalNode> it = nodeList.iterator();
-    while (it.hasNext()) {
-      PlanProto.EvalNode protoNode = it.next();
-
+    for (PlanProto.EvalNode protoNode : nodeList) {
       EvalType type = EvalType.valueOf(protoNode.getType().name());
 
       if (EvalType.isUnaryOperator(type)) {
@@ -214,7 +211,7 @@ public class EvalNodeDeserializer {
 
               if (evalContext != null && funcDesc.getInvocation().hasPythonAggregation()) {
                 evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc,
-                    aggFunc.isFirstPhase()  , aggFunc.isLastPhase()));
+                    aggFunc.isFirstPhase(), aggFunc.isLastPhase()));
               }
 
             } else {
