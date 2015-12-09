@@ -499,6 +499,9 @@ public class TajoPullServerService extends AbstractService {
             throws Exception {
 
       if (request.getMethod() == HttpMethod.DELETE) {
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+
         clearIndexCache(request.getUri());
       } else if (request.getMethod() != HttpMethod.GET) {
         sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
@@ -658,13 +661,11 @@ public class TajoPullServerService extends AbstractService {
     }
 
     private void clearIndexCache(String uri) throws IOException {
-      LOG.info("DELETE: " + uri);
       ExecutionBlockId ebId = ExecutionBlockId.fromString(uri);
       String queryId = ebId.getQueryId().toString();
       String ebSeqId = Integer.toString(ebId.getId());
       List<CacheKey> removed = new ArrayList<>();
       synchronized (indexReaderCache) {
-        LOG.info("before indexReaderCache: " + indexReaderCache.size());
         for (Entry<CacheKey, BSTIndexReader> e : indexReaderCache.asMap().entrySet()) {
           CacheKey key = e.getKey();
           if (key.queryId.equals(queryId) && key.ebSeqId.equals(ebSeqId)) {
@@ -673,11 +674,9 @@ public class TajoPullServerService extends AbstractService {
           }
         }
         indexReaderCache.invalidateAll(removed);
-        LOG.info("after indexReaderCache: " + indexReaderCache.size());
       }
       removed.clear();
       synchronized (waitForRemove) {
-        LOG.info("before waitForRemove: " + waitForRemove.size());
         for (Entry<CacheKey, BSTIndexReader> e : waitForRemove.entrySet()) {
           CacheKey key = e.getKey();
           if (key.queryId.equals(queryId) && key.ebSeqId.equals(ebSeqId)) {
@@ -688,7 +687,6 @@ public class TajoPullServerService extends AbstractService {
         for (CacheKey eachKey : removed) {
           waitForRemove.remove(eachKey);
         }
-        LOG.info("after waitForRemove: " + waitForRemove.size());
       }
     }
 

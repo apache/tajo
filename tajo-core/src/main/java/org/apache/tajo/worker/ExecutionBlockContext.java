@@ -208,46 +208,43 @@ public class ExecutionBlockContext {
   private void clearIndexCache() {
     if (executionBlockId.getId() > 1) {
       Bootstrap bootstrap = new Bootstrap()
-          .group(
-              NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER, 1))
+          .group(NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER, 1))
           .channel(NioSocketChannel.class)
           .option(ChannelOption.ALLOCATOR, NettyUtils.ALLOCATOR)
-          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
-              systemConf.getIntVar(ConfVars.SHUFFLE_FETCHER_CONNECT_TIMEOUT) * 1000)
-          .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M
+          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10 * 1000)
           .option(ChannelOption.TCP_NODELAY, true);
       ChannelInitializer<Channel> initializer = new ChannelInitializer<Channel>() {
         @Override
         protected void initChannel(Channel channel) throws Exception {
           ChannelPipeline pipeline = channel.pipeline();
-          int maxChunkSize = systemConf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE);
-          pipeline.addLast("codec", new HttpClientCodec(4096, 8192, maxChunkSize));
+          pipeline.addLast("codec", new HttpClientCodec());
         }
       };
       bootstrap.handler(initializer);
 
-      WorkerConnectionInfo connectionInfo = workerContext.getConnectionInfo();
-      ChannelFuture future = bootstrap.connect(new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPullServerPort()))
+      WorkerConnectionInfo connInfo = workerContext.getConnectionInfo();
+      ChannelFuture future = bootstrap.connect(new InetSocketAddress(connInfo.getHost(), connInfo.getPullServerPort()))
           .addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 
       try {
         Channel channel = future.await().channel();
         if (!future.isSuccess()) {
+          // Upon failure to connect to pull server, cache clear message is just ignored.
           LOG.warn(future.cause());
+          return;
         }
 
         ExecutionBlockId clearEbId = new ExecutionBlockId(executionBlockId.getQueryId(), executionBlockId.getId() - 1);
         HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.DELETE, clearEbId.toString());
-        request.headers().set(Names.HOST, connectionInfo.getHost());
+        request.headers().set(Names.HOST, connInfo.getHost());
         request.headers().set(Names.CONNECTION, Values.CLOSE);
         channel.writeAndFlush(request);
-        channel.closeFuture().syncUninterruptibly();
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       } finally {
         if (future != null && future.channel().isOpen()) {
           // Close the channel to exit.
-          future.channel().close().awaitUninterruptibly();
+          future.channel().closeFuture();
         }
       }
     }
