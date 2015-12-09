@@ -57,6 +57,7 @@ import org.apache.hadoop.metrics2.lib.MutableGaugeInt;
 import org.apache.hadoop.security.ssl.SSLFactory;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -72,6 +73,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -496,13 +498,15 @@ public class TajoPullServerService extends AbstractService {
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request)
             throws Exception {
 
-      if (request.getMethod() != HttpMethod.GET) {
+      if (request.getMethod() == HttpMethod.DELETE) {
+        clearIndexCache(request.getUri());
+      } else if (request.getMethod() != HttpMethod.GET) {
         sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
         return;
       }
 
-      ProcessingStatus processingStatus = new ProcessingStatus(request.getUri().toString());
-      processingStatusMap.put(request.getUri().toString(), processingStatus);
+      ProcessingStatus processingStatus = new ProcessingStatus(request.getUri());
+      processingStatusMap.put(request.getUri(), processingStatus);
 
       // Parsing the URL into key-values
       Map<String, List<String>> params = null;
@@ -650,6 +654,41 @@ public class TajoPullServerService extends AbstractService {
           // Close the connection when the whole content is written out.
           writeFuture.addListener(ChannelFutureListener.CLOSE);
         }
+      }
+    }
+
+    private void clearIndexCache(String uri) throws IOException {
+      LOG.info("DELETE: " + uri);
+      ExecutionBlockId ebId = ExecutionBlockId.fromString(uri);
+      String queryId = ebId.getQueryId().toString();
+      String ebSeqId = Integer.toString(ebId.getId());
+      List<CacheKey> removed = new ArrayList<>();
+      synchronized (indexReaderCache) {
+        LOG.info("before indexReaderCache: " + indexReaderCache.size());
+        for (Entry<CacheKey, BSTIndexReader> e : indexReaderCache.asMap().entrySet()) {
+          CacheKey key = e.getKey();
+          if (key.queryId.equals(queryId) && key.ebSeqId.equals(ebSeqId)) {
+            e.getValue().forceClose();
+            removed.add(e.getKey());
+          }
+        }
+        indexReaderCache.invalidateAll(removed);
+        LOG.info("after indexReaderCache: " + indexReaderCache.size());
+      }
+      removed.clear();
+      synchronized (waitForRemove) {
+        LOG.info("before waitForRemove: " + waitForRemove.size());
+        for (Entry<CacheKey, BSTIndexReader> e : waitForRemove.entrySet()) {
+          CacheKey key = e.getKey();
+          if (key.queryId.equals(queryId) && key.ebSeqId.equals(ebSeqId)) {
+            e.getValue().forceClose();
+            removed.add(e.getKey());
+          }
+        }
+        for (CacheKey eachKey : removed) {
+          waitForRemove.remove(eachKey);
+        }
+        LOG.info("after waitForRemove: " + waitForRemove.size());
       }
     }
 

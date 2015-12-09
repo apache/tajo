@@ -25,6 +25,12 @@ public class ExecutionBlockId implements Comparable<ExecutionBlockId> {
   private QueryId queryId;
   private int id;
 
+  public static ExecutionBlockId fromString(String idWithPrefix) {
+    String[] splits = idWithPrefix.split(QueryId.SEPARATOR); // eb_id_prefix, query_id, query_id_seq, eb_id
+    QueryId queryId = new QueryId(splits[1], Integer.parseInt(splits[2]));
+    return new ExecutionBlockId(queryId, Integer.parseInt(splits[3]));
+  }
+
   public ExecutionBlockId(QueryId queryId, int id) {
     this.queryId = queryId;
     this.id = id;

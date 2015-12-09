@@ -830,6 +830,11 @@ public class BSTIndex implements IndexMethod {
       }
     }
 
+    public void forceClose() throws IOException {
+      REFERENCE_UPDATER.compareAndSet(this, referenceNum, 0);
+      this.indexIn.close();
+    }
+
     @Override
     public String toString() {
       return "BSTIndex (" + firstKey + ", " + lastKey + ") " + fileName;

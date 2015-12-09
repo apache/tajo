@@ -20,6 +20,12 @@ package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.*;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.HttpHeaders.Names;
+import io.netty.handler.codec.http.HttpHeaders.Values;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -32,20 +38,20 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.pullserver.TajoPullServerService;
-import org.apache.tajo.rpc.AsyncRpcClient;
-import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.ExecutionBlockErrorEvent;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -191,8 +197,60 @@ public class ExecutionBlockContext {
     }
     tasks.clear();
     taskHistories.clear();
+
+    // Clear index cache in pull server
+    clearIndexCache();
+
     resource.release();
     RpcClientManager.cleanup(queryMasterClient);
+  }
+
+  private void clearIndexCache() {
+    if (executionBlockId.getId() > 1) {
+      Bootstrap bootstrap = new Bootstrap()
+          .group(
+              NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER, 1))
+          .channel(NioSocketChannel.class)
+          .option(ChannelOption.ALLOCATOR, NettyUtils.ALLOCATOR)
+          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS,
+              systemConf.getIntVar(ConfVars.SHUFFLE_FETCHER_CONNECT_TIMEOUT) * 1000)
+          .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M
+          .option(ChannelOption.TCP_NODELAY, true);
+      ChannelInitializer<Channel> initializer = new ChannelInitializer<Channel>() {
+        @Override
+        protected void initChannel(Channel channel) throws Exception {
+          ChannelPipeline pipeline = channel.pipeline();
+          int maxChunkSize = systemConf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE);
+          pipeline.addLast("codec", new HttpClientCodec(4096, 8192, maxChunkSize));
+        }
+      };
+      bootstrap.handler(initializer);
+
+      WorkerConnectionInfo connectionInfo = workerContext.getConnectionInfo();
+      ChannelFuture future = bootstrap.connect(new InetSocketAddress(connectionInfo.getHost(), connectionInfo.getPullServerPort()))
+          .addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+
+      try {
+        Channel channel = future.await().channel();
+        if (!future.isSuccess()) {
+          LOG.warn(future.cause());
+        }
+
+        ExecutionBlockId clearEbId = new ExecutionBlockId(executionBlockId.getQueryId(), executionBlockId.getId() - 1);
+        HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.DELETE, clearEbId.toString());
+        request.headers().set(Names.HOST, connectionInfo.getHost());
+        request.headers().set(Names.CONNECTION, Values.CLOSE);
+        channel.writeAndFlush(request);
+        channel.closeFuture().syncUninterruptibly();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      } finally {
+        if (future != null && future.channel().isOpen()) {
+          // Close the channel to exit.
+          future.channel().close().awaitUninterruptibly();
+        }
+      }
+    }
   }
 
   public TajoConf getConf() {
