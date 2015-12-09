@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -70,14 +71,14 @@ public class TestPartitionFileFragment {
     final int num = 10;
     PartitionFileFragment[] tablets = new PartitionFileFragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new PartitionFileFragment("tablet1", new Path(path, "tablet0/col1=" + i), i * 500, (i+1) * 500
+      tablets[i] = new PartitionFileFragment("tablet0", new Path(path, "tablet0/col1=" + i), i * 500, (i+1) * 500
       , "col1=" + i);
     }
-    
+
     Arrays.sort(tablets);
 
-    for(int i = 0; i < num; i++) {
-      assertEquals("col1=" + i, tablets[i].getPartitionKeys());
+    for (int i = 0; i < num; i++) {
+      assertEquals("col1=" + (num - i - 1), tablets[i].getPartitionKeys());
     }
   }
 
