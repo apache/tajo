@@ -946,9 +946,11 @@ public class Stage implements EventHandler<StageEvent> {
             + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
 
         long bigger = Math.max(outerVolume, innerVolume);
+        LOG.info("### 400 ### outerVolume:" + outerVolume + ", innerVolume:" + innerVolume);
 
         int mb = (int) Math.ceil((double) bigger / 1048576);
         LOG.info(stage.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
+        LOG.info("### 401 ### bigger:" + bigger + ", mb:" + mb);
 
         int taskNum = (int) Math.ceil((double) mb / masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
 
@@ -967,6 +969,8 @@ public class Stage implements EventHandler<StageEvent> {
         for (DataChannel eachChannel : masterPlan.getOutgoingChannels(inner.getId())) {
           innerShuffleOutputNum = Math.max(innerShuffleOutputNum, eachChannel.getShuffleOutputNum());
         }
+        LOG.info("### 402 ### outerShuffleOutputNum:" + outerShuffleOutputNum + ", innerShuffleOutputNum:" + innerShuffleOutputNum);
+
         if (outerShuffleOutputNum != innerShuffleOutputNum
             && taskNum != outerShuffleOutputNum
             && taskNum != innerShuffleOutputNum) {
@@ -978,7 +982,7 @@ public class Stage implements EventHandler<StageEvent> {
         }
 
         LOG.info(stage.getId() + ", The determined number of join partitions is " + taskNum);
-
+LOG.info("### 403 ### taskNum:" + taskNum);
         return taskNum;
         // Is this stage the first step of group-by?
       } else if (grpNode != null) {
@@ -1010,6 +1014,7 @@ public class Stage implements EventHandler<StageEvent> {
         }
         if (!hasGroupColumns) {
           LOG.info(stage.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
+          LOG.info("### 410 ### taskNum:1");
           return 1;
         } else {
           long volume = getInputVolume(stage.masterPlan, stage.context, stage.block);
@@ -1020,6 +1025,7 @@ public class Stage implements EventHandler<StageEvent> {
           int taskNum = (int) Math.ceil((double) volumeByMB /
               masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
           LOG.info(stage.getId() + ", The determined number of aggregation partitions is " + taskNum);
+          LOG.info("### 420 ### taskNum:" + taskNum);
           return taskNum;
         }
       } else {
@@ -1031,6 +1037,7 @@ public class Stage implements EventHandler<StageEvent> {
         // determine the number of task per 128MB
         int taskNum = (int) Math.ceil((double)mb / 128);
         LOG.info(stage.getId() + ", The determined number of partitions is " + taskNum);
+        LOG.info("### 430 ### taskNum:" + taskNum);
         return taskNum;
       }
     }

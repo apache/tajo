@@ -568,7 +568,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
         rewrittenScanNode.init(scanNode, filteredPaths, partitionContent.getPartitionKeys());
         rewrittenScanNode.getTableDesc().getStats().setNumBytes(partitionContent.getTotalVolume());
-
+LOG.info("### 100 ### tableName:" + rewrittenScanNode.getTableName() + ", volume:" + partitionContent.getTotalVolume());
         // if it is topmost node, set it as the rootnode of this block.
         if (stack.empty() || block.getRoot().equals(scanNode)) {
           block.setRoot(rewrittenScanNode);

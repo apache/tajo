@@ -1172,12 +1172,14 @@ public class Repartitioner {
     // TODO: the union handling is required when a join has unions as its child
     MasterPlan masterPlan = stage.getMasterPlan();
     keys = channel.getShuffleKeys();
+    LOG.info("### 500 ### desiredNum:" + desiredNum + ", channel:" + channel.toString());
     if (!masterPlan.isRoot(stage.getBlock()) ) {
       ExecutionBlock parentBlock = masterPlan.getParent(stage.getBlock());
       if (parentBlock.getPlan().getType() == NodeType.JOIN) {
         channel.setShuffleOutputNum(desiredNum);
       }
     }
+    LOG.info("### 510 ### desiredNum:" + desiredNum + ", channel:" + channel.toString());
 
     // set the partition number for group by and sort
     if (channel.getShuffleType() == HASH_SHUFFLE) {
@@ -1203,6 +1205,7 @@ public class Repartitioner {
         channel.setShuffleOutputNum(desiredNum);
       }
     }
+    LOG.info("### 520 ### desiredNum:" + desiredNum + ", channel:" + channel.toString());
     return stage;
   }
 }

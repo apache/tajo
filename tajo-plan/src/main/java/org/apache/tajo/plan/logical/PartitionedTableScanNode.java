@@ -143,10 +143,10 @@ public class PartitionedTableScanNode extends ScanNode {
 
     if (inputPaths != null) {
       planStr.addExplan("num of filtered paths: ").appendExplain(""+ inputPaths.length);
-      int i = 0;
-      for (Path path : inputPaths) {
-        planStr.addDetail((i++) + ": ").appendDetail(path.toString());
-      }
+//      int i = 0;
+//      for (Path path : inputPaths) {
+//        planStr.addDetail((i++) + ": ").appendDetail(path.toString());
+//      }
     }
 
     return planStr;
