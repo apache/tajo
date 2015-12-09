@@ -131,18 +131,16 @@ public class TestXMLCatalogSchemaManager {
     @Override
     protected boolean matchesSafely(Iterable<? extends T> item, org.hamcrest.Description mismatchDescription) {
       boolean isFirst = true;
-      Iterator<? extends T> iterator = item.iterator();
-      
-      while (iterator.hasNext()) {
-        T obj = iterator.next();
+
+      for (T obj : item) {
         if (this.matcher.matches(obj)) {
           return true;
         }
-        
+
         if (!isFirst) {
           mismatchDescription.appendText(", ");
         }
-        
+
         this.matcher.describeMismatch(obj, mismatchDescription);
         isFirst = false;
       }

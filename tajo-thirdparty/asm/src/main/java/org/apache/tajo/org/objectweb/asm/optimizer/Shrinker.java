@@ -87,9 +87,7 @@ public class Shrinker {
             }
         });
 
-        Iterator<String> i = unused.iterator();
-        while (i.hasNext()) {
-            String s = i.next();
+        for (String s : unused) {
             if (!s.endsWith("/remove")) {
                 System.out.println("INFO: unused mapping " + s);
             }
@@ -117,9 +115,7 @@ public class Shrinker {
 
             cr = new ClassReader(cw.toByteArray());
             cw = new ClassWriter(0);
-            Iterator<Constant> i = constants.iterator();
-            while (i.hasNext()) {
-                Constant c = i.next();
+            for (Constant c : constants) {
                 c.write(cw);
             }
             cr.accept(cw, ClassReader.SKIP_DEBUG);
