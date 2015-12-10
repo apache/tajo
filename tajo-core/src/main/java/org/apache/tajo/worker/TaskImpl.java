@@ -814,8 +814,7 @@ public class TaskImpl implements Task {
       Path partPath = StorageUtil.concatPath(queryBaseDir, "hash-shuffle", String.valueOf(partParentId), partId);
 
       if (!executionBlockContext.getLocalDirAllocator().ifExists(partPath.toString(), conf)) {
-        LOG.warn("Hash shuffle or Scattered hash shuffle - file not exist: " + partPath);
-        return null;
+        throw new IOException("Hash shuffle or Scattered hash shuffle - file not exist: " + partPath);
       }
       Path path = executionBlockContext.getLocalFS().makeQualified(
         executionBlockContext.getLocalDirAllocator().getLocalPathToRead(partPath.toString(), conf));
@@ -824,15 +823,13 @@ public class TaskImpl implements Task {
       long readLen = (offset >= 0 && length >= 0) ? length : file.length();
 
       if (startPos >= file.length()) {
-        LOG.error("Start pos[" + startPos + "] great than file length [" + file.length() + "]");
-        return null;
+        throw new IOException("Start pos[" + startPos + "] great than file length [" + file.length() + "]");
       }
       FileChunk chunk = new FileChunk(file, startPos, readLen);
       chunkList.add(chunk);
 
     } else {
-      LOG.error("Unknown shuffle type");
-      return null;
+      throw new IOException("Unknown shuffle type");
     }
 
     return chunkList;

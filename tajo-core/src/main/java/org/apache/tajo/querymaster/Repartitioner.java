@@ -82,7 +82,7 @@ import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 public class Repartitioner {
   private static final Log LOG = LogFactory.getLog(Repartitioner.class);
 
-  private final static int HTTP_REQUEST_MAXIMUM_LENGTH = 2 * StorageUnit.MB;
+  private final static int HTTP_REQUEST_MAXIMUM_LENGTH = 1900;
   private final static String UNKNOWN_HOST = "unknown";
 
   public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, Stage stage)

@@ -211,7 +211,7 @@ public class ExecutionBlockContext {
           .group(NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER, 1))
           .channel(NioSocketChannel.class)
           .option(ChannelOption.ALLOCATOR, NettyUtils.ALLOCATOR)
-          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10 * 1000)
+          .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 30 * 1000)
           .option(ChannelOption.TCP_NODELAY, true);
       ChannelInitializer<Channel> initializer = new ChannelInitializer<Channel>() {
         @Override
@@ -244,7 +244,7 @@ public class ExecutionBlockContext {
       } finally {
         if (future != null && future.channel().isOpen()) {
           // Close the channel to exit.
-          future.channel().closeFuture();
+          future.channel().close();
         }
       }
     }
