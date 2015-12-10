@@ -117,7 +117,7 @@ public class TestDirectRawFile {
 
   @AfterClass
   public static void tearDownClass() throws InterruptedException {
-    cluster.shutdown(true);
+    cluster.shutdown();
   }
 
   public Path getTestDir(FileSystem fs, String dir) throws IOException {

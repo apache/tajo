@@ -24,6 +24,8 @@ Release 0.11.1 - unreleased
 
   BUG FIXES
 
+    TAJO-2016: Fix storage tests hangs. (jinho)
+
     TAJO-2013: FilterPushDownRule fails due to the unsupported index. (jinho)
 
     TAJO-2014: TestRpcClientManager fails occasionally. (jinho)

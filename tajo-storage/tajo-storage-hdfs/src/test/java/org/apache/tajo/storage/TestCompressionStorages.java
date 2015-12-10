@@ -27,6 +27,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.io.compress.zlib.ZlibFactory;
 import org.apache.hadoop.util.NativeCodeLoader;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -68,9 +69,9 @@ public class TestCompressionStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"TEXT"},
-        {"RCFILE"},
-        {"SEQUENCEFILE"}
+        {BuiltinStorages.TEXT},
+        {BuiltinStorages.RCFILE},
+        {BuiltinStorages.SEQUENCE_FILE}
     });
   }
 
@@ -81,11 +82,11 @@ public class TestCompressionStorages {
 
   @Test
   public void testGzipCodecCompressionData() throws IOException {
-    if (dataFormat.equalsIgnoreCase("RCFILE")) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       if( ZlibFactory.isNativeZlibLoaded(conf)) {
         storageCompressionTest(dataFormat, GzipCodec.class);
       }
-    } else if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
+    } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       if( ZlibFactory.isNativeZlibLoaded(conf)) {
         storageCompressionTest(dataFormat, GzipCodec.class);
       }
@@ -131,7 +132,7 @@ public class TestCompressionStorages {
       extension = ((DelimitedTextFile.DelimitedTextFileAppender) appender).getExtension();
     }
 
-    int tupleNum = 100000;
+    int tupleNum = 1000;
     VTuple vTuple;
 
     for (int i = 0; i < tupleNum; i++) {
@@ -154,7 +155,7 @@ public class TestCompressionStorages {
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, tablets[0], schema);
     scanner.init();
 
-    if (dataFormat.equalsIgnoreCase("SEQUENCEFILE")) {
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
       assertTrue(scanner instanceof SequenceFileScanner);
       Writable key = ((SequenceFileScanner) scanner).getKey();
       assertEquals(key.getClass().getCanonicalName(), LongWritable.class.getCanonicalName());

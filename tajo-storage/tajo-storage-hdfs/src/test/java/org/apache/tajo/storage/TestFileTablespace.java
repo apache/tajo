@@ -18,13 +18,13 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import net.minidev.json.JSONObject;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.*;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -70,7 +70,7 @@ public class TestFileTablespace {
 		schema.addColumn("age",Type.INT4);
 		schema.addColumn("name",Type.TEXT);
 
-		TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+		TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
 		
 		VTuple[] tuples = new VTuple[4];
 		for(int i=0; i < tuples.length; i++) {
@@ -82,7 +82,7 @@ public class TestFileTablespace {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     localFs.mkdirs(path.getParent());
-    FileTablespace fileStorageManager = (FileTablespace) TablespaceManager.getLocalFs();
+    FileTablespace fileStorageManager = TablespaceManager.getLocalFs();
     assertEquals(localFs.getUri(), fileStorageManager.getFileSystem().getUri());
 
 		Appender appender = fileStorageManager.getAppender(meta, schema, path);
@@ -99,6 +99,7 @@ public class TestFileTablespace {
 			i++;
 		}
 		assertEquals(4,i);
+    localFs.delete(path, true);
 	}
 
   @Test(timeout = 60000)
@@ -137,7 +138,7 @@ public class TestFileTablespace {
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age",Type.INT4);
       schema.addColumn("name",Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
@@ -154,7 +155,7 @@ public class TestFileTablespace {
       assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
       fs.close();
     } finally {
-      cluster.shutdown(true);
+      cluster.shutdown();
     }
   }
 
@@ -203,7 +204,7 @@ public class TestFileTablespace {
       assertEquals(0, splits.size());
       fs.close();
     } finally {
-      cluster.shutdown(true);
+      cluster.shutdown();
     }
   }
 
@@ -254,7 +255,7 @@ public class TestFileTablespace {
       assertNotEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
       fs.close();
     } finally {
-      cluster.shutdown(true);
+      cluster.shutdown();
     }
   }
 
@@ -271,7 +272,6 @@ public class TestFileTablespace {
         new MiniDFSCluster.Builder(hdfsConf).numDataNodes(1).build();
     URI uri = URI.create(cluster.getFileSystem().getUri() + "/tajo");
 
-    Optional<Tablespace> existingTs = Optional.absent();
     try {
       /* Local FileSystem */
       FileTablespace space = TablespaceManager.getLocalFs();
@@ -279,16 +279,17 @@ public class TestFileTablespace {
 
       FileTablespace distTablespace = new FileTablespace("testGetFileTablespace", uri, null);
       distTablespace.init(conf);
-      existingTs = TablespaceManager.addTableSpaceForTest(distTablespace);
+
+      TablespaceManager.addTableSpaceForTest(distTablespace);
 
       /* Distributed FileSystem */
-      space = (FileTablespace) TablespaceManager.get(uri);
+      space = TablespaceManager.get(uri);
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
 
-      space = (FileTablespace) TablespaceManager.getByName("testGetFileTablespace");
+      space = TablespaceManager.getByName("testGetFileTablespace");
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
     } finally {
-      cluster.shutdown(true);
+      cluster.shutdown();
     }
   }
 }
