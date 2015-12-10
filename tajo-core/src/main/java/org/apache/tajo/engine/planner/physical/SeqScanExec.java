@@ -101,8 +101,8 @@ public class SeqScanExec extends ScanExec {
       List<PartitionFileFragment> partitionFileFragments = FragmentConvertor.convert(PartitionFileFragment
         .class, fragments);
 
-      // Get partition keys from first partition fragment
-      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionName(columnPartitionSchema,
+      // Get tuple from first partition fragment using parition keys
+      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionKeys(columnPartitionSchema,
         partitionFileFragments.get(0).getPartitionKeys());
     }
 

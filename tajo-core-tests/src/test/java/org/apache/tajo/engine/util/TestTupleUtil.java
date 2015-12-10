@@ -192,17 +192,17 @@ public class TestTupleUtil {
     schema.addColumn("key1", Type.INT8);
     schema.addColumn("key2", Type.TEXT);
 
-    Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionName(schema, "key1=123");
+    Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionKeys(schema, "key1=123");
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createNullDatum(), tuple.asDatum(1));
 
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionName(schema, "key1=123/key2=abc");
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionKeys(schema, "key1=123/key2=abc");
     assertNotNull(tuple);
     assertEquals(DatumFactory.createInt8(123), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));
 
-    tuple = PartitionedTableRewriter.buildTupleFromPartitionName(schema, "key2=abc");
+    tuple = PartitionedTableRewriter.buildTupleFromPartitionKeys(schema, "key2=abc");
     assertNotNull(tuple);
     assertEquals(DatumFactory.createNullDatum(), tuple.asDatum(0));
     assertEquals(DatumFactory.createText("abc"), tuple.asDatum(1));

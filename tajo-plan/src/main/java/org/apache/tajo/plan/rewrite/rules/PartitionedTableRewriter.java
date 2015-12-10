@@ -519,16 +519,16 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * The second datum of tuple : SEOUL
    *
    * @param partitionColumnSchema The partition column schema
-   * @param partitionName The partition name
+   * @param partitionKeys The keys of partition
    * @return The tuple transformed from a column values part.
    */
-  public static Tuple buildTupleFromPartitionName(Schema partitionColumnSchema, String partitionName) {
+  public static Tuple buildTupleFromPartitionKeys(Schema partitionColumnSchema, String partitionKeys) {
     Preconditions.checkNotNull(partitionColumnSchema);
-    Preconditions.checkNotNull(partitionName);
+    Preconditions.checkNotNull(partitionKeys);
 
-    String [] columnValues = partitionName.split("/");
+    String [] columnValues = partitionKeys.split("/");
     Preconditions.checkArgument(partitionColumnSchema.size() >= columnValues.length,
-      "Invalid Partition Name :" + partitionName);
+      "Invalid Partition Keys :" + partitionKeys);
 
     Tuple tuple = new VTuple(partitionColumnSchema.size());
 
