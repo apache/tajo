@@ -20,10 +20,8 @@ package org.apache.tajo.plan.function;
 
 import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TajoHiveTypeConverter;

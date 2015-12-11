@@ -25,8 +25,6 @@ import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
 import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
-import org.apache.hadoop.io.*;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.FunctionDescBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
