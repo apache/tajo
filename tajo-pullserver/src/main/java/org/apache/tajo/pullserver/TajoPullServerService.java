@@ -516,6 +516,7 @@ public class TajoPullServerService extends AbstractService {
       try {
         params = decodeParams(request.getUri());
       } catch (Throwable e) {
+        LOG.error("Failed to decode uri " + request.getUri());
         sendError(ctx, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         return;
       }
@@ -782,8 +783,10 @@ public class TajoPullServerService extends AbstractService {
     long startOffset;
     long endOffset;
     try {
-      if (indexReaderCache.size() > lowCacheHitCheckThreshold && indexReaderCache.stats().hitRate() < 0.5) {
-        LOG.warn("Too low cache hit rate: " + indexReaderCache.stats());
+      if (LOG.isDebugEnabled()) {
+        if (indexReaderCache.size() > lowCacheHitCheckThreshold && indexReaderCache.stats().hitRate() < 0.5) {
+          LOG.debug("Too low cache hit rate: " + indexReaderCache.stats());
+        }
       }
 
       Tuple indexedFirst = idxReader.getFirstKey();
