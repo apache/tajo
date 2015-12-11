@@ -33,6 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.function.UDFInvocationDesc;
+import org.apache.tajo.util.TajoHiveTypeConverter;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 
@@ -117,13 +118,13 @@ public class HiveFunctionLoader {
         }
       }
 
-      TajoDataTypes.DataType retType = convertHiveTypeToTajoType(hiveUDFretType);
+      TajoDataTypes.DataType retType = TajoHiveTypeConverter.convertHiveTypeToTajoType(hiveUDFretType);
       TajoDataTypes.DataType [] params = null;
 
       if (hiveUDFparams != null && hiveUDFparams.length > 0) {
         params = new TajoDataTypes.DataType[hiveUDFparams.length];
         for (int i=0; i<hiveUDFparams.length; i++) {
-          params[i] = convertHiveTypeToTajoType(hiveUDFparams[i]);
+          params[i] = TajoHiveTypeConverter.convertHiveTypeToTajoType(hiveUDFparams[i]);
         }
       }
 
@@ -155,28 +156,5 @@ public class HiveFunctionLoader {
   }
 
   private static void extractGenericUDFclasses(Set<Class<? extends GenericUDF>> classes, ArrayList<FunctionDesc> list) {
-  }
-
-  private static TajoDataTypes.DataType convertHiveTypeToTajoType(Class hiveType) {
-    if (hiveType == null)
-      return null;
-
-    if (hiveType == IntWritable.class) {
-      return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4);
-    }
-    if (hiveType == LongWritable.class) {
-      return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
-    }
-    if (hiveType == Text.class) {
-      return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT);
-    }
-    if (hiveType == FloatWritable.class) {
-      return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT4);
-    }
-    if (hiveType == DoubleWritable.class) {
-      return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8);
-    }
-
-    return null;
   }
 }

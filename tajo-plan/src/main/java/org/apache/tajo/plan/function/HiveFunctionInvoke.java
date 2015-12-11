@@ -18,13 +18,15 @@
 
 package org.apache.tajo.plan.function;
 
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.TajoHiveTypeConverter;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -77,10 +79,15 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
   @Override
   public Datum eval(Tuple tuple) {
     Datum resultDatum = NullDatum.get();
+    Writable [] params = new Writable[tuple.size()];
+
+    for (int i=0; i<tuple.size(); i++) {
+      params[i] = TajoHiveTypeConverter.convertDatum2Writable(tuple.asDatum(i));
+    }
 
     try {
-      Text result = (Text)evalMethod.invoke(instance, new Text(tuple.getText(0)));
-      resultDatum = new TextDatum(result.toString());
+      Writable result = (Writable)evalMethod.invoke(instance, params);
+      resultDatum = TajoHiveTypeConverter.convertWritable2Datum(result);
     } catch (Exception e) {
       e.printStackTrace();
     }
