@@ -43,6 +43,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.Bytes;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.TreeSet;
 
 public class HFileAppender extends AbstractHBaseAppender {
@@ -118,9 +119,7 @@ public class HFileAppender extends AbstractHBaseAppender {
 
     readKeyValues(tuple, rowkey);
     if (keyValues != null) {
-      for (KeyValue eachKeyVal: keyValues) {
-        kvSet.add(eachKeyVal);
-      }
+      Collections.addAll(kvSet, keyValues);
     }
   }
 
