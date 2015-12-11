@@ -67,6 +67,7 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
+import org.apache.tajo.unit.StorageUnit;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -400,7 +401,7 @@ public class TajoPullServerService extends AbstractService {
 
       int maxChunkSize = getConfig().getInt(ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.varname,
           ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.defaultIntVal);
-      pipeline.addLast("codec", new HttpServerCodec(1, 1, 1));
+      pipeline.addLast("codec", new HttpServerCodec(1 * StorageUnit.MB, 8192, maxChunkSize));
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
       pipeline.addLast("shuffle", PullServer);

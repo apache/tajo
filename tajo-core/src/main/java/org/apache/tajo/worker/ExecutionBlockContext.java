@@ -217,7 +217,7 @@ public class ExecutionBlockContext {
         @Override
         protected void initChannel(Channel channel) throws Exception {
           ChannelPipeline pipeline = channel.pipeline();
-          pipeline.addLast("codec", new HttpClientCodec(1,1,1));
+          pipeline.addLast("codec", new HttpClientCodec());
         }
       };
       bootstrap.handler(initializer);
