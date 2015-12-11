@@ -498,6 +498,11 @@ public class TajoPullServerService extends AbstractService {
     public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request)
             throws Exception {
 
+      if (request.getDecoderResult().isFailure()) {
+        LOG.error("Decoding failed. ", request.getDecoderResult().cause());
+        return;
+      }
+
       if (request.getMethod() == HttpMethod.DELETE) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
@@ -508,9 +513,6 @@ public class TajoPullServerService extends AbstractService {
         return;
       }
 
-      ProcessingStatus processingStatus = new ProcessingStatus(request.getUri());
-      processingStatusMap.put(request.getUri(), processingStatus);
-
       // Parsing the URL into key-values
       Map<String, List<String>> params = null;
       try {
@@ -520,6 +522,9 @@ public class TajoPullServerService extends AbstractService {
         sendError(ctx, e.getMessage(), HttpResponseStatus.BAD_REQUEST);
         return;
       }
+
+      ProcessingStatus processingStatus = new ProcessingStatus(request.getUri());
+      processingStatusMap.put(request.getUri(), processingStatus);
 
       String partId = params.get("p").get(0);
       String queryId = params.get("qid").get(0);

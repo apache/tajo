@@ -161,7 +161,7 @@ public class Fetcher {
       request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
       if(LOG.isDebugEnabled()) {
-        LOG.info("Status: " + getState() + ", URI:" + uri);
+        LOG.debug("Status: " + getState() + ", URI:" + uri);
       }
       // Send the HTTP request.
       channel.writeAndFlush(request);
