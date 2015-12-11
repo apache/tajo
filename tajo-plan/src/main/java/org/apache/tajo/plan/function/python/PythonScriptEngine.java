@@ -253,7 +253,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final String PYTHON_LANGUAGE = "python";
   private static final String TAJO_UTIL_NAME = "tajo_util.py";
   private static final String CONTROLLER_NAME = "controller.py";
-  private static final String BASE_DIR = FileUtils.getTempDirectoryPath().toString() + File.separator + "tajo-" + System.getProperty("user.name") + File.separator + "python";
+  private static final String BASE_DIR = FileUtils.getTempDirectoryPath() + File.separator + "tajo-" + System.getProperty("user.name") + File.separator + "python";
   private static final String PYTHON_CONTROLLER_JAR_PATH = "/python/" + CONTROLLER_NAME; // Relative to root of tajo jar.
   private static final String PYTHON_TAJO_UTIL_JAR_PATH = "/python/" + TAJO_UTIL_NAME; // Relative to root of tajo jar.
 
