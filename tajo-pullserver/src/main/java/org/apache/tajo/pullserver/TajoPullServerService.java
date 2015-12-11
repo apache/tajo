@@ -400,7 +400,7 @@ public class TajoPullServerService extends AbstractService {
 
       int maxChunkSize = getConfig().getInt(ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.varname,
           ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.defaultIntVal);
-      pipeline.addLast("codec", new HttpServerCodec(4096, 8192, maxChunkSize));
+      pipeline.addLast("codec", new HttpServerCodec(1, 1, 1));
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
       pipeline.addLast("shuffle", PullServer);
@@ -499,7 +499,8 @@ public class TajoPullServerService extends AbstractService {
             throws Exception {
 
       if (request.getDecoderResult().isFailure()) {
-        LOG.error("Decoding failed. ", request.getDecoderResult().cause());
+        LOG.error("Http decoding failed. ", request.getDecoderResult().cause());
+        sendError(ctx, request.getDecoderResult().toString(), HttpResponseStatus.BAD_REQUEST);
         return;
       }
 

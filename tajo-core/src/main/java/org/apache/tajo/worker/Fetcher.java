@@ -338,7 +338,7 @@ public class Fetcher {
       int maxChunkSize = conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE);
       int readTimeout = conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_READ_TIMEOUT);
 
-      pipeline.addLast("codec", new HttpClientCodec(4096, 8192, maxChunkSize));
+      pipeline.addLast("codec", new HttpClientCodec(1, 1, 1));
       pipeline.addLast("inflater", new HttpContentDecompressor());
       pipeline.addLast("timeout", new ReadTimeoutHandler(readTimeout, TimeUnit.SECONDS));
       pipeline.addLast("handler", new HttpClientHandler(file));
