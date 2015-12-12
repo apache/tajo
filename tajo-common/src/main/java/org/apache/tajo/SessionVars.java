@@ -19,7 +19,6 @@
 package org.apache.tajo;
 
 import com.google.common.collect.Maps;
-import org.apache.tajo.validation.BooleanValidator;
 import org.apache.tajo.validation.Validator;
 import org.apache.tajo.validation.Validators;
 

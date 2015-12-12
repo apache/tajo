@@ -57,7 +57,7 @@ public class TestInnerJoinWithSubQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testJoinWithMultipleJoinQual3() throws Exception {
     runSimpleTests();
@@ -68,24 +68,6 @@ public class TestInnerJoinWithSubQuery extends TestJoinQuery {
   @SimpleTest()
   public final void testJoinWithMultipleJoinQual4() throws Exception {
     runSimpleTests();
-  }
-
-  @Test
-  public final void testJoinWithJson2() throws Exception {
-    /*
-    select t.n_nationkey, t.n_name, t.n_regionkey, t.n_comment, ps.ps_availqty, s.s_suppkey
-    from (
-      select n_nationkey, n_name, n_regionkey, n_comment
-      from nation n
-      join region r on (n.n_regionkey = r.r_regionkey)
-    ) t
-    join supplier s on (s.s_nationkey = t.n_nationkey)
-    join partsupp ps on (s.s_suppkey = ps.ps_suppkey)
-    where t.n_name in ('ARGENTINA','ETHIOPIA', 'MOROCCO');
-     */
-    ResultSet res = executeJsonQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
   }
 
   @Test
