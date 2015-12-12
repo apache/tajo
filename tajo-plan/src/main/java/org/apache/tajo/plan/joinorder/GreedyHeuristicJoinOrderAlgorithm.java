@@ -399,7 +399,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     } else {
       // make cost bigger if cross join
       cost = Math.pow(getCostOfVertex(joinEdge.getLeftVertex()) *
-          getCostOfVertex(joinEdge.getRightVertex()), 2);
+          getCostOfVertex(joinEdge.getRightVertex()), 8);
     }
 
     return checkInfinity(cost * COMPUTATION_FACTOR);

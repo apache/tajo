@@ -545,24 +545,24 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testThreeJoinInUnion() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
     ResultSet res = executeString(
-      "select orders.o_orderkey \n" +
+      "select o_orderkey from (select orders.o_orderkey \n" +
           "from orders\n" +
           "join lineitem on orders.o_orderkey = lineitem.l_orderkey\n" +
           "join customer on orders.o_custkey =  customer.c_custkey\n" +
           "union all \n" +
-          "select nation.n_nationkey from nation"
+          "select nation.n_nationkey from nation) t order by o_orderkey"
     );
     String expected =
         "o_orderkey\n" +
             "-------------------------------\n" +
-            "1\n" +
-            "1\n" +
-            "2\n" +
-            "3\n" +
-            "3\n" +
             "0\n" +
             "1\n" +
+            "1\n" +
+            "1\n" +
             "2\n" +
+            "2\n" +
+            "3\n" +
+            "3\n" +
             "3\n" +
             "4\n" +
             "5\n" +
@@ -685,7 +685,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true)
+  @Option(withExplain = true, withExplainGlobal = true, sort = true)
   @SimpleTest
   public void testComplexUnion2() throws Exception {
     runSimpleTests();
