@@ -103,7 +103,7 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
     }
 
     private boolean isVirtual(TableDesc table) {
-      return table.getMeta().getDataFormat().equals("SYSTEM") || table.getMeta().getDataFormat().equals("FAKEFILE");
+      return table.getMeta().getDataFormat().equals("SYSTEM");
     }
 
     private long getTableVolume(TableDesc table) {

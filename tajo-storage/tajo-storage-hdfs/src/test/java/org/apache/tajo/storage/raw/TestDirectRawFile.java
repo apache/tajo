@@ -100,6 +100,7 @@ public class TestDirectRawFile {
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, false);
 
     MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
@@ -110,14 +111,13 @@ public class TestDirectRawFile {
     builder.waitSafeMode(true);
     cluster = builder.build();
 
-    cluster.waitClusterUp();
     dfs = cluster.getFileSystem();
     localFs = FileSystem.getLocal(new TajoConf());
   }
 
   @AfterClass
   public static void tearDownClass() throws InterruptedException {
-    cluster.shutdown(true);
+    cluster.shutdown();
   }
 
   public Path getTestDir(FileSystem fs, String dir) throws IOException {
@@ -168,7 +168,7 @@ public class TestDirectRawFile {
     return writeRowBlock(conf, meta, rowBlock, outputFile);
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testRWForAllTypesWithNextTuple() throws IOException {
     int rowNum = 10000;
 
@@ -198,7 +198,7 @@ public class TestDirectRawFile {
     assertEquals(rowNum, j);
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testRepeatedScan() throws IOException {
     int rowNum = 2;
 
@@ -226,7 +226,7 @@ public class TestDirectRawFile {
     reader.close();
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testReset() throws IOException {
     int rowNum = 2;
 

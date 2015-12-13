@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.datum.Datum;
@@ -58,6 +59,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   static class FilterPushDownContext {
     Set<EvalNode> pushingDownFilters = new HashSet<>();
+    LogicalPlanRewriteRuleContext rewriteRuleContext;
 
     public void clear() {
       pushingDownFilters.clear();
@@ -111,6 +113,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         . It not, create new HavingNode and set parent's child.
      */
     FilterPushDownContext context = new FilterPushDownContext();
+    context.rewriteRuleContext = rewriteRuleContext;
     LogicalPlan plan = rewriteRuleContext.getPlan();
     catalog = rewriteRuleContext.getCatalog();
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
@@ -966,35 +969,37 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       scanNode.setQual(qual);
 
       // Index path can be identified only after filters are pushed into each scan.
-      String databaseName, tableName;
-      databaseName = CatalogUtil.extractQualifier(table.getName());
-      tableName = CatalogUtil.extractSimpleName(table.getName());
-      Set<Predicate> predicates = new HashSet<>();
-      for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
-        BinaryEval binaryEval = (BinaryEval) eval;
-        // TODO: consider more complex predicates
-        if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
-            binaryEval.getRightExpr().getType() == EvalType.CONST) {
-          predicates.add(new Predicate(binaryEval.getType(),
-              ((FieldEval) binaryEval.getLeftExpr()).getColumnRef(),
-              ((ConstEval)binaryEval.getRightExpr()).getValue()));
-        } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
-            binaryEval.getRightExpr().getType() == EvalType.FIELD) {
-          predicates.add(new Predicate(binaryEval.getType(),
-              ((FieldEval) binaryEval.getRightExpr()).getColumnRef(),
-              ((ConstEval)binaryEval.getLeftExpr()).getValue()));
+      if(context.rewriteRuleContext.getQueryContext().getBool(SessionVars.INDEX_ENABLED)) {
+        String databaseName, tableName;
+        databaseName = CatalogUtil.extractQualifier(table.getName());
+        tableName = CatalogUtil.extractSimpleName(table.getName());
+        Set<Predicate> predicates = new HashSet<>();
+        for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
+          BinaryEval binaryEval = (BinaryEval) eval;
+          // TODO: consider more complex predicates
+          if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+              binaryEval.getRightExpr().getType() == EvalType.CONST) {
+            predicates.add(new Predicate(binaryEval.getType(),
+                ((FieldEval) binaryEval.getLeftExpr()).getColumnRef(),
+                ((ConstEval) binaryEval.getRightExpr()).getValue()));
+          } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
+              binaryEval.getRightExpr().getType() == EvalType.FIELD) {
+            predicates.add(new Predicate(binaryEval.getType(),
+                ((FieldEval) binaryEval.getRightExpr()).getColumnRef(),
+                ((ConstEval) binaryEval.getLeftExpr()).getValue()));
+          }
         }
-      }
 
-      // for every subset of the set of columns, find all matched index paths
-      for (Set<Predicate> subset : Sets.powerSet(predicates)) {
-        if (subset.size() == 0)
-          continue;
-        Column[] columns = extractColumns(subset);
-        if (catalog.existIndexByColumns(databaseName, tableName, columns)) {
-          IndexDesc indexDesc = catalog.getIndexByColumns(databaseName, tableName, columns);
-          block.addAccessPath(scanNode, new IndexScanInfo(
-              table.getStats(), indexDesc, getSimplePredicates(indexDesc, subset)));
+        // for every subset of the set of columns, find all matched index paths
+        for (Set<Predicate> subset : Sets.powerSet(predicates)) {
+          if (subset.size() == 0)
+            continue;
+          Column[] columns = extractColumns(subset);
+          if (catalog.existIndexByColumns(databaseName, tableName, columns)) {
+            IndexDesc indexDesc = catalog.getIndexByColumns(databaseName, tableName, columns);
+            block.addAccessPath(scanNode, new IndexScanInfo(
+                table.getStats(), indexDesc, getSimplePredicates(indexDesc, subset)));
+          }
         }
       }
     }
