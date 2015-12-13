@@ -26,6 +26,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -140,22 +141,22 @@ public class NettyServerBase {
     for (RpcEventListener listener: listeners) {
       listener.onBeforeShutdown(this);
     }
-    
+
     try {
       accepted.close();
 
-      if(bootstrap != null) {
+      if (bootstrap != null) {
         if (bootstrap.childGroup() != null) {
-          bootstrap.childGroup().shutdownGracefully();
+          Future future = bootstrap.childGroup().shutdownGracefully();
           if (waitUntilThreadsStop) {
-            bootstrap.childGroup().terminationFuture().sync();
+            future.sync();
           }
         }
 
         if (bootstrap.group() != null) {
-          bootstrap.group().shutdownGracefully();
+          Future future = bootstrap.group().shutdownGracefully();
           if (waitUntilThreadsStop) {
-            bootstrap.childGroup().terminationFuture().sync();
+            future.sync();
           }
         }
       }

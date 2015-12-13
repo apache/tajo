@@ -21,26 +21,24 @@ package org.apache.tajo.plan.rewrite;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.storage.StorageService;
 
 public class LogicalPlanRewriteRuleContext {
 
-  private OverridableConf queryContext;
-  private LogicalPlan plan;
+  private final OverridableConf queryContext;
+  private final LogicalPlan plan;
   private CatalogService catalog;
+  private StorageService storage;
 
-  public LogicalPlanRewriteRuleContext(OverridableConf queryContext, LogicalPlan plan) {
-    setQueryContext(queryContext);
-    setPlan(plan);
+  public LogicalPlanRewriteRuleContext(OverridableConf context, LogicalPlan plan) {
+    this.queryContext = context;
+    this.plan = plan;
   }
 
-  public LogicalPlanRewriteRuleContext(OverridableConf queryContext, LogicalPlan plan, CatalogService catalog) {
-    setQueryContext(queryContext);
-    setPlan(plan);
-    setCatalog(catalog);
-  }
-
-  public void setCatalog(CatalogService catalog) {
+  public LogicalPlanRewriteRuleContext(OverridableConf context, LogicalPlan plan, CatalogService catalog, StorageService storage) {
+    this(context, plan);
     this.catalog = catalog;
+    this.storage = storage;
   }
 
   public CatalogService getCatalog() {
@@ -51,15 +49,11 @@ public class LogicalPlanRewriteRuleContext {
     return queryContext;
   }
 
-  public void setQueryContext(OverridableConf queryContext) {
-    this.queryContext = queryContext;
-  }
-
   public LogicalPlan getPlan() {
     return plan;
   }
 
-  public void setPlan(LogicalPlan plan) {
-    this.plan = plan;
+  public StorageService getStorage() {
+    return storage;
   }
 }

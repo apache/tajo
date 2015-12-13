@@ -18,10 +18,10 @@
 
 package org.apache.tajo.rpc;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.logging.CommonsLoggerFactory;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 import org.apache.commons.logging.Log;
@@ -106,7 +106,7 @@ public class RpcClientManager {
         public void channelRegistered(ChannelHandlerContext ctx) {
           /* Register client to managed map */
           clients.put(target.getKey(), target);
-          target.getChannel().closeFuture().addListener(new ClientCloseFutureListener(target.getKey()));
+          ctx.channel().closeFuture().addListener(new ClientCloseFutureListener(target.getKey()));
         }
 
         @Override
@@ -210,7 +210,7 @@ public class RpcClientManager {
     }
   }
 
-  static class ClientCloseFutureListener implements GenericFutureListener {
+  static class ClientCloseFutureListener implements ChannelFutureListener {
     private RpcConnectionKey key;
 
     public ClientCloseFutureListener(RpcConnectionKey key) {
@@ -218,7 +218,7 @@ public class RpcClientManager {
     }
 
     @Override
-    public void operationComplete(Future future) throws Exception {
+    public void operationComplete(ChannelFuture future) throws Exception {
       clients.remove(key);
     }
   }

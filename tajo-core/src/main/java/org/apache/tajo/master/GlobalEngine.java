@@ -94,7 +94,7 @@ public class GlobalEngine extends AbstractService {
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog(), TablespaceManager.getInstance());
       // Access path rewriter is enabled only in QueryMasterTask
-      optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
+      optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog(), TablespaceManager.getInstance());
       annotatedPlanVerifier = new LogicalPlanVerifier();
       postLogicalPlanVerifier = new PostLogicalPlanVerifier();
     } catch (Throwable t) {

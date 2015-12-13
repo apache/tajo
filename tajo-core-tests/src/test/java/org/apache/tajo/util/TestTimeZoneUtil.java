@@ -16,38 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.util;
 
-import com.google.common.collect.Lists;
-import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.rpc.RpcConstants;
+import org.junit.Test;
 
-public class UnsetCommand extends TajoShellCommand {
+import java.util.Properties;
 
-  public UnsetCommand(TajoCli.TajoCliContext context) {
-    super(context);
-  }
+import static org.apache.tajo.rpc.RpcConstants.CLIENT_CONNECTION_TIMEOUT;
+import static org.apache.tajo.rpc.RpcConstants.CLIENT_RETRY_NUM;
+import static org.junit.Assert.*;
 
-  @Override
-  public String getCommand() {
-    return "\\unset";
-  }
+public class TestTimeZoneUtil {
 
-  @Override
-  public void invoke(String[] cmd) throws Exception {
-    if (cmd.length == 2) {
-      client.unsetSessionVariables(Lists.newArrayList(cmd[1]));
-    } else {
-      context.getOutput().println("usage: \\unset " + getUsage());
+    @Test
+    public void testASIASeoul() throws Exception {
+        String timezone = TimeZoneUtil.getValidTimezone("ASIA/Seoul");
+        assertEquals(timezone, "Asia/Seoul");
     }
-  }
 
-  @Override
-  public String getUsage() {
-    return "[NAME]";
-  }
+    @Test
+    public void testGMT_PLUS_3() throws Exception {
+        String timezone = TimeZoneUtil.getValidTimezone("GMT+3");
+        assertEquals(timezone, "GMT+3");
+    }
 
-  @Override
-  public String getDescription() {
-    return "unset a session variable";
-  }
 }

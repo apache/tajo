@@ -534,7 +534,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
 
       if (groupbyNode.hasAggFunctions()) {
-        verifyIfEvalNodesCanBeEvaluated(projectable, groupbyNode.getAggFunctions());
+        verifyIfEvalNodesCanBeEvaluated(projectable, (List<EvalNode>)(List<?>) groupbyNode.getAggFunctions());
       }
 
     } else if (projectable instanceof WindowAggNode) {
@@ -545,7 +545,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
 
       if (windowAggNode.hasAggFunctions()) {
-        verifyIfEvalNodesCanBeEvaluated(projectable, windowAggNode.getWindowFunctions());
+        verifyIfEvalNodesCanBeEvaluated(projectable, Arrays.asList(windowAggNode.getWindowFunctions()));
       }
 
       if (windowAggNode.hasSortSpecs()) {
@@ -584,7 +584,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
   }
 
-  public static void verifyIfEvalNodesCanBeEvaluated(Projectable projectable, EvalNode[] evalNodes)
+  public static void verifyIfEvalNodesCanBeEvaluated(Projectable projectable, List<EvalNode> evalNodes)
       throws TajoException {
     for (EvalNode e : evalNodes) {
       Set<Column> columns = EvalTreeUtil.findUniqueColumns(e);
@@ -804,7 +804,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     groupbyNode.setDistinct(includeDistinctFunction);
-    groupbyNode.setAggFunctions(aggEvals.toArray(new AggregationFunctionCallEval[aggEvals.size()]));
+    groupbyNode.setAggFunctions(new ArrayList<>(aggEvals));
     List<Target> targets = ProjectionPushDownRule.buildGroupByTarget(groupbyNode, null,
         aggEvalNames.toArray(new String[aggEvalNames.size()]));
     groupbyNode.setTargets(targets);
@@ -1049,7 +1049,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
     // if there is at least one distinct aggregation function
     groupingNode.setDistinct(includeDistinctFunction);
-    groupingNode.setAggFunctions(aggEvalNodes.toArray(new AggregationFunctionCallEval[aggEvalNodes.size()]));
+    groupingNode.setAggFunctions(aggEvalNodes);
 
     List<Target> targets = new ArrayList<>();
 
@@ -1334,7 +1334,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ScanNode scanNode = block.getNodeFromExpr(expr);
-    updatePhysicalInfo(scanNode.getTableDesc());
 
     // Find expression which can be evaluated at this relation node.
     // Except for column references, additional expressions used in select list, where clause, order-by clauses
@@ -1391,22 +1390,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
     }
     return targets;
-  }
-
-  private void updatePhysicalInfo(TableDesc desc) {
-
-    // FAKEFILE is used for test
-    if (!desc.getMeta().getDataFormat().equals("SYSTEM") && !desc.getMeta().getDataFormat().equals("FAKEFILE")) {
-      try {
-        if (desc.getStats() != null) {
-          desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
-        }
-      } catch (UnsupportedException t) {
-        LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume()");
-        // -1 means unknown volume size.
-        desc.getStats().setNumBytes(-1);
-      }
-    }
   }
 
   @Override

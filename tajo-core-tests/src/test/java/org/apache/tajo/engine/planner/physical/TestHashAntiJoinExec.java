@@ -133,7 +133,7 @@ public class TestHashAntiJoinExec {
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(conf, catalog);
+    optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
   }
 
   @After

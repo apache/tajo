@@ -3,8 +3,7 @@ Compression
 ***********
 
 Using compression can make data size compact, thereby enabling efficient use of network bandwidth and storage. Most of Tajo data formats support data compression feature.
-Currently, compression configuration affects only for stored data format and it is specified when a table is created as table meta information(See `Create Table <../sql_language/ddl.html#create-table>`_).
-Compression for intermidate data or others is not supported now.
+Currently, compression configuration affects only for stored data format and it is enabled when a table is created with the proper table property(See `Create Table <../sql_language/ddl.html#create-table>`_).
 
 ===========================================
 Compression Properties for each Data Format
