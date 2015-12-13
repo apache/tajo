@@ -655,9 +655,7 @@ public class Stage implements EventHandler<StageEvent> {
     List<ColumnStats> columnStatses = Lists.newArrayList();
 
     MasterPlan masterPlan = stage.getMasterPlan();
-    Iterator<ExecutionBlock> it = masterPlan.getChilds(stage.getBlock()).iterator();
-    while (it.hasNext()) {
-      ExecutionBlock block = it.next();
+    for (ExecutionBlock block : masterPlan.getChilds(stage.getBlock())) {
       Stage childStage = stage.context.getStage(block.getId());
       TableStats[] childStatArray = new TableStats[]{
           childStage.getInputStats(), childStage.getResultStats()

@@ -167,9 +167,7 @@ public class JSRInlinerAdapter extends MethodNode implements Opcodes {
             markSubroutines();
             if (LOGGING) {
                 log(mainSubroutine.toString());
-                Iterator<BitSet> it = subroutineHeads.values().iterator();
-                while (it.hasNext()) {
-                    BitSet sub = it.next();
+                for (BitSet sub : subroutineHeads.values()) {
                     log(sub.toString());
                 }
             }
