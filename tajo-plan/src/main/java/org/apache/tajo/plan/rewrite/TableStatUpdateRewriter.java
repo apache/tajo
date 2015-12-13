@@ -31,7 +31,6 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.StorageService;
-import org.apache.tajo.unit.StorageUnit;
 
 import java.util.Stack;
 
