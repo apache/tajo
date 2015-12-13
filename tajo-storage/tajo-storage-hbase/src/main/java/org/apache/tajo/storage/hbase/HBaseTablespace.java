@@ -73,8 +73,8 @@ public class HBaseTablespace extends Tablespace {
       new StorageProperty("hbase", false, true, false, false);
   public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true, false, true);
   public static final FormatProperty PUT_MODE_PROPERTIES = new FormatProperty(true, true, false);
-  public static final List<byte []> EMPTY_START_ROW_KEY = TUtil.newList(HConstants.EMPTY_START_ROW);
-  public static final List<byte []> EMPTY_END_ROW_KEY   = TUtil.newList(HConstants.EMPTY_END_ROW);
+  public static final List<byte []> EMPTY_START_ROW_KEY = TUtil.newList(new byte [0]);
+  public static final List<byte []> EMPTY_END_ROW_KEY   = TUtil.newList(new byte [0]);
 
   private Configuration hbaseConf;
 
@@ -269,7 +269,6 @@ public class HBaseTablespace extends Tablespace {
       // If there is many split keys, Tajo allows to define in the file.
       Path path = new Path(splitRowKeysFile);
       FileSystem fs = path.getFileSystem(conf);
-
       if (!fs.exists(path)) {
         throw new MissingTablePropertyException("hbase.split.rowkeys.file=" + path.toString() + " not exists.",
             hbaseTableName);
@@ -277,7 +276,6 @@ public class HBaseTablespace extends Tablespace {
 
       SortedSet<String> splitKeySet = new TreeSet<>();
       BufferedReader reader = null;
-
       try {
         reader = new BufferedReader(new InputStreamReader(fs.open(path)));
         String line = null;
