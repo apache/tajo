@@ -8,10 +8,16 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
-    TAJO-2005: Add TableStatUpdateRewriter. (hyunsik) 
+    TAJO-2005: Add TableStatUpdateRewriter. (hyunsik)
 
     TAJO-1948: Change GroupbyNode::setAggFunctions and getAggFunctions to set 
     and get List. (Dongkyu Hwangbo via hyunsik)
+
+    TAJO-1979: Usage of some TajoShellCommand is omitted.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-1998: Waiting for gracefully stopping in tajo-deamon.sh is too short.
+    (jinho)
 
     TAJO-1985: Supporting Metric report via JMX. (Yongjun Park via jinho)
 
