@@ -61,6 +61,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.InvalidURLException;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.storage.*;
@@ -401,7 +402,7 @@ public class TajoPullServerService extends AbstractService {
 
       int maxChunkSize = getConfig().getInt(ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.varname,
           ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.defaultIntVal);
-      pipeline.addLast("codec", new HttpServerCodec(1 * StorageUnit.MB, 8192, maxChunkSize));
+      pipeline.addLast("codec", new HttpServerCodec(500 * StorageUnit.KB, 8192, maxChunkSize));
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
       pipeline.addLast("shuffle", PullServer);
@@ -510,6 +511,7 @@ public class TajoPullServerService extends AbstractService {
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
 
         clearIndexCache(request.getUri());
+        return;
       } else if (request.getMethod() != HttpMethod.GET) {
         sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
         return;
@@ -668,8 +670,12 @@ public class TajoPullServerService extends AbstractService {
       }
     }
 
-    private void clearIndexCache(String uri) throws IOException {
-      ExecutionBlockId ebId = ExecutionBlockId.fromString(uri);
+    private void clearIndexCache(String uri) throws IOException, InvalidURLException {
+      String[] tokens = uri.split("=");
+      if (tokens.length != 2 || !tokens[0].equals("ebid")) {
+        throw new IllegalArgumentException("invalid params: " + uri);
+      }
+      ExecutionBlockId ebId = ExecutionBlockId.fromString(tokens[1]);
       String queryId = ebId.getQueryId().toString();
       String ebSeqId = Integer.toString(ebId.getId());
       List<CacheKey> removed = new ArrayList<>();

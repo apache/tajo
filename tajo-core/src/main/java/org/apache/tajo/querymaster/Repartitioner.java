@@ -82,7 +82,7 @@ import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 public class Repartitioner {
   private static final Log LOG = LogFactory.getLog(Repartitioner.class);
 
-  private final static int HTTP_REQUEST_MAXIMUM_LENGTH = 1 * StorageUnit.MB;
+  private final static int HTTP_REQUEST_MAXIMUM_LENGTH = 500 * StorageUnit.KB;
   private final static String UNKNOWN_HOST = "unknown";
 
   public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, Stage stage)
@@ -1154,6 +1154,7 @@ public class Repartitioner {
       if (fetch.getType() == HASH_SHUFFLE || fetch.getType() == SCATTERED_HASH_SHUFFLE) {
         fetchURLs.add(URI.create(urlPrefix.toString()));
       } else {
+        urlPrefix.append("&ta=");
         // If the get request is longer than 2000 characters,
         // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
         // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
@@ -1190,8 +1191,7 @@ public class Repartitioner {
           int attemptId = taskAndAttemptIds.get(i).getSecond();
           taskAttemptId.append(taskId).append("_").append(attemptId);
 
-          if (taskIdListBuilder.length() + taskAttemptId.length()
-              > HTTP_REQUEST_MAXIMUM_LENGTH) {
+          if (urlPrefix.length() + taskIdListBuilder.length() > HTTP_REQUEST_MAXIMUM_LENGTH) {
             taskIdsParams.add(taskIdListBuilder.toString());
             taskIdListBuilder = new StringBuilder(taskId + "_" + attemptId);
           } else {
@@ -1202,7 +1202,6 @@ public class Repartitioner {
         if (taskIdListBuilder.length() > 0) {
           taskIdsParams.add(taskIdListBuilder.toString());
         }
-        urlPrefix.append("&ta=");
         for (String param : taskIdsParams) {
           fetchURLs.add(URI.create(urlPrefix + param));
         }

@@ -206,6 +206,7 @@ public class ExecutionBlockContext {
   }
 
   private void clearIndexCache() {
+    // Avoid unnecessary cache clear when the current eb is a leaf eb
     if (executionBlockId.getId() > 1) {
       Bootstrap bootstrap = new Bootstrap()
           .group(NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER, 1))
@@ -235,7 +236,7 @@ public class ExecutionBlockContext {
         }
 
         ExecutionBlockId clearEbId = new ExecutionBlockId(executionBlockId.getQueryId(), executionBlockId.getId() - 1);
-        HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.DELETE, clearEbId.toString());
+        HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.DELETE, "ebid=" + clearEbId.toString());
         request.headers().set(Names.HOST, connInfo.getHost());
         request.headers().set(Names.CONNECTION, Values.CLOSE);
         channel.writeAndFlush(request);
