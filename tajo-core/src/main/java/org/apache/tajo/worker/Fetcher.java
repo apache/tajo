@@ -172,12 +172,13 @@ public class Fetcher {
       fileChunk.setLength(fileChunk.getFile().length());
 
       long start = 0;
-      for (int i = 0; i < chunkLengths.size(); i++) {
-        FileChunk chunk = new FileChunk(fileChunk.getFile(), start, chunkLengths.get(i));
+      for (Long eachChunkLength : chunkLengths) {
+        if (eachChunkLength == 0) continue;
+        FileChunk chunk = new FileChunk(fileChunk.getFile(), start, eachChunkLength);
         chunk.setEbId(fileChunk.getEbId());
         chunk.setFromRemote(fileChunk.fromRemote());
         fileChunks.add(chunk);
-        start += chunkLengths.get(i);
+        start += eachChunkLength;
       }
       return fileChunks;
 
