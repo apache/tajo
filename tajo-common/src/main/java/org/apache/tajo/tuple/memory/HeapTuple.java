@@ -33,6 +33,7 @@ import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.nio.ByteOrder;
+import java.util.Arrays;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
@@ -293,6 +294,20 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
   @Override
   public String toString() {
     return VTuple.toDisplayString(getValues());
+  }
+
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(getValues());
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Tuple) {
+      Tuple other = (Tuple) obj;
+      return Arrays.equals(getValues(), other.getValues());
+    }
+    return false;
   }
 
   @Override

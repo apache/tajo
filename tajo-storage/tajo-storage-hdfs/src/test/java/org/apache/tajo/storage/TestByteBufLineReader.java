@@ -85,7 +85,7 @@ public class TestByteBufLineReader {
     fs.close();
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testReaderWithDFS() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
@@ -94,8 +94,7 @@ public class TestByteBufLineReader {
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
-        .numDataNodes(2).build();
-    cluster.waitClusterUp();
+        .numDataNodes(2).waitSafeMode(true).build();
 
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
@@ -122,7 +121,7 @@ public class TestByteBufLineReader {
       lineReader.close();
       fs.close();
     } finally {
-      cluster.shutdown(true);
+      cluster.shutdown();
     }
   }
 
