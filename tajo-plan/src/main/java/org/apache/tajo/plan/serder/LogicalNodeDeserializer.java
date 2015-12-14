@@ -74,10 +74,7 @@ public class LogicalNodeDeserializer {
     // So, it sequentially transforms each serialized node into a LogicalNode instance in a postfix order of
     // the original logical node tree.
 
-    Iterator<PlanProto.LogicalNode> it = nodeList.iterator();
-    while (it.hasNext()) {
-      PlanProto.LogicalNode protoNode = it.next();
-
+    for (PlanProto.LogicalNode protoNode : nodeList) {
       switch (protoNode.getType()) {
       case ROOT:
         current = convertRoot(nodeMap, protoNode);

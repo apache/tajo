@@ -166,9 +166,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     GroupbyNode grp = (GroupbyNode) super.clone();
     if (groupingKeys != null) {
       grp.groupingKeys = new Column[groupingKeys.length];
-      for (int i = 0; i < groupingKeys.length; i++) {
-        grp.groupingKeys[i] = groupingKeys[i];
-      }
+      System.arraycopy(groupingKeys, 0, grp.groupingKeys, 0, groupingKeys.length);
     }
 
     if (aggrFunctions != null) {

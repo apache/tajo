@@ -57,6 +57,12 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2016: Fix storage tests hangs. (jinho)
+
+    TAJO-2013: FilterPushDownRule fails due to the unsupported index. (jinho)
+
+    TAJO-2014: TestRpcClientManager fails occasionally. (jinho)
+
     TAJO-2000: BSTIndex can cause OOM. (jinho)
 
     TAJO-1992: \set timezone in cli doesn't work because of casesensitive (DaeMyung)
@@ -112,6 +118,15 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2019: Replace manual array copy with System.arraycopy(). 
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
+    TAJO-1994: Some trivial modification is needed in compression document.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-1973: Replace 'while' loop with 'foreach'. (Contributed by Dongkyu Hwangbo, 
+    committed by jihoon)
 
     TAJO-1855: Add document for tablespace configuration to the Configuration chapter.
     (Contributed by Jongyoung Park. Committed by jihoon)
