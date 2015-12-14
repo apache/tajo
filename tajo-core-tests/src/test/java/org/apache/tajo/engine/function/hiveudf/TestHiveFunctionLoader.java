@@ -51,7 +51,7 @@ public class TestHiveFunctionLoader {
 
     URL hiveUDFURL = ClassLoader.getSystemResource("hiveudf");
     Preconditions.checkNotNull(hiveUDFURL, "hive udf directory is absent.");
-    conf.set("hive.udf.dir", hiveUDFURL.toString().substring("file:".length()));
+    conf.set(TajoConf.ConfVars.HIVE_UDF_DIR.varname, hiveUDFURL.toString().substring("file:".length()));
 
     cluster.startMiniClusterInLocal(1);
   }

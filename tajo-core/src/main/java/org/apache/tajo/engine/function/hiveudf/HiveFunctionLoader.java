@@ -43,7 +43,7 @@ import java.util.*;
 
 public class HiveFunctionLoader {
   public static Collection<FunctionDesc> loadHiveUDFs(TajoConf conf) {
-    String udfdir = conf.get("hive.udf.dir", "lib/hiveudf");
+    String udfdir = conf.get(TajoConf.ConfVars.HIVE_UDF_DIR.varname);
     ArrayList<FunctionDesc> funcList = new ArrayList<>();
 
     try {
