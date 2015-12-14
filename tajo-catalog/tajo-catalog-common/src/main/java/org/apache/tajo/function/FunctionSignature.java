@@ -24,6 +24,7 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionSignatureProto;
@@ -111,7 +112,7 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
     FunctionSignatureProto.Builder builder = FunctionSignatureProto.newBuilder();
     builder.setType(functionType);
     builder.setName(name);
-    builder.addAllParameterTypes(Arrays.asList(paramTypes));
+    builder.addAllParameterTypes(new ArrayList<>(Arrays.asList(paramTypes)));
     builder.setReturnType(returnType);
     return builder.build();
   }

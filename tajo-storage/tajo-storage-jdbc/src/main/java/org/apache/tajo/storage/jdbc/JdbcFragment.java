@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.jdbc.JdbcFragmentProtos.JdbcFragmentProto;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneable {
@@ -90,7 +91,7 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
     builder.setInputSourceId(this.inputSourceId);
     builder.setUri(this.uri);
     if(hostNames != null) {
-      builder.addAllHosts(Arrays.asList(hostNames));
+      builder.addAllHosts(new ArrayList<>(Arrays.asList(hostNames)));
     }
 
     CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();

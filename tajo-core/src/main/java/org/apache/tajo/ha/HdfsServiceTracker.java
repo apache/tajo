@@ -501,7 +501,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
       FSDataInputStream stream = fs.open(activeMasterEntry);
       String data = stream.readUTF();
       stream.close();
-      addressElements.addAll(Arrays.asList(data.split("_"))); // Add remains entries to elements
+      addressElements.addAll(new ArrayList<>(Arrays.asList(data.split("_")))); // Add remains entries to elements
 
       // ensure the number of entries
       Preconditions.checkState(addressElements.size() == 5, "Fewer service addresses than necessary.");
