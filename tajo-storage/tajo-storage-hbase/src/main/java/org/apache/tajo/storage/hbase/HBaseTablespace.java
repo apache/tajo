@@ -73,8 +73,8 @@ public class HBaseTablespace extends Tablespace {
       new StorageProperty("hbase", false, true, false, false);
   public static final FormatProperty HFILE_FORMAT_PROPERTIES = new FormatProperty(true, false, true);
   public static final FormatProperty PUT_MODE_PROPERTIES = new FormatProperty(true, true, false);
-  public static final List<byte []> EMPTY_START_ROW_KEY = TUtil.newList(HConstants.EMPTY_START_ROW);
-  public static final List<byte []> EMPTY_END_ROW_KEY   = TUtil.newList(HConstants.EMPTY_END_ROW);
+  public static final List<byte []> EMPTY_START_ROW_KEY = TUtil.newList(new byte [0]);
+  public static final List<byte []> EMPTY_END_ROW_KEY   = TUtil.newList(new byte [0]);
 
   private Configuration hbaseConf;
 
