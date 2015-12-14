@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1990: Refine some parts in HBaseTablespace. (hyunsik)
+
     TAJO-2005: Add TableStatUpdateRewriter. (hyunsik)
 
     TAJO-1948: Change GroupbyNode::setAggFunctions and getAggFunctions to set 
