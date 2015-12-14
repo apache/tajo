@@ -172,13 +172,6 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     return false;
   }
 
-  public boolean equalsSignature(Object obj) {
-    if (obj instanceof FunctionDesc) {
-      return this.getSignature().equalsWithoutType(obj);
-    }
-    return false;
-  }
-  
   @Override
   public Object clone() throws CloneNotSupportedException{
     FunctionDesc desc  = (FunctionDesc)super.clone();
