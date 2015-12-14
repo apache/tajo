@@ -119,7 +119,8 @@ Release 0.12.0 - unreleased
 
   TASKS
 
-    TAJO-2019: Replace manual array copy with System.arraycopy(). (jihoon)
+    TAJO-2019: Replace manual array copy with System.arraycopy(). 
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
 
     TAJO-1994: Some trivial modification is needed in compression document.
     (Contributed by Jongyoung Park. Committed by jihoon)
