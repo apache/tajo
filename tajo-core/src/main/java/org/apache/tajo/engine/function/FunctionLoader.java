@@ -36,7 +36,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.engine.function.hiveudf.HiveGeneralFunctionHolder;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
@@ -87,7 +86,6 @@ public class FunctionLoader {
    * Load functions defined by users.
    *
    * @param conf
-   * @param functionList
    * @return
    * @throws IOException
    */
@@ -219,7 +217,7 @@ public class FunctionLoader {
     Set<Class> functionClasses = ClassUtil.findClasses(Function.class, "org.apache.tajo.engine.function");
 
     for (Class eachClass : functionClasses) {
-      if(eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers()) || eachClass == HiveGeneralFunctionHolder.class) {
+      if(eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers())) {
         continue;
       }
       Function function = null;
