@@ -321,12 +321,12 @@ public class Repartitioner {
             if (tbNameToInterm.containsKey(scanEbId)) {
               tbNameToInterm.get(scanEbId).add(intermediateEntry);
             } else {
-              tbNameToInterm.put(scanEbId, Arrays.asList(intermediateEntry));
+              tbNameToInterm.put(scanEbId, new ArrayList<>(Arrays.asList(intermediateEntry)));
             }
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                     new HashMap<>();
-            tbNameToInterm.put(scanEbId, Arrays.asList(intermediateEntry));
+            tbNameToInterm.put(scanEbId, new ArrayList<>(Arrays.asList(intermediateEntry)));
             hashEntries.put(intermediateEntry.getPartId(), tbNameToInterm);
           }
         }
