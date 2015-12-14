@@ -240,8 +240,8 @@ public class TaskRequestImpl implements TaskRequest {
 			builder.setId(this.id.getProto());
 		}
 		if (fragments != null) {
-			for (FragmentProto fragment : fragments) {
-				builder.addFragments(fragment);
+				for (FragmentProto fragment : fragments) {
+					builder.addFragments(fragment);
 			}
 		}
 		if (this.outputTable != null) {
