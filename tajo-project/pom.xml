@@ -1189,6 +1189,11 @@
         <version>${jetty.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.reflections</groupId>
+        <artifactId>reflections</artifactId>
+        <version>0.9.10</version>
+      </dependency>
+      <dependency>
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>jsp-2.1</artifactId>
         <version>${jetty.version}</version>

@@ -87,16 +87,23 @@ public class TestHiveFunctionLoader {
     FunctionDesc desc = catService.getFunction("my_upper", CatalogProtos.FunctionType.UDF,
         CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
 
-    assertEquals(HiveGeneralFunctionHolder.class, desc.getLegacyFuncClass());
     assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
     assertEquals("to uppercase", desc.getDescription());
 
+    TajoDataTypes.DataType int4type = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4);
+    desc = catService.getFunction("my_divide", CatalogProtos.FunctionType.UDF, int4type, int4type);
+
+    assertEquals(TajoDataTypes.Type.FLOAT8, desc.getReturnType().getType());
+    assertEquals(2, desc.getParamTypes().length);
+    assertEquals(TajoDataTypes.Type.INT4, desc.getParamTypes()[0].getType());
+    assertEquals(TajoDataTypes.Type.INT4, desc.getParamTypes()[1].getType());
+
+    // synonym
     desc = catService.getFunction("test_upper", CatalogProtos.FunctionType.UDF,
         CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
 
-    assertEquals(HiveGeneralFunctionHolder.class, desc.getLegacyFuncClass());
     assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
@@ -106,7 +113,6 @@ public class TestHiveFunctionLoader {
     desc = catService.getFunction("com_example_hive_udf_MyLower", CatalogProtos.FunctionType.UDF,
         CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
 
-    assertEquals(HiveGeneralFunctionHolder.class, desc.getLegacyFuncClass());
     assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
@@ -122,6 +128,14 @@ public class TestHiveFunctionLoader {
     String result = rs.getString(1);
 
     assertEquals("ABCD", result);
+
+    rs.close();
+
+    rs = client.executeQueryAndGetResult("select my_divide(1,2)");
+    rs.beforeFirst();
+    rs.next();
+    double res = rs.getDouble(1);
+    assertEquals(0.5, res, 0.0000001);
 
     rs.close();
   }

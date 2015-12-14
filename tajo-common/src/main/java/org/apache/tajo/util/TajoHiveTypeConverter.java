@@ -22,6 +22,9 @@ import org.apache.hadoop.io.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
+import org.reflections.ReflectionUtils;
+
+import java.util.Set;
 
 public class TajoHiveTypeConverter {
 
@@ -30,20 +33,21 @@ public class TajoHiveTypeConverter {
       return null;
 
     DataType.Builder builder = DataType.newBuilder();
+    Set<Class<?>> parents = ReflectionUtils.getAllSuperTypes(hiveType);
 
-    if (hiveType == IntWritable.class) {
+    if (hiveType == IntWritable.class || parents.contains(IntWritable.class)) {
       return builder.setType(Type.INT4).build();
     }
-    if (hiveType == LongWritable.class) {
+    if (hiveType == LongWritable.class || parents.contains(LongWritable.class)) {
       return builder.setType(Type.INT8).build();
     }
-    if (hiveType == Text.class) {
+    if (hiveType == Text.class || parents.contains(Text.class)) {
       return builder.setType(Type.TEXT).build();
     }
-    if (hiveType == FloatWritable.class) {
+    if (hiveType == FloatWritable.class || parents.contains(FloatWritable.class)) {
       return builder.setType(Type.FLOAT4).build();
     }
-    if (hiveType == DoubleWritable.class) {
+    if (hiveType == DoubleWritable.class || parents.contains(DoubleWritable.class)) {
       return builder.setType(Type.FLOAT8).build();
     }
 
