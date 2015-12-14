@@ -670,7 +670,16 @@ public class TajoPullServerService extends AbstractService {
       }
     }
 
+    /**
+     * Upon a request from TajoWorker, this method clears index cache for fetching data of an execution block.
+     * It is called whenever an execution block is completed.
+     *
+     * @param uri query URI which indicates the execution block id
+     * @throws IOException
+     * @throws InvalidURLException
+     */
     private void clearIndexCache(String uri) throws IOException, InvalidURLException {
+      // Simply parse the given uri
       String[] tokens = uri.split("=");
       if (tokens.length != 2 || !tokens[0].equals("ebid")) {
         throw new IllegalArgumentException("invalid params: " + uri);
@@ -766,8 +775,12 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
+  // Temporal space to wait for the completion of all index lookup operations
   private static final ConcurrentHashMap<CacheKey, BSTIndexReader> waitForRemove = new ConcurrentHashMap<>();
 
+  // RemovalListener is triggered when an item is removed from the index reader cache.
+  // It closes index readers when they are not used anymore.
+  // If they are still being used, they are moved to waitForRemove map to wait for other operations' completion.
   private static final RemovalListener<CacheKey, BSTIndexReader> removalListener = (removal) -> {
     BSTIndexReader reader = removal.getValue();
     if (reader.getReferenceNum() == 0) {
@@ -790,7 +803,7 @@ public class TajoPullServerService extends AbstractService {
                                         boolean last) throws IOException, ExecutionException {
 
     BSTIndexReader idxReader = indexReaderCache.get(new CacheKey(outDir, queryId, ebSeqId));
-    idxReader.hold();
+    idxReader.retain();
 
     File data;
     long startOffset;

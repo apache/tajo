@@ -497,10 +497,17 @@ public class BSTIndex implements IndexMethod {
       open();
     }
 
-    public void hold() {
+    /**
+     * Increase the reference number of the index reader.
+     */
+    public void retain() {
       REFERENCE_UPDATER.compareAndSet(this, referenceNum, referenceNum + 1);
     }
 
+    /**
+     * Decrease the reference number of the index reader.
+     * This method must be called before {@link #close()}.
+     */
     public void release() {
       REFERENCE_UPDATER.compareAndSet(this, referenceNum, referenceNum - 1);
     }
@@ -823,6 +830,9 @@ public class BSTIndex implements IndexMethod {
       return offset;
     }
 
+    /**
+     * Close index reader only when it is not used anymore.
+     */
     @Override
     public void close() throws IOException {
       if (referenceNum == 0) {
@@ -830,6 +840,11 @@ public class BSTIndex implements IndexMethod {
       }
     }
 
+    /**
+     * Close index reader even though it is being used.
+     *
+     * @throws IOException
+     */
     public void forceClose() throws IOException {
       REFERENCE_UPDATER.compareAndSet(this, referenceNum, 0);
       this.indexIn.close();

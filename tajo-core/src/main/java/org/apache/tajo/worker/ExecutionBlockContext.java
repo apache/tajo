@@ -205,8 +205,11 @@ public class ExecutionBlockContext {
     RpcClientManager.cleanup(queryMasterClient);
   }
 
+  /**
+   * Send a request to {@link TajoPullServerService} to clear index cache
+   */
   private void clearIndexCache() {
-    // Avoid unnecessary cache clear when the current eb is a leaf eb
+    // Avoid unnecessary cache clear request when the current eb is a leaf eb
     if (executionBlockId.getId() > 1) {
       Bootstrap bootstrap = new Bootstrap()
           .group(NettyUtils.getSharedEventLoopGroup(NettyUtils.GROUP.FETCHER, 1))
@@ -235,6 +238,7 @@ public class ExecutionBlockContext {
           return;
         }
 
+        // Example of URI: /ebid=eb_1450063997899_0015_000002
         ExecutionBlockId clearEbId = new ExecutionBlockId(executionBlockId.getQueryId(), executionBlockId.getId() - 1);
         HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.DELETE, "ebid=" + clearEbId.toString());
         request.headers().set(Names.HOST, connInfo.getHost());
