@@ -25,7 +25,6 @@ import java.util.List;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.DataFormat;
-import org.apache.tajo.util.TUtil;
 
 public class InfoSchemaMetadataDictionary {
   private static final String DATABASE_NAME = "information_schema";

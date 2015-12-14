@@ -28,7 +28,6 @@ import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.io.PrintWriter;

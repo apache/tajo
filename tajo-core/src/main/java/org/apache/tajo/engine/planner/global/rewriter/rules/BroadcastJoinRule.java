@@ -33,7 +33,6 @@ import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.unit.StorageUnit;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 
 import java.util.*;

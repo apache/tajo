@@ -18,8 +18,6 @@
 
 package org.apache.tajo.validation;
 
-import org.apache.tajo.util.TUtil;
-
 import java.util.ArrayList;
 import java.util.Collection;
 

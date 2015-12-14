@@ -25,7 +25,6 @@ import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;

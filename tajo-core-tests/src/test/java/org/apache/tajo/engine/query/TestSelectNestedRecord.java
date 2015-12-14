@@ -19,11 +19,9 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -44,9 +42,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect1() throws Exception {
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample2");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("sample2"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("sample2"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -56,9 +52,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect2() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("tweets"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -68,9 +62,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect3() throws Exception {
     List<String> tables = executeDDL("sample2_ddl.sql", "sample2", "sample5");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("sample5"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("sample5"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -81,9 +73,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testTAJO_1610() throws Exception {
     executeString("CREATE DATABASE tweets").close();
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets.tweets");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("tweets.tweets"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("tweets.tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -93,9 +83,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testNestedFieldAsGroupbyKey1() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("tweets"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -105,9 +93,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testNestedFieldAsJoinKey1() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("tweets"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -118,9 +104,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testInsertType1() throws Exception {
     // all columns
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample3");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("sample3"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("sample3"), tables);
 
     executeString("CREATE TABLE clone (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
 
@@ -134,9 +118,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testInsertType2() throws Exception {
     // some columns
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample4");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("sample4"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("sample4"), tables);
 
     executeString("CREATE TABLE clone2 (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
 

@@ -33,7 +33,6 @@ import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.util.ExprFinder;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 

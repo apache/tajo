@@ -52,7 +52,6 @@ import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
 import java.net.URI;
 import java.util.*;

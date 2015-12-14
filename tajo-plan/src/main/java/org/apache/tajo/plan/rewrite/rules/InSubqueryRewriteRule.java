@@ -32,7 +32,6 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 

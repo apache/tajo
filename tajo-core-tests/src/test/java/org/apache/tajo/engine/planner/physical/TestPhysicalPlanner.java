@@ -56,7 +56,6 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

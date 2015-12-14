@@ -38,7 +38,6 @@ import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 

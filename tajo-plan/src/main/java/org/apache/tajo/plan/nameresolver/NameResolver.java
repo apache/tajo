@@ -33,7 +33,6 @@ import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 

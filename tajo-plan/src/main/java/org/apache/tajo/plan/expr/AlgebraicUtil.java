@@ -25,7 +25,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 

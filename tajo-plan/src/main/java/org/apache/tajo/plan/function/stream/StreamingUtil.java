@@ -20,7 +20,6 @@ package org.apache.tajo.plan.function.stream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.util.TUtil;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -33,7 +33,6 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.util.ProtoUtil;
-import org.apache.tajo.util.TUtil;
 
 import java.io.Closeable;
 import java.util.ArrayList;

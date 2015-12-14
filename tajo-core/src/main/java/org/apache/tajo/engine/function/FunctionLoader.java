@@ -40,7 +40,6 @@ import org.apache.tajo.exception.AmbiguousFunctionException;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Method;

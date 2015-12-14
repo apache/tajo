@@ -27,7 +27,6 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.verifier.PostLogicalPlanVerifier.Context;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.unit.StorageUnit;
-import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.List;

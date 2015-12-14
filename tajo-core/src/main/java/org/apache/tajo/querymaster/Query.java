@@ -50,7 +50,6 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
 

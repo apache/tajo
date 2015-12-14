@@ -39,7 +39,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -36,7 +36,6 @@ import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 

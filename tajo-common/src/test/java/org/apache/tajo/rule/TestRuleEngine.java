@@ -38,7 +38,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

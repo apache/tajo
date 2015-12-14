@@ -42,7 +42,6 @@ import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownConte
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 

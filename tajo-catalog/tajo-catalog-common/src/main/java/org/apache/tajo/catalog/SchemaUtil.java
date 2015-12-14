@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
-import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -184,8 +183,7 @@ public class SchemaUtil {
 
     if (column.getDataType().getType() == Type.RECORD) {
       for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getRootColumns()) {
-        List<String> newPath = new ArrayList<>();
-        newPath.addAll(path);
+        List<String> newPath = new ArrayList<>(path);
         newPath.add(column.getQualifiedName());
 
         visitInDepthFirstOrder(depth + 1, newPath, function, nestedColumn);

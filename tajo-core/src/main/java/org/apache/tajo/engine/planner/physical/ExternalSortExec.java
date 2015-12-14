@@ -49,7 +49,6 @@ import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.File;

@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
-import org.apache.tajo.util.TUtil;
 
 public class SelfDiagnosisRuleSession {
   

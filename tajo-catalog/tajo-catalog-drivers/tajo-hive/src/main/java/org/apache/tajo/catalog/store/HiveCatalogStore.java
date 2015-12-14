@@ -55,7 +55,6 @@ import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 import parquet.hadoop.ParquetOutputFormat;
 

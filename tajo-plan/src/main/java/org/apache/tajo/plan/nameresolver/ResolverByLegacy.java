@@ -30,7 +30,6 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.List;

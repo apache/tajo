@@ -48,7 +48,6 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
 import java.io.File;
 import java.io.IOException;

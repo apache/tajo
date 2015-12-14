@@ -23,11 +23,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.jdbc.JdbcFragmentProtos.JdbcFragmentProto;
-import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneable {
   String uri;

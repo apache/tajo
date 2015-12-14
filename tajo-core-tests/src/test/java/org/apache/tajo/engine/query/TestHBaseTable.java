@@ -50,7 +50,6 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -60,7 +60,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;

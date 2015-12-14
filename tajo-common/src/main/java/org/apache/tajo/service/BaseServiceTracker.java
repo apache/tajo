@@ -19,11 +19,11 @@
 package org.apache.tajo.service;
 
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class BaseServiceTracker implements ServiceTracker {
@@ -44,8 +44,7 @@ public class BaseServiceTracker implements ServiceTracker {
     tajoMasterInfo.setCatalogAddress(conf.getSocketAddrVar(TajoConf.ConfVars.CATALOG_ADDRESS));
     tajoMasterInfo.setWebServerAddress(conf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS));
 
-    tajoMasterInfos = new ArrayList<>();
-    tajoMasterInfos.add(tajoMasterInfo);
+    tajoMasterInfos = Arrays.asList(tajoMasterInfo);
   }
 
   @Override

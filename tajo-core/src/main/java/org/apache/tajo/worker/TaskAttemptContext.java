@@ -39,7 +39,6 @@ import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker.WorkerContext;
 
 import java.io.File;

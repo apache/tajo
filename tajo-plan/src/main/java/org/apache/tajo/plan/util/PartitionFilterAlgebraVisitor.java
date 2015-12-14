@@ -29,7 +29,6 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 

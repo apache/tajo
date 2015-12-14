@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.store.object.*;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.util.TUtil;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
