@@ -96,7 +96,6 @@ public class TajoWorker extends CompositeService {
   private HashShuffleAppenderManager hashShuffleAppenderManager;
   private LocalDirAllocator lDirAllocator;
   private JvmPauseMonitor pauseMonitor;
-
   private HistoryWriter taskHistoryWriter;
   private HistoryReader historyReader;
 
