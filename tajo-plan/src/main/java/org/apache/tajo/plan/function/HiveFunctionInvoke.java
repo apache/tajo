@@ -21,7 +21,7 @@ package org.apache.tajo.plan.function;
 import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TajoHiveTypeConverter;
@@ -62,7 +62,7 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
     try {
       instance = constructor.newInstance();
     } catch (InstantiationException|IllegalAccessException|InvocationTargetException e) {
-      e.printStackTrace();
+      throw new TajoInternalError(e);
     }
 
     for (Method m: clazz.getMethods()) {
@@ -76,7 +76,7 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
 
   @Override
   public Datum eval(Tuple tuple) {
-    Datum resultDatum = NullDatum.get();
+    Datum resultDatum;
     Writable [] params = new Writable[tuple.size()];
 
     for (int i=0; i<tuple.size(); i++) {
@@ -87,7 +87,7 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
       Writable result = (Writable)evalMethod.invoke(instance, params);
       resultDatum = TajoHiveTypeConverter.convertWritable2Datum(result);
     } catch (Exception e) {
-      e.printStackTrace();
+      throw new TajoInternalError(e);
     }
 
     return resultDatum;

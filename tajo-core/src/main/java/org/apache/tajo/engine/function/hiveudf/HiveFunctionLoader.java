@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.FunctionDescBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.util.TajoHiveTypeConverter;
 import org.reflections.Reflections;
@@ -54,25 +55,26 @@ public class HiveFunctionLoader {
         return null;
       }
 
+      // loop each jar file
       for (FileStatus fstatus : localFS.listStatus(udfPath, (Path path) -> path.getName().endsWith(".jar"))) {
 
         URL[] urls = new URL[]{new URL("jar:" + fstatus.getPath().toUri().toURL() + "!/")};
 
-        // For UDF's decendants (legacy)
+        // extract and register UDF's decendants (legacy Hive UDF form)
         Set<Class<? extends UDF>> udfClasses = getSubclassesFromJarEntry(urls, UDF.class);
         if (udfClasses != null) {
-          extractUDFclasses(udfClasses, funcList, "jar:"+urls[0].getPath());
+          buildFunctionsFromUDF(udfClasses, funcList, "jar:"+urls[0].getPath());
         }
 
-        // For GenericUDF's decendants (newer interface)
+        // extract and register GenericUDF's decendants (newer interface for Hive UDF)
         Set<Class<? extends GenericUDF>> genericUDFclasses = getSubclassesFromJarEntry(urls, GenericUDF.class);
         if (genericUDFclasses != null) {
-          extractGenericUDFclasses(genericUDFclasses, funcList);
+          buildFunctionsFromGenericUDF(genericUDFclasses, funcList);
         }
 
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new TajoInternalError(e);
     }
 
     return funcList;
@@ -86,12 +88,14 @@ public class HiveFunctionLoader {
     return refl.getSubTypesOf(targetCls);
   }
 
-  static void extractUDFclasses(Set<Class<? extends UDF>> classes, List<FunctionDesc> list, String jarurl) {
+  static void buildFunctionsFromUDF(Set<Class<? extends UDF>> classes, List<FunctionDesc> list, String jarurl) {
     for (Class<? extends UDF> clazz: classes) {
       String [] names;
       String value = null, extended = null;
 
       Description desc = clazz.getAnnotation(Description.class);
+
+      // Check @Description annotation (if exists)
       if (desc != null) {
         names = desc.name().split(",");
         for (int i=0; i<names.length; i++) {
@@ -108,6 +112,7 @@ public class HiveFunctionLoader {
       Class hiveUDFretType = null;
       Class [] hiveUDFparams = null;
 
+      // verify 'evaluate' method and extract return type and parameter types
       for (Method method: clazz.getMethods()) {
         if (method.getName().equals("evaluate")) {
           hiveUDFretType = method.getReturnType();
@@ -119,6 +124,7 @@ public class HiveFunctionLoader {
       TajoDataTypes.DataType retType = TajoHiveTypeConverter.convertHiveTypeToTajoType(hiveUDFretType);
       TajoDataTypes.DataType [] params = null;
 
+      // convert types to ones of Tajo
       if (hiveUDFparams != null && hiveUDFparams.length > 0) {
         params = new TajoDataTypes.DataType[hiveUDFparams.length];
         for (int i=0; i<hiveUDFparams.length; i++) {
@@ -126,6 +132,7 @@ public class HiveFunctionLoader {
         }
       }
 
+      // actual function descriptor building
       FunctionDescBuilder builder = new FunctionDescBuilder();
 
       UDFType type = clazz.getDeclaredAnnotation(UDFType.class);
@@ -153,6 +160,6 @@ public class HiveFunctionLoader {
     }
   }
 
-  private static void extractGenericUDFclasses(Set<Class<? extends GenericUDF>> classes, ArrayList<FunctionDesc> list) {
+  private static void buildFunctionsFromGenericUDF(Set<Class<? extends GenericUDF>> classes, ArrayList<FunctionDesc> list) {
   }
 }

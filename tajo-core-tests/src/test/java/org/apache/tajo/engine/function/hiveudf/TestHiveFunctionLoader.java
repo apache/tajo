@@ -28,7 +28,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.worker.TajoWorker;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +37,6 @@ import static org.junit.Assert.assertEquals;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.util.*;
-import java.util.stream.Stream;
 
 public class TestHiveFunctionLoader {
   private TajoTestingCluster cluster;
@@ -67,7 +65,7 @@ public class TestHiveFunctionLoader {
     funcSet.add(HiveUDFtest.class);
     List<FunctionDesc> funcList = new LinkedList<>();
 
-    HiveFunctionLoader.extractUDFclasses(funcSet, funcList, null);
+    HiveFunctionLoader.buildFunctionsFromUDF(funcSet, funcList, null);
 
     assertEquals(funcList.size(), 1);
 
