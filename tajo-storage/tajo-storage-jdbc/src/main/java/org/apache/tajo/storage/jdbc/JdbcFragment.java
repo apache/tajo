@@ -91,7 +91,7 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
     builder.setInputSourceId(this.inputSourceId);
     builder.setUri(this.uri);
     if(hostNames != null) {
-      builder.addAllHosts(new ArrayList<>(Arrays.asList(hostNames)));
+      builder.addAllHosts(Arrays.asList(hostNames));
     }
 
     CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();

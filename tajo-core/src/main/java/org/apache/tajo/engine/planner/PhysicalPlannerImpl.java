@@ -933,7 +933,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
           FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(new ArrayList<>(Arrays.asList(space.split(scanNode.getCanonicalName(), path))));
+            fileFragments.addAll(Arrays.asList(space.split(scanNode.getCanonicalName(), path)));
           }
 
           FragmentProto[] fragments =

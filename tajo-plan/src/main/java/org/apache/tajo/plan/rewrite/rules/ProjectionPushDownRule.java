@@ -689,7 +689,7 @@ public class ProjectionPushDownRule extends
     if (node.hasAggFunctions() && aggEvalNames != null) {
       WindowFunctionEval [] aggEvals = new WindowFunctionEval[aggEvalNames.length];
       int i = 0;
-      for (Iterator<String> it = getFilteredReferences(aggEvalNames, new ArrayList<>(Arrays.asList(aggEvalNames))); it.hasNext();) {
+      for (Iterator<String> it = getFilteredReferences(aggEvalNames, Arrays.asList(aggEvalNames)); it.hasNext();) {
 
         String referenceName = it.next();
         Target target = context.targetListMgr.getTarget(referenceName);
@@ -795,7 +795,7 @@ public class ProjectionPushDownRule extends
     // Getting projected targets
     if (node.hasAggFunctions() && aggEvalNames != null) {
       List<AggregationFunctionCallEval> aggEvals = new ArrayList<>();
-      for (Iterator<String> it = getFilteredReferences(aggEvalNames, new ArrayList<>(Arrays.asList(aggEvalNames))); it.hasNext();) {
+      for (Iterator<String> it = getFilteredReferences(aggEvalNames, Arrays.asList(aggEvalNames)); it.hasNext();) {
 
         String referenceName = it.next();
         Target target = context.targetListMgr.getTarget(referenceName);
@@ -962,7 +962,7 @@ public class ProjectionPushDownRule extends
   }
 
   static Iterator<String> getFilteredReferences(String [] targetNames, Collection<String> required) {
-    return new FilteredStringsIterator(new ArrayList<>(Arrays.asList(targetNames)), required);
+    return new FilteredStringsIterator(Arrays.asList(targetNames), required);
   }
 
   static class FilteredStringsIterator implements Iterator<String> {

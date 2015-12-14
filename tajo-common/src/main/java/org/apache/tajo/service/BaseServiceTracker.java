@@ -44,7 +44,7 @@ public class BaseServiceTracker implements ServiceTracker {
     tajoMasterInfo.setCatalogAddress(conf.getSocketAddrVar(TajoConf.ConfVars.CATALOG_ADDRESS));
     tajoMasterInfo.setWebServerAddress(conf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS));
 
-    tajoMasterInfos = new ArrayList<>(Arrays.asList(tajoMasterInfo));
+    tajoMasterInfos = Arrays.asList(tajoMasterInfo);
   }
 
   @Override
