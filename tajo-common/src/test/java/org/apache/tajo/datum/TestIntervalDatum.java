@@ -122,8 +122,8 @@ public class TestIntervalDatum {
 
     // date '2001-10-01' - integer '7' ==>	date '2001-09-24'
     datum = DatumFactory.createDate(2001, 10, 1);
-    for (Datum datum1 : datums) {
-      Datum result2 = datum.minus(datum1);
+    for (Datum eachDatum : datums) {
+      Datum result2 = datum.minus(eachDatum);
       assertEquals(TajoDataTypes.Type.DATE, result2.type());
       assertEquals(DatumFactory.createDate(2001, 9, 24), result2);
     }
