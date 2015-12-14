@@ -35,12 +35,12 @@ import java.io.OutputStream;
 import java.util.List;
 
 @RestReturnType(
-  headerType = "application/csv"
+  mimeType = "text/csv"
 )
 public class CSVStreamingOutput extends AbstractStreamingOutput {
   private String output;
   private boolean alreadyCalculated = false;
-  private int count = 0;
+  private int size = 0;
 
   public CSVStreamingOutput(NonForwardQueryResultScanner cachedQueryResultScanner, Integer count, Integer startOffset) throws IOException {
     super(cachedQueryResultScanner, count, startOffset);
@@ -65,7 +65,7 @@ public class CSVStreamingOutput extends AbstractStreamingOutput {
   public int count() {
     try {
       fetch();
-      return count;
+      return size;
     } catch (Exception e) {
       return 0;
     }
@@ -77,7 +77,7 @@ public class CSVStreamingOutput extends AbstractStreamingOutput {
     }
 
     List<Tuple> outputTupletList = scanner.getNextTupleRows(count);
-    count = outputTupletList.size();
+    size = outputTupletList.size();
 
     StringBuilder sb = new StringBuilder();
     if (startOffset == 0) {

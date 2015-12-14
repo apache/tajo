@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestReturnType(
-  headerType = "application/octet-stream"
+  mimeType = "application/octet-stream"
 )
 public class BinaryStreamingOutput extends AbstractStreamingOutput {
   private List<byte[]> byteOutputLists = null;

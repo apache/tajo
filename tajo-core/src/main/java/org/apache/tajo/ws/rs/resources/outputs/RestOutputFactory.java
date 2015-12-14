@@ -74,7 +74,7 @@ public class RestOutputFactory {
                   Integer.class, Integer.class})
                   .newInstance(scanner, count, startOffset);
       } else {
-        output = new BinaryStreamingOutput(scanner, count, startOffset);
+        output = new CSVStreamingOutput(scanner, count, startOffset);
       }
     } catch (Exception eh) {
         LOG.error(eh);

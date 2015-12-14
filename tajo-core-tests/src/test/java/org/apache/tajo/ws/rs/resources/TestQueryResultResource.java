@@ -176,7 +176,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
   }
 
   @Test
-  public void testGetQueryResultSet() throws Exception {
+  public void testGetQueryResultSetWithBinary() throws Exception {
     String sessionId = generateNewSessionAndGetId();
     URI queryIdURI = sendNewQueryResquest(sessionId, "select * from lineitem");
     URI queryResultURI = new URI(queryIdURI + "/result");
@@ -199,6 +199,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     Response queryResultSetResponse = restClient.target(queryResultSetURI)
         .queryParam("count", 100)
         .request().header(tajoSessionIdHeaderName, sessionId)
+        .header(HttpHeaders.ACCEPT, "application/octet-stream")
         .get();
 
     assertNotNull(queryResultSetResponse);
@@ -233,7 +234,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
   }
 
   @Test
-  public void testGetQueryResultSetWithDefaultCount() throws Exception {
+  public void testGetQueryResultSetWithDefaultCountWithBinary() throws Exception {
     String sessionId = generateNewSessionAndGetId();
     URI queryIdURI = sendNewQueryResquest(sessionId, "select * from lineitem");
     URI queryResultURI = new URI(queryIdURI + "/result");
@@ -255,6 +256,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     Response queryResultSetResponse = restClient.target(queryResultSetURI)
         .request().header(tajoSessionIdHeaderName, sessionId)
+        .header(HttpHeaders.ACCEPT, "application/octet-stream")
         .get();
 
     assertNotNull(queryResultSetResponse);
@@ -323,7 +325,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     Response queryResultSetResponse = restClient.target(queryResultSetURI)
             .request().header(tajoSessionIdHeaderName, sessionId)
-            .header(HttpHeaders.ACCEPT, "application/csv")
+            .header(HttpHeaders.ACCEPT, "text/csv")
             .get();
 
     assertNotNull(queryResultSetResponse);
@@ -384,37 +386,27 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     int offset = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoOffsetHeaderName));
     int count = Integer.valueOf(queryResultSetResponse.getHeaderString(tajoCountHeaderName));
     boolean eos = Boolean.valueOf(queryResultSetResponse.getHeaderString(tajoEOSHeaderName));
+    int length = Integer.valueOf(queryResultSetResponse.getHeaderString(HttpHeaders.CONTENT_LENGTH));
 
     assertTrue(eos);
     assertEquals(0, offset);
     assertEquals(5, count);
+    assertTrue(length > 0);
 
     DataInputStream queryResultSetInputStream =
             new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));
 
     assertNotNull(queryResultSetInputStream);
 
-    boolean isFinished = false;
-    List<Tuple> tupleList = TUtil.newList();
-    RowStoreUtil.RowStoreDecoder decoder = RowStoreUtil.createDecoder(response.getSchema());
-    while (!isFinished) {
-      try {
-        int length = queryResultSetInputStream.readInt();
-        byte[] dataByteArray = new byte[length];
-        int readBytes = queryResultSetInputStream.read(dataByteArray);
+    try {
+      byte[] dataByteArray = new byte[length];
+      int readBytes = queryResultSetInputStream.read(dataByteArray);
 
-        assertEquals(length, readBytes);
+      assertEquals(length, readBytes);
 
-        tupleList.add(decoder.toTuple(dataByteArray));
-      } catch (EOFException eof) {
-        isFinished = true;
-      }
+    } catch (EOFException eof) {
     }
 
-    assertEquals(5, tupleList.size());
-
-    for (Tuple aTuple : tupleList) {
-      assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
-    }
+    assertEquals(5, count);
   }
 }
