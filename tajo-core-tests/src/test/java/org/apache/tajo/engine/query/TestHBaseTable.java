@@ -1312,9 +1312,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
-      List inputList = new ArrayList<>();
-      inputList.addAll(Arrays.asList(HBaseStorageConstants.INSERT_PUT_MODE));
-      client.unsetSessionVariables(inputList);
+      client.unsetSessionVariables(Arrays.asList(HBaseStorageConstants.INSERT_PUT_MODE));
 
       if (scanner != null) {
         scanner.close();

@@ -334,8 +334,7 @@ public class ExternalSortExec extends SortExec {
 
   private Scanner externalMergeAndSort(List<Chunk> chunks) throws Exception {
     int level = 0;
-    final List<Chunk> inputFiles = new ArrayList<>();
-    inputFiles.addAll(chunks);
+    final List<Chunk> inputFiles = new ArrayList<>(chunks);
     final List<Chunk> outputFiles = new ArrayList<>();
     int remainRun = inputFiles.size();
     int chunksSize = chunks.size();

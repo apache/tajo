@@ -155,9 +155,7 @@ public class TUtil {
     if (map.containsKey(k1)) {
       map.get(k1).addAll(list);
     } else {
-      List inputList = new ArrayList<>();
-      inputList.addAll(list);
-      map.put(k1, inputList);
+      map.put(k1, new ArrayList<>(list));
     }
   }
 

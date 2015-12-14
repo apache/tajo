@@ -1191,8 +1191,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // In this case, this join is the top most one within a query block.
     boolean isTopMostJoin = stack.isEmpty() ? true : stack.peek().getType() != OpType.Join;
     List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode, isTopMostJoin);
-    List<Target> targets = new ArrayList<>();
-    targets.addAll(PlannerUtil.schemaToTargets(merged));
+    List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
 
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
@@ -1300,8 +1299,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } catch (UndefinedColumnException ve) {}
     }
 
-    List<Target> targets = new ArrayList<>();
-    targets.addAll(PlannerUtil.schemaToTargets(merged));
+    List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }

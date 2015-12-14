@@ -143,8 +143,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         // When every child is a broadcast candidate, enforce non-broadcast for the largest relation for the join to be
         // computed at the node who stores such largest relation.
         if (isFullyBroadcastable(current)) {
-          List<ScanNode> broadcastCandidates = new ArrayList<>();
-          broadcastCandidates.addAll(current.getBroadcastRelations());
+          List<ScanNode> broadcastCandidates = new ArrayList<>(current.getBroadcastRelations());
           Collections.sort(broadcastCandidates, relSizeComparator);
 
           current.removeBroadcastRelation(broadcastCandidates.remove(broadcastCandidates.size()-1));
@@ -245,8 +244,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
             context.estimatedEbOutputSize.put(current.getId(), outputVolume);
           }
         } else {
-          List<ScanNode> relations = new ArrayList<>();
-          relations.addAll(current.getBroadcastRelations());
+          List<ScanNode> relations = new ArrayList<>(current.getBroadcastRelations());
           for (ScanNode eachRelation : relations) {
             current.removeBroadcastRelation(eachRelation);
           }
@@ -389,8 +387,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      * @param block
      */
     private void checkTotalSizeOfBroadcastableRelations(Context context, ExecutionBlock block) {
-      List<ScanNode> broadcastCandidates = new ArrayList<>();
-      broadcastCandidates.addAll(block.getBroadcastRelations());
+      List<ScanNode> broadcastCandidates = new ArrayList<>(block.getBroadcastRelations());
       Collections.sort(broadcastCandidates, relSizeComparator);
 
       // Enforce broadcast for candidates in ascending order of relation size

@@ -34,9 +34,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect0() throws Exception {
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample1");
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList("sample1"));
-    assertEquals(inputList, tables);
+    assertEquals(Arrays.asList("sample1"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);

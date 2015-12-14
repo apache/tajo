@@ -674,9 +674,7 @@ public class TestPhysicalPlanner {
     }
 
     assertEquals(numPartitions, fragments.size());
-    List inputList = new ArrayList<>();
-    inputList.addAll(fragments);
-    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, inputList);
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, new ArrayList<>(fragments));
     scanner.init();
 
     Tuple tuple;

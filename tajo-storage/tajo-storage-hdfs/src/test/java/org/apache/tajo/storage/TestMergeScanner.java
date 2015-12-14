@@ -167,9 +167,7 @@ public class TestMergeScanner {
     targetSchema.addColumn(schema.getColumn(0));
     targetSchema.addColumn(schema.getColumn(2));
 
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList(fragment));
-    Scanner scanner = new MergeScanner(conf, schema, meta, inputList, targetSchema);
+    Scanner scanner = new MergeScanner(conf, schema, meta, Arrays.asList(fragment), targetSchema);
     assertEquals(isProjectableStorage(meta.getDataFormat()), scanner.isProjectable());
 
     scanner.init();

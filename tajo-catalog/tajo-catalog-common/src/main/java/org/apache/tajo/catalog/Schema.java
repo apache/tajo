@@ -84,8 +84,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       // where is start index of nested fields?
       int childStartIndex = tobeAdded.size() - childNum;
       // Extract nested fields
-      List<Column> nestedColumns = new ArrayList<>();
-      nestedColumns.addAll(tobeAdded.subList(childStartIndex, childStartIndex + childNum));
+      List<Column> nestedColumns = new ArrayList<>(tobeAdded.subList(childStartIndex, childStartIndex + childNum));
 
       // Remove nested fields from the the current level
       for (int i = 0; i < childNum; i++) {

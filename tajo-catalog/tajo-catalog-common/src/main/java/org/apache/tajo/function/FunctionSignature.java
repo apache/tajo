@@ -113,9 +113,7 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
     FunctionSignatureProto.Builder builder = FunctionSignatureProto.newBuilder();
     builder.setType(functionType);
     builder.setName(name);
-    List inputList = new ArrayList<>();
-    inputList.addAll(Arrays.asList(paramTypes));
-    builder.addAllParameterTypes(inputList);
+    builder.addAllParameterTypes(Arrays.asList(paramTypes));
     builder.setReturnType(returnType);
     return builder.build();
   }
