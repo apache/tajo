@@ -24,7 +24,6 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionSignatureProto;

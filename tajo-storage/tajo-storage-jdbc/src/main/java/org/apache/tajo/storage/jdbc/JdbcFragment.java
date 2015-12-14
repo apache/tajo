@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.jdbc.JdbcFragmentProtos.JdbcFragmentProto;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneable {

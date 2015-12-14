@@ -22,7 +22,6 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.junit.Test;
 
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
