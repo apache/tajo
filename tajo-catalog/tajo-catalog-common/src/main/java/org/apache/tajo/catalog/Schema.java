@@ -422,7 +422,9 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     Column newCol = new Column(normalized, typeDesc);
     fields.add(newCol);
     fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
-    fieldsByName.put(newCol.getSimpleName(), new ArrayList<Integer>(fields.size() - 1));
+    List<Integer> inputList = new ArrayList<>();
+    inputList.add(fields.size() - 1);
+    fieldsByName.put(newCol.getSimpleName(), inputList);
 
     return this;
   }
