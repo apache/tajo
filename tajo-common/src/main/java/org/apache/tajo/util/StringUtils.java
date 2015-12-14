@@ -310,15 +310,11 @@ public class StringUtils {
     padded[0] = new char[max];
     padded[1] = new char[max];
 
-    for (int i = 0; i < startChars.length; i++) {
-      padded[0][i] = startChars[i];
-    }
+    System.arraycopy(startChars, 0, padded[0], 0, startChars.length);
     for (int i = startChars.length; i < max; i++) {
       padded[0][i] = 0;
     }
-    for (int i = 0; i < endChars.length; i++) {
-      padded[1][i] = endChars[i];
-    }
+    System.arraycopy(endChars, 0, padded[1], 0, endChars.length);
     for (int i = endChars.length; i < max; i++) {
       padded[1][i] = 0;
     }

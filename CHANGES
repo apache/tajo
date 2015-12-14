@@ -119,10 +119,12 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2019: Replace manual array copy with System.arraycopy(). (jihoon)
+
     TAJO-1994: Some trivial modification is needed in compression document.
     (Contributed by Jongyoung Park. Committed by jihoon)
 
-    TAJO-1973: Replace 'while' loop with 'foreach'. (Contributed by Dongkyu Hwangbo, i
+    TAJO-1973: Replace 'while' loop with 'foreach'. (Contributed by Dongkyu Hwangbo, 
     committed by jihoon)
 
     TAJO-1855: Add document for tablespace configuration to the Configuration chapter.
