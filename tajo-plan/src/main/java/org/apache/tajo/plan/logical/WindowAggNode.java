@@ -157,9 +157,7 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
     WindowAggNode grp = (WindowAggNode) super.clone();
     if (partitionKeys != null) {
       grp.partitionKeys = new Column[partitionKeys.length];
-      for (int i = 0; i < partitionKeys.length; i++) {
-        grp.partitionKeys[i] = partitionKeys[i];
-      }
+      System.arraycopy(partitionKeys, 0, grp.partitionKeys, 0, partitionKeys.length);
     }
 
     if (windowFuncs != null) {

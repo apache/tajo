@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1990: Refine some parts in HBaseTablespace. (hyunsik)
+
     TAJO-2005: Add TableStatUpdateRewriter. (hyunsik)
 
     TAJO-1948: Change GroupbyNode::setAggFunctions and getAggFunctions to set 
@@ -119,10 +121,16 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2021: Some refactoring and changing anonymous class to lambda expression.
+    (Contributed by Jongyoung Park. Committed by jinho)
+
+    TAJO-2019: Replace manual array copy with System.arraycopy(). 
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
     TAJO-1994: Some trivial modification is needed in compression document.
     (Contributed by Jongyoung Park. Committed by jihoon)
 
-    TAJO-1973: Replace 'while' loop with 'foreach'. (Contributed by Dongkyu Hwangbo, i
+    TAJO-1973: Replace 'while' loop with 'foreach'. (Contributed by Dongkyu Hwangbo, 
     committed by jihoon)
 
     TAJO-1855: Add document for tablespace configuration to the Configuration chapter.
