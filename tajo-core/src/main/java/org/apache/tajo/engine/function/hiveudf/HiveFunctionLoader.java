@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
-import org.apache.hadoop.hive.ql.udf.generic.GenericUDF;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.FunctionDescBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -65,13 +64,6 @@ public class HiveFunctionLoader {
         if (udfClasses != null) {
           buildFunctionsFromUDF(udfClasses, funcList, "jar:"+urls[0].getPath());
         }
-
-        // extract and register GenericUDF's decendants (newer interface for Hive UDF)
-        Set<Class<? extends GenericUDF>> genericUDFclasses = getSubclassesFromJarEntry(urls, GenericUDF.class);
-        if (genericUDFclasses != null) {
-          buildFunctionsFromGenericUDF(genericUDFclasses, funcList);
-        }
-
       }
     } catch (IOException e) {
       throw new TajoInternalError(e);
@@ -158,8 +150,5 @@ public class HiveFunctionLoader {
         list.add(builder.build());
       }
     }
-  }
-
-  private static void buildFunctionsFromGenericUDF(Set<Class<? extends GenericUDF>> classes, ArrayList<FunctionDesc> list) {
   }
 }
