@@ -208,6 +208,7 @@ public class TajoWorker extends CompositeService {
 
   private void initWorkerMetrics() {
     workerSystemMetrics = new TajoSystemMetrics(systemConf, Node.class, workerContext.getWorkerName());
+    
     workerSystemMetrics.start();
 
     workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM,
