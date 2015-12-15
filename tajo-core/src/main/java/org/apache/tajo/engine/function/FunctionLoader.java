@@ -308,7 +308,10 @@ public class FunctionLoader {
     for (int i=1; i<functionLists.length; i++) {
       for (FunctionDesc desc: functionLists[i]) {
         if (funcMap.containsKey(desc.hashCodeWithoutType())) {
-          throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
+          FunctionDesc storedDesc = funcMap.get(desc.hashCodeWithoutType());
+          if (storedDesc.equalsSignature(desc)) {
+            throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
+          }
         }
 
         funcMap.put(desc.hashCodeWithoutType(), desc);
