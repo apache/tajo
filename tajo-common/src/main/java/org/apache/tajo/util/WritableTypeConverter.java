@@ -26,28 +26,34 @@ import org.reflections.ReflectionUtils;
 
 import java.util.Set;
 
-public class TajoHiveTypeConverter {
+public class WritableTypeConverter {
 
-  public static DataType convertHiveTypeToTajoType(Class hiveType) {
-    if (hiveType == null)
+  public static DataType convertWritableToTajoType(Class<? extends Writable> writableClass) {
+    if (writableClass == null)
       return null;
 
     DataType.Builder builder = DataType.newBuilder();
-    Set<Class<?>> parents = ReflectionUtils.getAllSuperTypes(hiveType);
+    Set<Class<?>> parents = ReflectionUtils.getAllSuperTypes(writableClass);
 
-    if (hiveType == IntWritable.class || parents.contains(IntWritable.class)) {
+    if (writableClass == ByteWritable.class || parents.contains(ByteWritable.class)) {
+      return builder.setType(Type.INT1).build();
+    }
+    if (writableClass == ShortWritable.class || parents.contains(ShortWritable.class)) {
+      return builder.setType(Type.INT2).build();
+    }
+    if (writableClass == IntWritable.class || parents.contains(IntWritable.class)) {
       return builder.setType(Type.INT4).build();
     }
-    if (hiveType == LongWritable.class || parents.contains(LongWritable.class)) {
+    if (writableClass == LongWritable.class || parents.contains(LongWritable.class)) {
       return builder.setType(Type.INT8).build();
     }
-    if (hiveType == Text.class || parents.contains(Text.class)) {
+    if (writableClass == Text.class || parents.contains(Text.class)) {
       return builder.setType(Type.TEXT).build();
     }
-    if (hiveType == FloatWritable.class || parents.contains(FloatWritable.class)) {
+    if (writableClass == FloatWritable.class || parents.contains(FloatWritable.class)) {
       return builder.setType(Type.FLOAT4).build();
     }
-    if (hiveType == DoubleWritable.class || parents.contains(DoubleWritable.class)) {
+    if (writableClass == DoubleWritable.class || parents.contains(DoubleWritable.class)) {
       return builder.setType(Type.FLOAT8).build();
     }
 
@@ -56,7 +62,8 @@ public class TajoHiveTypeConverter {
 
   public static Writable convertDatum2Writable(Datum value) {
     switch(value.type()) {
-      case INT2: return new IntWritable(value.asInt2());
+      case INT1: return new ByteWritable(value.asByte());
+      case INT2: return new ShortWritable(value.asInt2());
       case INT4: return new IntWritable(value.asInt4());
       case INT8: return new LongWritable(value.asInt8());
 
@@ -70,9 +77,11 @@ public class TajoHiveTypeConverter {
   }
 
   public static Datum convertWritable2Datum(Writable value) {
-    DataType type = convertHiveTypeToTajoType(value.getClass());
+    DataType type = convertWritableToTajoType(value.getClass());
 
     switch(type.getType()) {
+      case INT1: return new Int2Datum(((ByteWritable)value).get());
+      case INT2: return new Int2Datum(((ShortWritable)value).get());
       case INT4: return new Int4Datum(((IntWritable)value).get());
       case INT8: return new Int8Datum(((LongWritable)value).get());
 

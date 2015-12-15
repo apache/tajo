@@ -24,7 +24,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.TajoHiveTypeConverter;
+import org.apache.tajo.util.WritableTypeConverter;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -80,12 +80,12 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
     Writable [] params = new Writable[tuple.size()];
 
     for (int i=0; i<tuple.size(); i++) {
-      params[i] = TajoHiveTypeConverter.convertDatum2Writable(tuple.asDatum(i));
+      params[i] = WritableTypeConverter.convertDatum2Writable(tuple.asDatum(i));
     }
 
     try {
       Writable result = (Writable)evalMethod.invoke(instance, params);
-      resultDatum = TajoHiveTypeConverter.convertWritable2Datum(result);
+      resultDatum = WritableTypeConverter.convertWritable2Datum(result);
     } catch (Exception e) {
       throw new TajoInternalError(e);
     }

@@ -32,7 +32,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.UDFInvocationDesc;
-import org.apache.tajo.util.TajoHiveTypeConverter;
+import org.apache.tajo.util.WritableTypeConverter;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 
@@ -121,14 +121,14 @@ public class HiveFunctionLoader {
         }
       }
 
-      TajoDataTypes.DataType retType = TajoHiveTypeConverter.convertHiveTypeToTajoType(hiveUDFretType);
+      TajoDataTypes.DataType retType = WritableTypeConverter.convertWritableToTajoType(hiveUDFretType);
       TajoDataTypes.DataType [] params = null;
 
       // convert types to ones of Tajo
       if (hiveUDFparams != null && hiveUDFparams.length > 0) {
         params = new TajoDataTypes.DataType[hiveUDFparams.length];
         for (int i=0; i<hiveUDFparams.length; i++) {
-          params[i] = TajoHiveTypeConverter.convertHiveTypeToTajoType(hiveUDFparams[i]);
+          params[i] = WritableTypeConverter.convertWritableToTajoType(hiveUDFparams[i]);
         }
       }
 
