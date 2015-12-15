@@ -210,10 +210,12 @@ public class TajoWorker extends CompositeService {
     workerSystemMetrics = new TajoSystemMetrics(systemConf, Node.class, workerContext.getWorkerName());
     workerSystemMetrics.start();
 
-    workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM, () ->
-        queryMasterManagerService != null ? queryMasterManagerService.getQueryMaster().getQueryMasterTasks().size() : 0);
+    workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM,
+        () -> queryMasterManagerService != null ?
+            queryMasterManagerService.getQueryMaster().getQueryMasterTasks().size() : 0);
 
-    workerSystemMetrics.register(Node.Tasks.RUNNING_TASKS, () -> taskExecutor != null ? taskExecutor.getRunningTasks() : 0);
+    workerSystemMetrics.register(Node.Tasks.RUNNING_TASKS,
+        () -> taskExecutor != null ? taskExecutor.getRunningTasks() : 0);
   }
 
   private int initWebServer() {
