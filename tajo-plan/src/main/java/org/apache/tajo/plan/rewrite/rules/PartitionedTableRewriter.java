@@ -560,6 +560,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
 
       try {
+        long startTime = System.currentTimeMillis();
         PartitionContent partitionContent = getPartitionContent(queryContext, scanNode);
 
         Path[] filteredPaths = partitionContent.getPartitionPaths();
@@ -576,6 +577,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
         }
         block.registerNode(rewrittenScanNode);
+
+        long finishTime = System.currentTimeMillis();
+        long elapsedMills = finishTime - startTime;
+        LOG.info(String.format("Partition pruning :%d ms elapsed.", elapsedMills));
       } catch (IOException e) {
         throw new TajoInternalError("Partitioned Table Rewrite Failed: \n" + e.getMessage());
       }

@@ -625,6 +625,8 @@ public class FileTablespace extends Tablespace {
    */
   public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitionKeys,
                                            Path... inputs) throws IOException {
+    long startTime = System.currentTimeMillis();
+
     // generate splits'
     List<Fragment> splits = Lists.newArrayList();
     List<Fragment> volumeSplits = Lists.newArrayList();
@@ -705,6 +707,10 @@ public class FileTablespace extends Tablespace {
     setVolumeMeta(volumeSplits, blockLocations);
     splits.addAll(volumeSplits);
     LOG.info("Total # of splits: " + splits.size());
+
+    long finishTime = System.currentTimeMillis();
+    long elapsedMills = finishTime - startTime;
+    LOG.info(String.format("Split for partition table :%d ms elapsed.", elapsedMills));
     return splits;
   }
 
