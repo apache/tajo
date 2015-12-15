@@ -43,8 +43,8 @@ import java.util.*;
 
 public class HiveFunctionLoader {
   public static Collection<FunctionDesc> loadHiveUDFs(TajoConf conf) {
-    String udfdir = conf.get(TajoConf.ConfVars.HIVE_UDF_DIR.varname);
     ArrayList<FunctionDesc> funcList = new ArrayList<>();
+    String udfdir = conf.getVar(TajoConf.ConfVars.HIVE_UDF_DIR);
 
     try {
       FileSystem localFS = FileSystem.getLocal(conf);

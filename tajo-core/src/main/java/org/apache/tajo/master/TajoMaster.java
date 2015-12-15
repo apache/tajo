@@ -224,8 +224,13 @@ public class TajoMaster extends CompositeService {
       funcSet.put(desc.hashCodeWithoutType(), desc);
     }
 
-    checkUDFduplicates(udfs, funcSet);
-    checkUDFduplicates(hiveUDFs, funcSet);
+    if (udfs != null) {
+      checkUDFduplicates(udfs, funcSet);
+    }
+
+    if (hiveUDFs != null) {
+      checkUDFduplicates(hiveUDFs, funcSet);
+    }
 
     return funcSet.values();
   }
