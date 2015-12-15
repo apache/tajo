@@ -174,7 +174,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
 
   public boolean equalsSignature(Object obj) {
     if (obj instanceof FunctionDesc) {
-      return this.getSignature().equalsWithoutType(obj);
+      return this.getSignature().equalsWithoutType(((FunctionDesc) obj).getSignature());
     }
     return false;
   }
