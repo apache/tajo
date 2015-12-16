@@ -143,7 +143,7 @@ public class Fetcher {
     ChannelFuture future = null;
     try {
       future = bootstrap.clone().connect(new InetSocketAddress(host, port))
-              .addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+              .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 
       // Wait until the connection attempt succeeds or fails.
       Channel channel = future.awaitUninterruptibly().channel();
@@ -244,8 +244,10 @@ public class Fetcher {
                 }
               }
             }
-            for (String stringOffset : response.headers().getAll(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME)) {
-              chunkLengths.add(Long.parseLong(stringOffset));
+            String stringOffset = response.headers().get(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME);
+
+            for (String eachSplit : stringOffset.split(",")) {
+              chunkLengths.add(Long.parseLong(eachSplit));
             }
           }
           if (LOG.isDebugEnabled()) {

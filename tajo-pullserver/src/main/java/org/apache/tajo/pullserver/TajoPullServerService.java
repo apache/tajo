@@ -127,7 +127,7 @@ public class TajoPullServerService extends AbstractService {
   private static final AtomicIntegerFieldUpdater<ProcessingStatus> SLOW_FILE_UPDATER;
   private static final AtomicIntegerFieldUpdater<ProcessingStatus> REMAIN_FILE_UPDATER;
 
-  public static final String CHUNK_LENGTH_HEADER_NAME = "Chunk-Length";
+  public static final String CHUNK_LENGTH_HEADER_NAME = "c";
 
   static class CacheKey {
     private Path path;
@@ -634,10 +634,13 @@ public class TajoPullServerService extends AbstractService {
         ChannelFuture writeFuture = null;
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
         long totalSize = 0;
+        StringBuilder sb = new StringBuilder();
         for (FileChunk chunk : file) {
           totalSize += chunk.length();
-          HttpHeaders.addHeader(response, CHUNK_LENGTH_HEADER_NAME, chunk.length());
+          sb.append(Long.toString(chunk.length())).append(",");
         }
+        sb.deleteCharAt(sb.length() - 1);
+        HttpHeaders.addHeader(response, CHUNK_LENGTH_HEADER_NAME, sb.toString());
         HttpHeaders.setContentLength(response, totalSize);
 
         if (HttpHeaders.isKeepAlive(request)) {

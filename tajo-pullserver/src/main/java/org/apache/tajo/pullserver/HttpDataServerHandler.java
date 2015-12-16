@@ -85,7 +85,7 @@ public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpR
     FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
 
     // Write the content.
-    if (file == null) {
+    if (file.length == 0) {
       HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
       if (!HttpHeaders.isKeepAlive(request)) {
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
