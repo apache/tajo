@@ -50,6 +50,7 @@ import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.storage.*;
@@ -82,7 +83,6 @@ import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 public class Repartitioner {
   private static final Log LOG = LogFactory.getLog(Repartitioner.class);
 
-  private final static int HTTP_REQUEST_MAXIMUM_LENGTH = 4 * StorageUnit.KB;
   private final static String UNKNOWN_HOST = "unknown";
 
   public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, Stage stage)
@@ -1191,7 +1191,7 @@ public class Repartitioner {
           int attemptId = taskAndAttemptIds.get(i).getSecond();
           taskAttemptId.append(taskId).append("_").append(attemptId);
 
-          if (urlPrefix.length() + taskIdListBuilder.length() > HTTP_REQUEST_MAXIMUM_LENGTH) {
+          if (urlPrefix.length() + taskIdListBuilder.length() > TajoPullServerService.HTTP_MAX_URL_LENGTH) {
             taskIdsParams.add(taskIdListBuilder.toString());
             taskIdListBuilder = new StringBuilder(taskId + "_" + attemptId);
           } else {

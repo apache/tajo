@@ -83,6 +83,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 public class TajoPullServerService extends AbstractService {
 
+  public static final int HTTP_MAX_URL_LENGTH = 2 * StorageUnit.KB;
+
   private static final Log LOG = LogFactory.getLog(TajoPullServerService.class);
 
   public static final String SHUFFLE_MANAGE_OS_CACHE = "tajo.pullserver.manage.os.cache";
@@ -402,7 +404,7 @@ public class TajoPullServerService extends AbstractService {
 
       int maxChunkSize = getConfig().getInt(ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.varname,
           ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.defaultIntVal);
-      pipeline.addLast("codec", new HttpServerCodec(4 * StorageUnit.KB, 8192, maxChunkSize));
+      pipeline.addLast("codec", new HttpServerCodec(HTTP_MAX_URL_LENGTH, 8192, maxChunkSize));
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
       pipeline.addLast("shuffle", PullServer);
