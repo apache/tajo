@@ -247,10 +247,12 @@ public class Fetcher {
                 }
               }
             }
-            String stringOffset = response.headers().get(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME);
+            if (response.headers().contains(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME)) {
+              String stringOffset = response.headers().get(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME);
 
-            for (String eachSplit : stringOffset.split(",")) {
-              chunkLengths.add(Long.parseLong(eachSplit));
+              for (String eachSplit : stringOffset.split(",")) {
+                chunkLengths.add(Long.parseLong(eachSplit));
+              }
             }
           }
           if (LOG.isDebugEnabled()) {
