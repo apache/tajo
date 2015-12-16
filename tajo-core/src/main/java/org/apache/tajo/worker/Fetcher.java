@@ -31,6 +31,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoProtos.FetcherState;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
@@ -101,9 +102,6 @@ public class Fetcher {
               conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CONNECT_TIMEOUT) * 1000)
           .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M
           .option(ChannelOption.TCP_NODELAY, true);
-
-      ChannelInitializer<Channel> initializer = new HttpClientChannelInitializer(fileChunk.getFile());
-      bootstrap.handler(initializer);
     }
   }
 
@@ -136,6 +134,11 @@ public class Fetcher {
       fileChunks.add(fileChunk);
       fileLen = fileChunk.getFile().length();
       return fileChunks;
+    }
+
+    if (state == FetcherState.FETCH_INIT) {
+      ChannelInitializer<Channel> initializer = new HttpClientChannelInitializer(fileChunk.getFile());
+      bootstrap.handler(initializer);
     }
 
     this.startTime = System.currentTimeMillis();
