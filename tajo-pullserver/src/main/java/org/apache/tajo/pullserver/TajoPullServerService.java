@@ -402,7 +402,7 @@ public class TajoPullServerService extends AbstractService {
 
       int maxChunkSize = getConfig().getInt(ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.varname,
           ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.defaultIntVal);
-      pipeline.addLast("codec", new HttpServerCodec(500 * StorageUnit.KB, 8192, maxChunkSize));
+      pipeline.addLast("codec", new HttpServerCodec(4 * StorageUnit.KB, 8192, maxChunkSize));
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
       pipeline.addLast("shuffle", PullServer);
@@ -584,9 +584,7 @@ public class TajoPullServerService extends AbstractService {
           }
         }
         long after = System.currentTimeMillis();
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Index lookup time: " + (after - before) + " ms");
-        }
+        LOG.info("Index lookup time: " + (after - before) + " ms");
 
         // if a stage requires a hash shuffle or a scattered hash shuffle
       } else if (shuffleType.equals("h") || shuffleType.equals("s")) {

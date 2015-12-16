@@ -317,6 +317,7 @@ public class Fetcher {
       if(getState() != TajoProtos.FetcherState.FETCH_FINISHED){
         //channel is closed, but cannot complete fetcher
         finishTime = System.currentTimeMillis();
+        LOG.error("Channel closed by peer: " + ctx.channel());
         state = TajoProtos.FetcherState.FETCH_FAILED;
       }
       IOUtils.cleanup(LOG, fc, raf);
