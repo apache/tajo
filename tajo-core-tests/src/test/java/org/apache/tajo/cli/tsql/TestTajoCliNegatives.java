@@ -134,7 +134,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
     assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailureOfSimpleQuery') from default.lineitem" ,
         "?fail\n" +
             "-------------------------------\n" +
-            "ERROR: internal error: internal error: testQueryFailureOfSimpleQuery\n");
+            "ERROR: internal error: internal error: internal error: testQueryFailureOfSimpleQuery\n");
   }
 
   @Test

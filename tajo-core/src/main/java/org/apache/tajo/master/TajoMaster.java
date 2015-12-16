@@ -119,6 +119,7 @@ public class TajoMaster extends CompositeService {
   private CatalogServer catalogServer;
   private CatalogService catalog;
   private GlobalEngine globalEngine;
+  private AsyncTaskService asyncTaskService;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
   private QueryCoordinatorService tajoMasterService;
@@ -195,6 +196,9 @@ public class TajoMaster extends CompositeService {
 
     tajoMasterClientService = new TajoMasterClientService(context);
     addIfService(tajoMasterClientService);
+
+    asyncTaskService = new AsyncTaskService(context);
+    addIfService(asyncTaskService);
 
     tajoMasterService = new QueryCoordinatorService(context);
     addIfService(tajoMasterService);
@@ -499,6 +503,10 @@ public class TajoMaster extends CompositeService {
 
     public GlobalEngine getGlobalEngine() {
       return globalEngine;
+    }
+
+    public AsyncTaskService asyncTaskExecutor() {
+      return asyncTaskService;
     }
 
     public QueryCoordinatorService getTajoMasterService() {
