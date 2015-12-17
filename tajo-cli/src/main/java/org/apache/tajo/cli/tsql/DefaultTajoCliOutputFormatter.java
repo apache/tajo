@@ -32,12 +32,18 @@ import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 
+import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Strings.repeat;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private int printPauseRecords;
   private boolean printPause;
   private boolean printErrorTrace;
   private String nullChar;
   public static final char QUIT_COMMAND = 'q';
+  private ConsolePrinter console;
 
   @Override
   public void init(TajoCli.TajoCliContext context) {
@@ -45,6 +51,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     this.printPauseRecords = context.getInt(SessionVars.CLI_PAGE_ROWS);
     this.printErrorTrace = context.getBool(SessionVars.CLI_DISPLAY_ERROR_TRACE);
     this.nullChar = context.get(SessionVars.CLI_NULL_CHAR);
+    this.console = new ConsolePrinter(context.getOutput());
   }
 
   @Override
@@ -146,10 +153,57 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
 
   @Override
   public void printProgress(PrintWriter sout, QueryStatus status) {
-    sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
-        + "%, response time: "
-        + getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0)));
-    sout.flush();
+
+    int terminalWidth = console.getWidth();
+
+//    sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
+//        + "%, response time: "
+//        + getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0)));
+//    sout.flush();
+  }
+
+  private void reprintLine(String line) {
+    console.reprintLine(line);
+  }
+
+  public static String formatProgressBar(int width, int complete, int running, int total) {
+    if (total == 0) {
+      return repeat(" ", width);
+    }
+
+    int pending = max(0, total - complete - running);
+
+    // compute nominal lengths
+    int completeLength = min(width, ceil(complete * width, total));
+    int pendingLength = min(width, ceil(pending * width, total));
+
+    // leave space for at least one ">" as long as running is > 0
+    int minRunningLength = (running > 0) ? 1 : 0;
+    int runningLength = max(min(width, ceil(running * width, total)), minRunningLength);
+
+    // adjust to fix rounding errors
+    if (((completeLength + runningLength + pendingLength) != width) && (pending > 0)) {
+      // sacrifice "pending" if we're over the max width
+      pendingLength = max(0, width - completeLength - runningLength);
+    }
+    if ((completeLength + runningLength + pendingLength) != width) {
+      // then, sacrifice "running"
+      runningLength = max(minRunningLength, width - completeLength - pendingLength);
+    }
+    if (((completeLength + runningLength + pendingLength) > width) && (complete > 0)) {
+      // finally, sacrifice "complete" if we're still over the limit
+      completeLength = max(0, width - runningLength - pendingLength);
+    }
+
+    checkState((completeLength + runningLength + pendingLength) == width,
+        "Expected completeLength (%s) + runningLength (%s) + pendingLength (%s) == width (%s), was %s for complete = %s, running = %s, total = %s",
+        completeLength, runningLength, pendingLength, width, completeLength + runningLength + pendingLength, complete, running, total);
+
+    return repeat("=", completeLength) + repeat(">", runningLength) + repeat(" ", pendingLength);
+  }
+
+  private static int ceil(int dividend, int divisor) {
+    return ((dividend + divisor) - 1) / divisor;
   }
 
   @Override
