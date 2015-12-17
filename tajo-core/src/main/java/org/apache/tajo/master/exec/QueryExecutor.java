@@ -72,6 +72,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.apache.tajo.exception.ReturnStateUtil.OK;
 import static org.apache.tajo.exception.ReturnStateUtil.errUndefinedDatabase;
@@ -302,7 +303,14 @@ public class QueryExecutor {
         plan.getRootBlock().getRoot());
 
     final NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultFileScanner(
-        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, maxRow);
+        context.asyncTaskExecutor(),
+        context.getConf(),
+        session.getSessionId(),
+        queryInfo.getQueryId(),
+        scanNode,
+        maxRow,
+        Optional.empty());
+
     queryResultScanner.init();
 
     session.addNonForwardQueryResultScanner(queryResultScanner);
