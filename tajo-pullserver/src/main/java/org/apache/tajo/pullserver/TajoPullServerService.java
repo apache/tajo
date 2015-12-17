@@ -69,6 +69,7 @@ import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -83,8 +84,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 public class TajoPullServerService extends AbstractService {
 
-  public static final int HTTP_MAX_URL_LENGTH = 2 * StorageUnit.KB;
-
   private static final Log LOG = LogFactory.getLog(TajoPullServerService.class);
 
   public static final String SHUFFLE_MANAGE_OS_CACHE = "tajo.pullserver.manage.os.cache";
@@ -98,6 +97,7 @@ public class TajoPullServerService extends AbstractService {
   private final ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
   private HttpChannelInitializer channelInitializer;
   private int sslFileBufferSize;
+  private int maxUrlLength;
 
   private ApplicationId appId;
   private FileSystem localFS;
@@ -232,6 +232,9 @@ public class TajoPullServerService extends AbstractService {
                    .childOption(ChannelOption.TCP_NODELAY, true);
 
       localFS = new LocalFileSystem();
+
+      maxUrlLength = conf.getInt(ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.name(),
+          ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.defaultIntVal);
 
       conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
           , conf.getInt(TajoConf.ConfVars.PULLSERVER_PORT.varname, TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal));
@@ -404,7 +407,7 @@ public class TajoPullServerService extends AbstractService {
 
       int maxChunkSize = getConfig().getInt(ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.varname,
           ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE.defaultIntVal);
-      pipeline.addLast("codec", new HttpServerCodec(HTTP_MAX_URL_LENGTH, 8192, maxChunkSize));
+      pipeline.addLast("codec", new HttpServerCodec(maxUrlLength, 8192, maxChunkSize));
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
       pipeline.addLast("shuffle", PullServer);
@@ -687,7 +690,7 @@ public class TajoPullServerService extends AbstractService {
       if (tokens.length != 2 || !tokens[0].equals("ebid")) {
         throw new IllegalArgumentException("invalid params: " + uri);
       }
-      ExecutionBlockId ebId = ExecutionBlockId.fromString(tokens[1]);
+      ExecutionBlockId ebId = TajoIdUtils.createExecutionBlockId(tokens[1]);
       String queryId = ebId.getQueryId().toString();
       String ebSeqId = Integer.toString(ebId.getId());
       List<CacheKey> removed = new ArrayList<>();

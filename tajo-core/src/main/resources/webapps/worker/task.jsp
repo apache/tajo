@@ -38,6 +38,7 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
+<%@ page import="org.apache.tajo.conf.TajoConf.ConfVars" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -60,6 +61,9 @@
         response.sendRedirect(tajoMasterHttp + request.getRequestURI() + "?" + request.getQueryString());
         return;
     }
+
+    int maxUrlLength = tajoWorker.getConfig().getInt(ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.name(),
+            ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.defaultIntVal);
 
     Query query = queryMasterTask.getQuery();
     Stage stage = query.getStage(ebid);
@@ -111,7 +115,7 @@
         fetchInfo += delim + "<b>" + e.getKey() + "</b>";
         delim = "<br/>";
         for (FetchProto f : e.getValue()) {
-            for (URI uri : Repartitioner.createSimpleURIs(f)){
+            for (URI uri : Repartitioner.createSimpleURIs(maxUrlLength, f)){
                 fetchInfo += delim + uri;
             }
         }

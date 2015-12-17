@@ -1094,15 +1094,15 @@ public class Repartitioner {
   /**
    * Get the pull server URIs.
    */
-  public static List<URI> createFullURIs(FetchProto fetch) {
-    return createFetchURL(fetch, true);
+  public static List<URI> createFullURIs(int maxUrlLength, FetchProto fetch) {
+    return createFetchURL(maxUrlLength, fetch, true);
   }
 
   /**
    * Get the pull server URIs without repeated parameters.
    */
-  public static List<URI> createSimpleURIs(FetchProto fetch) {
-    return createFetchURL(fetch, false);
+  public static List<URI> createSimpleURIs(int maxUrlLength, FetchProto fetch) {
+    return createFetchURL(maxUrlLength, fetch, false);
   }
 
   private static String getRangeParam(FetchProto proto) {
@@ -1127,7 +1127,7 @@ public class Repartitioner {
     return sb.toString();
   }
 
-  public static List<URI> createFetchURL(FetchProto fetch, boolean includeParts) {
+  public static List<URI> createFetchURL(int maxUrlLength, FetchProto fetch, boolean includeParts) {
     String scheme = "http://";
 
     StringBuilder urlPrefix = new StringBuilder(scheme);
@@ -1191,7 +1191,7 @@ public class Repartitioner {
           int attemptId = taskAndAttemptIds.get(i).getSecond();
           taskAttemptId.append(taskId).append("_").append(attemptId);
 
-          if (urlPrefix.length() + taskIdListBuilder.length() > TajoPullServerService.HTTP_MAX_URL_LENGTH) {
+          if (urlPrefix.length() + taskIdListBuilder.length() > maxUrlLength) {
             taskIdsParams.add(taskIdListBuilder.toString());
             taskIdListBuilder = new StringBuilder(taskId + "_" + attemptId);
           } else {
