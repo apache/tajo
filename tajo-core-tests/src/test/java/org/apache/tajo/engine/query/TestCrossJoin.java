@@ -140,12 +140,14 @@ public class TestCrossJoin extends TestJoinQuery {
     }
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test (expected = InvalidInputsForCrossJoin.class)
   public final void testCrossJoinOfSubqueries() throws Exception {
     executeString("select * from (select * from nation, region where n_regionkey = r_regionkey) t1 " +
         "cross join (select * from orders, lineitem where l_orderkey = o_orderkey) t2");
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest (queries = {
@@ -155,6 +157,7 @@ public class TestCrossJoin extends TestJoinQuery {
     runSimpleTests();
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest (queries = {
@@ -165,6 +168,7 @@ public class TestCrossJoin extends TestJoinQuery {
     runSimpleTests();
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest (queries = {
