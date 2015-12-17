@@ -3,79 +3,23 @@ explain
 SELECTION(12)
   => Search Cond: default.t.n_nationkey (INT4) > default.s.s_suppkey (INT4)
    JOIN(15)(INNER)
-     => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
+     => Join Cond: default.s.s_suppkey (INT4) = default.ps.ps_suppkey (INT4)
      => target list: default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)
      => out schema: {(6) default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-     => in schema: {(7) default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-      TABLE_SUBQUERY(4) as default.t
-        => Targets: default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
-        => out schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-        => in  schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-         JOIN(13)(INNER)
-           => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
-           => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
-           => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-           => in schema: {(5) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.r.r_regionkey (INT4)}
-            SCAN(1) on default.region as r
-              => target list: default.r.r_regionkey (INT4)
-              => out schema: {(1) default.r.r_regionkey (INT4)}
-              => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
-            SCAN(0) on default.nation as n
-              => filter: default.n.n_name (TEXT) IN (ARGENTINA, ETHIOPIA, MOROCCO)
-              => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
-              => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-              => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+     => in schema: {(7) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+      SCAN(7) on default.partsupp as ps
+        => target list: default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)
+        => out schema: {(2) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)}
+        => in schema: {(5) default.ps.ps_availqty (INT4), default.ps.ps_comment (TEXT), default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.ps.ps_supplycost (FLOAT8)}
       JOIN(14)(INNER)
-        => Join Cond: default.s.s_suppkey (INT4) = default.ps.ps_suppkey (INT4)
-        => target list: default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)
-        => out schema: {(3) default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
-        => in schema: {(4) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
-         SCAN(5) on default.supplier as s
-           => target list: default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)
-           => out schema: {(2) default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
-           => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
-         SCAN(7) on default.partsupp as ps
-           => target list: default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)
-           => out schema: {(2) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)}
-           => in schema: {(5) default.ps.ps_availqty (INT4), default.ps.ps_comment (TEXT), default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.ps.ps_supplycost (FLOAT8)}
-explain
--------------------------------
--------------------------------------------------------------------------------
-Execution Block Graph (TERMINAL - eb_0000000000000_0000_000008)
--------------------------------------------------------------------------------
-|-eb_0000000000000_0000_000008
-   |-eb_0000000000000_0000_000007
--------------------------------------------------------------------------------
-Order of Execution
--------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000007
-2: eb_0000000000000_0000_000008
--------------------------------------------------------------------------------
-
-=======================================================
-Block Id: eb_0000000000000_0000_000007 [ROOT]
-=======================================================
-
-[Enforcers]
- 0: type=Broadcast, tables=default.ps
- 1: type=Broadcast, tables=default.r
- 2: type=Broadcast, tables=default.s
-
-SELECTION(12)
-  => Search Cond: default.t.n_nationkey (INT4) > default.s.s_suppkey (INT4)
-   JOIN(15)(INNER)
-     => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
-     => target list: default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)
-     => out schema: {(6) default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-     => in schema: {(7) default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-      TABLE_SUBQUERY(4) as default.t
-        => Targets: default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
-        => out schema: {(4) default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)}
-        => in  schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
-         PROJECTION(3)
-           => Targets: default.n.n_nationkey (INT4), default.n.n_name (TEXT), default.n.n_regionkey (INT4), default.n.n_comment (TEXT)
-           => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-           => in  schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+        => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
+        => target list: default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)
+        => out schema: {(5) default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+        => in schema: {(6) default.s.s_nationkey (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+         TABLE_SUBQUERY(4) as default.t
+           => Targets: default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
+           => out schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+           => in  schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
             JOIN(13)(INNER)
               => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
               => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
@@ -90,19 +34,104 @@ SELECTION(12)
                  => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
                  => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
                  => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
-      JOIN(14)(INNER)
-        => Join Cond: default.s.s_suppkey (INT4) = default.ps.ps_suppkey (INT4)
-        => target list: default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)
-        => out schema: {(3) default.ps.ps_availqty (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
-        => in schema: {(4) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4), default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
          SCAN(5) on default.supplier as s
            => target list: default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)
            => out schema: {(2) default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
            => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
-         SCAN(7) on default.partsupp as ps
-           => target list: default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)
-           => out schema: {(2) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)}
-           => in schema: {(5) default.ps.ps_availqty (INT4), default.ps.ps_comment (TEXT), default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.ps.ps_supplycost (FLOAT8)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000008)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000008
+   |-eb_0000000000000_0000_000007
+      |-eb_0000000000000_0000_000006
+      |-eb_0000000000000_0000_000005
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000005
+2: eb_0000000000000_0000_000006
+3: eb_0000000000000_0000_000007
+4: eb_0000000000000_0000_000008
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 7 (type=HASH_SHUFFLE, key=default.s.s_suppkey (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.n
+ 1: type=Broadcast, tables=default.r
+
+JOIN(14)(INNER)
+  => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
+  => target list: default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)
+  => out schema: {(5) default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+  => in schema: {(6) default.s.s_nationkey (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+   TABLE_SUBQUERY(4) as default.t
+     => Targets: default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
+     => out schema: {(4) default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)}
+     => in  schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+      PROJECTION(3)
+        => Targets: default.n.n_nationkey (INT4), default.n.n_name (TEXT), default.n.n_regionkey (INT4), default.n.n_comment (TEXT)
+        => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+        => in  schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+         JOIN(13)(INNER)
+           => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
+           => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+           => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+           => in schema: {(5) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.r.r_regionkey (INT4)}
+            SCAN(1) on default.region as r
+              => target list: default.r.r_regionkey (INT4)
+              => out schema: {(1) default.r.r_regionkey (INT4)}
+              => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
+            SCAN(0) on default.nation as n
+              => filter: default.n.n_name (TEXT) IN (ARGENTINA, ETHIOPIA, MOROCCO)
+              => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+              => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+              => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+   SCAN(5) on default.supplier as s
+     => target list: default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)
+     => out schema: {(2) default.s.s_nationkey (INT4), default.s.s_suppkey (INT4)}
+     => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 6 => 7 (type=HASH_SHUFFLE, key=default.ps.ps_suppkey (INT4), num=32)
+
+SCAN(7) on default.partsupp as ps
+  => target list: default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)
+  => out schema: {(2) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)}
+  => in schema: {(5) default.ps.ps_availqty (INT4), default.ps.ps_comment (TEXT), default.ps.ps_partkey (INT4), default.ps.ps_suppkey (INT4), default.ps.ps_supplycost (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000007 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 5 => 7 (type=HASH_SHUFFLE, key=default.s.s_suppkey (INT4), num=32)
+[q_0000000000000_0000] 6 => 7 (type=HASH_SHUFFLE, key=default.ps.ps_suppkey (INT4), num=32)
+
+SELECTION(12)
+  => Search Cond: default.t.n_nationkey (INT4) > default.s.s_suppkey (INT4)
+   JOIN(15)(INNER)
+     => Join Cond: default.s.s_suppkey (INT4) = default.ps.ps_suppkey (INT4)
+     => target list: default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)
+     => out schema: {(6) default.ps.ps_availqty (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+     => in schema: {(7) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4), default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+      SCAN(22) on eb_0000000000000_0000_000006
+        => out schema: {(2) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)}
+        => in schema: {(2) default.ps.ps_availqty (INT4), default.ps.ps_suppkey (INT4)}
+      SCAN(21) on eb_0000000000000_0000_000005
+        => out schema: {(5) default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
+        => in schema: {(5) default.s.s_suppkey (INT4), default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000008 [TERMINAL]

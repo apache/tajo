@@ -88,6 +88,11 @@ public enum SessionVars implements ConfigKey {
 
   // Query and Optimization ---------------------------------------------------
 
+  // Optimizer
+  USE_TABLE_VOLUME(ConfVars.$USE_TABLE_VOLUME,
+      "Enable optimizer to get and use the table volume via storage handlers", DEFAULT, Boolean.class,
+      Validators.bool()),
+
   // for distributed query strategies
   BROADCAST_NON_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD,
       "restriction for the total size of broadcasted table for non-cross join (kb)", DEFAULT, Long.class,
