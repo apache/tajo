@@ -26,19 +26,48 @@ Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
 -------------------------------------------------------------------------------
 |-eb_0000000000000_0000_000004
    |-eb_0000000000000_0000_000003
+      |-eb_0000000000000_0000_000002
+      |-eb_0000000000000_0000_000001
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000003
-2: eb_0000000000000_0000_000004
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
 -------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.l.l_orderkey (INT4), num=32)
+
+SCAN(0) on default.lineitem as l
+  => target list: default.l.l_orderkey (INT4)
+  => out schema: {(1) default.l.l_orderkey (INT4)}
+  => in schema: {(16) default.l.l_comment (TEXT), default.l.l_commitdate (TEXT), default.l.l_discount (FLOAT8), default.l.l_extendedprice (FLOAT8), default.l.l_linenumber (INT4), default.l.l_linestatus (TEXT), default.l.l_orderkey (INT4), default.l.l_partkey (INT4), default.l.l_quantity (FLOAT8), default.l.l_receiptdate (TEXT), default.l.l_returnflag (TEXT), default.l.l_shipdate (TEXT), default.l.l_shipinstruct (TEXT), default.l.l_shipmode (TEXT), default.l.l_suppkey (INT4), default.l.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.o.o_orderkey (INT4), num=32)
+
+SCAN(1) on default.orders as o
+  => target list: default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)
+  => out schema: {(2) default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)}
+  => in schema: {(9) default.o.o_clerk (TEXT), default.o.o_comment (TEXT), default.o.o_custkey (INT4), default.o.o_orderdate (TEXT), default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT), default.o.o_orderstatus (TEXT), default.o.o_shippriority (INT4), default.o.o_totalprice (FLOAT8)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000003 [ROOT]
 =======================================================
 
-[Enforcers]
- 0: type=Broadcast, tables=default.o
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.l.l_orderkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.o.o_orderkey (INT4), num=32)
 
 PROJECTION(4)
   => Targets: default.l.l_orderkey (INT4), default.o.o_orderkey (INT4), 201405 as key1, 5-LOW as key2
@@ -51,14 +80,12 @@ PROJECTION(4)
         => target list: default.l.l_orderkey (INT4), default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)
         => out schema: {(3) default.l.l_orderkey (INT4), default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)}
         => in schema: {(3) default.l.l_orderkey (INT4), default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)}
-         SCAN(1) on default.orders as o
-           => target list: default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)
+         SCAN(9) on eb_0000000000000_0000_000002
            => out schema: {(2) default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)}
-           => in schema: {(9) default.o.o_clerk (TEXT), default.o.o_comment (TEXT), default.o.o_custkey (INT4), default.o.o_orderdate (TEXT), default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT), default.o.o_orderstatus (TEXT), default.o.o_shippriority (INT4), default.o.o_totalprice (FLOAT8)}
-         SCAN(0) on default.lineitem as l
-           => target list: default.l.l_orderkey (INT4)
+           => in schema: {(2) default.o.o_orderkey (INT4), default.o.o_orderpriority (TEXT)}
+         SCAN(8) on eb_0000000000000_0000_000001
            => out schema: {(1) default.l.l_orderkey (INT4)}
-           => in schema: {(16) default.l.l_comment (TEXT), default.l.l_commitdate (TEXT), default.l.l_discount (FLOAT8), default.l.l_extendedprice (FLOAT8), default.l.l_linenumber (INT4), default.l.l_linestatus (TEXT), default.l.l_orderkey (INT4), default.l.l_partkey (INT4), default.l.l_quantity (FLOAT8), default.l.l_receiptdate (TEXT), default.l.l_returnflag (TEXT), default.l.l_shipdate (TEXT), default.l.l_shipinstruct (TEXT), default.l.l_shipmode (TEXT), default.l.l_suppkey (INT4), default.l.l_tax (FLOAT8)}
+           => in schema: {(1) default.l.l_orderkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000004 [TERMINAL]

@@ -37,24 +37,73 @@ Execution Block Graph (TERMINAL - eb_0000000000000_0000_000007)
 |-eb_0000000000000_0000_000007
    |-eb_0000000000000_0000_000006
       |-eb_0000000000000_0000_000005
+         |-eb_0000000000000_0000_000004
+         |-eb_0000000000000_0000_000001
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000005
-2: eb_0000000000000_0000_000006
-3: eb_0000000000000_0000_000007
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000004
+3: eb_0000000000000_0000_000005
+4: eb_0000000000000_0000_000006
+5: eb_0000000000000_0000_000007
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000005 [LEAF]
+Block Id: eb_0000000000000_0000_000001 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.a.id (INT4), num=32)
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.a.id (INT4), num=32)
+
+SCAN(0) on default.jointable11 as a
+  => target list: default.a.id (INT4)
+  => out schema: {(1) default.a.id (INT4)}
+  => in schema: {(2) default.a.id (INT4), default.a.name (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.b.id (INT4), num=32)
 
 [Enforcers]
  0: type=Broadcast, tables=default.jointable12
- 1: type=Broadcast, tables=default.lineitem
+
+TABLE_SUBQUERY(5) as default.b
+  => Targets: default.b.id (INT4)
+  => out schema: {(1) default.b.id (INT4)}
+  => in  schema: {(1) default.b.id (INT4)}
+   PROJECTION(4)
+     => Targets: default.jointable12.id (INT4)
+     => out schema: {(1) default.jointable12.id (INT4)}
+     => in  schema: {(1) default.jointable12.id (INT4)}
+      JOIN(10)(INNER)
+        => Join Cond: default.jointable12.id (INT4) = default.lineitem.l_orderkey (INT4)
+        => target list: default.jointable12.id (INT4)
+        => out schema: {(1) default.jointable12.id (INT4)}
+        => in schema: {(2) default.jointable12.id (INT4), default.lineitem.l_orderkey (INT4)}
+         SCAN(1) on default.jointable12
+           => filter: default.jointable12.id (INT4) > 10
+           => target list: default.jointable12.id (INT4)
+           => out schema: {(1) default.jointable12.id (INT4)}
+           => in schema: {(2) default.jointable12.id (INT4), default.jointable12.name (TEXT)}
+         SCAN(2) on default.lineitem
+           => target list: default.lineitem.l_orderkey (INT4)
+           => out schema: {(1) default.lineitem.l_orderkey (INT4)}
+           => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.a.id (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.b.id (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.a.id (INT4), num=32)
 
 SORT(17)
   => Sort Keys: default.a.id (INT4) (asc, nulls last)
@@ -63,32 +112,12 @@ SORT(17)
      => target list: default.a.id (INT4), default.b.id (INT4)
      => out schema: {(2) default.a.id (INT4), default.b.id (INT4)}
      => in schema: {(2) default.a.id (INT4), default.b.id (INT4)}
-      TABLE_SUBQUERY(5) as default.b
-        => Targets: default.b.id (INT4)
+      SCAN(16) on eb_0000000000000_0000_000004
         => out schema: {(1) default.b.id (INT4)}
-        => in  schema: {(1) default.b.id (INT4)}
-         PROJECTION(4)
-           => Targets: default.jointable12.id (INT4)
-           => out schema: {(1) default.jointable12.id (INT4)}
-           => in  schema: {(1) default.jointable12.id (INT4)}
-            JOIN(10)(INNER)
-              => Join Cond: default.jointable12.id (INT4) = default.lineitem.l_orderkey (INT4)
-              => target list: default.jointable12.id (INT4)
-              => out schema: {(1) default.jointable12.id (INT4)}
-              => in schema: {(2) default.jointable12.id (INT4), default.lineitem.l_orderkey (INT4)}
-               SCAN(1) on default.jointable12
-                 => filter: default.jointable12.id (INT4) > 10
-                 => target list: default.jointable12.id (INT4)
-                 => out schema: {(1) default.jointable12.id (INT4)}
-                 => in schema: {(2) default.jointable12.id (INT4), default.jointable12.name (TEXT)}
-               SCAN(2) on default.lineitem
-                 => target list: default.lineitem.l_orderkey (INT4)
-                 => out schema: {(1) default.lineitem.l_orderkey (INT4)}
-                 => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
-      SCAN(0) on default.jointable11 as a
-        => target list: default.a.id (INT4)
+        => in schema: {(1) default.b.id (INT4)}
+      SCAN(15) on eb_0000000000000_0000_000001
         => out schema: {(1) default.a.id (INT4)}
-        => in schema: {(2) default.a.id (INT4), default.a.name (TEXT)}
+        => in schema: {(1) default.a.id (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000006 [ROOT]

@@ -30,20 +30,51 @@ Execution Block Graph (TERMINAL - eb_0000000000000_0000_000006)
 -------------------------------------------------------------------------------
 |-eb_0000000000000_0000_000006
    |-eb_0000000000000_0000_000005
+      |-eb_0000000000000_0000_000002
+      |-eb_0000000000000_0000_000001
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000005
-2: eb_0000000000000_0000_000006
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000005
+4: eb_0000000000000_0000_000006
 -------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.a.l_orderkey (INT4), num=32)
+
+SCAN(0) on default.lineitem as a
+  => target list: default.a.l_orderkey (INT4)
+  => out schema: {(1) default.a.l_orderkey (INT4)}
+  => in schema: {(16) default.a.l_comment (TEXT), default.a.l_commitdate (TEXT), default.a.l_discount (FLOAT8), default.a.l_extendedprice (FLOAT8), default.a.l_linenumber (INT4), default.a.l_linestatus (TEXT), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_receiptdate (TEXT), default.a.l_returnflag (TEXT), default.a.l_shipdate (TEXT), default.a.l_shipinstruct (TEXT), default.a.l_shipmode (TEXT), default.a.l_suppkey (INT4), default.a.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 5 (type=HASH_SHUFFLE, key=default.b.o_orderkey (INT4), num=32)
+
+SCAN(1) on default.orders as b
+  => target list: default.b.o_orderkey (INT4)
+  => out schema: {(1) default.b.o_orderkey (INT4)}
+  => in schema: {(9) default.b.o_clerk (TEXT), default.b.o_comment (TEXT), default.b.o_custkey (INT4), default.b.o_orderdate (TEXT), default.b.o_orderkey (INT4), default.b.o_orderpriority (TEXT), default.b.o_orderstatus (TEXT), default.b.o_shippriority (INT4), default.b.o_totalprice (FLOAT8)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000005 [ROOT]
 =======================================================
 
+[Incoming]
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.a.l_orderkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 5 (type=HASH_SHUFFLE, key=default.b.o_orderkey (INT4), num=32)
+
 [Enforcers]
- 0: type=Broadcast, tables=default.b
- 1: type=Broadcast, tables=default.c
+ 0: type=Broadcast, tables=default.c
 
 JOIN(8)(LEFT_OUTER)
   => Join Cond: default.a.l_orderkey (INT4) = default.c.c_custkey (INT4)
@@ -60,14 +91,12 @@ JOIN(8)(LEFT_OUTER)
      => target list: default.a.l_orderkey (INT4), default.b.o_orderkey (INT4)
      => out schema: {(2) default.a.l_orderkey (INT4), default.b.o_orderkey (INT4)}
      => in schema: {(2) default.a.l_orderkey (INT4), default.b.o_orderkey (INT4)}
-      SCAN(1) on default.orders as b
-        => target list: default.b.o_orderkey (INT4)
+      SCAN(12) on eb_0000000000000_0000_000002
         => out schema: {(1) default.b.o_orderkey (INT4)}
-        => in schema: {(9) default.b.o_clerk (TEXT), default.b.o_comment (TEXT), default.b.o_custkey (INT4), default.b.o_orderdate (TEXT), default.b.o_orderkey (INT4), default.b.o_orderpriority (TEXT), default.b.o_orderstatus (TEXT), default.b.o_shippriority (INT4), default.b.o_totalprice (FLOAT8)}
-      SCAN(0) on default.lineitem as a
-        => target list: default.a.l_orderkey (INT4)
+        => in schema: {(1) default.b.o_orderkey (INT4)}
+      SCAN(11) on eb_0000000000000_0000_000001
         => out schema: {(1) default.a.l_orderkey (INT4)}
-        => in schema: {(16) default.a.l_comment (TEXT), default.a.l_commitdate (TEXT), default.a.l_discount (FLOAT8), default.a.l_extendedprice (FLOAT8), default.a.l_linenumber (INT4), default.a.l_linestatus (TEXT), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_receiptdate (TEXT), default.a.l_returnflag (TEXT), default.a.l_shipdate (TEXT), default.a.l_shipinstruct (TEXT), default.a.l_shipmode (TEXT), default.a.l_suppkey (INT4), default.a.l_tax (FLOAT8)}
+        => in schema: {(1) default.a.l_orderkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000006 [TERMINAL]

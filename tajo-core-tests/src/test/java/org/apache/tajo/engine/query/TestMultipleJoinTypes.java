@@ -71,7 +71,7 @@ public class TestMultipleJoinTypes extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest(prepare = {
       "CREATE TABLE customer_broad_parts (" +
           "  c_nationkey INT4," +
