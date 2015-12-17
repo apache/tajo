@@ -40,7 +40,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
-import org.apache.tajo.master.AsyncTaskService;
+import org.apache.tajo.io.AsyncTaskService;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.storage.*;

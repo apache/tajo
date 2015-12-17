@@ -48,6 +48,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.io.AsyncTaskService;
 import org.apache.tajo.master.rm.TajoResourceManager;
 import org.apache.tajo.metrics.ClusterResourceMetricSet;
 import org.apache.tajo.metrics.Master;
