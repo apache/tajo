@@ -1,19 +1,19 @@
-*****************
+***********
  Predicates
-*****************
+***********
 
-=====================
+=============
  IN Predicate
-=====================
+=============
 
-IN predicate provides row and array comparison.
+IN predicate provides a comparison of row, array, and result of a subquery.
 
 *Synopsis*
 
 .. code-block:: sql
 
-  column_reference IN (val1, val2, ..., valN)
-  column_reference NOT IN (val1, val2, ..., valN)
+  column_reference (NOT) IN (val1, val2, ..., valN)
+  column_reference (NOT) IN (SELECT ... FROM ...) AS alias_name
 
 
 Examples are as follows:
@@ -26,7 +26,7 @@ Examples are as follows:
   -- this statement filters lists down all the records where col1 value is neither 1, 2 nor 3:
   SELECT col1, col2 FROM table1 WHERE col1 NOT IN (1, 2, 3);
 
-You can use 'IN clause' on text data domain as follows:
+You can use `IN clause` on text data domain as follows:
 
 .. code-block:: sql
 
@@ -34,6 +34,25 @@ You can use 'IN clause' on text data domain as follows:
 
   SELECT col1, col2 FROM table1 WHERE col2 NOT IN ('tajo', 'hadoop');
 
+Finally, you can use subqueries in the `IN clause`.
+
+.. code-block:: sql
+
+  SELECT col1, col2
+  FROM table1
+  WHERE col3 IN (
+    SELECT avg(col2) as avg_col2
+    FROM table2
+    GROUP BY col1
+    HAVING avg_col2 > 100);
+
+  SELECT col1, col2
+  FROM table1
+  WHERE col3 NOT IN (
+    SELECT avg(col2) as avg_col2
+    FROM table2
+    GROUP BY col1
+    HAVING avg_col2 > 100);
 
 ==================================
 String Pattern Matching Predicates

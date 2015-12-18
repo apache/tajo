@@ -45,7 +45,7 @@ import java.util.*;
 public class PlannerUtil {
 
   public static final Column [] EMPTY_COLUMNS = new Column[] {};
-  public static final AggregationFunctionCallEval [] EMPTY_AGG_FUNCS = new AggregationFunctionCallEval[] {};
+  public static final List<AggregationFunctionCallEval> EMPTY_AGG_FUNCS = new ArrayList<>();
 
   public static boolean checkIfSetSession(LogicalNode node) {
     LogicalNode baseNode = node;
@@ -969,7 +969,7 @@ public class PlannerUtil {
     return finder.getEvalNodes();
   }
 
-  public static boolean hasAsterisk(NamedExpr [] namedExprs) {
+  public static boolean hasAsterisk(List<NamedExpr> namedExprs) {
     for (NamedExpr eachTarget : namedExprs) {
       if (eachTarget.getExpr().getType() == OpType.Asterisk) {
         return true;

@@ -75,12 +75,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
     Set<FunctionDesc> functionDescs = new HashSet<>();
 
-    InputStream in = getScriptAsStream(path);
     List<FunctionInfo> functions = null;
-    try {
+    try (InputStream in = getScriptAsStream(path)) {
       functions = getFunctions(in);
-    } finally {
-      in.close();
     }
 
     for(FunctionInfo funcInfo : functions) {

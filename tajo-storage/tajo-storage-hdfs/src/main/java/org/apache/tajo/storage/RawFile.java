@@ -453,10 +453,11 @@ public class RawFile {
         return 1.0f;
       }
 
-      if (filePosition - startOffset == 0) {
+      long readBytes = filePosition - startOffset;
+      if (readBytes == 0) {
         return 0.0f;
       } else {
-        return Math.min(1.0f, ((float) filePosition / endOffset));
+        return Math.min(1.0f, ((float) readBytes / fragment.getLength()));
       }
     }
   }

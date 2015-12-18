@@ -109,7 +109,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir,
         "FindValueInCSV.idx"), BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.open();
+    creater.init();
 
     SeekableScanner fileScanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
@@ -135,7 +135,7 @@ public class TestSingleCSVFileBSTIndex {
     tuple = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir,
         "FindValueInCSV.idx"), keySchema, comp);
-    reader.open();
+    reader.init();
     fileScanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
     fileScanner.init();
@@ -200,7 +200,7 @@ public class TestSingleCSVFileBSTIndex {
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "FindNextKeyValueInCSV.idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
     creater.setLoadNum(LOAD_NUM);
-    creater.open();
+    creater.init();
     
     SeekableScanner fileScanner  = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
@@ -223,7 +223,7 @@ public class TestSingleCSVFileBSTIndex {
     fileScanner.close();    
     
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "FindNextKeyValueInCSV.idx"), keySchema, comp);
-    reader.open();
+    reader.init();
     fileScanner  = OldStorageManager.getStorageManager(conf, meta.getDataFormat())
         .getSeekableScanner(meta, schema, tablet.getProto(), schema);
     fileScanner.init();

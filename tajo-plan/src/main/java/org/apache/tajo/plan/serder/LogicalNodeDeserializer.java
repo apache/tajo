@@ -74,10 +74,7 @@ public class LogicalNodeDeserializer {
     // So, it sequentially transforms each serialized node into a LogicalNode instance in a postfix order of
     // the original logical node tree.
 
-    Iterator<PlanProto.LogicalNode> it = nodeList.iterator();
-    while (it.hasNext()) {
-      PlanProto.LogicalNode protoNode = it.next();
-
+    for (PlanProto.LogicalNode protoNode : nodeList) {
       switch (protoNode.getType()) {
       case ROOT:
         current = convertRoot(nodeMap, protoNode);
@@ -710,12 +707,12 @@ public class LogicalNodeDeserializer {
     return dropIndex;
   }
 
-  private static AggregationFunctionCallEval [] convertAggFuncCallEvals(OverridableConf context, EvalContext evalContext,
+  private static List<AggregationFunctionCallEval> convertAggFuncCallEvals(OverridableConf context, EvalContext evalContext,
                                                                        List<PlanProto.EvalNodeTree> evalTrees) {
-    AggregationFunctionCallEval [] aggFuncs = new AggregationFunctionCallEval[evalTrees.size()];
-    for (int i = 0; i < aggFuncs.length; i++) {
-      aggFuncs[i] = (AggregationFunctionCallEval) EvalNodeDeserializer.deserialize(context, evalContext,
-          evalTrees.get(i));
+    List<AggregationFunctionCallEval> aggFuncs = new ArrayList<>();
+    for (int i = 0; i < evalTrees.size(); i++) {
+      aggFuncs.add((AggregationFunctionCallEval) EvalNodeDeserializer.deserialize(context, evalContext,
+          evalTrees.get(i)));
     }
     return aggFuncs;
   }

@@ -39,6 +39,7 @@ import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.VersionInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -163,12 +164,9 @@ public class TestTajoCli {
     assertEquals("tajo.executor.join.inner.in-memory-table-num=256", confValues[1]);
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    TajoCli testCli = new TajoCli(tajoConf, args, null, System.in, System.out);
-    try {
+    try (TajoCli testCli = new TajoCli(tajoConf, args, null, System.in, System.out)) {
       assertEquals("false", testCli.getContext().get(SessionVars.CLI_PAGING_ENABLED));
       assertEquals("256", testCli.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
-    } finally {
-      testCli.close();
     }
   }
 
@@ -345,16 +343,13 @@ public class TestTajoCli {
   public void testGetConf() throws Exception {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out);
-    try {
+    
+    try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+         TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out)) {
       tajoCli.executeMetaCommand("\\getconf tajo.rootdir");
 
       String consoleResult = new String(out.toByteArray());
       assertEquals(consoleResult, tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.ROOT_DIR) + "\n");
-    } finally {
-      tajoCli.close();
     }
   }
 
@@ -447,6 +442,22 @@ public class TestTajoCli {
   }
 
   @Test
+  public void testTimeZoneSessionVars3() throws Exception {
+    tajoCli.executeMetaCommand("\\set timezone GMT+1");
+    tajoCli.executeMetaCommand("\\set");
+    String output = new String(out.toByteArray());
+    assertTrue(output.contains("'TIMEZONE'='GMT+1'"));
+  }
+
+  @Test
+  public void testTimeZoneSessionVars4() throws Exception {
+    tajoCli.executeMetaCommand("\\set timeZone GMT+2");
+    tajoCli.executeMetaCommand("\\set");
+    String output = new String(out.toByteArray());
+    assertTrue(output.contains("'TIMEZONE'='GMT+2'"));
+  }
+
+  @Test
   public void testTimeZoneTest1() throws Exception {
     String tableName = "test1";
     tajoCli.executeMetaCommand("\\set TIMEZONE GMT+0");
@@ -473,14 +484,12 @@ public class TestTajoCli {
   @Test(timeout = 3000)
   public void testNonForwardQueryPause() throws Exception {
     final String sql = "select * from default.lineitem";
-    TajoCli cli = null;
-    try {
-      TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
-      assertNotNull(tableDesc);
-      assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
+    TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
+    assertNotNull(tableDesc);
+    assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
 
-      InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
-      cli = new TajoCli(cluster.getConfiguration(), new String[]{}, null, testInput, out);
+    try (InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
+         TajoCli cli = new TajoCli(cluster.getConfiguration(), new String[]{}, null, testInput, out)) {
       setVar(cli, SessionVars.CLI_PAGE_ROWS, "2");
       setVar(cli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
@@ -489,8 +498,6 @@ public class TestTajoCli {
       String consoleResult;
       consoleResult = new String(out.toByteArray());
       assertOutputResult(consoleResult);
-    } finally {
-      cli.close();
     }
   }
 
@@ -565,6 +572,27 @@ public class TestTajoCli {
   }
 
   @Test
+  public void testPrintVersion() {
+    tajoCli.executeMetaCommand("\\?");
+    String consoleResult = new String(out.toByteArray());
+    String tajoFullVersion = VersionInfo.getVersion();
+    String tajoVersion;
+
+    int delimiterIdx = tajoFullVersion.indexOf("-");
+    if (delimiterIdx > -1) {
+      tajoVersion = tajoFullVersion.substring(0, delimiterIdx);
+    } else {
+      tajoVersion = tajoFullVersion;
+    }
+
+    if (tajoVersion.equalsIgnoreCase("") || tajoFullVersion.contains("SNAPSHOT")) {
+      assertTrue(consoleResult.contains("docs/current/"));
+    } else {
+      assertTrue(consoleResult.contains("docs/" + tajoVersion + "/"));
+    }
+  }
+
+  @Test
   public void testDefaultPrintHelp() throws IOException, NoSuchMethodException {
     for (Map.Entry<String, TajoShellCommand> entry : tajoCli.getContext().getCommands().entrySet()) {
       TajoShellCommand shellCommand = entry.getValue();
@@ -581,5 +609,23 @@ public class TestTajoCli {
         assertEquals(result, expected);
       }
     }
+  }
+
+  @Test
+  public void testPrintUsageOfConnectDatabaseCommand() {
+    tajoCli.executeMetaCommand("\\help c");
+    assertTrue(new String(out.toByteArray()).contains("[database_name]"));
+  }
+
+  @Test
+  public void testPrintUsageOfSetCommand() {
+    tajoCli.executeMetaCommand("\\set a b c");
+    assertTrue(new String(out.toByteArray()).contains("[[NAME] VALUE]"));
+  }
+
+  @Test
+  public void testPrintUsageOfUnsetCommand() {
+    tajoCli.executeMetaCommand("\\help unset");
+    assertTrue(new String(out.toByteArray()).contains("[NAME]"));
   }
 }

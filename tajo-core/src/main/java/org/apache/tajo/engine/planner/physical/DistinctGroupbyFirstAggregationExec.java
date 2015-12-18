@@ -226,7 +226,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
   class NonDistinctHashAggregator {
     private int aggFunctionsNum;
-    private final AggregationFunctionCallEval aggFunctions[];
+    private final List<AggregationFunctionCallEval> aggFunctions;
 
     // GroupingKey -> FunctionContext[]
     private TupleMap<FunctionContext[]> nonDistinctAggrDatas;
@@ -240,9 +240,9 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
 
       if (groupbyNode.hasAggFunctions()) {
         aggFunctions = groupbyNode.getAggFunctions();
-        aggFunctionsNum = aggFunctions.length;
+        aggFunctionsNum = aggFunctions.size();
       } else {
-        aggFunctions = new AggregationFunctionCallEval[0];
+        aggFunctions = new ArrayList<>();
         aggFunctionsNum = 0;
       }
 
@@ -259,14 +259,14 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     public void compute(KeyTuple groupingKeyTuple, Tuple tuple) {
       FunctionContext[] contexts = nonDistinctAggrDatas.get(groupingKeyTuple);
       if (contexts != null) {
-        for (int i = 0; i < aggFunctions.length; i++) {
-          aggFunctions[i].merge(contexts[i], tuple);
+        for (int i = 0; i < aggFunctions.size(); i++) {
+          aggFunctions.get(i).merge(contexts[i], tuple);
         }
       } else { // if the key occurs firstly
         contexts = new FunctionContext[aggFunctionsNum];
         for (int i = 0; i < aggFunctionsNum; i++) {
-          contexts[i] = aggFunctions[i].newContext();
-          aggFunctions[i].merge(contexts[i], tuple);
+          contexts[i] = aggFunctions.get(i).newContext();
+          aggFunctions.get(i).merge(contexts[i], tuple);
         }
         nonDistinctAggrDatas.put(groupingKeyTuple, contexts);
       }
@@ -279,7 +279,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
       }
 
       for (int i = 0; i < aggFunctionsNum; i++) {
-        outTuple.put(i, aggFunctions[i].terminate(contexts[i]));
+        outTuple.put(i, aggFunctions.get(i).terminate(contexts[i]));
       }
 
       return outTuple;

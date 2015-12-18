@@ -345,11 +345,11 @@ public class TestEvalTreeUtil {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
     GroupbyNode groupByNode = plan.getRootBlock().getNode(NodeType.GROUP_BY);
-    EvalNode [] aggEvals = groupByNode.getAggFunctions();
+    List aggEvals = groupByNode.getAggFunctions();
 
     List<AggregationFunctionCallEval> list = new ArrayList<>();
-    for (int i = 0; i < aggEvals.length; i++) {
-      list.addAll(EvalTreeUtil.findDistinctAggFunction(aggEvals[i]));
+    for (int i = 0; i < aggEvals.size(); i++) {
+      list.addAll(EvalTreeUtil.findDistinctAggFunction((EvalNode) aggEvals.get(i)));
     }
     assertEquals(2, list.size());
 

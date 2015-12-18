@@ -19,6 +19,7 @@
 package org.apache.tajo.tuple;
 
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.memory.*;
 import org.apache.tajo.unit.StorageUnit;
@@ -54,6 +55,11 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   }
 
   @Override
+  public void backward(int length) {
+    memoryBlock.writerPosition(memoryBlock.writerPosition() - length);
+  }
+
+  @Override
   public boolean startRow() {
     memoryBlock.writerPosition(0);
     return super.startRow();
@@ -65,13 +71,18 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   }
 
   @Override
-  public void addTuple(Tuple tuple) {
-    if (tuple instanceof UnSafeTuple) {
-      UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
-      addTuple(unSafeTuple);
-    } else {
-      OffHeapRowBlockUtils.convert(tuple, this);
+  public boolean addTuple(Tuple tuple) {
+    try {
+      if (tuple instanceof UnSafeTuple) {
+        UnSafeTuple unSafeTuple = TUtil.checkTypeAndGet(tuple, UnSafeTuple.class);
+        addTuple(unSafeTuple);
+      } else {
+        OffHeapRowBlockUtils.convert(tuple, this);
+      }
+    } catch (ValueOutOfRangeException e) {
+      return false;
     }
+    return true;
   }
 
   @Override

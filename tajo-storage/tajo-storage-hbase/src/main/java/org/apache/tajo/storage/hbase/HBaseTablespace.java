@@ -124,19 +124,19 @@ public class HBaseTablespace extends Tablespace {
 
   private void createTable(URI uri, TableMeta tableMeta, Schema schema,
                            boolean isExternal, boolean ifNotExists) throws TajoException, IOException {
-    String hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY, "");
+    String hbaseTableName = tableMeta.getProperty(HBaseStorageConstants.META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
       throw new MissingTablePropertyException(HBaseStorageConstants.META_TABLE_KEY, "hbase");
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
-    String mappedColumns = tableMeta.getOption(HBaseStorageConstants.META_COLUMNS_KEY, "");
+    String mappedColumns = tableMeta.getProperty(HBaseStorageConstants.META_COLUMNS_KEY, "");
     if (mappedColumns != null && mappedColumns.split(",").length > schema.size()) {
       throw new InvalidTablePropertyException(HBaseStorageConstants.META_COLUMNS_KEY,
           "mapping column pairs must be more than number of columns in the schema");
     }
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getPropertySet());
     int numRowKeys = 0;
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
     for (int i = 0; i < isRowKeyMappings.length; i++) {
@@ -161,9 +161,7 @@ public class HBaseTablespace extends Tablespace {
       }
     }
 
-    HBaseAdmin hAdmin =  new HBaseAdmin(getHbaseConf());
-
-    try {
+    try (HBaseAdmin hAdmin = new HBaseAdmin(getHbaseConf())) {
       if (isExternal) {
         // If tajo table is external table, only check validation.
         if (mappedColumns == null || mappedColumns.isEmpty()) {
@@ -178,7 +176,7 @@ public class HBaseTablespace extends Tablespace {
           tableColumnFamilies.add(eachColumn.getNameAsString());
         }
 
-        Collection<String> mappingColumnFamilies =columnMapping.getColumnFamilyNames();
+        Collection<String> mappingColumnFamilies = columnMapping.getColumnFamilyNames();
         if (mappingColumnFamilies.isEmpty()) {
           throw new MissingTablePropertyException(HBaseStorageConstants.META_COLUMNS_KEY, hbaseTableName);
         }
@@ -206,8 +204,6 @@ public class HBaseTablespace extends Tablespace {
           hAdmin.createTable(hTableDescriptor, splitKeys);
         }
       }
-    } finally {
-      hAdmin.close();
     }
   }
 
@@ -223,15 +219,15 @@ public class HBaseTablespace extends Tablespace {
   private byte[][] getSplitKeys(TajoConf conf, String hbaseTableName, Schema schema, TableMeta meta)
       throws MissingTablePropertyException, InvalidTablePropertyException, IOException {
 
-    String splitRowKeys = meta.getOption(HBaseStorageConstants.META_SPLIT_ROW_KEYS_KEY, "");
-    String splitRowKeysFile = meta.getOption(HBaseStorageConstants.META_SPLIT_ROW_KEYS_FILE_KEY, "");
+    String splitRowKeys = meta.getProperty(HBaseStorageConstants.META_SPLIT_ROW_KEYS_KEY, "");
+    String splitRowKeysFile = meta.getProperty(HBaseStorageConstants.META_SPLIT_ROW_KEYS_FILE_KEY, "");
 
     if ((splitRowKeys == null || splitRowKeys.isEmpty()) &&
         (splitRowKeysFile == null || splitRowKeysFile.isEmpty())) {
       return null;
     }
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, meta.getOptions());
+    ColumnMapping columnMapping = new ColumnMapping(schema, meta.getPropertySet());
     boolean[] isBinaryColumns = columnMapping.getIsBinaryColumns();
     boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
 
@@ -343,13 +339,13 @@ public class HBaseTablespace extends Tablespace {
   public static HTableDescriptor parseHTableDescriptor(TableMeta tableMeta, Schema schema)
       throws MissingTablePropertyException, InvalidTablePropertyException {
 
-    String hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY, "");
+    String hbaseTableName = tableMeta.getProperty(HBaseStorageConstants.META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
       throw new MissingTablePropertyException(HBaseStorageConstants.META_TABLE_KEY, hbaseTableName);
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
-    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getOptions());
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getPropertySet());
 
     HTableDescriptor hTableDescriptor = new HTableDescriptor(hTableName);
 
@@ -370,15 +366,12 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
-    HBaseAdmin hAdmin =  new HBaseAdmin(hbaseConf);
 
-    try {
+    try (HBaseAdmin hAdmin = new HBaseAdmin(hbaseConf)) {
       HTableDescriptor hTableDesc = parseHTableDescriptor(tableDesc.getMeta(), tableDesc.getSchema());
       LOG.info("Deleting hbase table: " + new String(hTableDesc.getName()));
       hAdmin.disableTable(hTableDesc.getName());
       hAdmin.deleteTable(hTableDesc.getName());
-    } finally {
-      hAdmin.close();
     }
   }
 
@@ -397,7 +390,7 @@ public class HBaseTablespace extends Tablespace {
   private Column[] getIndexableColumns(TableDesc tableDesc) throws
       MissingTablePropertyException, InvalidTablePropertyException {
 
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getPropertySet());
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
     int[] rowKeyIndexes = columnMapping.getRowKeyFieldIndexes();
 
@@ -419,14 +412,14 @@ public class HBaseTablespace extends Tablespace {
                                   @Nullable EvalNode filterCondition)
       throws IOException, TajoException {
 
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getPropertySet());
 
     List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, filterCondition);
     HTable htable = null;
     HBaseAdmin hAdmin = null;
 
     try {
-      htable = new HTable(hbaseConf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
+      htable = new HTable(hbaseConf, tableDesc.getMeta().getProperty(HBaseStorageConstants.META_TABLE_KEY));
 
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
@@ -915,10 +908,9 @@ public class HBaseTablespace extends Tablespace {
     committer.commitJob(jobContext);
 
     // insert into table
-    String tableName = tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY);
+    String tableName = tableDesc.getMeta().getProperty(HBaseStorageConstants.META_TABLE_KEY);
 
-    HTable htable = new HTable(hbaseConf, tableName);
-    try {
+    try (HTable htable = new HTable(hbaseConf, tableName)) {
       LoadIncrementalHFiles loadIncrementalHFiles = null;
       try {
         loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
@@ -929,8 +921,6 @@ public class HBaseTablespace extends Tablespace {
       loadIncrementalHFiles.doBulkLoad(stagingResultDir, htable);
 
       return stagingResultDir;
-    } finally {
-      htable.close();
     }
   }
 
@@ -944,10 +934,9 @@ public class HBaseTablespace extends Tablespace {
         sortKeyIndexes[i] = inputSchema.getColumnId(sortSpecs[i].getSortKey().getQualifiedName());
       }
 
-      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getOptions());
+      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getPropertySet());
 
-      HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
-      try {
+      try (HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName())) {
         byte[][] endKeys = htable.getEndKeys();
         if (endKeys.length == 1) {
           return new TupleRange[]{dataRange};
@@ -984,12 +973,12 @@ public class HBaseTablespace extends Tablespace {
           for (int i = 0; i < sortSpecs.length; i++) {
             if (columnMapping.getIsBinaryColumns()[sortKeyIndexes[i]]) {
               endTuple.put(i,
-                  HBaseBinarySerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
-                      rowKeyFields[i]));
+                      HBaseBinarySerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                              rowKeyFields[i]));
             } else {
               endTuple.put(i,
-                  HBaseTextSerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
-                      rowKeyFields[i]));
+                      HBaseTextSerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                              rowKeyFields[i]));
             }
           }
           tupleRanges.add(new TupleRange(sortSpecs, previousTuple, endTuple));
@@ -1003,8 +992,6 @@ public class HBaseTablespace extends Tablespace {
           tupleRanges.remove(tupleRanges.size() - 1);
         }
         return tupleRanges.toArray(new TupleRange[tupleRanges.size()]);
-      } finally {
-        htable.close();
       }
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
@@ -1026,7 +1013,7 @@ public class HBaseTablespace extends Tablespace {
 
   @Override
   public FormatProperty getFormatProperty(TableMeta meta) {
-    KeyValueSet tableProperty = meta.getOptions();
+    KeyValueSet tableProperty = meta.getPropertySet();
     if (tableProperty.isTrue(HBaseStorageConstants.INSERT_PUT_MODE) ||
         tableProperty.isTrue(StorageConstants.INSERT_DIRECTLY)) {
       return PUT_MODE_PROPERTIES;
@@ -1055,22 +1042,19 @@ public class HBaseTablespace extends Tablespace {
         return;
       }
 
-      HBaseAdmin hAdmin =  new HBaseAdmin(this.hbaseConf);
       TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
-      try {
+      try (HBaseAdmin hAdmin = new HBaseAdmin(this.hbaseConf)) {
         HTableDescriptor hTableDesc = parseHTableDescriptor(tableMeta, cNode.getTableSchema());
         LOG.info("Delete table cause query failed:" + new String(hTableDesc.getName()));
         hAdmin.disableTable(hTableDesc.getName());
         hAdmin.deleteTable(hTableDesc.getName());
-      } finally {
-        hAdmin.close();
       }
     }
   }
 
   @Override
   public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
-    if (meta.getOptions().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
+    if (meta.getPropertySet().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
       throw new IOException("Staging phase is not supported in this storage.");
     } else {
       return TablespaceManager.getDefault().getStagingUri(context, queryId, meta);
@@ -1079,7 +1063,7 @@ public class HBaseTablespace extends Tablespace {
 
   public URI prepareStagingSpace(TajoConf conf, String queryId, OverridableConf context,
                                  TableMeta meta) throws IOException {
-    if (!meta.getOptions().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
+    if (!meta.getPropertySet().isTrue(HBaseStorageConstants.INSERT_PUT_MODE)) {
       return TablespaceManager.getDefault().prepareStagingSpace(conf, queryId, context, meta);
     } else {
       throw new IOException("Staging phase is not supported in this storage.");
