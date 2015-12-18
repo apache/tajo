@@ -112,7 +112,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else {
         value = null;
       }
-      return new SetSession(ctx.name.getText(), value);
+      // Keep upper case letters (workaround temporarily)
+      return new SetSession(ctx.name.getText().toUpperCase(), value);
 
 
     } else if (checkIfExist(ctx.TIME()) && checkIfExist(ctx.ZONE())) {

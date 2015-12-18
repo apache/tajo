@@ -65,16 +65,16 @@ public class TestSetSessionQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSetSession1() throws Exception {
-    assertFalse(getClient().existSessionVariable("key1"));
-    executeString("SET SESSION key1 to true").close();
-    assertTrue(getClient().existSessionVariable("key1"));
+    assertFalse(getClient().existSessionVariable("KEY1"));
+    executeString("SET SESSION KEY1 to true").close();
+    assertTrue(getClient().existSessionVariable("KEY1"));
 
-    executeString("SET SESSION key1 to true").close();
-    executeString("SET SESSION key2 to 'val1'").close();
-    assertTrue(getClient().existSessionVariable("key1"));
-    assertTrue(getClient().existSessionVariable("key2"));
-    executeString("RESET key1").close();
-    executeString("SET SESSION key2 to DEFAULT").close();
-    assertFalse(getClient().existSessionVariable("key2"));
+    executeString("SET SESSION KEY2 to true").close();
+    executeString("SET SESSION KEY2 to 'val1'").close();
+    assertTrue(getClient().existSessionVariable("KEY1"));
+    assertTrue(getClient().existSessionVariable("KEY2"));
+    executeString("RESET KEY1").close();
+    executeString("SET SESSION KEY2 to DEFAULT").close();
+    assertFalse(getClient().existSessionVariable("KEY2"));
   }
 }
