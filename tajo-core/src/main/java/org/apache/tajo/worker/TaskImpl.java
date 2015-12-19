@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
@@ -100,6 +101,7 @@ public class TaskImpl implements Task {
   private Schema finalSchema = null;
 
   private TupleComparator sortComp = null;
+  private final int maxUrlLength;
 
   public TaskImpl(final TaskRequest request,
                   final ExecutionBlockContext executionBlockContext) throws IOException {
@@ -125,6 +127,7 @@ public class TaskImpl implements Task {
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
     this.context.setState(TaskAttemptState.TA_PENDING);
+    this.maxUrlLength = systemConf.getIntVar(ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH);
   }
 
   public void initPlan() throws IOException {
@@ -159,7 +162,7 @@ public class TaskImpl implements Task {
 
     if(LOG.isDebugEnabled()) {
       for (FetchProto f : request.getFetches()) {
-        LOG.debug("Table Id: " + f.getName() + ", Simple URIs: " + Repartitioner.createSimpleURIs(f));
+        LOG.debug("Table Id: " + f.getName() + ", Simple URIs: " + Repartitioner.createSimpleURIs(maxUrlLength, f));
       }
     }
 
@@ -694,7 +697,7 @@ public class TaskImpl implements Task {
           if (!storeDir.mkdirs()) throw new IOException("Failed to create " + storeDir);
         }
 
-        for (URI uri : Repartitioner.createFullURIs(f)) {
+        for (URI uri : Repartitioner.createFullURIs(maxUrlLength, f)) {
           storeChunkList.clear();
           defaultStoreFile = new File(storeDir, "in_" + i);
           InetAddress address = InetAddress.getByName(uri.getHost());

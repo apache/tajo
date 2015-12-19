@@ -34,6 +34,7 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
@@ -98,6 +99,8 @@ public class Task implements EventHandler<TaskEvent> {
   private static final AttemptKilledTransition ATTEMPT_KILLED_TRANSITION = new AttemptKilledTransition();
 
   private TaskHistory finalTaskHistory;
+
+  private final int maxUrlLength;
 
   protected static final StateMachineFactory
       <Task, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
@@ -206,6 +209,8 @@ public class Task implements EventHandler<TaskEvent> {
 
     stateMachine = stateMachineFactory.make(this);
     totalFragmentNum = 0;
+    maxUrlLength = conf.getInt(ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.name(),
+        ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.defaultIntVal);
 	}
 
   public boolean isLeafTask() {
@@ -283,7 +288,7 @@ public class Task implements EventHandler<TaskEvent> {
     List<String[]> fetchList = new ArrayList<>();
     for (Map.Entry<String, Set<FetchProto>> e : getFetchMap().entrySet()) {
       for (FetchProto f : e.getValue()) {
-        for (URI uri : Repartitioner.createSimpleURIs(f)) {
+        for (URI uri : Repartitioner.createSimpleURIs(maxUrlLength, f)) {
           fetchList.add(new String[] {e.getKey(), uri.toString()});
         }
       }
@@ -416,7 +421,7 @@ public class Task implements EventHandler<TaskEvent> {
 		for (Entry<String, Set<FetchProto>> e : fetchMap.entrySet()) {
       builder.append(e.getKey()).append(" : ");
       for (FetchProto t : e.getValue()) {
-        for (URI uri : Repartitioner.createFullURIs(t)){
+        for (URI uri : Repartitioner.createFullURIs(maxUrlLength, t)){
           builder.append(uri).append(" ");
         }
       }

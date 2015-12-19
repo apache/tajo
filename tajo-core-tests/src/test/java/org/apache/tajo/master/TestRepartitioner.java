@@ -30,6 +30,7 @@ import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.FetchImpl;
 import org.junit.Test;
@@ -83,7 +84,7 @@ public class TestRepartitioner {
 
       hashEntries.put(eachEntry.getKey(), ebEntries);
 
-      List<URI> uris = Repartitioner.createFullURIs(fetch.getProto());
+      List<URI> uris = Repartitioner.createFullURIs(2 * StorageUnit.KB, fetch.getProto());
       assertEquals(1, uris.size());   //In Hash Suffle, Fetcher return only one URI per partition.
 
       URI uri = uris.get(0);
