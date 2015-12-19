@@ -290,6 +290,16 @@ public class FunctionLoader {
     List<FunctionDesc> functionList = new ArrayList<>(loadBuiltinFunctions().values());
     List<FunctionDesc> udfs = loadUserDefinedFunctions(conf);
 
+    /* NOTE:
+     * For built-in functions, it is not done to check duplicates.
+     * There are two reasons.
+     * Firstly, it could be an useless operation in most of cases because built-in functions are not changed frequently
+     *   but checking will be done each startup.
+     * Secondly, this logic checks duplicate excluding type, but there are already duplicates in built-in functions
+     *   such as sum with/without 'distinct' feature. So to check duplicates in built-in functions, some other logic is needed.
+     * It should be another issue.
+     */
+    // merge lists and return it.
     return mergeFunctionLists(functionList, udfs);
   }
 
