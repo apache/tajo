@@ -800,7 +800,7 @@ public class TaskImpl implements Task {
           chunkList.add(chunk);
         } catch (Throwable t) {
           LOG.error(t.getMessage(), t);
-          throw new RuntimeException(t.getCause());
+          throw new IOException(t.getCause());
         }
       }
       long after = System.currentTimeMillis();

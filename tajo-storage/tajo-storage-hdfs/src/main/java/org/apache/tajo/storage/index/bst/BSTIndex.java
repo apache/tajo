@@ -714,6 +714,8 @@ public class BSTIndex implements IndexMethod {
       } catch (IOException e) {
         //TODO this block should fix correctly
         counter--;
+        if (counter == 0)
+          LOG.info("counter: " + counter);
         if (pos != -1) {
           in.seek(pos);
         }
@@ -795,6 +797,9 @@ public class BSTIndex implements IndexMethod {
 
       //http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6412541
       int centerPos = (start + end) >>> 1;
+      if (arr.length == 0) {
+        LOG.error("arr.length: 0, loadNum: " + loadNum + ", inited: " + inited.get());
+      }
       while (true) {
         if (comparator.compare(arr[centerPos], key) > 0) {
           if (centerPos == 0) {
