@@ -144,4 +144,21 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
 
     return o.paramTypes.length - paramTypes.length;
   }
+
+  public boolean equalsWithoutType(Object obj) {
+    if (obj instanceof FunctionSignature) {
+      FunctionSignature other = (FunctionSignature) obj;
+
+      boolean eq = name.equals(other.name);
+      eq = eq && TUtil.checkEquals(paramTypes, other.paramTypes);
+      eq = eq && returnType.equals(other.returnType);
+      return eq;
+    } else {
+      return false;
+    }
+  }
+
+  public int hashCodeWithoutType() {
+    return Objects.hashCode(name, returnType, Objects.hashCode(paramTypes));
+  }
 }

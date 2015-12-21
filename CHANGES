@@ -187,6 +187,9 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1997: Registering UDF, it needs to check duplication.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-2024: Remove getContentSummary from HCatalogStore. (hyunsik)
 
     TAJO-2004: S3TableSpace needs to extend FileTableSpace. (jaehwa)

@@ -61,6 +61,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
@@ -70,7 +71,7 @@ import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
 
 public class ExprTestBase {
-  private static TajoTestingCluster util;
+  private static TajoTestingCluster cluster;
   private static TajoConf conf;
   private static CatalogService cat;
   private static SQLAnalyzer analyzer;
@@ -88,28 +89,29 @@ public class ExprTestBase {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    util = new TajoTestingCluster();
-    conf = util.getConfiguration();
-    util.startCatalogCluster();
-    cat = util.getCatalogService();
+    cluster = new TajoTestingCluster();
+    conf = cluster.getConfiguration();
+    cluster.startCatalogCluster();
+    cat = cluster.getCatalogService();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
-    map = FunctionLoader.loadUserDefinedFunctions(conf, map);
-    for (FunctionDesc funcDesc : map.values()) {
+    Map<FunctionSignature, FunctionDesc> map = FunctionLoader.loadBuiltinFunctions();
+    List<FunctionDesc> list = new ArrayList<>(map.values());
+    list.addAll(FunctionLoader.loadUserDefinedFunctions(conf));
+    for (FunctionDesc funcDesc : list) {
       cat.createFunction(funcDesc);
     }
 
     analyzer = new SQLAnalyzer();
     preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
     planner = new LogicalPlanner(cat, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(util.getConfiguration(), cat, TablespaceManager.getInstance());
+    optimizer = new LogicalOptimizer(cluster.getConfiguration(), cat, TablespaceManager.getInstance());
     annotatedPlanVerifier = new LogicalPlanVerifier();
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    util.shutdownCatalogCluster();
+    cluster.shutdownCatalogCluster();
   }
 
   private static void assertJsonSerDer(EvalNode expr) {

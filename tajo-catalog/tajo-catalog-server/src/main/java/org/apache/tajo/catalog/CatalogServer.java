@@ -95,13 +95,10 @@ public class CatalogServer extends AbstractService {
   private String bindAddressStr;
   final CatalogProtocolHandler handler;
 
-  private Collection<FunctionDesc> builtingFuncs;
+  private Collection<FunctionDesc> builtinFuncs;
 
   public CatalogServer() throws IOException {
-    super(CatalogServer.class.getName());
-    this.handler = new CatalogProtocolHandler();
-    this.linkedMetadataManager = new LinkedMetadataManager(Collections.EMPTY_LIST);
-    this.builtingFuncs = new ArrayList<>();
+    this(Collections.EMPTY_LIST, new ArrayList<>());
   }
 
   public CatalogServer(Collection<MetadataProvider> metadataProviders, Collection<FunctionDesc> sqlFuncs)
@@ -109,7 +106,7 @@ public class CatalogServer extends AbstractService {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
     this.linkedMetadataManager = new LinkedMetadataManager(metadataProviders);
-    this.builtingFuncs = sqlFuncs;
+    this.builtinFuncs = sqlFuncs;
   }
 
   @Override
@@ -131,7 +128,7 @@ public class CatalogServer extends AbstractService {
 
       this.store = (CatalogStore) cons.newInstance(this.conf);
 
-      initBuiltinFunctions(builtingFuncs);
+      initBuiltinFunctions(builtinFuncs);
     } catch (Throwable t) {
       LOG.error("CatalogServer initialization failed", t);
       throw new TajoInternalError(t);
