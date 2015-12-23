@@ -152,6 +152,13 @@ public class TajoConf extends Configuration {
     DEFAULT_SERVICE_TRACKER_CLASS("tajo.discovery.service-tracker.class", BaseServiceTracker.class.getCanonicalName()),
     HA_SERVICE_TRACKER_CLASS("tajo.discovery.ha-service-tracker.class", "org.apache.tajo.ha.HdfsServiceTracker"),
 
+    // Async IO Task Service
+
+    /** The number of threads for async tasks */
+    MASTER_ASYNC_TASK_THREAD_NUM("tajo.master.async-task.thread-num", 4),
+    /** How long it will wait for termination */
+    MASTER_ASYNC_TASK_TERMINATION_WAIT_TIME("tajo.master.async-task.wait-time-sec", 60), // 1 min
+
     // Resource tracker service
     RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003",
         Validators.networkAddr()),
@@ -317,6 +324,13 @@ public class TajoConf extends Configuration {
     $EMPTY("tajo._", ""),
 
     // Query and Optimization ---------------------------------------------------
+
+
+    // Enables the optimizer to get and use table volumes via storage handlers.
+    // This feature may cause some performance degradation when storage access is too slow (S3).
+    // By default, this config value is false, and in this case the optimizer uses the table stats from catalog.
+    $USE_TABLE_VOLUME("tajo.optimizer.stats.use-table-volume", Boolean.FALSE),
+
 
     // for distributed query strategies
     $DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD("tajo.dist-query.broadcast.non-cross-join.threshold-kb", 5 * 1024l,

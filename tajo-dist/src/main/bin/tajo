@@ -260,6 +260,10 @@ if [ ! -z ${HBASE_HOME} ] && [ -d ${HBASE_HOME} ] && [ -d ${HBASE_LIB} ]; then
     CLASSPATH=${CLASSPATH}:$f;
   done
 
+  for f in ${HBASE_LIB}/metrics-core-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
 fi
 
 ##############################################################################

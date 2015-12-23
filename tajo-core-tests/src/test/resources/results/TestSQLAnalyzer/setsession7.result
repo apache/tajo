@@ -1,5 +1,5 @@
 {
-  "name": "extsort_buffer_size",
+  "name": "EXTSORT_BUFFER_SIZE",
   "value": "ABCD",
   "OpType": "SetSession"
 }

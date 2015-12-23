@@ -95,7 +95,7 @@ public class ExprTestBase {
     cat = cluster.getCatalogService();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
+    Map<FunctionSignature, FunctionDesc> map = FunctionLoader.loadBuiltinFunctions();
     List<FunctionDesc> list = new ArrayList<>(map.values());
     list.addAll(FunctionLoader.loadUserDefinedFunctions(conf));
     for (FunctionDesc funcDesc : list) {
