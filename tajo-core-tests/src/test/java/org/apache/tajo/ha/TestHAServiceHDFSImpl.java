@@ -88,7 +88,9 @@ public class TestHAServiceHDFSImpl  {
       assertEquals(2, fs.listStatus(activePath).length);
       assertEquals(0, fs.listStatus(backupPath).length);
     } finally {
-      backupMaster.stop();
+      if (backupMaster != null) {
+        backupMaster.stop();
+      }
     }
   }
 

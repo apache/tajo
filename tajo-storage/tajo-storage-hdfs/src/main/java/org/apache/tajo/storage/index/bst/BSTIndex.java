@@ -42,6 +42,8 @@ import java.nio.channels.FileChannel;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static org.apache.tajo.index.IndexProtos.TupleComparatorProto;
 
@@ -440,6 +442,9 @@ public class BSTIndex implements IndexMethod {
     }
   }
 
+  private static final AtomicIntegerFieldUpdater<BSTIndexReader> REFERENCE_UPDATER =
+      AtomicIntegerFieldUpdater.newUpdater(BSTIndexReader.class, "referenceNum");
+
   /**
    * BSTIndexReader is thread-safe.
    */
@@ -468,6 +473,10 @@ public class BSTIndex implements IndexMethod {
 
     private RowStoreDecoder rowStoreDecoder;
 
+    private AtomicBoolean inited = new AtomicBoolean(false);
+
+    volatile int referenceNum;
+
     /**
      *
      * @param fileName
@@ -486,6 +495,25 @@ public class BSTIndex implements IndexMethod {
     public BSTIndexReader(final Path fileName) throws IOException {
       this.fileName = fileName;
       open();
+    }
+
+    /**
+     * Increase the reference number of the index reader.
+     */
+    public void retain() {
+      REFERENCE_UPDATER.compareAndSet(this, referenceNum, referenceNum + 1);
+    }
+
+    /**
+     * Decrease the reference number of the index reader.
+     * This method must be called before {@link #close()}.
+     */
+    public void release() {
+      REFERENCE_UPDATER.compareAndSet(this, referenceNum, referenceNum - 1);
+    }
+
+    public int getReferenceNum() {
+      return referenceNum;
     }
 
     public Schema getKeySchema() {
@@ -543,8 +571,10 @@ public class BSTIndex implements IndexMethod {
       byteBuf.release();
     }
 
-    public void init() throws IOException {
-      fillData();
+    public synchronized void init() throws IOException {
+      if (inited.compareAndSet(false, true)) {
+        fillData();
+      }
     }
 
     private void open()
@@ -684,6 +714,8 @@ public class BSTIndex implements IndexMethod {
       } catch (IOException e) {
         //TODO this block should fix correctly
         counter--;
+        if (counter == 0)
+          LOG.info("counter: " + counter);
         if (pos != -1) {
           in.seek(pos);
         }
@@ -765,6 +797,9 @@ public class BSTIndex implements IndexMethod {
 
       //http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6412541
       int centerPos = (start + end) >>> 1;
+      if (arr.length == 0) {
+        LOG.error("arr.length: 0, loadNum: " + loadNum + ", inited: " + inited.get());
+      }
       while (true) {
         if (comparator.compare(arr[centerPos], key) > 0) {
           if (centerPos == 0) {
@@ -800,8 +835,23 @@ public class BSTIndex implements IndexMethod {
       return offset;
     }
 
+    /**
+     * Close index reader only when it is not used anymore.
+     */
     @Override
     public void close() throws IOException {
+      if (referenceNum == 0) {
+        this.indexIn.close();
+      }
+    }
+
+    /**
+     * Close index reader even though it is being used.
+     *
+     * @throws IOException
+     */
+    public void forceClose() throws IOException {
+      REFERENCE_UPDATER.compareAndSet(this, referenceNum, 0);
       this.indexIn.close();
     }
 

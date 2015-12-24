@@ -7,6 +7,8 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1950: Query master uses too much memory during range shuffle. (jihoon)
+
     TAJO-1858: Aligning error message in execute query page of web UI is needed.
     (Byunghwa Yun via jihoon)
 

@@ -90,7 +90,7 @@ public class TestFetcher {
     FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
     storeChunk.setFromRemote(true);
     final Fetcher fetcher = new Fetcher(conf, uri, storeChunk);
-    FileChunk chunk = fetcher.get();
+    FileChunk chunk = fetcher.get().get(0);
     assertNotNull(chunk);
     assertNotNull(chunk.getFile());
 
