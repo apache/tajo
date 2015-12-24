@@ -21,26 +21,24 @@
 
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
 <%@ page import="org.apache.tajo.QueryId" %>
+<%@ page import="org.apache.tajo.ResourceProtos.FetchProto" %>
 <%@ page import="org.apache.tajo.ResourceProtos.ShuffleFileOutput" %>
 <%@ page import="org.apache.tajo.TaskId" %>
 <%@ page import="org.apache.tajo.catalog.proto.CatalogProtos" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
-<%@ page import="org.apache.tajo.querymaster.Query" %>
-<%@ page import="org.apache.tajo.querymaster.QueryMasterTask" %>
-<%@ page import="org.apache.tajo.querymaster.Stage" %>
-<%@ page import="org.apache.tajo.querymaster.Task" %>
+<%@ page import="org.apache.tajo.querymaster.*" %>
 <%@ page import="org.apache.tajo.storage.DataLocation" %>
 <%@ page import="org.apache.tajo.storage.fragment.Fragment" %>
 <%@ page import="org.apache.tajo.storage.fragment.FragmentConvertor" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.worker.FetchImpl" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="java.net.URI" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
+<%@ page import="org.apache.tajo.conf.TajoConf.ConfVars" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -63,6 +61,9 @@
         response.sendRedirect(tajoMasterHttp + request.getRequestURI() + "?" + request.getQueryString());
         return;
     }
+
+    int maxUrlLength = tajoWorker.getConfig().getInt(ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.name(),
+            ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH.defaultIntVal);
 
     Query query = queryMasterTask.getQuery();
     Stage stage = query.getStage(ebid);
@@ -110,11 +111,11 @@
 
     String fetchInfo = "";
     delim = "";
-    for (Map.Entry<String, Set<FetchImpl>> e : task.getFetchMap().entrySet()) {
+    for (Map.Entry<String, Set<FetchProto>> e : task.getFetchMap().entrySet()) {
         fetchInfo += delim + "<b>" + e.getKey() + "</b>";
         delim = "<br/>";
-        for (FetchImpl f : e.getValue()) {
-            for (URI uri : f.getSimpleURIs()){
+        for (FetchProto f : e.getValue()) {
+            for (URI uri : Repartitioner.createSimpleURIs(maxUrlLength, f)){
                 fetchInfo += delim + uri;
             }
         }

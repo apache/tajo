@@ -19,6 +19,7 @@
 package org.apache.tajo.querymaster;
 
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ResourceProtos.FetchProto;
 import org.apache.tajo.master.event.TaskSchedulerEvent;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -26,15 +27,15 @@ import java.util.List;
 import java.util.Map;
 
 public class FetchScheduleEvent extends TaskSchedulerEvent {
-  private final Map<String, List<FetchImpl>> fetches;
+  private final Map<String, List<FetchProto>> fetches;  // map of table name and fetch list
 
   public FetchScheduleEvent(final EventType eventType, final ExecutionBlockId blockId,
-                            final Map<String, List<FetchImpl>> fetches) {
+                            final Map<String, List<FetchProto>> fetches) {
     super(eventType, blockId);
     this.fetches = fetches;
   }
 
-  public Map<String, List<FetchImpl>> getFetches() {
+  public Map<String, List<FetchProto>> getFetches() {
     return fetches;
   }
 }
