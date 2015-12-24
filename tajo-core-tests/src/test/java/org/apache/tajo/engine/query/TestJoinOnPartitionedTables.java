@@ -174,7 +174,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
       ResultSet res = executeString(
           "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
               "left outer join " + tableName + " b " +
-              "on a.l_partkey = b.l_partkey and b.l_orderkey = 1000"
+              "on a.l_partkey = b.l_partkey and b.l_orderkey = 1000 order by key1, key2"
       );
 
       String expected = "key1,key2\n" +

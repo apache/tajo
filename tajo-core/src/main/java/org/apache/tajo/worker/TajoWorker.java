@@ -199,7 +199,7 @@ public class TajoWorker extends CompositeService {
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
 
-    FunctionLoader.loadUserDefinedFunctions(systemConf, new HashMap<>());
+    FunctionLoader.loadUserDefinedFunctions(systemConf);
 
     PythonScriptEngine.initPythonScriptEngineFiles();
     

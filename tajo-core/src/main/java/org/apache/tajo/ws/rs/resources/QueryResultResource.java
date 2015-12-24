@@ -50,6 +50,7 @@ import java.net.URI;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Optional;
 
 public class QueryResultResource {
   
@@ -133,8 +134,14 @@ public class QueryResultResource {
         scanNode.init(resultTableDesc);
       }
 
-      resultScanner = new NonForwardQueryResultFileScanner(masterContext.getConf(), session.getSessionId(), queryId,
-          scanNode, Integer.MAX_VALUE);
+      resultScanner = new NonForwardQueryResultFileScanner(
+          masterContext.asyncTaskExecutor(),
+          masterContext.getConf(),
+          session.getSessionId(),
+          queryId,
+          scanNode,
+          Integer.MAX_VALUE,
+          Optional.empty());
       resultScanner.init();
       session.addNonForwardQueryResultScanner(resultScanner);
     }
