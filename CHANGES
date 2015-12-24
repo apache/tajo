@@ -7,6 +7,9 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1858: Aligning error message in execute query page of web UI is needed.
+    (Byunghwa Yun via jihoon)
+
     TAJO-1979: Usage of some TajoShellCommand is omitted.
     (Contributed by Dongkyu Hwangbo, committed by jaehwa)
 
