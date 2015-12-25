@@ -166,7 +166,7 @@ public class TestPhysicalPlanner {
     catalog.createTable(score);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(conf, catalog);
+    optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
     masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
 
     createLargeScoreTable();

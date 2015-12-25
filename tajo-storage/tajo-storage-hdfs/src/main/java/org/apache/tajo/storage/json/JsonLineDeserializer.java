@@ -60,8 +60,8 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     projectedPaths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(projected), true);
     types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
 
-    hasTimezone = meta.containsOption(StorageConstants.TIMEZONE);
-    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+    hasTimezone = meta.containsProperty(StorageConstants.TIMEZONE);
+    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
   @Override

@@ -94,6 +94,12 @@ public abstract class OffHeapRowWriter implements RowWriter {
    */
   public abstract void forward(int length);
 
+  /**
+   * Backward the address;
+   *
+   * @param length Length to be backwarded
+   */
+  public abstract void backward(int length);
 
   @Override
   public void clear() {
@@ -130,6 +136,16 @@ public abstract class OffHeapRowWriter implements RowWriter {
       PlatformDependent.putInt(rowHeaderPos, MemoryRowBlock.NULL_FIELD_OFFSET);
       rowHeaderPos += SizeOf.SIZE_OF_INT;
     }
+    curOffset = 0;
+  }
+
+  @Override
+  public void cancelRow() {
+    // curOffset is equivalent to a byte length of current row.
+    backward(curOffset);
+    curOffset = 0;
+    curFieldOffset = SizeOf.SIZE_OF_INT;
+    curFieldIdx = 0;
   }
 
   @Override

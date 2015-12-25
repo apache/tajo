@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -39,9 +40,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestMemoryRowBlock {
   private static final Log LOG = LogFactory.getLog(TestMemoryRowBlock.class);
@@ -111,6 +110,41 @@ public class TestMemoryRowBlock {
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
 
+    rowBlock.release();
+  }
+
+  @Test
+  public void testPutAndCancelValidation() {
+    VTuple vTuple = new VTuple(schema.length);
+    fillVTuple(0, vTuple);
+
+    //get memory size of 1 row
+    MemoryRowBlock rowBlock = new MemoryRowBlock(schema);
+    fillRow(0, rowBlock.getWriter());
+    int rowSize = rowBlock.usedMem();
+    rowBlock.release();
+
+    rowBlock = new MemoryRowBlock(schema, new FixedSizeLimitSpec(rowSize / 2, 0.0f), true);
+    assertFalse(rowBlock.getWriter().addTuple(vTuple));
+    try {
+      OffHeapRowBlockUtils.convert(vTuple, rowBlock.getWriter());
+      fail();
+    } catch (Exception e) {
+      assertEquals(ValueOutOfRangeException.class, e.getClass());
+    }
+    rowBlock.release();
+
+    //allow 1 row
+    rowBlock = new MemoryRowBlock(schema, new FixedSizeLimitSpec(rowSize, 0.0f), true);
+    assertTrue(rowBlock.getWriter().addTuple(vTuple));
+    assertFalse(rowBlock.getWriter().addTuple(vTuple));
+    assertEquals(1, rowBlock.rows());
+
+    ZeroCopyTuple tuple = new UnSafeTuple();
+    RowBlockReader reader = rowBlock.getReader();
+    assertTrue(reader.next(tuple));
+    validateTupleResult(0, tuple);
+    assertFalse(reader.next(tuple));
     rowBlock.release();
   }
 

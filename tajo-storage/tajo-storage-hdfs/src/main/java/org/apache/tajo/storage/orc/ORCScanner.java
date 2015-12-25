@@ -131,7 +131,7 @@ public class ORCScanner extends FileScanner {
         this.fragment.getPath().toString(),
         fis,
         fs.getFileStatus(path).getLen(),
-        Integer.parseInt(meta.getOption(StorageConstants.ORC_MAX_MERGE_DISTANCE,
+        Integer.parseInt(meta.getProperty(StorageConstants.ORC_MAX_MERGE_DISTANCE,
           StorageConstants.DEFAULT_ORC_MAX_MERGE_DISTANCE)));
 
     targetColInfo = new ColumnInfo[targets.length];
@@ -155,7 +155,7 @@ public class ORCScanner extends FileScanner {
 
     orcReader = new OrcReader(orcDataSource, new OrcMetadataReader());
 
-    TimeZone timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+    TimeZone timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
       TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
 
     // TODO: make OrcPredicate useful

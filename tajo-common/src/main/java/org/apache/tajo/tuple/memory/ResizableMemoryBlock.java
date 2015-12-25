@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.UnsafeUtil;
@@ -128,11 +129,12 @@ public class ResizableMemoryBlock implements MemoryBlock {
   @Override
   public void ensureSize(int size) {
     if (!buffer.isWritable(size)) {
-      if (!limitSpec.canIncrease(size)) {
-        throw new RuntimeException("Cannot increase RowBlock anymore.");
+      int newBlockSize = limitSpec.increasedSize(size);
+
+      if (!limitSpec.canIncrease(buffer.writableBytes() + newBlockSize)) {
+        throw new ValueOutOfRangeException("Cannot increase RowBlock anymore.");
       }
 
-      int newBlockSize = limitSpec.increasedSize(size);
       resize(newBlockSize);
       LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
     }
@@ -142,7 +144,7 @@ public class ResizableMemoryBlock implements MemoryBlock {
     Preconditions.checkArgument(newSize > 0, "Size must be greater than 0 bytes");
 
     if (newSize > limitSpec.limit()) {
-      throw new RuntimeException("Resize cannot exceed the capacity limit");
+      throw new ValueOutOfRangeException("Resize cannot exceed the capacity limit");
     }
 
     if (newSize < buffer.writableBytes()) {

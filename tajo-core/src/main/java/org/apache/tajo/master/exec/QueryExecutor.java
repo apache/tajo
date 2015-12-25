@@ -288,7 +288,7 @@ public class QueryExecutor {
     }
 
     final TableDesc resultDesc = new TableDesc("", scanNode.getOutSchema(),
-        new TableMeta(BuiltinStorages.DRAW, table.getMeta().getOptions()), null);
+        new TableMeta(BuiltinStorages.DRAW, table.getMeta().getPropertySet()), null);
 
     // push down limit
     int maxRow = Integer.MAX_VALUE;
@@ -461,7 +461,7 @@ public class QueryExecutor {
       URI finalOutputUri = insertNode.getUri();
       Tablespace space = TablespaceManager.get(finalOutputUri);
       TableMeta tableMeta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
-      tableMeta.putOption(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
+      tableMeta.putProperty(StorageConstants.INSERT_DIRECTLY, Boolean.TRUE.toString());
 
       FormatProperty formatProperty = space.getFormatProperty(tableMeta);
 

@@ -25,6 +25,7 @@ import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.BitArray;
 import org.apache.tajo.util.SizeOf;
@@ -182,6 +183,15 @@ public class CompactRowBlockWriter implements RowWriter {
     rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() + length);
   }
 
+  /**
+   * Backward the address;
+   *
+   * @param length Length to be backwarded
+   */
+  public void backward(int length) {
+    rowBlock.getMemory().writerPosition(rowBlock.getMemory().writerPosition() - length);
+  }
+
   public void ensureSize(int size) {
     rowBlock.getMemory().ensureSize(size);
   }
@@ -232,7 +242,7 @@ public class CompactRowBlockWriter implements RowWriter {
     return true;
   }
 
-
+  @Override
   public void endRow() {
     long rowHeaderPos = recordStartAddr();
     // curOffset is equivalent to a byte length of this row.
@@ -246,6 +256,15 @@ public class CompactRowBlockWriter implements RowWriter {
     PlatformDependent.copyMemory(flags, 0, rowHeaderPos, flags.length);
 
     rowBlock.setRows(rowBlock.rows() + 1);
+  }
+
+  @Override
+  public void cancelRow() {
+    // curOffset is equivalent to a byte length of current row.
+    backward(curOffset);
+    curOffset = 0;
+    nullFlags.clear();
+    curFieldIdx = 0;
   }
 
   @Override
@@ -402,7 +421,12 @@ public class CompactRowBlockWriter implements RowWriter {
   }
 
   @Override
-  public void addTuple(Tuple tuple) {
-    OffHeapRowBlockUtils.convert(tuple, this);
+  public boolean addTuple(Tuple tuple) {
+    try {
+      OffHeapRowBlockUtils.convert(tuple, this);
+    } catch (ValueOutOfRangeException e) {
+      return false;
+    }
+    return true;
   }
 }

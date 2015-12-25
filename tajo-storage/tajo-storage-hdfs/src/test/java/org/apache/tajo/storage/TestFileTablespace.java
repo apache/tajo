@@ -101,17 +101,17 @@ public class TestFileTablespace {
 		assertEquals(4,i);
 	}
 
-  @Test
+  @Test(timeout = 60000)
   public void testGetSplit() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, false);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(1).build();
-    cluster.waitClusterUp();
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
 
@@ -158,16 +158,16 @@ public class TestFileTablespace {
     }
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testZeroLengthSplit() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
+    conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(1).build();
-    cluster.waitClusterUp();
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
 
@@ -207,17 +207,17 @@ public class TestFileTablespace {
     }
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testGetSplitWithBlockStorageLocationsBatching() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 2);
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(2).build();
-    cluster.waitClusterUp();
 
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
@@ -258,17 +258,17 @@ public class TestFileTablespace {
     }
   }
 
-  @Test
+  @Test(timeout = 60000)
   public void testGetFileTablespace() throws Exception {
     final Configuration hdfsConf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
     hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
     hdfsConf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    hdfsConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     hdfsConf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
 
     final MiniDFSCluster cluster =
-        new MiniDFSCluster.Builder(hdfsConf).numDataNodes(2).build();
-    cluster.waitClusterUp();
+        new MiniDFSCluster.Builder(hdfsConf).numDataNodes(1).build();
     URI uri = URI.create(cluster.getFileSystem().getUri() + "/tajo");
 
     Optional<Tablespace> existingTs = Optional.empty();
@@ -287,13 +287,7 @@ public class TestFileTablespace {
 
       space = (FileTablespace) TablespaceManager.getByName("testGetFileTablespace");
       assertEquals(cluster.getFileSystem().getUri(), space.getFileSystem().getUri());
-
     } finally {
-
-      if (existingTs.isPresent()) {
-        TablespaceManager.addTableSpaceForTest(existingTs.get());
-      }
-
       cluster.shutdown(true);
     }
   }

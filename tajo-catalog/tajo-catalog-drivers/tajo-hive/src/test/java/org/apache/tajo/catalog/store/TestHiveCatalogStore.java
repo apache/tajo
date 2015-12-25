@@ -125,7 +125,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
-        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
+        table1.getMeta().getProperty(StorageConstants.TEXT_DELIMITER));
     store.dropTable(DB_NAME, CUSTOMER);
   }
 
@@ -159,7 +159,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
-        table1.getMeta().getOption(StorageConstants.RCFILE_SERDE));
+        table1.getMeta().getProperty(StorageConstants.RCFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -192,7 +192,7 @@ public class TestHiveCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getOption(StorageConstants.RCFILE_SERDE));
+    assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getProperty(StorageConstants.RCFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -232,16 +232,16 @@ public class TestHiveCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
-        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
+    assertEquals(table.getMeta().getProperty(StorageConstants.TEXT_DELIMITER),
+        table1.getMeta().getProperty(StorageConstants.TEXT_DELIMITER));
 
-    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_NULL),
-        table1.getMeta().getOption(StorageConstants.TEXT_NULL));
+    assertEquals(table.getMeta().getProperty(StorageConstants.TEXT_NULL),
+        table1.getMeta().getProperty(StorageConstants.TEXT_NULL));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
+    assertEquals(table1.getMeta().getProperty(StorageConstants.TEXT_DELIMITER),
         StringEscapeUtils.escapeJava("\u0002"));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_NULL),
+    assertEquals(table1.getMeta().getProperty(StorageConstants.TEXT_NULL),
         StringEscapeUtils.escapeJava("\u0003"));
 
     store.dropTable(DB_NAME, SUPPLIER);
@@ -577,7 +577,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_BINARY_SERDE,
-      table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
+      table1.getMeta().getProperty(StorageConstants.SEQUENCEFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -610,7 +610,7 @@ public class TestHiveCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
+    assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getProperty(StorageConstants.SEQUENCEFILE_SERDE));
     store.dropTable(DB_NAME, REGION);
   }
 
@@ -683,7 +683,7 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
-      table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
+      table1.getMeta().getProperty(StorageConstants.TEXT_DELIMITER));
     store.dropTable(DB_NAME, tableName);
   }
 }

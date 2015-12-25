@@ -84,12 +84,12 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
         Column[] distinctGroupingColumns = eachGroupby.getGroupingColumns();
         inTupleIndex += distinctGroupingColumns.length;
-        outTupleIndex += eachGroupby.getAggFunctions().length;
+        outTupleIndex += eachGroupby.getAggFunctions().size();
       } else {
         nonDistinctAggr = new DistinctFinalAggregator(-1, inTupleIndex, outTupleIndex, eachGroupby);
-        outTupleIndex += eachGroupby.getAggFunctions().length;
+        outTupleIndex += eachGroupby.getAggFunctions().size();
       }
-      resultTupleLength += eachGroupby.getAggFunctions().length;
+      resultTupleLength += eachGroupby.getAggFunctions().size();
     }
     aggregators = aggregatorList.toArray(new DistinctFinalAggregator[aggregatorList.size()]);
     outTuple = new VTuple(resultTupleLength);
@@ -234,7 +234,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
   class DistinctFinalAggregator {
     private FunctionContext[] functionContexts;
-    private AggregationFunctionCallEval[] aggrFunctions;
+    private List<AggregationFunctionCallEval> aggrFunctions;
     private int seq;
     private int inTupleIndex;
     private int outTupleIndex;
@@ -254,15 +254,15 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     }
 
     private void newFunctionContext() {
-      functionContexts = new FunctionContext[aggrFunctions.length];
-      for (int i = 0; i < aggrFunctions.length; i++) {
-        functionContexts[i] = aggrFunctions[i].newContext();
+      functionContexts = new FunctionContext[aggrFunctions.size()];
+      for (int i = 0; i < aggrFunctions.size(); i++) {
+        functionContexts[i] = aggrFunctions.get(i).newContext();
       }
     }
 
     public void merge(Tuple tuple) {
-      for (int i = 0; i < aggrFunctions.length; i++) {
-        aggrFunctions[i].merge(functionContexts[i], tuple);
+      for (int i = 0; i < aggrFunctions.size(); i++) {
+        aggrFunctions.get(i).merge(functionContexts[i], tuple);
       }
 
       if (seq == 0 && nonDistinctAggr != null) {
@@ -273,8 +273,8 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     }
 
     public void terminate(Tuple resultTuple) {
-      for (int i = 0; i < aggrFunctions.length; i++) {
-        resultTuple.put(resultTupleIndexes[outTupleIndex + i], aggrFunctions[i].terminate(functionContexts[i]));
+      for (int i = 0; i < aggrFunctions.size(); i++) {
+        resultTuple.put(resultTupleIndexes[outTupleIndex + i], aggrFunctions.get(i).terminate(functionContexts[i]));
       }
       newFunctionContext();
 
@@ -285,8 +285,8 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
     public void terminateEmpty(Tuple resultTuple) {
       newFunctionContext();
-      for (int i = 0; i < aggrFunctions.length; i++) {
-        resultTuple.put(resultTupleIndexes[outTupleIndex + i], aggrFunctions[i].terminate(functionContexts[i]));
+      for (int i = 0; i < aggrFunctions.size(); i++) {
+        resultTuple.put(resultTupleIndexes[outTupleIndex + i], aggrFunctions.get(i).terminate(functionContexts[i]));
       }
       if (seq == 0 && nonDistinctAggr != null) {
         nonDistinctAggr.terminateEmpty(resultTuple);

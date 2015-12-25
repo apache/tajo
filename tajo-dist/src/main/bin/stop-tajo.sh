@@ -24,21 +24,7 @@ bin=`cd "$bin"; pwd`
 
 . "$bin"/tajo-config.sh
 
-# stop the tajo master daemon
 AUTOHA_ENABLED=$("$bin"/tajo getconf tajo.master.ha.enable)
-
-if [ "$AUTOHA_ENABLED" = "true" ]; then
-  echo "Stopping TajoMasters on HA mode"
-  if [ -f "${TAJO_CONF_DIR}/masters" ]; then
-    MASTER_FILE=${TAJO_CONF_DIR}/masters
-    MASTER_NAMES=$(cat "$MASTER_FILE" | sed  's/#.*$//;/^$/d')
-    "$bin/tajo-daemons.sh" --hosts masters cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" stop master
-  fi
-else
-  echo "Stopping single TajoMaster"
-  "$bin"/tajo-daemon.sh --config $TAJO_CONF_DIR stop master
-fi
-
 
 if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
   . "${TAJO_CONF_DIR}/tajo-env.sh"
@@ -49,3 +35,14 @@ if [ "$TAJO_PULLSERVER_STANDALONE" = "true" ]; then
   "$bin/tajo-daemons.sh" cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" stop pullserver
 fi
 
+# stop the tajo master daemon
+if [ "$AUTOHA_ENABLED" = "true" ]; then
+  echo "Stopping TajoMasters on HA mode"
+  if [ -f "${TAJO_CONF_DIR}/masters" ]; then
+    MASTER_FILE=${TAJO_CONF_DIR}/masters
+    MASTER_NAMES=$(cat "$MASTER_FILE" | sed  's/#.*$//;/^$/d')
+    "$bin/tajo-daemons.sh" --hosts masters cd "$TAJO_HOME" \; "$bin/tajo-daemon.sh" stop master
+  fi
+else
+  "$bin"/tajo-daemon.sh --config $TAJO_CONF_DIR stop master
+fi

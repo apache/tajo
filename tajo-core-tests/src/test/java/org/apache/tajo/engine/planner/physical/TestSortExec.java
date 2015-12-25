@@ -113,7 +113,7 @@ public class TestSortExec {
     queryContext = new QueryContext(conf);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(conf, catalog);
+    optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
   }
 
   public static String[] QUERIES = {

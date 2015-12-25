@@ -49,8 +49,8 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   private final TimeZone timezone;
 
   public TextFieldSerializerDeserializer(TableMeta meta) {
-    hasTimezone = meta.containsOption(StorageConstants.TIMEZONE);
-    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+    hasTimezone = meta.containsProperty(StorageConstants.TIMEZONE);
+    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
   private static boolean isNull(ByteBuf val, ByteBuf nullBytes) {

@@ -114,10 +114,10 @@ public class TestCompressionStorages {
     schema.addColumn("name", Type.TEXT);
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.putOption("compression.codec", codec.getCanonicalName());
-    meta.putOption("compression.type", SequenceFile.CompressionType.BLOCK.name());
-    meta.putOption("rcfile.serde", TextSerializerDeserializer.class.getName());
-    meta.putOption("sequencefile.serde", TextSerializerDeserializer.class.getName());
+    meta.putProperty("compression.codec", codec.getCanonicalName());
+    meta.putProperty("compression.type", SequenceFile.CompressionType.BLOCK.name());
+    meta.putProperty("rcfile.serde", TextSerializerDeserializer.class.getName());
+    meta.putProperty("sequencefile.serde", TextSerializerDeserializer.class.getName());
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);

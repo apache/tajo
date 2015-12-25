@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.tajo.SessionVars.TIMEZONE;
 import static org.apache.tajo.SessionVars.VariableMode;
 
 public class SetCommand extends TajoShellCommand {
@@ -55,6 +56,10 @@ public class SetCommand extends TajoShellCommand {
   public void set(String key, String val) throws NoSuchSessionVariableException {
     SessionVars sessionVar;
 
+    if (TIMEZONE.name().equalsIgnoreCase(key)) {
+      key = TIMEZONE.name();
+    }
+
     if (SessionVars.exists(key)) { // if the variable is one of the session variables
       sessionVar = SessionVars.get(key);
 
@@ -81,13 +86,13 @@ public class SetCommand extends TajoShellCommand {
     } else if (cmd.length == 3) {
       set(cmd[1], cmd[2]);
     } else {
-      context.getOutput().println("usage: \\set [[NAME] VALUE]");
+      context.getOutput().println("usage: \\set " + getUsage());
     }
   }
 
   @Override
   public String getUsage() {
-    return "";
+    return "[[NAME] VALUE]";
   }
 
   @Override
