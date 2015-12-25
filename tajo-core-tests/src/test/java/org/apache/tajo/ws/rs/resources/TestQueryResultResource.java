@@ -18,7 +18,6 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -26,7 +25,6 @@ import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.thirdparty.orc.IntegerColumnStatistics;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
