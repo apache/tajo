@@ -32,6 +32,8 @@ import org.junit.Test;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.GenericType;
+
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 
@@ -50,8 +52,8 @@ public class TestFunctionsResource extends QueryTestCaseBase {
   
   @Before
   public void setUp() throws Exception {
-    int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
-    restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
+    InetSocketAddress address = testBase.getTestingCluster().getConfiguration().getSocketAddrVar(ConfVars.REST_SERVICE_ADDRESS);
+    restServiceURI = new URI("http", null, address.getHostName(), address.getPort(), "/rest", null, null);
     functionsURI = new URI(restServiceURI + "/functions");
     restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))

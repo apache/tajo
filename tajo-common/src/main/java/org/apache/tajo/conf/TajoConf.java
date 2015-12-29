@@ -140,7 +140,7 @@ public class TajoConf extends Configuration {
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
 
     // Tajo Rest Service
-    REST_SERVICE_PORT("tajo.rest.service.port", 26880),
+    REST_SERVICE_ADDRESS("tajo.rest.service-http.address", "0.0.0.0:26880", Validators.networkAddr()),
 
     // High availability configurations
     TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
