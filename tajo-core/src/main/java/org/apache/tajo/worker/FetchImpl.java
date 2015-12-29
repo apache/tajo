@@ -28,14 +28,11 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.TupleRange;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 

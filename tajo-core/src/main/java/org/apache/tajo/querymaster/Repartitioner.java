@@ -1181,7 +1181,7 @@ public class Repartitioner {
         for (int i = 0; i < taskIds.size(); i++) {
           taskAndAttemptIds.add(new Pair<>(taskIds.get(i), attemptIds.get(i)));
         }
-        taskAndAttemptIds.sort(new Comparator<Pair<Integer, Integer>>() {
+        Collections.sort(taskAndAttemptIds, new Comparator<Pair<Integer, Integer>>() {
           @Override
           public int compare(Pair<Integer, Integer> p1, Pair<Integer, Integer> p2) {
             return p1.getFirst() - p2.getFirst();
