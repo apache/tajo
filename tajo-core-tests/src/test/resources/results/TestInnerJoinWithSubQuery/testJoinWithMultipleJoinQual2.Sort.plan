@@ -5,10 +5,6 @@ JOIN(11)(INNER)
   => target list: default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)
   => out schema: {(4) default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
   => in schema: {(5) default.s.s_nationkey (INT4), default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
-   SCAN(5) on default.supplier as s
-     => target list: default.s.s_nationkey (INT4)
-     => out schema: {(1) default.s.s_nationkey (INT4)}
-     => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
    TABLE_SUBQUERY(4) as default.t
      => Targets: default.t.n_nationkey (INT4), default.t.name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
      => out schema: {(4) default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
@@ -27,6 +23,10 @@ JOIN(11)(INNER)
            => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT) as name, default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
            => out schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
            => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+   SCAN(5) on default.supplier as s
+     => target list: default.s.s_nationkey (INT4)
+     => out schema: {(1) default.s.s_nationkey (INT4)}
+     => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -46,18 +46,14 @@ Block Id: eb_0000000000000_0000_000005 [ROOT]
 =======================================================
 
 [Enforcers]
- 0: type=Broadcast, tables=default.r
- 1: type=Broadcast, tables=default.s
+ 0: type=Broadcast, tables=default.n
+ 1: type=Broadcast, tables=default.r
 
 JOIN(11)(INNER)
   => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
   => target list: default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)
   => out schema: {(4) default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
   => in schema: {(5) default.s.s_nationkey (INT4), default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
-   SCAN(5) on default.supplier as s
-     => target list: default.s.s_nationkey (INT4)
-     => out schema: {(1) default.s.s_nationkey (INT4)}
-     => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
    TABLE_SUBQUERY(4) as default.t
      => Targets: default.t.n_nationkey (INT4), default.t.name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
      => out schema: {(4) default.t.n_nationkey (INT4), default.t.name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)}
@@ -80,6 +76,10 @@ JOIN(11)(INNER)
               => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT) as name, default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
               => out schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
               => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+   SCAN(5) on default.supplier as s
+     => target list: default.s.s_nationkey (INT4)
+     => out schema: {(1) default.s.s_nationkey (INT4)}
+     => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000006 [TERMINAL]

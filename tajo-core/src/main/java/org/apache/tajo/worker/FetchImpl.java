@@ -21,16 +21,21 @@ package org.apache.tajo.worker;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ResourceProtos.FetchProto;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.querymaster.Task;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
+import org.apache.tajo.storage.TupleRange;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
-import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 
@@ -42,8 +47,8 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
   private ShuffleType type; // hash or range partition method.
   private ExecutionBlockId executionBlockId;   // The executionBlock id
   private int partitionId;                     // The hash partition id
-  private String name;                         // The intermediate source name
-  private String rangeParams;                  // optional, the http parameters of range partition. (e.g., start=xx&end=yy)
+  private final String name;                   // The intermediate source name
+  private RangeParam rangeParam;               // optional, range parameter for range shuffle
   private boolean hasNext = false;             // optional, if true, has more taskIds
 
   private List<Integer> taskIds;               // repeated, the task ids
@@ -52,19 +57,48 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
   private long offset = -1;
   private long length = -1;
 
-  public FetchImpl() {
-    taskIds = new ArrayList<>();
-    attemptIds = new ArrayList<>();
+  public static class RangeParam {
+    private byte[] start;
+    private byte[] end;
+    private boolean lastInclusive;
+
+    public RangeParam(TupleRange range, boolean lastInclusive, RowStoreEncoder encoder) {
+      this.start = encoder.toBytes(range.getStart());
+      this.end = encoder.toBytes(range.getEnd());
+      this.lastInclusive = lastInclusive;
+    }
+
+    public RangeParam(byte[] start, byte[] end, boolean lastInclusive) {
+      this.start = start;
+      this.end = end;
+      this.lastInclusive = lastInclusive;
+    }
+
+    public byte[] getStart() {
+      return start;
+    }
+
+    public byte[] getEnd() {
+      return end;
+    }
+
+    public boolean isLastInclusive() {
+      return lastInclusive;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(Arrays.hashCode(start), Arrays.hashCode(end), lastInclusive);
+    }
   }
 
   public FetchImpl(FetchProto proto) {
-    this(new Task.PullHost(proto.getHost(), proto.getPort()),
+    this(proto.getName(),
+        new Task.PullHost(proto.getHost(), proto.getPort()),
         proto.getType(),
         new ExecutionBlockId(proto.getExecutionBlockId()),
         proto.getPartitionId(),
-        proto.getRangeParams(),
         proto.getHasNext(),
-        proto.getName(),
         proto.getTaskIdList(), proto.getAttemptIdList());
 
     if (proto.hasOffset()) {
@@ -74,31 +108,41 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     if (proto.hasLength()) {
       this.length = proto.getLength();
     }
+
+    if (proto.hasRangeStart()) {
+      this.rangeParam = new RangeParam(proto.getRangeStart().toByteArray(),
+          proto.getRangeEnd().toByteArray(), proto.getRangeLastInclusive());
+    }
   }
 
-  public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
+  public FetchImpl(String name, Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
                    int partitionId) {
-    this(host, type, executionBlockId, partitionId, null, false, null,
-            new ArrayList<>(), new ArrayList<>());
+    this(name, host, type, executionBlockId, partitionId, null, false, new ArrayList<>(), new ArrayList<>());
   }
 
-  public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
+  public FetchImpl(String name, Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
                    int partitionId, List<Task.IntermediateEntry> intermediateEntryList) {
-    this(host, type, executionBlockId, partitionId, null, false, null,
+    this(name, host, type, executionBlockId, partitionId, null, false,
             new ArrayList<>(), new ArrayList<>());
     for (Task.IntermediateEntry entry : intermediateEntryList){
       addPart(entry.getTaskId(), entry.getAttemptId());
     }
   }
 
-  public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
-                   int partitionId, String rangeParams, boolean hasNext, String name,
+  public FetchImpl(String name, Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
+                   int partitionId, boolean hasNext,
+                   List<Integer> taskIds, List<Integer> attemptIds) {
+    this(name, host, type, executionBlockId, partitionId, null, hasNext, taskIds, attemptIds);
+  }
+
+  public FetchImpl(String name, Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
+                   int partitionId, RangeParam rangeParam, boolean hasNext,
                    List<Integer> taskIds, List<Integer> attemptIds) {
     this.host = host;
     this.type = type;
     this.executionBlockId = executionBlockId;
     this.partitionId = partitionId;
-    this.rangeParams = rangeParams;
+    this.rangeParam = rangeParam;
     this.hasNext = hasNext;
     this.name = name;
     this.taskIds = taskIds;
@@ -107,7 +151,7 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(host, type, executionBlockId, partitionId, name, rangeParams,
+    return Objects.hashCode(host, type, executionBlockId, partitionId, name, rangeParam.hashCode(),
         hasNext, taskIds, attemptIds, offset, length);
   }
 
@@ -123,11 +167,14 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     builder.setHasNext(hasNext);
     builder.setName(name);
 
-    if (rangeParams != null && !rangeParams.isEmpty()) {
-      builder.setRangeParams(rangeParams);
+    if (rangeParam != null) {
+      builder.setRangeStart(ByteString.copyFrom(rangeParam.getStart()));
+      builder.setRangeEnd(ByteString.copyFrom(rangeParam.getEnd()));
+      builder.setRangeLastInclusive(rangeParam.isLastInclusive());
     }
 
     Preconditions.checkArgument(taskIds.size() == attemptIds.size());
+
     builder.addAllTaskId(taskIds);
     builder.addAllAttemptId(attemptIds);
 
@@ -141,10 +188,6 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     this.attemptIds.add(attemptId);
   }
 
-  public Task.PullHost getPullHost() {
-    return this.host;
-  }
-
   public ExecutionBlockId getExecutionBlockId() {
     return executionBlockId;
   }
@@ -153,20 +196,8 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     this.executionBlockId = executionBlockId;
   }
 
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  public void setPartitionId(int partitionId) {
-    this.partitionId = partitionId;
-  }
-
-  public String getRangeParams() {
-    return rangeParams;
-  }
-
-  public void setRangeParams(String rangeParams) {
-    this.rangeParams = rangeParams;
+  public void setRangeParams(RangeParam rangeParams) {
+    this.rangeParam = rangeParams;
   }
 
   public boolean hasNext() {
@@ -185,34 +216,8 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     this.type = type;
   }
 
-  /**
-   * Get the pull server URIs.
-   */
-  public List<URI> getURIs(){
-    return Repartitioner.createFetchURL(this, true);
-  }
-
-  /**
-   * Get the pull server URIs without repeated parameters.
-   */
-  public List<URI> getSimpleURIs(){
-    return Repartitioner.createFetchURL(this, false);
-  }
-
   public String getName() {
     return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public List<Integer> getTaskIds() {
-    return taskIds;
-  }
-
-  public List<Integer> getAttemptIds() {
-    return attemptIds;
   }
 
   public long getOffset() {
@@ -238,8 +243,7 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
     newFetchImpl.type = type;
     newFetchImpl.executionBlockId = executionBlockId;
     newFetchImpl.partitionId = partitionId;
-    newFetchImpl.name = name;
-    newFetchImpl.rangeParams = rangeParams;
+    newFetchImpl.rangeParam = rangeParam;
     newFetchImpl.hasNext = hasNext;
     if (taskIds != null) {
       newFetchImpl.taskIds = Lists.newArrayList(taskIds);
@@ -269,7 +273,7 @@ public class FetchImpl implements ProtoObject<FetchProto>, Cloneable {
         TUtil.checkEquals(executionBlockId, fetch.executionBlockId) &&
         TUtil.checkEquals(host, fetch.host) &&
         TUtil.checkEquals(name, fetch.name) &&
-        TUtil.checkEquals(rangeParams, fetch.rangeParams) &&
+        TUtil.checkEquals(rangeParam, fetch.rangeParam) &&
         TUtil.checkEquals(taskIds, fetch.taskIds) &&
         TUtil.checkEquals(type, fetch.type) &&
         TUtil.checkEquals(offset, fetch.offset) &&

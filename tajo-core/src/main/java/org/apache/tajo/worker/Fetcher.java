@@ -31,7 +31,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoProtos.FetcherState;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NettyUtils;
 
@@ -42,6 +44,8 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.FileChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -67,6 +71,7 @@ public class Fetcher {
   private TajoProtos.FetcherState state;
 
   private Bootstrap bootstrap;
+  private List<Long> chunkLengths = new ArrayList<>();
 
   public Fetcher(TajoConf conf, URI uri, FileChunk chunk) {
     this.uri = uri;
@@ -97,9 +102,6 @@ public class Fetcher {
               conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CONNECT_TIMEOUT) * 1000)
           .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M
           .option(ChannelOption.TCP_NODELAY, true);
-
-      ChannelInitializer<Channel> initializer = new HttpClientChannelInitializer(fileChunk.getFile());
-      bootstrap.handler(initializer);
     }
   }
 
@@ -123,12 +125,20 @@ public class Fetcher {
     return messageReceiveCount;
   }
 
-  public FileChunk get() throws IOException {
+  public List<FileChunk> get() throws IOException {
+    List<FileChunk> fileChunks = new ArrayList<>();
     if (useLocalFile) {
       startTime = System.currentTimeMillis();
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FINISHED;
-      return fileChunk;
+      fileChunks.add(fileChunk);
+      fileLen = fileChunk.getFile().length();
+      return fileChunks;
+    }
+
+    if (state == FetcherState.FETCH_INIT) {
+      ChannelInitializer<Channel> initializer = new HttpClientChannelInitializer(fileChunk.getFile());
+      bootstrap.handler(initializer);
     }
 
     this.startTime = System.currentTimeMillis();
@@ -136,7 +146,7 @@ public class Fetcher {
     ChannelFuture future = null;
     try {
       future = bootstrap.clone().connect(new InetSocketAddress(host, port))
-              .addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+              .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
 
       // Wait until the connection attempt succeeds or fails.
       Channel channel = future.awaitUninterruptibly().channel();
@@ -154,7 +164,7 @@ public class Fetcher {
       request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
       if(LOG.isDebugEnabled()) {
-        LOG.info("Status: " + getState() + ", URI:" + uri);
+        LOG.debug("Status: " + getState() + ", URI:" + uri);
       }
       // Send the HTTP request.
       channel.writeAndFlush(request);
@@ -163,7 +173,18 @@ public class Fetcher {
       channel.closeFuture().syncUninterruptibly();
 
       fileChunk.setLength(fileChunk.getFile().length());
-      return fileChunk;
+
+      long start = 0;
+      for (Long eachChunkLength : chunkLengths) {
+        if (eachChunkLength == 0) continue;
+        FileChunk chunk = new FileChunk(fileChunk.getFile(), start, eachChunkLength);
+        chunk.setEbId(fileChunk.getEbId());
+        chunk.setFromRemote(fileChunk.fromRemote());
+        fileChunks.add(chunk);
+        start += eachChunkLength;
+      }
+      return fileChunks;
+
     } finally {
       if(future != null && future.channel().isOpen()){
         // Close the channel to exit.
@@ -224,6 +245,13 @@ public class Fetcher {
                 if (this.length == -1 && name.equals("Content-Length")) {
                   this.length = Long.parseLong(value);
                 }
+              }
+            }
+            if (response.headers().contains(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME)) {
+              String stringOffset = response.headers().get(TajoPullServerService.CHUNK_LENGTH_HEADER_NAME);
+
+              for (String eachSplit : stringOffset.split(",")) {
+                chunkLengths.add(Long.parseLong(eachSplit));
               }
             }
           }
@@ -296,6 +324,7 @@ public class Fetcher {
       if(getState() != TajoProtos.FetcherState.FETCH_FINISHED){
         //channel is closed, but cannot complete fetcher
         finishTime = System.currentTimeMillis();
+        LOG.error("Channel closed by peer: " + ctx.channel());
         state = TajoProtos.FetcherState.FETCH_FAILED;
       }
       IOUtils.cleanup(LOG, fc, raf);

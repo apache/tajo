@@ -664,7 +664,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       ResultSet res = executeString("select a.rk, a.col1, a.col2, a.col3, b.l_orderkey, b.l_linestatus " +
           "from hbase_mapped_table a " +
-          "join default.lineitem b on a.col3 = b.l_orderkey");
+          "join default.lineitem b on a.col3 = b.l_orderkey order by a.rk, a.col1, a.col2, a.col3");
       assertResultSet(res);
       res.close();
     } finally {

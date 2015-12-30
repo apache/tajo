@@ -5,10 +5,6 @@ JOIN(11)(INNER)
   => target list: default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)
   => out schema: {(4) default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
   => in schema: {(5) default.s.s_nationkey (INT4), default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
-   SCAN(5) on default.supplier as s
-     => target list: default.s.s_nationkey (INT4)
-     => out schema: {(1) default.s.s_nationkey (INT4)}
-     => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
    TABLE_SUBQUERY(4) as default.t
      => Targets: default.t.n_nationkey (INT4), default.t.name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
      => out schema: {(4) default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
@@ -27,6 +23,10 @@ JOIN(11)(INNER)
            => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT) as name, default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
            => out schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
            => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
+   SCAN(5) on default.supplier as s
+     => target list: default.s.s_nationkey (INT4)
+     => out schema: {(1) default.s.s_nationkey (INT4)}
+     => in schema: {(7) default.s.s_acctbal (FLOAT8), default.s.s_address (TEXT), default.s.s_comment (TEXT), default.s.s_name (TEXT), default.s.s_nationkey (INT4), default.s.s_phone (TEXT), default.s.s_suppkey (INT4)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -35,26 +35,26 @@ Execution Block Graph (TERMINAL - eb_0000000000000_0000_000006)
 |-eb_0000000000000_0000_000006
    |-eb_0000000000000_0000_000005
       |-eb_0000000000000_0000_000004
-      |-eb_0000000000000_0000_000003
+         |-eb_0000000000000_0000_000003
          |-eb_0000000000000_0000_000002
-         |-eb_0000000000000_0000_000001
+      |-eb_0000000000000_0000_000001
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000001
-2: eb_0000000000000_0000_000002
-3: eb_0000000000000_0000_000003
-4: eb_0000000000000_0000_000004
+1: eb_0000000000000_0000_000002
+2: eb_0000000000000_0000_000003
+3: eb_0000000000000_0000_000004
+4: eb_0000000000000_0000_000001
 5: eb_0000000000000_0000_000005
 6: eb_0000000000000_0000_000006
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000001 [LEAF]
+Block Id: eb_0000000000000_0000_000002 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.n.n_regionkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 4 (type=HASH_SHUFFLE, key=default.n.n_regionkey (INT4), num=32)
 
 SCAN(0) on default.nation as n
   => filter: default.n.n_name (TEXT) = MOROCCO
@@ -63,11 +63,11 @@ SCAN(0) on default.nation as n
   => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000002 [LEAF]
+Block Id: eb_0000000000000_0000_000003 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
 
 SCAN(1) on default.region as r
   => target list: default.r.r_regionkey (INT4)
@@ -75,15 +75,15 @@ SCAN(1) on default.region as r
   => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+Block Id: eb_0000000000000_0000_000004 [INTERMEDIATE]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.n.n_regionkey (INT4), num=32)
-[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 4 (type=HASH_SHUFFLE, key=default.n.n_regionkey (INT4), num=32)
+[q_0000000000000_0000] 3 => 4 (type=HASH_SHUFFLE, key=default.r.r_regionkey (INT4), num=32)
 
 [Outgoing]
-[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.t.n_nationkey (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.t.n_nationkey (INT4), num=32)
 
 TABLE_SUBQUERY(4) as default.t
   => Targets: default.t.n_nationkey (INT4), default.t.name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
@@ -98,19 +98,19 @@ TABLE_SUBQUERY(4) as default.t
         => target list: default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)
         => out schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
         => in schema: {(5) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.r.r_regionkey (INT4), name (TEXT)}
-         SCAN(14) on eb_0000000000000_0000_000002
+         SCAN(14) on eb_0000000000000_0000_000003
            => out schema: {(1) default.r.r_regionkey (INT4)}
            => in schema: {(1) default.r.r_regionkey (INT4)}
-         SCAN(13) on eb_0000000000000_0000_000001
+         SCAN(13) on eb_0000000000000_0000_000002
            => out schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
            => in schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
 
 =======================================================
-Block Id: eb_0000000000000_0000_000004 [LEAF]
+Block Id: eb_0000000000000_0000_000001 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.s.s_nationkey (INT4), num=32)
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.s.s_nationkey (INT4), num=32)
 
 SCAN(5) on default.supplier as s
   => target list: default.s.s_nationkey (INT4)
@@ -122,8 +122,8 @@ Block Id: eb_0000000000000_0000_000005 [ROOT]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.t.n_nationkey (INT4), num=32)
-[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.s.s_nationkey (INT4), num=32)
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.s.s_nationkey (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.t.n_nationkey (INT4), num=32)
 
 JOIN(11)(INNER)
   => Join Cond: default.s.s_nationkey (INT4) = default.t.n_nationkey (INT4)
@@ -131,11 +131,11 @@ JOIN(11)(INNER)
   => out schema: {(4) default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
   => in schema: {(5) default.s.s_nationkey (INT4), default.t.n_comment (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4), default.t.name (TEXT)}
    SCAN(16) on eb_0000000000000_0000_000004
-     => out schema: {(1) default.s.s_nationkey (INT4)}
-     => in schema: {(1) default.s.s_nationkey (INT4)}
-   SCAN(15) on eb_0000000000000_0000_000003
      => out schema: {(4) default.t.n_nationkey (INT4), default.t.name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)}
      => in schema: {(4) default.t.n_nationkey (INT4), default.t.name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)}
+   SCAN(15) on eb_0000000000000_0000_000001
+     => out schema: {(1) default.s.s_nationkey (INT4)}
+     => in schema: {(1) default.s.s_nationkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000006 [TERMINAL]
