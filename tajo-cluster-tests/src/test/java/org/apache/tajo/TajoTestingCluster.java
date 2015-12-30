@@ -126,6 +126,7 @@ public class TajoTestingCluster {
     // Injection of equality testing code of logical plan (de)serialization
     conf.setClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, LogicalPlanTestRuleProvider.class);
     conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
+    conf.setLongVar(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD, 1024 * 1024); // 1GB
 
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES.varname, 4);
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 2000);

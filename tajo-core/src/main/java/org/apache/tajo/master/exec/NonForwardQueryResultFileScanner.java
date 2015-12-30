@@ -40,6 +40,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
+import org.apache.tajo.io.AsyncTaskService;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.storage.*;
@@ -56,38 +57,34 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.Optional;
 import java.util.concurrent.Future;
 
 public class NonForwardQueryResultFileScanner implements NonForwardQueryResultScanner {
   private final static Log LOG = LogFactory.getLog(NonForwardQueryResultFileScanner.class);
 
-  private QueryId queryId;
-  private String sessionId;
+  final private AsyncTaskService asyncTaskService;
+  final private QueryId queryId;
+  final private String sessionId;
   private ScanExec scanExec;
-  private TableDesc tableDesc;
-  private RowStoreEncoder rowEncoder;
-  private int maxRow;
+  final private TableDesc tableDesc;
+  final private RowStoreEncoder rowEncoder;
+  final private int maxRow;
   private boolean eof;
   private volatile long totalRows;
   private volatile int currentNumRows;
   private volatile boolean isStopped;
   private TaskAttemptContext taskContext;
-  private TajoConf tajoConf;
-  private ScanNode scanNode;
-  private CodecType codecType;
-  private ExecutorService executor;
+  final private TajoConf tajoConf;
+  final private ScanNode scanNode;
+  final private Optional<CodecType> codecType;
   private MemoryRowBlock rowBlock;
   private Future<MemoryRowBlock> nextFetch;
 
-  public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-                                          int maxRow) throws IOException {
-    this(tajoConf, sessionId, queryId, scanNode, maxRow, null);
-  }
-
-  public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-      int maxRow, CodecType codecType) throws IOException {
+  public NonForwardQueryResultFileScanner(AsyncTaskService asyncTaskService,
+                                          TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
+                                          int maxRow, Optional<CodecType> codecType) throws IOException {
+    this.asyncTaskService = asyncTaskService;
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
     this.queryId = queryId;
@@ -159,24 +156,58 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       rowBlock = null;
     }
 
-    if(executor != null) {
-      executor.shutdown();
-    }
-
     //remove temporal final output
     if (!tajoConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
       Path temporalResultDir = TajoConf.getTemporalResultDir(tajoConf, queryId);
+
       if (tableDesc.getUri().equals(temporalResultDir.toUri())) {
-        temporalResultDir.getFileSystem(tajoConf).delete(temporalResultDir.getParent(), true);
+        asyncTaskService.run(() -> {
+              try {
+                temporalResultDir.getFileSystem(tajoConf).delete(temporalResultDir.getParent(), true);
+              } catch (IOException e) {
+                LOG.error(e);
+              }
+            }
+        );
       }
     }
-
 
     LOG.info(String.format("\"Sent result to client for %s, queryId: %s %s rows: %d",
         sessionId, queryId,
         codecType != null ? ", compression: " + codecType : "",
         totalRows
     ));
+  }
+
+  public List<Tuple> getNextTupleRows(int fetchRowNum) throws IOException {
+    List<Tuple> rows = new ArrayList<>();
+    if (scanExec == null) {
+      return rows;
+    }
+    int rowCount = 0;
+    while (!eof) {
+      Tuple tuple = scanExec.next();
+      if (tuple == null) {
+        eof = true;
+        break;
+      }
+
+      rows.add(tuple);
+      rowCount++;
+      currentNumRows++;
+      if (rowCount >= fetchRowNum) {
+        break;
+      }
+      if (currentNumRows >= maxRow) {
+        eof = true;
+        break;
+      }
+    }
+
+    if(eof) {
+      close();
+    }
+    return rows;
   }
 
   public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
@@ -229,13 +260,13 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
         resultSetBuilder.setRows(rowBlock.rows());
         MemoryBlock memoryBlock = rowBlock.getMemory();
 
-        if (codecType != null) {
+        if (codecType.isPresent()) {
           byte[] uncompressedBytes = new byte[memoryBlock.readableBytes()];
           memoryBlock.getBuffer().getBytes(0, uncompressedBytes);
 
-          byte[] compressedBytes = CompressionUtil.compress(codecType, uncompressedBytes);
+          byte[] compressedBytes = CompressionUtil.compress(codecType.get(), uncompressedBytes);
           resultSetBuilder.setDecompressedLength(uncompressedBytes.length);
-          resultSetBuilder.setDecompressCodec(codecType);
+          resultSetBuilder.setDecompressCodec(codecType.get());
           resultSetBuilder.setSerializedTuples(ByteString.copyFrom(compressedBytes));
         } else {
           ByteBuffer uncompressed = memoryBlock.getBuffer().nioBuffer(0, memoryBlock.readableBytes());
@@ -272,42 +303,34 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       return future;
     }
 
-    if (executor == null) {
-      executor = Executors.newSingleThreadExecutor();
-    }
-
-    executor.submit(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          rowBlock.clear();
-          int endRow = currentNumRows + fetchRowNum;
-          while (currentNumRows < endRow) {
-            Tuple tuple = scanExec.next();
-            if (tuple == null) {
+    return asyncTaskService.supply(() -> {
+      try {
+        rowBlock.clear();
+        int endRow = currentNumRows + fetchRowNum;
+        while (currentNumRows < endRow) {
+          Tuple tuple = scanExec.next();
+          if (tuple == null) {
+            eof = true;
+            break;
+          } else {
+            rowBlock.getWriter().addTuple(tuple);
+            currentNumRows++;
+            if (currentNumRows >= maxRow) {
               eof = true;
               break;
-            } else {
-              rowBlock.getWriter().addTuple(tuple);
-              currentNumRows++;
-              if (currentNumRows >= maxRow) {
-                eof = true;
-                break;
-              }
             }
           }
-
-          if (rowBlock.rows() > 0) {
-            totalRows += rowBlock.rows();
-          }
-
-          future.set(rowBlock);
-        } catch (Throwable t) {
-          future.setException(t);
         }
+
+        if (rowBlock.rows() > 0) {
+          totalRows += rowBlock.rows();
+        }
+
+        return rowBlock;
+      } catch (Throwable t) {
+        throw new TajoInternalError(t);
       }
     });
-    return future;
   }
 
   @Override

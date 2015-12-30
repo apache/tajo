@@ -36,24 +36,55 @@ Execution Block Graph (TERMINAL - eb_0000000000000_0000_000007)
 |-eb_0000000000000_0000_000007
    |-eb_0000000000000_0000_000006
       |-eb_0000000000000_0000_000005
+         |-eb_0000000000000_0000_000002
+         |-eb_0000000000000_0000_000001
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000005
-2: eb_0000000000000_0000_000006
-3: eb_0000000000000_0000_000007
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000005
+4: eb_0000000000000_0000_000006
+5: eb_0000000000000_0000_000007
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000005 [LEAF]
+Block Id: eb_0000000000000_0000_000001 [LEAF]
 =======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.nation.n_nationkey (INT4), num=32)
+
+SCAN(1) on default.nation
+  => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+  => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+  => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 5 (type=HASH_SHUFFLE, key=default.supplier.s_nationkey (INT4), num=32)
+
+SCAN(2) on default.supplier
+  => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)
+  => out schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+  => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 5 (type=HASH_SHUFFLE, key=default.nation.n_nationkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 5 (type=HASH_SHUFFLE, key=default.supplier.s_nationkey (INT4), num=32)
 
 [Outgoing]
 [q_0000000000000_0000] 5 => 6 (type=RANGE_SHUFFLE, key=default.region.r_name (TEXT), s1 (TEXT), num=32)
 
 [Enforcers]
  0: type=Broadcast, tables=default.region
- 1: type=Broadcast, tables=default.supplier
 
 SORT(17)
   => Sort Keys: default.region.r_name (TEXT) (asc, nulls last),s1 (TEXT) (asc, nulls last)
@@ -79,12 +110,10 @@ SORT(17)
               => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)
               => out schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
               => in schema: {(11) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
-               SCAN(2) on default.supplier
-                 => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)
+               SCAN(14) on eb_0000000000000_0000_000002
                  => out schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
                  => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
-               SCAN(1) on default.nation
-                 => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+               SCAN(13) on eb_0000000000000_0000_000001
                  => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
                  => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
 

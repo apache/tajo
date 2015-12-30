@@ -21,6 +21,7 @@
  */
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.ResourceProtos.FetchProto;
 import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -29,7 +30,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.plan.serder.PlanProto;
-import org.apache.tajo.worker.FetchImpl;
 
 import java.util.List;
 
@@ -39,8 +39,8 @@ public interface TaskRequest extends ProtoObject<TaskRequestProto> {
 	List<CatalogProtos.FragmentProto> getFragments();
 	PlanProto.LogicalNodeTree getPlan();
 	void setInterQuery();
-	void addFetch(String name, FetchImpl fetch);
-	List<FetchImpl> getFetches();
+	void addFetch(FetchProto fetch);
+	List<FetchProto> getFetches();
   QueryContext getQueryContext(TajoConf conf);
   DataChannel getDataChannel();
   Enforcer getEnforcer();

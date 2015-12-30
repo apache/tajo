@@ -28,7 +28,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -37,6 +36,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.exception.AmbiguousFunctionException;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.GENERAL;
 
@@ -59,7 +60,7 @@ public class FunctionLoader {
    *
    * @return
    */
-  public static Map<FunctionSignature, FunctionDesc> load() {
+  public static Map<FunctionSignature, FunctionDesc> loadBuiltinFunctions() {
     Map<FunctionSignature, FunctionDesc> map = Maps.newHashMap();
 
     List<FunctionDesc> dd = Lists.newArrayList();
@@ -87,13 +88,12 @@ public class FunctionLoader {
    * Load functions defined by users.
    *
    * @param conf
-   * @param functionMap
    * @return
    * @throws IOException
    */
-  public static Map<FunctionSignature, FunctionDesc> loadUserDefinedFunctions(TajoConf conf,
-                                                                              Map<FunctionSignature, FunctionDesc> functionMap)
+  public static List<FunctionDesc> loadUserDefinedFunctions(TajoConf conf)
       throws IOException {
+    List<FunctionDesc> functionList = new LinkedList<>();
 
     String[] codePaths = conf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);
     if (codePaths != null) {
@@ -110,37 +110,27 @@ public class FunctionLoader {
 
         List<Path> filePaths = TUtil.newList();
         if (localFS.isDirectory(codePath)) {
-          for (FileStatus file : localFS.listStatus(codePath, new PathFilter() {
-            @Override
-            public boolean accept(Path path) {
-              return path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION);
-            }
-          })) {
+          for (FileStatus file : localFS.listStatus(codePath,
+              (Path path) -> path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION))) {
             filePaths.add(file.getPath());
           }
         } else {
           filePaths.add(codePath);
         }
         for (Path filePath : filePaths) {
-          for (FunctionDesc f : PythonScriptEngine.registerFunctions(filePath.toUri(),
-              FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
-            functionMap.put(f.getSignature(), f);
-          }
+          PythonScriptEngine.registerFunctions(filePath.toUri(), FunctionLoader.PYTHON_FUNCTION_NAMESPACE).forEach(functionList::add);
         }
       }
     }
-    return functionMap;
+
+    return functionList;
   }
 
   public static Set<FunctionDesc> findScalarFunctions() {
     Set<FunctionDesc> functions = Sets.newHashSet();
 
-    Set<Method> scalarFunctions = findPublicStaticMethods("org.apache.tajo.engine.function", new Predicate() {
-      @Override
-      public boolean evaluate(Object object) {
-        return ((Method) object).getAnnotation(ScalarFunction.class) != null;
-      }
-    });
+    Set<Method> scalarFunctions = findPublicStaticMethods("org.apache.tajo.engine.function",
+        (Object object) -> ((Method) object).getAnnotation(ScalarFunction.class) != null);
 
     for (Method method : scalarFunctions) {
       ScalarFunction annotation = method.getAnnotation(ScalarFunction.class);
@@ -170,12 +160,8 @@ public class FunctionLoader {
   }
 
   private static Set<Class> findFunctionCollections(String packageName) {
-    return ClassUtil.findClasses(null, packageName, new Predicate() {
-      @Override
-      public boolean evaluate(Object object) {
-        return ((Class)object).getAnnotation(FunctionCollection.class) != null;
-      }
-    });
+    return ClassUtil.findClasses(null, packageName, (Object object) ->
+        ((Class)object).getAnnotation(FunctionCollection.class) != null);
   }
 
   private static Collection<FunctionDesc> buildFunctionDescs(ScalarFunction annotation, Method method) {
@@ -298,5 +284,52 @@ public class FunctionLoader {
     }
 
     return sqlFuncs;
+  }
+
+  public static Collection<FunctionDesc> loadFunctions(TajoConf conf) throws IOException, AmbiguousFunctionException {
+    List<FunctionDesc> functionList = new ArrayList<>(loadBuiltinFunctions().values());
+    List<FunctionDesc> udfs = loadUserDefinedFunctions(conf);
+
+    /* NOTE:
+     * For built-in functions, it is not done to check duplicates.
+     * There are two reasons.
+     * Firstly, it could be an useless operation in most of cases because built-in functions are not changed frequently
+     *   but checking will be done each startup.
+     * Secondly, this logic checks duplicate excluding type, but there are already duplicates in built-in functions
+     *   such as sum with/without 'distinct' feature. So to check duplicates in built-in functions, some other logic is needed.
+     * It should be another issue.
+     */
+    // merge lists and return it.
+    return mergeFunctionLists(functionList, udfs);
+  }
+
+  @SafeVarargs
+  static Collection<FunctionDesc> mergeFunctionLists(List<FunctionDesc> ... functionLists)
+      throws AmbiguousFunctionException {
+
+    Map<Integer, FunctionDesc> funcMap = new HashMap<>();
+    List<FunctionDesc> baseFuncList = functionLists[0];
+
+    // Build a map with a first list
+    for (FunctionDesc desc: baseFuncList) {
+      funcMap.put(desc.hashCodeWithoutType(), desc);
+    }
+
+    // Check duplicates for other function lists(should be UDFs practically)
+    for (int i=1; i<functionLists.length; i++) {
+      for (FunctionDesc desc: functionLists[i]) {
+        if (funcMap.containsKey(desc.hashCodeWithoutType())) {
+          FunctionDesc storedDesc = funcMap.get(desc.hashCodeWithoutType());
+          if (storedDesc.equalsSignature(desc)) {
+            throw new AmbiguousFunctionException(String.format("%s", storedDesc.toString()));
+          }
+        }
+
+        funcMap.put(desc.hashCodeWithoutType(), desc);
+        baseFuncList.add(desc);
+      }
+    }
+
+    return baseFuncList;
   }
 }

@@ -3,36 +3,36 @@ explain
 SORT(5)
   => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last)
    JOIN(13)(INNER)
-     => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
+     => Join Cond: default.supplier.s_suppkey (INT4) = default.partsupp.ps_suppkey (INT4)
      => target list: default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)
      => out schema: {(4) default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)}
-     => in schema: {(6) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
-      SCAN(3) on default.nation
-        => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
-        => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
-        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+     => in schema: {(6) default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)}
       JOIN(12)(INNER)
+        => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
+        => target list: default.nation.n_name (TEXT), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)
+        => out schema: {(4) default.nation.n_name (TEXT), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)}
+        => in schema: {(6) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
+         SCAN(3) on default.nation
+           => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
+           => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
+           => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+         SCAN(1) on default.supplier
+           => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)
+           => out schema: {(4) default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
+           => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+      JOIN(11)(INNER)
         => Join Cond: default.part.p_partkey (INT4) = default.partsupp.ps_partkey (INT4)
-        => target list: default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)
-        => out schema: {(4) default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
-        => in schema: {(5) default.part.p_partkey (INT4), default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
+        => target list: default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4)
+        => out schema: {(2) default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+        => in schema: {(3) default.part.p_partkey (INT4), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
          SCAN(0) on default.part
            => target list: default.part.p_partkey (INT4)
            => out schema: {(1) default.part.p_partkey (INT4)}
            => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-         JOIN(11)(INNER)
-           => Join Cond: default.supplier.s_suppkey (INT4) = default.partsupp.ps_suppkey (INT4)
-           => target list: default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)
-           => out schema: {(4) default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
-           => in schema: {(6) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-            SCAN(1) on default.supplier
-              => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)
-              => out schema: {(4) default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-              => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
-            SCAN(2) on default.partsupp
-              => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
-              => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
-              => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
+         SCAN(2) on default.partsupp
+           => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
+           => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+           => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
 explain
 -------------------------------
 -------------------------------------------------------------------------------
@@ -41,59 +41,117 @@ Execution Block Graph (TERMINAL - eb_0000000000000_0000_000009)
 |-eb_0000000000000_0000_000009
    |-eb_0000000000000_0000_000008
       |-eb_0000000000000_0000_000007
+         |-eb_0000000000000_0000_000006
+         |-eb_0000000000000_0000_000003
+            |-eb_0000000000000_0000_000002
+            |-eb_0000000000000_0000_000001
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000007
-2: eb_0000000000000_0000_000008
-3: eb_0000000000000_0000_000009
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000006
+5: eb_0000000000000_0000_000007
+6: eb_0000000000000_0000_000008
+7: eb_0000000000000_0000_000009
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000007 [LEAF]
+Block Id: eb_0000000000000_0000_000001 [LEAF]
 =======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.partsupp.ps_partkey (INT4), num=32)
+
+SCAN(2) on default.partsupp
+  => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
+  => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+  => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.part.p_partkey (INT4), num=32)
+
+SCAN(0) on default.part
+  => target list: default.part.p_partkey (INT4)
+  => out schema: {(1) default.part.p_partkey (INT4)}
+  => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.partsupp.ps_partkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.part.p_partkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 7 (type=HASH_SHUFFLE, key=default.partsupp.ps_suppkey (INT4), num=32)
+
+JOIN(11)(INNER)
+  => Join Cond: default.part.p_partkey (INT4) = default.partsupp.ps_partkey (INT4)
+  => target list: default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4)
+  => out schema: {(2) default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+  => in schema: {(3) default.part.p_partkey (INT4), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+   SCAN(16) on eb_0000000000000_0000_000002
+     => out schema: {(1) default.part.p_partkey (INT4)}
+     => in schema: {(1) default.part.p_partkey (INT4)}
+   SCAN(15) on eb_0000000000000_0000_000001
+     => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+     => in schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 6 => 7 (type=HASH_SHUFFLE, key=default.supplier.s_suppkey (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.nation
+
+JOIN(12)(INNER)
+  => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
+  => target list: default.nation.n_name (TEXT), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)
+  => out schema: {(4) default.nation.n_name (TEXT), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)}
+  => in schema: {(6) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
+   SCAN(3) on default.nation
+     => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
+     => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
+     => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+   SCAN(1) on default.supplier
+     => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)
+     => out schema: {(4) default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
+     => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000007 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 7 (type=HASH_SHUFFLE, key=default.partsupp.ps_suppkey (INT4), num=32)
+[q_0000000000000_0000] 6 => 7 (type=HASH_SHUFFLE, key=default.supplier.s_suppkey (INT4), num=32)
 
 [Outgoing]
 [q_0000000000000_0000] 7 => 8 (type=RANGE_SHUFFLE, key=default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), num=32)
 
-[Enforcers]
- 0: type=Broadcast, tables=default.part
- 1: type=Broadcast, tables=default.partsupp
- 2: type=Broadcast, tables=default.supplier
-
 SORT(21)
   => Sort Keys: default.supplier.s_acctbal (FLOAT8) (asc, nulls last),default.supplier.s_name (TEXT) (asc, nulls last),default.part.p_partkey (INT4) (asc, nulls last),default.nation.n_name (TEXT) (asc, nulls last)
    JOIN(13)(INNER)
-     => Join Cond: default.supplier.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
+     => Join Cond: default.supplier.s_suppkey (INT4) = default.partsupp.ps_suppkey (INT4)
      => target list: default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)
      => out schema: {(4) default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT)}
-     => in schema: {(6) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
-      SCAN(3) on default.nation
-        => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
-        => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
-        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
-      JOIN(12)(INNER)
-        => Join Cond: default.part.p_partkey (INT4) = default.partsupp.ps_partkey (INT4)
-        => target list: default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)
-        => out schema: {(4) default.part.p_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
-        => in schema: {(5) default.part.p_partkey (INT4), default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
-         SCAN(0) on default.part
-           => target list: default.part.p_partkey (INT4)
-           => out schema: {(1) default.part.p_partkey (INT4)}
-           => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-         JOIN(11)(INNER)
-           => Join Cond: default.supplier.s_suppkey (INT4) = default.partsupp.ps_suppkey (INT4)
-           => target list: default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)
-           => out schema: {(4) default.partsupp.ps_partkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4)}
-           => in schema: {(6) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-            SCAN(1) on default.supplier
-              => target list: default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)
-              => out schema: {(4) default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_suppkey (INT4)}
-              => in schema: {(7) default.supplier.s_acctbal (FLOAT8), default.supplier.s_address (TEXT), default.supplier.s_comment (TEXT), default.supplier.s_name (TEXT), default.supplier.s_nationkey (INT4), default.supplier.s_phone (TEXT), default.supplier.s_suppkey (INT4)}
-            SCAN(2) on default.partsupp
-              => target list: default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)
-              => out schema: {(2) default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
-              => in schema: {(5) default.partsupp.ps_availqty (INT4), default.partsupp.ps_comment (TEXT), default.partsupp.ps_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.partsupp.ps_supplycost (FLOAT8)}
+     => in schema: {(6) default.nation.n_name (TEXT), default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)}
+      SCAN(20) on eb_0000000000000_0000_000006
+        => out schema: {(4) default.nation.n_name (TEXT), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)}
+        => in schema: {(4) default.nation.n_name (TEXT), default.supplier.s_acctbal (FLOAT8), default.supplier.s_name (TEXT), default.supplier.s_suppkey (INT4)}
+      SCAN(19) on eb_0000000000000_0000_000003
+        => out schema: {(2) default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
+        => in schema: {(2) default.part.p_partkey (INT4), default.partsupp.ps_suppkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000008 [ROOT]

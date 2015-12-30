@@ -18,6 +18,7 @@ Available Session Variables:
 \set LC_MONETARY [text value] - Formatting of currency amounts
 \set LC_NUMERIC [text value] - Formatting of numbers
 \set LC_TIME [text value] - Formatting of dates and times
+\set USE_TABLE_VOLUME [true or false] - Enable optimizer to get and use the table volume via storage handlers
 \set BROADCAST_NON_CROSS_JOIN_THRESHOLD [long value] - restriction for the total size of broadcasted table for non-cross join (kb)
 \set BROADCAST_CROSS_JOIN_THRESHOLD [long value] - restriction for the total size of broadcasted table for cross join (kb)
 \set JOIN_TASK_INPUT_SIZE [int value] - join task input size (mb)
