@@ -47,34 +47,6 @@ public class ConsolePrinter {
     lines++;
   }
 
-  public void repositionCursor()
-  {
-    if (lines > 0) {
-      if (isRealTerminal()) {
-        out.print(ansi().cursorUp(lines).toString());
-      }
-      else {
-        out.print('\r');
-      }
-      out.flush();
-      lines = 0;
-    }
-  }
-
-  public void resetScreen()
-  {
-    if (lines > 0) {
-      if (isRealTerminal()) {
-        out.print(ansi().cursorUp(lines).eraseScreen(Erase.FORWARD).toString());
-      }
-      else {
-        out.print('\r');
-      }
-      out.flush();
-      lines = 0;
-    }
-  }
-
   public int getWidth()
   {
     return TerminalFactory.get().getWidth();
