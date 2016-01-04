@@ -85,7 +85,7 @@ public class TestByteBufLineReader {
     fs.close();
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   public void testReaderWithDFS() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();

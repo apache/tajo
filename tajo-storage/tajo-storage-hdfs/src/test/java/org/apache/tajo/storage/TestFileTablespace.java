@@ -102,7 +102,7 @@ public class TestFileTablespace {
     localFs.delete(path, true);
 	}
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   public void testGetSplit() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
@@ -160,7 +160,7 @@ public class TestFileTablespace {
     }
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   public void testZeroLengthSplit() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
@@ -210,7 +210,7 @@ public class TestFileTablespace {
     }
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   public void testGetSplitWithBlockStorageLocationsBatching() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
@@ -262,7 +262,7 @@ public class TestFileTablespace {
     }
   }
 
-  @Test(timeout = 60000)
+  @Test(timeout = 120000)
   public void testGetFileTablespace() throws Exception {
     final Configuration hdfsConf = new HdfsConfiguration();
     String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
