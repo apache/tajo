@@ -619,6 +619,7 @@ public class TajoCli implements Closeable {
         }
       }
 
+      sout.println();
       if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
         displayFormatter.printErrorMessage(sout, status);
         wasError = true;

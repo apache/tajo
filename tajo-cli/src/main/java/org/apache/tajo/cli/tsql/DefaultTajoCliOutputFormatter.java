@@ -153,33 +153,41 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
 
   @Override
   public void printProgress(PrintWriter sout, QueryStatus status) {
-
     int terminalWidth = console.getWidth();
+    assert terminalWidth >= 75;
+    int progressWidth = (min(terminalWidth, 100) - 75) + 17; // progress bar is 17-42 characters wide
 
-//    sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
-//        + "%, response time: "
-//        + getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0)));
-//    sout.flush();
+    String progressBar = formatProgressBar(progressWidth,
+      (int)(status.getProgress() * 100.0f));
+
+    // 0:17 [=====>>                                   ] 10%
+    String progressLine = String.format("%s [%s] %d%%",
+      getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0)),
+      progressBar,
+      (int)(status.getProgress() * 100.0f));
+
+    reprintLine(progressLine);
+    sout.flush();
   }
 
   private void reprintLine(String line) {
     console.reprintLine(line);
   }
 
-  public static String formatProgressBar(int width, int complete, int running, int total) {
-    if (total == 0) {
+  public static String formatProgressBar(int width, int progress) {
+    if (progress == 0) {
       return repeat(" ", width);
     }
 
-    int pending = max(0, total - complete - running);
+    int pending = 2;
 
     // compute nominal lengths
-    int completeLength = min(width, ceil(complete * width, total));
-    int pendingLength = min(width, ceil(pending * width, total));
+    int completeLength = min(width, ceil(progress * width, 100));
+    int pendingLength = min(width, ceil(pending * width, 100));
 
     // leave space for at least one ">" as long as running is > 0
-    int minRunningLength = (running > 0) ? 1 : 0;
-    int runningLength = max(min(width, ceil(running * width, total)), minRunningLength);
+    int minRunningLength = 1;
+    int runningLength = max(min(width, ceil(1 * width, 100)), minRunningLength);
 
     // adjust to fix rounding errors
     if (((completeLength + runningLength + pendingLength) != width) && (pending > 0)) {
@@ -190,14 +198,14 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
       // then, sacrifice "running"
       runningLength = max(minRunningLength, width - completeLength - pendingLength);
     }
-    if (((completeLength + runningLength + pendingLength) > width) && (complete > 0)) {
+    if (((completeLength + runningLength + pendingLength) > width) && (progress > 0)) {
       // finally, sacrifice "complete" if we're still over the limit
       completeLength = max(0, width - runningLength - pendingLength);
     }
 
     checkState((completeLength + runningLength + pendingLength) == width,
         "Expected completeLength (%s) + runningLength (%s) + pendingLength (%s) == width (%s), was %s for complete = %s, running = %s, total = %s",
-        completeLength, runningLength, pendingLength, width, completeLength + runningLength + pendingLength, complete, running, total);
+        completeLength, runningLength, pendingLength, width, completeLength + runningLength + pendingLength, progress, 1, 100);
 
     return repeat("=", completeLength) + repeat(">", runningLength) + repeat(" ", pendingLength);
   }
