@@ -110,9 +110,10 @@ public class TestFileTablespace {
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
     conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, false);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
-        .numDataNodes(1).build();
+        .numDataNodes(1).format(true).build();
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
 
@@ -166,9 +167,10 @@ public class TestFileTablespace {
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
     conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
-        .numDataNodes(1).build();
+        .numDataNodes(1).format(true).build();
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
 
@@ -216,9 +218,10 @@ public class TestFileTablespace {
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
     conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 2);
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
-        .numDataNodes(2).build();
+        .numDataNodes(2).format(true).build();
 
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
@@ -267,9 +270,10 @@ public class TestFileTablespace {
     hdfsConf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
     hdfsConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     hdfsConf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
+    hdfsConf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
 
     final MiniDFSCluster cluster =
-        new MiniDFSCluster.Builder(hdfsConf).numDataNodes(1).build();
+        new MiniDFSCluster.Builder(hdfsConf).numDataNodes(1).format(true).build();
     URI uri = URI.create(cluster.getFileSystem().getUri() + "/tajo");
 
     try {

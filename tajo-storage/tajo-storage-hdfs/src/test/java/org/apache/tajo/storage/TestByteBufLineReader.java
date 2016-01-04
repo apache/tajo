@@ -92,9 +92,10 @@ public class TestByteBufLineReader {
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
-        .numDataNodes(2).waitSafeMode(true).build();
+        .numDataNodes(2).format(true).build();
 
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
