@@ -230,17 +230,17 @@ public class TajoMaster extends CompositeService {
     }
 
     if (udfs != null) {
-      checkUDFduplicates(udfs, funcSet);
+      checkUDFduplicates(udfs, funcSet, functionList);
     }
 
     if (hiveUDFs != null) {
-      checkUDFduplicates(hiveUDFs, funcSet);
+      checkUDFduplicates(hiveUDFs, funcSet, functionList);
     }
 
-    return funcSet.values();
+    return functionList;
   }
 
-  private void checkUDFduplicates(Collection<FunctionDesc> udfs, HashMap<Integer, FunctionDesc> funcSet)
+  private void checkUDFduplicates(Collection<FunctionDesc> udfs, HashMap<Integer, FunctionDesc> funcSet, List<FunctionDesc> funcList)
       throws AmbiguousFunctionException {
     for (FunctionDesc desc: udfs) {
       if (funcSet.containsKey(desc.hashCodeWithoutType())) {
@@ -248,6 +248,7 @@ public class TajoMaster extends CompositeService {
       }
 
       funcSet.put(desc.hashCodeWithoutType(), desc);
+      funcList.add(desc);
     }
   }
 
