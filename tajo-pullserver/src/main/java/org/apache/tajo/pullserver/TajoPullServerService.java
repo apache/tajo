@@ -510,7 +510,7 @@ public class TajoPullServerService extends AbstractService {
         sendError(ctx, request.getDecoderResult().toString(), HttpResponseStatus.BAD_REQUEST);
         return;
       }
-      
+
       if (request.getMethod() == HttpMethod.DELETE) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
