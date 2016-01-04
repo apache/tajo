@@ -103,6 +103,7 @@ public class TestDirectRawFile {
     conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, false);
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
+    conf.setBoolean(DFSConfigKeys.DFS_HA_STANDBY_CHECKPOINTS_KEY, false);
 
     MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
     builder.numDataNodes(1);
