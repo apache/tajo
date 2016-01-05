@@ -117,8 +117,8 @@ public class FunctionLoader {
           filePaths.add(codePath);
         }
         for (Path filePath : filePaths) {
-          PythonScriptEngine.registerFunctions(filePath.toUri(), FunctionLoader.PYTHON_FUNCTION_NAMESPACE)
-              .stream().map(functionList::add);
+          PythonScriptEngine.registerFunctions(filePath.toUri(), FunctionLoader.PYTHON_FUNCTION_NAMESPACE).
+              forEach(functionList::add);
         }
       }
     }
