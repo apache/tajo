@@ -580,6 +580,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
         long finishTime = System.currentTimeMillis();
         long elapsedMills = finishTime - startTime;
+        
         LOG.info(String.format("Partition pruning :%d ms elapsed.", elapsedMills));
       } catch (IOException e) {
         throw new TajoInternalError("Partitioned Table Rewrite Failed: \n" + e.getMessage());
