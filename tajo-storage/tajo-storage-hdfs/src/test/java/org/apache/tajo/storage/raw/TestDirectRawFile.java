@@ -106,13 +106,10 @@ public class TestDirectRawFile {
 
   @After
   public void tearDown() throws IOException {
-    if (isLocal) {
-       fs.delete(testDir, true);
-    } else {
-      if(cluster != null) {
-        cluster.triggerBlockReports();
-        cluster.shutdown();
-      }
+    fs.delete(testDir, true);
+    if (!isLocal) {
+      cluster.triggerDeletionReports();
+      cluster.shutdown();
     }
   }
 
