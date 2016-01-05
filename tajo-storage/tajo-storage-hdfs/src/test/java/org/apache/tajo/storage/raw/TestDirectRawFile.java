@@ -24,8 +24,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -37,6 +35,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.storage.TestFileTablespace;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
@@ -96,16 +95,9 @@ public class TestDirectRawFile {
 
   @BeforeClass
   public static void setUpClass() throws IOException, InterruptedException {
-    final Configuration conf = new HdfsConfiguration();
-    String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
-    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
-    conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
-    conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
-    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, false);
-    conf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
-    conf.setBoolean(DFSConfigKeys.DFS_HA_STANDBY_CHECKPOINTS_KEY, false);
+    final Configuration conf = TestFileTablespace.getTestHdfsConfiguration();
 
-    MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
+    MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
     builder.numDataNodes(1);
     builder.format(true);
     builder.manageNameDfsDirs(true);
