@@ -100,9 +100,7 @@ public class TestDirectRawFile {
     MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
     builder.numDataNodes(1);
     builder.format(true);
-    builder.manageNameDfsDirs(true);
-    builder.manageDataDfsDirs(true);
-    builder.waitSafeMode(true);
+    builder.storagesPerDatanode(1);
     cluster = builder.build();
 
     dfs = cluster.getFileSystem();
