@@ -45,8 +45,8 @@ import org.apache.tajo.tuple.memory.RowWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.ProtoUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -65,9 +65,9 @@ public class TestDirectRawFile {
   public static Schema schema;
 
   private static String TEST_PATH = "target/test-data/TestDirectRawFile";
-  private static MiniDFSCluster cluster;
-  private static FileSystem dfs;
-  private static FileSystem localFs;
+  private MiniDFSCluster cluster;
+  private FileSystem fs;
+  private boolean isLocal;
 
   private TajoConf tajoConf;
   private Path testDir;
@@ -82,34 +82,32 @@ public class TestDirectRawFile {
 
 
   public TestDirectRawFile(boolean isLocal) throws IOException {
-    FileSystem fs;
+    this.isLocal = isLocal;
+  }
+
+  @Before
+  public void setup() throws IOException {
     if (isLocal) {
-      fs = localFs;
+      fs = FileSystem.getLocal(new TajoConf());
     } else {
-      fs = dfs;
+      final Configuration conf = TestFileTablespace.getTestHdfsConfiguration();
+
+      cluster = new MiniDFSCluster.Builder(conf)
+          .numDataNodes(1)
+          .format(true)
+          .storagesPerDatanode(1).build();
+
+      fs = cluster.getFileSystem();
     }
 
     this.tajoConf = new TajoConf(fs.getConf());
     this.testDir = getTestDir(fs, TEST_PATH);
   }
 
-  @BeforeClass
-  public static void setUpClass() throws IOException, InterruptedException {
-    final Configuration conf = TestFileTablespace.getTestHdfsConfiguration();
-
-    MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(conf);
-    builder.numDataNodes(1);
-    builder.format(true);
-    builder.storagesPerDatanode(1);
-    cluster = builder.build();
-
-    dfs = cluster.getFileSystem();
-    localFs = FileSystem.getLocal(new TajoConf());
-  }
-
-  @AfterClass
-  public static void tearDownClass() throws InterruptedException {
-    cluster.shutdown();
+  @After
+  public void tearDown() throws IOException {
+    fs.delete(testDir, true);
+    if(cluster != null) cluster.shutdown();
   }
 
   public Path getTestDir(FileSystem fs, String dir) throws IOException {
