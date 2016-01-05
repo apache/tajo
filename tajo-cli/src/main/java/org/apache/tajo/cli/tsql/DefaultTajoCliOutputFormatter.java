@@ -167,7 +167,6 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
       (int)(status.getProgress() * 100.0f));
 
     reprintLine(progressLine);
-    sout.flush();
   }
 
   private void reprintLine(String line) {
