@@ -18,6 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
+import jline.TerminalFactory;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
@@ -32,7 +33,6 @@ import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.repeat;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -43,7 +43,6 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private boolean printErrorTrace;
   private String nullChar;
   public static final char QUIT_COMMAND = 'q';
-  private ConsolePrinter console;
 
   @Override
   public void init(TajoCli.TajoCliContext context) {
@@ -51,7 +50,6 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     this.printPauseRecords = context.getInt(SessionVars.CLI_PAGE_ROWS);
     this.printErrorTrace = context.getBool(SessionVars.CLI_DISPLAY_ERROR_TRACE);
     this.nullChar = context.get(SessionVars.CLI_NULL_CHAR);
-    this.console = new ConsolePrinter(context.getOutput());
   }
 
   @Override
@@ -153,12 +151,10 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
 
   @Override
   public void printProgress(PrintWriter sout, QueryStatus status) {
-    int terminalWidth = console.getWidth();
-    assert terminalWidth >= 75;
+    int terminalWidth = TerminalFactory.get().getWidth();
     int progressWidth = (min(terminalWidth, 100) - 75) + 17; // progress bar is 17-42 characters wide
 
-    String progressBar = formatProgressBar(progressWidth,
-      (int)(status.getProgress() * 100.0f));
+    String progressBar = formatProgressBar(progressWidth, (int)(status.getProgress() * 100.0f));
 
     // 0:17 [=====>>                                   ] 10%
     String progressLine = String.format("%s [%s] %d%%",
@@ -166,11 +162,8 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
       progressBar,
       (int)(status.getProgress() * 100.0f));
 
-    reprintLine(progressLine);
-  }
-
-  private void reprintLine(String line) {
-    console.reprintLine(line);
+    sout.print('\r' + progressLine);
+    sout.flush();
   }
 
   public static String formatProgressBar(int width, int progress) {
@@ -201,10 +194,6 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
       // finally, sacrifice "complete" if we're still over the limit
       completeLength = max(0, width - runningLength - pendingLength);
     }
-
-    checkState((completeLength + runningLength + pendingLength) == width,
-        "Expected completeLength (%s) + runningLength (%s) + pendingLength (%s) == width (%s), was %s for complete = %s, running = %s, total = %s",
-        completeLength, runningLength, pendingLength, width, completeLength + runningLength + pendingLength, progress, 1, 100);
 
     return repeat("=", completeLength) + repeat(">", runningLength) + repeat(" ", pendingLength);
   }
