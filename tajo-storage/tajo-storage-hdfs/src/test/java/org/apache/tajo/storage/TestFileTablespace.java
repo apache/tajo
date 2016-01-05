@@ -66,7 +66,7 @@ public class TestFileTablespace {
 
   public static HdfsConfiguration getTestHdfsConfiguration() {
     HdfsConfiguration conf = new HdfsConfiguration(false);
-    String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
+    String testDataPath = new File(TEST_PATH + "/" + UUID.randomUUID().toString()).getAbsolutePath();
 
     String namenodeDir = new File(testDataPath, "name").getAbsolutePath();
     conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
@@ -163,6 +163,8 @@ public class TestFileTablespace {
       assertEquals(testCount / 2, splits.size());
       assertEquals(1, splits.get(0).getHosts().length);
       assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
+
+      fs.delete(tablePath, true);
       fs.close();
     } finally {
       cluster.shutdown();
@@ -207,6 +209,8 @@ public class TestFileTablespace {
       // Get FileFragments in partition batch
       splits.addAll(space.getSplits("data", meta, schema, partitions.toArray(new Path[partitions.size()])));
       assertEquals(0, splits.size());
+
+      fs.delete(tablePath, true);
       fs.close();
     } finally {
       cluster.shutdown();
@@ -253,6 +257,8 @@ public class TestFileTablespace {
       assertEquals(2, splits.get(0).getHosts().length);
       assertEquals(2, ((FileFragment)splits.get(0)).getDiskIds().length);
       assertNotEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
+
+      fs.delete(tablePath, true);
       fs.close();
     } finally {
       cluster.shutdown();
