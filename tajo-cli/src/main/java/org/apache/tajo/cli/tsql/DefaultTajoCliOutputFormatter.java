@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.util.FileUtil;
+import org.fusesource.jansi.Ansi;
 
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -36,6 +37,9 @@ import java.sql.ResultSetMetaData;
 import static com.google.common.base.Strings.repeat;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
+import static org.fusesource.jansi.internal.CLibrary.isatty;
 
 public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private int printPauseRecords;
@@ -43,6 +47,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private boolean printErrorTrace;
   private String nullChar;
   public static final char QUIT_COMMAND = 'q';
+  public static final boolean REAL_TERMINAL = detectRealTerminal();
 
   @Override
   public void init(TajoCli.TajoCliContext context) {
@@ -162,8 +167,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
       progressBar,
       (int)(status.getProgress() * 100.0f));
 
-    sout.print('\r' + progressLine);
-    sout.flush();
+    reprintLine(sout, progressLine);
   }
 
   public String formatProgressBar(int width, int progress) {
@@ -190,6 +194,22 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
 
   private int ceil(int dividend, int divisor) {
     return ((dividend + divisor) - 1) / divisor;
+  }
+
+  public void reprintLine(PrintWriter out, String line)
+  {
+    if (isRealTerminal()) {
+      out.print(ansi().eraseLine(Ansi.Erase.ALL).a('\r').a(line).toString());
+    }
+    else {
+      out.print('\r' + line);
+    }
+    out.flush();
+  }
+
+  public boolean isRealTerminal()
+  {
+    return REAL_TERMINAL;
   }
 
   @Override
@@ -245,5 +265,31 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     }
 
     return message;
+  }
+
+  private static boolean detectRealTerminal()
+  {
+    if (Boolean.parseBoolean(System.getProperty("jansi.passthrough"))) {
+      return true;
+    }
+
+    if (Boolean.parseBoolean(System.getProperty("jansi.strip"))) {
+      return false;
+    }
+
+    String os = System.getProperty("os.name");
+    if (os.startsWith("Windows")) {
+      return true;
+    }
+
+    try {
+      if (isatty(STDOUT_FILENO) == 0) {
+        return false;
+      }
+    }
+    catch (NoClassDefFoundError | UnsatisfiedLinkError ignore) {
+      // These errors happen if the JNI lib is not available for your platform.
+    }
+    return true;
   }
 }
