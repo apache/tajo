@@ -166,7 +166,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     sout.flush();
   }
 
-  public static String formatProgressBar(int width, int progress) {
+  public String formatProgressBar(int width, int progress) {
     if (progress == 0) {
       return repeat(" ", width);
     }
@@ -188,7 +188,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     return repeat("=", completeLength) + repeat(">", runningLength) + repeat(" ", remainLength);
   }
 
-  private static int ceil(int dividend, int divisor) {
+  private int ceil(int dividend, int divisor) {
     return ((dividend + divisor) - 1) / divisor;
   }
 
