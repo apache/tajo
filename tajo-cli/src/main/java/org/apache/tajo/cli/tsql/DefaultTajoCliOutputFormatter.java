@@ -171,31 +171,21 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
       return repeat(" ", width);
     }
 
-    int pending = 2;
-
     // compute nominal lengths
     int completeLength = min(width, ceil(progress * width, 100));
-    int pendingLength = min(width, ceil(pending * width, 100));
-
-    // leave space for at least one ">" as long as running is > 0
-    int minRunningLength = 1;
-    int runningLength = max(min(width, ceil(1 * width, 100)), minRunningLength);
+    int remainLength = width;
+    int runningLength = 1;
 
     // adjust to fix rounding errors
-    if (((completeLength + runningLength + pendingLength) != width) && (pending > 0)) {
-      // sacrifice "pending" if we're over the max width
-      pendingLength = max(0, width - completeLength - runningLength);
-    }
-    if ((completeLength + runningLength + pendingLength) != width) {
-      // then, sacrifice "running"
-      runningLength = max(minRunningLength, width - completeLength - pendingLength);
-    }
-    if (((completeLength + runningLength + pendingLength) > width) && (progress > 0)) {
-      // finally, sacrifice "complete" if we're still over the limit
-      completeLength = max(0, width - runningLength - pendingLength);
+    if (((completeLength + runningLength + remainLength) != width) && (remainLength > 0)) {
+      remainLength = max(0, width - completeLength - runningLength);
     }
 
-    return repeat("=", completeLength) + repeat(">", runningLength) + repeat(" ", pendingLength);
+    if (((completeLength + runningLength + remainLength) > width) && (progress > 0)) {
+      completeLength = max(0, width - runningLength - remainLength);
+    }
+
+    return repeat("=", completeLength) + repeat(">", runningLength) + repeat(" ", remainLength);
   }
 
   private static int ceil(int dividend, int divisor) {
