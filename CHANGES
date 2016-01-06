@@ -81,6 +81,8 @@ Release 0.11.1 - unreleased
 
   TASKS
 
+    TAJO-1705: Update document for index support. (jihoon)
+
     TAJO-2028: Refining Hive Integration document including typo.
     (Jongyoung Park via jihoon)
 
