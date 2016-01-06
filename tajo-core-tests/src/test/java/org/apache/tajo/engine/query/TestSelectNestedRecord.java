@@ -19,10 +19,10 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -32,7 +32,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect0() throws Exception {
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample1");
-    assertEquals(TUtil.newList("sample1"), tables);
+    assertEquals(Arrays.asList("sample1"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -42,7 +42,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect1() throws Exception {
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample2");
-    assertEquals(TUtil.newList("sample2"), tables);
+    assertEquals(Arrays.asList("sample2"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -52,7 +52,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect2() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
-    assertEquals(TUtil.newList("tweets"), tables);
+    assertEquals(Arrays.asList("tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -62,7 +62,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testSelect3() throws Exception {
     List<String> tables = executeDDL("sample2_ddl.sql", "sample2", "sample5");
-    assertEquals(TUtil.newList("sample5"), tables);
+    assertEquals(Arrays.asList("sample5"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -73,7 +73,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testTAJO_1610() throws Exception {
     executeString("CREATE DATABASE tweets").close();
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets.tweets");
-    assertEquals(TUtil.newList("tweets.tweets"), tables);
+    assertEquals(Arrays.asList("tweets.tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -83,7 +83,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testNestedFieldAsGroupbyKey1() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
-    assertEquals(TUtil.newList("tweets"), tables);
+    assertEquals(Arrays.asList("tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -93,7 +93,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
   public final void testNestedFieldAsJoinKey1() throws Exception {
     List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
-    assertEquals(TUtil.newList("tweets"), tables);
+    assertEquals(Arrays.asList("tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -104,7 +104,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testInsertType1() throws Exception {
     // all columns
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample3");
-    assertEquals(TUtil.newList("sample3"), tables);
+    assertEquals(Arrays.asList("sample3"), tables);
 
     executeString("CREATE TABLE clone (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
 
@@ -118,7 +118,7 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
   public final void testInsertType2() throws Exception {
     // some columns
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample4");
-    assertEquals(TUtil.newList("sample4"), tables);
+    assertEquals(Arrays.asList("sample4"), tables);
 
     executeString("CREATE TABLE clone2 (title TEXT, name RECORD (first_name TEXT, last_name TEXT)) USING JSON;").close();
 

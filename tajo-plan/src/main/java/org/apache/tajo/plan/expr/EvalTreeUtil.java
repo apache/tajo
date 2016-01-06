@@ -33,7 +33,6 @@ import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.util.ExprFinder;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -523,7 +522,7 @@ public class EvalTreeUtil {
 
   public static class EvalFinder extends BasicEvalNodeVisitor<Object, Object> {
     private EvalType targetType;
-    List<EvalNode> evalNodes = TUtil.newList();
+    List<EvalNode> evalNodes = new ArrayList<>();
 
     public EvalFinder(EvalType targetType) {
       this.targetType = targetType;
@@ -546,7 +545,7 @@ public class EvalTreeUtil {
   }
 
   public static class OuterJoinSensitiveEvalFinder extends BasicEvalNodeVisitor<Object, Object> {
-    private List<EvalNode> evalNodes = TUtil.newList();
+    private List<EvalNode> evalNodes = new ArrayList<>();
 
     @Override
     public Object visit(Object context, EvalNode evalNode, Stack<EvalNode> stack) {

@@ -138,6 +138,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1999: TUtil.newList/newLinkedHashMap should be replaced by Java's diamond 
+    operator. (Dongkyu Hwangbo via jihoon)
+
     TAJO-2020: Remove unused import statements in S3TableSpace.
     (Contributed by  Byunghwa Yun, committed by jaehwa)
 

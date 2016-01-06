@@ -55,7 +55,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     numShuffleOutputs = 0;
     avgRows = 0l;
     readBytes = 0l;
-    columnStatses = TUtil.newList();
+    columnStatses = new ArrayList<>();
   }
 
   public TableStats(CatalogProtos.TableStatsProto proto) {
@@ -83,7 +83,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
       this.readBytes = 0l;
     }
 
-    this.columnStatses = TUtil.newList();
+    this.columnStatses = new ArrayList<>();
     for (CatalogProtos.ColumnStatsProto colProto : proto.getColStatList()) {
       if (colProto.getColumn().getDataType().getType() == TajoDataTypes.Type.PROTOBUF) {
         continue;

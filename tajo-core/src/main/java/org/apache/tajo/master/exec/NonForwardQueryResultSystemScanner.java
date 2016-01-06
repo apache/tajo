@@ -60,7 +60,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -767,7 +766,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         this.qual.bind(null, inSchema);
       }
 
-      cachedData = TUtil.newList();
+      cachedData = new ArrayList<>();
       currentRow = 0;
       isClosed = false;
       
