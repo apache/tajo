@@ -32,7 +32,6 @@ import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -72,7 +71,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-    distinctGroupingKeyColumnSet = TUtil.newList();
+    distinctGroupingKeyColumnSet = new ArrayList<>();
     for (Column col : plan.getGroupingColumns()) {
       if (!distinctGroupingKeyColumnSet.contains(col)) {
         distinctGroupingKeyColumnSet.add(col);

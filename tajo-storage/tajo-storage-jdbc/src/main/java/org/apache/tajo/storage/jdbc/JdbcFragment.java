@@ -23,7 +23,8 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.jdbc.JdbcFragmentProtos.JdbcFragmentProto;
-import org.apache.tajo.util.TUtil;
+
+import java.util.Arrays;
 
 public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneable {
   String uri;
@@ -89,7 +90,7 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
     builder.setInputSourceId(this.inputSourceId);
     builder.setUri(this.uri);
     if(hostNames != null) {
-      builder.addAllHosts(TUtil.newList(hostNames));
+      builder.addAllHosts(Arrays.asList(hostNames));
     }
 
     CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();

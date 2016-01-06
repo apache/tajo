@@ -331,7 +331,7 @@ public class LogicalNodeDeserializer {
     }
 
     if (distinctGroupbyProto.getSubPlansCount() > 0) {
-      List<GroupbyNode> subPlans = TUtil.newList();
+      List<GroupbyNode> subPlans = new ArrayList<>();
       for (int i = 0; i < distinctGroupbyProto.getSubPlansCount(); i++) {
         subPlans.add(convertGroupby(context, evalContext, nodeMap, distinctGroupbyProto.getSubPlans(i)));
       }

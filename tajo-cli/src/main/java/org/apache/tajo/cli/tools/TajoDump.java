@@ -28,7 +28,6 @@ import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -169,7 +168,7 @@ public class TajoDump {
     writer.write("\n\n");
 
     // returned list is immutable.
-    List<String> tableNames = TUtil.newList(client.getTableList(databaseName));
+    List<String> tableNames = new ArrayList<>(client.getTableList(databaseName));
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {

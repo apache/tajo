@@ -26,6 +26,7 @@ import java.io.FileOutputStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -36,7 +37,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,7 +69,7 @@ public class TestRuleSession {
 
     @Override
     public List<SelfDiagnosisRule> getDefinedRules() {
-      List<SelfDiagnosisRule> ruleList = TUtil.newList();
+      List<SelfDiagnosisRule> ruleList = new ArrayList<>();
       ruleList.add(new TestRule1());
       ruleList.add(new TestRule2());
       ruleList.add(new TestRule3());
@@ -214,7 +214,7 @@ public class TestRuleSession {
 
     @Override
     public List<SelfDiagnosisRule> getDefinedRules() {
-      List<SelfDiagnosisRule> ruleList = TUtil.newList();
+      List<SelfDiagnosisRule> ruleList = new ArrayList<>();
       ruleList.add(new TestPriorityRule1());
       ruleList.add(new TestPriorityRule2());
       ruleList.add(new TestPriorityRule3());
@@ -320,7 +320,7 @@ public class TestRuleSession {
 
     @Override
     public List<SelfDiagnosisRule> getDefinedRules() {
-      List<SelfDiagnosisRule> ruleList = TUtil.newList();
+      List<SelfDiagnosisRule> ruleList = new ArrayList<>();
       ruleList.add(new TestExecRule1());
       ruleList.add(new TestExecRule2());
       ruleList.add(new TestExecRule3());

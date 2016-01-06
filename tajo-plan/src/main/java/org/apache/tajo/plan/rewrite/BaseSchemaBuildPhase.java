@@ -36,7 +36,6 @@ import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -149,7 +148,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         // columns of every relation should be resolved.
         Iterator<RelationNode> iterator = block.getRelations().iterator();
         Schema schema;
-        List<Column> resolvedColumns = TUtil.newList();
+        List<Column> resolvedColumns = new ArrayList<>();
 
         while (iterator.hasNext()) {
           relationOp = iterator.next();
@@ -187,7 +186,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
     private static List<NamedExpr> voidResolveAsteriskNamedExpr(LogicalPlanner.PlanContext context,
                                                              List<NamedExpr> namedExprs) throws TajoException {
-      List<NamedExpr> rewrittenTargets = TUtil.newList();
+      List<NamedExpr> rewrittenTargets = new ArrayList<>();
       for (NamedExpr originTarget : namedExprs) {
         if (originTarget.getExpr().getType() == OpType.Asterisk) {
           // rewrite targets

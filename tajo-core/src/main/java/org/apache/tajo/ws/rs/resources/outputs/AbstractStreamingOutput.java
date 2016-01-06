@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,26 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.querymaster;
+package org.apache.tajo.ws.rs.resources.outputs;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ResourceProtos.FetchProto;
-import org.apache.tajo.master.event.TaskSchedulerEvent;
-import org.apache.tajo.worker.FetchImpl;
+import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.StreamingOutput;
 
-import java.util.List;
-import java.util.Map;
+public abstract class AbstractStreamingOutput implements StreamingOutput {
+  protected NonForwardQueryResultScanner scanner;
+  protected int count;
+  protected int startOffset;
 
-public class FetchScheduleEvent extends TaskSchedulerEvent {
-  private final Map<String, List<FetchProto>> fetches;  // map of table name and fetch list
-
-  public FetchScheduleEvent(final EventType eventType, final ExecutionBlockId blockId,
-                            final Map<String, List<FetchProto>> fetches) {
-    super(eventType, blockId);
-    this.fetches = fetches;
+  public AbstractStreamingOutput(NonForwardQueryResultScanner scanner, Integer count, Integer startoffset) {
+    this.scanner = scanner;
+    this.count = count;
+    this.startOffset = startoffset;
   }
 
-  public Map<String, List<FetchProto>> getFetches() {
-    return fetches;
+  public abstract boolean hasLength();
+  public abstract int count();
+  public abstract int length();
+
+  public String contentType() {
+    return MediaType.APPLICATION_OCTET_STREAM;
   }
 }

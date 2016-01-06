@@ -157,6 +157,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   public int hashCode() {
     return Objects.hashCode(signature);
   }
+
+  public int hashCodeWithoutType() {
+    return signature.hashCodeWithoutType();
+  }
   
   @Override
   public boolean equals(Object obj) {
@@ -164,6 +168,13 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
       FunctionDesc other = (FunctionDesc) obj;
       if(this.getProto().equals(other.getProto()))
         return true;
+    }
+    return false;
+  }
+
+  public boolean equalsSignature(Object obj) {
+    if (obj instanceof FunctionDesc) {
+      return this.getSignature().equalsWithoutType(((FunctionDesc) obj).getSignature());
     }
     return false;
   }

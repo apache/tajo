@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -212,7 +213,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     if (proto != null) {
       return proto.getPropertiesList();
     } else {
-      List<EnforceProperty> list = TUtil.newList();
+      List<EnforceProperty> list = new ArrayList<>();
       for (List<EnforceProperty> propertyList : properties.values()) {
         list.addAll(propertyList);
       }
