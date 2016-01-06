@@ -46,6 +46,11 @@ and its optimizer.
 * commits@tajo.apache.org - To monitor commits to the source repository.
 
 To subscribe to the mailing lists, please send an email to:
-${listname}-subscribe@tajo.apache.org. For example, to subscribe to
-dev, send an email from your desired subscription address to:
-dev-subscribe@tajo.apache.org and follow the instructions from there.
+
+    ${listname}-subscribe@tajo.apache.org
+
+For example, to subscribe to dev, send an email from your desired subscription address to:
+
+    dev-subscribe@tajo.apache.org
+
+and follow the instructions from there.
