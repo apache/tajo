@@ -26,6 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.ContainerLocalizer;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.pullserver.retriever.DataRetriever;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 
@@ -84,7 +85,7 @@ public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpR
     FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
 
     // Write the content.
-    if (file == null) {
+    if (file.length == 0) {
       HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
       if (!HttpHeaders.isKeepAlive(request)) {
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
@@ -171,7 +172,8 @@ public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpR
       return;
     }
 
-    LOG.error(cause.getMessage(), cause);
+    LOG.error(cause.getMessage());
+    ExceptionUtil.printStackTraceIfError(LOG, cause);
     if (ch.isActive()) {
       sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }

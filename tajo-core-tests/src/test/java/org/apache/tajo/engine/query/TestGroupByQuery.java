@@ -24,7 +24,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
 import org.junit.AfterClass;
@@ -58,7 +57,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @AfterClass
   public static void tearDown() throws Exception {
-    client.unsetSessionVariables(TUtil.newList(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname()));
+    client.unsetSessionVariables(Arrays.asList(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname()));
   }
 
   @Parameters

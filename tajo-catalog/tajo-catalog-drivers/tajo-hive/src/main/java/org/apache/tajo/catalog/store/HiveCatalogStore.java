@@ -55,7 +55,6 @@ import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
 import parquet.hadoop.ParquetOutputFormat;
 
@@ -230,17 +229,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         long totalSize = 0;
         if (properties.getProperty("totalSize") != null) {
           totalSize = Long.parseLong(properties.getProperty("totalSize"));
-        } else {
-          try {
-            FileSystem fs = path.getFileSystem(conf);
-            if (fs.exists(path)) {
-              totalSize = fs.getContentSummary(path).getLength();
-            }
-          } catch (IOException ioe) {
-            throw new TajoInternalError(ioe);
-          }
+          stats.setNumBytes(totalSize);
         }
-        stats.setNumBytes(totalSize);
       }
 
       // set partition keys
@@ -1029,7 +1019,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     List<ColumnProto> parititonColumns = null;
 
     try {
-      partitions = TUtil.newList();
+      partitions = new ArrayList<>();
       client = clientPool.getClient();
 
       List<Partition> hivePartitions = client.getHiveClient().listPartitionsByFilter(databaseName, tableName
@@ -1252,7 +1242,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   public void addPartitions(String databaseName, String tableName, List<CatalogProtos.PartitionDescProto> partitions
     , boolean ifNotExists) {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
-    List<Partition> addPartitions = TUtil.newList();
+    List<Partition> addPartitions = new ArrayList<>();
     CatalogProtos.PartitionDescProto existingPartition = null;
 
     try {

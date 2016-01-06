@@ -27,7 +27,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.*;
 
-import org.apache.tajo.util.TUtil;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;

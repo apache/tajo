@@ -8,6 +8,18 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1944: Support text resultset for REST (DaeMyung)
+
+    TAJO-1950: Query master uses too much memory during range shuffle. (jihoon)
+
+    TAJO-1858: Aligning error message in execute query page of web UI is needed.
+    (Byunghwa Yun via jihoon)
+
+    TAJO-2007: By default, Optimizer should use the table volume in TableStat.
+    (hyunsik)
+
+    TAJO-2022: Add AsyncTaskServer to TajoMaster. (hyunsik)
+
     TAJO-1990: Refine some parts in HBaseTablespace. (hyunsik)
 
     TAJO-2005: Add TableStatUpdateRewriter. (hyunsik)
@@ -58,6 +70,14 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-2034: Files required for executing python functions are not copied in 
+    testEval(). (jihoon)
+
+    TAJO-2037: tajo-storage-hdfs tests occasionally hangs. (jinho)
+
+    TAJO-2025: HBASE_LIB/metrics-core-*.jar should be included in CLASSPATH.
+    (Contributed by Dongkyu Hwangbo, committed by jinho)
 
     TAJO-2016: Fix storage tests hangs. (jinho)
 
@@ -121,6 +141,20 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1705: Update document for index support. (jihoon)
+
+    TAJO-2028: Refining Hive Integration document including typo. 
+    (Jongyoung Park via jihoon)
+
+    TAJO-1999: TUtil.newList/newLinkedHashMap should be replaced by Java's diamond 
+    operator. (Dongkyu Hwangbo via jihoon)
+
+    TAJO-2020: Remove unused import statements in S3TableSpace.
+    (Contributed by  Byunghwa Yun, committed by jaehwa)
+
+    TAJO-2021: Some refactoring and changing anonymous class to lambda expression.
+    (Contributed by Jongyoung Park. Committed by jinho)
+
     TAJO-2019: Replace manual array copy with System.arraycopy(). 
     (Contributed by Dongkyu Hwangbo, committed by jihoon)
 
@@ -173,13 +207,18 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1997: Registering UDF, it needs to check duplication.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-2024: Remove getContentSummary from HCatalogStore. (hyunsik)
+
     TAJO-2004: S3TableSpace needs to extend FileTableSpace. (jaehwa)
 
     TAJO-1960: Separate HDFS space handler and S3 space handler. (jaehwa)
 
-    TAJO-1856: Add a description about the relationship of tablespace, managed table, 
-    and external table to Tablespace section of Table Management chapter. 
-    (Contributed by Jongyoung Park. Committed by jihoon)
+    TAJO-1856: Add a description about the relationship of tablespace, managed 
+    table, and external table to Tablespace section of Table Management 
+    chapter. (Contributed by Jongyoung Park. Committed by jihoon)
 
     TAJO-1922: Allow date types with IN operator for partition pruning. (jaehwa)
 

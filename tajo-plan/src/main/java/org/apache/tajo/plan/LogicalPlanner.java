@@ -51,7 +51,6 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
 import java.net.URI;
 import java.util.*;
@@ -90,7 +89,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock queryBlock;
     EvalTreeOptimizer evalOptimizer;
     TimeZone timeZone;
-    List<Expr> unplannedExprs = TUtil.newList();
+    List<Expr> unplannedExprs = new ArrayList<>();
     boolean debugOrUnitTests;
     Integer noNameSubqueryId = 0;
 
@@ -369,7 +368,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     String [] referenceNames = new String[finalTargetNum];
     ExprNormalizedResult[] normalizedExprList = new ExprNormalizedResult[finalTargetNum];
 
-    List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList = TUtil.newList();
+    List<ExprNormalizer.WindowSpecReferences> windowSpecReferencesList = new ArrayList<>();
 
     List<Integer> targetsIds = normalize(context, projection, normalizedExprList, new Matcher() {
       @Override
@@ -1029,8 +1028,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     ////////////////////////////////////////////////////////
 
     // create EvalNodes and check if each EvalNode can be evaluated here.
-    List<String> aggEvalNames = TUtil.newList();
-    List<AggregationFunctionCallEval> aggEvalNodes = TUtil.newList();
+    List<String> aggEvalNames = new ArrayList<>();
+    List<AggregationFunctionCallEval> aggEvalNodes = new ArrayList<>();
     boolean includeDistinctFunction = false;
     for (Iterator<NamedExpr> iterator = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); iterator.hasNext();) {
       NamedExpr namedExpr = iterator.next();
@@ -1190,7 +1189,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // In this case, this join is the top most one within a query block.
     boolean isTopMostJoin = stack.isEmpty() ? true : stack.peek().getType() != OpType.Join;
     List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode, isTopMostJoin);
-    List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
+    List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
 
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
@@ -1214,7 +1213,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     EvalNode evalNode;
-    List<String> newlyEvaluatedExprs = TUtil.newList();
+    List<String> newlyEvaluatedExprs = new ArrayList<>();
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); it.hasNext();) {
       NamedExpr namedExpr = it.next();
       try {
@@ -1285,7 +1284,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     block.addJoinType(join.getJoinType());
 
     EvalNode evalNode;
-    List<String> newlyEvaluatedExprs = TUtil.newList();
+    List<String> newlyEvaluatedExprs = new ArrayList<>();
     for (Iterator<NamedExpr> it = block.namedExprsMgr.getIteratorForUnevaluatedExprs(); it.hasNext();) {
       NamedExpr namedExpr = it.next();
       try {
@@ -1298,7 +1297,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } catch (UndefinedColumnException ve) {}
     }
 
-    List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
+    List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
     for (String newAddedExpr : newlyEvaluatedExprs) {
       targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
     }
@@ -1729,7 +1728,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.
-      List<Target> targets = TUtil.newList();
+      List<Target> targets = new ArrayList<>();
 
       for (Column column : tableSchema.getAllColumns()) {
         int idxInProjectionNode = targetColumns.getIndex(column);

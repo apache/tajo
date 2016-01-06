@@ -1,6 +1,6 @@
-*************************************
+****************
 Hive Integration
-*************************************
+****************
 
 Apache Tajo™ catalog supports HiveCatalogStore to integrate with Apache Hive™.
 This integration allows Tajo to access all tables used in Apache Hive. 
@@ -12,16 +12,22 @@ and then add some configs into ``conf/tajo-env.sh`` and ``conf/catalog-site.xml`
 This section describes how to setup HiveMetaStore integration.
 This instruction would take no more than five minutes.
 
-You need to set your Hive home directory to the environment variable ``HIVE_HOME`` in conf/tajo-env.sh as follows: ::
+You need to set your Hive home directory to the environment variable **HIVE_HOME** in ``conf/tajo-env.sh`` as follows:
+
+.. code-block:: sh
 
   export HIVE_HOME=/path/to/your/hive/directory
 
 If you need to use jdbc to connect HiveMetaStore, you have to prepare MySQL jdbc driver.
-Next, you should set the path of MySQL JDBC driver jar file to the environment variable HIVE_JDBC_DRIVER_DIR in conf/tajo-env.sh as follows: ::
+Next, you should set the path of MySQL JDBC driver jar file to the environment variable **HIVE_JDBC_DRIVER_DIR** in ``conf/tajo-env.sh`` as follows:
 
-  export HIVE_JDBC_DRIVER_DIR==/path/to/your/mysql_jdbc_driver/mysql-connector-java-x.x.x-bin.jar
+.. code-block:: sh
 
-Finally, you should specify HiveCatalogStore as Tajo catalog driver class in ``conf/catalog-site.xml`` as follows: ::
+  export HIVE_JDBC_DRIVER_DIR=/path/to/your/mysql_jdbc_driver/mysql-connector-java-x.x.x-bin.jar
+
+Finally, you should specify HiveCatalogStore as Tajo catalog driver class in ``conf/catalog-site.xml`` as follows:
+
+.. code-block:: xml
 
   <property>
     <name>tajo.catalog.store.class</name>
@@ -30,13 +36,17 @@ Finally, you should specify HiveCatalogStore as Tajo catalog driver class in ``c
 
 .. note::
 
-  Hive stores a list of partitions for each table in its metastore. If new partitions are
-  directly added to HDFS, HiveMetastore will not able aware of these partitions unless the user
+  Hive stores a list of partitions for each table in its metastore. When new partitions are
+  added directly to HDFS, HiveMetastore can't recognize these partitions until the user executes
   ``ALTER TABLE table_name ADD PARTITION`` commands on each of the newly added partitions or
-  ``MSCK REPAIR TABLE  table_name`` command.
+  ``MSCK REPAIR TABLE table_name`` command.
 
-  But current tajo doesn't provide ``ADD PARTITION`` command and hive doesn't provide an api for
-  responding to ``MSK REPAIR TABLE`` command. Thus, if you insert data to hive partitioned
-  table and you want to scan the updated partitions through Tajo, you must run following command on hive ::
+  But current Tajo doesn't provide ``ADD PARTITION`` command and Hive doesn't provide an api for
+  responding to ``MSK REPAIR TABLE`` command. Thus, if you insert data to Hive partitioned
+  table and you want to scan the updated partitions through Tajo, you must run following command on Hive
+  (see `Hive doc <https://cwiki.apache.org/confluence/display/Hive/LanguageManual+DDL#LanguageManualDDL-RecoverPartitions(MSCKREPAIRTABLE)>`_
+  for more details of the command):
 
-  $ MSCK REPAIR TABLE [table_name];
+  .. code-block:: sql
+
+    MSCK REPAIR TABLE [table_name];

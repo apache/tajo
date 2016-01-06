@@ -441,6 +441,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
    runSimpleTests();
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest
@@ -448,6 +449,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest
