@@ -612,6 +612,7 @@ public class TajoCli implements Closeable {
         }
 
         if (TajoClientUtil.isQueryComplete(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
+          sout.println();
           break;
         } else {
           Thread.sleep(Math.min(200 * progressRetries, 1000));
@@ -619,7 +620,6 @@ public class TajoCli implements Closeable {
         }
       }
 
-      sout.println();
       if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
         displayFormatter.printErrorMessage(sout, status);
         wasError = true;
