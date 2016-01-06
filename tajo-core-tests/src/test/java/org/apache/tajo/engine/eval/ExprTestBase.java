@@ -34,15 +34,19 @@ import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.plan.*;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
@@ -60,6 +64,7 @@ import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -278,6 +283,9 @@ public class ExprTestBase {
     EvalContext evalContext = new EvalContext();
 
     try {
+      if (needPythonFileCopy()) {
+        PythonScriptEngine.initPythonScriptEngineFiles();
+      }
       targets = getRawTargets(queryContext, query, condition);
 
       EvalCodeGenerator codegen = null;
@@ -333,6 +341,11 @@ public class ExprTestBase {
       }
       QueryExecutor.stopScriptExecutors(evalContext);
     }
+  }
+
+  private static boolean needPythonFileCopy() {
+    File contoller = new File(PythonScriptEngine.getControllerPath());
+    return !contoller.exists();
   }
 
   public static void assertEvalTreeProtoSerDer(OverridableConf context, EvalNode evalNode) {

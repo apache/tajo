@@ -71,6 +71,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2034: Files required for executing python functions are not copied in 
+    testEval(). (jihoon)
+
     TAJO-2037: tajo-storage-hdfs tests occasionally hangs. (jinho)
 
     TAJO-2025: HBASE_LIB/metrics-core-*.jar should be included in CLASSPATH.
