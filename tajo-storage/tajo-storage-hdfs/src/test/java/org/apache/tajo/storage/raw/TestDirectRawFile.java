@@ -47,7 +47,9 @@ import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.ProtoUtil;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -55,6 +57,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -71,6 +74,9 @@ public class TestDirectRawFile {
 
   private TajoConf tajoConf;
   private Path testDir;
+
+  @Rule
+  public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
 
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() throws IOException {
@@ -161,7 +167,7 @@ public class TestDirectRawFile {
     return writeRowBlock(conf, meta, rowBlock, outputFile);
   }
 
-  @Test(timeout = 60000)
+  @Test
   public void testRWForAllTypesWithNextTuple() throws IOException {
     int rowNum = 10000;
 
@@ -191,7 +197,7 @@ public class TestDirectRawFile {
     assertEquals(rowNum, j);
   }
 
-  @Test(timeout = 60000)
+  @Test
   public void testRepeatedScan() throws IOException {
     int rowNum = 2;
 
@@ -219,7 +225,7 @@ public class TestDirectRawFile {
     reader.close();
   }
 
-  @Test(timeout = 60000)
+  @Test
   public void testReset() throws IOException {
     int rowNum = 2;
 
