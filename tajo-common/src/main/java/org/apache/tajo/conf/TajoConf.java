@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 public class TajoConf extends Configuration {
   private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
-  
+
   private static final Map<String, ConfVars> vars = new HashMap<>();
 
   static {
@@ -121,7 +121,7 @@ public class TajoConf extends Configuration {
     ///////////////////////////////////////////////////////////////////////////////////////
 
     // a username for a running Tajo cluster
-    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/", 
+    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/",
         Validators.groups(Validators.notNull(), Validators.pathUrl())),
     USERNAME("tajo.username", "${user.name}", Validators.javaString()),
 
@@ -140,7 +140,7 @@ public class TajoConf extends Configuration {
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
 
     // Tajo Rest Service
-    REST_SERVICE_ADDRESS("tajo.rest.service-http.address", "0.0.0.0:26880", Validators.networkAddr()),
+    REST_SERVICE_ADDRESS("tajo.rest.service.address", "0.0.0.0:26880", Validators.networkAddr()),
 
     // High availability configurations
     TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
@@ -432,7 +432,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.STRING;
     }
-    
+
     ConfVars(String varname, String defaultVal, Validator validator) {
       this(varname, defaultVal);
       this.validator = validator;
@@ -448,7 +448,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.INT;
     }
-    
+
     ConfVars(String varname, int defaultIntVal, Validator validator) {
       this(varname, defaultIntVal);
       this.validator = validator;
@@ -464,7 +464,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.LONG;
     }
-    
+
     ConfVars(String varname, long defaultLongVal, Validator validator) {
       this(varname, defaultLongVal);
       this.validator = validator;
@@ -480,7 +480,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.FLOAT;
     }
-    
+
     ConfVars(String varname, float defaultFloatVal, Validator validator) {
       this(varname, defaultFloatVal);
       this.validator = validator;
@@ -496,7 +496,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = defaultBoolVal;
       this.type = VarType.BOOLEAN;
     }
-    
+
     ConfVars(String varname, boolean defaultBoolVal, Validator validator) {
       this(varname, defaultBoolVal);
       this.validator = validator;
@@ -847,11 +847,11 @@ public class TajoConf extends Configuration {
       return new Path(systemConfPathStr);
     }
   }
-  
+
   /**
    * validateProperty function will fetch pre-defined configuration property by keyname.
    * If found, it will validate the supplied value with these validators.
-   * 
+   *
    * @param name - a string containing specific key
    * @param value - a string containing value
    * @throws ConstraintViolationException
