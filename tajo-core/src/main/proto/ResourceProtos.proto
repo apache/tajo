@@ -80,15 +80,17 @@ message FetchProto {
     required ExecutionBlockIdProto executionBlockId = 4;
     required int32 partitionId = 5;
     required string name = 6;
-    optional string rangeParams = 7;
-    optional bool hasNext = 8 [default = false];
+    optional bytes range_start = 7;
+    optional bytes range_end = 8;
+    optional bool range_last_inclusive = 9;
+    optional bool has_next = 10 [default = false];
 
-    //repeated part
-    repeated int32 taskId = 9 [packed=true];
-    repeated int32 attemptId = 10 [packed=true];
+    // repeated part
+    repeated int32 task_id = 11 [packed = true];
+    repeated int32 attempt_id = 12 [packed = true];
 
-    optional int64 offset = 11;
-    optional int64 length = 12;
+    optional int64 offset = 13;
+    optional int64 length = 14;
 }
 
 message TaskStatusProto {

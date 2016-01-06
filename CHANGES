@@ -7,6 +7,11 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1950: Query master uses too much memory during range shuffle. (jihoon)
+
+    TAJO-1858: Aligning error message in execute query page of web UI is needed.
+    (Byunghwa Yun via jihoon)
+
     TAJO-1979: Usage of some TajoShellCommand is omitted.
     (Contributed by Dongkyu Hwangbo, committed by jaehwa)
 
@@ -23,6 +28,9 @@ Release 0.11.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-2025: HBASE_LIB/metrics-core-*.jar should be included in CLASSPATH.
+    (Contributed by Dongkyu Hwangbo, committed by jinho)
 
     TAJO-2016: Fix storage tests hangs. (jinho)
 
