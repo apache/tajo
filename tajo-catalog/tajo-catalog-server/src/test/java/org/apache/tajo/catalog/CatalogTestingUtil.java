@@ -144,14 +144,14 @@ public class CatalogTestingUtil {
     String[] partitionNames = partitionName.split("/");
 
     List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
-    for (String partitionName : partitionNames) {
-      String[] splits = partitionName.split("=");
+    for (String partition : partitionNames) {
+      String[] splits = partition.split("=");
       String columnName = "", partitionValue = "";
       if (splits.length == 2) {
         columnName = splits[0];
         partitionValue = splits[1];
       } else if (splits.length == 1) {
-        if (partitionName.charAt(0) == '=') {
+        if (partition.charAt(0) == '=') {
           partitionValue = splits[0];
         } else {
           columnName = "";
