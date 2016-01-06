@@ -138,6 +138,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2028: Refining Hive Integration document including typo. 
+    (Jongyoung Park via jihoon)
+
     TAJO-1999: TUtil.newList/newLinkedHashMap should be replaced by Java's diamond 
     operator. (Dongkyu Hwangbo via jihoon)
 
