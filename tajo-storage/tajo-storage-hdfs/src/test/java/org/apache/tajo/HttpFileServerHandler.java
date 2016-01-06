@@ -25,15 +25,14 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 public class HttpFileServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
   
@@ -84,11 +83,12 @@ public class HttpFileServerHandler extends SimpleChannelInboundHandler<FullHttpR
     ChannelFuture lastContentFuture;
     if (ctx.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
-      lastContentFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)));
+      lastContentFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)),
+          ctx.newProgressivePromise());
     } else {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, fileLength);
-      writeFuture = ctx.write(region);
+      writeFuture = ctx.write(region, ctx.newProgressivePromise());
       lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
       writeFuture.addListener(new ChannelProgressiveFutureListener() {
         @Override
@@ -99,7 +99,7 @@ public class HttpFileServerHandler extends SimpleChannelInboundHandler<FullHttpR
 
         @Override
         public void operationComplete(ChannelProgressiveFuture future) throws Exception {
-          region.release();
+          LOG.trace(future.channel() + " Transfer complete.");
         }
       });
     }
