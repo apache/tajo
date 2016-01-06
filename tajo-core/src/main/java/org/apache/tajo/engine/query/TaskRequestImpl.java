@@ -256,8 +256,8 @@ public class TaskRequestImpl implements TaskRequest {
 		  builder.setInterQuery(this.interQuery);
 		}
     if (this.fetches != null) {
-      for (FetchProto fetche : fetches) {
-        builder.addFetches(fetche);
+      for (FetchProto fetch : fetches) {
+        builder.addFetches(fetch);
       }
     }
     if (this.queryMasterHostAndPort != null) {

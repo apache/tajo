@@ -363,11 +363,9 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       List<Column> groupingKeyColumnList = new ArrayList<>(distinctGroupingKeyColumnSet);
 
       Column[] keyColumns = groupbyNode.getGroupingColumns();
-      Column col;
       for (Column keyColumn : keyColumns) {
-        col = keyColumn;
-        if (!distinctGroupingKeyColumnSet.contains(col)) {
-          groupingKeyColumnList.add(col);
+        if (!distinctGroupingKeyColumnSet.contains(keyColumn)) {
+          groupingKeyColumnList.add(keyColumn);
         }
       }
       Column[] groupingKeyColumns = groupingKeyColumnList.toArray(new Column[groupingKeyColumnList.size()]);
