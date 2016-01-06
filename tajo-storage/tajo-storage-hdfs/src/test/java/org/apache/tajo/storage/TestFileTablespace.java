@@ -65,7 +65,7 @@ public class TestFileTablespace {
 	}
 
   public static HdfsConfiguration getTestHdfsConfiguration() {
-    HdfsConfiguration conf = new HdfsConfiguration(false);
+    HdfsConfiguration conf = new HdfsConfiguration();
     String testDataPath = new File(TEST_PATH + "/" + UUID.randomUUID().toString()).getAbsolutePath();
 
     String namenodeDir = new File(testDataPath, "name").getAbsolutePath();
@@ -237,8 +237,7 @@ public class TestFileTablespace {
       assertTrue(fs.exists(tablePath));
 
       FileTablespace sm = new FileTablespace("testGetSplitWithBlockStorageLocationsBatching", fs.getUri(), null);
-      conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
-      sm.init(conf);
+      sm.init(new TajoConf(hdfsConf));
       TablespaceManager.addTableSpaceForTest(sm);
       assertEquals(fs.getUri(), sm.getUri());
 
