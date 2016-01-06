@@ -17,6 +17,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.JSPUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -507,14 +508,20 @@ public class QueryExecutorServlet extends HttpServlet {
         numOfRows = resultRows;
       }
 
+      int currentResultSize = 0;
       int rowCount = 0;
       while (res.next()) {
-        if(rowCount > numOfRows) {
+        if(rowCount > numOfRows || currentResultSize > sizeLimit) {
           break;
         }
         List<Object> row = new ArrayList<>();
         for(int i = 0; i < numOfColumns; i++) {
-          row.add(String.valueOf(res.getObject(i + 1)));
+          String columnValue = String.valueOf(res.getObject(i + 1));
+          try {
+	    currentResultSize += columnValue.getBytes(Bytes.UTF8_ENCODING).length;
+	  } catch (Exception e) {
+	  }
+          row.add(columnValue);
         }
         queryResult.add(row);
         rowCount++;
