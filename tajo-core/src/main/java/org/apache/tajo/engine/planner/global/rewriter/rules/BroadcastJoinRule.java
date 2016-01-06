@@ -33,7 +33,6 @@ import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.unit.StorageUnit;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 
 import java.util.*;
@@ -143,7 +142,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         // When every child is a broadcast candidate, enforce non-broadcast for the largest relation for the join to be
         // computed at the node who stores such largest relation.
         if (isFullyBroadcastable(current)) {
-          List<ScanNode> broadcastCandidates = TUtil.newList(current.getBroadcastRelations());
+          List<ScanNode> broadcastCandidates = new ArrayList<>(current.getBroadcastRelations());
           Collections.sort(broadcastCandidates, relSizeComparator);
 
           current.removeBroadcastRelation(broadcastCandidates.remove(broadcastCandidates.size()-1));
@@ -244,7 +243,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
             context.estimatedEbOutputSize.put(current.getId(), outputVolume);
           }
         } else {
-          List<ScanNode> relations = TUtil.newList(current.getBroadcastRelations());
+          List<ScanNode> relations = new ArrayList<>(current.getBroadcastRelations());
           for (ScanNode eachRelation : relations) {
             current.removeBroadcastRelation(eachRelation);
           }
@@ -387,7 +386,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      * @param block
      */
     private void checkTotalSizeOfBroadcastableRelations(Context context, ExecutionBlock block) {
-      List<ScanNode> broadcastCandidates = TUtil.newList(block.getBroadcastRelations());
+      List<ScanNode> broadcastCandidates = new ArrayList<>(block.getBroadcastRelations());
       Collections.sort(broadcastCandidates, relSizeComparator);
 
       // Enforce broadcast for candidates in ascending order of relation size
@@ -449,7 +448,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private void addUnionNodeIfNecessary(Map<ExecutionBlockId, ExecutionBlockId> unionScanMap, MasterPlan plan,
                                          ExecutionBlock child, ExecutionBlock current) {
       if (unionScanMap != null) {
-        List<ExecutionBlockId> unionScans = TUtil.newList();
+        List<ExecutionBlockId> unionScans = new ArrayList<>();
         ExecutionBlockId representativeId = null;
         if (unionScanMap.containsKey(child.getId())) {
           representativeId = unionScanMap.get(child.getId());

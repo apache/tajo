@@ -33,7 +33,6 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -165,7 +164,7 @@ public class TestMergeScanner {
     targetSchema.addColumn(schema.getColumn(0));
     targetSchema.addColumn(schema.getColumn(2));
 
-    Scanner scanner = new MergeScanner(conf, schema, meta, TUtil.newList(fragment), targetSchema);
+    Scanner scanner = new MergeScanner(conf, schema, meta, Arrays.asList(fragment), targetSchema);
     assertEquals(isProjectableStorage(meta.getDataFormat()), scanner.isProjectable());
 
     scanner.init();

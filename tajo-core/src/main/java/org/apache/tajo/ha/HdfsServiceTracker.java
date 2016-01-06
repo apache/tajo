@@ -33,11 +33,11 @@ import org.apache.tajo.service.HAServiceTracker;
 import org.apache.tajo.service.ServiceTrackerException;
 import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -302,7 +302,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
   @Override
   public List<TajoMasterInfo> getMasters() throws IOException {
-    List<TajoMasterInfo> list = TUtil.newList();
+    List<TajoMasterInfo> list = new ArrayList<>();
 
     FileStatus[] files = fs.listStatus(activePath);
     for(FileStatus status : files) {
@@ -496,12 +496,12 @@ public class HdfsServiceTracker extends HAServiceTracker {
         throw new ServiceTrackerException("Active master entry must be a file, but it is a directory.");
       }
 
-      List<String> addressElements = TUtil.newList();
+      List<String> addressElements = new ArrayList<>();
 
       FSDataInputStream stream = fs.open(activeMasterEntry);
       String data = stream.readUTF();
       stream.close();
-      addressElements.addAll(TUtil.newList(data.split("_"))); // Add remains entries to elements
+      addressElements.addAll(Arrays.asList(data.split("_"))); // Add remains entries to elements
 
       // ensure the number of entries
       Preconditions.checkState(addressElements.size() == 5, "Fewer service addresses than necessary.");

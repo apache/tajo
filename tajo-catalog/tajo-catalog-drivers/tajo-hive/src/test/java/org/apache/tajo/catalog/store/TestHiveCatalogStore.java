@@ -39,7 +39,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -297,7 +296,7 @@ public class TestHiveCatalogStore {
     testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150101");
     testAddPartition(table1.getUri(), NATION, "n_nationkey=30/n_date=20150102");
 
-    List<String> partitionNames = TUtil.newList();
+    List<String> partitionNames = new ArrayList<>();
     partitionNames.add("n_nationkey=40/n_date=20150801");
     partitionNames.add("n_nationkey=40/n_date=20150802");
     partitionNames.add("n_nationkey=50/n_date=20150801");
@@ -445,7 +444,7 @@ public class TestHiveCatalogStore {
   }
 
   private void testAddPartitions(URI uri, String tableName, List<String> partitionNames) throws Exception {
-    List<CatalogProtos.PartitionDescProto> partitions = TUtil.newList();
+    List<CatalogProtos.PartitionDescProto> partitions = new ArrayList<>();
     for (String partitionName : partitionNames) {
       CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
       builder.setPartitionName(partitionName);

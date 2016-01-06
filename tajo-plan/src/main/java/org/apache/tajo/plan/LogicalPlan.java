@@ -288,7 +288,7 @@ public class LogicalPlan {
   }
 
   public List<QueryBlock> getChildBlocks(QueryBlock block) {
-    List<QueryBlock> childBlocks = TUtil.newList();
+    List<QueryBlock> childBlocks = new ArrayList<>();
     for (String blockName : queryBlockGraph.getChilds(block.getName())) {
       childBlocks.add(queryBlocks.get(blockName));
     }
@@ -431,7 +431,7 @@ public class LogicalPlan {
     private final Map<String, List<String>> relationAliasMap = new HashMap<>();
     private final Map<String, String> columnAliasMap = new HashMap<>();
     private final Map<OpType, List<Expr>> operatorToExprMap = new HashMap<>();
-    private final List<RelationNode> relationList = TUtil.newList();
+    private final List<RelationNode> relationList = new ArrayList<>();
     private final Map<Integer, List<AccessPathInfo>> relNodePidAccessPathMap = new HashMap<>();
     private boolean hasWindowFunction = false;
     private final Map<String, ConstEval> constantPoolByRef = Maps.newHashMap();

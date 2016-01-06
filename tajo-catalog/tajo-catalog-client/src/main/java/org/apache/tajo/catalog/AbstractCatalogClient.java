@@ -33,7 +33,6 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.util.ProtoUtil;
-import org.apache.tajo.util.TUtil;
 
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -782,7 +781,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final IndexListResponse response = stub.getAllIndexesByTable(null, proto);
       ensureOk(response.getState());
 
-      List<IndexDesc> indexDescs = TUtil.newList();
+      List<IndexDesc> indexDescs = new ArrayList<>();
       for (IndexDescProto descProto : response.getIndexDescList()) {
         indexDescs.add(new IndexDesc(descProto));
       }

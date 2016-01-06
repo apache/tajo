@@ -32,7 +32,6 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -65,7 +64,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
   }
 
   static List<InEval> extractInSubquery(EvalNode qual) {
-    List<InEval> inSubqueries = TUtil.newList();
+    List<InEval> inSubqueries = new ArrayList<>();
     for (EvalNode eachQual : EvalTreeUtil.findEvalsByType(qual, EvalType.IN)) {
       InEval inEval = (InEval) eachQual;
       if (inEval.getRightExpr().getType() == EvalType.SUBQUERY) {
@@ -127,7 +126,8 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
         joinNode.setInSchema(inSchema);
         joinNode.setOutSchema(node.getOutSchema());
 
-        List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(inSchema));
+        List<Target> targets = new ArrayList<>();
+        targets.addAll(PlannerUtil.schemaToTargets(inSchema));
         joinNode.setTargets(targets);
 
         block.addJoinType(joinType);
@@ -140,7 +140,7 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
       
       // 4. remove in quals
       EvalNode[] originDnfs = AlgebraicUtil.toDisjunctiveNormalFormArray(node.getQual());
-      List<EvalNode> rewrittenDnfs = TUtil.newList();
+      List<EvalNode> rewrittenDnfs = new ArrayList<>();
       for (EvalNode eachDnf : originDnfs) {
         Set<EvalNode> cnfs = new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(eachDnf)));
         cnfs.removeAll(inSubqueries);

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.rewrite;
+package org.apache.tajo.ws.rs.annotation;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class BaseLogicalPlanPreprocessPhaseProvider extends LogicalPlanPreprocessPhaseProvider {
-  @Override
-  public Collection<Class<? extends LogicalPlanPreprocessPhase>> getPhases() {
-    List phases = new ArrayList<>();
-    phases.add(BaseSchemaBuildPhase.class);
-    phases.add(SelfDescSchemaBuildPhase.class);
-    return phases;
-  }
+/**
+ * Definition of the return type of Rest API.
+ * According to the output type, Rest APIs return their results in text or binary.
+ */
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+public @interface RestReturnType {
+    String mimeType();
 }

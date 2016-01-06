@@ -20,9 +20,9 @@ package org.apache.tajo.plan.function.stream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.util.TUtil;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +41,7 @@ public class StreamingUtil {
    */
   public static ProcessBuilder createProcess(String[] argv) {
     // Set the actual command to run with 'bash -c exec ...'
-    List<String> cmdArgs = TUtil.newList();
+    List<String> cmdArgs = new ArrayList<>();
 
     StringBuffer argBuffer = new StringBuffer();
     for (String arg : argv) {

@@ -122,40 +122,8 @@ public class TUtil {
     return result;
   }
 
-  public static <K,V> Map<K,V> newLinkedHashMap() {
-    return new LinkedHashMap<>();
-  }
-
-  public static <K, V> Map<K,V> newLinkedHashMap(K k, V v) {
-    HashMap<K, V> newMap = new LinkedHashMap<>();
-    newMap.put(k, v);
-    return newMap;
-  }
-
   public static <K,V> Map<K,V> newConcurrentHashMap() {
     return new ConcurrentHashMap<>();
-  }
-
-  public static <T> List<T> newList() {
-    return new ArrayList<>();
-  }
-
-  public static <T> List<T> newList(T...items) {
-    List<T> list = new ArrayList<>();
-    for (T t : items) {
-      list.add(t);
-    }
-
-    return list;
-  }
-
-  public static <T> List<T> newList(Collection<T> items) {
-    List<T> list = new ArrayList<>();
-    for (T t : items) {
-      list.add(t);
-    }
-
-    return list;
   }
 
   /**
@@ -176,7 +144,9 @@ public class TUtil {
     if (map.containsKey(k1)) {
       map.get(k1).add(value);
     } else {
-      map.put(k1, TUtil.newList(value));
+      List inputList = new ArrayList<>();
+      inputList.add(value);
+      map.put(k1, inputList);
     }
   }
 
@@ -185,7 +155,7 @@ public class TUtil {
     if (map.containsKey(k1)) {
       map.get(k1).addAll(list);
     } else {
-      map.put(k1, TUtil.newList(list));
+      map.put(k1, new ArrayList<>(list));
     }
   }
 
@@ -194,7 +164,9 @@ public class TUtil {
     if (map.containsKey(k1)) {
       map.get(k1).put(k2, value);
     } else {
-      map.put(k1, TUtil.newLinkedHashMap(k2, value));
+      HashMap<KEY2, VALUE> newMap = new LinkedHashMap<>();
+      newMap.put(k2, value);
+      map.put(k1, newMap);
     }
   }
 

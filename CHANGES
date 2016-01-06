@@ -8,6 +8,13 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1944: Support text resultset for REST (DaeMyung)
+
+    TAJO-1950: Query master uses too much memory during range shuffle. (jihoon)
+
+    TAJO-1858: Aligning error message in execute query page of web UI is needed.
+    (Byunghwa Yun via jihoon)
+
     TAJO-2007: By default, Optimizer should use the table volume in TableStat.
     (hyunsik)
 
@@ -63,6 +70,11 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-2034: Files required for executing python functions are not copied in 
+    testEval(). (jihoon)
+
+    TAJO-2037: tajo-storage-hdfs tests occasionally hangs. (jinho)
 
     TAJO-2025: HBASE_LIB/metrics-core-*.jar should be included in CLASSPATH.
     (Contributed by Dongkyu Hwangbo, committed by jinho)
@@ -128,6 +140,14 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-1705: Update document for index support. (jihoon)
+
+    TAJO-2028: Refining Hive Integration document including typo. 
+    (Jongyoung Park via jihoon)
+
+    TAJO-1999: TUtil.newList/newLinkedHashMap should be replaced by Java's diamond 
+    operator. (Dongkyu Hwangbo via jihoon)
 
     TAJO-2020: Remove unused import statements in S3TableSpace.
     (Contributed by  Byunghwa Yun, committed by jaehwa)

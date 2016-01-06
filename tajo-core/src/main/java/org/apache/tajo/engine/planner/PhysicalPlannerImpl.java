@@ -61,6 +61,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
@@ -928,11 +929,11 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
         if (broadcastFlag) {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<Fragment> fileFragments = TUtil.newList();
+          List<Fragment> fileFragments = new ArrayList<>();
 
           FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(TUtil.newList(space.split(scanNode.getCanonicalName(), path)));
+            fileFragments.addAll(Arrays.asList(space.split(scanNode.getCanonicalName(), path)));
           }
 
           FragmentProto[] fragments =
