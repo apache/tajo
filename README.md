@@ -37,12 +37,9 @@ and its optimizer.
 ## Mailing lists
 
 * dev@tajo.apache.org     - To discuss and ask general development issues.
-
 * user@tajo.apache.org    - To discuss and ask end-user questions/issues.
-
 * issues@tajo.apache.org  - To see notifications made in the Tajo issue
                             tracking system, review board, and Jenkins CI.
-
 * commits@tajo.apache.org - To monitor commits to the source repository.
 
 To subscribe to the mailing lists, please send an email to:
