@@ -198,7 +198,6 @@ public class QueryExecutorServlet extends HttpServlet {
             errorResponse(response, queryRunner.error);
             return;
           }
-          returnValue.put("numOfRows", queryRunner.numOfRows);
           returnValue.put("resultSize", queryRunner.resultRows);
           returnValue.put("resultData", queryRunner.queryResult);
           returnValue.put("resultColumns", queryRunner.columnNames);
@@ -287,7 +286,6 @@ public class QueryExecutorServlet extends HttpServlet {
     String database;
     long resultRows;
     int sizeLimit;
-    long numOfRows;
     Exception error;
 
     AtomicInteger progress = new AtomicInteger(0);
@@ -502,16 +500,10 @@ public class QueryExecutorServlet extends HttpServlet {
       }
       queryResult = new ArrayList<>();
 
-      if(sizeLimit < resultRows) {
-        numOfRows = (long)((float)(resultRows) * ((float)sizeLimit / (float) resultRows));
-      } else {
-        numOfRows = resultRows;
-      }
-
       int currentResultSize = 0;
       int rowCount = 0;
       while (res.next()) {
-        if(rowCount > numOfRows || currentResultSize > sizeLimit) {
+        if(currentResultSize > sizeLimit) {
           break;
         }
         List<Object> row = new ArrayList<>();
