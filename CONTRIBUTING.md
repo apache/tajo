@@ -2,10 +2,10 @@
 
 ## GitHub process
 
-* Fork (and then git clone https://github.com/<your-username-here>/tajo.git).
-* Create a branch (git checkout -b branch_name).
-* Commit your changes (git commit -am "Description of contribution").
-* Push the branch (git push origin branch_name).
+* Fork (and then `git clone https://github.com/<your-username-here>/tajo.git`).
+* Create a branch (`git checkout -b branch_name`).
+* Commit your changes (`git commit -am "Description of contribution"`).
+* Push the branch (`git push origin branch_name`).
 * Open a Pull Request.
 * Thank you for your contribution! Wait for a response...
 
