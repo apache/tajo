@@ -48,7 +48,6 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;

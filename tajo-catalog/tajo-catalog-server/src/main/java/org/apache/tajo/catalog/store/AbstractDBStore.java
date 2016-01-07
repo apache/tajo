@@ -242,7 +242,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     
     String sql = "SELECT version FROM META";
     if (LOG.isDebugEnabled()) {
-      LOG.debug(sql.toString());
+      LOG.debug(sql);
     }
 
     try (PreparedStatement pstmt = getConnection().prepareStatement(sql);
@@ -1402,10 +1402,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     String sql = "SELECT TID FROM TABLES WHERE DB_ID = ? AND " + COL_TABLES_NAME + "=?";
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug(sql.toString());
+      LOG.debug(sql);
     }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql.toString())) {
+    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
       int dbid = getDatabaseId(databaseName);
 
       pstmt.setInt(1, dbid);
@@ -3006,10 +3006,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     String sql = "SELECT COLUMN_NAME FROM " + TB_COLUMNS + " WHERE TID = ? AND COLUMN_NAME = ?";
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug(sql.toString());
+      LOG.debug(sql);
     }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(sql.toString())) {
+    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
       pstmt.setInt(1, tableId);
       pstmt.setString(2, columnName);
       res = pstmt.executeQuery();

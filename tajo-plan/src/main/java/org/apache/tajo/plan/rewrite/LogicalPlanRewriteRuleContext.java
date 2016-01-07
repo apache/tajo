@@ -21,7 +21,7 @@ package org.apache.tajo.plan.rewrite;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.storage.StorageService;
+import org.apache.tajo.plan.StorageService;
 
 public class LogicalPlanRewriteRuleContext {
 

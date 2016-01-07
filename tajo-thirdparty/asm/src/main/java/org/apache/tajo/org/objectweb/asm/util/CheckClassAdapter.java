@@ -215,7 +215,7 @@ public class CheckClassAdapter extends ClassVisitor {
 
         List<Type> interfaces = new ArrayList<>();
         for (Iterator<String> i = cn.interfaces.iterator(); i.hasNext();) {
-            interfaces.add(Type.getObjectType(i.next().toString()));
+            interfaces.add(Type.getObjectType(i.next()));
         }
 
         for (int i = 0; i < methods.size(); ++i) {

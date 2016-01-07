@@ -8,6 +8,13 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2040: Decrease the default size of max request for locality. (jinho)
+
+    TAJO-2035: Rewrite README file using Markdown format. 
+    (Dongkyu Hwangbo via jinho)
+
+    TAJO-1991: Tablespace::getVolume should take filter predication. (hyunsik)
+
     TAJO-1944: Support text resultset for REST (DaeMyung)
 
     TAJO-1950: Query master uses too much memory during range shuffle. (jihoon)
@@ -140,6 +147,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2018: Remove redundant 'String.toString()'. (Dongkyu Hwangbo via jinho)
 
     TAJO-1705: Update document for index support. (jihoon)
 
