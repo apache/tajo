@@ -149,7 +149,7 @@
 <div class='contents'>
   <h2>Tajo Master: <%=masterLabel%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
-  <h3><a href='querydetail.jsp?queryId=<%=queryId%>&startTime=<%=startTime%>'><%=ebId.toString()%></a></h3>
+  <h3><a href='querydetail.jsp?queryId=<%=queryId%>&startTime=<%=startTime%>'><%=ebId%></a></h3>
   <hr/>
   <p/>
   <pre style="white-space:pre-wrap;"><%=stage.getPlan()%></pre>
@@ -192,7 +192,7 @@
   List<TaskHistory> filteredTasks = new ArrayList<>();
   for(TaskHistory eachTask: allTasks) {
     if (!"ALL".equals(status)) {
-      if (!status.equals(eachTask.getState().toString())) {
+      if (!status.equals(eachTask.getState())) {
         continue;
       }
     }

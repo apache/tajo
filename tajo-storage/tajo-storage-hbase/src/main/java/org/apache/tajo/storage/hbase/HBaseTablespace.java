@@ -282,6 +282,7 @@ public class HBaseTablespace extends Tablespace {
       // If there is many split keys, Tajo allows to define in the file.
       Path path = new Path(splitRowKeysFile);
       FileSystem fs = path.getFileSystem(conf);
+
       if (!fs.exists(path)) {
         throw new MissingTablePropertyException("hbase.split.rowkeys.file=" + path.toString() + " not exists.",
             hbaseTableName);
@@ -289,6 +290,7 @@ public class HBaseTablespace extends Tablespace {
 
       SortedSet<String> splitKeySet = new TreeSet<>();
       BufferedReader reader = null;
+
       try {
         reader = new BufferedReader(new InputStreamReader(fs.open(path)));
         String line = null;
@@ -739,7 +741,7 @@ public class HBaseTablespace extends Tablespace {
       throws IOException, MissingTablePropertyException, InvalidTablePropertyException {
 
     final Column[] indexableColumns = getIndexableColumns(tableDesc);
-    if (indexableColumns == null && indexableColumns.length == 0) {
+    if (indexableColumns == null || indexableColumns.length == 0) {
       return Collections.EMPTY_LIST;
     }
 
