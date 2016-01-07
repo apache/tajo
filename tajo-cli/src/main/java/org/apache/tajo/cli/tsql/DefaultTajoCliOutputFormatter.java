@@ -23,6 +23,7 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
@@ -159,15 +160,11 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     int terminalWidth = TerminalFactory.get().getWidth();
     int progressWidth = (min(terminalWidth, 100) - 75) + 17; // progress bar is 17-42 characters wide
 
-    String progressBar = formatProgressBar(progressWidth, (int)(status.getProgress() * 100.0f));
+    int progress = (int)(status.getProgress() * 100.0f);
+    String responseTime = getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0));
+    String progressBar = formatProgressBar(progressWidth, progress);
 
-    // 0:17 [=====>>                                   ] 10%
-    String progressLine = String.format("%s [%s] %d%%",
-      getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0)),
-      progressBar,
-      (int)(status.getProgress() * 100.0f));
-
-    reprintLine(sout, progressLine);
+    reprintProgressLine(sout, progressBar, progress, responseTime, status);
   }
 
   public String formatProgressBar(int width, int progress) {
@@ -196,14 +193,28 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     return ((dividend + divisor) - 1) / divisor;
   }
 
-  public void reprintLine(PrintWriter out, String line)
+  public void reprintProgressLine(PrintWriter out, String progressBar, int progress, String responseTime, QueryStatus status)
   {
+    // [=====>>                                   ] 10%  3.18 sec
+    String lineFormat = "[%s] %d%%  %s";
+
     if (isRealTerminal()) {
-      out.print(ansi().eraseLine(Ansi.Erase.ALL).a('\r').a(line).toString());
+      if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        progressBar = "@|green " + progressBar + "|@";
+      }
+      else if (status.getState() == TajoProtos.QueryState.QUERY_ERROR ||
+               status.getState() == TajoProtos.QueryState.QUERY_FAILED) {
+        progressBar = "@|red " + progressBar + "|@";
+      }
+
+      String line = String.format(lineFormat, progressBar, progress, responseTime);
+      out.print(ansi().eraseLine(Ansi.Erase.ALL).a('\r').render(line));
     }
     else {
+      String line = String.format(lineFormat, progressBar, progress, responseTime);
       out.print('\r' + line);
     }
+
     out.flush();
   }
 
