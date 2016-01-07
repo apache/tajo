@@ -41,6 +41,8 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
   private DataType[] paramTypes;
   @Expose
   private DataType returnType;
+
+  // for future use
   @Expose
   private boolean deterministic = true;
 
