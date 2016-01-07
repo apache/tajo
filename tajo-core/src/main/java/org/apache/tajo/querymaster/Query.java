@@ -50,7 +50,6 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
 
@@ -540,7 +539,7 @@ public class Query implements EventHandler<QueryEvent> {
 
     private List<PartitionDescProto> getPartitionsWithContentsSummary(TajoConf conf, Path outputDir,
         List<PartitionDescProto> partitions) throws IOException {
-      List<PartitionDescProto> finalPartitions = TUtil.newList();
+      List<PartitionDescProto> finalPartitions = new ArrayList<>();
 
       FileSystem fileSystem = outputDir.getFileSystem(conf);
       for (PartitionDescProto partition : partitions) {
@@ -560,7 +559,7 @@ public class Query implements EventHandler<QueryEvent> {
     }
 
     private static class QueryHookExecutor {
-      private List<QueryHook> hookList = TUtil.newList();
+      private List<QueryHook> hookList = new ArrayList<>();
       private QueryMaster.QueryMasterContext context;
 
       public QueryHookExecutor(QueryMaster.QueryMasterContext context) {

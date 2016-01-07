@@ -21,14 +21,14 @@ package org.apache.tajo.engine.planner.global.rewriter;
 import com.google.common.collect.Lists;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.rewriter.rules.BroadcastJoinRule;
-import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 @SuppressWarnings("unused")
 public class BaseGlobalPlanRewriteRuleProvider extends GlobalPlanRewriteRuleProvider {
-  private static final List<Class<? extends GlobalPlanRewriteRule>> EMPTY_RULES = TUtil.newList();
+  private static final List<Class<? extends GlobalPlanRewriteRule>> EMPTY_RULES = new ArrayList<>();
 
   public BaseGlobalPlanRewriteRuleProvider(TajoConf conf) {
     super(conf);

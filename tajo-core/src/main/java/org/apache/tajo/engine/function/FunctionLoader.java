@@ -40,7 +40,6 @@ import org.apache.tajo.exception.AmbiguousFunctionException;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -108,7 +107,7 @@ public class FunctionLoader {
           continue;
         }
 
-        List<Path> filePaths = TUtil.newList();
+        List<Path> filePaths = new ArrayList<>();
         if (localFS.isDirectory(codePath)) {
           for (FileStatus file : localFS.listStatus(codePath,
               (Path path) -> path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION))) {

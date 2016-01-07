@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -98,7 +99,7 @@ public abstract class Tablespace {
     return name + "=" + uri.toString();
   }
 
-  public abstract long getTableVolume(URI uri) throws UnsupportedException;
+  public abstract long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException;
 
   /**
    * if {@link StorageProperty#isArbitraryPathAllowed} is true,

@@ -30,8 +30,8 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
@@ -39,9 +39,7 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.storage.StorageService;
 import org.apache.tajo.util.ReflectionUtil;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
 
 import java.util.*;
@@ -260,7 +258,7 @@ public class LogicalOptimizer {
                                    SelectionNode node, Stack<LogicalNode> stack) throws TajoException {
       // all join predicate candidates must be collected before building the join tree except non-equality conditions
       // TODO: non-equality conditions should also be considered as join conditions after TAJO-1554
-      List<EvalNode> candidateJoinQuals = TUtil.newList();
+      List<EvalNode> candidateJoinQuals = new ArrayList<>();
       for (EvalNode eachEval : AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())) {
         if (EvalTreeUtil.isJoinQual(eachEval, false)) {
           candidateJoinQuals.add(eachEval);

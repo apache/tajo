@@ -39,7 +39,6 @@ import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker.WorkerContext;
 
 import java.io.File;
@@ -120,7 +119,7 @@ public class TaskAttemptContext {
 
     this.partitionOutputVolume = Maps.newHashMap();
 
-    this.partitions = TUtil.newList();
+    this.partitions = new ArrayList<>();
   }
 
   @VisibleForTesting
@@ -292,7 +291,7 @@ public class TaskAttemptContext {
   }
 
   private List<Path> fragmentToPath(List<FragmentProto> tableFragments) {
-    List<Path> list = TUtil.newList();
+    List<Path> list = new ArrayList<>();
 
     for (FragmentProto proto : tableFragments) {
       FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);

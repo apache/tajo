@@ -40,9 +40,7 @@ import org.apache.tajo.plan.serder.PlanProto.AlterTablespaceNode.SetLocation;
 import org.apache.tajo.plan.serder.PlanProto.LogicalNodeTree;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.ProtoUtil;
-import org.apache.tajo.util.TUtil;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 

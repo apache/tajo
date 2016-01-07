@@ -36,6 +36,8 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.exception.UndefinedTablespaceHandlerException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.StorageService;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
@@ -433,8 +435,9 @@ public class TablespaceManager implements StorageService {
   }
 
   @Override
-  public long getTableVolumn(URI tableUri) throws UnsupportedException {
-    return get(tableUri).getTableVolume(tableUri);
+  public long getTableVolumn(URI tableUri, Optional<EvalNode> filter)
+      throws UnsupportedException {
+    return get(tableUri).getTableVolume(tableUri, filter);
   }
 
   public static Iterable<Tablespace> getAllTablespaces() {

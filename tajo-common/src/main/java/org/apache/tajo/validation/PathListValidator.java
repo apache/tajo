@@ -18,8 +18,7 @@
 
 package org.apache.tajo.validation;
 
-import org.apache.tajo.util.TUtil;
-
+import java.util.ArrayList;
 import java.util.Collection;
 
 public class PathListValidator extends AbstractValidator {
@@ -57,7 +56,7 @@ public class PathListValidator extends AbstractValidator {
 
   @Override
   protected Collection<Validator> getDependantValidators() {
-    return TUtil.newList();
+    return new ArrayList<>();
   }
 
 }

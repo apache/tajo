@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
-import org.apache.tajo.util.TUtil;
 
 public class SelfDiagnosisRuleSession {
   
@@ -67,7 +66,7 @@ public class SelfDiagnosisRuleSession {
   
   protected List<RuleWrapper> getCandidateRules() {
     Map<String, Map<String, RuleWrapper>> wrapperMap = null;
-    List<RuleWrapper> candidateRules = TUtil.newList();
+    List<RuleWrapper> candidateRules = new ArrayList<>();
     
     wrapperMap = ruleEngine.getRules();
     Class<?> callerClazz = getCallerClassName();

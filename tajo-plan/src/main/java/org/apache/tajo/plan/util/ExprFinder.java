@@ -25,8 +25,8 @@ import org.apache.tajo.algebra.UnaryOperator;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
-import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -35,7 +35,7 @@ import java.util.Stack;
 public class ExprFinder extends SimpleAlgebraVisitor<ExprFinder.Context, Object> {
 
   static class Context<T> {
-    List<T> set = TUtil.newList();
+    List<T> set = new ArrayList<>();
     OpType targetType;
 
     Context(OpType type) {
