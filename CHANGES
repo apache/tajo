@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2040: Decrease the default size of max request for locality. (jinho)
+
     TAJO-2035: Rewrite README file using Markdown format. 
     (Dongkyu Hwangbo via jinho)
 
