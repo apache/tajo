@@ -159,7 +159,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         if (!isPartitionKey) {
           String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
               CatalogConstants.IDENTIFIER_DELIMITER + eachField.getName();
-          TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(eachField.getType().toString());
+          TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(eachField.getType());
           schema.addColumn(fieldName, dataType);
         }
       }
@@ -245,7 +245,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
-            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType());
             String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
                 CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
             expressionSchema.addColumn(new Column(fieldName, dataType));
@@ -807,7 +807,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
-            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType());
             String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
                 CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
             expressionSchema.addColumn(new Column(fieldName, dataType));

@@ -58,7 +58,7 @@ public class MiniCatalogServer extends CatalogServer {
       this.start();
       catalog = new LocalCatalogWrapper(this);
       if (!catalog.existTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME)) {
-        catalog.createTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME, testDir.toString());
+        catalog.createTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME, testDir);
       }
       if (!catalog.existDatabase(DEFAULT_DATABASE_NAME)) {
         catalog.createDatabase(DEFAULT_DATABASE_NAME, TajoConstants.DEFAULT_TABLESPACE_NAME);
