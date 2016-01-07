@@ -419,9 +419,9 @@ public abstract class AdviceAdapter extends GeneratorAdapter implements Opcodes 
         mv.visitMethodInsn(opcode, owner, name, desc);
         if (constructor) {
             Type[] types = Type.getArgumentTypes(desc);
-            for (Type type : types) {
+            for (Type eachType : types) {
                 popValue();
-                if (type.getSize() == 2) {
+                if (eachType.getSize() == 2) {
                     popValue();
                 }
             }
