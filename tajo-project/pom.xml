@@ -249,6 +249,11 @@
 
   <contributors>
     <contributor>
+      <name>Byunghwa Yun</name>
+      <organization>LOEN entertainment</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
       <name>Camelia</name>
       <roles><role>Contributor</role></roles>
     </contributor>
@@ -263,8 +268,13 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
+      <name>Dongkyu Hwangbo</name>
+      <organization>Gruter</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
       <name>Dongmin Yu</name>
-      <organization>InfiniLoop</organization>
+      <organization>Treasure Data</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -327,7 +337,7 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
-      <name>Youngjun Park</name>
+      <name>Yongjun Park</name>
       <organization>Gruter</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
