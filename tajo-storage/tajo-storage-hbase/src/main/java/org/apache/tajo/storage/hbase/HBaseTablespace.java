@@ -18,7 +18,7 @@
 
 package org.apache.tajo.storage.hbase;
 
-import com.google.common.base.Preconditions;
+import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
@@ -51,7 +51,6 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
 import org.apache.tajo.storage.*;
@@ -100,7 +99,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri) throws UnsupportedException {
+  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
     throw new UnsupportedException();
   }
 
@@ -176,7 +175,7 @@ public class HBaseTablespace extends Tablespace {
           throw new UnavailableTableLocationException(hbaseTableName, "the table does not exist");
         }
         HTableDescriptor hTableDescriptor = hAdmin.getTableDescriptor(hTableName);
-        Set<String> tableColumnFamilies = new HashSet<String>();
+        Set<String> tableColumnFamilies = new HashSet<>();
         for (HColumnDescriptor eachColumn : hTableDescriptor.getColumnFamilies()) {
           tableColumnFamilies.add(eachColumn.getNameAsString());
         }

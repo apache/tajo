@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.base.Optional;
 import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
@@ -98,7 +99,7 @@ public abstract class Tablespace {
     return name + "=" + uri.toString();
   }
 
-  public abstract long getTableVolume(URI uri) throws UnsupportedException;
+  public abstract long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException;
 
   /**
    * if {@link StorageProperty#isArbitraryPathAllowed} is true,
