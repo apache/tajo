@@ -1383,8 +1383,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testGetSplitsWhenRestartHBase() throws Exception {
     executeString("CREATE TABLE hbase_mapped_table1 (rk text, col1 text, col2 text, col3 int) "
-	+ "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table1', 'columns'=':key,col1:a,col2:,col3:#b', "
-	+ "'hbase.split.rowkeys'='010,020,030,040,050,060,070,080,090')").close();
+      + "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table1', 'columns'=':key,col1:a,col2:,col3:#b', "
+      + "'hbase.split.rowkeys'='010,020,030,040,050,060,070,080,090')").close();
 
     assertTableExists("hbase_mapped_table1");
     HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -1397,13 +1397,13 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       DecimalFormat df = new DecimalFormat("000");
       for (int i = 0; i < 100; i++) {
-	Put put = new Put(String.valueOf(df.format(i)).getBytes());
-	put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
-	put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-	put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
-	put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
-	put.add("col3".getBytes(), "".getBytes(), Bytes.toBytes(i));
-	htable.put(put);
+        Put put = new Put(String.valueOf(df.format(i)).getBytes());
+        put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
+        put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+        put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
+        put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
+        put.add("col3".getBytes(), "".getBytes(), Bytes.toBytes(i));
+        htable.put(put);
       }
 
       ResultSet res = executeString("select * from hbase_mapped_table1");
@@ -1428,7 +1428,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       executeString("DROP TABLE hbase_mapped_table1 PURGE").close();
       hAdmin.close();
       if (htable == null) {
-	htable.close();
+        htable.close();
       }
     }
   }

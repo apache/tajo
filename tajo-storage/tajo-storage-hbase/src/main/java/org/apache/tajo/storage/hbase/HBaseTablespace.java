@@ -441,11 +441,11 @@ public class HBaseTablespace extends Tablespace {
             HConstants.EMPTY_BYTE_ARRAY,
             regLoc.getHostname());
         long regionSize = sizeCalculator.getRegionSize(regLoc.getRegionInfo().getRegionName());
-	if (regionSize == 0) {
-	  fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
-	} else {
-	  fragment.setLength(regionSize);
-	}
+        if (regionSize == 0) {
+          fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
+        } else {
+          fragment.setLength(regionSize);
+        }
         fragments.add(fragment);
         return fragments;
       }
@@ -514,8 +514,8 @@ public class HBaseTablespace extends Tablespace {
                 prevFragment.setStopRow(fragmentStop);
               }
             } else {
-	      byte[] regionName = location.getRegionInfo().getRegionName();
-	      long regionSize = sizeCalculator.getRegionSize(regionName);
+              byte[] regionName = location.getRegionInfo().getRegionName();
+              long regionSize = sizeCalculator.getRegionSize(regionName);
 
               HBaseFragment fragment = new HBaseFragment(tableDesc.getUri(),
                   inputSourceId,
@@ -526,7 +526,7 @@ public class HBaseTablespace extends Tablespace {
               if (regionSize == 0) {
                 fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
               } else {
-        	fragment.setLength(regionSize);
+                fragment.setLength(regionSize);
               }
 
               fragmentMap.put(regionStartKey, fragment);
