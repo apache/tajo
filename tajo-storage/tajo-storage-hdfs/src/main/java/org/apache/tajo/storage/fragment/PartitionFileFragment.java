@@ -30,6 +30,7 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -110,7 +111,7 @@ public class PartitionFileFragment extends FileFragment implements Cloneable {
     }
 
     if (getHosts() != null) {
-      builder.addAllHosts(TUtil.newList(getHosts()));
+      builder.addAllHosts(Arrays.asList(getHosts()));
     }
 
     if (partitionKeys != null) {
