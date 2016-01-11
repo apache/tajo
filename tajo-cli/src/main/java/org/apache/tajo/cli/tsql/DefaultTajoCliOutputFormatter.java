@@ -212,7 +212,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     }
     else {
       String line = String.format(lineFormat, progressBar, progress, responseTime);
-      out.print('\r' + line);
+      out.print('\n' + line);
     }
 
     out.flush();
