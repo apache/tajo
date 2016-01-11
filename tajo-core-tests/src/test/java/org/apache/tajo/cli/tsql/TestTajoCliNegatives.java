@@ -141,6 +141,6 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
   public void testQueryFailure() throws Exception {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
     assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem where l_orderkey > 0" ,
-        "ERROR: Internal error. Please check out log files in ${tajo_install_dir}/logs directory.\n");
+        "ERROR: internal error: testQueryFailure\n");
   }
 }

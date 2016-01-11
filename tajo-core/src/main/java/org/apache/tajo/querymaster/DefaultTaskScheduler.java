@@ -116,11 +116,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               break;
             } else {
               LOG.fatal(e.getMessage(), e);
-              stage.abort(StageState.ERROR);
+              stage.abort(StageState.ERROR, e);
             }
           } catch (Throwable e) {
             LOG.fatal(e.getMessage(), e);
-            stage.abort(StageState.ERROR);
+            stage.abort(StageState.ERROR, e);
             break;
           }
         }

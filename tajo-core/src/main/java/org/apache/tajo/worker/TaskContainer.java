@@ -71,7 +71,7 @@ public class TaskContainer implements Runnable {
         if (task != null) {
           try {
             task.abort();
-            task.getExecutionBlockContext().fatalError(task.getTaskContext().getTaskId(), e.getMessage());
+            task.getExecutionBlockContext().fatalError(task.getTaskContext().getTaskId(), e);
           } catch (Throwable t) {
             LOG.fatal(t.getMessage(), t);
           }

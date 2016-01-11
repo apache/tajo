@@ -21,7 +21,6 @@ package org.apache.tajo.worker;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -41,6 +40,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
@@ -448,18 +448,10 @@ public class TaskImpl implements Task {
           executionBlockContext.killedTasksNum.incrementAndGet();
         } else {
           context.setState(TaskAttemptState.TA_FAILED);
-          TaskFatalErrorReport.Builder errorBuilder =
-              TaskFatalErrorReport.newBuilder()
-                  .setId(getId().getProto());
-          if (error != null) {
-            if (error.getMessage() == null) {
-              errorBuilder.setErrorMessage(error.getClass().getCanonicalName());
-            } else {
-              errorBuilder.setErrorMessage(error.getMessage());
-            }
-            errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
-          }
+          TaskFatalErrorReport.Builder errorBuilder = TaskFatalErrorReport.newBuilder();
 
+          errorBuilder.setId(getId().getProto());
+          errorBuilder.setError(ErrorUtil.convertException(error));
           queryMasterStub.fatalError(null, errorBuilder.build(), NullCallback.get());
           executionBlockContext.failedTasksNum.incrementAndGet();
         }
