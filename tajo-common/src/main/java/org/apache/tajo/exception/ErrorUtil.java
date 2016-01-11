@@ -34,9 +34,9 @@ public class ErrorUtil {
 
   public static Stacktrace.StackTrace convertStacktrace(Throwable t) {
     Stacktrace.StackTrace.Builder builder = Stacktrace.StackTrace.newBuilder();
-    for (StackTraceElement element: t.getStackTrace()) {
+    for (StackTraceElement element : t.getStackTrace()) {
       builder.addElement(Stacktrace.StackTrace.Element.newBuilder()
-              .setFilename(element.getFileName())
+              .setFilename(element.getFileName() == null ? "(Unknown Source)" : element.getFileName())
               .setFunction(element.getClassName() + "::" + element.getMethodName())
               .setLine(element.getLineNumber())
       );

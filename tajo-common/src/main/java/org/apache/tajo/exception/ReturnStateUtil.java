@@ -86,9 +86,7 @@ public class ReturnStateUtil {
       builder.setMessage(ErrorMessages.getInternalErrorMessage(t));
     }
 
-    if (t.getStackTrace() != null) {
-      builder.setStackTrace(ErrorUtil.convertStacktrace(t));
-    }
+    builder.setStackTrace(ErrorUtil.convertStacktrace(t));
     return builder.build();
   }
 
