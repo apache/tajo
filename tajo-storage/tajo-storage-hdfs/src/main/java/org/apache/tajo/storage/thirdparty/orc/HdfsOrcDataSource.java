@@ -17,7 +17,8 @@ package org.apache.tajo.storage.thirdparty.orc;
 import com.facebook.presto.orc.DiskRange;
 import com.facebook.presto.orc.OrcDataSource;
 import com.google.common.collect.ImmutableMap;
-import io.airlift.slice.Slice;
+import io.airlift.slice.BasicSliceInput;
+import io.airlift.slice.FixedLengthSliceInput;
 import io.airlift.units.DataSize;
 import org.apache.hadoop.fs.FSDataInputStream;
 
@@ -43,17 +44,19 @@ public class HdfsOrcDataSource
   private final String path;
   private final long size;
   private final DataSize maxMergeDistance;
+  private final DataSize maxReadSize;
   private long readTimeNanos;
 
-  public HdfsOrcDataSource(String path, FSDataInputStream inputStream, long size, double maxMergeDistance)
+  public HdfsOrcDataSource(String path, FSDataInputStream inputStream, long size,
+                           DataSize maxMergeDistance, DataSize maxReadSize)
   {
     this.path = checkNotNull(path, "path is null");
     this.inputStream = checkNotNull(inputStream, "inputStream is null");
     this.size = size;
     checkArgument(size >= 0, "size is negative");
 
-    DataSize mergeDistance = new DataSize(maxMergeDistance, DataSize.Unit.BYTE);
-    this.maxMergeDistance = checkNotNull(mergeDistance, "maxMergeDistance is null");
+    this.maxMergeDistance = checkNotNull(maxMergeDistance, "maxMergeDistance is null");
+    this.maxReadSize = checkNotNull(maxReadSize, "maxMergeDistance is null");
   }
 
   @Override
@@ -94,7 +97,7 @@ public class HdfsOrcDataSource
   }
 
   @Override
-  public <K> Map<K, Slice> readFully(Map<K, DiskRange> diskRanges)
+  public <K> Map<K, FixedLengthSliceInput> readFully(Map<K, DiskRange> diskRanges)
     throws IOException
   {
     checkNotNull(diskRanges, "diskRanges is null");
@@ -103,7 +106,7 @@ public class HdfsOrcDataSource
       return ImmutableMap.of();
     }
 
-    Iterable<DiskRange> mergedRanges = mergeAdjacentDiskRanges(diskRanges.values(), maxMergeDistance);
+    Iterable<DiskRange> mergedRanges = mergeAdjacentDiskRanges(diskRanges.values(), maxMergeDistance, maxReadSize);
 
     // read ranges
     Map<DiskRange, byte[]> buffers = new LinkedHashMap<>();
@@ -114,9 +117,9 @@ public class HdfsOrcDataSource
       buffers.put(mergedRange, buffer);
     }
 
-    ImmutableMap.Builder<K, Slice> slices = ImmutableMap.builder();
+    ImmutableMap.Builder<K, FixedLengthSliceInput> slices = ImmutableMap.builder();
     for (Entry<K, DiskRange> entry : diskRanges.entrySet()) {
-      slices.put(entry.getKey(), getDiskRangeSlice(entry.getValue(), buffers));
+      slices.put(entry.getKey(), new BasicSliceInput(getDiskRangeSlice(entry.getValue(), buffers)));
     }
     return slices.build();
   }

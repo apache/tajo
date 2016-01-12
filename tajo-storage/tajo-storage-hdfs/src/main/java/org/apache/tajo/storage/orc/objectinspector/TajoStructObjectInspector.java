@@ -60,6 +60,11 @@ public class TajoStructObjectInspector extends StructObjectInspector {
     }
 
     @Override
+    public int getFieldID() {
+      return 0;
+    }
+
+    @Override
     public String getFieldComment() {
       return comment;
     }
