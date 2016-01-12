@@ -124,4 +124,14 @@ public class ParquetScanner extends FileScanner {
   public boolean isSplittable() {
     return false;
   }
+
+  @Override
+  public float getProgress() {
+
+    if (!inited) {
+      return super.getProgress();
+    } else {
+      return reader.getProgress();
+    }
+  }
 }
