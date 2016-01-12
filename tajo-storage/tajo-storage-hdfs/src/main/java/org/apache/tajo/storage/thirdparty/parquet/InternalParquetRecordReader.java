@@ -134,7 +134,7 @@ class InternalParquetRecordReader<T> {
     return currentValue;
   }
 
-  public float getProgress() throws IOException, InterruptedException {
+  public float getProgress() {
     return (float) current / total;
   }
 
