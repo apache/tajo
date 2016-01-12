@@ -210,7 +210,7 @@ public class ORCScanner extends FileScanner {
     if (block.isNull(currentPosInBatch))
       return NullDatum.get();
 
-    // NOTE: block.get<Type>() methods are determined by the type size wich is in createFBtypeByTajoType()
+    // NOTE: block.get***() methods are determined by the type size wich is in createFBtypeByTajoType()
     switch (type.getType()) {
       case INT1:
         return DatumFactory.createInt2((short)block.getLong(currentPosInBatch, 0));
