@@ -49,6 +49,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.thirdparty.orc.HdfsOrcDataSource;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
@@ -209,6 +210,7 @@ public class ORCScanner extends FileScanner {
     if (block.isNull(currentPosInBatch))
       return NullDatum.get();
 
+    // NOTE: block.get<Type>() methods are determined by the type size wich is in createFBtypeByTajoType()
     switch (type.getType()) {
       case INT1:
         return DatumFactory.createInt2((short)block.getLong(currentPosInBatch, 0));
@@ -251,6 +253,14 @@ public class ORCScanner extends FileScanner {
           LOG.error("ERROR", e);
           return NullDatum.get();
         }
+
+      case TIMESTAMP:
+        return DatumFactory.createTimestamp(
+            DateTimeUtil.javaTimeToJulianTime(block.getLong(currentPosInBatch, 0)));
+
+      case DATE:
+        return DatumFactory.createDate(
+            block.getInt(currentPosInBatch, 0) + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
 
       case INET4:
         return DatumFactory.createInet4((int)block.getLong(currentPosInBatch, 0));
