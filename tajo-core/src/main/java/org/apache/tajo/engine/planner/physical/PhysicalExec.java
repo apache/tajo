@@ -90,4 +90,9 @@ public abstract class PhysicalExec implements SchemaObject {
   public TableStats getInputStats() {
     return null;
   }
+
+  @Override
+  public String toString() {
+    return String.format("%s", getClass().getSimpleName());
+  }
 }

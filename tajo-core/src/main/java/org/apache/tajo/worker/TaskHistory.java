@@ -46,6 +46,7 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
   private CatalogProtos.TableStatsProto outputStats;
   private String outputPath;
   private String workingPath;
+  private String physicalPlan;
 
   private int finishedFetchCount;
   private int totalFetchCount;
@@ -90,6 +91,10 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
       this.totalFetchCount = proto.getTotalFetchCount();
     }
 
+    if(proto.hasPhysicalPlan()) {
+      this.physicalPlan = proto.getPhysicalPlan();
+    }
+
     this.fetcherHistories = proto.getFetcherHistoriesList();
   }
 
@@ -132,6 +137,10 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
     if (totalFetchCount > 0) {
       builder.setTotalFetchCount(totalFetchCount);
       builder.setFinishedFetchCount(finishedFetchCount);
+    }
+
+    if(physicalPlan != null) {
+      builder.setPhysicalPlan(physicalPlan);
     }
 
     builder.addAllFetcherHistories(fetcherHistories);
@@ -212,6 +221,14 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
 
   public void setOutputStats(CatalogProtos.TableStatsProto outputStats) {
     this.outputStats = outputStats;
+  }
+
+  public String getPhysicalPlan() {
+    return physicalPlan;
+  }
+
+  public void setPhysicalPlan(String physicalPlan) {
+    this.physicalPlan = physicalPlan;
   }
 
   @Override
