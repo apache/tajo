@@ -292,4 +292,15 @@ public class AvroScanner extends FileScanner {
   public boolean isSplittable() {
     return false;
   }
+
+  @Override
+  public float getProgress() {
+    if (!inited) return super.getProgress();
+
+    if (!dataFileReader.hasNext()) {
+      return 1.0f;
+    } else {
+      return 0.0f;
+    }
+  }
 }

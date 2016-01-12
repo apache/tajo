@@ -113,8 +113,6 @@ public class ORCScanner extends FileScanner {
       targets = schema.toArray();
     }
 
-    super.init();
-
     outTuple = new VTuple(targets.length);
 
     Path path = fragment.getPath();
@@ -163,6 +161,7 @@ public class ORCScanner extends FileScanner {
     recordReader = orcReader.createRecordReader(columnSet, OrcPredicate.TRUE,
         fragment.getStartKey(), fragment.getLength(), DateTimeZone.forTimeZone(timezone));
 
+    super.init();
     LOG.debug("file fragment { path: " + fragment.getPath() +
       ", start offset: " + fragment.getStartKey() +
       ", length: " + fragment.getLength() + "}");
@@ -307,6 +306,8 @@ public class ORCScanner extends FileScanner {
 
   @Override
   public float getProgress() {
+    if(!inited) return super.getProgress();
+
     return recordReader.getProgress();
   }
 

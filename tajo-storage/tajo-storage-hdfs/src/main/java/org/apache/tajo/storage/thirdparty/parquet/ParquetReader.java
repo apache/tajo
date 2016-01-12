@@ -143,4 +143,12 @@ public class ParquetReader<T> implements Closeable {
       reader.close();
     }
   }
+
+  public float getProgress() {
+    if (!footersIterator.hasNext()) {
+      return 1.0f;
+    } else {
+      return reader != null ? reader.getProgress() : 0.0f;
+    }
+  }
 }
