@@ -150,6 +150,8 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2041: Update the Team page. (jaehwa)
+
     TAJO-2018: Remove redundant 'String.toString()'. (Dongkyu Hwangbo via jinho)
 
     TAJO-1705: Update document for index support. (jihoon)
