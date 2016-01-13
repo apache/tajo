@@ -82,7 +82,10 @@ public class LiteralValue extends Expr {
         return LiteralType.Unsigned_Float;
       } catch (NumberFormatException e) {}
 
-      // TODO: handle unsigned_large_integer
+      try {
+        Long.parseUnsignedLong(value);
+        return LiteralType.Unsigned_Large_Integer;
+      } catch (NumberFormatException e) {}
 
       return LiteralType.String;
     }
