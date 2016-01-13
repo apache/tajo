@@ -1,9 +1,10 @@
 create table customer (
-	c_custkey long,
-	c_name string,
-	c_nationkey long,
-	c_phone string,
+	c_custkey bigint,
+	c_name text,
+	c_address text,
+	c_nationkey bigint,
+	c_phone text,
 	c_acctbal double,
-	c_mktsegment string,
-	c_comment string
+	c_mktsegment text,
+	c_comment text
 ) 

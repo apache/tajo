@@ -1,11 +1,11 @@
 create table part (
-	p_partkey long /* primary key */, 
-	p_name string, 
-	p_mfgr string,
-	p_brand string,
-	p_type string,
-	p_size int,
-	p_container string,
+	p_partkey bigint /* primary key */,
+	p_name text,
+	p_mfgr text,
+	p_brand text,
+	p_type text,
+	p_size integer,
+	p_container text,
 	p_retailprice double,
-	p_comment string
+	p_comment text
 )

@@ -70,10 +70,10 @@ public class TPCH extends BenchmarkSet {
   @Override
   public void loadSchemas() {
     Schema lineitem = new Schema()
-        .addColumn("l_orderkey", Type.INT4) // 0
-        .addColumn("l_partkey", Type.INT4) // 1
-        .addColumn("l_suppkey", Type.INT4) // 2
-        .addColumn("l_linenumber", Type.INT4) // 3
+        .addColumn("l_orderkey", Type.INT8) // 0
+        .addColumn("l_partkey", Type.INT8) // 1
+        .addColumn("l_suppkey", Type.INT8) // 2
+        .addColumn("l_linenumber", Type.INT8) // 3
         .addColumn("l_quantity", Type.FLOAT8) // 4
         .addColumn("l_extendedprice", Type.FLOAT8) // 5
         .addColumn("l_discount", Type.FLOAT8) // 6
@@ -81,20 +81,19 @@ public class TPCH extends BenchmarkSet {
             // TODO - This is temporal solution. 8 and 9 are actually Char type.
         .addColumn("l_returnflag", Type.TEXT) // 8
         .addColumn("l_linestatus", Type.TEXT) // 9
-            // TODO - This is temporal solution. 10,11, and 12 are actually Date type.
-        .addColumn("l_shipdate", Type.TEXT) // 10
-        .addColumn("l_commitdate", Type.TEXT) // 11
-        .addColumn("l_receiptdate", Type.TEXT) // 12
+        .addColumn("l_shipdate", Type.DATE) // 10
+        .addColumn("l_commitdate", Type.DATE) // 11
+        .addColumn("l_receiptdate", Type.DATE) // 12
         .addColumn("l_shipinstruct", Type.TEXT) // 13
         .addColumn("l_shipmode", Type.TEXT) // 14
         .addColumn("l_comment", Type.TEXT); // 15
     schemas.put(LINEITEM, lineitem);
 
     Schema customer = new Schema()
-        .addColumn("c_custkey", Type.INT4) // 0
+        .addColumn("c_custkey", Type.INT8) // 0
         .addColumn("c_name", Type.TEXT) // 1
         .addColumn("c_address", Type.TEXT) // 2
-        .addColumn("c_nationkey", Type.INT4) // 3
+        .addColumn("c_nationkey", Type.INT8) // 3
         .addColumn("c_phone", Type.TEXT) // 4
         .addColumn("c_acctbal", Type.FLOAT8) // 5
         .addColumn("c_mktsegment", Type.TEXT) // 6
@@ -102,7 +101,7 @@ public class TPCH extends BenchmarkSet {
     schemas.put(CUSTOMER, customer);
 
     Schema customerParts = new Schema()
-        .addColumn("c_custkey", Type.INT4) // 0
+        .addColumn("c_custkey", Type.INT8) // 0
         .addColumn("c_name", Type.TEXT) // 1
         .addColumn("c_address", Type.TEXT) // 2
         .addColumn("c_phone", Type.TEXT) // 3
@@ -112,14 +111,14 @@ public class TPCH extends BenchmarkSet {
     schemas.put(CUSTOMER_PARTS, customerParts);
 
     Schema nation = new Schema()
-        .addColumn("n_nationkey", Type.INT4) // 0
+        .addColumn("n_nationkey", Type.INT8) // 0
         .addColumn("n_name", Type.TEXT) // 1
-        .addColumn("n_regionkey", Type.INT4) // 2
+        .addColumn("n_regionkey", Type.INT8) // 2
         .addColumn("n_comment", Type.TEXT); // 3
     schemas.put(NATION, nation);
 
     Schema part = new Schema()
-        .addColumn("p_partkey", Type.INT4) // 0
+        .addColumn("p_partkey", Type.INT8) // 0
         .addColumn("p_name", Type.TEXT) // 1
         .addColumn("p_mfgr", Type.TEXT) // 2
         .addColumn("p_brand", Type.TEXT) // 3
@@ -131,18 +130,17 @@ public class TPCH extends BenchmarkSet {
     schemas.put(PART, part);
 
     Schema region = new Schema()
-        .addColumn("r_regionkey", Type.INT4) // 0
+        .addColumn("r_regionkey", Type.INT8) // 0
         .addColumn("r_name", Type.TEXT) // 1
         .addColumn("r_comment", Type.TEXT); // 2
     schemas.put(REGION, region);
 
     Schema orders = new Schema()
-        .addColumn("o_orderkey", Type.INT4) // 0
-        .addColumn("o_custkey", Type.INT4) // 1
+        .addColumn("o_orderkey", Type.INT8) // 0
+        .addColumn("o_custkey", Type.INT8) // 1
         .addColumn("o_orderstatus", Type.TEXT) // 2
         .addColumn("o_totalprice", Type.FLOAT8) // 3
-            // TODO - This is temporal solution. o_orderdate is actually Date type.
-        .addColumn("o_orderdate", Type.TEXT) // 4
+        .addColumn("o_orderdate", Type.DATE) // 4
         .addColumn("o_orderpriority", Type.TEXT) // 5
         .addColumn("o_clerk", Type.TEXT) // 6
         .addColumn("o_shippriority", Type.INT4) // 7
@@ -152,18 +150,18 @@ public class TPCH extends BenchmarkSet {
 
 
     Schema partsupp = new Schema()
-        .addColumn("ps_partkey", Type.INT4) // 0
-        .addColumn("ps_suppkey", Type.INT4) // 1
+        .addColumn("ps_partkey", Type.INT8) // 0
+        .addColumn("ps_suppkey", Type.INT8) // 1
         .addColumn("ps_availqty", Type.INT4) // 2
         .addColumn("ps_supplycost", Type.FLOAT8) // 3
         .addColumn("ps_comment", Type.TEXT); // 4
     schemas.put(PARTSUPP, partsupp);
 
     Schema supplier = new Schema()
-        .addColumn("s_suppkey", Type.INT4) // 0
+        .addColumn("s_suppkey", Type.INT8) // 0
         .addColumn("s_name", Type.TEXT) // 1
         .addColumn("s_address", Type.TEXT) // 2
-        .addColumn("s_nationkey", Type.INT4) // 3
+        .addColumn("s_nationkey", Type.INT8) // 3
         .addColumn("s_phone", Type.TEXT) // 4
         .addColumn("s_acctbal", Type.FLOAT8) // 5
         .addColumn("s_comment", Type.TEXT); // 6
@@ -175,7 +173,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("s_acctbal", Type.FLOAT8)
         .addColumn("s_name", Type.TEXT)
         .addColumn("n_name", Type.TEXT)
-        .addColumn("p_partkey", Type.INT4)
+        .addColumn("p_partkey", Type.INT8)
         .addColumn("p_mfgr", Type.TEXT)
         .addColumn("s_address", Type.TEXT)
         .addColumn("s_phone", Type.TEXT)

@@ -1,6 +1,6 @@
 create table nation (
-	n_nationkey long /* primary key */,
-	n_name string,
-	n_regionkey long,
-	n_comment string
+	n_nationkey bigint /* primary key */,
+	n_name text,
+	n_regionkey bigint,
+	n_comment text
 ) 

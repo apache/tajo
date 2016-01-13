@@ -1,9 +1,9 @@
 create table supplier (
-	s_suppkey long /* primary key */,
-	s_name string,
-	s_address string,
-	s_nationkey long,
-	s_phone string,
+	s_suppkey bigint /* primary key */,
+	s_name text,
+	s_address text,
+	s_nationkey bigint,
+	s_phone text,
 	s_acctbal double,
-	s_comment string
+	s_comment text
 )
