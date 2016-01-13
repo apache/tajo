@@ -361,4 +361,29 @@ public class SequenceFileScanner extends FileScanner {
   public boolean isSplittable(){
     return true;
   }
+
+  @Override
+  public float getProgress() {
+    if (!inited) return super.getProgress();
+
+    if (!more) {
+      return 1.0f;
+    } else {
+      long filePos;
+      float progress;
+      try {
+        filePos = reader.getPosition();
+        if (start == filePos) {
+          progress = 0.0f;
+        } else {
+          long readBytes = filePos - start;
+          long remainingBytes = Math.max(end - filePos, 0);
+          progress = Math.min(1.0f, (float) (readBytes) / (float) (readBytes + remainingBytes));
+        }
+      } catch (IOException e) {
+        progress = 0.0f;
+      }
+      return progress;
+    }
+  }
 }

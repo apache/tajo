@@ -78,6 +78,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2038: NPE in FileScanner#getProgress. (jinho)
+
     TAJO-2034: Files required for executing python functions are not copied in 
     testEval(). (jihoon)
 
@@ -147,6 +149,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2041: Update the Team page. (jaehwa)
 
     TAJO-2018: Remove redundant 'String.toString()'. (Dongkyu Hwangbo via jinho)
 
