@@ -794,6 +794,7 @@ public class BSTIndex implements IndexMethod {
       int offset = -1;
       int start = startPos;
       int end = endPos;
+      int prevCenter = -1;
 
       //http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6412541
       int centerPos = (start + end) >>> 1;
@@ -803,48 +804,52 @@ public class BSTIndex implements IndexMethod {
 
       correctable = false;
       while (true) {
-        int compareResult = comparator.compare(arr[centerPos], key);
-        int subResult;
+        if (end - start == 1) {
+          int comp;
+          // prevCenter should be either end or start
+          if (end == prevCenter) {
+            comp = comparator.compare(arr[start], key);
 
-        if (compareResult > 0) {
-          if (centerPos == 0) {
+            if (comp == 0) {
+              correctable = true;
+              offset = start;
+            } else if (comp < 0) {
+              offset = start;
+            }
             break;
           } else {
-            subResult = comparator.compare(arr[centerPos - 1], key);
-            if (subResult < 0) {
-              offset = centerPos - 1;
+            if (end == arr.length) {
+              offset = start;
               break;
-            } else if (subResult == 0) {
-              correctable = true;
-              offset = centerPos - 1;
-              break;
-            } else {
-              end = centerPos - 1;
-              centerPos = (start + end) / 2;
             }
-          }
-        } else if (compareResult < 0) {
-          if (centerPos == arr.length - 1) {
-            offset = centerPos;
+
+            comp = comparator.compare(arr[end], key);
+            if (comp == 0) {
+              correctable = true;
+              offset = end;
+            } else if (comp > 0) {
+              offset = start;
+            }
             break;
-          } else {
-            subResult = comparator.compare(arr[centerPos + 1], key);
-            if (subResult > 0) {
-              offset = centerPos;
-              break;
-            } else if (subResult == 0) {
-              correctable = true;
-              offset = centerPos + 1;
-              break;
-            } else {
-              start = centerPos + 1;
-              centerPos = (start + end) / 2;
-            }
           }
-        } else {
+        }
+
+        int compareResult = comparator.compare(arr[centerPos], key);
+
+        if (compareResult == 0) {
           correctable = true;
           offset = centerPos;
           break;
+        } else {
+          prevCenter = centerPos;
+
+          if (compareResult > 0) {
+            end = centerPos;
+          } else {
+            start = centerPos;
+          }
+
+          centerPos = (start + end) / 2;
         }
       }
       return offset;
