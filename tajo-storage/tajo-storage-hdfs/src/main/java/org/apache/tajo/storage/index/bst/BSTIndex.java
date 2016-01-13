@@ -800,31 +800,46 @@ public class BSTIndex implements IndexMethod {
       if (arr.length == 0) {
         LOG.error("arr.length: 0, loadNum: " + loadNum + ", inited: " + inited.get());
       }
+
+      correctable = false;
       while (true) {
-        if (comparator.compare(arr[centerPos], key) > 0) {
+        int compareResult = comparator.compare(arr[centerPos], key);
+        int subResult;
+
+        if (compareResult > 0) {
           if (centerPos == 0) {
-            correctable = false;
-            break;
-          } else if (comparator.compare(arr[centerPos - 1], key) < 0) {
-            correctable = false;
-            offset = centerPos - 1;
             break;
           } else {
-            end = centerPos;
-            centerPos = (start + end) / 2;
+            subResult = comparator.compare(arr[centerPos - 1], key);
+            if (subResult < 0) {
+              offset = centerPos - 1;
+              break;
+            } else if (subResult == 0) {
+              correctable = true;
+              offset = centerPos - 1;
+              break;
+            } else {
+              end = centerPos - 1;
+              centerPos = (start + end) / 2;
+            }
           }
-        } else if (comparator.compare(arr[centerPos], key) < 0) {
+        } else if (compareResult < 0) {
           if (centerPos == arr.length - 1) {
-            correctable = false;
-            offset = centerPos;
-            break;
-          } else if (comparator.compare(arr[centerPos + 1], key) > 0) {
-            correctable = false;
             offset = centerPos;
             break;
           } else {
-            start = centerPos + 1;
-            centerPos = (start + end) / 2;
+            subResult = comparator.compare(arr[centerPos + 1], key);
+            if (subResult > 0) {
+              offset = centerPos;
+              break;
+            } else if (subResult == 0) {
+              correctable = true;
+              offset = centerPos + 1;
+              break;
+            } else {
+              start = centerPos + 1;
+              centerPos = (start + end) / 2;
+            }
           }
         } else {
           correctable = true;
