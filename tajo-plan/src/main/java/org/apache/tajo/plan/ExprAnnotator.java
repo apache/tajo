@@ -45,6 +45,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TimeZone;
@@ -596,7 +597,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     FunctionDesc funcDesc = catalog.getFunction(expr.getSignature(), paramTypes);
 
     // trying the implicit type conversion between actual parameter types and the definition types.
-    if (CatalogUtil.checkIfVariableLengthParamDefinition(TUtil.newList(funcDesc.getParamTypes()))) {
+    if (CatalogUtil.checkIfVariableLengthParamDefinition(Arrays.asList(funcDesc.getParamTypes()))) {
       DataType lastDataType = funcDesc.getParamTypes()[0];
       for (int i = 0; i < givenArgs.length; i++) {
         if (i < (funcDesc.getParamTypes().length - 1)) { // variable length

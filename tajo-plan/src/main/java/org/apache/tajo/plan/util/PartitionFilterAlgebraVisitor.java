@@ -29,7 +29,6 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -37,6 +36,8 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.sql.Date;
 import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 import java.util.TimeZone;
@@ -53,7 +54,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   private String timezoneId;
 
   private Stack<String> queries = new Stack();
-  private List<Pair<Type, Object>> parameters = TUtil.newList();
+  private List<Pair<Type, Object>> parameters = new ArrayList<>();
 
   public String getTableAlias() {
     return tableAlias;

@@ -40,11 +40,11 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.TUtil;
 
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -173,7 +173,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   // TODO: python parser must be improved.
   private static List<FunctionInfo> getFunctions(InputStream is) throws IOException {
-    List<FunctionInfo> functions = TUtil.newList();
+    List<FunctionInfo> functions = new ArrayList<>();
     InputStreamReader in = new InputStreamReader(is, Charset.defaultCharset());
     BufferedReader br = new BufferedReader(in);
     String line = br.readLine();
@@ -253,7 +253,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final String PYTHON_LANGUAGE = "python";
   private static final String TAJO_UTIL_NAME = "tajo_util.py";
   private static final String CONTROLLER_NAME = "controller.py";
-  private static final String BASE_DIR = FileUtils.getTempDirectoryPath().toString() + File.separator + "tajo-" + System.getProperty("user.name") + File.separator + "python";
+  private static final String BASE_DIR = FileUtils.getTempDirectoryPath() + File.separator + "tajo-" + System.getProperty("user.name") + File.separator + "python";
   private static final String PYTHON_CONTROLLER_JAR_PATH = "/python/" + CONTROLLER_NAME; // Relative to root of tajo jar.
   private static final String PYTHON_TAJO_UTIL_JAR_PATH = "/python/" + TAJO_UTIL_NAME; // Relative to root of tajo jar.
 

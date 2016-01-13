@@ -24,8 +24,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -37,6 +35,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.storage.TestFileTablespace;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
@@ -46,9 +45,11 @@ import org.apache.tajo.tuple.memory.RowWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.ProtoUtil;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -56,6 +57,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -66,12 +68,15 @@ public class TestDirectRawFile {
   public static Schema schema;
 
   private static String TEST_PATH = "target/test-data/TestDirectRawFile";
-  private static MiniDFSCluster cluster;
-  private static FileSystem dfs;
-  private static FileSystem localFs;
+  private MiniDFSCluster cluster;
+  private FileSystem fs;
+  private boolean isLocal;
 
   private TajoConf tajoConf;
   private Path testDir;
+
+  @Rule
+  public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
 
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() throws IOException {
@@ -83,41 +88,35 @@ public class TestDirectRawFile {
 
 
   public TestDirectRawFile(boolean isLocal) throws IOException {
-    FileSystem fs;
+    this.isLocal = isLocal;
+  }
+
+  @Before
+  public void setup() throws IOException {
     if (isLocal) {
-      fs = localFs;
+      fs = FileSystem.getLocal(new TajoConf());
     } else {
-      fs = dfs;
+      final Configuration conf = TestFileTablespace.getTestHdfsConfiguration();
+
+      cluster = new MiniDFSCluster.Builder(conf)
+          .numDataNodes(1)
+          .format(true)
+          .storagesPerDatanode(1).build();
+
+      fs = cluster.getFileSystem();
     }
 
     this.tajoConf = new TajoConf(fs.getConf());
     this.testDir = getTestDir(fs, TEST_PATH);
   }
 
-  @BeforeClass
-  public static void setUpClass() throws IOException, InterruptedException {
-    final Configuration conf = new HdfsConfiguration();
-    String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
-    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
-    conf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
-    conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
-    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, false);
-
-    MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
-    builder.numDataNodes(1);
-    builder.format(true);
-    builder.manageNameDfsDirs(true);
-    builder.manageDataDfsDirs(true);
-    builder.waitSafeMode(true);
-    cluster = builder.build();
-
-    dfs = cluster.getFileSystem();
-    localFs = FileSystem.getLocal(new TajoConf());
-  }
-
-  @AfterClass
-  public static void tearDownClass() throws InterruptedException {
-    cluster.shutdown();
+  @After
+  public void tearDown() throws IOException {
+    if (isLocal) {
+      fs.delete(testDir, true);
+    } else {
+      cluster.shutdown();
+    }
   }
 
   public Path getTestDir(FileSystem fs, String dir) throws IOException {
@@ -168,7 +167,7 @@ public class TestDirectRawFile {
     return writeRowBlock(conf, meta, rowBlock, outputFile);
   }
 
-  @Test(timeout = 60000)
+  @Test
   public void testRWForAllTypesWithNextTuple() throws IOException {
     int rowNum = 10000;
 
@@ -198,7 +197,7 @@ public class TestDirectRawFile {
     assertEquals(rowNum, j);
   }
 
-  @Test(timeout = 60000)
+  @Test
   public void testRepeatedScan() throws IOException {
     int rowNum = 2;
 
@@ -226,7 +225,7 @@ public class TestDirectRawFile {
     reader.close();
   }
 
-  @Test(timeout = 60000)
+  @Test
   public void testReset() throws IOException {
     int rowNum = 2;
 

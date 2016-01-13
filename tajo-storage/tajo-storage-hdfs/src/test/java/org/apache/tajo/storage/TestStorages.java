@@ -48,6 +48,7 @@ import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -152,6 +153,11 @@ public class TestStorages {
         {BuiltinStorages.TEXT, true, true, true, false},
         {BuiltinStorages.JSON, true, true, false, false},
     });
+  }
+
+  @After
+  public void tearDown() throws IOException {
+   fs.delete(testDir, true);
   }
 
   @Test
@@ -1302,5 +1308,52 @@ public class TestStorages {
     } finally {
       IOUtils.cleanup(null, appender);
     }
+  }
+
+  @Test
+  public void testProgress() throws IOException {
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.FLOAT4);
+    schema.addColumn("col2", Type.FLOAT8);
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+
+    KeyValueSet options = new KeyValueSet();
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
+    }
+
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Path tablePath = new Path(testDir, "testProgress.data");
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.init();
+
+    VTuple tuple = new VTuple(new Datum[]{
+        DatumFactory.createFloat4(Float.MAX_VALUE),
+        DatumFactory.createFloat8(Double.MAX_VALUE),
+        DatumFactory.createInt2(Short.MAX_VALUE),
+        DatumFactory.createInt4(Integer.MAX_VALUE),
+        DatumFactory.createInt8(Long.MAX_VALUE)
+    });
+
+    appender.addTuple(tuple);
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner =  sm.getScanner(meta, schema, fragment, null);
+
+    assertEquals(0.0f, scanner.getProgress(), 0.0f);
+
+    scanner.init();
+    assertNotNull(scanner.next());
+    assertNull(null, scanner.next());
+
+    scanner.close();
+    assertEquals(1.0f, scanner.getProgress(), 0.0f);
   }
 }

@@ -40,7 +40,7 @@
     <hive.version>1.1.0</hive.version>
     <netty.version>4.0.33.Final</netty.version>
     <jersey.version>2.6</jersey.version>
-    <jetty.version>6.1.14</jetty.version>
+    <jetty.version>6.1.26</jetty.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -249,6 +249,11 @@
 
   <contributors>
     <contributor>
+      <name>Byunghwa Yun</name>
+      <organization>LOEN entertainment</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
       <name>Camelia</name>
       <roles><role>Contributor</role></roles>
     </contributor>
@@ -263,8 +268,13 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
+      <name>Dongkyu Hwangbo</name>
+      <organization>Gruter</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
       <name>Dongmin Yu</name>
-      <organization>InfiniLoop</organization>
+      <organization>Treasure Data</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -280,6 +290,11 @@
     <contributor>
       <name>Jinhang Choi</name>
       <organization>LineWalks</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Jongyoung Park</name>
+      <organization>Gruter</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -327,7 +342,7 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
-      <name>Youngjun Park</name>
+      <name>Yongjun Park</name>
       <organization>Gruter</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
@@ -485,6 +500,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.19</version>
+          <configuration>
+            <trimStackTrace>false</trimStackTrace>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
@@ -1190,12 +1208,23 @@
       </dependency>
       <dependency>
         <groupId>org.mortbay.jetty</groupId>
-        <artifactId>jsp-2.1</artifactId>
+        <artifactId>jsp-2.1-jetty</artifactId>
         <version>${jetty.version}</version>
         <exclusions>
           <exclusion>
             <artifactId>core</artifactId>
             <groupId>org.eclipse.jdt</groupId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>jsp-2.1-glassfish</artifactId>
+        <version>2.1.v20091210</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jdt.core.compiler</groupId>
+            <artifactId>ecj</artifactId>
           </exclusion>
         </exclusions>
       </dependency>

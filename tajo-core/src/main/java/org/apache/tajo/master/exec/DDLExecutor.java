@@ -49,7 +49,6 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.TUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -621,7 +620,7 @@ public class DDLExecutor {
 
     // Find missing partitions from filesystem
     List<PartitionDescProto> existingPartitions = catalog.getPartitionsOfTable(databaseName, simpleTableName);
-    List<String> existingPartitionNames = TUtil.newList();
+    List<String> existingPartitionNames = new ArrayList<>();
     Path existingPartitionPath = null;
 
     for(PartitionDescProto existingPartition : existingPartitions) {
@@ -633,7 +632,7 @@ public class DDLExecutor {
     }
 
     // Find missing partitions from CatalogStore
-    List<PartitionDescProto> targetPartitions = TUtil.newList();
+    List<PartitionDescProto> targetPartitions = new ArrayList<>();
     for(Path filteredPath : filteredPaths) {
 
       int startIdx = filteredPath.toString().indexOf(PartitionedTableRewriter.getColumnPartitionPathPrefix

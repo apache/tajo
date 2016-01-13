@@ -35,6 +35,7 @@
 <%@ page import="java.net.InetSocketAddress" %>
 <%@ page import="java.util.Date" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="java.util.ArrayList" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -80,7 +81,7 @@
   String numDeadQueryMastersHtml = numDeadQueryMasters == 0 ? "0" : "<font color='red'>" + numDeadQueryMasters + "</font>";
 
   ServiceTracker haService = master.getContext().getHAService();
-  List<TajoMasterInfo> masters = TUtil.newList();
+  List<TajoMasterInfo> masters = new ArrayList<>();
 
   String activeLabel = "";
   if (haService != null) {

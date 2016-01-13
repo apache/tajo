@@ -349,7 +349,7 @@ public class NamedExprsManager {
     private final Iterator<NamedExpr> iterator;
 
     public UnevaluatedIterator() {
-      List<NamedExpr> unEvaluatedList = TUtil.newList();
+      List<NamedExpr> unEvaluatedList = new ArrayList<>();
       for (Integer refId: idToNamesMap.keySet()) {
         String name = idToNamesMap.get(refId).get(0);
         if (!isEvaluated(name)) {

@@ -873,7 +873,7 @@ public class CatalogUtil {
    */
   public static Pair<List<PartitionKeyProto>, String> getPartitionKeyNamePair(String[] columns, String[] values) {
     Pair<List<PartitionKeyProto>, String> pair = null;
-    List<PartitionKeyProto> partitionKeyList = TUtil.newList();
+    List<PartitionKeyProto> partitionKeyList = new ArrayList<>();
 
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < columns.length; i++) {

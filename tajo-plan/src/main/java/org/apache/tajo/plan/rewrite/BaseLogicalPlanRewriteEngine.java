@@ -22,7 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.storage.StorageService;
+import org.apache.tajo.plan.StorageService;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -56,7 +56,6 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -674,7 +673,7 @@ public class TestPhysicalPlanner {
     }
 
     assertEquals(numPartitions, fragments.size());
-    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, new ArrayList<>(fragments));
     scanner.init();
 
     Tuple tuple;
@@ -745,7 +744,7 @@ public class TestPhysicalPlanner {
       assertEquals(expectedFileNum, fileStatuses.length);
     }
     TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
-    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, new ArrayList<>(fragments));
     scanner.init();
 
     long rowNum = 0;
@@ -809,7 +808,7 @@ public class TestPhysicalPlanner {
 
     assertEquals(numPartitions, fragments.size());
 
-    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, new ArrayList<>(fragments));
     scanner.init();
     Tuple tuple;
     int i = 0;
