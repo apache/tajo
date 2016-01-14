@@ -88,50 +88,50 @@ public final class SAXAnnotationAdapter extends AnnotationVisitor {
             AnnotationVisitor av = visitArray(name);
             if (value instanceof byte[]) {
                 byte[] b = (byte[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, new Byte(b[i]));
+                for (byte aB : b) {
+                    av.visit(null, new Byte(aB));
                 }
 
             } else if (value instanceof char[]) {
                 char[] b = (char[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, new Character(b[i]));
+                for (char aB : b) {
+                    av.visit(null, new Character(aB));
                 }
 
             } else if (value instanceof short[]) {
                 short[] b = (short[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, new Short(b[i]));
+                for (short aB : b) {
+                    av.visit(null, new Short(aB));
                 }
 
             } else if (value instanceof boolean[]) {
                 boolean[] b = (boolean[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, Boolean.valueOf(b[i]));
+                for (boolean aB : b) {
+                    av.visit(null, Boolean.valueOf(aB));
                 }
 
             } else if (value instanceof int[]) {
                 int[] b = (int[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, new Integer(b[i]));
+                for (int aB : b) {
+                    av.visit(null, new Integer(aB));
                 }
 
             } else if (value instanceof long[]) {
                 long[] b = (long[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, new Long(b[i]));
+                for (long aB : b) {
+                    av.visit(null, new Long(aB));
                 }
 
             } else if (value instanceof float[]) {
                 float[] b = (float[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, new Float(b[i]));
+                for (float aB : b) {
+                    av.visit(null, new Float(aB));
                 }
 
             } else if (value instanceof double[]) {
                 double[] b = (double[]) value;
-                for (int i = 0; i < b.length; i++) {
-                    av.visit(null, new Double(b[i]));
+                for (double aB : b) {
+                    av.visit(null, new Double(aB));
                 }
 
             }

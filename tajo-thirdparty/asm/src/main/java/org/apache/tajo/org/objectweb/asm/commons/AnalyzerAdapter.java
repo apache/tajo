@@ -177,8 +177,7 @@ public class AnalyzerAdapter extends MethodVisitor {
             }
         }
         Type[] types = Type.getArgumentTypes(desc);
-        for (int i = 0; i < types.length; ++i) {
-            Type type = types[i];
+        for (Type type : types) {
             switch (type.getSort()) {
             case Type.BOOLEAN:
             case Type.CHAR:
@@ -199,11 +198,11 @@ public class AnalyzerAdapter extends MethodVisitor {
                 locals.add(Opcodes.TOP);
                 break;
             case Type.ARRAY:
-                locals.add(types[i].getDescriptor());
+                locals.add(type.getDescriptor());
                 break;
             // case Type.OBJECT:
             default:
-                locals.add(types[i].getInternalName());
+                locals.add(type.getInternalName());
             }
         }
     }
@@ -283,8 +282,8 @@ public class AnalyzerAdapter extends MethodVisitor {
                     mv.visitLabel(l);
                 }
             }
-            for (int i = 0; i < labels.size(); ++i) {
-                uninitializedTypes.put(labels.get(i), type);
+            for (Label label : labels) {
+                uninitializedTypes.put(label, type);
             }
         }
         if (mv != null) {
@@ -538,8 +537,8 @@ public class AnalyzerAdapter extends MethodVisitor {
         if (c == '(') {
             int n = 0;
             Type[] types = Type.getArgumentTypes(desc);
-            for (int i = 0; i < types.length; ++i) {
-                n += types[i].getSize();
+            for (Type type : types) {
+                n += type.getSize();
             }
             pop(n);
         } else if (c == 'J' || c == 'D') {

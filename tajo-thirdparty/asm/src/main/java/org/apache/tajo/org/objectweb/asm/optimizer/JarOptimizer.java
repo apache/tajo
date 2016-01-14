@@ -99,8 +99,8 @@ public class JarOptimizer {
 
         if (f.isDirectory()) {
             File[] files = f.listFiles();
-            for (int i = 0; i < files.length; ++i) {
-                optimize(files[i]);
+            for (File file : files) {
+                optimize(file);
             }
         } else if (f.getName().endsWith(".jar")) {
             File g = new File(f.getParentFile(), f.getName() + ".new");

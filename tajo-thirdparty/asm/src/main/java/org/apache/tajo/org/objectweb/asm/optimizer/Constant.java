@@ -225,8 +225,8 @@ class Constant {
         this.objVals = bsmArgs;
 
         int hashCode = 'y' + name.hashCode() * desc.hashCode() * bsm.hashCode();
-        for (int i = 0; i < bsmArgs.length; i++) {
-            hashCode *= bsmArgs[i].hashCode();
+        for (Object bsmArg : bsmArgs) {
+            hashCode *= bsmArg.hashCode();
         }
         this.hashCode = 0x7FFFFFFF & hashCode;
     }

@@ -466,15 +466,13 @@ public class ASMContentHandler extends DefaultHandler implements Opcodes {
             }
 
             int n = path.lastIndexOf('/');
-            for (Iterator<String> it = lpatterns.iterator(); it.hasNext();) {
-                String pattern = it.next();
+            for (String pattern : lpatterns) {
                 if (path.substring(n).endsWith(pattern)) {
                     return rules.get(pattern);
                 }
             }
 
-            for (Iterator<String> it = rpatterns.iterator(); it.hasNext();) {
-                String pattern = it.next();
+            for (String pattern : rpatterns) {
                 if (path.startsWith(pattern)) {
                     return rules.get(pattern);
                 }
