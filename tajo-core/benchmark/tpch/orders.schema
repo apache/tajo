@@ -1,11 +1,11 @@
 create table orders (
-	o_orderkey long, /* primary key */
-	o_custkey long,
-	o_orderstatus string,
+	o_orderkey bigint, /* primary key */
+	o_custkey bigint,
+	o_orderstatus text,
 	o_totalprice double,
-	o_orderdate string,
-	o_orderpriority string,
-	o_clerk string,
+	o_orderdate date,
+	o_orderpriority text,
+	o_clerk text,
 	o_shippriority int,
-	o_comment string
+	o_comment text
 ) 

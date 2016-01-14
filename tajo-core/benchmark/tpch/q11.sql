@@ -21,7 +21,7 @@ group by
 		where
 		ps_suppkey = s_suppkey
 		and s_nationkey = n_nationkey
-		and n_name = '[NATION]'
+		and n_name = 'GERMANY'
 	)
 order by
 	value desc
