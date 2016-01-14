@@ -195,7 +195,7 @@ public class TestTajoJdbcNegative extends QueryTestCaseBase {
                    "select fail(3, l_orderkey, 'testQueryFailure') from default.lineitem where l_orderkey > 0")) {
         fail("Failure must occur here.");
       } catch (SQLException s) {
-        assertEquals(toSQLState(ResultCode.INTERNAL_ERROR), s.getSQLState());
+        assertEquals(toSQLState(ResultCode.UNDEFINED_FUNCTION), s.getSQLState());
       }
     }
   }
