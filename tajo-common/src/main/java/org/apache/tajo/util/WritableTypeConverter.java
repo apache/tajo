@@ -22,6 +22,8 @@ import org.apache.hadoop.io.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.reflections.ReflectionUtils;
 
 import java.util.Set;
@@ -56,8 +58,11 @@ public class WritableTypeConverter {
     if (writableClass == DoubleWritable.class || parents.contains(DoubleWritable.class)) {
       return builder.setType(Type.FLOAT8).build();
     }
+    if (writableClass == BytesWritable.class || parents.contains(BytesWritable.class)) {
+      return builder.setType(Type.VARBINARY).build();
+    }
 
-    return builder.setType(Type.NULL_TYPE).build();
+    throw new TajoRuntimeException(new NotImplementedException(writableClass.getSimpleName()));
   }
 
   public static Writable convertDatum2Writable(Datum value) {
@@ -71,9 +76,10 @@ public class WritableTypeConverter {
       case FLOAT8: return new DoubleWritable(value.asFloat8());
 
       case TEXT: return new Text(value.asChars());
+      case VARBINARY: return new BytesWritable(value.asByteArray());
     }
 
-    return NullWritable.get();
+    throw new TajoRuntimeException(new NotImplementedException(value.type().name()));
   }
 
   public static Datum convertWritable2Datum(Writable value) {
@@ -89,6 +95,7 @@ public class WritableTypeConverter {
       case FLOAT8: return new Float8Datum(((DoubleWritable)value).get());
 
       case TEXT: return new TextDatum(value.toString());
+      case VARBINARY: return new BlobDatum(((BytesWritable)value).getBytes());
     }
 
     return NullDatum.get();
