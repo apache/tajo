@@ -367,7 +367,8 @@ public class ProjectionPushDownRule extends
       Iterator<Target> iterator;
 
       public FilteredTargetIterator(Set<String> required) {
-        filtered.addAll(nameToIdBiMap.keySet().stream().filter(name -> required.contains(name)).map(TargetListManager.this::getTarget).collect(Collectors.toList()));
+        filtered.addAll(nameToIdBiMap.keySet().stream()
+          .filter(name -> required.contains(name)).map(TargetListManager.this::getTarget).collect(Collectors.toList()));
         iterator = filtered.iterator();
       }
 
@@ -429,7 +430,8 @@ public class ProjectionPushDownRule extends
     }
 
     private void addNecessaryReferences(EvalNode evalNode) {
-      requiredSet.addAll(EvalTreeUtil.findUniqueColumns(evalNode).stream().map(Column::getQualifiedName).collect(Collectors.toList()));
+      requiredSet.addAll(EvalTreeUtil.findUniqueColumns(evalNode).stream()
+        .map(Column::getQualifiedName).collect(Collectors.toList()));
     }
 
     @Override
@@ -1006,7 +1008,8 @@ public class ProjectionPushDownRule extends
         }
       }
 
-      filtered.addAll(requiredReferences.stream().filter(name -> targetSet.containsKey(name)).map(targetSet::get).collect(Collectors.toList()));
+      filtered.addAll(requiredReferences.stream().filter(name -> targetSet.containsKey(name))
+        .map(targetSet::get).collect(Collectors.toList()));
 
       iterator = filtered.iterator();
     }

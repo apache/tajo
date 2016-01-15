@@ -33,7 +33,7 @@ public class ByteBufferPoolAdapter implements ByteBufferPool {
   public final ByteBuffer getBuffer(boolean direct, int length) {
     return this.pool.getBuffer(direct, length);
   }
-
+  
   @Override
   public final void putBuffer(ByteBuffer buffer) {
     this.pool.putBuffer(buffer);

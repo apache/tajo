@@ -62,7 +62,8 @@ import java.util.stream.Collectors;
 
   public synchronized List<TableCacheKey> getCacheKeyByExecutionBlockId(ExecutionBlockId ebId) {
     List<TableCacheKey> keys = Lists.newArrayList();
-    keys.addAll(cacheMap.keySet().stream().filter(eachKey -> eachKey.ebId.equals(ebId.toString())).collect(Collectors.toList()));
+    keys.addAll(cacheMap.keySet().stream().filter(eachKey ->
+      eachKey.ebId.equals(ebId.toString())).collect(Collectors.toList()));
     return keys;
   }
 

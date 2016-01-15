@@ -306,7 +306,8 @@ public class XMLCatalogSchemaManager {
     final List<SchemaPatch> candidatePatches = new ArrayList<>();
     Statement stmt;
 
-    candidatePatches.addAll(this.catalogStore.getPatches().stream().filter(patch -> currentVersion >= patch.getPriorVersion()).collect(Collectors.toList()));
+    candidatePatches.addAll(this.catalogStore.getPatches().stream()
+      .filter(patch -> currentVersion >= patch.getPriorVersion()).collect(Collectors.toList()));
     
     Collections.sort(candidatePatches);
     try {

@@ -224,7 +224,9 @@ public class NamedExprsManager {
 
   public Collection<NamedExpr> getAllNamedExprs() {
     List<NamedExpr> namedExprList = Lists.newArrayList();
-    namedExprList.addAll(idToExprBiMap.entrySet().stream().map(entry -> new NamedExpr(entry.getValue(), idToNamesMap.get(entry.getKey()).get(0))).collect(Collectors.toList()));
+    namedExprList.addAll(idToExprBiMap.entrySet().stream()
+      .map(entry -> new NamedExpr(entry.getValue(), idToNamesMap.get(entry.getKey()).get(0)))
+      .collect(Collectors.toList()));
     return namedExprList;
   }
 

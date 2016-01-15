@@ -330,7 +330,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
     NodeResourceResponse response = callBack.get();
 
-    taskRequestEvents.addAll(response.getResourceList().stream().map(resource -> new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId())).collect(Collectors.toList()));
+    taskRequestEvents.addAll(response.getResourceList().stream()
+      .map(resource -> new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId()))
+      .collect(Collectors.toList()));
 
     return taskRequestEvents;
   }

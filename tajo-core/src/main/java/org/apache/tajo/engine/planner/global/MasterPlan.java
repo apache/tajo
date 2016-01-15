@@ -237,7 +237,8 @@ public class MasterPlan {
   }
 
   public List<ExecutionBlock> getChilds(ExecutionBlockId id) {
-    List<ExecutionBlock> childBlocks = execBlockGraph.getChilds(id).stream().map(cid -> execBlockMap.get(cid)).collect(Collectors.toList());
+    List<ExecutionBlock> childBlocks = execBlockGraph.getChilds(id).stream()
+      .map(cid -> execBlockMap.get(cid)).collect(Collectors.toList());
     return childBlocks;
   }
 

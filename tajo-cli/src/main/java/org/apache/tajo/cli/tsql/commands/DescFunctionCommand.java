@@ -92,7 +92,8 @@ public class DescFunctionCommand extends TajoShellCommand {
       Map<String, CatalogProtos.FunctionDescProto> functionMap =
               new HashMap<>();
 
-      functions.stream().filter(eachFunction -> !functionMap.containsKey(eachFunction.getSupplement().getShortDescription())).forEach(eachFunction -> {
+      functions.stream().filter(eachFunction -> !functionMap.containsKey(eachFunction.getSupplement()
+        .getShortDescription())).forEach(eachFunction -> {
         functionMap.put(eachFunction.getSupplement().getShortDescription(), eachFunction);
       });
 

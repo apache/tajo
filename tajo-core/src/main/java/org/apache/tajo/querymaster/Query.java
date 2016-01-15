@@ -320,7 +320,9 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setDistributedPlan(plan.toString());
 
     List<String[]> sessionVariables = new ArrayList<>();
-    plan.getContext().getAllKeyValus().entrySet().stream().filter(entry -> SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey()))).forEach(entry -> {
+    plan.getContext().getAllKeyValus().entrySet().stream()
+      .filter(entry -> SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey())))
+      .forEach(entry -> {
       sessionVariables.add(new String[]{entry.getKey(), entry.getValue()});
     });
     queryHistory.setSessionVariables(sessionVariables);

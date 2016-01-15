@@ -162,7 +162,8 @@ public class LogicalOptimizer {
     markAsEvaluated.addAll(joinGraphContext.getEvaluatedJoinFilters());
     Set<EvalNode> remainingQuals = new HashSet<>(joinGraphContext.getCandidateJoinFilters());
     for (JoinEdge eachEdge : joinEdges) {
-      remainingQuals.addAll(eachEdge.getJoinQual().stream().filter(eachQual -> !markAsEvaluated.contains(eachQual)).collect(Collectors.toList()));
+      remainingQuals.addAll(eachEdge.getJoinQual().stream()
+        .filter(eachQual -> !markAsEvaluated.contains(eachQual)).collect(Collectors.toList()));
     }
 
     if (!remainingQuals.isEmpty()) {

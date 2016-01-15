@@ -269,7 +269,8 @@ public class HistoryWriter extends AbstractService {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.HOUR_OF_DAY, -2);
         String closeTargetTime = df.format(cal.getTime());
-        List<String> closingTargets = taskWriters.keySet().stream().filter(eachWriterTime -> eachWriterTime.compareTo(closeTargetTime) <= 0).collect(Collectors.toList());
+        List<String> closingTargets = taskWriters.keySet().stream()
+          .filter(eachWriterTime -> eachWriterTime.compareTo(closeTargetTime) <= 0).collect(Collectors.toList());
 
         for (String eachWriterTime : closingTargets) {
           WriterHolder writerHolder;

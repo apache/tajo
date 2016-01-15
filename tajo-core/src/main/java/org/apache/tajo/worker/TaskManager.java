@@ -214,7 +214,8 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
         QueryStopEvent queryStopEvent = TUtil.checkTypeAndGet(event, QueryStopEvent.class);
 
         //cleanup failure ExecutionBlock
-        executionBlockContextMap.keySet().stream().filter(ebId -> ebId.getQueryId().equals(queryStopEvent.getQueryId())).forEach(ebId -> {
+        executionBlockContextMap.keySet().stream()
+          .filter(ebId -> ebId.getQueryId().equals(queryStopEvent.getQueryId())).forEach(ebId -> {
           try {
             executionBlockContextMap.remove(ebId).stop();
           } catch (Exception e) {

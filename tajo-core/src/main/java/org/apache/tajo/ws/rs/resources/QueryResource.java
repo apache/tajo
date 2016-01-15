@@ -175,7 +175,8 @@ public class QueryResource {
     private List<QueryInfo> selectQueriesInfoByState(List<QueryInfo> queriesInfo, TajoProtos.QueryState state) {
       List<QueryInfo> resultQueriesInfo = new ArrayList<>(queriesInfo.size() / 2);
 
-      resultQueriesInfo.addAll(queriesInfo.stream().filter(queryInfo -> state.equals(queryInfo.getQueryState())).collect(Collectors.toList()));
+      resultQueriesInfo.addAll(queriesInfo.stream()
+        .filter(queryInfo -> state.equals(queryInfo.getQueryState())).collect(Collectors.toList()));
       
       return resultQueriesInfo;
     }

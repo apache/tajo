@@ -176,7 +176,8 @@ public class TestTajoClient {
     String prefixName = "key_";
     String prefixValue = "val_";
 
-    List<String> unsetList = client.getAllSessionVariables().entrySet().stream().map(Map.Entry<String, String>::getKey).collect(Collectors.toList());
+    List<String> unsetList = client.getAllSessionVariables().entrySet().stream()
+      .map(Map.Entry<String, String>::getKey).collect(Collectors.toList());
     client.unsetSessionVariables(unsetList);
 
     for (int i = 0; i < 10; i++) {

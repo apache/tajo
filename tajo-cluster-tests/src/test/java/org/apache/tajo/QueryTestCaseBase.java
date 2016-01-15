@@ -519,7 +519,8 @@ public class QueryTestCaseBase {
     List<String> queries = Lists.newArrayList();
 
     for (Path p : paths) {
-      queries.addAll(SimpleParser.parseScript(FileUtil.readTextFile(new File(p.toUri()))).stream().map(ParsedResult::getStatement).collect(Collectors.toList()));
+      queries.addAll(SimpleParser.parseScript(
+        FileUtil.readTextFile(new File(p.toUri()))).stream().map(ParsedResult::getStatement).collect(Collectors.toList()));
     }
 
     return queries;

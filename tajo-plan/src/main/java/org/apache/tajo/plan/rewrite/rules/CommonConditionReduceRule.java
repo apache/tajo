@@ -182,7 +182,8 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
             new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(rightChild))) :
             new HashSet<>(Arrays.asList(AlgebraicUtil.toDisjunctiveNormalFormArray(rightChild)));
 
-        commonQuals.addAll(leftChildSplits.stream().filter(eachLeftChildSplit -> rightChildSplits.contains(eachLeftChildSplit)).collect(Collectors.toList()));
+        commonQuals.addAll(leftChildSplits.stream()
+          .filter(eachLeftChildSplit -> rightChildSplits.contains(eachLeftChildSplit)).collect(Collectors.toList()));
 
         if (leftChildSplits.size() == rightChildSplits.size() &&
             commonQuals.size() == leftChildSplits.size()) {

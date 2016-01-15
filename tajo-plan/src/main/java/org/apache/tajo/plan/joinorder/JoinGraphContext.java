@@ -48,11 +48,13 @@ public class JoinGraphContext {
   }
 
   public void addCandidateJoinConditions(Collection<EvalNode> candidates) {
-    candidateJoinConditions.addAll(candidates.stream().filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate)).collect(Collectors.toList()));
+    candidateJoinConditions.addAll(candidates.stream()
+      .filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate)).collect(Collectors.toList()));
   }
 
   public void addCandidateJoinFilters(Collection<EvalNode> candidates) {
-    candidateJoinFilters.addAll(candidates.stream().filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate)).collect(Collectors.toList()));
+    candidateJoinFilters.addAll(candidates.stream()
+      .filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate)).collect(Collectors.toList()));
   }
 
   public void removeCandidateJoinConditions(Collection<EvalNode> willBeRemoved) {

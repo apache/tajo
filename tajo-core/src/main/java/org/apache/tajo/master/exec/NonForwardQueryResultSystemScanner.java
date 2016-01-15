@@ -528,9 +528,11 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     }
     
     tuples = new ArrayList<>(queryMasterList.size() + nodeStatusList.size());
-    tuples.addAll(queryMasterList.stream().map(queryMaster -> getQueryMasterTuple(outSchema, queryMaster)).collect(Collectors.toList()));
+    tuples.addAll(queryMasterList.stream().map(queryMaster -> getQueryMasterTuple(outSchema, queryMaster))
+      .collect(Collectors.toList()));
 
-    tuples.addAll(nodeStatusList.stream().map(nodeStatus -> getWorkerTuple(outSchema, nodeStatus)).collect(Collectors.toList()));
+    tuples.addAll(nodeStatusList.stream().map(nodeStatus -> getWorkerTuple(outSchema, nodeStatus))
+      .collect(Collectors.toList()));
     
     return tuples;
   }

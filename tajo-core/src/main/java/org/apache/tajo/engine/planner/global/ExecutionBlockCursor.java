@@ -135,7 +135,8 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
         orderRequiredChildCountMap.get(eachItem.parentEB.getId()).decrementAndGet();
       } else {
         if (eachItem.allSiblingsOrdered()) {
-          orderedBlocks.addAll(notOrderedSiblingBlocks.stream().map(eachSiblingItem -> eachSiblingItem.eb).collect(Collectors.toList()));
+          orderedBlocks.addAll(notOrderedSiblingBlocks.stream().map(eachSiblingItem -> eachSiblingItem.eb)
+            .collect(Collectors.toList()));
           orderedBlocks.add(eachItem.eb);
           notOrderedSiblingBlocks.clear();
         } else {

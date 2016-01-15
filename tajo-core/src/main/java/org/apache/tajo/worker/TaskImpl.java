@@ -383,7 +383,8 @@ public class TaskImpl implements Task {
     Set<String> broadcastTableNames = new HashSet<>();
     List<EnforceProperty> broadcasts = context.getEnforcer().getEnforceProperties(EnforceType.BROADCAST);
     if (broadcasts != null) {
-      broadcastTableNames.addAll(broadcasts.stream().map(eachBroadcast -> eachBroadcast.getBroadcast().getTableName()).collect(Collectors.toList()));
+      broadcastTableNames.addAll(broadcasts.stream()
+        .map(eachBroadcast -> eachBroadcast.getBroadcast().getTableName()).collect(Collectors.toList()));
     }
 
     // localize the fetched data and skip the broadcast table

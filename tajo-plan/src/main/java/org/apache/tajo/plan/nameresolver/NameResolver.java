@@ -126,7 +126,8 @@ public abstract class NameResolver {
    */
   public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName) {
 
-    Set<RelationNode> found = block.getRelations().stream().filter(rel -> rel.getLogicalSchema().contains(columnName)).collect(Collectors.toSet());
+    Set<RelationNode> found = block.getRelations().stream()
+      .filter(rel -> rel.getLogicalSchema().contains(columnName)).collect(Collectors.toSet());
 
     return found;
   }
@@ -252,7 +253,8 @@ public abstract class NameResolver {
       return ensureUniqueColumn(candidates);
     } else {
       if (includeSelfDescTable) {
-        List<RelationNode> candidateRels = block.getRelations().stream().filter(rel -> describeSchemaByItself(rel)).collect(Collectors.toList());
+        List<RelationNode> candidateRels = block.getRelations().stream().
+          filter(rel -> describeSchemaByItself(rel)).collect(Collectors.toList());
         if (candidateRels.size() == 1) {
           return guessColumn(IdentifierUtil.buildFQName(candidateRels.get(0).getCanonicalName(), columnName));
         } else if (candidateRels.size() > 1) {

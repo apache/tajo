@@ -1427,7 +1427,8 @@ public class CatalogServer extends AbstractService {
        *
        * */
       if (functions.containsKey(signature)) {
-        candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+        candidates.addAll(functions.get(signature).stream()
+          .filter(func -> func.getSignature().getParameterTypesList() != null &&
           CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).collect(Collectors.toList()));
 
         // if there are more than one function candidates, we choose the nearest matched function.
@@ -1450,7 +1451,8 @@ public class CatalogServer extends AbstractService {
           candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getType() == type &&
             func.getSignature().getParameterTypesList().equals(params)).collect(Collectors.toList()));
         } else {
-          candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+          candidates.addAll(functions.get(signature).stream()
+            .filter(func -> func.getSignature().getParameterTypesList() != null &&
             CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).collect(Collectors.toList()));
         }
       }
