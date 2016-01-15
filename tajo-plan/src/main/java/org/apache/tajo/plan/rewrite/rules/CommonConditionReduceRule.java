@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 /**
  * Condition reduce rule reduces the query predicate based on distributivity.
@@ -181,11 +182,7 @@ public class CommonConditionReduceRule implements LogicalPlanRewriteRule {
             new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(rightChild))) :
             new HashSet<>(Arrays.asList(AlgebraicUtil.toDisjunctiveNormalFormArray(rightChild)));
 
-        for (EvalNode eachLeftChildSplit : leftChildSplits) {
-          if (rightChildSplits.contains(eachLeftChildSplit)) {
-            commonQuals.add(eachLeftChildSplit);
-          }
-        }
+        commonQuals.addAll(leftChildSplits.stream().filter(eachLeftChildSplit -> rightChildSplits.contains(eachLeftChildSplit)).collect(Collectors.toList()));
 
         if (leftChildSplits.size() == rightChildSplits.size() &&
             commonQuals.size() == leftChildSplits.size()) {

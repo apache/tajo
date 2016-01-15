@@ -56,6 +56,7 @@ import org.apache.tajo.worker.TajoWorker;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.apache.tajo.conf.TajoConf.ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS;
@@ -547,13 +548,8 @@ public class GlobalPlanner {
       }
     }
 
-    List<Target> firstStageTargets = new ArrayList<>();
-    for (Column column : firstStageGroupingColumns) {
-      firstStageTargets.add(new Target(new FieldEval(column)));
-    }
-    for (Target target : firstPhaseEvalNodeTargets) {
-      firstStageTargets.add(target);
-    }
+    List<Target> firstStageTargets = firstStageGroupingColumns.stream().map(column -> new Target(new FieldEval(column))).collect(Collectors.toList());
+    firstStageTargets.addAll(firstPhaseEvalNodeTargets.stream().collect(Collectors.toList()));
 
     // Create the groupby node for the first stage and set all necessary descriptions
     GroupbyNode firstStageGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());

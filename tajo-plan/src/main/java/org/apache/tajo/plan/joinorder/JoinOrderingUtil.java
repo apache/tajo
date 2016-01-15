@@ -28,6 +28,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class JoinOrderingUtil {
 
@@ -42,13 +43,8 @@ public class JoinOrderingUtil {
    */
   public static Set<EvalNode> findJoinConditionForJoinVertex(Set<EvalNode> candidates, JoinEdge edge,
                                                              boolean isOnPredicates) {
-    Set<EvalNode> conditionsForThisJoin = new HashSet<>();
-    for (EvalNode predicate : candidates) {
-      if (EvalTreeUtil.isJoinQual(predicate, false)
-          && checkIfEvaluatedAtEdge(predicate, edge, isOnPredicates)) {
-        conditionsForThisJoin.add(predicate);
-      }
-    }
+    Set<EvalNode> conditionsForThisJoin = candidates.stream().filter(predicate -> EvalTreeUtil.isJoinQual(predicate, false)
+      && checkIfEvaluatedAtEdge(predicate, edge, isOnPredicates)).collect(Collectors.toSet());
     return conditionsForThisJoin;
   }
 

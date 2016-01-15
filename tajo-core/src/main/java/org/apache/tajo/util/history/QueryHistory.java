@@ -27,6 +27,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class QueryHistory implements GsonObject, History {
   @Expose
@@ -140,9 +141,7 @@ public class QueryHistory implements GsonObject, History {
 
     List<StageHistoryProto> stageHistoryProtos = new ArrayList<>();
     if (stageHistories != null) {
-      for (StageHistory eachStage: stageHistories) {
-        stageHistoryProtos.add((eachStage.getProto()));
-      }
+      stageHistoryProtos.addAll(stageHistories.stream().map(eachStage -> (eachStage.getProto())).collect(Collectors.toList()));
     }
     builder.addAllStageHistories(stageHistoryProtos);
 

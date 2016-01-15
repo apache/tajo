@@ -43,6 +43,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 public class XMLCatalogSchemaManager {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -304,12 +305,8 @@ public class XMLCatalogSchemaManager {
     
     final List<SchemaPatch> candidatePatches = new ArrayList<>();
     Statement stmt;
-    
-    for (SchemaPatch patch: this.catalogStore.getPatches()) {
-      if (currentVersion >= patch.getPriorVersion()) {
-        candidatePatches.add(patch);
-      }
-    }
+
+    candidatePatches.addAll(this.catalogStore.getPatches().stream().filter(patch -> currentVersion >= patch.getPriorVersion()).collect(Collectors.toList()));
     
     Collections.sort(candidatePatches);
     try {

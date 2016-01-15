@@ -73,6 +73,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -518,9 +519,7 @@ public class QueryTestCaseBase {
     List<String> queries = Lists.newArrayList();
 
     for (Path p : paths) {
-      for (ParsedResult statement: SimpleParser.parseScript(FileUtil.readTextFile(new File(p.toUri())))) {
-        queries.add(statement.getStatement());
-      }
+      queries.addAll(SimpleParser.parseScript(FileUtil.readTextFile(new File(p.toUri()))).stream().map(ParsedResult::getStatement).collect(Collectors.toList()));
     }
 
     return queries;

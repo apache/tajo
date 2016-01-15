@@ -99,11 +99,9 @@ public class BSTIndexScanExec extends ScanExec {
     }
 
     SchemaBuilder mergedSchema = SchemaBuilder.builder();
-    for (Column column : originalSchema.getRootColumns()) {
-      if (subSchema.contains(column) || qualAndTargets.contains(column)) {
-        mergedSchema.add(column);
-      }
-    }
+    originalSchema.getRootColumns().stream()
+      .filter(column -> subSchema.contains(column) || qualAndTargets.contains(column))
+      .forEach(mergedSchema::add);
     return mergedSchema.build();
   }
 

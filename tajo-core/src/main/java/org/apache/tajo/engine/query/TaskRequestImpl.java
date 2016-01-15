@@ -29,6 +29,7 @@ import org.apache.tajo.plan.serder.PlanProto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
@@ -222,9 +223,7 @@ public class TaskRequestImpl implements TaskRequest {
     }
     TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     this.fetches = new ArrayList<>();
-    for(FetchProto fetch : p.getFetchesList()) {
-      fetches.add(fetch);
-    }
+		fetches.addAll(p.getFetchesList().stream().collect(Collectors.toList()));
 	}
 
   private void maybeInitBuilder() {

@@ -514,14 +514,12 @@ public class Repartitioner {
   private static void addJoinShuffle(Stage stage, int partitionId,
                                      Map<ExecutionBlockId, List<IntermediateEntry>> grouppedPartitions) {
     Map<String, List<FetchProto>> fetches = new HashMap<>();
-    for (ExecutionBlock execBlock : stage.getMasterPlan().getChilds(stage.getId())) {
-      if (grouppedPartitions.containsKey(execBlock.getId())) {
-        String name = execBlock.getId().toString();
-        List<FetchProto> requests = mergeShuffleRequest(name, partitionId, HASH_SHUFFLE,
-            grouppedPartitions.get(execBlock.getId()));
-        fetches.put(name, requests);
-      }
-    }
+    stage.getMasterPlan().getChilds(stage.getId()).stream().filter(execBlock -> grouppedPartitions.containsKey(execBlock.getId())).forEach(execBlock -> {
+      String name = execBlock.getId().toString();
+      List<FetchProto> requests = mergeShuffleRequest(name, partitionId, HASH_SHUFFLE,
+        grouppedPartitions.get(execBlock.getId()));
+      fetches.put(name, requests);
+    });
 
     if (fetches.isEmpty()) {
       LOG.info(stage.getId() + "'s " + partitionId + " partition has empty result.");

@@ -402,9 +402,7 @@ public class QueryExecutor {
   }
 
   public static void stopScriptExecutors(EvalContext evalContext) {
-    for (TajoScriptEngine executor : evalContext.getAllScriptEngines()) {
-      executor.shutdown();
-    }
+    evalContext.getAllScriptEngines().forEach(TajoScriptEngine::shutdown);
   }
 
   /**

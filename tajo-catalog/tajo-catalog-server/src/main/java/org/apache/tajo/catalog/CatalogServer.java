@@ -63,6 +63,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.exception.ExceptionUtil.printStackTraceIfError;
@@ -1032,9 +1033,7 @@ public class CatalogServer extends AbstractService {
         List<PartitionDescProto> partitions = store.getPartitionsOfTable(dbName, tbName);
 
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        for (PartitionDescProto partition : partitions) {
-          builder.addPartition(partition);
-        }
+        partitions.forEach(builder::addPartition);
 
         builder.setState(OK);
         return builder.build();
@@ -1414,12 +1413,8 @@ public class CatalogServer extends AbstractService {
       List<FunctionDescProto> candidates = Lists.newArrayList();
 
       if (functions.containsKey(signature)) {
-        for (FunctionDescProto func : functions.get(signature)) {
-          if (func.getSignature().getParameterTypesList() != null &&
-              func.getSignature().getParameterTypesList().equals(params)) {
-            candidates.add(func);
-          }
-        }
+        candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+          func.getSignature().getParameterTypesList().equals(params)).collect(Collectors.toList()));
       }
 
       /*
@@ -1432,12 +1427,8 @@ public class CatalogServer extends AbstractService {
        *
        * */
       if (functions.containsKey(signature)) {
-        for (FunctionDescProto func : functions.get(signature)) {
-          if (func.getSignature().getParameterTypesList() != null &&
-              CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)) {
-            candidates.add(func);
-          }
-        }
+        candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+          CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).collect(Collectors.toList()));
 
         // if there are more than one function candidates, we choose the nearest matched function.
         if (candidates.size() > 0) {
@@ -1456,19 +1447,11 @@ public class CatalogServer extends AbstractService {
 
       if (functions.containsKey(signature)) {
         if (strictTypeCheck) {
-          for (FunctionDescProto func : functions.get(signature)) {
-            if (func.getSignature().getType() == type &&
-                func.getSignature().getParameterTypesList().equals(params)) {
-              candidates.add(func);
-            }
-          }
+          candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getType() == type &&
+            func.getSignature().getParameterTypesList().equals(params)).collect(Collectors.toList()));
         } else {
-          for (FunctionDescProto func : functions.get(signature)) {
-            if (func.getSignature().getParameterTypesList() != null &&
-                CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)) {
-              candidates.add(func);
-            }
-          }
+          candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+            CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).collect(Collectors.toList()));
         }
       }
 

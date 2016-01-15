@@ -505,9 +505,7 @@ public class TestRepartitioner {
     Set<FetchProto> resultURLs = Sets.newHashSet();
 
     for (Map<String, List<FetchProto>> e : result) {
-      for (List<FetchProto> list : e.values()) {
-        resultURLs.addAll(list);
-      }
+      e.values().forEach(resultURLs::addAll);
     }
 
     assertEquals(expectedURLs.size(), resultURLs.size());

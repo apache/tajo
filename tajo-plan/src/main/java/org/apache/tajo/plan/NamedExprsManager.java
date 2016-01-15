@@ -33,6 +33,7 @@ import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.TypeConverter.convert;
 
@@ -223,9 +224,7 @@ public class NamedExprsManager {
 
   public Collection<NamedExpr> getAllNamedExprs() {
     List<NamedExpr> namedExprList = Lists.newArrayList();
-    for (Map.Entry<Integer, Expr> entry: idToExprBiMap.entrySet()) {
-      namedExprList.add(new NamedExpr(entry.getValue(), idToNamesMap.get(entry.getKey()).get(0)));
-    }
+    namedExprList.addAll(idToExprBiMap.entrySet().stream().map(entry -> new NamedExpr(entry.getValue(), idToNamesMap.get(entry.getKey()).get(0))).collect(Collectors.toList()));
     return namedExprList;
   }
 

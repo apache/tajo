@@ -19,6 +19,7 @@ import org.apache.tajo.SessionVars;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.
@@ -103,9 +104,7 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
   // Add all execution blocks in a depth first and postfix order
   private void buildDepthFirstOrder(ExecutionBlock current) {
     if (!masterPlan.isLeaf(current.getId())) {
-      for (ExecutionBlock execBlock : masterPlan.getChilds(current)) {
-        buildDepthFirstOrder(execBlock);
-      }
+      masterPlan.getChilds(current).forEach(this::buildDepthFirstOrder);
     }
     orderedBlocks.add(current);
   }
@@ -136,9 +135,7 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
         orderRequiredChildCountMap.get(eachItem.parentEB.getId()).decrementAndGet();
       } else {
         if (eachItem.allSiblingsOrdered()) {
-          for (BuildOrderItem eachSiblingItem: notOrderedSiblingBlocks) {
-            orderedBlocks.add(eachSiblingItem.eb);
-          }
+          orderedBlocks.addAll(notOrderedSiblingBlocks.stream().map(eachSiblingItem -> eachSiblingItem.eb).collect(Collectors.toList()));
           orderedBlocks.add(eachItem.eb);
           notOrderedSiblingBlocks.clear();
         } else {
@@ -162,9 +159,7 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
           stack.push(item);
         }
       }
-      for (BuildOrderItem eachItem : stack) {
-        preExecutionOrder(eachItem);
-      }
+      stack.forEach(this::preExecutionOrder);
     }
     executionOrderedBlocks.add(current);
   }

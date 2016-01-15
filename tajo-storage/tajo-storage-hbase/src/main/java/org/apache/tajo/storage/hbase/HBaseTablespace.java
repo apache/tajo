@@ -372,9 +372,7 @@ public class HBaseTablespace extends Tablespace {
     Collection<String> columnFamilies = columnMapping.getColumnFamilyNames();
     //If 'columns' attribute is empty, Tajo table columns are mapped to all HBase table column.
     if (columnFamilies.isEmpty()) {
-      for (Column eachColumn: schema.getRootColumns()) {
-        columnFamilies.add(eachColumn.getSimpleName());
-      }
+      columnFamilies.addAll(schema.getRootColumns().stream().map(Column::getSimpleName).collect(Collectors.toList()));
     }
 
     for (String eachColumnFamily: columnFamilies) {

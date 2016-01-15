@@ -63,6 +63,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.ResourceProtos.*;
 
@@ -288,11 +290,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     Set<Integer> workerIds = Sets.newHashSet();
     if(hosts.isEmpty()) return workerIds;
 
-    for (WorkerConnectionInfo worker : stage.getContext().getWorkerMap().values()) {
-      if(hosts.contains(worker.getHost())){
-        workerIds.add(worker.getId());
-      }
-    }
+    workerIds.addAll(stage.getContext().getWorkerMap().values().stream().filter(worker -> hosts.contains(worker.getHost())).map((Function<WorkerConnectionInfo, int>) WorkerConnectionInfo::getId).collect(Collectors.toList()));
     return workerIds;
   }
 
@@ -328,9 +326,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
     NodeResourceResponse response = callBack.get();
 
-    for (AllocationResourceProto resource : response.getResourceList()) {
-      taskRequestEvents.add(new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId()));
-    }
+    taskRequestEvents.addAll(response.getResourceList().stream().map(resource -> new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId())).collect(Collectors.toList()));
 
     return taskRequestEvents;
   }

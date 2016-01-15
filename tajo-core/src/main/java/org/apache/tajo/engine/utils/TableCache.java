@@ -26,6 +26,7 @@ import org.apache.tajo.ExecutionBlockId;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * This is a simple TableCache which just added CacheHolder as needed.
@@ -61,11 +62,7 @@ import java.util.Map;
 
   public synchronized List<TableCacheKey> getCacheKeyByExecutionBlockId(ExecutionBlockId ebId) {
     List<TableCacheKey> keys = Lists.newArrayList();
-    for (TableCacheKey eachKey : cacheMap.keySet()) {
-      if (eachKey.ebId.equals(ebId.toString())) {
-        keys.add(eachKey);
-      }
-    }
+    keys.addAll(cacheMap.keySet().stream().filter(eachKey -> eachKey.ebId.equals(ebId.toString())).collect(Collectors.toList()));
     return keys;
   }
 

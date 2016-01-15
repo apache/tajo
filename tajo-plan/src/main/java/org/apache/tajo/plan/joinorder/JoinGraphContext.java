@@ -26,6 +26,7 @@ import org.apache.tajo.util.Pair;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class JoinGraphContext {
   private Set<JoinVertex> rootVertexes = new HashSet<>(); // most left vertex in the join plan
@@ -47,19 +48,11 @@ public class JoinGraphContext {
   }
 
   public void addCandidateJoinConditions(Collection<EvalNode> candidates) {
-    for (EvalNode eachCandidate : candidates) {
-      if (!evaluatedJoinConditions.contains(eachCandidate)) {
-        candidateJoinConditions.add(eachCandidate);
-      }
-    }
+    candidateJoinConditions.addAll(candidates.stream().filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate)).collect(Collectors.toList()));
   }
 
   public void addCandidateJoinFilters(Collection<EvalNode> candidates) {
-    for (EvalNode eachCandidate : candidates) {
-      if (!evaluatedJoinFilters.contains(eachCandidate)) {
-        candidateJoinFilters.add(eachCandidate);
-      }
-    }
+    candidateJoinFilters.addAll(candidates.stream().filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate)).collect(Collectors.toList()));
   }
 
   public void removeCandidateJoinConditions(Collection<EvalNode> willBeRemoved) {
@@ -71,21 +64,17 @@ public class JoinGraphContext {
   }
 
   public void markAsEvaluatedJoinConditions(Collection<EvalNode> willBeMarked) {
-    for (EvalNode eachEval : willBeMarked) {
-      if (candidateJoinConditions.contains(eachEval)) {
-        candidateJoinConditions.remove(eachEval);
-        evaluatedJoinConditions.add(eachEval);
-      }
-    }
+    willBeMarked.stream().filter(eachEval -> candidateJoinConditions.contains(eachEval)).forEach(eachEval -> {
+      candidateJoinConditions.remove(eachEval);
+      evaluatedJoinConditions.add(eachEval);
+    });
   }
 
   public void markAsEvaluatedJoinFilters(Collection<EvalNode> willBeMarked) {
-    for (EvalNode eachEval : willBeMarked) {
-      if (candidateJoinFilters.contains(eachEval)) {
-        candidateJoinFilters.remove(eachEval);
-        evaluatedJoinFilters.add(eachEval);
-      }
-    }
+    willBeMarked.stream().filter(eachEval -> candidateJoinFilters.contains(eachEval)).forEach(eachEval -> {
+      candidateJoinFilters.remove(eachEval);
+      evaluatedJoinFilters.add(eachEval);
+    });
   }
 
   public Set<EvalNode> getCandidateJoinConditions() {

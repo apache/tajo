@@ -104,9 +104,7 @@ public class TajoSystemMetrics extends TajoMetrics {
 
   protected void stopAndClearReporter() {
     synchronized(metricsReporters) {
-      for(TajoMetricsScheduledReporter eachReporter: metricsReporters) {
-        eachReporter.close();
-      }
+      metricsReporters.forEach(TajoMetricsScheduledReporter::close);
 
       metricsReporters.clear();
     }

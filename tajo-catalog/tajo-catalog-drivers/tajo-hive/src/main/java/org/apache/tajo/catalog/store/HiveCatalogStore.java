@@ -65,6 +65,7 @@ import org.apache.thrift.TException;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -689,11 +690,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       List<FieldSchema> columns = table.getSd().getCols();
 
-      for (final FieldSchema currentColumn : columns) {
-        if (currentColumn.getName().equalsIgnoreCase(alterColumnProto.getOldColumnName())) {
-          currentColumn.setName(alterColumnProto.getNewColumnName());
-        }
-      }
+      columns.stream().filter(currentColumn -> currentColumn.getName().equalsIgnoreCase(alterColumnProto.getOldColumnName())).forEach(currentColumn -> {
+        currentColumn.setName(alterColumnProto.getNewColumnName());
+      });
       client.getHiveClient().alter_table(databaseName, tableName, table);
 
     } catch (NoSuchObjectException nsoe) {
@@ -745,9 +744,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       partition.setParameters(params);
 
       List<String> values = Lists.newArrayList();
-      for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
-        values.add(keyProto.getPartitionValue());
-      }
+      values.addAll(partitionDescProto.getPartitionKeysList().stream().map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList()));
       partition.setValues(values);
 
       Table table = client.getHiveClient().getTable(databaseName, tableName);
@@ -773,9 +770,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       client = clientPool.getClient();
 
       List<String> values = Lists.newArrayList();
-      for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
-        values.add(keyProto.getPartitionValue());
-      }
+      values.addAll(partitionDescProto.getPartitionKeysList().stream().map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList()));
       client.getHiveClient().dropPartition(databaseName, tableName, values, true);
     } catch (Exception e) {
       throw new TajoInternalError(e);
@@ -1250,9 +1245,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           partition.setTableName(tableName);
 
           List<String> values = Lists.newArrayList();
-          for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
-            values.add(keyProto.getPartitionValue());
-          }
+          values.addAll(partitionDescProto.getPartitionKeysList().stream().map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList()));
           partition.setValues(values);
 
           Table table = client.getHiveClient().getTable(databaseName, tableName);

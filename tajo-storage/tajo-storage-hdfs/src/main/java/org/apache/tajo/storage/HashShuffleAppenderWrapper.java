@@ -167,9 +167,7 @@ public class HashShuffleAppenderWrapper implements Closeable {
   public List<Pair<Long, Pair<Integer, Integer>>> getMergedTupleIndexes() {
     List<Pair<Long, Pair<Integer, Integer>>> merged = new ArrayList<>();
 
-    for (List<Pair<Long, Pair<Integer, Integer>>> eachFailureIndex: taskTupleIndexes.values()) {
-      merged.addAll(eachFailureIndex);
-    }
+    taskTupleIndexes.values().forEach(merged::addAll);
 
     return merged;
   }

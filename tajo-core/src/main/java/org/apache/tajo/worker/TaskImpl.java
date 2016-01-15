@@ -68,6 +68,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.ResourceProtos.*;
 
@@ -190,9 +191,7 @@ public class TaskImpl implements Task {
   }
 
   private void stopScriptExecutors() {
-    for (TajoScriptEngine executor : context.getEvalContext().getAllScriptEngines()) {
-      executor.shutdown();
-    }
+    context.getEvalContext().getAllScriptEngines().forEach(TajoScriptEngine::shutdown);
   }
 
   @Override
@@ -384,9 +383,7 @@ public class TaskImpl implements Task {
     Set<String> broadcastTableNames = new HashSet<>();
     List<EnforceProperty> broadcasts = context.getEnforcer().getEnforceProperties(EnforceType.BROADCAST);
     if (broadcasts != null) {
-      for (EnforceProperty eachBroadcast : broadcasts) {
-        broadcastTableNames.add(eachBroadcast.getBroadcast().getTableName());
-      }
+      broadcastTableNames.addAll(broadcasts.stream().map(eachBroadcast -> eachBroadcast.getBroadcast().getTableName()).collect(Collectors.toList()));
     }
 
     // localize the fetched data and skip the broadcast table
@@ -613,15 +610,13 @@ public class TaskImpl implements Task {
           try {
             List<FileChunk> fetched = fetcher.get();
             if (fetcher.getState() == FetcherState.FETCH_DATA_FINISHED) {
-              for (FileChunk eachFetch : fetched) {
-                if (eachFetch.getFile() != null) {
-                  if (!eachFetch.fromRemote()) {
-                    localChunks.add(eachFetch);
-                  } else {
-                    remoteChunks.add(eachFetch);
-                  }
+              fetched.stream().filter(eachFetch -> eachFetch.getFile() != null).forEach(eachFetch -> {
+                if (!eachFetch.fromRemote()) {
+                  localChunks.add(eachFetch);
+                } else {
+                  remoteChunks.add(eachFetch);
                 }
-              }
+              });
               break;
             }
           } catch (Throwable e) {

@@ -39,6 +39,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * History directory structure
@@ -268,13 +269,7 @@ public class HistoryWriter extends AbstractService {
         Calendar cal = Calendar.getInstance();
         cal.add(Calendar.HOUR_OF_DAY, -2);
         String closeTargetTime = df.format(cal.getTime());
-        List<String> closingTargets = new ArrayList<>();
-
-        for (String eachWriterTime : taskWriters.keySet()) {
-          if (eachWriterTime.compareTo(closeTargetTime) <= 0) {
-            closingTargets.add(eachWriterTime);
-          }
-        }
+        List<String> closingTargets = taskWriters.keySet().stream().filter(eachWriterTime -> eachWriterTime.compareTo(closeTargetTime) <= 0).collect(Collectors.toList());
 
         for (String eachWriterTime : closingTargets) {
           WriterHolder writerHolder;

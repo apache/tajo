@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class CreateTable extends Expr {
   @Expose @SerializedName("IsExternal")
@@ -419,9 +420,7 @@ public class CreateTable extends Expr {
       hash.quantity = quantity;
       if (specifiers != null) {
         hash.specifiers = new ArrayList<>();
-        for (PartitionSpecifier specifier : specifiers) {
-          hash.specifiers.add(specifier);
-        }
+        hash.specifiers.addAll(specifiers.stream().collect(Collectors.toList()));
       }
       return hash;
     }
@@ -472,9 +471,7 @@ public class CreateTable extends Expr {
       }
       if (specifiers != null) {
         listPartition.specifiers = new ArrayList<>();
-        for (ListPartitionSpecifier specifier : specifiers) {
-          listPartition.specifiers.add(specifier);
-        }
+        listPartition.specifiers.addAll(specifiers.stream().collect(Collectors.toList()));
       }
       return listPartition;
     }

@@ -21,6 +21,7 @@ package org.apache.tajo.catalog.dictionary;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -78,12 +79,8 @@ public class InfoSchemaMetadataDictionary {
   }
   
   public List<String> getAllSystemTables() {
-    List<String> systemTableNames = new ArrayList<>();
-    
-    for (TableDescriptor descriptor: schemaInfoTableDescriptors) {
-      systemTableNames.add(descriptor.getTableNameString());
-    }
-    
+    List<String> systemTableNames = schemaInfoTableDescriptors.stream().map(TableDescriptor::getTableNameString).collect(Collectors.toList());
+
     return systemTableNames;
   }
   

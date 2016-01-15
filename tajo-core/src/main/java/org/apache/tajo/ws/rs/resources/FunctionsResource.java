@@ -33,6 +33,7 @@ import javax.ws.rs.core.Response.Status;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/functions")
 public class FunctionsResource {
@@ -91,9 +92,7 @@ public class FunctionsResource {
       if (functionDescriptors.size() > 0) {
         List<FunctionSignature> functionSignature =
                 new ArrayList<>(functionDescriptors.size());
-        for (FunctionDesc functionDesc : functionDescriptors) {
-          functionSignature.add(functionDesc.getSignature());
-        }
+        functionSignature.addAll(functionDescriptors.stream().map(FunctionDesc::getSignature).collect(Collectors.toList()));
         
         return Response.ok(functionSignature).build();
       } else {

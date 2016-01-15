@@ -251,15 +251,13 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
         }
       }
     }
-    for (GroupbyNode eachGroupbyNode: subGroupbyPlan) {
-      if (eachGroupbyNode.getGroupingColumns() != null && eachGroupbyNode.getGroupingColumns().length > 0) {
-        for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {
-          if (!shuffleKeyColumns.contains(eachColumn)) {
-            shuffleKeyColumns.add(eachColumn);
-          }
+    subGroupbyPlan.stream().filter(eachGroupbyNode -> eachGroupbyNode.getGroupingColumns() != null && eachGroupbyNode.getGroupingColumns().length > 0).forEach(eachGroupbyNode -> {
+      for (Column eachColumn : eachGroupbyNode.getGroupingColumns()) {
+        if (!shuffleKeyColumns.contains(eachColumn)) {
+          shuffleKeyColumns.add(eachColumn);
         }
       }
-    }
+    });
 
     return shuffleKeyColumns.toArray(new Column[shuffleKeyColumns.size()]);
   }

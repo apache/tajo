@@ -39,6 +39,7 @@ import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.CatalogUtil.buildTableIdentifier;
 import static org.apache.tajo.error.Errors.ResultCode.*;
@@ -522,9 +523,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
           .setTableName(tableName);
       builder.setTableIdentifier(identifier.build());
 
-      for (PartitionDescProto partition: partitions) {
-        builder.addPartitionDesc(partition);
-      }
+      partitions.forEach(builder::addPartitionDesc);
       builder.setIfNotExists(ifNotExists);
 
       ReturnState state = stub.addPartitions(null, builder.build());
@@ -782,10 +781,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       final IndexListResponse response = stub.getAllIndexesByTable(null, proto);
       ensureOk(response.getState());
 
-      List<IndexDesc> indexDescs = new ArrayList<>();
-      for (IndexDescProto descProto : response.getIndexDescList()) {
-        indexDescs.add(new IndexDesc(descProto));
-      }
+      List<IndexDesc> indexDescs = response.getIndexDescList().stream().map(IndexDesc::new).collect(Collectors.toList());
       return indexDescs;
     } catch (ServiceException e) {
       throw new RuntimeException(e);
