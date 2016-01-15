@@ -206,16 +206,13 @@ public class HashShuffleAppenderManager {
     HashShuffleAppenderWrapper appender =
         getAppender(rowBlock, taskId.getTaskId().getExecutionBlockId(), partId, meta, schema);
     ExecutorService executor = executors.get(appender.getVolumeId());
-    return executor.submit(new Callable<MemoryRowBlock>() {
-      @Override
-      public MemoryRowBlock call() throws Exception {
-        appender.writeRowBlock(taskId, rowBlock);
+    return executor.submit(() -> {
+      appender.writeRowBlock(taskId, rowBlock);
 
-        if (release) rowBlock.release();
-        else rowBlock.clear();
+      if (release) rowBlock.release();
+      else rowBlock.clear();
 
-        return rowBlock;
-      }
+      return rowBlock;
     });
   }
 

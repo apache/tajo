@@ -147,12 +147,7 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
     List<StageHistory> stages = queryHistory.getStageHistories();
     assertEquals(numStages, stages.size());
 
-    Collections.sort(stages, new Comparator<StageHistory>() {
-      @Override
-      public int compare(StageHistory o1, StageHistory o2) {
-        return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
-      }
-    });
+    Collections.sort(stages, (o1, o2) -> o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId()));
 
     int index = 0;
     StringBuilder expectedString = new StringBuilder();

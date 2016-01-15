@@ -39,54 +39,19 @@ public class ClusterResourceMetricSet implements MetricSet {
   public Map<String, Metric> getMetrics() {
     Map<String, Metric> metricsMap = new HashMap<>();
 
-    metricsMap.put(Cluster.TOTAL_NODES.name(), new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return masterContext.getResourceManager().getNodes().size();
-      }
-    });
+    metricsMap.put(Cluster.TOTAL_NODES.name(), (Gauge<Integer>) () -> masterContext.getResourceManager().getNodes().size());
 
-    metricsMap.put(Cluster.ACTIVE_NODES.name(), new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return getNumWorkers(NodeState.RUNNING);
-      }
-    });
+    metricsMap.put(Cluster.ACTIVE_NODES.name(), (Gauge<Integer>) () -> getNumWorkers(NodeState.RUNNING));
 
-    metricsMap.put(Cluster.LOST_NODES.name(), new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return getNumWorkers(NodeState.LOST);
-      }
-    });
+    metricsMap.put(Cluster.LOST_NODES.name(), (Gauge<Integer>) () -> getNumWorkers(NodeState.LOST));
 
-    metricsMap.put(Cluster.TOTAL_MEMORY.name(), new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return masterContext.getResourceManager().getScheduler().getMaximumResourceCapability().getMemory();
-      }
-    });
+    metricsMap.put(Cluster.TOTAL_MEMORY.name(), (Gauge<Integer>) () -> masterContext.getResourceManager().getScheduler().getMaximumResourceCapability().getMemory());
 
-    metricsMap.put(Cluster.FREE_MEMORY.name(), new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return masterContext.getResourceManager().getScheduler().getClusterResource().getMemory();
-      }
-    });
+    metricsMap.put(Cluster.FREE_MEMORY.name(), (Gauge<Integer>) () -> masterContext.getResourceManager().getScheduler().getClusterResource().getMemory());
 
-    metricsMap.put(Cluster.TOTAL_VCPU.name(), new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return masterContext.getResourceManager().getScheduler().getMaximumResourceCapability().getVirtualCores();
-      }
-    });
+    metricsMap.put(Cluster.TOTAL_VCPU.name(), (Gauge<Integer>) () -> masterContext.getResourceManager().getScheduler().getMaximumResourceCapability().getVirtualCores());
 
-    metricsMap.put(Cluster.FREE_VCPU.name(), new Gauge<Integer>() {
-      @Override
-      public Integer getValue() {
-        return masterContext.getResourceManager().getScheduler().getClusterResource().getVirtualCores();
-      }
-    });
+    metricsMap.put(Cluster.FREE_VCPU.name(), (Gauge<Integer>) () -> masterContext.getResourceManager().getScheduler().getClusterResource().getVirtualCores());
 
     return metricsMap;
   }

@@ -58,12 +58,7 @@ public class LogicalNodeDeserializer {
 
     // sort serialized logical nodes in an ascending order of their sids
     List<PlanProto.LogicalNode> nodeList = Lists.newArrayList(tree.getNodesList());
-    Collections.sort(nodeList, new Comparator<PlanProto.LogicalNode>() {
-      @Override
-      public int compare(PlanProto.LogicalNode o1, PlanProto.LogicalNode o2) {
-        return o1.getVisitSeq() - o2.getVisitSeq();
-      }
-    });
+    Collections.sort(nodeList, (o1, o2) -> o1.getVisitSeq() - o2.getVisitSeq());
 
     LogicalNode current = null;
 

@@ -2035,11 +2035,6 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   private static String buildIdentifierChain(final Collection<IdentifierContext> identifierChains) {
-    return Joiner.on(".").join(Collections2.transform(identifierChains, new Function<IdentifierContext, String>() {
-      @Override
-      public String apply(IdentifierContext identifierContext) {
-        return buildIdentifier(identifierContext);
-      }
-    }));
+    return Joiner.on(".").join(Collections2.transform(identifierChains, identifierContext -> buildIdentifier(identifierContext)));
   }
 }

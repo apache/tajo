@@ -157,30 +157,27 @@ public class TestTajoClientV2 extends QueryTestCaseBase {
     final AtomicBoolean success = new AtomicBoolean(false);
     final List<ResultSet> resultContainer = Lists.newArrayList();
 
-    future.addListener(new FutureListener<QueryFuture>() {
-      @Override
-      public void processingCompleted(QueryFuture future) {
-        try {
-          ResultSet result = future.get();
-          resultContainer.add(result); // for better error handling, it should be verified outside this future.
+    future.addListener(future1 -> {
+      try {
+        ResultSet result = future1.get();
+        resultContainer.add(result); // for better error handling, it should be verified outside this future.
 
-          assertTrue(future.isDone());
-          assertEquals(QueryState.COMPLETED, future.state());
-          assertTrue(future.isSuccessful());
-          assertFalse(future.isFailed());
-          assertFalse(future.isKilled());
-          assertTrue(1.0f == future.progress());
-          assertEquals("default", future.queue());
+        assertTrue(future1.isDone());
+        assertEquals(QueryState.COMPLETED, future1.state());
+        assertTrue(future1.isSuccessful());
+        assertFalse(future1.isFailed());
+        assertFalse(future1.isKilled());
+        assertTrue(1.0f == future1.progress());
+        assertEquals("default", future1.queue());
 
-          assertTrue(future.submitTime() > 0);
-          assertTrue(future.startTime() > 0);
-          assertTrue(future.finishTime() > 0);
+        assertTrue(future1.submitTime() > 0);
+        assertTrue(future1.startTime() > 0);
+        assertTrue(future1.finishTime() > 0);
 
-          success.set(true);
+        success.set(true);
 
-        } catch (Throwable t) {
-          throw new RuntimeException(t);
-        }
+      } catch (Throwable t) {
+        throw new RuntimeException(t);
       }
     });
 

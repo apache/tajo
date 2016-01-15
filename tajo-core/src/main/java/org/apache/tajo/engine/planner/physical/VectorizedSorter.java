@@ -63,16 +63,11 @@ public class VectorizedSorter extends ComparableVector implements IndexedSortabl
   @Override
   public Iterable<Tuple> sort() {
     new QuickSort().sort(this, 0, mappings.length);
-    return new Iterable<Tuple>() {
-      @Override
-      public Iterator<Tuple> iterator() {
-        return new Iterator<Tuple>() {
-          int index;
-          public boolean hasNext() { return index < mappings.length; }
-          public Tuple next() { return tuples[mappings[index++]]; }
-          public void remove() { throw new TajoRuntimeException(new UnsupportedException()); }
-        };
-      }
+    return () -> new Iterator<Tuple>() {
+      int index;
+      public boolean hasNext() { return index < mappings.length; }
+      public Tuple next() { return tuples[mappings[index++]]; }
+      public void remove() { throw new TajoRuntimeException(new UnsupportedException()); }
     };
   }
 }

@@ -902,12 +902,7 @@ public class QueryTestCaseBase {
       throw new IOException("Cannot find " + positiveQueryDir);
     }
 
-    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)), new Function<FileStatus, Path>(){
-      @Override
-      public Path apply(@Nullable FileStatus fileStatus) {
-        return fileStatus.getPath();
-      }
-    });
+    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)), fileStatus -> fileStatus.getPath());
   }
 
   private Collection<Path> getNegativeQueryFiles() throws IOException {
@@ -918,12 +913,7 @@ public class QueryTestCaseBase {
       throw new IOException("Cannot find " + positiveQueryDir);
     }
 
-    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)),new Function<FileStatus, Path>(){
-      @Override
-      public Path apply(@Nullable FileStatus fileStatus) {
-        return fileStatus.getPath();
-      }
-    });
+    return Collections2.transform(Lists.newArrayList(fs.listStatus(positiveQueryDir)), fileStatus -> fileStatus.getPath());
   }
 
   private Path getQueryFilePath(String fileName) throws IOException {

@@ -299,15 +299,10 @@ public class CatalogServer extends AbstractService {
 
         // retrieves tablespaces from linked meta data
         tableSpaces.addAll(Collections2.transform(linkedMetadataManager.getTablespaces(),
-            new Function<Pair<String, URI>, TablespaceProto>() {
-              @Override
-              public TablespaceProto apply(Pair<String, URI> input) {
-                return TablespaceProto.newBuilder()
-                    .setSpaceName(input.getFirst())
-                    .setUri(input.getSecond().toString())
-                    .build();
-              }
-            }));
+          input -> TablespaceProto.newBuilder()
+              .setSpaceName(input.getFirst())
+              .setUri(input.getSecond().toString())
+              .build()));
 
         return GetTablespaceListResponse.newBuilder()
             .setState(OK)

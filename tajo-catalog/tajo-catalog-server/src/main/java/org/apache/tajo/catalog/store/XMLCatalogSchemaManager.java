@@ -447,14 +447,8 @@ public class XMLCatalogSchemaManager {
   protected String[] listResources() throws IOException, URISyntaxException {
     String[] files = new String[0];
     URL dirURL = ClassLoader.getSystemResource(schemaPath);
-    FilenameFilter fileFilter = new FilenameFilter() {
-      
-      @Override
-      public boolean accept(File dir, String name) {
-        return ((name.lastIndexOf('.') > -1) && 
-            (".xml".equalsIgnoreCase(name.substring(name.lastIndexOf('.')))));
-      }
-    };
+    FilenameFilter fileFilter = (dir, name) -> ((name.lastIndexOf('.') > -1) &&
+        (".xml".equalsIgnoreCase(name.substring(name.lastIndexOf('.')))));
     
     if (dirURL == null) {
       throw new FileNotFoundException(schemaPath);

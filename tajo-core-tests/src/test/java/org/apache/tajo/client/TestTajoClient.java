@@ -770,12 +770,7 @@ public class TestTajoClient {
 
     List<ClientProtos.StageHistoryProto> taskHistories =
             new ArrayList<>(queryHistory.getStageHistoriesList());
-    Collections.sort(taskHistories, new Comparator<StageHistoryProto>() {
-      @Override
-      public int compare(ClientProtos.StageHistoryProto o1, StageHistoryProto o2) {
-        return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
-      }
-    });
+    Collections.sort(taskHistories, (o1, o2) -> o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId()));
     assertEquals(8, taskHistories.get(0).getTotalReadRows());
     assertEquals(1, taskHistories.get(0).getTotalWriteRows());
     assertEquals(1, taskHistories.get(1).getTotalReadRows());

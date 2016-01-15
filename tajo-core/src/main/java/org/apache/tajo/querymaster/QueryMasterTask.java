@@ -281,12 +281,7 @@ public class QueryMasterTask extends CompositeService {
   private class LocalTaskEventHandler implements EventHandler<LocalTaskEvent> {
     @Override
     public void handle(final LocalTaskEvent event) {
-      queryMasterContext.getEventExecutor().submit(new Runnable() {
-        @Override
-        public void run() {
-          killTaskAttempt(event.getWorkerId(), event.getTaskAttemptId());
-        }
-      });
+      queryMasterContext.getEventExecutor().submit((Runnable) () -> killTaskAttempt(event.getWorkerId(), event.getTaskAttemptId()));
     }
   }
 
@@ -475,17 +470,14 @@ public class QueryMasterTask extends CompositeService {
 
       LOG.info("Cleanup resources of all workers. Query: " + queryId + ", workers: " + workers.size());
       for (final InetSocketAddress worker : workers) {
-        queryMasterContext.getEventExecutor().submit(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true,
-                  rpcParams);
-              TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
-              tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
-            } catch (Throwable e) {
-              LOG.error(e.getMessage(), e);
-            }
+        queryMasterContext.getEventExecutor().submit((Runnable) () -> {
+          try {
+            AsyncRpcClient rpc = RpcClientManager.getInstance().getClient(worker, TajoWorkerProtocol.class, true,
+                rpcParams);
+            TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
+            tajoWorkerProtocolService.stopQuery(null, queryId.getProto(), NullCallback.get());
+          } catch (Throwable e) {
+            LOG.error(e.getMessage(), e);
           }
         });
       }

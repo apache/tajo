@@ -177,12 +177,7 @@ public class TestLinkedMetadataManager {
   @Test
   public void testGetTablespaces() throws Exception {
     Collection<String> names = Collections2.transform(catalog.getAllTablespaces(),
-        new Function<CatalogProtos.TablespaceProto, String>() {
-      @Override
-      public String apply(@Nullable CatalogProtos.TablespaceProto input) {
-        return input.getSpaceName();
-      }
-    });
+      input -> input.getSpaceName());
 
     assertEquals(Sets.newHashSet("space1", "space2", "default"), Sets.newHashSet(names));
   }

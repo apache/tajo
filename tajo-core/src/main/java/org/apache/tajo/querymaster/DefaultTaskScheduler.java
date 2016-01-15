@@ -722,17 +722,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       if (remainingTasks.size() > 0) {
         synchronized (scheduledRequests) {
           //find largest remaining task of other host in rack
-          Collections.sort(remainingTasks, new Comparator<HostVolumeMapping>() {
-            @Override
-            public int compare(HostVolumeMapping v1, HostVolumeMapping v2) {
-              // descending remaining tasks
-              if (v2.remainTasksNum.get() > v1.remainTasksNum.get()) {
-                return 1;
-              } else if (v2.remainTasksNum.get() == v1.remainTasksNum.get()) {
-                return 0;
-              } else {
-                return -1;
-              }
+          Collections.sort(remainingTasks, (v1, v2) -> {
+            // descending remaining tasks
+            if (v2.remainTasksNum.get() > v1.remainTasksNum.get()) {
+              return 1;
+            } else if (v2.remainTasksNum.get() == v1.remainTasksNum.get()) {
+              return 0;
+            } else {
+              return -1;
             }
           });
         }

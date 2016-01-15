@@ -151,11 +151,9 @@ public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpR
           file.startOffset(), file.length());
       writeFuture = ctx.write(region);
       lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
-      writeFuture.addListener(new ChannelFutureListener() {
-        public void operationComplete(ChannelFuture future) {
-          if (region.refCnt() > 0) {
-            region.release();
-          }
+      writeFuture.addListener(future -> {
+        if (region.refCnt() > 0) {
+          region.release();
         }
       });
     }

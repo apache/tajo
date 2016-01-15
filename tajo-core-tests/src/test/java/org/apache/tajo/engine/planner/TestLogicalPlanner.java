@@ -1355,12 +1355,7 @@ public class TestLogicalPlanner {
 
     // projection column test
     List<Target> targets = projectionNode.getTargets();
-    Collections.sort(targets, new Comparator<Target>() {
-      @Override
-      public int compare(Target o1, Target o2) {
-        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
-      }
-    });
+    Collections.sort(targets, (o1, o2) -> o1.getCanonicalName().compareTo(o2.getCanonicalName()));
     assertEquals(3, targets.size());
     assertEquals("default.self_desc_table1.dept", targets.get(0).getCanonicalName());
     assertEquals("default.self_desc_table1.id", targets.get(1).getCanonicalName());
@@ -1370,12 +1365,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.SCAN, projectionNode.getChild().getType());
     ScanNode scanNode = projectionNode.getChild();
     targets = scanNode.getTargets();
-    Collections.sort(targets, new Comparator<Target>() {
-      @Override
-      public int compare(Target o1, Target o2) {
-        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
-      }
-    });
+    Collections.sort(targets, (o1, o2) -> o1.getCanonicalName().compareTo(o2.getCanonicalName()));
     assertEquals(3, targets.size());
     assertEquals("default.self_desc_table1.dept", targets.get(0).getCanonicalName());
     assertEquals("default.self_desc_table1.id", targets.get(1).getCanonicalName());
@@ -1409,12 +1399,7 @@ public class TestLogicalPlanner {
 
     // projection column test
     List<Target> targets = projectionNode.getTargets();
-    Collections.sort(targets, new Comparator<Target>() {
-      @Override
-      public int compare(Target o1, Target o2) {
-        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
-      }
-    });
+    Collections.sort(targets, (o1, o2) -> o1.getCanonicalName().compareTo(o2.getCanonicalName()));
     assertEquals(2, targets.size());
     assertEquals("default.self_desc_table1.dept", targets.get(0).getCanonicalName());
     assertEquals("default.self_desc_table1.name", targets.get(1).getCanonicalName());
@@ -1428,12 +1413,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.SCAN, selectionNode.getChild().getType());
     ScanNode scanNode = selectionNode.getChild();
     targets = scanNode.getTargets();
-    Collections.sort(targets, new Comparator<Target>() {
-      @Override
-      public int compare(Target o1, Target o2) {
-        return o1.getCanonicalName().compareTo(o2.getCanonicalName());
-      }
-    });
+    Collections.sort(targets, (o1, o2) -> o1.getCanonicalName().compareTo(o2.getCanonicalName()));
     assertEquals(4, targets.size());
     assertEquals("?greaterthan", targets.get(0).getCanonicalName());
     assertEquals("default.self_desc_table1.dept", targets.get(1).getCanonicalName());

@@ -252,36 +252,33 @@ public class TestNodeResourceManager {
     List<Future> futureList = Lists.newArrayList();
 
     for (int i = 0; i < parallelCount; i++) {
-      futureList.add(executor.submit(new Runnable() {
-            @Override
-            public void run() {
-              int complete = 0;
-              while (true) {
-                TaskAllocationProto task = totalTasks.poll();
-                if (task == null) break;
+      futureList.add(executor.submit((Runnable) () -> {
+        int complete = 0;
+        while (true) {
+          TaskAllocationProto task1 = totalTasks.poll();
+          if (task1 == null) break;
 
 
-                BatchAllocationRequest.Builder requestProto = BatchAllocationRequest.newBuilder();
-                requestProto.addTaskRequest(task);
-                requestProto.setExecutionBlockId(ebId.getProto());
+          BatchAllocationRequest.Builder requestProto1 = BatchAllocationRequest.newBuilder();
+          requestProto1.addTaskRequest(task1);
+          requestProto1.setExecutionBlockId(ebId.getProto());
 
-                CallFuture<BatchAllocationResponse> callFuture = new CallFuture<>();
-                dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto.build(), callFuture));
-                try {
-                  BatchAllocationResponse proto = callFuture.get();
-                  if (proto.getCancellationTaskCount() > 0) {
-                    totalTasks.addAll(proto.getCancellationTaskList());
-                    totalCanceled.addAndGet(proto.getCancellationTaskCount());
-                  } else {
-                    complete++;
-                  }
-                } catch (Exception e) {
-                  fail(e.getMessage());
-                }
-              }
-              totalComplete.addAndGet(complete);
+          CallFuture<BatchAllocationResponse> callFuture1 = new CallFuture<>();
+          dispatcher.getEventHandler().handle(new NodeResourceAllocateEvent(requestProto1.build(), callFuture1));
+          try {
+            BatchAllocationResponse proto = callFuture1.get();
+            if (proto.getCancellationTaskCount() > 0) {
+              totalTasks.addAll(proto.getCancellationTaskList());
+              totalCanceled.addAndGet(proto.getCancellationTaskCount());
+            } else {
+              complete++;
             }
-          })
+          } catch (Exception e) {
+            fail(e.getMessage());
+          }
+        }
+        totalComplete.addAndGet(complete);
+      })
       );
     }
 

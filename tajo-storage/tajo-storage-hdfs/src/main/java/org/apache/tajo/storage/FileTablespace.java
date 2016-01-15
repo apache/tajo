@@ -56,11 +56,9 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENAB
 
 public class FileTablespace extends Tablespace {
 
-  public static final PathFilter hiddenFileFilter = new PathFilter() {
-    public boolean accept(Path p) {
-      String name = p.getName();
-      return !name.startsWith("_") && !name.startsWith(".");
-    }
+  public static final PathFilter hiddenFileFilter = p -> {
+    String name1 = p.getName();
+    return !name1.startsWith("_") && !name1.startsWith(".");
   };
   private static final Log LOG = LogFactory.getLog(FileTablespace.class);
 
@@ -424,13 +422,7 @@ public class FileTablespace extends Tablespace {
     }
 
     List<Map.Entry<String, Integer>> entries = new ArrayList<>(hostsBlockMap.entrySet());
-    Collections.sort(entries, new Comparator<Map.Entry<String, Integer>>() {
-
-      @Override
-      public int compare(Map.Entry<String, Integer> v1, Map.Entry<String, Integer> v2) {
-        return v1.getValue().compareTo(v2.getValue());
-      }
-    });
+    Collections.sort(entries, (v1, v2) -> v1.getValue().compareTo(v2.getValue()));
 
     String[] hosts = new String[blkLocations[0].getHosts().length];
 

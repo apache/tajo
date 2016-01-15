@@ -62,12 +62,7 @@ public class EvalNodeDeserializer {
 
     // sort serialized eval nodes in an ascending order of their IDs.
     List<PlanProto.EvalNode> nodeList = Lists.newArrayList(tree.getNodesList());
-    Collections.sort(nodeList, new Comparator<PlanProto.EvalNode>() {
-      @Override
-      public int compare(PlanProto.EvalNode o1, PlanProto.EvalNode o2) {
-        return o1.getId() - o2.getId();
-      }
-    });
+    Collections.sort(nodeList, (o1, o2) -> o1.getId() - o2.getId());
 
     EvalNode current = null;
 
