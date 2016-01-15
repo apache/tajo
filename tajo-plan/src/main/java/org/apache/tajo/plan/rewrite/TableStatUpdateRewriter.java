@@ -27,11 +27,13 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.StorageService;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.storage.StorageService;
 
+import java.util.Optional;
 import java.util.Stack;
 
 public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
@@ -75,15 +77,15 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
       final TableDesc table = scanNode.getTableDesc();
 
       if (!isVirtual(table)) {
-
         final TableStats stats = getTableStat(table);
         final long tableSize = stats.getNumBytes();
+        final Optional<EvalNode> filter = scanNode.hasQual() ? Optional.of(scanNode.getQual()) : Optional.empty();
 
         // If USE_TABLE_VOLUME is set, we will update the table volume through a storage handler.
         // In addition, if the table size is zero, we will update too.
         // It is a good workaround to avoid suboptimal join orders without cheap cost.
         if (conf.getBool(SessionVars.USE_TABLE_VOLUME) || tableSize == 0) {
-          table.getStats().setNumBytes(getTableVolume(table));
+          table.getStats().setNumBytes(getTableVolume(table, filter));
         }
       }
 
@@ -105,10 +107,10 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
       return table.getMeta().getDataFormat().equals("SYSTEM");
     }
 
-    private long getTableVolume(TableDesc table) {
+    private long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
       try {
         if (table.getStats() != null) {
-          return storage.getTableVolumn(table.getUri());
+          return storage.getTableVolumn(table.getUri(), filter);
         }
       } catch (UnsupportedException t) {
         LOG.warn(table.getName() + " does not support Tablespace::getTableVolume()");

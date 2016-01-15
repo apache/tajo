@@ -125,7 +125,7 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri) throws UnsupportedException {
+  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
     Path path = new Path(uri);
     ContentSummary summary;
     try {
@@ -321,9 +321,7 @@ public class FileTablespace extends Tablespace {
 
     PathFilter inputFilter = new MultiPathFilter(filters);
 
-    for (int i = 0; i < dirs.length; ++i) {
-      Path p = dirs[i];
-
+    for (Path p : dirs) {
       FileStatus[] matches = fs.globStatus(p, inputFilter);
       if (matches == null) {
         LOG.warn("Input path does not exist: " + p);

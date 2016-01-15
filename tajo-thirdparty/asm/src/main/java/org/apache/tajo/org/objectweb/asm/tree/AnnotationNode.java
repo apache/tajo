@@ -213,8 +213,8 @@ public class AnnotationNode extends AnnotationVisitor {
             } else if (value instanceof List) {
                 AnnotationVisitor v = av.visitArray(name);
                 List<?> array = (List<?>) value;
-                for (int j = 0; j < array.size(); ++j) {
-                    accept(v, null, array.get(j));
+                for (Object anArray : array) {
+                    accept(v, null, anArray);
                 }
                 v.visitEnd();
             } else {

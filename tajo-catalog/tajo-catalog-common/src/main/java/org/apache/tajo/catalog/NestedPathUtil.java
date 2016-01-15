@@ -57,7 +57,7 @@ public class NestedPathUtil {
     StringBuilder sb = new StringBuilder();
     for (int i = startIndex; i < depth; i++) {
       sb.append(PATH_DELIMITER);
-      sb.append(parts[i].toString());
+      sb.append(parts[i]);
     }
 
     return sb.toString();

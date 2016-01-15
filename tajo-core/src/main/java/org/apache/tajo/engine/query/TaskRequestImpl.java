@@ -26,7 +26,6 @@ import org.apache.tajo.ResourceProtos.TaskRequestProto;
 import org.apache.tajo.ResourceProtos.FetchProto;
 import org.apache.tajo.ResourceProtos.TaskRequestProtoOrBuilder;
 import org.apache.tajo.plan.serder.PlanProto;
-import org.apache.tajo.worker.FetchImpl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -87,9 +86,8 @@ public class TaskRequestImpl implements TaskRequest {
     this.queryContext = queryContext;
     this.dataChannel = dataChannel;
     this.enforcer = enforcer;
-		this.queryMasterHostAndPort = queryMasterHostAndPort;
-	}
-
+    this.queryMasterHostAndPort = queryMasterHostAndPort;
+  }
 	@Override
 	public TaskRequestProto getProto() {
 		mergeLocalToProto();
@@ -214,8 +212,7 @@ public class TaskRequestImpl implements TaskRequest {
 
   @Override
   public List<FetchProto> getFetches() {
-	  initFetches();    
-
+	  initFetches();
     return this.fetches;
 	}
 	
@@ -242,8 +239,8 @@ public class TaskRequestImpl implements TaskRequest {
 			builder.setId(this.id.getProto());
 		}
 		if (fragments != null) {
-			for (int i = 0; i < fragments.size(); i++) {
-				builder.addFragments(fragments.get(i));
+      for (FragmentProto fragment : fragments) {
+        builder.addFragments(fragment);
 			}
 		}
 		if (this.outputTable != null) {
@@ -259,8 +256,8 @@ public class TaskRequestImpl implements TaskRequest {
 		  builder.setInterQuery(this.interQuery);
 		}
     if (this.fetches != null) {
-      for (int i = 0; i < fetches.size(); i++) {
-        builder.addFetches(fetches.get(i));
+      for (FetchProto fetch : fetches) {
+        builder.addFetches(fetch);
       }
     }
     if (this.queryMasterHostAndPort != null) {

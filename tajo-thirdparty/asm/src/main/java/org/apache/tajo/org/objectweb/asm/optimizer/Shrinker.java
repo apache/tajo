@@ -98,8 +98,8 @@ public class Shrinker {
             throws IOException {
         if (f.isDirectory()) {
             File[] files = f.listFiles();
-            for (int i = 0; i < files.length; ++i) {
-                optimize(files[i], d, remapper);
+            for (File file : files) {
+                optimize(file, d, remapper);
             }
         } else if (f.getName().endsWith(".class")) {
             ConstantPool cp = new ConstantPool();

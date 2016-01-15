@@ -100,7 +100,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri) throws UnsupportedException {
+  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
     throw new UnsupportedException();
   }
 
@@ -142,8 +142,8 @@ public class HBaseTablespace extends Tablespace {
     ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getPropertySet());
     int numRowKeys = 0;
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
-    for (int i = 0; i < isRowKeyMappings.length; i++) {
-      if (isRowKeyMappings[i]) {
+    for (boolean isRowKeyMapping : isRowKeyMappings) {
+      if (isRowKeyMapping) {
         numRowKeys++;
       }
     }

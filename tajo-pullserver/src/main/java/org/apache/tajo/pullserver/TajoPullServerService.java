@@ -655,7 +655,7 @@ public class TajoPullServerService extends AbstractService {
         writeFuture = ctx.write(response);
 
         for (FileChunk chunk : file) {
-          writeFuture = sendFile(ctx, chunk, request.getUri().toString());
+          writeFuture = sendFile(ctx, chunk, request.getUri());
           if (writeFuture == null) {
             sendError(ctx, HttpResponseStatus.NOT_FOUND);
             return;

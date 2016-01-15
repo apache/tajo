@@ -357,8 +357,8 @@ public class HttpServer {
       }
       // Make sure there is no handler failures.
       Handler[] handlers = webServer.getHandlers();
-      for (int i = 0; i < handlers.length; i++) {
-        if (handlers[i].isFailed()) {
+      for (Handler handler : handlers) {
+        if (handler.isFailed()) {
           throw new IOException(
               "Problem in starting http server. Server handlers failed");
         }

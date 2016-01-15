@@ -47,6 +47,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
@@ -109,7 +110,7 @@ public abstract class JdbcTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri) throws UnsupportedException {
+  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
     throw new UnsupportedException();
   }
 
