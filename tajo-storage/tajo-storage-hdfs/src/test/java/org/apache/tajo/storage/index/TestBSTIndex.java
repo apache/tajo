@@ -49,7 +49,7 @@ public class TestBSTIndex {
   private Schema schema;
   private TableMeta meta;
 
-  private static final int TUPLE_NUM = 1000000;
+  private static final int TUPLE_NUM = 10000;
   private static final int LOAD_NUM = 100;
   private static final String TEST_PATH = "target/test-data/TestIndex";
   private Path testDir;
@@ -130,7 +130,6 @@ public class TestBSTIndex {
 
     Tuple keyTuple;
     long offset;
-    long sum = 0;
     while (true) {
       keyTuple = new VTuple(2);
       offset = scanner.getNextOffset();
@@ -139,12 +138,8 @@ public class TestBSTIndex {
 
       keyTuple.put(0, tuple.asDatum(1));
       keyTuple.put(1, tuple.asDatum(2));
-      long start = System.currentTimeMillis();
       creater.write(keyTuple, offset);
-      long end = System.currentTimeMillis();
-      sum += (end - start);
     }
-    System.out.println("write : "+(sum/1000)+" sec");
 
     creater.flush();
     creater.close();
@@ -160,10 +155,7 @@ public class TestBSTIndex {
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
       tuple.put(0, DatumFactory.createInt8(i));
       tuple.put(1, DatumFactory.createFloat8(i));
-      long start = System.currentTimeMillis();
       long offsets = reader.find(tuple);
-      long end = System.currentTimeMillis();
-      sum += end-start;
       scanner.seek(offsets);
       tuple = scanner.next();
       assertTrue("seek check [" + (i) + " ," + (tuple.getInt8(1)) + "]", (i) == (tuple.getInt8(1)));
@@ -178,7 +170,6 @@ public class TestBSTIndex {
       assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.getInt4(0)));
       assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.getInt8(1)));
     }
-    System.out.println("find: "+(sum / 1000) + " sec");
     reader.close();
     scanner.close();
   }
