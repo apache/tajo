@@ -41,6 +41,8 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
@@ -66,8 +68,8 @@ public class TestTablesResource extends QueryTestCaseBase {
 
   @Before
   public void setUp() throws Exception {
-    int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
-    restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
+    InetSocketAddress address = testBase.getTestingCluster().getConfiguration().getSocketAddrVar(ConfVars.REST_SERVICE_ADDRESS);
+    restServiceURI = new URI("http", null, address.getHostName(), address.getPort(), "/rest", null, null);
     tablesURI = new URI(restServiceURI + "/databases/" + defaultDatabaseName + "/tables");
 		queriesURI = new URI(restServiceURI + "/queries");
 		sessionsURI = new URI(restServiceURI + "/sessions");

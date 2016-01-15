@@ -7,6 +7,9 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2032: Change tajo.rest.service.port to be the general style in TAJO.
+    (Byunghwa Yun via jihoon)
+
     TAJO-2040: Decrease the default size of max request for locality. (jinho)
 
     TAJO-1950: Query master uses too much memory during range shuffle. (jihoon)
