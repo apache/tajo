@@ -100,7 +100,7 @@ In order to create a new HBase table which is to be managed by Tajo, use the USI
   USING hbase WITH (
     'table'='blog'
     , 'columns'=':key,info:author,info:date,content:title')
-  LOCATION 'hbase:zk://localhost:2181/';
+  LOCATION 'hbase:zk://<hostname>:<port>/';
 
 After executing the command above, you should be able to see the new table in the HBase shell:
 
