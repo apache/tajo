@@ -819,6 +819,9 @@ public class BSTIndex implements IndexMethod {
             break;
           } else {
             if (end == arr.length) {
+              if (comparator.compare(arr[start], key) == 0) {
+                correctable = true;
+              }
               offset = start;
               break;
             }
