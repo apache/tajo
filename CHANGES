@@ -7,6 +7,8 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1740: Update Partition Table document. (jaehwa)
+
     TAJO-2053: Update description for HBase configuration.
     (Dongkyu Hwangbo via jaehwa)
 
