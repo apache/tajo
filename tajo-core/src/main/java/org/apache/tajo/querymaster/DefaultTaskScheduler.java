@@ -290,11 +290,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     Set<Integer> workerIds = Sets.newHashSet();
     if(hosts.isEmpty()) return workerIds;
 
-    for (WorkerConnectionInfo worker : stage.getContext().getWorkerMap().values()) {
-      if(hosts.contains(worker.getHost())){
-        workerIds.add(worker.getId());
-      }
-    }
+    stage.getContext().getWorkerMap().values().stream().filter(worker -> hosts.contains(worker.getHost()))
+      .forEach(worker -> workerIds.add(worker.getId()));
     return workerIds;
   }
 
@@ -1014,9 +1011,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           for(Map.Entry<String, Set<FetchProto>> entry: task.getFetchMap().entrySet()) {
             Collection<FetchProto> fetches = entry.getValue();
             if (fetches != null) {
-              for (FetchProto fetch : fetches) {
-                taskAssign.addFetch(fetch);
-              }
+              fetches.forEach(taskAssign::addFetch);
             }
           }
 

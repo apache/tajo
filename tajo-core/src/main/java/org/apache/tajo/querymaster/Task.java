@@ -782,16 +782,11 @@ public class Task implements EventHandler<TaskEvent> {
       this.volume = proto.getVolume();
 
       failureRowNums = new ArrayList<>();
-      for (FailureIntermediateProto eachFailure: proto.getFailuresList()) {
-
-        failureRowNums.add(new Pair(eachFailure.getPagePos(),
-          new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum())));
-      }
+      proto.getFailuresList().stream().map(eachFailure -> new Pair(eachFailure.getPagePos(),
+        new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum()))).forEach(eachFailure -> failureRowNums.add(eachFailure));
 
       pages = new ArrayList<>();
-      for (IntermediateEntryProto.PageProto eachPage: proto.getPagesList()) {
-        pages.add(new Pair(eachPage.getPos(), eachPage.getLength()));
-      }
+      proto.getPagesList().stream().map(eachPage -> new Pair(eachPage.getPos(), eachPage.getLength())).forEach(eachPage -> pages.add(eachPage));
     }
 
     public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host) {

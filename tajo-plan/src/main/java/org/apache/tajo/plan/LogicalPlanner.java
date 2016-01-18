@@ -60,6 +60,7 @@ import org.apache.tajo.util.StringUtils;
 import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
 import static org.apache.tajo.plan.ExprNormalizer.ExprNormalizedResult;
@@ -735,9 +736,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
       }
     }
-    for (String winFuncRef : winFuncRefs) {
-      targets.add(block.namedExprsMgr.getTarget(winFuncRef));
-    }
+    targets.addAll(winFuncRefs.stream().map(block.namedExprsMgr::getTarget).collect(Collectors.toList()));
     windowAggNode.setTargets(targets);
     verifyProjectedFields(block, windowAggNode);
 
@@ -1189,9 +1188,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode, isTopMostJoin);
     List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
 
-    for (String newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
-    }
+    targets.addAll(newlyEvaluatedExprs.stream().map(newAddedExpr -> block.namedExprsMgr.getTarget(newAddedExpr, true)).collect(Collectors.toList()));
     joinNode.setTargets(targets);
 
     // Determine join conditions
@@ -1285,9 +1282,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
-    for (String newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
-    }
+    targets.addAll(newlyEvaluatedExprs.stream().map(newAddedExpr -> block.namedExprsMgr.getTarget(newAddedExpr, true)).collect(Collectors.toList()));
     join.setTargets(targets);
     return join;
   }
@@ -1425,9 +1420,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Assume that each unique expr is evaluated once.
     LinkedHashSet<Target> targets = createFieldTargetsFromRelation(block, subQueryNode, newlyEvaluatedExprs);
 
-    for (String newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
-    }
+    targets.addAll(newlyEvaluatedExprs.stream().map(newAddedExpr -> block.namedExprsMgr.getTarget(newAddedExpr, true)).collect(Collectors.toList()));
 
     subQueryNode.setTargets(new ArrayList<>(targets));
   }

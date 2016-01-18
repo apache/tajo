@@ -457,9 +457,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       }
 
       // Add simple columns
-      for (Column eachColumn : simpleColumns) {
-        schema.add(eachColumn);
-      }
+      simpleColumns.forEach(schema::add);
 
       return schema.build();
     }

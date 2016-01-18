@@ -600,18 +600,10 @@ public class XMLCatalogSchemaManager {
           unorderedObjects.add(object);
         }
       }
-      
-      for (DatabaseObject object: orderedObjects) {
-        if (object != null) {
-          mergedObjects.add(object);
-        }
-      }
-      
-      for (DatabaseObject object: unorderedObjects) {
-        if (object != null) {
-          mergedObjects.add(object);
-        }
-      }
+
+      mergedObjects.addAll(orderedObjects.stream().filter(object -> object != null).collect(Collectors.toList()));
+
+      mergedObjects.addAll(unorderedObjects.stream().filter(object -> object != null).collect(Collectors.toList()));
       
       return mergedObjects;
     }
@@ -692,9 +684,7 @@ public class XMLCatalogSchemaManager {
       boolean alreadySetDatabaseObject = false;
       
       // first pass
-      for (StoreObject store : this.storeObjects) {
-        copySchemaInfo(store);
-      }
+      this.storeObjects.forEach(this::copySchemaInfo);
       
       // second pass
       for (StoreObject store: this.storeObjects) {

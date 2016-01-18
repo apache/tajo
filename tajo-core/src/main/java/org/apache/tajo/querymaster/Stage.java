@@ -495,9 +495,7 @@ public class Stage implements EventHandler<StageEvent> {
     }
 
     Set<Integer> partitions = Sets.newHashSet();
-    for (IntermediateEntry entry : getHashShuffleIntermediateEntries()) {
-      partitions.add(entry.getPartId());
-    }
+    getHashShuffleIntermediateEntries().stream().forEach(entry -> partitions.add(entry.getPartId()));
 
     stageHistory.setTotalInputBytes(totalInputBytes);
     stageHistory.setTotalReadBytes(totalReadBytes);
@@ -763,9 +761,7 @@ public class Stage implements EventHandler<StageEvent> {
     if (!getContext().getQueryContext().getBool(SessionVars.DEBUG_ENABLED)) {
       List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
 
-      for (ExecutionBlock executionBlock : childs) {
-        ebIds.add(executionBlock.getId().getProto());
-      }
+      ebIds.addAll(childs.stream().map(executionBlock -> executionBlock.getId().getProto()).collect(Collectors.toList()));
     }
 
     StopExecutionBlockRequest.Builder stopRequest = StopExecutionBlockRequest.newBuilder();
@@ -1328,9 +1324,7 @@ public class Stage implements EventHandler<StageEvent> {
 
     completedShuffleTasks.addAndGet(report.getSucceededTasks());
     if (report.getIntermediateEntriesCount() > 0) {
-      for (IntermediateEntryProto eachInterm : report.getIntermediateEntriesList()) {
-        hashShuffleIntermediateEntries.add(new IntermediateEntry(eachInterm));
-      }
+      hashShuffleIntermediateEntries.addAll(report.getIntermediateEntriesList().stream().map(IntermediateEntry::new).collect(Collectors.toList()));
     }
 
     if (completedShuffleTasks.get() >= succeededObjectCount) {
