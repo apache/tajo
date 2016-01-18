@@ -65,8 +65,7 @@ If a table created using the ``PARTITION BY`` clause, a query can do partition p
 
   SELECT * FROM student WHERE country = 'KOREA' AND city = 'SEOUL';
 
-The following predicates in the ``WHERE`` clause can be used to prune unqualified column partitions without processing
-during query planning phase.
+The following predicates in the ``WHERE`` clause can be used to prune column partitions during query planning phase.
 
 * ``=``
 * ``<>``
