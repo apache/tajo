@@ -97,7 +97,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void init(Configuration conf) {
     tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    rpcParams = RpcParameterFactory.get(new TajoConf());
+    rpcParams = RpcParameterFactory.get(tajoConf);
 
     scheduledRequests = new ScheduledRequests();
     minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
