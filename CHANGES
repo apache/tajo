@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2057: Remove redundant class loading in plan optimizer. (jinho)
+
     TAJO-2032: Change tajo.rest.service.port to be the general style in TAJO.
     (Byunghwa Yun via jihoon)
 
