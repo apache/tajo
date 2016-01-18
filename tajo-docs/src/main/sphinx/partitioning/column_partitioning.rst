@@ -59,7 +59,7 @@ You might have noticed that while the partitioning key columns are a part of the
 Querying Partitioned Tables
 ==================================================
 
-If a table created using the PARTITION BY clause, a query can do partition pruning and scan only a fraction of the table relevant to the partitions specified by the query. Tajo currently does partition pruning if the partition predicates are specified in the WHERE clause. For example, if table student is partitioned on column country and column city, the following query retrieves rows in ``country=KOREA\city=SEOUL`` directory.
+If a table created using the ``PARTITION BY`` clause, a query can do partition pruning and scan only a fraction of the table relevant to the partitions specified by the query. Tajo currently does partition pruning if the partition predicates are specified in the WHERE clause. For example, if table student is partitioned on column country and column city, the following query retrieves rows in ``country=KOREA\city=SEOUL`` directory.
 
 .. code-block:: sql
 
