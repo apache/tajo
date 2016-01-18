@@ -37,8 +37,7 @@ If you want to make country as partitioned column, your Tajo definition would be
     phone     TEXT
   ) PARTITION BY COLUMN (country TEXT);
 
-Now your users will still query on ``WHERE country = '...'`` but the 2nd column will be the original values.
-Here's an example statement to create a table:
+Let us assume you want to use more partition columns and parquet file format. Here's an example statement to create a table:
 
 .. code-block:: sql
 
@@ -51,14 +50,20 @@ Here's an example statement to create a table:
   ) USING PARQUET
   PARTITION BY COLUMN (country TEXT, city TEXT);
 
-The statement above creates the student table with id, name, grade. The table is also partitioned and data is stored in parquet files.
+The statement above creates the student table with id, name, grade, etc. The table is also partitioned and data is stored in parquet files.
 
 You might have noticed that while the partitioning key columns are a part of the table DDL, they’re only listed in the ``PARTITION BY`` clause. In Tajo, as data is written to disk, each partition of data will be automatically split out into different folders, e.g. country=USA/city=NEWYORK. During a read operation, Tajo will use the folder structure to quickly locate the right partitions and also return the partitioning columns as columns in the result set.
 
 
 ==================================================
-Partition Pruning on Column Partitioned Tables
+Querying Partitioned Tables
 ==================================================
+
+If a table created using the PARTITION BY clause, a query can do partition pruning and scan only a fraction of the table relevant to the partitions specified by the query. Tajo currently does partition pruning if the partition predicates are specified in the WHERE clause. For example, if table student is partitioned on column country and column city, the following query retrieves rows in ``country=KOREA\city=SEOUL`` directory.
+
+.. code-block:: sql
+
+  SELECT * FROM student WHERE country = 'KOREA' AND city = 'SEOUL';
 
 The following predicates in the ``WHERE`` clause can be used to prune unqualified column partitions without processing
 during query planning phase.
@@ -71,12 +76,6 @@ during query planning phase.
 * ``<=``
 * LIKE predicates with a leading wild-card character
 * IN list predicates
-
-.. code-block:: sql
-
-  SELECT * FROM student WHERE country = 'KOREA' AND city = 'SEOUL';
-  SELECT * FROM student WHERE country = 'USA' AND (city = 'NEWYORK' OR city = 'BOSTON');
-  SELECT * FROM student WHERE country = 'USA' AND city <> 'NEWYORK';
 
 
 ==================================================
@@ -233,5 +232,5 @@ You will see table information in Tajo:
 How to add data to partition table
 --------------------------------------------------------
 
-In Tajo, you can add data dynamically to partition table of Hive with both ``INSERT INTO ... SELECT`` and ``Create Table As Select (CTAS)`` statments. Tajo will automatically filter the data to HiveMetastore, create directories and move filtered data to appropriate directory on the distributed file system
+In Tajo, you can add data dynamically to partition table of Hive with both ``INSERT INTO ... SELECT`` and ``Create Table As Select (CTAS)`` statments. Tajo will automatically filter the data to HiveMetastore, create directories and move filtered data to appropriate directory on the distributed file system.
 
