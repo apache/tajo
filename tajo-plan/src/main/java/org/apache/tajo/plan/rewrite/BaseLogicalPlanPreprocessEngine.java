@@ -42,7 +42,7 @@ public class BaseLogicalPlanPreprocessEngine implements LogicalPlanPreprocessEng
   }
 
   /** class logger */
-  private Log LOG = LogFactory.getLog(BaseLogicalPlanPreprocessEngine.class);
+  private static Log LOG = LogFactory.getLog(BaseLogicalPlanPreprocessEngine.class);
 
   /** a map for pre-process phases */
   private Map<String, LogicalPlanPreprocessPhase> preprocessPhases = new LinkedHashMap<>();

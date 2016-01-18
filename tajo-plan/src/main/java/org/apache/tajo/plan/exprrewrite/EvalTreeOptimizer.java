@@ -36,9 +36,9 @@ import java.util.Set;
 public class EvalTreeOptimizer {
   private static final Log LOG = LogFactory.getLog(EvalTreeOptimizer.class);
 
-  private List<EvalTreeOptimizationRule> rules = Lists.newArrayList();
+  private static List<EvalTreeOptimizationRule> rules = Lists.newArrayList();
 
-  public EvalTreeOptimizer() {
+  static {
     Set<Class> functionClasses = ClassUtil.findClasses(EvalTreeOptimizationRule.class,
         EvalTreeOptimizationRule.class.getPackage().getName() + ".rules");
 
@@ -65,6 +65,9 @@ public class EvalTreeOptimizer {
         return priority1 - priority2;
       }
     });
+  }
+
+  public EvalTreeOptimizer() {
   }
 
   public EvalNode optimize(LogicalPlanner.PlanContext context, EvalNode node) {
