@@ -282,24 +282,12 @@ public class HdfsServiceTracker extends HAServiceTracker {
   public synchronized void delete() throws IOException {
     stopped = true;
 
-    if (checkerThread != null) {
-      checkerThread.interrupt();
-      try {
-        checkerThread.join();
-      } catch (InterruptedException ie) {
-        LOG.warn("Ignore InterruptedException from PingChecker.join");
-      }
-    }
-
     if (ShutdownHookManager.get().isShutdownInProgress()) return;
 
     String fileName = masterName.replaceAll(":", "_");
 
-    fs.cancelDeleteOnExit(new Path(activePath, fileName));
     fs.delete(new Path(activePath, fileName), false);
-    fs.cancelDeleteOnExit(new Path(activePath, fileName));
     fs.delete(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE), false);
-    fs.cancelDeleteOnExit(new Path(backupPath, fileName));
     fs.delete(new Path(backupPath, fileName), false);
   }
 
