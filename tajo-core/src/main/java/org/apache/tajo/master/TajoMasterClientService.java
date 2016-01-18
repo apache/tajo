@@ -107,7 +107,7 @@ public class TajoMasterClientService extends AbstractService {
   @Override
   public void serviceStop() throws Exception {
     if (server != null) {
-      server.shutdown();
+      server.shutdown(true);
     }
     super.serviceStop();
   }
