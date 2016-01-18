@@ -9,11 +9,13 @@ In order to use this feature, you need to build add some configs into ``conf/taj
 
 This section describes how to setup HBase integration.
 
-First, you need to set your HBase home directory to the environment variable ``HBASE_HOME`` in conf/tajo-env.sh as follows: ::
+First, you need to set your HBase home directory to the environment variable ``HBASE_HOME`` in ``conf/tajo-env.sh`` as follows: ::
 
   export HBASE_HOME=/path/to/your/hbase/directory
 
 If you set the directory, Tajo will add HBase library file to classpath.
+
+Next, you must configure tablespace about HBase. Please see :doc:`/table_management/tablespaces` if you want to know more information about it.
 
 
 
@@ -30,8 +32,12 @@ CREATE TABLE
   WITH ('table'='<hbase_table_name>'
   , 'columns'=':key,<column_family_name>:<qualifier_name>, ...'
   , 'hbase.zookeeper.quorum'='<zookeeper_address>'
-  , 'hbase.zookeeper.property.clientPort'='<zookeeper_client_port>'
-  )
+  , 'hbase.zookeeper.property.clientPort'='<zookeeper_client_port>')
+  [LOCATION 'hbase:zk://<hostname>:<port>/'] ;
+
+``IF NOT EXISTS`` allows ``CREATE [EXTERNAL] TABLE`` statement to avoid an error which occurs when the table does not exist.
+
+If you want to create ``EXTERNAL TABLE``, You must write ``LOCATION`` statement.
 
 Options
 
@@ -40,7 +46,6 @@ Options
 * ``hbase.zookeeper.quorum`` : Set zookeeper quorum address. You can use different zookeeper cluster on the same Tajo database. If you don't set the zookeeper address, Tajo will refer the property of hbase-site.xml file.
 * ``hbase.zookeeper.property.clientPort`` : Set zookeeper client port. If you don't set the port, Tajo will refer the property of hbase-site.xml file.
 
-``IF NOT EXISTS`` allows ``CREATE [EXTERNAL] TABLE`` statement to avoid an error which occurs when the table does not exist.
 
 
 
@@ -94,7 +99,8 @@ In order to create a new HBase table which is to be managed by Tajo, use the USI
   CREATE EXTERNAL TABLE blog (rowkey text, author text, register_date text, title text)
   USING hbase WITH (
     'table'='blog'
-    , 'columns'=':key,info:author,info:date,content:title');
+    , 'columns'=':key,info:author,info:date,content:title')
+  LOCATION 'hbase:zk://<hostname>:<port>/';
 
 After executing the command above, you should be able to see the new table in the HBase shell:
 
