@@ -660,8 +660,8 @@ public class ASMifier extends Printer {
     public void visitTableSwitchInsn(final int min, final int max,
             final Label dflt, final Label... labels) {
         buf.setLength(0);
-        for (int i = 0; i < labels.length; ++i) {
-            declareLabel(labels[i]);
+        for (Label label : labels) {
+            declareLabel(label);
         }
         declareLabel(dflt);
 
@@ -681,8 +681,8 @@ public class ASMifier extends Printer {
     public void visitLookupSwitchInsn(final Label dflt, final int[] keys,
             final Label[] labels) {
         buf.setLength(0);
-        for (int i = 0; i < labels.length; ++i) {
-            declareLabel(labels[i]);
+        for (Label label : labels) {
+            declareLabel(label);
         }
         declareLabel(dflt);
 

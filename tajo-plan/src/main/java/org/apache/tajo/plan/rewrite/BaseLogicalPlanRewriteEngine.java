@@ -34,7 +34,7 @@ import java.util.Map.Entry;
  */
 public class BaseLogicalPlanRewriteEngine implements LogicalPlanRewriteEngine {
   /** class logger */
-  private Log LOG = LogFactory.getLog(BaseLogicalPlanRewriteEngine.class);
+  private static Log LOG = LogFactory.getLog(BaseLogicalPlanRewriteEngine.class);
 
   private final StorageService storage;
 

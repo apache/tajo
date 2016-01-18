@@ -114,8 +114,7 @@ public class HiveCatalogStoreClientPool {
   }
 
   public void setParameters(Configuration conf) {
-    for( Iterator<Entry<String, String>> iter = conf.iterator(); iter.hasNext();) {
-      Map.Entry<String, String> entry = iter.next();
+    for (Entry<String, String> entry : conf) {
       this.hiveConf.set(entry.getKey(), entry.getValue());
     }
   }

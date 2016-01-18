@@ -182,10 +182,10 @@ public class TestRepartitioner {
     for (int i = 0; i < 20; i++) {
       List<Pair<Long, Integer>> pages = new ArrayList<>();
       long offset = 0;
-      for (int j = 0; j < pageLengths.length; j++) {
-        pages.add(new Pair(offset, pageLengths[j]));
-        offset += pageLengths[j];
-        expectedTotalLength += pageLengths[j];
+      for (int pageLength : pageLengths) {
+        pages.add(new Pair(offset, pageLength));
+        offset += pageLength;
+        expectedTotalLength += pageLength;
       }
       IntermediateEntry interm = new IntermediateEntry(i, -1, -1, new Task.PullHost("" + i, i));
       interm.setPages(pages);
@@ -241,10 +241,10 @@ public class TestRepartitioner {
     for (int i = 0; i < 20; i++) {
       List<Pair<Long, Integer>> pages = new ArrayList<>();
       long offset = 0;
-      for (int j = 0; j < pageLengths.length; j++) {
-        pages.add(new Pair(offset, pageLengths[j]));
-        offset += pageLengths[j];
-        expectedTotalLength += pageLengths[j];
+      for (int pageLength : pageLengths) {
+        pages.add(new Pair(offset, pageLength));
+        offset += pageLength;
+        expectedTotalLength += pageLength;
       }
       IntermediateEntry interm = new IntermediateEntry(i, -1, 0, new Task.PullHost("" + i, i));
       interm.setPages(pages);
@@ -373,8 +373,8 @@ public class TestRepartitioner {
     List<IntermediateEntry> entries = new ArrayList<>();
     for (int i = 0; i < 2; i++) {
       List<Pair<Long, Integer>> pages = new ArrayList<>();
-      for (int j = 0; j < pageDatas.length; j++) {
-        pages.add(new Pair(pageDatas[j][0], (int) (pageDatas[j][1])));
+      for (long[] pageData : pageDatas) {
+        pages.add(new Pair(pageData[0], (int) (pageData[1])));
       }
       IntermediateEntry entry = new IntermediateEntry(-1, -1, 1, new Task.PullHost("host" + i , 9000));
       entry.setPages(pages);
@@ -432,10 +432,10 @@ public class TestRepartitioner {
     for (int i = 0; i < 20; i++) {
       List<Pair<Long, Integer>> pages = new ArrayList<>();
       long offset = 0;
-      for (int j = 0; j < pageLengths.length; j++) {
-        pages.add(new Pair(offset, pageLengths[j]));
-        offset += pageLengths[j];
-        expectedTotalLength += pageLengths[j];
+      for (int pageLength : pageLengths) {
+        pages.add(new Pair(offset, pageLength));
+        offset += pageLength;
+        expectedTotalLength += pageLength;
       }
       IntermediateEntry interm = new IntermediateEntry(i, -1, 0, pullHost);
       interm.setPages(pages);

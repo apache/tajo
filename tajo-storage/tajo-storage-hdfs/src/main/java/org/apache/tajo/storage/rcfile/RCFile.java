@@ -906,8 +906,7 @@ public class RCFile {
     public int getKeyBufferSize() throws IOException {
       int ret = 0;
       ret += WritableUtils.getVIntSize(bufferedRecords);
-      for (int i = 0; i < columnBuffers.length; i++) {
-        ColumnBuffer currentBuf = columnBuffers[i];
+      for (ColumnBuffer currentBuf : columnBuffers) {
         ret += WritableUtils.getVIntSize(currentBuf.columnValueLength);
         ret += WritableUtils.getVIntSize(currentBuf.uncompressedColumnValueLength);
         ret += WritableUtils.getVIntSize(currentBuf.columnKeyLength);
@@ -927,8 +926,7 @@ public class RCFile {
       int ret = 12; //12 bytes |record count, key length, compressed key length|
 
       ret += WritableUtils.getVIntSize(bufferedRecords);
-      for (int i = 0; i < columnBuffers.length; i++) {
-        ColumnBuffer currentBuf = columnBuffers[i];
+      for (ColumnBuffer currentBuf : columnBuffers) {
         ret += WritableUtils.getVIntSize(currentBuf.columnValueLength);
         ret += WritableUtils.getVIntSize(currentBuf.uncompressedColumnValueLength);
         ret += WritableUtils.getVIntSize(currentBuf.columnKeyLength);
@@ -941,8 +939,7 @@ public class RCFile {
 
     private void WriteKeyBuffer(DataOutputStream out) throws IOException {
       WritableUtils.writeVLong(out, bufferedRecords);
-      for (int i = 0; i < columnBuffers.length; i++) {
-        ColumnBuffer currentBuf = columnBuffers[i];
+      for (ColumnBuffer currentBuf : columnBuffers) {
         WritableUtils.writeVLong(out, currentBuf.columnValueLength);
         WritableUtils.writeVLong(out, currentBuf.uncompressedColumnValueLength);
         WritableUtils.writeVLong(out, currentBuf.columnKeyLength);

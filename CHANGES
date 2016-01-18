@@ -8,6 +8,16 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2053: Update description for HBase configuration.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-2057: Remove redundant class loading in plan optimizer. (jinho)
+
+    TAJO-2032: Change tajo.rest.service.port to be the general style in TAJO.
+    (Byunghwa Yun via jihoon)
+
+    TAJO-1971: Replace 'for' loop with 'foreach'. (Dongkyu Hwangbo via jihoon)
+
     TAJO-2040: Decrease the default size of max request for locality. (jinho)
 
     TAJO-2035: Rewrite README file using Markdown format. 

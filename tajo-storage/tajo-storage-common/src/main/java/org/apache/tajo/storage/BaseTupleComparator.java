@@ -167,8 +167,8 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
   public TupleComparatorProto getProto() {
     TupleComparatorProto.Builder builder = TupleComparatorProto.newBuilder();
     builder.setSchema(schema.getProto());
-    for (int i = 0; i < sortSpecs.length; i++) {
-      builder.addSortSpecs(sortSpecs[i].getProto());
+    for (SortSpec sortSpec : sortSpecs) {
+      builder.addSortSpecs(sortSpec.getProto());
     }
 
     TupleComparatorSpecProto.Builder sortSpecBuilder;

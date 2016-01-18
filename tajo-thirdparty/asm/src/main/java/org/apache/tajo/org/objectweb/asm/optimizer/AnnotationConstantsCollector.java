@@ -66,43 +66,43 @@ public class AnnotationConstantsCollector extends AnnotationVisitor {
             cp.newUTF8(((Type) value).getDescriptor());
         } else if (value instanceof byte[]) {
             byte[] v = (byte[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newInteger(v[i]);
+            for (byte aV : v) {
+                cp.newInteger(aV);
             }
         } else if (value instanceof boolean[]) {
             boolean[] v = (boolean[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newInteger(v[i] ? 1 : 0);
+            for (boolean aV : v) {
+                cp.newInteger(aV ? 1 : 0);
             }
         } else if (value instanceof short[]) {
             short[] v = (short[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newInteger(v[i]);
+            for (short aV : v) {
+                cp.newInteger(aV);
             }
         } else if (value instanceof char[]) {
             char[] v = (char[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newInteger(v[i]);
+            for (char aV : v) {
+                cp.newInteger(aV);
             }
         } else if (value instanceof int[]) {
             int[] v = (int[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newInteger(v[i]);
+            for (int aV : v) {
+                cp.newInteger(aV);
             }
         } else if (value instanceof long[]) {
             long[] v = (long[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newLong(v[i]);
+            for (long aV : v) {
+                cp.newLong(aV);
             }
         } else if (value instanceof float[]) {
             float[] v = (float[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newFloat(v[i]);
+            for (float aV : v) {
+                cp.newFloat(aV);
             }
         } else if (value instanceof double[]) {
             double[] v = (double[]) value;
-            for (int i = 0; i < v.length; i++) {
-                cp.newDouble(v[i]);
+            for (double aV : v) {
+                cp.newDouble(aV);
             }
         } else {
             cp.newConst(value);
