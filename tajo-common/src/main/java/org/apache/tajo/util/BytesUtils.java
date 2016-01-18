@@ -229,8 +229,8 @@ public class BytesUtils {
 
     int maxLen = Integer.MIN_VALUE;
 
-    for (int i = 0; i < bytes.length; i++) {
-      maxLen = Math.max(maxLen, bytes[i].length);
+    for (byte[] aByte : bytes) {
+      maxLen = Math.max(maxLen, aByte.length);
     }
 
     for (int i = 0; i < bytes.length; i++) {

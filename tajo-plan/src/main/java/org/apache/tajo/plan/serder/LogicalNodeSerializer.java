@@ -30,6 +30,7 @@ import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.AddColumn;
@@ -39,8 +40,8 @@ import org.apache.tajo.plan.serder.PlanProto.AlterTablespaceNode.SetLocation;
 import org.apache.tajo.plan.serder.PlanProto.LogicalNodeTree;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.ProtoUtil;
-import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -295,7 +296,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     }
     if (node.hasAggFunctions()) {
       groupbyBuilder.addAllAggFunctions(
-          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions()));
+          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions().toArray(new ProtoObject[node.getAggFunctions().size()])));
     }
     if (node.hasTargets()) {
       groupbyBuilder.addAllTargets(ProtoUtil.<PlanProto.Target>toProtoObjects(node.getTargets().toArray(new ProtoObject[node.getTargets().size()])));
@@ -328,9 +329,9 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       distGroupbyBuilder.addAllGroupingKeys(
           ProtoUtil.<CatalogProtos.ColumnProto>toProtoObjects(node.getGroupingColumns()));
     }
-    if (node.getAggFunctions().length > 0) {
+    if (node.getAggFunctions().size() > 0) {
       distGroupbyBuilder.addAllAggFunctions(
-          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions()));
+          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions().toArray(new ProtoObject[node.getAggFunctions().size()])));
     }
     if (node.hasTargets()) {
       distGroupbyBuilder.addAllTargets(ProtoUtil.<PlanProto.Target>toProtoObjects(node.getTargets().toArray(new ProtoObject[node.getTargets().size()])));
@@ -477,7 +478,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
 
     PlanProto.PartitionScanSpec.Builder partitionScan = PlanProto.PartitionScanSpec.newBuilder();
-    List<String> pathStrs = TUtil.newList();
+    List<String> pathStrs = new ArrayList<>();
     if (node.getInputPaths() != null) {
       for (Path p : node.getInputPaths()) {
         pathStrs.add(p.toString());
@@ -830,7 +831,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   public static PlanProto.Target convertTarget(Target target) {
     PlanProto.Target.Builder targetBuilder = PlanProto.Target.newBuilder();
-    targetBuilder.setExpr(EvalNodeSerializer.serialize(target.getEvalTree()));
+    targetBuilder.setExpr(EvalNodeSerializer.serialize((EvalNode) target.getEvalTree()));
     if (target.hasAlias()) {
       targetBuilder.setAlias(target.getAlias());
     }

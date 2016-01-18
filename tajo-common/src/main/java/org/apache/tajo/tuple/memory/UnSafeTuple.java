@@ -36,6 +36,7 @@ import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
@@ -337,6 +338,19 @@ public class UnSafeTuple extends ZeroCopyTuple {
     return datums;
   }
 
+  @Override
+  public int hashCode() {
+    return Arrays.hashCode(getValues());
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Tuple) {
+      Tuple other = (Tuple) obj;
+      return Arrays.equals(getValues(), other.getValues());
+    }
+    return false;
+  }
   @Override
   public String toString() {
     return VTuple.toDisplayString(getValues());

@@ -218,8 +218,8 @@ public class ConstantPool extends HashMap<Constant, Constant> {
             newNameType(name, desc);
             newHandle(bsm.getTag(), bsm.getOwner(), bsm.getName(),
                     bsm.getDesc());
-            for (int i = 0; i < bsmArgs.length; i++) {
-                newConst(bsmArgs[i]);
+            for (Object bsmArg : bsmArgs) {
+                newConst(bsmArg);
             }
             result = new Constant(key5);
             put(result);

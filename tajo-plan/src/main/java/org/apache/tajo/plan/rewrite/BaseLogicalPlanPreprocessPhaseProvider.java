@@ -18,18 +18,21 @@
 
 package org.apache.tajo.plan.rewrite;
 
-import org.apache.tajo.util.TUtil;
+import com.google.common.collect.Lists;
 
 import java.util.Collection;
 import java.util.List;
 
 public class BaseLogicalPlanPreprocessPhaseProvider extends LogicalPlanPreprocessPhaseProvider {
+  private static List<Class<? extends LogicalPlanPreprocessPhase>> phases = Lists.newArrayList();
+
+  static {
+    phases.add(BaseSchemaBuildPhase.class);
+    phases.add(SelfDescSchemaBuildPhase.class);
+  }
+
   @Override
   public Collection<Class<? extends LogicalPlanPreprocessPhase>> getPhases() {
-    List phases = TUtil.newList(
-        BaseSchemaBuildPhase.class,
-        SelfDescSchemaBuildPhase.class
-    );
     return phases;
   }
 }

@@ -27,7 +27,6 @@ import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.*;
 
-import org.apache.tajo.util.TUtil;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
@@ -77,18 +76,16 @@ public class TestValidators {
     @Override
     protected boolean matchesSafely(Iterable<? extends T> item, Description mismatchDescription) {
       boolean isFirst = true;
-      Iterator<? extends T> iterator = item.iterator();
-      
-      while (iterator.hasNext()) {
-        T obj = iterator.next();
+
+      for (T obj : item) {
         if (this.matcher.matches(obj)) {
           return true;
         }
-        
+
         if (!isFirst) {
           mismatchDescription.appendText(", ");
         }
-        
+
         this.matcher.describeMismatch(obj, mismatchDescription);
         isFirst = false;
       }

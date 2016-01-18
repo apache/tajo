@@ -1,5 +1,5 @@
 {
-  "name": "enable_seqscan",
+  "name": "ENABLE_SEQSCAN",
   "value": "false",
   "OpType": "SetSession"
 }

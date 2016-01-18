@@ -50,7 +50,6 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -664,7 +663,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       ResultSet res = executeString("select a.rk, a.col1, a.col2, a.col3, b.l_orderkey, b.l_linestatus " +
           "from hbase_mapped_table a " +
-          "join default.lineitem b on a.col3 = b.l_orderkey");
+          "join default.lineitem b on a.col3 = b.l_orderkey order by a.rk, a.col1, a.col2, a.col3");
       assertResultSet(res);
       res.close();
     } finally {
@@ -1312,7 +1311,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
-      client.unsetSessionVariables(TUtil.newList(HBaseStorageConstants.INSERT_PUT_MODE));
+      client.unsetSessionVariables(Arrays.asList(HBaseStorageConstants.INSERT_PUT_MODE));
 
       if (scanner != null) {
         scanner.close();

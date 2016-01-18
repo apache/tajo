@@ -90,7 +90,6 @@ public class BSTIndexScanExec extends ScanExec {
     Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(fragment));
     this.reader = new BSTIndex(context.getConf()).
         getIndexReader(indexPath, keySchema, comparator);
-    this.reader.open();
   }
 
   private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, List<Target> targets, EvalNode qual) {
@@ -101,9 +100,7 @@ public class BSTIndexScanExec extends ScanExec {
       qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree()));
     }
     for (Column column : originalSchema.getRootColumns()) {
-      if (subSchema.contains(column)
-          || qualAndTargets.contains(column)
-          || qualAndTargets.contains(column)) {
+      if (subSchema.contains(column) || qualAndTargets.contains(column)) {
         mergedSchema.addColumn(column);
       }
     }
@@ -127,6 +124,8 @@ public class BSTIndexScanExec extends ScanExec {
 
   @Override
   public void init() throws IOException {
+    reader.init();
+
     Schema projected;
 
     // in the case where projected column or expression are given

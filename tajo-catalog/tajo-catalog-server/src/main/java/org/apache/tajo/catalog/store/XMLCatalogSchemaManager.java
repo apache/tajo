@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.store.object.*;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.util.TUtil;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
@@ -336,7 +335,7 @@ public class XMLCatalogSchemaManager {
   public boolean catalogAlreadyExists(Connection conn) {
     boolean result = false;
     try {
-      List<String> constants = TUtil.newList();
+      List<String> constants = new ArrayList<>();
       constants.add(CatalogConstants.TB_META);
       constants.add(CatalogConstants.TB_SPACES);
       constants.add(CatalogConstants.TB_DATABASES);

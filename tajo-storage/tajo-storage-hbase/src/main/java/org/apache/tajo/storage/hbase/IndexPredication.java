@@ -22,40 +22,31 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
 
 public class IndexPredication {
-  private Column column;
-  private int columnId;
-  private Datum startValue;
-  private Datum stopValue;
+  final private Column column;
+  final private int columnId;
+  final private Datum startValue;
+  final private Datum stopValue;
+
+  public IndexPredication(Column c, int columnId, Datum startValue, Datum stopValue) {
+    this.column     = c;
+    this.columnId   = columnId;
+    this.startValue = startValue;
+    this.stopValue  = stopValue;
+  }
 
   public Column getColumn() {
     return column;
-  }
-
-  public void setColumn(Column column) {
-    this.column = column;
   }
 
   public int getColumnId() {
     return columnId;
   }
 
-  public void setColumnId(int columnId) {
-    this.columnId = columnId;
-  }
-
   public Datum getStartValue() {
     return startValue;
   }
 
-  public void setStartValue(Datum startValue) {
-    this.startValue = startValue;
-  }
-
   public Datum getStopValue() {
     return stopValue;
-  }
-
-  public void setStopValue(Datum stopValue) {
-    this.stopValue = stopValue;
   }
 }

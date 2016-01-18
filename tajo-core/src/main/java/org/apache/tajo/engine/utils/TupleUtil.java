@@ -20,7 +20,6 @@ package org.apache.tajo.engine.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
@@ -29,46 +28,15 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.RowStoreUtil;
-import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
 public class TupleUtil {
   private static final Log LOG = LogFactory.getLog(TupleUtil.class);
-
-  public static String rangeToQuery(Schema schema, TupleRange range, boolean last)
-      throws UnsupportedEncodingException {
-    return rangeToQuery(range, last, RowStoreUtil.createEncoder(schema));
-  }
-
-  public static String rangeToQuery(TupleRange range, boolean last, RowStoreEncoder encoder)
-      throws UnsupportedEncodingException {
-    StringBuilder sb = new StringBuilder();
-    byte [] firstKeyBytes = encoder.toBytes(range.getStart());
-    byte [] endKeyBytes = encoder.toBytes(range.getEnd());
-
-    String firstKeyBase64 = new String(Base64.encodeBase64(firstKeyBytes));
-    String lastKeyBase64 = new String(Base64.encodeBase64(endKeyBytes));
-
-    sb.append("start=")
-        .append(URLEncoder.encode(firstKeyBase64, "utf-8"))
-        .append("&")
-        .append("end=")
-        .append(URLEncoder.encode(lastKeyBase64, "utf-8"));
-
-    if (last) {
-      sb.append("&final=true");
-    }
-
-    return sb.toString();
-  }
 
   /**
    * if max value is null, set ranges[last]

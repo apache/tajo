@@ -25,7 +25,6 @@ import java.util.List;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.DataFormat;
-import org.apache.tajo.util.TUtil;
 
 public class InfoSchemaMetadataDictionary {
   private static final String DATABASE_NAME = "information_schema";
@@ -79,7 +78,7 @@ public class InfoSchemaMetadataDictionary {
   }
   
   public List<String> getAllSystemTables() {
-    List<String> systemTableNames = TUtil.newList();
+    List<String> systemTableNames = new ArrayList<>();
     
     for (TableDescriptor descriptor: schemaInfoTableDescriptors) {
       systemTableNames.add(descriptor.getTableNameString());
@@ -96,8 +95,7 @@ public class InfoSchemaMetadataDictionary {
     }
     
     tableName = tableName.toUpperCase();
-    for (int idx = 0; idx < schemaInfoTableDescriptors.size(); idx++) {
-      TableDescriptor testDescriptor = schemaInfoTableDescriptors.get(idx);
+    for (TableDescriptor testDescriptor : schemaInfoTableDescriptors) {
       if (testDescriptor.getTableNameString().equalsIgnoreCase(tableName)) {
         tableDescriptor = testDescriptor;
         break;

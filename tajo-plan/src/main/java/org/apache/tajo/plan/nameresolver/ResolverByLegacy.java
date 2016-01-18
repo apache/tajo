@@ -30,8 +30,8 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ResolverByLegacy extends NameResolver {
@@ -85,7 +85,7 @@ public class ResolverByLegacy extends NameResolver {
 
     if (currentNode != null && !currentNodeSchema.contains(found)
         && currentNode.getType() != NodeType.TABLE_SUBQUERY) {
-      List<Column> candidates = TUtil.newList();
+      List<Column> candidates = new ArrayList<>();
       if (block.getNamedExprsManager().isAliased(qualifiedName)) {
         String alias = block.getNamedExprsManager().getAlias(qualifiedName);
         found = resolve(plan, block, new ColumnReferenceExpr(alias), NameResolvingMode.LEGACY, includeSeflDescTable);

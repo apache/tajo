@@ -214,12 +214,11 @@ public class CheckClassAdapter extends ClassVisitor {
         List<MethodNode> methods = cn.methods;
 
         List<Type> interfaces = new ArrayList<>();
-        for (Iterator<String> i = cn.interfaces.iterator(); i.hasNext();) {
-            interfaces.add(Type.getObjectType(i.next().toString()));
+        for (String anInterface : cn.interfaces) {
+            interfaces.add(Type.getObjectType(anInterface));
         }
 
-        for (int i = 0; i < methods.size(); ++i) {
-            MethodNode method = methods.get(i);
+        for (MethodNode method : methods) {
             SimpleVerifier verifier = new SimpleVerifier(
                     Type.getObjectType(cn.name), syperType, interfaces,
                     (cn.access & Opcodes.ACC_INTERFACE) != 0);

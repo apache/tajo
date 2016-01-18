@@ -282,9 +282,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
     evaluatedTuples = new TupleList();
 
-    for (int i = 0; i <accumulatedInTuples.size(); i++) {
-      Tuple inTuple = accumulatedInTuples.get(i);
-
+    for (Tuple inTuple : accumulatedInTuples) {
       for (int c = 0; c < nonFunctionColumnNum; c++) {
         evaluatedTuple.put(c, inTuple.asDatum(nonFunctionColumns[c]));
       }
@@ -316,9 +314,8 @@ public class WindowAggExec extends UnaryPhysicalExec {
       }
 
       if (aggFuncFlags[idx]) {
-        for (int i = 0; i < evaluatedTuples.size(); i++) {
+        for (Tuple outTuple : evaluatedTuples) {
           Datum result = functions[idx].terminate(contexts[idx]);
-          Tuple outTuple = evaluatedTuples.get(i);
           outTuple.put(nonFunctionColumnNum + idx, result);
         }
       }

@@ -167,9 +167,7 @@ public class JSRInlinerAdapter extends MethodNode implements Opcodes {
             markSubroutines();
             if (LOGGING) {
                 log(mainSubroutine.toString());
-                Iterator<BitSet> it = subroutineHeads.values().iterator();
-                while (it.hasNext()) {
-                    BitSet sub = it.next();
+                for (BitSet sub : subroutineHeads.values()) {
                     log(sub.toString());
                 }
             }
@@ -195,9 +193,8 @@ public class JSRInlinerAdapter extends MethodNode implements Opcodes {
 
         // Go through the head of each subroutine and find any nodes reachable
         // to that subroutine without following any JSR links.
-        for (Iterator<Map.Entry<LabelNode, BitSet>> it = subroutineHeads
-                .entrySet().iterator(); it.hasNext();) {
-            Map.Entry<LabelNode, BitSet> entry = it.next();
+        for (Map.Entry<LabelNode, BitSet> entry : subroutineHeads
+                .entrySet()) {
             LabelNode lab = entry.getKey();
             BitSet sub = entry.getValue();
             int index = instructions.indexOf(lab);
@@ -234,10 +231,7 @@ public class JSRInlinerAdapter extends MethodNode implements Opcodes {
         boolean loop = true;
         while (loop) {
             loop = false;
-            for (Iterator<TryCatchBlockNode> it = tryCatchBlocks.iterator(); it
-                    .hasNext();) {
-                TryCatchBlockNode trycatch = it.next();
-
+            for (TryCatchBlockNode trycatch : tryCatchBlocks) {
                 if (LOGGING) {
                     // TODO use of default toString().
                     log("Scanning try/catch " + trycatch);
@@ -507,10 +501,7 @@ public class JSRInlinerAdapter extends MethodNode implements Opcodes {
         }
 
         // Emit try/catch blocks that are relevant to this method.
-        for (Iterator<TryCatchBlockNode> it = tryCatchBlocks.iterator(); it
-                .hasNext();) {
-            TryCatchBlockNode trycatch = it.next();
-
+        for (TryCatchBlockNode trycatch : tryCatchBlocks) {
             if (LOGGING) {
                 // TODO use of default toString().
                 log("try catch block original labels=" + trycatch.start + '-'
@@ -544,9 +535,7 @@ public class JSRInlinerAdapter extends MethodNode implements Opcodes {
                     trycatch.type));
         }
 
-        for (Iterator<LocalVariableNode> it = localVariables.iterator(); it
-                .hasNext();) {
-            LocalVariableNode lvnode = it.next();
+        for (LocalVariableNode lvnode : localVariables) {
             if (LOGGING) {
                 log("local var " + lvnode.name);
             }

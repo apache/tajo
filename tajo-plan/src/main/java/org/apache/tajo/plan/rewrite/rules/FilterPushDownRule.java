@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.datum.Datum;
@@ -41,7 +42,6 @@ import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownConte
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -58,6 +58,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   static class FilterPushDownContext {
     Set<EvalNode> pushingDownFilters = new HashSet<>();
+    LogicalPlanRewriteRuleContext rewriteRuleContext;
 
     public void clear() {
       pushingDownFilters.clear();
@@ -72,7 +73,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     public void setToOrigin(Map<EvalNode, EvalNode> evalMap) {
       //evalMap: copy -> origin
-      List<EvalNode> origins = TUtil.newList();
+      List<EvalNode> origins = new ArrayList<>();
       for (EvalNode eval : pushingDownFilters) {
         EvalNode origin = evalMap.get(eval);
         if (origin != null) {
@@ -111,6 +112,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         . It not, create new HavingNode and set parent's child.
      */
     FilterPushDownContext context = new FilterPushDownContext();
+    context.rewriteRuleContext = rewriteRuleContext;
     LogicalPlan plan = rewriteRuleContext.getPlan();
     catalog = rewriteRuleContext.getCatalog();
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
@@ -185,7 +187,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     LogicalNode left = joinNode.getLeftChild();
     LogicalNode right = joinNode.getRightChild();
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
     // Join's input schema = right child output columns + left child output columns
     Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, block, joinNode, left, notMatched,
         null, 0);
@@ -207,7 +209,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     notMatched.clear();
     context.pushingDownFilters.addAll(nonPushableQuals);
-    List<EvalNode> matched = TUtil.newList();
+    List<EvalNode> matched = new ArrayList<>();
 
     // If the query involves a subquery, the stack can be empty.
     // In this case, this join is the top most one within a query block.
@@ -411,7 +413,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private static List<EvalNode> extractNonEquiThetaJoinQuals(final Set<EvalNode> predicates,
                                                              final LogicalPlan.QueryBlock block,
                                                              final JoinNode joinNode) {
-    List<EvalNode> nonEquiThetaJoinQuals = TUtil.newList();
+    List<EvalNode> nonEquiThetaJoinQuals = new ArrayList<>();
     for (EvalNode eachEval: predicates) {
       if (isNonEquiThetaJoinQual(block, joinNode, eachEval)) {
         nonEquiThetaJoinQuals.add(eachEval);
@@ -531,8 +533,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitTableSubQuery(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                         TableSubQueryNode node, Stack<LogicalNode> stack) throws TajoException {
-    List<EvalNode> matched = TUtil.newList();
-    List<EvalNode> unmatched = TUtil.newList();
+    List<EvalNode> matched = new ArrayList<>();
+    List<EvalNode> unmatched = new ArrayList<>();
     for (EvalNode eval : context.pushingDownFilters) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, node)) {
         matched.add(eval);
@@ -558,7 +560,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                 Stack<LogicalNode> stack) throws TajoException {
     LogicalNode leftNode = unionNode.getLeftChild();
 
-    List<EvalNode> origins = TUtil.newList(context.pushingDownFilters);
+    List<EvalNode> origins = new ArrayList<>();
+    origins.addAll(context.pushingDownFilters);
 
     // transformed -> pushingDownFilters
     Map<EvalNode, EvalNode> transformedMap = transformEvalsWidthByPassNode(origins, plan, block, unionNode, leftNode);
@@ -591,7 +594,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                      Stack<LogicalNode> stack) throws TajoException {
     LogicalNode childNode = projectionNode.getChild();
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
 
     //copy -> origin
     BiMap<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(
@@ -788,8 +791,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
     }
 
-    List<EvalNode> aggrEvalOrigins = TUtil.newList();
-    List<EvalNode> aggrEvals = TUtil.newList();
+    List<EvalNode> aggrEvalOrigins = new ArrayList<>();
+    List<EvalNode> aggrEvals = new ArrayList<>();
 
     for (EvalNode eval : context.pushingDownFilters) {
       EvalNode copy = null;
@@ -875,7 +878,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       context.pushingDownFilters.removeAll(aggrEvals);
     }
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
     // transform
     Map<EvalNode, EvalNode> transformed =
         findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, 0);
@@ -893,7 +896,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   public LogicalNode visitScan(FilterPushDownContext context, LogicalPlan plan,
                                LogicalPlan.QueryBlock block, final ScanNode scanNode,
                                Stack<LogicalNode> stack) throws TajoException {
-    List<EvalNode> matched = TUtil.newList();
+    List<EvalNode> matched = new ArrayList<>();
 
     // find partition column and check matching
     Set<String> partitionColumns = new HashSet<>();
@@ -939,7 +942,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     context.pushingDownFilters.removeAll(partitionEvals);
 
-    List<EvalNode> notMatched = TUtil.newList();
+    List<EvalNode> notMatched = new ArrayList<>();
 
     // transform
     Map<EvalNode, EvalNode> transformed =
@@ -966,35 +969,37 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       scanNode.setQual(qual);
 
       // Index path can be identified only after filters are pushed into each scan.
-      String databaseName, tableName;
-      databaseName = CatalogUtil.extractQualifier(table.getName());
-      tableName = CatalogUtil.extractSimpleName(table.getName());
-      Set<Predicate> predicates = new HashSet<>();
-      for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
-        BinaryEval binaryEval = (BinaryEval) eval;
-        // TODO: consider more complex predicates
-        if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
-            binaryEval.getRightExpr().getType() == EvalType.CONST) {
-          predicates.add(new Predicate(binaryEval.getType(),
-              ((FieldEval) binaryEval.getLeftExpr()).getColumnRef(),
-              ((ConstEval)binaryEval.getRightExpr()).getValue()));
-        } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
-            binaryEval.getRightExpr().getType() == EvalType.FIELD) {
-          predicates.add(new Predicate(binaryEval.getType(),
-              ((FieldEval) binaryEval.getRightExpr()).getColumnRef(),
-              ((ConstEval)binaryEval.getLeftExpr()).getValue()));
+      if(context.rewriteRuleContext.getQueryContext().getBool(SessionVars.INDEX_ENABLED)) {
+        String databaseName, tableName;
+        databaseName = CatalogUtil.extractQualifier(table.getName());
+        tableName = CatalogUtil.extractSimpleName(table.getName());
+        Set<Predicate> predicates = new HashSet<>();
+        for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
+          BinaryEval binaryEval = (BinaryEval) eval;
+          // TODO: consider more complex predicates
+          if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+              binaryEval.getRightExpr().getType() == EvalType.CONST) {
+            predicates.add(new Predicate(binaryEval.getType(),
+                ((FieldEval) binaryEval.getLeftExpr()).getColumnRef(),
+                ((ConstEval) binaryEval.getRightExpr()).getValue()));
+          } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
+              binaryEval.getRightExpr().getType() == EvalType.FIELD) {
+            predicates.add(new Predicate(binaryEval.getType(),
+                ((FieldEval) binaryEval.getRightExpr()).getColumnRef(),
+                ((ConstEval) binaryEval.getLeftExpr()).getValue()));
+          }
         }
-      }
 
-      // for every subset of the set of columns, find all matched index paths
-      for (Set<Predicate> subset : Sets.powerSet(predicates)) {
-        if (subset.size() == 0)
-          continue;
-        Column[] columns = extractColumns(subset);
-        if (catalog.existIndexByColumns(databaseName, tableName, columns)) {
-          IndexDesc indexDesc = catalog.getIndexByColumns(databaseName, tableName, columns);
-          block.addAccessPath(scanNode, new IndexScanInfo(
-              table.getStats(), indexDesc, getSimplePredicates(indexDesc, subset)));
+        // for every subset of the set of columns, find all matched index paths
+        for (Set<Predicate> subset : Sets.powerSet(predicates)) {
+          if (subset.size() == 0)
+            continue;
+          Column[] columns = extractColumns(subset);
+          if (catalog.existIndexByColumns(databaseName, tableName, columns)) {
+            IndexDesc indexDesc = catalog.getIndexByColumns(databaseName, tableName, columns);
+            block.addAccessPath(scanNode, new IndexScanInfo(
+                table.getStats(), indexDesc, getSimplePredicates(indexDesc, subset)));
+          }
         }
       }
     }

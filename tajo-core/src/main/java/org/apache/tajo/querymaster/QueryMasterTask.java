@@ -318,7 +318,7 @@ public class QueryMasterTask extends CompositeService {
       LOG.info(SessionVars.INDEX_ENABLED.keyname() + " : " + queryContext.getBool(SessionVars.INDEX_ENABLED));
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-      LogicalOptimizer optimizer = new LogicalOptimizer(systemConf, catalog);
+      LogicalOptimizer optimizer = new LogicalOptimizer(systemConf, catalog, TablespaceManager.getInstance());
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       jsonExpr = null; // remove the possible OOM
 

@@ -81,7 +81,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private int numGroupingColumns;
   private int[][] distinctKeyIndexes;
   private FunctionContext[] nonDistinctAggrContexts;
-  private AggregationFunctionCallEval[] nonDistinctAggrFunctions;
+  private List<AggregationFunctionCallEval> nonDistinctAggrFunctions;
   private int nonDistinctAggrTupleStartIndex = -1;
 
   // Key tuples may have various lengths. The below two maps are used to cache key tuple instances.
@@ -131,7 +131,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
             eachFunction.bind(context.getEvalContext(), inSchema);
             eachFunction.setIntermediatePhase();
           }
-          nonDistinctAggrContexts = new FunctionContext[nonDistinctAggrFunctions.length];
+          nonDistinctAggrContexts = new FunctionContext[nonDistinctAggrFunctions.size()];
         }
       }
     }
@@ -142,8 +142,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       if (eachGroupby.isDistinct()) {
         List<Integer> distinctGroupingKeyIndex = new ArrayList<>();
         Column[] distinctGroupingColumns = eachGroupby.getGroupingColumns();
-        for (int idx = 0; idx < distinctGroupingColumns.length; idx++) {
-          Column col = distinctGroupingColumns[idx];
+        for (Column col : distinctGroupingColumns) {
           int keyIndex;
           if (col.hasQualifier()) {
             keyIndex = inSchema.getColumnId(col.getQualifiedName());
@@ -163,7 +162,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       }
     }
     if (nonDistinctAggrFunctions != null) {
-      nonDistinctAggrTupleStartIndex = inSchema.size() - nonDistinctAggrFunctions.length;
+      nonDistinctAggrTupleStartIndex = inSchema.size() - nonDistinctAggrFunctions.size();
     }
   }
 
@@ -235,9 +234,9 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
 
   private void initNonDistinctAggrContext() {
     if (nonDistinctAggrFunctions != null) {
-      nonDistinctAggrContexts = new FunctionContext[nonDistinctAggrFunctions.length];
-      for (int i = 0; i < nonDistinctAggrFunctions.length; i++) {
-        nonDistinctAggrContexts[i] = nonDistinctAggrFunctions[i].newContext();
+      nonDistinctAggrContexts = new FunctionContext[nonDistinctAggrFunctions.size()];
+      for (int i = 0; i < nonDistinctAggrFunctions.size(); i++) {
+        nonDistinctAggrContexts[i] = nonDistinctAggrFunctions.get(i).newContext();
       }
     }
   }
@@ -246,8 +245,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     if (nonDistinctAggrFunctions == null) {
       return;
     }
-    for (int i = 0; i < nonDistinctAggrFunctions.length; i++) {
-      nonDistinctAggrFunctions[i].merge(nonDistinctAggrContexts[i], tuple);
+    for (int i = 0; i < nonDistinctAggrFunctions.size(); i++) {
+      nonDistinctAggrFunctions.get(i).merge(nonDistinctAggrContexts[i], tuple);
     }
   }
 
@@ -255,8 +254,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
     if (nonDistinctAggrFunctions == null) {
       return;
     }
-    for (int i = 0; i < nonDistinctAggrFunctions.length; i++) {
-      tuple.put(nonDistinctAggrTupleStartIndex + i, nonDistinctAggrFunctions[i].terminate(nonDistinctAggrContexts[i]));
+    for (int i = 0; i < nonDistinctAggrFunctions.size(); i++) {
+      tuple.put(nonDistinctAggrTupleStartIndex + i, nonDistinctAggrFunctions.get(i).terminate(nonDistinctAggrContexts[i]));
     }
   }
 

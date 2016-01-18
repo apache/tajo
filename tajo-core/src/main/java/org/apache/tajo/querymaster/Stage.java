@@ -65,7 +65,6 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
-import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -655,9 +654,7 @@ public class Stage implements EventHandler<StageEvent> {
     List<ColumnStats> columnStatses = Lists.newArrayList();
 
     MasterPlan masterPlan = stage.getMasterPlan();
-    Iterator<ExecutionBlock> it = masterPlan.getChilds(stage.getBlock()).iterator();
-    while (it.hasNext()) {
-      ExecutionBlock block = it.next();
+    for (ExecutionBlock block : masterPlan.getChilds(stage.getBlock())) {
       Stage childStage = stage.context.getStage(block.getId());
       TableStats[] childStatArray = new TableStats[]{
           childStage.getInputStats(), childStage.getResultStats()
@@ -1191,7 +1188,7 @@ public class Stage implements EventHandler<StageEvent> {
         stage.getId(), leftFragment, rightFragments));
   }
 
-  public static void scheduleFetches(Stage stage, Map<String, List<FetchImpl>> fetches) {
+  public static void scheduleFetches(Stage stage, Map<String, List<FetchProto>> fetches) {
     stage.taskScheduler.handle(new FetchScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         stage.getId(), fetches));
   }

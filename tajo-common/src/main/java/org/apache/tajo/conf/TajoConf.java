@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 public class TajoConf extends Configuration {
   private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
-  
+
   private static final Map<String, ConfVars> vars = new HashMap<>();
 
   static {
@@ -121,7 +121,7 @@ public class TajoConf extends Configuration {
     ///////////////////////////////////////////////////////////////////////////////////////
 
     // a username for a running Tajo cluster
-    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/", 
+    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/",
         Validators.groups(Validators.notNull(), Validators.pathUrl())),
     USERNAME("tajo.username", "${user.name}", Validators.javaString()),
 
@@ -140,7 +140,7 @@ public class TajoConf extends Configuration {
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
 
     // Tajo Rest Service
-    REST_SERVICE_PORT("tajo.rest.service.port", 26880),
+    REST_SERVICE_ADDRESS("tajo.rest.service.address", "0.0.0.0:26880", Validators.networkAddr()),
 
     // High availability configurations
     TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
@@ -151,6 +151,13 @@ public class TajoConf extends Configuration {
     // Service discovery
     DEFAULT_SERVICE_TRACKER_CLASS("tajo.discovery.service-tracker.class", BaseServiceTracker.class.getCanonicalName()),
     HA_SERVICE_TRACKER_CLASS("tajo.discovery.ha-service-tracker.class", "org.apache.tajo.ha.HdfsServiceTracker"),
+
+    // Async IO Task Service
+
+    /** The number of threads for async tasks */
+    MASTER_ASYNC_TASK_THREAD_NUM("tajo.master.async-task.thread-num", 4),
+    /** How long it will wait for termination */
+    MASTER_ASYNC_TASK_TERMINATION_WAIT_TIME("tajo.master.async-task.wait-time-sec", 60), // 1 min
 
     // Resource tracker service
     RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003",
@@ -205,6 +212,10 @@ public class TajoConf extends Configuration {
 
     // Shuffle Configuration --------------------------------------------------
     PULLSERVER_PORT("tajo.pullserver.port", 0, Validators.range("0", "65535")),
+    PULLSERVER_CACHE_SIZE("tajo.pullserver.index-cache.size", 10000, Validators.min("1")),
+    PULLSERVER_CACHE_TIMEOUT("tajo.pullserver.index-cache.timeout-min", 5, Validators.min("1")),
+    PULLSERVER_FETCH_URL_MAX_LENGTH("tajo.pullserver.fetch-url.max-length", StorageUnit.KB,
+        Validators.min("1")),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false, Validators.bool()),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", BuiltinStorages.RAW, Validators.javaString()),
     SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num",
@@ -315,6 +326,13 @@ public class TajoConf extends Configuration {
 
     // Query and Optimization ---------------------------------------------------
 
+
+    // Enables the optimizer to get and use table volumes via storage handlers.
+    // This feature may cause some performance degradation when storage access is too slow (S3).
+    // By default, this config value is false, and in this case the optimizer uses the table stats from catalog.
+    $USE_TABLE_VOLUME("tajo.optimizer.stats.use-table-volume", Boolean.FALSE),
+
+
     // for distributed query strategies
     $DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD("tajo.dist-query.broadcast.non-cross-join.threshold-kb", 5 * 1024l,
         Validators.min("0")), // 5 MB
@@ -414,7 +432,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.STRING;
     }
-    
+
     ConfVars(String varname, String defaultVal, Validator validator) {
       this(varname, defaultVal);
       this.validator = validator;
@@ -430,7 +448,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.INT;
     }
-    
+
     ConfVars(String varname, int defaultIntVal, Validator validator) {
       this(varname, defaultIntVal);
       this.validator = validator;
@@ -446,7 +464,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.LONG;
     }
-    
+
     ConfVars(String varname, long defaultLongVal, Validator validator) {
       this(varname, defaultLongVal);
       this.validator = validator;
@@ -462,7 +480,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.FLOAT;
     }
-    
+
     ConfVars(String varname, float defaultFloatVal, Validator validator) {
       this(varname, defaultFloatVal);
       this.validator = validator;
@@ -478,7 +496,7 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = defaultBoolVal;
       this.type = VarType.BOOLEAN;
     }
-    
+
     ConfVars(String varname, boolean defaultBoolVal, Validator validator) {
       this(varname, defaultBoolVal);
       this.validator = validator;
@@ -829,11 +847,11 @@ public class TajoConf extends Configuration {
       return new Path(systemConfPathStr);
     }
   }
-  
+
   /**
    * validateProperty function will fetch pre-defined configuration property by keyname.
    * If found, it will validate the supplied value with these validators.
-   * 
+   *
    * @param name - a string containing specific key
    * @param value - a string containing value
    * @throws ConstraintViolationException

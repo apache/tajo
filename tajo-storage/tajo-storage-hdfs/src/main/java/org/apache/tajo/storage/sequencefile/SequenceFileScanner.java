@@ -240,8 +240,8 @@ public class SequenceFileScanner extends FileScanner {
         fieldLength[i] = elementSize;
         lastFieldByteEnd = fieldStart[i] + fieldLength[i];
 
-        for (int j = 0; j < projectionMap.length; j++) {
-          if (projectionMap[j] == i) {
+        for (int aProjectionMap : projectionMap) {
+          if (aProjectionMap == i) {
             Datum datum = serde.deserialize(i, bytes, fieldStart[i], fieldLength[i], nullChars);
             outTuple.put(i, datum);
           }
@@ -360,5 +360,30 @@ public class SequenceFileScanner extends FileScanner {
   @Override
   public boolean isSplittable(){
     return true;
+  }
+
+  @Override
+  public float getProgress() {
+    if (!inited) return super.getProgress();
+
+    if (!more) {
+      return 1.0f;
+    } else {
+      long filePos;
+      float progress;
+      try {
+        filePos = reader.getPosition();
+        if (start == filePos) {
+          progress = 0.0f;
+        } else {
+          long readBytes = filePos - start;
+          long remainingBytes = Math.max(end - filePos, 0);
+          progress = Math.min(1.0f, (float) (readBytes) / (float) (readBytes + remainingBytes));
+        }
+      } catch (IOException e) {
+        progress = 0.0f;
+      }
+      return progress;
+    }
   }
 }

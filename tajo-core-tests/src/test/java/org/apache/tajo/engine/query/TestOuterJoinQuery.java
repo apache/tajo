@@ -81,7 +81,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testLeftOuterJoinWithConstantExpr4() throws Exception {
     // outer join with constant projections
@@ -95,7 +95,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testLeftOuterJoinWithConstantExpr5() throws Exception {
     // outer join with constant projections
@@ -116,7 +116,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testFullOuterJoin1() throws Exception {
     runSimpleTests();
@@ -417,7 +417,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testLeftOuterJoin2() throws Exception {
     // large, large, small, small
@@ -425,7 +425,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
+  @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest()
   public final void testLeftOuterJoin3() throws Exception {
     // large, large, small, large, small, small
@@ -441,6 +441,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
    runSimpleTests();
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true)
   @SimpleTest
@@ -448,6 +449,7 @@ public class TestOuterJoinQuery extends TestJoinQuery {
     runSimpleTests();
   }
 
+  // FIXME: should be replaced by join queries with hints (See TAJO-2026)
   @Test
   @Option(withExplain = true, withExplainGlobal = true, parameterized = true, sort = true)
   @SimpleTest

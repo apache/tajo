@@ -97,7 +97,7 @@
   String dataLocationInfos = "";
   delim = "";
   for (String eachLocation: task.getDataLocations()) {
-    dataLocationInfos += delim + eachLocation.toString();
+    dataLocationInfos += delim + eachLocation;
     delim = "<br/>";
   }
 

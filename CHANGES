@@ -8,6 +8,48 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2053: Update description for HBase configuration.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-2057: Remove redundant class loading in plan optimizer. (jinho)
+
+    TAJO-2032: Change tajo.rest.service.port to be the general style in TAJO.
+    (Byunghwa Yun via jihoon)
+
+    TAJO-1971: Replace 'for' loop with 'foreach'. (Dongkyu Hwangbo via jihoon)
+
+    TAJO-2040: Decrease the default size of max request for locality. (jinho)
+
+    TAJO-2035: Rewrite README file using Markdown format. 
+    (Dongkyu Hwangbo via jinho)
+
+    TAJO-1991: Tablespace::getVolume should take filter predication. (hyunsik)
+
+    TAJO-1944: Support text resultset for REST (DaeMyung)
+
+    TAJO-1950: Query master uses too much memory during range shuffle. (jihoon)
+
+    TAJO-1858: Aligning error message in execute query page of web UI is needed.
+    (Byunghwa Yun via jihoon)
+
+    TAJO-2007: By default, Optimizer should use the table volume in TableStat.
+    (hyunsik)
+
+    TAJO-2022: Add AsyncTaskServer to TajoMaster. (hyunsik)
+
+    TAJO-1990: Refine some parts in HBaseTablespace. (hyunsik)
+
+    TAJO-2005: Add TableStatUpdateRewriter. (hyunsik)
+
+    TAJO-1948: Change GroupbyNode::setAggFunctions and getAggFunctions to set 
+    and get List. (Dongkyu Hwangbo via hyunsik)
+
+    TAJO-1979: Usage of some TajoShellCommand is omitted.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-1998: Waiting for gracefully stopping in tajo-deamon.sh is too short.
+    (jinho)
+
     TAJO-1985: Supporting Metric report via JMX. (Yongjun Park via jinho)
 
     TAJO-1983: Improve memory usage of ExternalSortExec. (jinho)
@@ -45,6 +87,30 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-2038: NPE in FileScanner#getProgress. (jinho)
+
+    TAJO-2034: Files required for executing python functions are not copied in 
+    testEval(). (jihoon)
+
+    TAJO-2037: tajo-storage-hdfs tests occasionally hangs. (jinho)
+
+    TAJO-2025: HBASE_LIB/metrics-core-*.jar should be included in CLASSPATH.
+    (Contributed by Dongkyu Hwangbo, committed by jinho)
+
+    TAJO-2016: Fix storage tests hangs. (jinho)
+
+    TAJO-2013: FilterPushDownRule fails due to the unsupported index. (jinho)
+
+    TAJO-2014: TestRpcClientManager fails occasionally. (jinho)
+
+    TAJO-2000: BSTIndex can cause OOM. (jinho)
+
+    TAJO-1992: \set timezone in cli doesn't work because of casesensitive (DaeMyung)
+
+    TAJO-1993: Table Timezone doesn't work when Timezone is not exactly same.(DaeMyung)
+
+    TAJO-2010: Parquet can not read null value. (jinho)
 
     TAJO-2001: DirectRawFileScanner.getProgress occasionally fails. (jinho)
 
@@ -94,6 +160,33 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2041: Update the Team page. (jaehwa)
+
+    TAJO-2018: Remove redundant 'String.toString()'. (Dongkyu Hwangbo via jinho)
+
+    TAJO-1705: Update document for index support. (jihoon)
+
+    TAJO-2028: Refining Hive Integration document including typo. 
+    (Jongyoung Park via jihoon)
+
+    TAJO-1999: TUtil.newList/newLinkedHashMap should be replaced by Java's diamond 
+    operator. (Dongkyu Hwangbo via jihoon)
+
+    TAJO-2020: Remove unused import statements in S3TableSpace.
+    (Contributed by  Byunghwa Yun, committed by jaehwa)
+
+    TAJO-2021: Some refactoring and changing anonymous class to lambda expression.
+    (Contributed by Jongyoung Park. Committed by jinho)
+
+    TAJO-2019: Replace manual array copy with System.arraycopy(). 
+    (Contributed by Dongkyu Hwangbo, committed by jihoon)
+
+    TAJO-1994: Some trivial modification is needed in compression document.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-1973: Replace 'while' loop with 'foreach'. (Contributed by Dongkyu Hwangbo, 
+    committed by jihoon)
+
     TAJO-1855: Add document for tablespace configuration to the Configuration chapter.
     (Contributed by Jongyoung Park. Committed by jihoon)
 
@@ -137,13 +230,18 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1997: Registering UDF, it needs to check duplication.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
+    TAJO-2024: Remove getContentSummary from HCatalogStore. (hyunsik)
+
     TAJO-2004: S3TableSpace needs to extend FileTableSpace. (jaehwa)
 
     TAJO-1960: Separate HDFS space handler and S3 space handler. (jaehwa)
 
-    TAJO-1856: Add a description about the relationship of tablespace, managed table, 
-    and external table to Tablespace section of Table Management chapter. 
-    (Contributed by Jongyoung Park. Committed by jihoon)
+    TAJO-1856: Add a description about the relationship of tablespace, managed 
+    table, and external table to Tablespace section of Table Management 
+    chapter. (Contributed by Jongyoung Park. Committed by jihoon)
 
     TAJO-1922: Allow date types with IN operator for partition pruning. (jaehwa)
 

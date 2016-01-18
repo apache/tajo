@@ -18,39 +18,11 @@
 
 package org.apache.tajo.storage.s3;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
-import net.minidev.json.JSONObject;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.tajo.*;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.Scanner;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.Bytes;
-
-import javax.annotation.Nullable;
-import java.io.IOException;
 import java.net.URI;
-import java.text.NumberFormat;
-import java.util.*;
+
+import org.apache.tajo.storage.FileTablespace;
+
+import net.minidev.json.JSONObject;
 
 public class S3TableSpace extends FileTablespace {
   public S3TableSpace(String spaceName, URI uri, JSONObject config) {

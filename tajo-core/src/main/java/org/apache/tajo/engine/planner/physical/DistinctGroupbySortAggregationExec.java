@@ -109,11 +109,11 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     }
 
     int mergeTupleIndex = 0;
-    for (int i = 0; i < currentTuples.length; i++) {
-      int tupleSize = currentTuples[i].size();
+    for (Tuple currentTuple : currentTuples) {
+      int tupleSize = currentTuple.size();
       for (int j = 0; j < tupleSize; j++) {
         if (resultColumnIdIndexes[mergeTupleIndex] >= 0) {
-          outTuple.put(resultColumnIdIndexes[mergeTupleIndex], currentTuples[i].asDatum(j));
+          outTuple.put(resultColumnIdIndexes[mergeTupleIndex], currentTuple.asDatum(j));
         }
         mergeTupleIndex++;
       }
@@ -127,7 +127,7 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     int tupleIndex = 0;
     for (SortAggregateExec aggExec: aggregateExecs) {
       for (int i = 0; i < aggExec.aggFunctionsNum; i++, tupleIndex++) {
-        String funcName = aggExec.aggFunctions[i].getName();
+        String funcName = aggExec.aggFunctions.get(i).getName();
         if ("min".equals(funcName) || "max".equals(funcName) || "avg".equals(funcName) || "sum".equals(funcName)) {
           outTuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createNullDatum());
         }

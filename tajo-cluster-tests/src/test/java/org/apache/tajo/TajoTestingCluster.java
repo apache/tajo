@@ -126,6 +126,7 @@ public class TajoTestingCluster {
     // Injection of equality testing code of logical plan (de)serialization
     conf.setClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, LogicalPlanTestRuleProvider.class);
     conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
+    conf.setLongVar(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD, 1024 * 1024); // 1GB
 
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES.varname, 4);
     conf.setInt(ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname, 2000);
@@ -253,15 +254,16 @@ public class TajoTestingCluster {
                                             final String hosts[])
       throws IOException {
 
-    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dir.toString());
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dir.getAbsolutePath());
     conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setBoolean(DFSConfigKeys.DFS_CLIENT_READ_SHORTCIRCUIT_KEY, false);
+    conf.setLong(DFSConfigKeys.DFS_NAMENODE_DU_RESERVED_KEY, 0);
+
     MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
     builder.hosts(hosts);
     builder.numDataNodes(servers);
     builder.format(true);
-    builder.manageNameDfsDirs(true);
-    builder.manageDataDfsDirs(true);
+    builder.storagesPerDatanode(1);
     builder.waitSafeMode(true);
     this.dfsCluster = builder.build();
 
@@ -357,7 +359,7 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_TEMPORAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
-    c.setIntVar(ConfVars.REST_SERVICE_PORT, 0);
+    c.setVar(ConfVars.REST_SERVICE_ADDRESS, "localhost:0");
 
     if (!local) {
       String tajoRootDir = getMiniDFSCluster().getFileSystem().getUri().toString() + "/tajo";
@@ -392,8 +394,8 @@ public class TajoTestingCluster {
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
     
     InetSocketAddress tajoRestAddress = tajoMaster.getContext().getRestServer().getBindAddress();
-    
-    this.conf.setIntVar(ConfVars.REST_SERVICE_PORT, tajoRestAddress.getPort());
+
+    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, tajoRestAddress.getHostName() + ":" + tajoRestAddress.getPort());
 
     startTajoWorkers(numSlaves);
 
