@@ -51,6 +51,9 @@ Release 0.11.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1921: Hbase Storage can cause NPE when the hbase cluster is restarted.
+    (Byunghwa Yun via hyunsik)
+
     TAJO-2038: NPE in FileScanner#getProgress. (jinho)
 
     TAJO-2034: Files required for executing python functions are not copied in 

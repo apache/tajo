@@ -34,6 +34,7 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.security.UserProvider;
+import org.apache.hadoop.hbase.util.RegionSizeCalculator;
 import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.task.JobContextImpl;
@@ -425,10 +426,11 @@ public class HBaseTablespace extends Tablespace {
 
     List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, filterCondition);
     HTable htable = null;
-    HBaseAdmin hAdmin = null;
 
     try {
+
       htable = new HTable(hbaseConf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
+      RegionSizeCalculator sizeCalculator = new RegionSizeCalculator(htable);
 
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
@@ -436,13 +438,20 @@ public class HBaseTablespace extends Tablespace {
         if (null == regLoc) {
           throw new IOException("Expecting at least one region.");
         }
+
         List<Fragment> fragments = new ArrayList<Fragment>(1);
-        Fragment fragment = new HBaseFragment(
+        HBaseFragment fragment = new HBaseFragment(
             tableDesc.getUri(),
             inputSourceId, htable.getName().getNameAsString(),
             HConstants.EMPTY_BYTE_ARRAY,
             HConstants.EMPTY_BYTE_ARRAY,
             regLoc.getHostname());
+        long regionSize = sizeCalculator.getRegionSize(regLoc.getRegionInfo().getRegionName());
+        if (regionSize == 0) {
+          fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
+        } else {
+          fragment.setLength(regionSize);
+        }
         fragments.add(fragment);
         return fragments;
       }
@@ -475,13 +484,14 @@ public class HBaseTablespace extends Tablespace {
         stopRows = TUtil.newList(HConstants.EMPTY_END_ROW);
       }
 
-      hAdmin =  new HBaseAdmin(hbaseConf);
-      Map<ServerName, ServerLoad> serverLoadMap = new HashMap<ServerName, ServerLoad>();
-
+      // reference: org.apache.hadoop.hbase.mapreduce.TableInputFormatBase.getSplits(JobContext)
       // region startkey -> HBaseFragment
       Map<byte[], HBaseFragment> fragmentMap = new HashMap<byte[], HBaseFragment>();
       for (int i = 0; i < keys.getFirst().length; i++) {
         HRegionLocation location = htable.getRegionLocation(keys.getFirst()[i], false);
+        if (null == location) {
+          throw new IOException("Can't find the region of the key: " +  Bytes.toStringBinary(keys.getFirst()[i]));
+        }
 
         byte[] regionStartKey = keys.getFirst()[i];
         byte[] regionStopKey = keys.getSecond()[i];
@@ -499,14 +509,6 @@ public class HBaseTablespace extends Tablespace {
             byte[] fragmentStop = (stopRow.length == 0 || Bytes.compareTo(regionStopKey, stopRow) <= 0) &&
                 regionStopKey.length > 0 ? regionStopKey : stopRow;
 
-            String regionName = location.getRegionInfo().getRegionNameAsString();
-
-            ServerLoad serverLoad = serverLoadMap.get(location.getServerName());
-            if (serverLoad == null) {
-              serverLoad = hAdmin.getClusterStatus().getLoad(location.getServerName());
-              serverLoadMap.put(location.getServerName(), serverLoad);
-            }
-
             if (fragmentMap.containsKey(regionStartKey)) {
               HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
               if (Bytes.compareTo(fragmentStart, prevFragment.getStartRow()) < 0) {
@@ -516,27 +518,19 @@ public class HBaseTablespace extends Tablespace {
                 prevFragment.setStopRow(fragmentStop);
               }
             } else {
+              byte[] regionName = location.getRegionInfo().getRegionName();
+              long regionSize = sizeCalculator.getRegionSize(regionName);
+
               HBaseFragment fragment = new HBaseFragment(tableDesc.getUri(),
                   inputSourceId,
                   htable.getName().getNameAsString(),
                   fragmentStart,
                   fragmentStop,
                   location.getHostname());
-
-              // get region size
-              boolean foundLength = false;
-              for (Map.Entry<byte[], RegionLoad> entry : serverLoad.getRegionsLoad().entrySet()) {
-                if (regionName.equals(Bytes.toString(entry.getKey()))) {
-                  RegionLoad regionLoad = entry.getValue();
-                  long storeFileSize = (regionLoad.getStorefileSizeMB() + regionLoad.getMemStoreSizeMB()) * 1024L * 1024L;
-                  fragment.setLength(storeFileSize);
-                  foundLength = true;
-                  break;
-                }
-              }
-
-              if (!foundLength) {
+              if (regionSize == 0) {
                 fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
+              } else {
+                fragment.setLength(regionSize);
               }
 
               fragmentMap.put(regionStartKey, fragment);
@@ -557,9 +551,6 @@ public class HBaseTablespace extends Tablespace {
     } finally {
       if (htable != null) {
         htable.close();
-      }
-      if (hAdmin != null) {
-        hAdmin.close();
       }
     }
   }

@@ -69,18 +69,21 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
+  @Option(sort = true)
   public void testTPCH_Q1() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
+  @Option(sort = true)
   public void testTPCH_Q2_Part() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
+  @Option(sort = true)
   public void testTPCH_Q2_Part_MixedStorage() throws Exception {
     // Manually enable broadcast feature
     try {
@@ -104,12 +107,14 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
+  @Option(sort = true)
   public void testTPCH_Q3() throws Exception {
     runSimpleTests();
   }
 
   @SimpleTest
   @Test
+  @Option(sort = true)
   public void testTPCH_Q5() throws Exception {
     runSimpleTests();
   }
