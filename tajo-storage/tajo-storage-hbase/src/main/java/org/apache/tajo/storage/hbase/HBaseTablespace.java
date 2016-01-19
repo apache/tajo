@@ -102,7 +102,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
     long totalVolume;
     try {
       totalVolume = getRawSplits("", table, filter.orElse(null)).stream()
