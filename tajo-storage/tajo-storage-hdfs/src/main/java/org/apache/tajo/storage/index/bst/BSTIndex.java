@@ -27,6 +27,9 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -800,9 +803,23 @@ public class BSTIndex implements IndexMethod {
       int centerPos = (start + end) >>> 1;
       if (arr.length == 0) {
         LOG.error("arr.length: 0, loadNum: " + loadNum + ", inited: " + inited.get());
+        return -1;
       }
 
       correctable = false;
+      if (arr.length == 1) {
+        int comp = comparator.compare(arr[0], key);
+
+        if (comp < 0) {
+          return 0;
+        } else if (comp > 0) {
+          return -1;
+        }
+
+        correctable = true;
+        return 0;
+      }
+
       while (true) {
         if (end - start == 1) {
           int comp;
