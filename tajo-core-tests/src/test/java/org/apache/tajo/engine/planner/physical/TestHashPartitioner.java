@@ -45,7 +45,7 @@ public class TestHashPartitioner {
   }
 
   @Test
-  public final void testGetPartition() {   
+  public final void testGetPartition() {
     VTuple tuple1 = new VTuple(3);
     tuple1.put(new Datum[] {
         DatumFactory.createInt4(1),
@@ -76,16 +76,16 @@ public class TestHashPartitioner {
         DatumFactory.createInt4(2),
         DatumFactory.createInt4(4)
     });
-    
+
     int [] partKeys = {0,1};
     Partitioner p = new HashPartitioner(partKeys, 2);
-    
+
     int part1 = p.getPartition(tuple1);
     assertEquals(part1, p.getPartition(tuple2));
     assertEquals(part1, p.getPartition(tuple3));
-    
+
     int part2 = p.getPartition(tuple4);
-    assertEquals(part2, p.getPartition(tuple5));    
+    assertEquals(part2, p.getPartition(tuple5));
   }
 
   @Test
@@ -99,8 +99,8 @@ public class TestHashPartitioner {
     }
 
     int[] testNumPartitions = new int[]{31, 62, 124, 32, 63, 125};
-    for (int index = 0; index <  testNumPartitions.length; index++) {
-      Partitioner p = new HashPartitioner(new int[]{0, 1, 2}, testNumPartitions[index]);
+    for (int testNumPartition : testNumPartitions) {
+      Partitioner p = new HashPartitioner(new int[]{0, 1, 2}, testNumPartition);
 
       Set<Integer> ids = new TreeSet<>();
       for (int i = 0; i < data.length; i++) {
@@ -111,7 +111,7 @@ public class TestHashPartitioner {
       }
 
       // The number of partitions isn't exactly matched.
-      assertTrue(ids.size() + 5 >= testNumPartitions[index]);
+      assertTrue(ids.size() + 5 >= testNumPartition);
     }
   }
 }

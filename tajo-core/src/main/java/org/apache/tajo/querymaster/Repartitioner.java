@@ -153,8 +153,8 @@ public class Repartitioner {
     if (joinNode != null) {
       // If all stats are zero, return
       boolean isEmptyAllJoinTables = true;
-      for (int i = 0; i < stats.length; i++) {
-        if (stats[i] > 0) {
+      for (long stat : stats) {
+        if (stat > 0) {
           isEmptyAllJoinTables = false;
           break;
         }

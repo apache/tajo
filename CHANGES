@@ -8,6 +8,21 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2050: Adopt TAJO logo in CLI.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-1740: Update Partition Table document. (jaehwa)
+    
+    TAJO-2053: Update description for HBase configuration.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-2057: Remove redundant class loading in plan optimizer. (jinho)
+
+    TAJO-2032: Change tajo.rest.service.port to be the general style in TAJO.
+    (Byunghwa Yun via jihoon)
+
+    TAJO-1971: Replace 'for' loop with 'foreach'. (Dongkyu Hwangbo via jihoon)
+
     TAJO-2040: Decrease the default size of max request for locality. (jinho)
 
     TAJO-2035: Rewrite README file using Markdown format. 
@@ -78,6 +93,11 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1921: Hbase Storage can cause NPE when the hbase cluster is restarted.
+    (Byunghwa Yun via hyunsik)
+
+    TAJO-2038: NPE in FileScanner#getProgress. (jinho)
+
     TAJO-2034: Files required for executing python functions are not copied in 
     testEval(). (jihoon)
 
@@ -147,6 +167,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2041: Update the Team page. (jaehwa)
 
     TAJO-2018: Remove redundant 'String.toString()'. (Dongkyu Hwangbo via jinho)
 

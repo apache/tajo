@@ -300,50 +300,19 @@ public class DelimitedTextFile {
 
     @Override
     public void init() throws IOException {
-      if (reader != null) {
-        reader.close();
-      }
 
-      if(deserializer != null) {
-        deserializer.release();
-      }
-
-      reader = new DelimitedLineReader(conf, fragment, conf.getInt(READ_BUFFER_SIZE, 128 * StorageUnit.KB));
       reader.init();
-      recordCount = 0;
 
       if (targets == null) {
         targets = schema.toArray();
       }
 
-      outTuple = new VTuple(targets.length);
+      reset();
 
       super.init();
       if (LOG.isDebugEnabled()) {
         LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
-
-      // skip first line if it reads from middle of file
-      if (startOffset > 0) {
-        reader.readLine();
-      } else { // skip header lines if it is defined
-
-        // initialization for skipping header(max 20)
-        int headerLineNum = Math.min(Integer.parseInt(meta.getProperty(StorageConstants.TEXT_SKIP_HEADER_LINE, "0")), 20);
-        if (headerLineNum > 0) {
-          LOG.info(String.format("Skip %d header lines", headerLineNum));
-          for (int i = 0; i < headerLineNum; i++) {
-            if (!reader.isReadable()) {
-              return;
-            }
-
-            reader.readLine();
-          }
-        }
-      }
-
-      deserializer = getLineSerde().createDeserializer(schema, meta, targets);
-      deserializer.init();
     }
 
     public TextLineSerDe getLineSerde() {
@@ -436,7 +405,44 @@ public class DelimitedTextFile {
 
     @Override
     public void reset() throws IOException {
-      init();
+      recordCount = 0;
+
+      if (reader.getReadBytes() > 0) {
+        reader.close();
+
+        reader = new DelimitedLineReader(conf, fragment, conf.getInt(READ_BUFFER_SIZE, 128 * StorageUnit.KB));
+        reader.init();
+      }
+
+      if(deserializer != null) {
+        deserializer.release();
+      }
+
+      deserializer = getLineSerde().createDeserializer(schema, meta, targets);
+      deserializer.init();
+
+      outTuple = new VTuple(targets.length);
+
+      // skip first line if it reads from middle of file
+      if (startOffset > 0) {
+        reader.readLine();
+      } else { // skip header lines if it is defined
+
+        // initialization for skipping header(max 20)
+        int headerLineNum = Math.min(Integer.parseInt(
+            meta.getProperty(StorageConstants.TEXT_SKIP_HEADER_LINE, "0")), 20);
+
+        if (headerLineNum > 0) {
+          LOG.info(String.format("Skip %d header lines", headerLineNum));
+          for (int i = 0; i < headerLineNum; i++) {
+            if (!reader.isReadable()) {
+              return;
+            }
+
+            reader.readLine();
+          }
+        }
+      }
     }
 
     @Override
@@ -446,16 +452,16 @@ public class DelimitedTextFile {
           deserializer.release();
         }
 
-        if (tableStats != null && reader != null) {
+        if (reader != null) {
           tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
           tableStats.setNumRows(recordCount);
         }
+
         if (LOG.isDebugEnabled()) {
           LOG.debug("DelimitedTextFileScanner processed record:" + recordCount);
         }
       } finally {
         IOUtils.cleanup(LOG, reader);
-        reader = null;
         outTuple = null;
       }
     }
