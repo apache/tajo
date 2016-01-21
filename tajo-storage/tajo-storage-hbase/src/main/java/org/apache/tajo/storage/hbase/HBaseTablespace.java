@@ -467,6 +467,15 @@ public class HBaseTablespace extends Tablespace {
     return tableRange == null || tableRange.getFirst() == null || tableRange.getFirst().length == 0;
   }
 
+  private long getRegionSize(RegionSizeCalculator calculator, byte [] regionName) {
+    long regionSize = calculator.getRegionSize(regionName);
+    if (regionSize == 0) {
+      return TajoConstants.UNKNOWN_LENGTH;
+    } else {
+      return regionSize;
+    }
+  }
+
   private List<HBaseFragment> createEmptyFragment(TableDesc table, String sourceId, HTable htable,
                                                   RegionSizeCalculator sizeCalculator) throws IOException {
     HRegionLocation regLoc = htable.getRegionLocation(HConstants.EMPTY_BYTE_ARRAY, false);
@@ -481,13 +490,7 @@ public class HBaseTablespace extends Tablespace {
         HConstants.EMPTY_BYTE_ARRAY,
         regLoc.getHostname());
 
-    long regionSize = sizeCalculator.getRegionSize(regLoc.getRegionInfo().getRegionName());
-    if (regionSize == 0) {
-      fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
-    } else {
-      fragment.setLength(regionSize);
-    }
-
+    fragment.setLength(getRegionSize(sizeCalculator, regLoc.getRegionInfo().getRegionName()));
     return ImmutableList.of(fragment);
   }
 
@@ -529,21 +532,17 @@ public class HBaseTablespace extends Tablespace {
               prevFragment.setStopRow(fragmentStop);
             }
           } else {
+
             final HBaseFragment fragment = new HBaseFragment(table.getUri(),
                 inputSourceId,
                 htable.getName().getNameAsString(),
                 fragmentStart,
                 fragmentStop,
                 location.getHostname());
-            final byte[] regionName = location.getRegionInfo().getRegionName();
-            final long regionSize = sizeCalculator.getRegionSize(regionName);
-            if (regionSize == 0) {
-              fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
-            } else {
-              fragment.setLength(regionSize);
-            }
 
+            fragment.setLength(getRegionSize(sizeCalculator, location.getRegionInfo().getRegionName()));
             fragmentMap.put(regionStartKey, fragment);
+
             if (LOG.isDebugEnabled()) {
               LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
             }

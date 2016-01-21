@@ -226,11 +226,13 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testGetTableVolume() throws Exception {
+    final String tableName = "external_hbase_table";
+
     Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
     assertTrue(existing.isPresent());
 
     try {
-      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf(tableName));
       hTableDesc.addFamily(new HColumnDescriptor("col1"));
       hTableDesc.addFamily(new HColumnDescriptor("col2"));
       hTableDesc.addFamily(new HColumnDescriptor("col3"));
@@ -244,21 +246,21 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       assertTableExists("external_hbase_mapped_table");
 
+      HBaseTablespace tablespace = (HBaseTablespace)existing.get();
       HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
-      try (HTableInterface htable = hconn.getTable("external_hbase_table")) {
+
+      try (HTableInterface htable = hconn.getTable(tableName)) {
         htable.setAutoFlushTo(true);
         putData(htable, 4000);
-        htable.close();
       }
       hconn.close();
 
-      Thread.sleep(1000);
+      Thread.sleep(3000); // sleep here for up-to-date region server load. It may not be a problem in real cluster.
 
       TableDesc createdTable = client.getTableDesc("external_hbase_mapped_table");
-      HBaseTablespace tablespace = TablespaceManager.get(tableSpaceUri);
       assertNotNull(tablespace);
       long volume = tablespace.getTableVolume(createdTable, Optional.empty());
-      assertTrue(volume > 0);
+      assertTrue(volume > 0 || volume == -1);
       executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
 
     } finally {
