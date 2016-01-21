@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.hbase;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
@@ -53,8 +54,9 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.*;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 
 import javax.annotation.Nullable;
@@ -465,100 +467,91 @@ public class HBaseTablespace extends Tablespace {
     return tableRange == null || tableRange.getFirst() == null || tableRange.getFirst().length == 0;
   }
 
-  private List<HBaseFragment> createEmptyFragment(TableDesc table, String sourceId, HTable htable) throws IOException {
+  private List<HBaseFragment> createEmptyFragment(TableDesc table, String sourceId, HTable htable,
+                                                  RegionSizeCalculator sizeCalculator) throws IOException {
     HRegionLocation regLoc = htable.getRegionLocation(HConstants.EMPTY_BYTE_ARRAY, false);
     if (null == regLoc) {
       throw new IOException("Expecting at least one region.");
     }
-    List<HBaseFragment> fragments = new ArrayList<>(1);
+
     HBaseFragment fragment = new HBaseFragment(
         table.getUri(),
         sourceId, htable.getName().getNameAsString(),
         HConstants.EMPTY_BYTE_ARRAY,
         HConstants.EMPTY_BYTE_ARRAY,
         regLoc.getHostname());
-    fragments.add(fragment);
-    return fragments;
+
+    long regionSize = sizeCalculator.getRegionSize(regLoc.getRegionInfo().getRegionName());
+    if (regionSize == 0) {
+      fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
+    } else {
+      fragment.setLength(regionSize);
+    }
+
+    return ImmutableList.of(fragment);
   }
 
   private Collection<HBaseFragment> convertRangeToFragment(
-      TableDesc table, String inputSourceId, HTable htable,
+      TableDesc table, String inputSourceId, HTable htable, RegionSizeCalculator sizeCalculator,
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> tableRange,
       Pair<List<byte[]>, List<byte[]>> selectedRange) throws IOException {
 
-    final Map<ServerName, ServerLoad> serverLoadMap = new HashMap<>();
     final Map<byte[], HBaseFragment> fragmentMap = new HashMap<>();
 
-    try (HBaseAdmin hAdmin = new HBaseAdmin(hbaseConf)) {
+    for (int i = 0; i < tableRange.getFirst().length; i++) {
+      HRegionLocation location = htable.getRegionLocation(tableRange.getFirst()[i], false);
+      if (location == null) {
+        throw new IOException("Can't find the region of the key: " + Bytes.toStringBinary(tableRange.getFirst()[i]));
+      }
 
-      for (int i = 0; i < tableRange.getFirst().length; i++) {
-        HRegionLocation location = htable.getRegionLocation(tableRange.getFirst()[i], false);
+      final byte[] regionStartKey = tableRange.getFirst()[i];
+      final byte[] regionStopKey = tableRange.getSecond()[i];
 
-        byte[] regionStartKey = tableRange.getFirst()[i];
-        byte[] regionStopKey = tableRange.getSecond()[i];
+      int startRowsSize = selectedRange.getFirst().size();
+      for (int j = 0; j < startRowsSize; j++) {
+        byte[] startRow = selectedRange.getFirst().get(j);
+        byte[] stopRow = selectedRange.getSecond().get(j);
+        // determine if the given start an stop key fall into the region
+        if ((startRow.length == 0 || regionStopKey.length == 0 || Bytes.compareTo(startRow, regionStopKey) < 0)
+            && (stopRow.length == 0 || Bytes.compareTo(stopRow, regionStartKey) > 0)) {
+          final byte[] fragmentStart = (startRow.length == 0 || Bytes.compareTo(regionStartKey, startRow) >= 0) ?
+              regionStartKey : startRow;
 
-        int startRowsSize = selectedRange.getFirst().size();
-        for (int j = 0; j < startRowsSize; j++) {
-          byte[] startRow = selectedRange.getFirst().get(j);
-          byte[] stopRow = selectedRange.getSecond().get(j);
-          // determine if the given start an stop key fall into the region
-          if ((startRow.length == 0 || regionStopKey.length == 0 || Bytes.compareTo(startRow, regionStopKey) < 0)
-              && (stopRow.length == 0 || Bytes.compareTo(stopRow, regionStartKey) > 0)) {
-            byte[] fragmentStart = (startRow.length == 0 || Bytes.compareTo(regionStartKey, startRow) >= 0) ?
-                regionStartKey : startRow;
+          final byte[] fragmentStop = (stopRow.length == 0 || Bytes.compareTo(regionStopKey, stopRow) <= 0) &&
+              regionStopKey.length > 0 ? regionStopKey : stopRow;
 
-            byte[] fragmentStop = (stopRow.length == 0 || Bytes.compareTo(regionStopKey, stopRow) <= 0) &&
-                regionStopKey.length > 0 ? regionStopKey : stopRow;
-
-            String regionName = location.getRegionInfo().getRegionNameAsString();
-
-            ServerLoad serverLoad = serverLoadMap.get(location.getServerName());
-            if (serverLoad == null) {
-              serverLoad = hAdmin.getClusterStatus().getLoad(location.getServerName());
-              serverLoadMap.put(location.getServerName(), serverLoad);
+          if (fragmentMap.containsKey(regionStartKey)) {
+            final HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
+            if (Bytes.compareTo(fragmentStart, prevFragment.getStartRow()) < 0) {
+              prevFragment.setStartRow(fragmentStart);
+            }
+            if (Bytes.compareTo(fragmentStop, prevFragment.getStopRow()) > 0) {
+              prevFragment.setStopRow(fragmentStop);
+            }
+          } else {
+            final HBaseFragment fragment = new HBaseFragment(table.getUri(),
+                inputSourceId,
+                htable.getName().getNameAsString(),
+                fragmentStart,
+                fragmentStop,
+                location.getHostname());
+            final byte[] regionName = location.getRegionInfo().getRegionName();
+            final long regionSize = sizeCalculator.getRegionSize(regionName);
+            if (regionSize == 0) {
+              fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
+            } else {
+              fragment.setLength(regionSize);
             }
 
-            if (fragmentMap.containsKey(regionStartKey)) {
-              HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
-              if (Bytes.compareTo(fragmentStart, prevFragment.getStartRow()) < 0) {
-                prevFragment.setStartRow(fragmentStart);
-              }
-              if (Bytes.compareTo(fragmentStop, prevFragment.getStopRow()) > 0) {
-                prevFragment.setStopRow(fragmentStop);
-              }
-            } else {
-              HBaseFragment fragment = new HBaseFragment(table.getUri(),
-                  inputSourceId,
-                  htable.getName().getNameAsString(),
-                  fragmentStart,
-                  fragmentStop,
-                  location.getHostname());
-
-              // get region size
-              boolean foundLength = false;
-              for (Map.Entry<byte[], RegionLoad> entry : serverLoad.getRegionsLoad().entrySet()) {
-                if (regionName.equals(Bytes.toString(entry.getKey()))) {
-                  RegionLoad regionLoad = entry.getValue();
-                  long storeFileSize = (regionLoad.getStorefileSizeMB() + regionLoad.getMemStoreSizeMB()) * 1024L * 1024L;
-                  fragment.setLength(storeFileSize);
-                  foundLength = true;
-                  break;
-                }
-              }
-
-              if (!foundLength) {
-                fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
-              }
-
-              fragmentMap.put(regionStartKey, fragment);
-              if (LOG.isDebugEnabled()) {
-                LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
-              }
+            fragmentMap.put(regionStartKey, fragment);
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
             }
           }
         }
       }
     }
+
     return fragmentMap.values();
   }
 
@@ -566,7 +559,7 @@ public class HBaseTablespace extends Tablespace {
   public List<Fragment> getSplits(String inputSourceId,
                                   TableDesc table,
                                   @Nullable EvalNode filterCondition) throws IOException, TajoException {
-    return (ArrayList<Fragment>) (ArrayList) getRawSplits(inputSourceId, table, filterCondition);
+    return (List<Fragment>) (List) getRawSplits(inputSourceId, table, filterCondition);
   }
 
   private List<HBaseFragment> getRawSplits(String inputSourceId,
@@ -575,10 +568,10 @@ public class HBaseTablespace extends Tablespace {
     final ColumnMapping columnMapping = new ColumnMapping(table.getSchema(), table.getMeta().getPropertySet());
 
     try (final HTable htable = new HTable(hbaseConf, table.getMeta().getProperty(HBaseStorageConstants.META_TABLE_KEY))) {
-
+      final RegionSizeCalculator sizeCalculator = new RegionSizeCalculator(htable);
       final org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> tableRange = htable.getStartEndKeys();
       if (isEmptyRegion(tableRange)) {
-        return createEmptyFragment(table, inputSourceId, htable);
+        return createEmptyFragment(table, inputSourceId, htable, sizeCalculator);
       }
 
       final Pair<List<byte []>, List<byte []>> selectedRange = getSelectedKeyRange(
@@ -586,13 +579,13 @@ public class HBaseTablespace extends Tablespace {
           getIndexPredications(columnMapping, table, filterCondition));
 
       // region startkey -> HBaseFragment
-      List<HBaseFragment> fragments = new ArrayList<>(convertRangeToFragment(table, inputSourceId, htable, tableRange, selectedRange));
+      List<HBaseFragment> fragments = new ArrayList<>(convertRangeToFragment(table, inputSourceId, htable, sizeCalculator, tableRange, selectedRange));
       Collections.sort(fragments);
       if (!fragments.isEmpty()) {
         fragments.get(fragments.size() - 1).setLast(true);
       }
 
-      return fragments;
+      return ImmutableList.copyOf(fragments);
     }
   }
 

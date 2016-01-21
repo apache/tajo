@@ -243,15 +243,18 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
       try (HTableInterface htable = hconn.getTable("external_hbase_table")) {
-        putData(htable, 2000);
-        htable.flushCommits();
+        htable.setAutoFlushTo(true);
+        putData(htable, 4000);
+        htable.close();
       }
       hconn.close();
+
+      Thread.sleep(1000);
+
       TableDesc createdTable = client.getTableDesc("external_hbase_mapped_table");
       HBaseTablespace tablespace = TablespaceManager.get(tableSpaceUri);
       assertNotNull(tablespace);
       long volume = tablespace.getTableVolume(createdTable, Optional.empty());
-      assertEquals(volume, 1000);
       assertTrue(volume > 0);
       executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
 
