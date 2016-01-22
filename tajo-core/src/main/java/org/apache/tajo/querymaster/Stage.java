@@ -1426,18 +1426,14 @@ public class Stage implements EventHandler<StageEvent> {
             stage.getSucceededObjectCount(),
             stage.killedObjectCount));
 
-        if (stage.killedObjectCount > 0 || stage.failedObjectCount > 0) {
+        // If the current stage are failed, next stages receives SQ_KILL event
+        if (stage.killedObjectCount + stage.failedObjectCount > 0) {
           if (stage.failedObjectCount > 0) {
             stage.abort(StageState.FAILED);
             return StageState.FAILED;
-          } else if (stage.killedObjectCount > 0) {
+          } else {
             stage.abort(StageState.KILLED);
             return StageState.KILLED;
-          } else {
-            TajoInternalError error = new TajoInternalError("Invalid State " + stage.getSynchronizedState() + " State");
-            LOG.error(error.getMessage(), error);
-            stage.abort(StageState.ERROR, error);
-            return StageState.ERROR;
           }
         } else {
           stage.complete();

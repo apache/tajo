@@ -507,7 +507,6 @@ public class TajoMasterClientService extends AbstractService {
               if(!StringUtils.isEmpty(queryInfo.getLastMessage())) {
                 builder.setErrorMessage(queryInfo.getLastMessage());
               }
-              builder.setState(OK);
             }
           } else {
             Session session = context.getSessionManager().getSession(request.getSessionId().getId());
