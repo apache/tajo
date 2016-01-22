@@ -8,6 +8,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2050: Adopt TAJO logo in CLI.
+    (Dongkyu Hwangbo via jaehwa)
+
     TAJO-1740: Update Partition Table document. (jaehwa)
     
     TAJO-2053: Update description for HBase configuration.
@@ -89,6 +92,9 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-1921: Hbase Storage can cause NPE when the hbase cluster is restarted.
+    (Byunghwa Yun via hyunsik)
 
     TAJO-2038: NPE in FileScanner#getProgress. (jinho)
 
