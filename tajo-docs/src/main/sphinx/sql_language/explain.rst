@@ -11,7 +11,7 @@ EXPLAIN
 
 *Description*
 
-Show the logical or distributed execution plan of a statement.
+Show the logical or global execution plan of a statement.
 
 
 *Examples*
@@ -34,7 +34,7 @@ Logical plan:
        => in schema: {(16) default.lineitem.l_orderkey (INT8), default.lineitem.l_partkey (INT8), default.lineitem.l_suppkey (INT8), default.lineitem.l_linenumber (INT8), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_discount (FLOAT8), default.lineitem.l_tax (FLOAT8), default.lineitem.l_returnflag (TEXT), default.lineitem.l_linestatus (TEXT), default.lineitem.l_shipdate (DATE), default.lineitem.l_commitdate (DATE), default.lineitem.l_receiptdate (DATE), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_comment (TEXT)}
 
 
-Distributed plan:
+Global plan:
 
 .. code-block:: sql
 
