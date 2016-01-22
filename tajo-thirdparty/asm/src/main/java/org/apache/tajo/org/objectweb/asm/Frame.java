@@ -821,8 +821,8 @@ final class Frame {
                 inputLocals[i++] = UNINITIALIZED_THIS;
             }
         }
-        for (int j = 0; j < args.length; ++j) {
-            int t = type(cw, args[j].getDescriptor());
+        for (Type arg : args) {
+            int t = type(cw, arg.getDescriptor());
             inputLocals[i++] = t;
             if (t == LONG || t == DOUBLE) {
                 inputLocals[i++] = TOP;

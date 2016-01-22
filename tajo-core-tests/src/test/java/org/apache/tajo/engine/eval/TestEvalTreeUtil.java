@@ -348,8 +348,8 @@ public class TestEvalTreeUtil {
     List aggEvals = groupByNode.getAggFunctions();
 
     List<AggregationFunctionCallEval> list = new ArrayList<>();
-    for (int i = 0; i < aggEvals.size(); i++) {
-      list.addAll(EvalTreeUtil.findDistinctAggFunction((EvalNode) aggEvals.get(i)));
+    for (Object aggEval : aggEvals) {
+      list.addAll(EvalTreeUtil.findDistinctAggFunction((EvalNode) aggEval));
     }
     assertEquals(2, list.size());
 

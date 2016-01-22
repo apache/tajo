@@ -287,10 +287,10 @@ public class TestMemoryRowBlock {
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
 
     int count = 0;
-    for (int l = 0; l < rowBlock.size(); l++) {
-      for(int m = 0; m < schema.length; m++ ) {
-        if (rowBlock.get(l).contains(m) && rowBlock.get(l).get(m).type() == Type.INT4) {
-          count ++;
+    for (VTuple aRowBlock : rowBlock) {
+      for (int m = 0; m < schema.length; m++) {
+        if (aRowBlock.contains(m) && aRowBlock.get(m).type() == Type.INT4) {
+          count++;
         }
       }
     }
