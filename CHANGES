@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2060: Upgrade geoip-api-java library. (Byunghwa Yun via jinho)
+
     TAJO-2048: QueryMaster and TajoWorker should support the exception
     propagation. (jinho)
 
