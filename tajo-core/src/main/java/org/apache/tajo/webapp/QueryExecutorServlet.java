@@ -162,6 +162,11 @@ public class QueryExecutorServlet extends HttpServlet {
         } catch (java.lang.NumberFormatException nfe) {
           queryRunner.sizeLimit = 1048576;
         }
+        try {
+          queryRunner.rowLimit = Integer.parseInt(request.getParameter("limitRow"));
+        } catch (java.lang.NumberFormatException nfe) {
+          queryRunner.rowLimit = 3000000;
+        }
         synchronized(queryRunners) {
           queryRunners.put(queryRunnerId, queryRunner);
         }
@@ -286,6 +291,7 @@ public class QueryExecutorServlet extends HttpServlet {
     String database;
     long resultRows;
     int sizeLimit;
+    long rowLimit;
     Exception error;
 
     AtomicInteger progress = new AtomicInteger(0);
@@ -503,7 +509,7 @@ public class QueryExecutorServlet extends HttpServlet {
       int currentResultSize = 0;
       int rowCount = 0;
       while (res.next()) {
-        if(currentResultSize > sizeLimit) {
+        if(rowCount > rowLimit || currentResultSize > sizeLimit) {
           break;
         }
         List<Object> row = new ArrayList<>();
