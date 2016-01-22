@@ -98,6 +98,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2062: Fix TestQueryResult#testTemporalResultOnClose failure. (jinho)
+
     TAJO-1921: Hbase Storage can cause NPE when the hbase cluster is restarted.
     (Byunghwa Yun via hyunsik)
 
