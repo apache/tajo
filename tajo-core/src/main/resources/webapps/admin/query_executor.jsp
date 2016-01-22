@@ -240,26 +240,26 @@ function getCSV() {
 }
 
 function getNext() {
-	var printedLine = 0;
-	if(pageCount > pageNum) {
-		pageNum++;
-		document.getElementById("selectPage").options.selectedIndex = pageNum;
-	}else {
-		alert("There's no next page.");
-		return;
-	}
-	getPage();
+  var printedLine = 0;
+  if(pageCount > pageNum) {
+    pageNum++;
+    document.getElementById("selectPage").options.selectedIndex = pageNum;
+  } else {
+    alert("There's no next page.");
+    return;
+  }
+  getPage();
 }
 
 function getPrev() {
-	if(pageNum > 0  ) {
-		pageNum--;
-		document.getElementById("selectPage").options.selectedIndex = pageNum;
-	} else {
-		alert("There's no previous page.");
-		return;
-	}
-	getPage();
+  if(pageNum > 0  ) {
+    pageNum--;
+    document.getElementById("selectPage").options.selectedIndex = pageNum;
+  } else {
+    alert("There's no previous page.");
+    return;
+  }
+  getPage();
 }
 
 function getSelectedPage() {
@@ -304,12 +304,12 @@ function getPage() {
   Database :
   <select id="selectDatabase" name="database" width="190" style="width: 190px">
     <%
-	for (String databaseName : master.getCatalog().getAllDatabaseNames()) {
-	%>
-	  <option value="<%=databaseName%>" <%= (databaseName.equals("default"))?"selected":"" %> ><%=databaseName%></option>
-	<%
-	}
-	%>
+    for (String databaseName : master.getCatalog().getAllDatabaseNames()) {
+    %>
+      <option value="<%=databaseName%>" <%= (databaseName.equals("default"))?"selected":"" %> ><%=databaseName%></option>
+    <%
+    }
+    %>
   </select>
   <p />
 <textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>

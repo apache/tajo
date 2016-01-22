@@ -516,9 +516,9 @@ public class QueryExecutorServlet extends HttpServlet {
         for(int i = 0; i < numOfColumns; i++) {
           String columnValue = String.valueOf(res.getObject(i + 1));
           try {
-	    currentResultSize += columnValue.getBytes(Bytes.UTF8_ENCODING).length;
-	  } catch (Exception e) {
-	  }
+            currentResultSize += columnValue.getBytes(Bytes.UTF8_ENCODING).length;
+          } catch (Exception e) {
+          }
           row.add(columnValue);
         }
         queryResult.add(row);
