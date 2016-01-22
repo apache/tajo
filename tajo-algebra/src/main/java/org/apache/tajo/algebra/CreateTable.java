@@ -419,8 +419,7 @@ public class CreateTable extends Expr {
       }
       hash.quantity = quantity;
       if (specifiers != null) {
-        hash.specifiers = new ArrayList<>();
-        hash.specifiers.addAll(specifiers.stream().collect(Collectors.toList()));
+        hash.specifiers = new ArrayList<>(specifiers);
       }
       return hash;
     }
@@ -470,8 +469,7 @@ public class CreateTable extends Expr {
         }
       }
       if (specifiers != null) {
-        listPartition.specifiers = new ArrayList<>();
-        listPartition.specifiers.addAll(specifiers.stream().collect(Collectors.toList()));
+        listPartition.specifiers = new ArrayList<>(specifiers);
       }
       return listPartition;
     }
