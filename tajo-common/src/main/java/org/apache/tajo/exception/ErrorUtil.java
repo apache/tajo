@@ -18,6 +18,8 @@
 
 package org.apache.tajo.exception;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.error.Stacktrace;
 
@@ -32,13 +34,32 @@ public class ErrorUtil {
 
   public static Stacktrace.StackTrace convertStacktrace(Throwable t) {
     Stacktrace.StackTrace.Builder builder = Stacktrace.StackTrace.newBuilder();
-    for (StackTraceElement element: t.getStackTrace()) {
+    for (StackTraceElement element : t.getStackTrace()) {
       builder.addElement(Stacktrace.StackTrace.Element.newBuilder()
-              .setFilename(element.getFileName())
+              .setFilename(element.getFileName() == null ? "(Unknown Source)" : element.getFileName())
               .setFunction(element.getClassName() + "::" + element.getMethodName())
               .setLine(element.getLineNumber())
       );
     }
+    return builder.build();
+  }
+
+  public static Errors.SerializedException convertException(Throwable t) {
+    Errors.SerializedException.Builder builder = Errors.SerializedException.newBuilder();
+
+    if (ExceptionUtil.isExceptionWithResultCode(t)) {
+      DefaultTajoException tajoException = (DefaultTajoException) t;
+      builder.setReturnCode(tajoException.getErrorCode());
+      builder.setMessage(tajoException.getMessage());
+    } else {
+      Throwable rootCause = ExceptionUtils.getRootCause(t);
+      if(rootCause != null) t = rootCause;
+
+      builder.setReturnCode(ResultCode.INTERNAL_ERROR);
+      builder.setMessage(ErrorMessages.getInternalErrorMessage(t));
+    }
+    builder.setStackTrace(ErrorUtil.convertStacktrace(t));
+    builder.setTimestamp(System.currentTimeMillis());
     return builder.build();
   }
 }

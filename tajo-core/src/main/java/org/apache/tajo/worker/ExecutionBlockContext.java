@@ -38,8 +38,9 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.serder.PlanProto;
@@ -308,13 +309,13 @@ public class ExecutionBlockContext {
     return taskHistories;
   }
 
-  public void fatalError(TaskAttemptId taskAttemptId, String message) {
-    if (message == null) {
-      message = "No error message";
+  public void fatalError(TaskAttemptId taskAttemptId, Throwable error) {
+    if (error == null) {
+      error = new TajoInternalError("No error message");
     }
     TaskFatalErrorReport.Builder builder = TaskFatalErrorReport.newBuilder()
         .setId(taskAttemptId.getProto())
-        .setErrorMessage(message);
+        .setError(ErrorUtil.convertException(error));
 
     try {
       //If QueryMaster does not responding, current execution block should be stop

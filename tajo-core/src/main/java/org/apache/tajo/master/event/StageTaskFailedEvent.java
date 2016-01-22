@@ -18,25 +18,22 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.ResourceProtos.TaskFatalErrorReport;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.error.Errors.SerializedException;
-import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.master.TaskState;
 
-public class TaskFatalErrorEvent extends TaskAttemptEvent {
-  private final SerializedException error;
+/**
+ * Event Class: From Task to Stage
+ */
+public class StageTaskFailedEvent extends StageTaskEvent {
+  private final SerializedException exception;
 
-  public TaskFatalErrorEvent(TaskFatalErrorReport report) {
-    super(new TaskAttemptId(report.getId()), TaskAttemptEventType.TA_FATAL_ERROR);
-    this.error = report.getError();
+  public StageTaskFailedEvent(TaskId taskId, SerializedException exception) {
+    super(taskId, TaskState.FAILED);
+    this.exception = exception;
   }
 
-  public TaskFatalErrorEvent(TaskAttemptId attemptId, Throwable e) {
-    super(attemptId, TaskAttemptEventType.TA_FATAL_ERROR);
-    this.error = ErrorUtil.convertException(e);
-  }
-
-  public SerializedException getError() {
-    return error;
+  public SerializedException getException() {
+    return exception;
   }
 }

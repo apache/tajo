@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
@@ -266,12 +267,12 @@ public class QueryMasterTask extends CompositeService {
 
       if(!callFuture.get().getValue()){
         getEventHandler().handle(
-            new TaskFatalErrorEvent(taskAttemptId, "Can't kill task :" + taskAttemptId));
+            new TaskFatalErrorEvent(taskAttemptId, new TajoInternalError("Can't kill task :" + taskAttemptId)));
       }
     } catch (Exception e) {
       /* Node RPC failure */
       LOG.error(e.getMessage(), e);
-      getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
+      getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e));
     }
   }
 
