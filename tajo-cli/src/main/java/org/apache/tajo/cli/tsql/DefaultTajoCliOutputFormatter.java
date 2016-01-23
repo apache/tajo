@@ -203,7 +203,8 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
         progressBar = "@|green " + progressBar + "|@";
       }
       else if (status.getState() == TajoProtos.QueryState.QUERY_ERROR ||
-               status.getState() == TajoProtos.QueryState.QUERY_FAILED) {
+               status.getState() == TajoProtos.QueryState.QUERY_FAILED ||
+               status.getState() == TajoProtos.QueryState.QUERY_KILLED) {
         progressBar = "@|red " + progressBar + "|@";
       }
 

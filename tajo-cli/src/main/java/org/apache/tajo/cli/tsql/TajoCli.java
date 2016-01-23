@@ -595,7 +595,7 @@ public class TajoCli implements Closeable {
     // query execute
     ResultSet res = null;
     QueryStatus status = null;
-    boolean isPrintingProgress = false;
+    boolean isProgressPrinting = false;
     try {
 
       int initRetries = 0;
@@ -608,15 +608,14 @@ public class TajoCli implements Closeable {
           continue;
         }
 
-        if (TajoClientUtil.isQueryRunning(status.getState()) || status.getState() == QueryState.QUERY_SUCCEEDED) {
+        if (TajoClientUtil.isQueryRunning(status.getState())) {
           displayFormatter.printProgress(sout, status);
-          isPrintingProgress = true;
+          if (isProgressPrinting == false) {
+            isProgressPrinting = true;
+          }
         }
 
         if (TajoClientUtil.isQueryComplete(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
-          if (isPrintingProgress) {
-            sout.println();
-          }
           break;
         } else {
           Thread.sleep(Math.min(200 * progressRetries, 1000));
@@ -624,8 +623,11 @@ public class TajoCli implements Closeable {
         }
       }
 
-      if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
+      if (isProgressPrinting == true) {
         displayFormatter.printProgress(sout, status);
+        sout.println();
+      }
+      if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
         displayFormatter.printErrorMessage(sout, status);
         wasError = true;
       } else if (status.getState() == QueryState.QUERY_KILLED) {
