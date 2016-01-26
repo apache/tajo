@@ -18,12 +18,15 @@
 
 package org.apache.tajo.cli.tsql;
 
-import com.google.common.collect.Maps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.google.protobuf.ServiceException;
 import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
+import jline.console.completer.AggregateCompleter;
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.Completer;
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
@@ -92,6 +95,9 @@ public class TajoCli implements Closeable {
       TajoGetConfCommand.class,
       TajoHAAdminCommand.class
   };
+
+  private AggregateCompleter cliCompleter;
+
   private final Map<String, TajoShellCommand> commands = new TreeMap<>();
 
   protected static final Options options;
@@ -256,6 +262,8 @@ public class TajoCli implements Closeable {
       initHistory();
       initCommands();
 
+      reader.addCompleter(cliCompleter);
+
       if (cmd.getOptionValues("conf") != null) {
         processSessionVarCommand(cmd.getOptionValues("conf"));
       }
@@ -365,8 +373,10 @@ public class TajoCli implements Closeable {
   }
 
   private void initCommands() {
+    List<Completer> compList = new ArrayList<>();
     for (Class clazz : registeredCommands) {
       TajoShellCommand cmd = null;
+
       try {
          Constructor cons = clazz.getConstructor(new Class[] {TajoCliContext.class});
          cmd = (TajoShellCommand) cons.newInstance(context);
@@ -374,11 +384,17 @@ public class TajoCli implements Closeable {
         System.err.println(e.getMessage());
         throw new RuntimeException(e.getMessage());
       }
+
+      // make completers for console auto-completion
+      compList.add(cmd.getArgumentComplementer());
+
       commands.put(cmd.getCommand(), cmd);
       for (String alias : cmd.getAliases()) {
         commands.put(alias, cmd);
       }
     }
+
+    cliCompleter = new AggregateCompleter(compList);
   }
 
   private void addShutdownHook() {

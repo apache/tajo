@@ -18,9 +18,18 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.Completer;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.cli.tsql.TajoCli;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public abstract class TajoShellCommand {
   public abstract String getCommand();
@@ -125,5 +134,37 @@ public abstract class TajoShellCommand {
 
     println();
     return columnWidths;
+  }
+
+  public ArgumentCompleter getArgumentComplementer() {
+    List<String> cmds = new ArrayList<>(Arrays.asList(getAliases()));
+    cmds.add(getCommand());
+
+    return new ArgumentCompleter(new StringsCompleter(cmds.toArray(new String[cmds.size()])), NullCompleter.INSTANCE);
+  }
+
+  class SessionVarCompleter implements Completer {
+    @Override
+    public int complete(String s, int i, List<CharSequence> list) {
+      return new StringsCompleter(client.getAllSessionVariables().keySet().toArray(new String[1]))
+          .complete(s, i, list);
+
+    }
+  }
+
+  class DbNameCompleter implements Completer {
+    @Override
+    public int complete(String s, int i, List<CharSequence> list) {
+      return new StringsCompleter(client.getAllDatabaseNames().toArray(new String[1]))
+          .complete(s, i, list);
+    }
+  }
+
+  class TableNameCompleter implements Completer {
+    @Override
+    public int complete(String s, int i, List<CharSequence> list) {
+      return new StringsCompleter(client.getTableList(client.getCurrentDatabase()).toArray(new String[1]))
+          .complete(s, i, list);
+    }
   }
 }
