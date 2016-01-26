@@ -18,8 +18,15 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.cli.tools.TajoGetConf;
+import org.apache.tajo.conf.TajoConf;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TajoGetConfCommand extends TajoShellCommand {
   private TajoGetConf getconf;
@@ -54,5 +61,20 @@ public class TajoGetConfCommand extends TajoShellCommand {
   @Override
   public String getDescription() {
     return "execute a tajo getconf command.";
+  }
+
+  @Override
+  public ArgumentCompleter getArgumentComplementer() {
+    TajoConf.ConfVars[] vars = TajoConf.ConfVars.values();
+    List<String> confNames = new ArrayList<>();
+
+    for(TajoConf.ConfVars varname: vars) {
+      confNames.add(varname.varname);
+    }
+
+    return new ArgumentCompleter(
+        new StringsCompleter(getCommand()),
+        new StringsCompleter(confNames.toArray(new String[confNames.size()])),
+        NullCompleter.INSTANCE);
   }
 }
