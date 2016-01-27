@@ -45,6 +45,9 @@ import org.apache.hadoop.hbase.client.RegionLocator;
 import org.apache.hadoop.hbase.util.Bytes;
 
 /**
+ * This class is borrowed from Hbase, but it is modified in order to recognize
+ * the mem store size.
+ *
  * Computes size of each region for given table and given column families.
  * The value is used by MapReduce for better scheduling.
  * */
