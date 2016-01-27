@@ -99,7 +99,7 @@ public abstract class Tablespace {
     return name + "=" + uri.toString();
   }
 
-  public abstract long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException;
+  public abstract long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException;
 
   /**
    * if {@link StorageProperty#isArbitraryPathAllowed} is true,

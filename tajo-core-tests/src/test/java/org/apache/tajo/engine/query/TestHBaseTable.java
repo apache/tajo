@@ -54,7 +54,6 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,10 +64,7 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -221,7 +217,62 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
     }
+  }
 
+  private void putData(HTableInterface htable, int rownum) throws IOException {
+    for (int i = 0; i < rownum; i++) {
+      Put put = new Put(String.valueOf(i).getBytes());
+      put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
+      put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+      put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
+      put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
+      put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+      htable.put(put);
+    }
+  }
+
+  @Test
+  public void testGetTableVolume() throws Exception {
+    final String tableName = "external_hbase_table";
+
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
+
+    try {
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf(tableName));
+      hTableDesc.addFamily(new HColumnDescriptor("col1"));
+      hTableDesc.addFamily(new HColumnDescriptor("col2"));
+      hTableDesc.addFamily(new HColumnDescriptor("col3"));
+      testingCluster.getHBaseUtil().createTable(hTableDesc);
+
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+              "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b') " +
+              "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      executeString(sql).close();
+
+      assertTableExists("external_hbase_mapped_table");
+
+      HBaseTablespace tablespace = (HBaseTablespace)existing.get();
+      HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
+
+      try (HTableInterface htable = hconn.getTable(tableName)) {
+        htable.setAutoFlushTo(true);
+        putData(htable, 4000);
+      }
+      hconn.close();
+
+      Thread.sleep(3000); // sleep here for up-to-date region server load. It may not be a problem in real cluster.
+
+      TableDesc createdTable = client.getTableDesc("external_hbase_mapped_table");
+      assertNotNull(tablespace);
+      long volume = tablespace.getTableVolume(createdTable, Optional.<EvalNode>absent());
+      assertTrue(volume > 0 || volume == -1);
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
+
+    } finally {
+      TablespaceManager.addTableSpaceForTest(existing.get());
+    }
   }
 
   @Test
@@ -248,22 +299,14 @@ public class TestHBaseTable extends QueryTestCaseBase {
       HTableInterface htable = hconn.getTable("external_hbase_table");
 
       try {
-        for (int i = 0; i < 100; i++) {
-          Put put = new Put(String.valueOf(i).getBytes());
-          put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
-          put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-          put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
-          put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
-          put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-          htable.put(put);
-        }
-
+        putData(htable, 100);
         ResultSet res = executeString("select * from external_hbase_mapped_table where rk > '20'");
         assertResultSet(res);
         cleanupQuery(res);
       } finally {
         executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
         htable.close();
+        hconn.close();
       }
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
@@ -793,13 +836,13 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     DecimalFormat df = new DecimalFormat("000");
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -849,12 +892,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -907,13 +950,13 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     DecimalFormat df = new DecimalFormat("000");
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -967,12 +1010,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
     schema.addColumn("id2", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
     DecimalFormat df = new DecimalFormat("000");
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id1, id2, name from base_table ").close();
@@ -1022,12 +1065,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -1080,14 +1123,14 @@ public class TestHBaseTable extends QueryTestCaseBase {
     schema.addColumn("col2_key", Type.TEXT);
     schema.addColumn("col2_value", Type.TEXT);
     schema.addColumn("col3", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 20; i >= 0; i--) {
       for (int j = 0; j < 3; j++) {
         datas.add(i + "|ck-" + j + "|value-" + j + "|col3-" + i);
       }
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select rk, col2_key, col2_value, col3 from base_table ").close();
@@ -1167,12 +1210,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
-    List<String> datas = new ArrayList<String>();
+    List<String> datas = new ArrayList<>();
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     try {
       executeString("insert into hbase_mapped_table " +
@@ -1245,7 +1288,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       datas.add(df.format(i) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[]{}), 2);
+        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
     executeString(
         "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
@@ -1330,7 +1373,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
-      client.unsetSessionVariables(TUtil.newList(HBaseStorageConstants.INSERT_PUT_MODE));
+      client.unsetSessionVariables(Arrays.asList(HBaseStorageConstants.INSERT_PUT_MODE));
 
       if (scanner != null) {
         scanner.close();
@@ -1367,7 +1410,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         datas.add(df.format(i) + "|value" + i + "|comment-" + i);
       }
       TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-          schema, tableOptions, datas.toArray(new String[]{}), 2);
+          schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
 
       executeString("insert into location '/tmp/hfile_test' " +
           "select id, name, comment from base_table ").close();

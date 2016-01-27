@@ -7,6 +7,9 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1940: Implement HBaseTablespace::getTableVolume() method.
+    (hyunsik)
+
     TAJO-1991: Tablespace::getVolume should take filter predication.
     (hyunsik)
 

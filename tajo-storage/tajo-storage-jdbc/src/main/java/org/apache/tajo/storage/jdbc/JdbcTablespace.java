@@ -110,7 +110,7 @@ public abstract class JdbcTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
     throw new UnsupportedException();
   }
 

@@ -110,7 +110,7 @@ public class TableStatUpdateRewriter implements LogicalPlanRewriteRule {
     private long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
       try {
         if (table.getStats() != null) {
-          return storage.getTableVolumn(table.getUri(), filter);
+          return storage.getTableVolumn(table, filter);
         }
       } catch (UnsupportedException t) {
         LOG.warn(table.getName() + " does not support Tablespace::getTableVolume()");

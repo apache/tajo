@@ -127,8 +127,8 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
-    Path path = new Path(uri);
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
+    Path path = new Path(table.getUri());
     ContentSummary summary;
     try {
       summary = fs.getContentSummary(path);
