@@ -97,7 +97,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void init(Configuration conf) {
     tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    rpcParams = RpcParameterFactory.get(new TajoConf());
+    rpcParams = RpcParameterFactory.get(tajoConf);
 
     scheduledRequests = new ScheduledRequests();
     minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
@@ -116,11 +116,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               break;
             } else {
               LOG.fatal(e.getMessage(), e);
-              stage.abort(StageState.ERROR);
+              stage.abort(StageState.ERROR, e);
             }
           } catch (Throwable e) {
             LOG.fatal(e.getMessage(), e);
-            stage.abort(StageState.ERROR);
+            stage.abort(StageState.ERROR, e);
             break;
           }
         }
