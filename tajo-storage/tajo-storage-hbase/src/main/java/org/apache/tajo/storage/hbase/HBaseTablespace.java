@@ -110,7 +110,7 @@ public class HBaseTablespace extends Tablespace {
       totalVolume = getRawSplits("", table, filter.orElse(null)).stream()
           .map(f -> f.getLength())
           .filter(size -> size > 0) // eliminate unknown sizes (-1)
-          .reduce(0L, (sum, size) -> sum + size);
+          .reduce(0L, Long::sum);
     } catch (TajoException e) {
       throw new TajoRuntimeException(e);
     } catch (Throwable ioe) {
