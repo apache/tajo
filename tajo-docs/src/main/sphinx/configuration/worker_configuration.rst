@@ -14,7 +14,7 @@ If you want to adjust heap memory size, set ``TAJO_WORKER_HEAPSIZE`` variable in
 
   TAJO_WORKER_HEAPSIZE=8000
 
-The default size is 1000 (1GB).
+The default size is 5000 (5GB).
 
 ========================
 Temporary Data Directory
@@ -54,8 +54,8 @@ In order to specify the resource capacity of each worker, you should add the fol
 ===================================  =============   ======================   =================================
   tajo.worker.resource.cpu-cores       Integer         available cpu-cores      the number of cpu cores
   tajo.worker.resource.memory-mb       Integer         available jvm heap       memory size (MB)
-  tajo.worker.resource.disks           Integer         1                        the number of disks
-  tajo.task.resource.min.memory-mb     Integer         500                      minimum allocatable memory per task
+  tajo.worker.resource.disks           Integer         2                        the number of disks
+  tajo.task.resource.min.memory-mb     Integer         1000                     minimum allocatable memory per task
   tajo.qm.resource.min.memory-mb       Integer         500                      minimum allocatable memory per query
 ===================================  =============   ======================   =================================
 
@@ -73,7 +73,7 @@ In order to specify the resource capacity of each worker, you should add the fol
  Example
 ------------
 
-Assume that you want to give 15GB Jvm heap, 1GB memory per task, 4 disks, and 12 cores on each worker. The example configuration is as follows:
+Assume that you want to give 15GB Jvm heap, 2GB memory per task, 4 disks, and 12 cores on each worker. The example configuration is as follows:
 
 ``tajo-env.sh``
 
@@ -93,7 +93,7 @@ Assume that you want to give 15GB Jvm heap, 1GB memory per task, 4 disks, and 12
   
    <property>
     <name>tajo.task.resource.min.memory-mb</name>
-    <value>1000</value>
+    <value>2000</value>
   </property>
   
   <property>
@@ -117,7 +117,7 @@ Assume that you want to give 15GB Jvm heap, 1GB memory per task, 4 disks, and 12
 
    <property>
     <name>tajo.task.resource.min.memory-mb</name>
-    <value>1000</value>
+    <value>2000</value>
   </property>
 
   <property>
@@ -141,7 +141,7 @@ Assume that you want to give 15GB Jvm heap, 1GB memory per task, 4 disks, and 12
 
    <property>
     <name>tajo.task.resource.min.memory-mb</name>
-    <value>1000</value>
+    <value>2000</value>
   </property>
 
   <property>

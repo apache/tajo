@@ -111,6 +111,8 @@ Release 0.11.1 - unreleased
 
   TASKS
 
+    TAJO-2065: Increase default heap size. (jinho)
+
     TAJO-2041: Update the Team page. (jaehwa)
 
     TAJO-2018: Remove redundant 'String.toString()'. (Dongkyu Hwangbo via jinho)

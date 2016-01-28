@@ -33,8 +33,8 @@
 # The maximum amount of heap to use, in MB. Default is 1000.
 # export TAJO_MASTER_HEAPSIZE=1000
 
-# The maximum amount of heap to use, in MB. Default is 1000.
-# export TAJO_WORKER_HEAPSIZE=1000
+# The maximum amount of heap to use, in MB. Default is 5000.
+# export TAJO_WORKER_HEAPSIZE=5000
 
 # The maximum amount of heap to use, in MB. Default is 1000.
 # export TAJO_PULLSERVER_HEAPSIZE=1000
@@ -48,8 +48,8 @@
 # Extra TajoMaster's java runtime options for TajoMaster. Empty by default
 # export TAJO_MASTER_OPTS=
 
-# Extra TajoWorker's java runtime options. Empty by default
-# export TAJO_WORKER_OPTS=
+# Extra TajoWorker's java runtime options.
+export TAJO_WORKER_OPTS='-XX:+UseParallelOldGC'
 
 # Extra TajoPullServer's java runtime options. Empty by default
 # export TAJO_PULLSERVER_OPTS=
