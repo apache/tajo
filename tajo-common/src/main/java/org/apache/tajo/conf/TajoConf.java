@@ -168,7 +168,7 @@ public class TajoConf extends Configuration {
     QUERYMASTER_MINIMUM_MEMORY("tajo.qm.resource.min.memory-mb", 500, Validators.min("64")),
 
     // Worker task resource
-    TASK_RESOURCE_MINIMUM_MEMORY("tajo.task.resource.min.memory-mb", 500, Validators.min("64")),
+    TASK_RESOURCE_MINIMUM_MEMORY("tajo.task.resource.min.memory-mb", 1000, Validators.min("64")),
 
     // Tajo Worker Service Addresses
     WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080", Validators.networkAddr()),
@@ -186,7 +186,7 @@ public class TajoConf extends Configuration {
         Runtime.getRuntime().availableProcessors(), Validators.min("2")), // 1qm + 1task
     WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1000, Validators.min("64")),
 
-    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1, Validators.min("1")),
+    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 2, Validators.min("1")),
 
     WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM("tajo.worker.resource.disk.parallel-execution.num", 2,
         Validators.min("1")),
