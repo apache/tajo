@@ -54,6 +54,7 @@ import static org.junit.Assert.assertTrue;
 public class TestJoinQuery extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestJoinQuery.class);
   private static int reference = 0;
+  protected static long ORIGINAL_BROADCAST_CROSS_JOIN_THRESHOLD = 1024 * 1024;
 
   public TestJoinQuery(String joinOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME, joinOption);
@@ -62,7 +63,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
         "" + 5);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
-        "" + 2);
+        1024 * 1024 + "");
 
     testingCluster.setAllTajoDaemonConfValue(
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
@@ -76,6 +77,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
         ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
 
     if (joinOption.indexOf("NoBroadcast") >= 0) {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+          1024 * 1024 + "");
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
     }
 
@@ -86,6 +89,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
           String.valueOf(256));
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
           String.valueOf(256));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+          1024 * 1024 + "");
     }
     if (joinOption.indexOf("Sort") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
@@ -94,6 +99,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
           String.valueOf(0));
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
           String.valueOf(0));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+          1024 * 1024 + "");
     }
   }
 
@@ -119,7 +126,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
         ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.defaultVal);
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
-        ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.defaultVal);
+        1024 * 1024 + "");
 
     testingCluster.setAllTajoDaemonConfValue(
         ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,

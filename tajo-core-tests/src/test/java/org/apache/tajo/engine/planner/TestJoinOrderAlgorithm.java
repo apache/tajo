@@ -28,12 +28,15 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.unit.StorageUnit;
@@ -45,7 +48,8 @@ import org.junit.Test;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestJoinOrderAlgorithm {
 
@@ -125,7 +129,7 @@ public class TestJoinOrderAlgorithm {
 
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
   }

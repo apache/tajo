@@ -73,25 +73,157 @@ Execution Block Graph (TERMINAL - eb_0000000000000_0000_000012)
 |-eb_0000000000000_0000_000012
    |-eb_0000000000000_0000_000011
       |-eb_0000000000000_0000_000010
-         |-eb_0000000000000_0000_000008
+         |-eb_0000000000000_0000_000009
+            |-eb_0000000000000_0000_000008
+               |-eb_0000000000000_0000_000007
+               |-eb_0000000000000_0000_000006
+         |-eb_0000000000000_0000_000005
+            |-eb_0000000000000_0000_000004
+            |-eb_0000000000000_0000_000003
+               |-eb_0000000000000_0000_000002
+               |-eb_0000000000000_0000_000001
 -------------------------------------------------------------------------------
 Order of Execution
 -------------------------------------------------------------------------------
-1: eb_0000000000000_0000_000008
-2: eb_0000000000000_0000_000010
-3: eb_0000000000000_0000_000011
-4: eb_0000000000000_0000_000012
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+5: eb_0000000000000_0000_000006
+6: eb_0000000000000_0000_000007
+7: eb_0000000000000_0000_000005
+8: eb_0000000000000_0000_000008
+9: eb_0000000000000_0000_000009
+10: eb_0000000000000_0000_000010
+11: eb_0000000000000_0000_000011
+12: eb_0000000000000_0000_000012
 -------------------------------------------------------------------------------
 
 =======================================================
-Block Id: eb_0000000000000_0000_000008 [LEAF]
+Block Id: eb_0000000000000_0000_000001 [LEAF]
 =======================================================
 
 [Outgoing]
-[q_0000000000000_0000] 8 => 10 (type=HASH_SHUFFLE, key=default.e.l_orderkey (INT4), num=32)
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.a.l_partkey (INT4), num=32)
 
-[Enforcers]
- 0: type=Broadcast, tables=default.part
+SCAN(0) on default.lineitem as a
+  => target list: default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)
+  => out schema: {(4) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
+  => in schema: {(16) default.a.l_comment (TEXT), default.a.l_commitdate (TEXT), default.a.l_discount (FLOAT8), default.a.l_extendedprice (FLOAT8), default.a.l_linenumber (INT4), default.a.l_linestatus (TEXT), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_receiptdate (TEXT), default.a.l_returnflag (TEXT), default.a.l_shipdate (TEXT), default.a.l_shipinstruct (TEXT), default.a.l_shipmode (TEXT), default.a.l_suppkey (INT4), default.a.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.part.p_partkey (INT4), num=32)
+
+SCAN(1) on default.part
+  => target list: default.part.p_partkey (INT4)
+  => out schema: {(1) default.part.p_partkey (INT4)}
+  => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 3 (type=HASH_SHUFFLE, key=default.a.l_partkey (INT4), num=32)
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.part.p_partkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.b.l_orderkey (INT4), num=32)
+
+TABLE_SUBQUERY(4) as default.b
+  => Targets: default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)
+  => out schema: {(2) default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)}
+  => in  schema: {(3) default.b.l_linenumber (INT4), default.b.l_orderkey (INT4), default.b.l_quantity (FLOAT8)}
+   PROJECTION(3)
+     => Targets: default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_linenumber (INT4)
+     => out schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
+     => in  schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
+      JOIN(21)(INNER)
+        => Join Cond: default.a.l_partkey (INT4) = default.part.p_partkey (INT4)
+        => target list: default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)
+        => out schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
+        => in schema: {(5) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.part.p_partkey (INT4)}
+         SCAN(27) on eb_0000000000000_0000_000002
+           => out schema: {(1) default.part.p_partkey (INT4)}
+           => in schema: {(1) default.part.p_partkey (INT4)}
+         SCAN(26) on eb_0000000000000_0000_000001
+           => out schema: {(4) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
+           => in schema: {(4) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.c.o_orderkey (INT4), num=32)
+
+SCAN(5) on default.orders as c
+  => filter: default.c.o_orderkey (INT4) > 0
+  => target list: default.c.o_orderkey (INT4)
+  => out schema: {(1) default.c.o_orderkey (INT4)}
+  => in schema: {(9) default.c.o_clerk (TEXT), default.c.o_comment (TEXT), default.c.o_custkey (INT4), default.c.o_orderdate (TEXT), default.c.o_orderkey (INT4), default.c.o_orderpriority (TEXT), default.c.o_orderstatus (TEXT), default.c.o_shippriority (INT4), default.c.o_totalprice (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 6 => 8 (type=HASH_SHUFFLE, key=default.d.l_partkey (INT4), num=32)
+
+SCAN(7) on default.lineitem as d
+  => target list: default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)
+  => out schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
+  => in schema: {(16) default.d.l_comment (TEXT), default.d.l_commitdate (TEXT), default.d.l_discount (FLOAT8), default.d.l_extendedprice (FLOAT8), default.d.l_linenumber (INT4), default.d.l_linestatus (TEXT), default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8), default.d.l_receiptdate (TEXT), default.d.l_returnflag (TEXT), default.d.l_shipdate (TEXT), default.d.l_shipinstruct (TEXT), default.d.l_shipmode (TEXT), default.d.l_suppkey (INT4), default.d.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000007 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 7 => 8 (type=HASH_SHUFFLE, key=default.part.p_partkey (INT4), num=32)
+
+SCAN(8) on default.part
+  => target list: default.part.p_partkey (INT4)
+  => out schema: {(1) default.part.p_partkey (INT4)}
+  => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 3 => 5 (type=HASH_SHUFFLE, key=default.b.l_orderkey (INT4), num=32)
+[q_0000000000000_0000] 4 => 5 (type=HASH_SHUFFLE, key=default.c.o_orderkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 10 (type=HASH_SHUFFLE, key=default.c.o_orderkey (INT4), num=32)
+
+JOIN(23)(INNER)
+  => Join Cond: default.c.o_orderkey (INT4) = default.b.l_orderkey (INT4)
+  => target list: default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)
+  => out schema: {(2) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
+  => in schema: {(3) default.b.l_orderkey (INT4), default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
+   SCAN(29) on eb_0000000000000_0000_000004
+     => out schema: {(1) default.c.o_orderkey (INT4)}
+     => in schema: {(1) default.c.o_orderkey (INT4)}
+   SCAN(28) on eb_0000000000000_0000_000003
+     => out schema: {(2) default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)}
+     => in schema: {(2) default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000008 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 6 => 8 (type=HASH_SHUFFLE, key=default.d.l_partkey (INT4), num=32)
+[q_0000000000000_0000] 7 => 8 (type=HASH_SHUFFLE, key=default.part.p_partkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 8 => 9 (type=HASH_SHUFFLE, key=default.e.l_orderkey (INT4), num=32)
 
 GROUP_BY(32)(l_orderkey)
   => exprs: (avg(default.e.l_quantity (FLOAT8)))
@@ -111,29 +243,50 @@ GROUP_BY(32)(l_orderkey)
            => target list: default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)
            => out schema: {(2) default.d.l_orderkey (INT4), default.d.l_quantity (FLOAT8)}
            => in schema: {(4) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8), default.part.p_partkey (INT4)}
-            SCAN(8) on default.part
-              => target list: default.part.p_partkey (INT4)
+            SCAN(31) on eb_0000000000000_0000_000007
               => out schema: {(1) default.part.p_partkey (INT4)}
-              => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-            SCAN(7) on default.lineitem as d
-              => target list: default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)
+              => in schema: {(1) default.part.p_partkey (INT4)}
+            SCAN(30) on eb_0000000000000_0000_000006
               => out schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
-              => in schema: {(16) default.d.l_comment (TEXT), default.d.l_commitdate (TEXT), default.d.l_discount (FLOAT8), default.d.l_extendedprice (FLOAT8), default.d.l_linenumber (INT4), default.d.l_linestatus (TEXT), default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8), default.d.l_receiptdate (TEXT), default.d.l_returnflag (TEXT), default.d.l_shipdate (TEXT), default.d.l_shipinstruct (TEXT), default.d.l_shipmode (TEXT), default.d.l_suppkey (INT4), default.d.l_tax (FLOAT8)}
+              => in schema: {(3) default.d.l_orderkey (INT4), default.d.l_partkey (INT4), default.d.l_quantity (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000009 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 8 => 9 (type=HASH_SHUFFLE, key=default.e.l_orderkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 9 => 10 (type=HASH_SHUFFLE, key=default.f.l_orderkey (INT4), num=32)
+
+TABLE_SUBQUERY(14) as default.f
+  => Targets: default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)
+  => out schema: {(2) default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
+  => in  schema: {(2) default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
+   PROJECTION(13)
+     => Targets: default.e.l_orderkey (INT4), avg_quantity (FLOAT8)
+     => out schema: {(2) avg_quantity (FLOAT8), default.e.l_orderkey (INT4)}
+     => in  schema: {(2) avg_quantity (FLOAT8), default.e.l_orderkey (INT4)}
+      GROUP_BY(12)(l_orderkey)
+        => exprs: (avg(?avg_11 (PROTOBUF)))
+        => target list: default.e.l_orderkey (INT4), avg_quantity (FLOAT8)
+        => out schema:{(2) avg_quantity (FLOAT8), default.e.l_orderkey (INT4)}
+        => in schema:{(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
+         SCAN(33) on eb_0000000000000_0000_000008
+           => out schema: {(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
+           => in schema: {(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000010 [INTERMEDIATE]
 =======================================================
 
 [Incoming]
-[q_0000000000000_0000] 8 => 10 (type=HASH_SHUFFLE, key=default.e.l_orderkey (INT4), num=32)
+[q_0000000000000_0000] 5 => 10 (type=HASH_SHUFFLE, key=default.c.o_orderkey (INT4), num=32)
+[q_0000000000000_0000] 9 => 10 (type=HASH_SHUFFLE, key=default.f.l_orderkey (INT4), num=32)
 
 [Outgoing]
 [q_0000000000000_0000] 10 => 11 (type=HASH_SHUFFLE, key=, num=1)
-
-[Enforcers]
- 0: type=Broadcast, tables=default.a
- 1: type=Broadcast, tables=default.c
- 2: type=Broadcast, tables=default.part
 
 GROUP_BY(36)()
   => exprs: (sum(default.b.l_quantity (FLOAT8)))
@@ -147,53 +300,12 @@ GROUP_BY(36)()
         => target list: default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)
         => out schema: {(2) default.b.l_quantity (FLOAT8), default.f.avg_quantity (FLOAT8)}
         => in schema: {(4) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4), default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
-         TABLE_SUBQUERY(14) as default.f
-           => Targets: default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)
+         SCAN(35) on eb_0000000000000_0000_000009
            => out schema: {(2) default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
-           => in  schema: {(2) default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
-            PROJECTION(13)
-              => Targets: default.e.l_orderkey (INT4), avg_quantity (FLOAT8)
-              => out schema: {(2) avg_quantity (FLOAT8), default.e.l_orderkey (INT4)}
-              => in  schema: {(2) avg_quantity (FLOAT8), default.e.l_orderkey (INT4)}
-               GROUP_BY(12)(l_orderkey)
-                 => exprs: (avg(?avg_11 (PROTOBUF)))
-                 => target list: default.e.l_orderkey (INT4), avg_quantity (FLOAT8)
-                 => out schema:{(2) avg_quantity (FLOAT8), default.e.l_orderkey (INT4)}
-                 => in schema:{(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
-                  SCAN(33) on eb_0000000000000_0000_000008
-                    => out schema: {(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
-                    => in schema: {(2) default.e.l_orderkey (INT4), ?avg_11 (PROTOBUF)}
-         JOIN(23)(INNER)
-           => Join Cond: default.c.o_orderkey (INT4) = default.b.l_orderkey (INT4)
-           => target list: default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)
+           => in schema: {(2) default.f.avg_quantity (FLOAT8), default.f.l_orderkey (INT4)}
+         SCAN(34) on eb_0000000000000_0000_000005
            => out schema: {(2) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
-           => in schema: {(3) default.b.l_orderkey (INT4), default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
-            SCAN(5) on default.orders as c
-              => filter: default.c.o_orderkey (INT4) > 0
-              => target list: default.c.o_orderkey (INT4)
-              => out schema: {(1) default.c.o_orderkey (INT4)}
-              => in schema: {(9) default.c.o_clerk (TEXT), default.c.o_comment (TEXT), default.c.o_custkey (INT4), default.c.o_orderdate (TEXT), default.c.o_orderkey (INT4), default.c.o_orderpriority (TEXT), default.c.o_orderstatus (TEXT), default.c.o_shippriority (INT4), default.c.o_totalprice (FLOAT8)}
-            TABLE_SUBQUERY(4) as default.b
-              => Targets: default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)
-              => out schema: {(2) default.b.l_quantity (FLOAT8), default.b.l_orderkey (INT4)}
-              => in  schema: {(3) default.b.l_linenumber (INT4), default.b.l_orderkey (INT4), default.b.l_quantity (FLOAT8)}
-               PROJECTION(3)
-                 => Targets: default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_linenumber (INT4)
-                 => out schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
-                 => in  schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
-                  JOIN(21)(INNER)
-                    => Join Cond: default.a.l_partkey (INT4) = default.part.p_partkey (INT4)
-                    => target list: default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)
-                    => out schema: {(3) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_quantity (FLOAT8)}
-                    => in schema: {(5) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.part.p_partkey (INT4)}
-                     SCAN(1) on default.part
-                       => target list: default.part.p_partkey (INT4)
-                       => out schema: {(1) default.part.p_partkey (INT4)}
-                       => in schema: {(9) default.part.p_brand (TEXT), default.part.p_comment (TEXT), default.part.p_container (TEXT), default.part.p_mfgr (TEXT), default.part.p_name (TEXT), default.part.p_partkey (INT4), default.part.p_retailprice (FLOAT8), default.part.p_size (INT4), default.part.p_type (TEXT)}
-                     SCAN(0) on default.lineitem as a
-                       => target list: default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)
-                       => out schema: {(4) default.a.l_linenumber (INT4), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8)}
-                       => in schema: {(16) default.a.l_comment (TEXT), default.a.l_commitdate (TEXT), default.a.l_discount (FLOAT8), default.a.l_extendedprice (FLOAT8), default.a.l_linenumber (INT4), default.a.l_linestatus (TEXT), default.a.l_orderkey (INT4), default.a.l_partkey (INT4), default.a.l_quantity (FLOAT8), default.a.l_receiptdate (TEXT), default.a.l_returnflag (TEXT), default.a.l_shipdate (TEXT), default.a.l_shipinstruct (TEXT), default.a.l_shipmode (TEXT), default.a.l_suppkey (INT4), default.a.l_tax (FLOAT8)}
+           => in schema: {(2) default.b.l_quantity (FLOAT8), default.c.o_orderkey (INT4)}
 
 =======================================================
 Block Id: eb_0000000000000_0000_000011 [ROOT]

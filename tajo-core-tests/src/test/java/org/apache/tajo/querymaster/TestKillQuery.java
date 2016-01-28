@@ -29,7 +29,6 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
@@ -39,6 +38,7 @@ import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
 import org.apache.tajo.master.event.StageEvent;
 import org.apache.tajo.master.event.StageEventType;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -96,7 +96,7 @@ public class TestKillQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
 
     LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -160,7 +160,7 @@ public class TestKillQuery {
     CatalogService catalog = cluster.getMaster().getCatalog();
 
     LogicalPlanner planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
     Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 

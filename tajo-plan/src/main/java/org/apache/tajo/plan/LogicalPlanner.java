@@ -1336,7 +1336,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ScanNode scanNode = block.getNodeFromExpr(expr);
-    updatePhysicalInfo(scanNode.getTableDesc());
 
     // Find expression which can be evaluated at this relation node.
     // Except for column references, additional expressions used in select list, where clause, order-by clauses
@@ -1393,22 +1392,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       }
     }
     return targets;
-  }
-
-  private void updatePhysicalInfo(TableDesc desc) {
-
-    // FAKEFILE is used for test
-    if (!desc.getMeta().getDataFormat().equals("SYSTEM") && !desc.getMeta().getDataFormat().equals("FAKEFILE")) {
-      try {
-        if (desc.getStats() != null) {
-          desc.getStats().setNumBytes(storage.getTableVolumn(desc.getUri()));
-        }
-      } catch (UnsupportedException t) {
-        LOG.warn(desc.getName() + " does not support Tablespace::getTableVolume()");
-        // -1 means unknown volume size.
-        desc.getStats().setNumBytes(-1);
-      }
-    }
   }
 
   @Override

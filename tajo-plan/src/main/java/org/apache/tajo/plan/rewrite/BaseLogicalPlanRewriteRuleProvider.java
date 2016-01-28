@@ -47,6 +47,9 @@ public class BaseLogicalPlanRewriteRuleProvider extends LogicalPlanRewriteRulePr
       rules.add(FilterPushDownRule.class);
     }
 
+    // for updating table stats
+    rules.add(TableStatUpdateRewriter.class);
+
     return rules;
   }
 

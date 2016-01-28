@@ -319,6 +319,13 @@ public class TajoConf extends Configuration {
 
     // Query and Optimization ---------------------------------------------------
 
+
+    // Enables the optimizer to get and use table volumes via storage handlers.
+    // This feature may cause some performance degradation when storage access is too slow (S3).
+    // By default, this config value is false, and in this case the optimizer uses the table stats from catalog.
+    $USE_TABLE_VOLUME("tajo.optimizer.stats.use-table-volume", Boolean.FALSE),
+
+
     // for distributed query strategies
     $DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD("tajo.dist-query.broadcast.non-cross-join.threshold-kb", 5 * 1024l,
         Validators.min("0")), // 5 MB

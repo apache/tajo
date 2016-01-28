@@ -512,7 +512,7 @@ public class TestLogicalPlanner {
     Schema expected = tpch.getOutSchema("q2");
     assertSchema(expected, node.getOutSchema());
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
@@ -551,7 +551,7 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
@@ -592,7 +592,8 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog,
+        TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
@@ -639,7 +640,8 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog,
+        TablespaceManager.getInstance());
     optimizer.optimize(plan);
 
     Map<BinaryEval, Boolean> scanMap = TUtil.newHashMap();

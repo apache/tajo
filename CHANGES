@@ -7,6 +7,9 @@ Release 0.11.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2007: By default, Optimizer should use the table volume in TableStat.
+    (hyunsik)
+
     TAJO-2061: Add description for EXPLAIN statement. (jaehwa)
 
     TAJO-2060: Upgrade geoip-api-java library. (Byunghwa Yun via jinho)

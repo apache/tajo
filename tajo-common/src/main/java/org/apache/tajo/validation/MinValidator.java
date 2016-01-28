@@ -67,6 +67,10 @@ public class MinValidator extends AbstractValidator {
         BigDecimal objDecimal = (BigDecimal) object;
         BigDecimal minDecimal = new BigDecimal(minValue);
         result = objDecimal.compareTo(minDecimal) >= 0;
+      } else if (object instanceof String) {
+        BigDecimal objDecimal = new BigDecimal((String)object);
+        BigDecimal minDecimal = new BigDecimal(minValue);
+        result = objDecimal.compareTo(minDecimal) >= 0;
       }
     }
     else {
