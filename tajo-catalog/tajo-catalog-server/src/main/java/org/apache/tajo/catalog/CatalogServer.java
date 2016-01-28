@@ -63,7 +63,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.exception.ExceptionUtil.printStackTraceIfError;
@@ -1413,8 +1412,8 @@ public class CatalogServer extends AbstractService {
       List<FunctionDescProto> candidates = Lists.newArrayList();
 
       if (functions.containsKey(signature)) {
-        candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
-          func.getSignature().getParameterTypesList().equals(params)).collect(Collectors.toList()));
+        functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+          func.getSignature().getParameterTypesList().equals(params)).forEach(candidates::add);
       }
 
       /*
@@ -1427,9 +1426,8 @@ public class CatalogServer extends AbstractService {
        *
        * */
       if (functions.containsKey(signature)) {
-        candidates.addAll(functions.get(signature).stream()
-          .filter(func -> func.getSignature().getParameterTypesList() != null &&
-          CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).collect(Collectors.toList()));
+        functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+            CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).forEach(candidates::add);
 
         // if there are more than one function candidates, we choose the nearest matched function.
         if (candidates.size() > 0) {
@@ -1448,12 +1446,11 @@ public class CatalogServer extends AbstractService {
 
       if (functions.containsKey(signature)) {
         if (strictTypeCheck) {
-          candidates.addAll(functions.get(signature).stream().filter(func -> func.getSignature().getType() == type &&
-            func.getSignature().getParameterTypesList().equals(params)).collect(Collectors.toList()));
+          functions.get(signature).stream().filter(func -> func.getSignature().getType() == type &&
+            func.getSignature().getParameterTypesList().equals(params)).forEach(candidates::add);
         } else {
-          candidates.addAll(functions.get(signature).stream()
-            .filter(func -> func.getSignature().getParameterTypesList() != null &&
-            CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).collect(Collectors.toList()));
+          functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+              CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).forEach(candidates::add);
         }
       }
 

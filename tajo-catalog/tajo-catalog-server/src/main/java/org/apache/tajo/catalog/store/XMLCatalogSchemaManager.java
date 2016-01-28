@@ -303,13 +303,10 @@ public class XMLCatalogSchemaManager {
       throw new TajoInternalError("Database schema files are not loaded.");
     }
     
-    final List<SchemaPatch> candidatePatches = new ArrayList<>();
+    final List<SchemaPatch> candidatePatches = this.catalogStore.getPatches().stream()
+      .filter(patch -> currentVersion >= patch.getPriorVersion()).sorted().collect(Collectors.toList());
     Statement stmt;
 
-    candidatePatches.addAll(this.catalogStore.getPatches().stream()
-      .filter(patch -> currentVersion >= patch.getPriorVersion()).collect(Collectors.toList()));
-    
-    Collections.sort(candidatePatches);
     try {
       stmt = conn.createStatement();
     } catch (SQLException e) {
@@ -601,9 +598,9 @@ public class XMLCatalogSchemaManager {
         }
       }
 
-      mergedObjects.addAll(orderedObjects.stream().filter(object -> object != null).collect(Collectors.toList()));
+      orderedObjects.stream().filter(object -> object != null).forEach(mergedObjects::add);
 
-      mergedObjects.addAll(unorderedObjects.stream().filter(object -> object != null).collect(Collectors.toList()));
+      unorderedObjects.stream().filter(object -> object != null).forEach(mergedObjects::add);
       
       return mergedObjects;
     }

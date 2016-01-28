@@ -26,7 +26,6 @@ import org.apache.tajo.util.Pair;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class JoinGraphContext {
   private Set<JoinVertex> rootVertexes = new HashSet<>(); // most left vertex in the join plan
@@ -48,13 +47,13 @@ public class JoinGraphContext {
   }
 
   public void addCandidateJoinConditions(Collection<EvalNode> candidates) {
-    candidateJoinConditions.addAll(candidates.stream()
-      .filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate)).collect(Collectors.toList()));
+    candidates.stream().filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate))
+      .forEach(candidateJoinConditions::add);
   }
 
   public void addCandidateJoinFilters(Collection<EvalNode> candidates) {
-    candidateJoinFilters.addAll(candidates.stream()
-      .filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate)).collect(Collectors.toList()));
+    candidates.stream().filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate))
+      .forEach(candidateJoinFilters::add);
   }
 
   public void removeCandidateJoinConditions(Collection<EvalNode> willBeRemoved) {

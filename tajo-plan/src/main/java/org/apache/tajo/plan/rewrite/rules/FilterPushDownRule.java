@@ -214,9 +214,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     boolean isTopMostJoin = stack.isEmpty() ? true : stack.peek().getType() != NodeType.JOIN;
 
     // TODO: currently, non-equi theta join is not supported yet.
-    matched.addAll(context.pushingDownFilters.stream()
-      .filter(evalNode -> LogicalPlanner.isEvaluatableJoinQual(block, evalNode, joinNode, onPredicates.contains(evalNode),
-      isTopMostJoin)).collect(Collectors.toList()));
+    context.pushingDownFilters.stream()
+      .filter(evalNode ->
+        LogicalPlanner.isEvaluatableJoinQual(block, evalNode, joinNode, onPredicates.contains(evalNode), isTopMostJoin))
+      .forEach(matched::add);
 
     EvalNode qual = null;
     if (matched.size() > 1) {
@@ -357,13 +358,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     Set<EvalNode> nonPushableQuals = new HashSet<>();
-    for (EvalNode eachQual : onPredicates) {
-      nonPushableQuals.addAll(preservedTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName)).map(relName -> eachQual).collect(Collectors.toList()));
-    }
+    onPredicates.forEach(eachQual ->
+      preservedTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName)).map(relName -> eachQual)
+        .forEach(nonPushableQuals::add));
 
-    for (EvalNode eachQual : wherePredicates) {
-      nonPushableQuals.addAll(nullSupplyingTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName)).map(relName -> eachQual).collect(Collectors.toList()));
-    }
+    wherePredicates.forEach(eachQual ->
+      nullSupplyingTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName)).map(relName -> eachQual)
+        .forEach(nonPushableQuals::add));
 
     return nonPushableQuals;
   }
@@ -588,7 +589,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     stack.pop();
 
     // find not matched after visiting child
-    notMatched.addAll(context.pushingDownFilters.stream().map(transformedMap::get).collect(Collectors.toList()));
+    context.pushingDownFilters.stream().map(transformedMap::get).forEach(notMatched::add);
 
     EvalNode qual = null;
     if (notMatched.size() > 1) {
@@ -920,8 +921,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     Map<EvalNode, EvalNode> transformed =
         findCanPushdownAndTransform(context, block, scanNode, null, notMatched, partitionColumns, 0);
 
-    matched.addAll(transformed.keySet().stream()
-      .filter(eval -> LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)).collect(Collectors.toList()));
+    transformed.keySet().stream()
+      .filter(eval -> LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)).forEach(matched::add);
 
     EvalNode qual = null;
     if (matched.size() > 1) {

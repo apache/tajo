@@ -25,13 +25,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class RegexpMetricsFilter implements MetricFilter {
   List<Pattern> filterPatterns = new ArrayList<>();
 
   public RegexpMetricsFilter(Collection<String> filterExpressions) {
-    filterPatterns.addAll(filterExpressions.stream().map(Pattern::compile).collect(Collectors.toList()));
+    filterExpressions.stream().map(Pattern::compile).forEach(filterPatterns::add);
   }
 
   @Override

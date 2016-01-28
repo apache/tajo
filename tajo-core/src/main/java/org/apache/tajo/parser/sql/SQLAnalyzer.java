@@ -1402,8 +1402,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
       } else { // ( PARTITION part_name , ...)
         List<CreateTable.PartitionSpecifier> specifiers = Lists.newArrayList();
-        specifiers.addAll(hashPartitions.individual_hash_partitions().individual_hash_partition().stream()
-          .map(partition -> new PartitionSpecifier(partition.partition_name().getText())).collect(Collectors.toList()));
+        hashPartitions.individual_hash_partitions().individual_hash_partition().stream()
+          .map(partition -> new PartitionSpecifier(partition.partition_name().getText())).forEach(specifiers::add);
         return new HashPartition(buildColumnReferenceList(hashPartitions.column_reference_list()), specifiers);
       }
 

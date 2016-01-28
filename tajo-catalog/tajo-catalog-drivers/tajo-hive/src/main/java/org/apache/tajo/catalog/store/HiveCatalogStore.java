@@ -744,9 +744,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       params.put(StatsSetupConst.TOTAL_SIZE, Long.toString(partitionDescProto.getNumBytes()));
       partition.setParameters(params);
 
-      List<String> values = Lists.newArrayList();
-      values.addAll(partitionDescProto.getPartitionKeysList().stream()
-        .map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList()));
+      List<String> values = partitionDescProto.getPartitionKeysList().stream()
+        .map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList());
       partition.setValues(values);
 
       Table table = client.getHiveClient().getTable(databaseName, tableName);
@@ -771,9 +770,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       client = clientPool.getClient();
 
-      List<String> values = Lists.newArrayList();
-      values.addAll(partitionDescProto.getPartitionKeysList().stream()
-        .map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList()));
+      List<String> values = partitionDescProto.getPartitionKeysList().stream()
+        .map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList());
       client.getHiveClient().dropPartition(databaseName, tableName, values, true);
     } catch (Exception e) {
       throw new TajoInternalError(e);
@@ -1247,9 +1245,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           partition.setDbName(databaseName);
           partition.setTableName(tableName);
 
-          List<String> values = Lists.newArrayList();
-          values.addAll(partitionDescProto.getPartitionKeysList().stream()
-            .map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList()));
+          List<String> values = partitionDescProto.getPartitionKeysList().stream()
+            .map(PartitionKeyProto::getPartitionValue).collect(Collectors.toList());
           partition.setValues(values);
 
           Table table = client.getHiveClient().getTable(databaseName, tableName);

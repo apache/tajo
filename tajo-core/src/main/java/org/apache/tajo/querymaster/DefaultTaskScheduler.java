@@ -63,8 +63,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.apache.tajo.ResourceProtos.*;
 
@@ -327,9 +325,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
     NodeResourceResponse response = callBack.get();
 
-    taskRequestEvents.addAll(response.getResourceList().stream()
+    response.getResourceList().stream()
       .map(resource -> new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId()))
-      .collect(Collectors.toList()));
+      .forEach(taskRequestEvents::add);
 
     return taskRequestEvents;
   }

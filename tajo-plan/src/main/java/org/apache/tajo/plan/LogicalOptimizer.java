@@ -43,7 +43,6 @@ import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.apache.tajo.plan.LogicalPlan.BlockEdge;
 import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.getCost;
@@ -161,10 +160,8 @@ public class LogicalOptimizer {
     Collection<EvalNode> markAsEvaluated = new HashSet<>(joinGraphContext.getEvaluatedJoinConditions());
     markAsEvaluated.addAll(joinGraphContext.getEvaluatedJoinFilters());
     Set<EvalNode> remainingQuals = new HashSet<>(joinGraphContext.getCandidateJoinFilters());
-    for (JoinEdge eachEdge : joinEdges) {
-      remainingQuals.addAll(eachEdge.getJoinQual().stream()
-        .filter(eachQual -> !markAsEvaluated.contains(eachQual)).collect(Collectors.toList()));
-    }
+    joinEdges.forEach(eachEdge ->
+      eachEdge.getJoinQual().stream().filter(eachQual -> !markAsEvaluated.contains(eachQual)).forEach(remainingQuals::add));
 
     if (!remainingQuals.isEmpty()) {
       LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
@@ -197,7 +194,7 @@ public class LogicalOptimizer {
       super.visitJoin(ctx, plan, block, node, stack);
 
       if (node.hasTargets()) {
-        ctx.addAll(node.getTargets().stream().collect(Collectors.toList()));
+        node.getTargets().forEach(ctx::add);
       }
       return node;
     }

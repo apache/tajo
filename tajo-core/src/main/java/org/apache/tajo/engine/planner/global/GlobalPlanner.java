@@ -548,8 +548,9 @@ public class GlobalPlanner {
       }
     }
 
-    List<Target> firstStageTargets = firstStageGroupingColumns.stream().map(column -> new Target(new FieldEval(column))).collect(Collectors.toList());
-    firstStageTargets.addAll(firstPhaseEvalNodeTargets.stream().collect(Collectors.toList()));
+    List<Target> firstStageTargets = firstStageGroupingColumns.stream()
+      .map(column -> new Target(new FieldEval(column))).collect(Collectors.toList());
+    firstPhaseEvalNodeTargets.stream().collect(Collectors.toList()).forEach(firstStageTargets::add);
 
     // Create the groupby node for the first stage and set all necessary descriptions
     GroupbyNode firstStageGroupby = new GroupbyNode(context.plan.getLogicalPlan().newPID());

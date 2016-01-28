@@ -19,7 +19,6 @@ import org.apache.tajo.SessionVars;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.
@@ -135,8 +134,7 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
         orderRequiredChildCountMap.get(eachItem.parentEB.getId()).decrementAndGet();
       } else {
         if (eachItem.allSiblingsOrdered()) {
-          orderedBlocks.addAll(notOrderedSiblingBlocks.stream().map(eachSiblingItem -> eachSiblingItem.eb)
-            .collect(Collectors.toList()));
+          notOrderedSiblingBlocks.stream().map(eachSiblingItem -> eachSiblingItem.eb).forEach(orderedBlocks::add);
           orderedBlocks.add(eachItem.eb);
           notOrderedSiblingBlocks.clear();
         } else {

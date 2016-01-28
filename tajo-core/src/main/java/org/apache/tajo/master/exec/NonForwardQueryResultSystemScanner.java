@@ -70,7 +70,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.stream.Collectors;
 
 public class NonForwardQueryResultSystemScanner implements NonForwardQueryResultScanner {
   
@@ -528,12 +527,10 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     }
     
     tuples = new ArrayList<>(queryMasterList.size() + nodeStatusList.size());
-    tuples.addAll(queryMasterList.stream().map(queryMaster -> getQueryMasterTuple(outSchema, queryMaster))
-      .collect(Collectors.toList()));
+    queryMasterList.stream().map(queryMaster -> getQueryMasterTuple(outSchema, queryMaster)).forEach(tuples::add);
 
-    tuples.addAll(nodeStatusList.stream().map(nodeStatus -> getWorkerTuple(outSchema, nodeStatus))
-      .collect(Collectors.toList()));
-    
+    nodeStatusList.stream().map(nodeStatus -> getWorkerTuple(outSchema, nodeStatus)).forEach(tuples::add);
+
     return tuples;
   }
 

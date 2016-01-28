@@ -68,7 +68,6 @@ import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
 
 import static org.apache.tajo.ResourceProtos.*;
 
@@ -383,8 +382,7 @@ public class TaskImpl implements Task {
     Set<String> broadcastTableNames = new HashSet<>();
     List<EnforceProperty> broadcasts = context.getEnforcer().getEnforceProperties(EnforceType.BROADCAST);
     if (broadcasts != null) {
-      broadcastTableNames.addAll(broadcasts.stream()
-        .map(eachBroadcast -> eachBroadcast.getBroadcast().getTableName()).collect(Collectors.toList()));
+      broadcasts.stream().map(eachBroadcast -> eachBroadcast.getBroadcast().getTableName()).forEach(broadcastTableNames::add);
     }
 
     // localize the fetched data and skip the broadcast table

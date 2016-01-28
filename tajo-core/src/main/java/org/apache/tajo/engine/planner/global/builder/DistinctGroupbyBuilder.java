@@ -241,8 +241,7 @@ public class DistinctGroupbyBuilder {
 
     List<Target> baseGroupByTargets = new ArrayList<>();
     baseGroupByTargets.add(new Target(new FieldEval(new Column("?distinctseq", Type.INT2))));
-    baseGroupByTargets.addAll(originalGroupingColumns.stream().map(column ->
-      new Target(new FieldEval(column))).collect(Collectors.toList()));
+    originalGroupingColumns.stream().map(column -> new Target(new FieldEval(column))).forEach(baseGroupByTargets::add);
 
     //Add child groupby node for each Distinct clause
     for (DistinctGroupbyNodeBuildInfo buildInfo: distinctNodeBuildInfos.values()) {
@@ -524,8 +523,7 @@ public class DistinctGroupbyBuilder {
         LinkedHashSet<Column> distinctColumns = EvalTreeUtil.findUniqueColumns(secondStageGroupbyNode.getAggFunctions().get(0));
         List<Column> uniqueDistinctColumn = new ArrayList<>();
         // remove origin group by column from distinctColumns
-        uniqueDistinctColumn.addAll(distinctColumns.stream().filter(eachColumn ->
-          !originGroupColumns.contains(eachColumn)).collect(Collectors.toList()));
+        distinctColumns.stream().filter(eachColumn -> !originGroupColumns.contains(eachColumn)).forEach(uniqueDistinctColumn::add);
         for (int i = 0; i < originGroupColumns.size(); i++) {
           secondGroupbyTargets.add(oldTargets.get(i));
           if (grpIdx > 0) {

@@ -79,7 +79,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.apache.tajo.ResourceProtos.*;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
@@ -761,7 +760,7 @@ public class Stage implements EventHandler<StageEvent> {
     if (!getContext().getQueryContext().getBool(SessionVars.DEBUG_ENABLED)) {
       List<ExecutionBlock> childs = getMasterPlan().getChilds(getId());
 
-      ebIds.addAll(childs.stream().map(executionBlock -> executionBlock.getId().getProto()).collect(Collectors.toList()));
+      childs.stream().map(executionBlock -> executionBlock.getId().getProto()).forEach(ebIds::add);
     }
 
     StopExecutionBlockRequest.Builder stopRequest = StopExecutionBlockRequest.newBuilder();
@@ -1324,7 +1323,7 @@ public class Stage implements EventHandler<StageEvent> {
 
     completedShuffleTasks.addAndGet(report.getSucceededTasks());
     if (report.getIntermediateEntriesCount() > 0) {
-      hashShuffleIntermediateEntries.addAll(report.getIntermediateEntriesList().stream().map(IntermediateEntry::new).collect(Collectors.toList()));
+      report.getIntermediateEntriesList().stream().map(IntermediateEntry::new).forEach(hashShuffleIntermediateEntries::add);
     }
 
     if (completedShuffleTasks.get() >= succeededObjectCount) {
