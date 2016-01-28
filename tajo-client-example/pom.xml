@@ -22,7 +22,7 @@
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
-    <version>0.11.1-SNAPSHOT</version>
+    <version>0.11.1</version>
     <relativePath>../tajo-project</relativePath>
   </parent>
   <artifactId>tajo-client-example</artifactId>
