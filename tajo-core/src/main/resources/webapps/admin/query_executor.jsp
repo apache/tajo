@@ -88,9 +88,7 @@ function runQuery() {
   } else if(Math.ceil(Number($("#sizeLimit").val())) > 0) {
     SIZE_LIMIT = Number($("#sizeLimit").val()) * 1024 * 1024;
   }
-  if(Math.ceil(Number($("#rowLimit").val())) >= 10) {
-    ROW_LIMIT = 10 * 1000 * 1000 - 1;
-  } else if(Math.ceil(Number($("#rowLimit").val())) > 0) {
+  if(Math.ceil(Number($("#rowLimit").val())) > 0) {
     ROW_LIMIT = Number($("#rowLimit").val()) * 1000 * 1000;
   }
   if(Math.ceil(Number($("#printLimit").val())) > 0) {
