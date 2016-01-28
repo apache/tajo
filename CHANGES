@@ -51,6 +51,9 @@ Release 0.11.1 - unreleased
 
   BUG FIXES
 
+    TAJO-2066: Fix TestJoinOnPartitionedTables.testPartialFilterPushDown failure.
+    (jinho)
+
     TAJO-1921: Hbase Storage can cause NPE when the hbase cluster is restarted.
     (Byunghwa Yun via hyunsik)
 
