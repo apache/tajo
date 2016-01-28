@@ -118,9 +118,9 @@ public class HdfsOrcDataSource
     }
 
     ImmutableMap.Builder<K, FixedLengthSliceInput> slices = ImmutableMap.builder();
-    for (Entry<K, DiskRange> entry : diskRanges.entrySet()) {
-      slices.put(entry.getKey(), new BasicSliceInput(getDiskRangeSlice(entry.getValue(), buffers)));
-    }
+    diskRanges.forEach((K key, DiskRange range) ->
+        slices.put(key, new BasicSliceInput(getDiskRangeSlice(range, buffers))));
+
     return slices.build();
   }
 
