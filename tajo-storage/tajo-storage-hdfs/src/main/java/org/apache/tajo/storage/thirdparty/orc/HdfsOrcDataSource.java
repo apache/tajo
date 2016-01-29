@@ -92,7 +92,6 @@ public class HdfsOrcDataSource
     long start = System.nanoTime();
 
     inputStream.readFully(position, buffer, bufferOffset, bufferLength);
-
     readTimeNanos += System.nanoTime() - start;
   }
 
