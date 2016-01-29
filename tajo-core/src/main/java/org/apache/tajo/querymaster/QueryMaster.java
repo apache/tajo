@@ -447,7 +447,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
         List<QueryMasterTask> tempTasks = new ArrayList<>();
         tempTasks.addAll(queryMasterTasks.values());
 
-        tempTasks.stream().filter(eachTask -> !eachTask.isStopped()).forEach(eachTask -> {
+        tempTasks.parallelStream().filter(eachTask -> !eachTask.isStopped()).forEach(eachTask -> {
           try {
             long lastHeartbeat = eachTask.getLastClientHeartbeat();
             long time = System.currentTimeMillis() - lastHeartbeat;

@@ -430,7 +430,7 @@ public class ProjectionPushDownRule extends
     }
 
     private void addNecessaryReferences(EvalNode evalNode) {
-      EvalTreeUtil.findUniqueColumns(evalNode).stream().map(Column::getQualifiedName).forEach(requiredSet::add);
+      EvalTreeUtil.findUniqueColumns(evalNode).parallelStream().map(Column::getQualifiedName).forEach(requiredSet::add);
     }
 
     @Override

@@ -190,7 +190,7 @@ public class TaskImpl implements Task {
   }
 
   private void stopScriptExecutors() {
-    context.getEvalContext().getAllScriptEngines().forEach(TajoScriptEngine::shutdown);
+    context.getEvalContext().getAllScriptEngines().parallelStream().forEach(TajoScriptEngine::shutdown);
   }
 
   @Override

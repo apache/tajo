@@ -226,9 +226,7 @@ public class DistinctGroupbyBuilder {
           distinctNodeBuildInfos.put(groupbyMapKey, buildInfo);
 
           // Grouping columns are GROUP BY clause's column + Distinct column.
-          List<Column> groupingColumns = new ArrayList<>();
-          groupbyUniqColumns.stream().filter(eachGroupingColumn ->
-            !groupingColumns.contains(eachGroupingColumn)).forEach(groupingColumns::add);
+          List<Column> groupingColumns = groupbyUniqColumns.stream().distinct().collect(Collectors.toList());
           distinctGroupbyNode.setGroupingColumns(groupingColumns.toArray(new Column[groupingColumns.size()]));
         }
         buildInfo.addAggFunction(aggFunction);

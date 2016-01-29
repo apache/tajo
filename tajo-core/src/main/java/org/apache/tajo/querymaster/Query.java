@@ -339,7 +339,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public void clearPartitions() {
-    getStages().forEach(Stage::clearPartitions);
+    getStages().parallelStream().forEach(Stage::clearPartitions);
   }
 
   public SerializedException getFailureReason() {

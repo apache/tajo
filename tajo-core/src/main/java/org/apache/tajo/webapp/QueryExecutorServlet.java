@@ -210,7 +210,7 @@ public class QueryExecutorServlet extends HttpServlet {
         }
       } else if("clearAllQueryRunner".equals(action)) {
         synchronized(queryRunners) {
-          queryRunners.values().forEach(QueryRunner::setStop);
+          queryRunners.values().parallelStream().forEach(QueryRunner::setStop);
           queryRunners.clear();
         }
       } else if("killQuery".equals(action)) {
@@ -265,7 +265,7 @@ public class QueryExecutorServlet extends HttpServlet {
       List<QueryRunner> queryRunnerList;
       synchronized(queryRunners) {
         queryRunnerList = new ArrayList<>(queryRunners.values());
-        queryRunnerList.stream().filter(eachQueryRunner -> !eachQueryRunner.running.get() &&
+        queryRunnerList.parallelStream().filter(eachQueryRunner -> !eachQueryRunner.running.get() &&
           (System.currentTimeMillis() - eachQueryRunner.finishTime > 180 * 1000)).forEach(eachQueryRunner -> {
           queryRunners.remove(eachQueryRunner.queryRunnerId);
         });

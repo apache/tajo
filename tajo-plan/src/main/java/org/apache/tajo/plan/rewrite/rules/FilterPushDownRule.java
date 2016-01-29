@@ -151,7 +151,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     } else { // if there remain search conditions
 
       // check if it can be evaluated here
-      Set<EvalNode> matched = context.pushingDownFilters.stream()
+      Set<EvalNode> matched = context.pushingDownFilters.parallelStream()
         .filter(eachEval -> LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode)).collect(Collectors.toSet());
 
       // if there are search conditions which can be evaluated here,
@@ -358,13 +358,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     Set<EvalNode> nonPushableQuals = new HashSet<>();
-    onPredicates.forEach(eachQual ->
-      preservedTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName)).map(relName -> eachQual)
-        .forEach(nonPushableQuals::add));
+    onPredicates.parallelStream().forEach(eachQual ->
+      preservedTableNameSet.parallelStream().filter(relName -> isEvalNeedRelation(eachQual, relName))
+        .map(relName -> eachQual).forEach(nonPushableQuals::add));
 
-    wherePredicates.forEach(eachQual ->
-      nullSupplyingTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName)).map(relName -> eachQual)
-        .forEach(nonPushableQuals::add));
+    wherePredicates.parallelStream().forEach(eachQual ->
+      nullSupplyingTableNameSet.parallelStream().filter(relName -> isEvalNeedRelation(eachQual, relName))
+        .map(relName -> eachQual).forEach(nonPushableQuals::add));
 
     return nonPushableQuals;
   }
@@ -456,7 +456,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         }
 
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
-        columns.stream().filter(c -> c.hasQualifier()).forEach(c -> {
+        columns.parallelStream().filter(c -> c.hasQualifier()).forEach(c -> {
           EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), c.getSimpleName());
         });
 
@@ -626,7 +626,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private Collection<EvalNode> reverseTransform(BiMap<EvalNode, EvalNode> map, Set<EvalNode> remainFilters) {
-    Set<EvalNode> reversed = remainFilters.stream().map(map::get).collect(Collectors.toSet());
+    Set<EvalNode> reversed = remainFilters.parallelStream().map(map::get).collect(Collectors.toSet());
     return reversed;
   }
 
@@ -761,7 +761,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                        GroupbyNode groupByNode) throws TajoException {
     // find aggregation column
     Set<Column> groupingColumns = new HashSet<>(Arrays.asList(groupByNode.getGroupingColumns()));
-    Set<String> aggrFunctionOutColumns = groupByNode.getOutSchema().getRootColumns().stream()
+    Set<String> aggrFunctionOutColumns = groupByNode.getOutSchema().getRootColumns().parallelStream()
       .filter(column -> !groupingColumns.contains(column)).map(Column::getQualifiedName).collect(Collectors.toSet());
 
     List<EvalNode> aggrEvalOrigins = new ArrayList<>();
@@ -974,7 +974,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
     }
 
-    matched.forEach(transformed::remove);
+    matched.parallelStream().forEach(transformed::remove);
 
     context.setToOrigin(transformed);
     context.addFiltersTobePushed(notMatched);

@@ -631,30 +631,22 @@ public class XMLCatalogSchemaManager {
     
     protected void mergePatches(List<SchemaPatch> patches) {
       final List<DatabaseObject> objects = new ArrayList<>();
-      
-      Collections.sort(patches);
-      
-      for (SchemaPatch patch: patches) {
+
+      patches.stream().forEachOrdered(patch -> {
         validatePatch(patches, patch);
-        
+
         objects.clear();
         List<DatabaseObject> tempObjects = new ArrayList<>();
         tempObjects.addAll(patch.getObjects());
         patch.clearObjects();
-        patch.addObjects(mergeDatabaseObjects(tempObjects));        
-        
+        patch.addObjects(mergeDatabaseObjects(tempObjects));
+
         targetStore.addPatch(patch);
-      }
+      });
     }
     
     protected void validateSQLObject(List<SQLObject> queries, SQLObject testQuery) {
-      int occurredCount = 0;
-      
-      for (SQLObject query: queries) {
-        if (query.getType() == testQuery.getType()) {
-          occurredCount++;
-        }
-      }
+      int occurredCount = (int) queries.parallelStream().filter(query -> query.getType() == testQuery.getType()).count();
       
       if (occurredCount > 1) {
         throw new TajoInternalError("Duplicate Query type (" + testQuery.getType() + ") has found.");
@@ -662,38 +654,38 @@ public class XMLCatalogSchemaManager {
     }
     
     protected void mergeExistQueries(List<SQLObject> queries) {
-      for (SQLObject query: queries) {
+      queries.forEach(query -> {
         validateSQLObject(queries, query);
-        
+
         targetStore.addExistQuery(query);
-      }
+      });
     }
     
     protected void mergeDropStatements(List<SQLObject> queries) {
-      for (SQLObject query: queries) {
+      queries.forEach(query -> {
         validateSQLObject(queries, query);
-        
+
         targetStore.addDropStatement(query);
-      }
+      });
     }
     
     public StoreObject merge() {
       boolean alreadySetDatabaseObject = false;
       
       // first pass
-      this.storeObjects.forEach(this::copySchemaInfo);
+      this.storeObjects.parallelStream().forEach(this::copySchemaInfo);
       
       // second pass
       for (StoreObject store: this.storeObjects) {
-        if (store.getSchema().getVersion() == targetStore.getSchema().getVersion() && 
+        if (store.getSchema().getVersion() == targetStore.getSchema().getVersion() &&
             !alreadySetDatabaseObject) {
           BaseSchema targetSchema = targetStore.getSchema();
           targetSchema.clearObjects();
           targetSchema.addObjects(mergeDatabaseObjects(store.getSchema().getObjects()));
-          
+
           alreadySetDatabaseObject = true;
         }
-        
+
         mergePatches(store.getPatches());
         mergeExistQueries(store.getExistQueries());
         mergeDropStatements(store.getDropStatements());

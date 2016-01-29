@@ -224,7 +224,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           }
           JoinType joinType = ((JoinNode)found).getJoinType();
 
-          childs.stream().filter(child -> !child.isPreservedRow()).forEach(child -> {
+          childs.parallelStream().filter(child -> !child.isPreservedRow()).forEach(child -> {
             updateBroadcastableRelForChildEb(context, child, joinType);
             updateInputBasedOnChildEb(child, current);
           });
@@ -243,7 +243,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           }
         } else {
           List<ScanNode> relations = new ArrayList<>(current.getBroadcastRelations());
-          relations.forEach(current::removeBroadcastRelation);
+          relations.parallelStream().forEach(current::removeBroadcastRelation);
         }
       }
     }

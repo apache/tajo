@@ -102,7 +102,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     isStopped = true;
 
     threadPool.shutdown();
-    fetcherThreadPoolList.forEach(ExecutorService::shutdown);
+    fetcherThreadPoolList.parallelStream().forEach(ExecutorService::shutdown);
     super.serviceStop();
   }
 

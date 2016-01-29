@@ -103,7 +103,7 @@ public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
   // Add all execution blocks in a depth first and postfix order
   private void buildDepthFirstOrder(ExecutionBlock current) {
     if (!masterPlan.isLeaf(current.getId())) {
-      masterPlan.getChilds(current).forEach(this::buildDepthFirstOrder);
+      masterPlan.getChilds(current).parallelStream().forEach(this::buildDepthFirstOrder);
     }
     orderedBlocks.add(current);
   }

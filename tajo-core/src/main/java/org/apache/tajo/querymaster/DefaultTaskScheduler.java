@@ -288,7 +288,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     Set<Integer> workerIds = Sets.newHashSet();
     if(hosts.isEmpty()) return workerIds;
 
-    stage.getContext().getWorkerMap().values().stream().filter(worker -> hosts.contains(worker.getHost()))
+    stage.getContext().getWorkerMap().values().parallelStream().filter(worker -> hosts.contains(worker.getHost()))
       .forEach(worker -> workerIds.add(worker.getId()));
     return workerIds;
   }

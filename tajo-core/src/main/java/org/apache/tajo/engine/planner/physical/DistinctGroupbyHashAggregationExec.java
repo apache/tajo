@@ -261,7 +261,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       listIndex++;
     }
 
-    tupleSlots.forEach(TupleList::clear);
+    tupleSlots.parallelStream().forEach(TupleList::clear);
     tupleSlots.clear();
 
     currentAggregatedTupleIndex = 0;
@@ -438,7 +438,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     public void close() throws IOException {
-      hashTable.values().forEach(TupleMap<FunctionContext[]>::clear);
+      hashTable.values().parallelStream().forEach(TupleMap<FunctionContext[]>::clear);
       hashTable.clear();
       hashTable = null;
       iterator = null;

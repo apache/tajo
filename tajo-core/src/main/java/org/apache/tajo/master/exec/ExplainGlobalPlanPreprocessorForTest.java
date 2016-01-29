@@ -47,7 +47,7 @@ public class ExplainGlobalPlanPreprocessorForTest {
     for (ExecutionBlock block : cursor) {
       List<DataChannel> outgoingChannels = plan.getOutgoingChannels(block.getId());
       if (outgoingChannels != null) {
-        outgoingChannels.stream().filter(channel -> channel.hasShuffleKeys()).forEach(channel -> {
+        outgoingChannels.parallelStream().filter(channel -> channel.hasShuffleKeys()).forEach(channel -> {
           Column[] shuffleKeys = channel.getShuffleKeys();
           Arrays.sort(shuffleKeys, columnComparator);
           channel.setShuffleKeys(shuffleKeys);

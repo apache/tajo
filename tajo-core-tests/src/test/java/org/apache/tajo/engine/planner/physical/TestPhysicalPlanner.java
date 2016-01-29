@@ -844,7 +844,7 @@ public class TestPhysicalPlanner {
 
     // Set all aggregation functions to the first phase mode
     GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
-    groupbyNode.getAggFunctions().forEach(AggregationFunctionCallEval::setFirstPhase);
+    groupbyNode.getAggFunctions().parallelStream().forEach(AggregationFunctionCallEval::setFirstPhase);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -873,7 +873,7 @@ public class TestPhysicalPlanner {
 
     // Set all aggregation functions to the first phase mode
     GroupbyNode groupbyNode = PlannerUtil.findTopNode(rootNode, NodeType.GROUP_BY);
-    groupbyNode.getAggFunctions().forEach(AggregationFunctionCallEval::setFirstPhase);
+    groupbyNode.getAggFunctions().parallelStream().forEach(AggregationFunctionCallEval::setFirstPhase);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);

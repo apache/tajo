@@ -690,7 +690,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       List<FieldSchema> columns = table.getSd().getCols();
 
-      columns.stream().filter(currentColumn -> currentColumn.getName()
+      columns.parallelStream().filter(currentColumn -> currentColumn.getName()
         .equalsIgnoreCase(alterColumnProto.getOldColumnName())).forEach(currentColumn -> {
         currentColumn.setName(alterColumnProto.getNewColumnName());
       });
