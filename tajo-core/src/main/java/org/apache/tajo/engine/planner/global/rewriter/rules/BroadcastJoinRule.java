@@ -224,7 +224,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           }
           JoinType joinType = ((JoinNode)found).getJoinType();
 
-          childs.parallelStream().filter(child -> !child.isPreservedRow()).forEach(child -> {
+          childs.stream().filter(child -> !child.isPreservedRow()).forEach(child -> {
             updateBroadcastableRelForChildEb(context, child, joinType);
             updateInputBasedOnChildEb(child, current);
           });

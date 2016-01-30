@@ -36,7 +36,7 @@ public class GlobalPlanRewriteUtil {
    * @return
    */
   public static ExecutionBlock mergeExecutionBlocks(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
-    child.getBroadcastRelations().parallelStream().forEach(parent::addBroadcastRelation);
+    child.getBroadcastRelations().forEach(parent::addBroadcastRelation);
 
     // connect parent and grand children
     List<ExecutionBlock> grandChilds = plan.getChilds(child);
