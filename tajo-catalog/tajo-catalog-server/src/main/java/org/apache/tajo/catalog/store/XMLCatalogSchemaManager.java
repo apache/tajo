@@ -673,7 +673,7 @@ public class XMLCatalogSchemaManager {
       boolean alreadySetDatabaseObject = false;
       
       // first pass
-      this.storeObjects.forEach(this::copySchemaInfo);
+      this.storeObjects.parallelStream().forEach(this::copySchemaInfo);
       
       // second pass
       for (StoreObject store: this.storeObjects) {
