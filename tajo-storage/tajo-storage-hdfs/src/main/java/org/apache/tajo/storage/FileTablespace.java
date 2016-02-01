@@ -837,6 +837,7 @@ public class FileTablespace extends Tablespace {
         Path stagingDirRoot = stagingDir.getParent();
         fs.delete(stagingDirRoot, true);
       } catch (Throwable t) {
+        rollback(stagingResultDir, finalOutputDir, oldTableDir, commitHandle);
         LOG.error(t);
         throw new IOException(t);
       }
@@ -853,10 +854,10 @@ public class FileTablespace extends Tablespace {
     String finalOutputPath = finalOutputDir.toString();
     String oldTablePath = oldTableDir.toString();
 
-    try {
-      for(PartitionDescProto partition : partitions) {
+    partitions.parallelStream().forEach(partition -> {
+      try {
         Path targetPath = new Path(partition.getPath() + "/");
-        Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath)+"/");
+        Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
         Path backupPath = new Path(partition.getPath().replaceAll(finalOutputPath, oldTablePath));
 
         // Move existing directory to backup directory.
@@ -870,18 +871,16 @@ public class FileTablespace extends Tablespace {
         commitHandle.addTargetPath(targetPath);
 
         // Summarize the volume of partitions
-        // TODO : This will improved at TAJO-2069
         long totalSize = calculateSize(targetPath);
         PartitionDescProto.Builder builder = partition.toBuilder();
         builder.setNumBytes(totalSize);
         commitHandle.addPartition(builder.build());
+      } catch (IOException e) {
+        throw new ConcurrentModificationException();
       }
-      partitions.clear();
-      partitions.addAll(commitHandle.getPartitions());
-    } catch (Exception e) {
-      rollback(stagingResultDir, finalOutputDir, oldTableDir, commitHandle);
-      throw new IOException("Failed to create partition table:", e);
-    }
+    });
+    partitions.clear();
+    partitions.addAll(commitHandle.getPartitions());
   }
 
   private void commitInsertWithPartition(Path stagingResultDir, Path finalOutputDir,
@@ -893,10 +892,10 @@ public class FileTablespace extends Tablespace {
     fmt.setGroupingUsed(false);
     fmt.setMinimumIntegerDigits(3);
 
-    try {
-      for(PartitionDescProto partition : partitions) {
+    partitions.parallelStream().forEach(partition -> {
+      try {
         Path targetPath = new Path(partition.getPath() + "/");
-        Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath)+"/");
+        Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
 
         if (!fs.exists(targetPath)) {
           renameDirectory(stagingPath, targetPath);
@@ -907,21 +906,14 @@ public class FileTablespace extends Tablespace {
 
         // Summarize the volume of partitions
         PartitionDescProto.Builder builder = partition.toBuilder();
-        // TODO: This will improved at TAJO-2069
         builder.setNumBytes(calculateSize(targetPath));
         commitHandle.addPartition(builder.build());
+      } catch (IOException e) {
+        throw new ConcurrentModificationException();
       }
-      partitions.clear();
-      partitions.addAll(commitHandle.getPartitions());
-    } catch (Exception e) {
-      rollback(stagingResultDir, finalOutputDir, commitHandle);
-      throw new IOException("Failed to create partition table:", e);
-    }
-  }
-
-  private void rollback(Path stagingResultDir, Path finalOutputDir,
-                        OutputCommitHandle commitHandle) throws IOException {
-    rollback(stagingResultDir, finalOutputDir, null, commitHandle);
+    });
+    partitions.clear();
+    partitions.addAll(commitHandle.getPartitions());
   }
 
   private void rollback(Path stagingResultDir, Path finalOutputDir, Path oldTableDir,
