@@ -129,13 +129,13 @@ public class FileTablespace extends Tablespace {
   @Override
   public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
     Path path = new Path(table.getUri());
-    ContentSummary summary;
+    long totalVolume = 0L;
     try {
-      summary = fs.getContentSummary(path);
+      totalVolume = getTotalFileSize(path);
     } catch (IOException e) {
       throw new TajoInternalError(e);
     }
-    return summary.getLength();
+    return totalVolume;
   }
 
   @Override
@@ -252,7 +252,7 @@ public class FileTablespace extends Tablespace {
     long totalSize = 0;
 
     if (fs.exists(tablePath)) {
-      totalSize = fs.getContentSummary(tablePath).getLength();
+      totalSize = getTotalFileSize(tablePath);
     }
 
     return totalSize;
@@ -870,8 +870,7 @@ public class FileTablespace extends Tablespace {
         commitHandle.addTargetPath(targetPath);
 
         // Summarize the volume of partitions
-        // TODO : This will improved at TAJO-2069
-        long totalSize = calculateSize(targetPath);
+        long totalSize = getTotalFileSize(targetPath);
         PartitionDescProto.Builder builder = partition.toBuilder();
         builder.setNumBytes(totalSize);
         commitHandle.addPartition(builder.build());
@@ -907,8 +906,7 @@ public class FileTablespace extends Tablespace {
 
         // Summarize the volume of partitions
         PartitionDescProto.Builder builder = partition.toBuilder();
-        // TODO: This will improved at TAJO-2069
-        builder.setNumBytes(calculateSize(targetPath));
+        builder.setNumBytes(getTotalFileSize(targetPath));
         commitHandle.addPartition(builder.build());
       }
       partitions.clear();
@@ -1161,6 +1159,21 @@ public class FileTablespace extends Tablespace {
     return true;
   }
 
+  protected long getTotalFileSize(Path path) throws IOException {
+    long totalVolume = 0L;
+
+    // f is a file
+    FileStatus status = fs.getFileStatus(path);
+    if (status.isFile()) {
+      totalVolume = status.getLen();
+    }
+    // f is a directory
+    for(FileStatus s : listStatus(path)) {
+      long length = s.isDirectory() ? getTotalFileSize(s.getPath()) : s.getLen();
+      totalVolume += length;
+    }
+    return totalVolume;
+  }
 
   protected void renameDirectory(Path sourcePath, Path targetPath) throws IOException {
     try {
@@ -1190,6 +1203,4 @@ public class FileTablespace extends Tablespace {
   protected boolean rename(Path sourcePath, Path targetPath) throws IOException {
     return fs.rename(sourcePath, targetPath);
   }
-
-
 }

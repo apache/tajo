@@ -46,6 +46,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.error.Errors.SerializedException;
 import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -637,7 +638,7 @@ public class Query implements EventHandler<QueryEvent> {
                 finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
 
-        stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+        stats.setNumBytes(getTableVolume(queryContext, resultTableDesc));
         resultTableDesc.setStats(stats);
         query.setResultDesc(resultTableDesc);
       }
@@ -678,7 +679,7 @@ public class Query implements EventHandler<QueryEvent> {
         if (!query.getPartitions().isEmpty()) {
           totalVolume = query.getPartitions().stream().mapToLong(partition -> partition.getNumBytes()).sum();
         } else {
-          totalVolume = getTableVolume(query.systemConf, finalOutputDir);
+          totalVolume = getTableVolume(queryContext, tableDescTobeCreated);
         }
 
         stats.setNumBytes(totalVolume);
@@ -719,8 +720,9 @@ public class Query implements EventHandler<QueryEvent> {
           finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir.toUri());
         }
 
-        long volume = getTableVolume(query.systemConf, finalOutputDir);
-        stats.setNumBytes(volume);
+        long totalVolume = getTableVolume(queryContext, finalTable);
+
+        stats.setNumBytes(totalVolume);
         finalTable.setStats(stats);
 
         if (insertNode.hasTargetTable()) {
@@ -736,10 +738,10 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  public static long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
-    FileSystem fs = tablePath.getFileSystem(systemConf);
-    ContentSummary directorySummary = fs.getContentSummary(tablePath);
-    return directorySummary.getLength();
+  public static long getTableVolume(QueryContext queryContext, TableDesc tableDesc) throws UnsupportedException {
+    Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
+
+    return space.getTableVolume(tableDesc, Optional.empty());
   }
 
   public static class StageCompletedTransition implements SingleArcTransition<Query, QueryEvent> {
