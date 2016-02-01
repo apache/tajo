@@ -102,6 +102,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2066: Fix TestJoinOnPartitionedTables.testPartialFilterPushDown failure.
+    (jinho)
+
     TAJO-2062: Fix TestQueryResult#testTemporalResultOnClose failure. (jinho)
 
     TAJO-1921: Hbase Storage can cause NPE when the hbase cluster is restarted.
@@ -178,6 +181,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2065: Increase default heap size. (jinho)
 
     TAJO-2041: Update the Team page. (jaehwa)
 

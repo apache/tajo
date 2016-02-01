@@ -60,19 +60,19 @@
 <!--
 <property>
   <name>tajo.worker.resource.cpu-cores</name>
-  <value>1</value>
+  <value>4</value>
   <description>Number of CPU cores</description>
 </property>
 
 <property>
-  <name>tajo.worker.resource.memory-mb</name>
-  <value>1024</value>
-  <description>Available memory size (MB)</description>
+  <name>tajo.task.resource.min.memory-mb</name>
+  <value>2000</value>
+  <description>Minimum allocatable memory per task</description>
 </property>
 
 <property>
   <name>tajo.worker.resource.disks</name>
-  <value>1</value>
+  <value>2</value>
   <description>Available disk capacity (usually number of disks)</description>
 </property>
 
