@@ -27,6 +27,7 @@ import jline.console.ConsoleReader;
 import jline.console.completer.AggregateCompleter;
 import jline.console.completer.ArgumentCompleter;
 import jline.console.completer.Completer;
+import jline.console.completer.StringsCompleter;
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
@@ -97,6 +98,7 @@ public class TajoCli implements Closeable {
   };
 
   private AggregateCompleter cliCompleter;
+  private ArgumentCompleter sqlCompleter;
 
   private final Map<String, TajoShellCommand> commands = new TreeMap<>();
 
@@ -263,6 +265,7 @@ public class TajoCli implements Closeable {
       initCommands();
 
       reader.addCompleter(cliCompleter);
+      reader.addCompleter(sqlCompleter);
 
       if (cmd.getOptionValues("conf") != null) {
         processSessionVarCommand(cmd.getOptionValues("conf"));
@@ -395,6 +398,32 @@ public class TajoCli implements Closeable {
     }
 
     cliCompleter = new AggregateCompleter(compList);
+
+    sqlCompleter = new ArgumentCompleter(
+        new ArgumentCompleter.AbstractArgumentDelimiter() {
+          @Override
+          public boolean isDelimiterChar(CharSequence buf, int pos) {
+            char c = buf.charAt(pos);
+            return Character.isWhitespace(c) || !(Character.isLetterOrDigit(c)) && c != '_';
+          }
+        },
+        new StringsCompleter(getKeywords())
+    );
+  }
+
+  private Collection<String> getKeywords() {
+    List<String> klist = new ArrayList<>();
+
+    // SQL keywords
+    klist.addAll(Arrays.asList(SQLKeywords.keywords));
+
+    // DB and table names
+    for (String db: client.getAllDatabaseNames()) {
+      klist.add(db);
+      klist.addAll(client.getTableList(db));
+    }
+
+    return klist;
   }
 
   private void addShutdownHook() {
