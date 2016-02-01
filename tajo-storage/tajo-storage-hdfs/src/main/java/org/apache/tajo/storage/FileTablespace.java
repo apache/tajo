@@ -1182,6 +1182,4 @@ public class FileTablespace extends Tablespace {
   protected boolean rename(Path sourcePath, Path targetPath) throws IOException {
     return fs.rename(sourcePath, targetPath);
   }
-
-
 }
