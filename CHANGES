@@ -8,6 +8,32 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2052: Upgrading ORC reader version. (Jongyoung Park via jaehwa)
+    
+    TAJO-1940: Implement HBaseTablespace::getTableVolume() method. (hyunsik)
+
+    TAJO-2061: Add description for EXPLAIN statement. (jaehwa)
+
+    TAJO-2060: Upgrade geoip-api-java library. (Byunghwa Yun via jinho)
+
+    TAJO-2048: QueryMaster and TajoWorker should support the exception
+    propagation. (jinho)
+
+    TAJO-2050: Adopt TAJO logo in CLI.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-1740: Update Partition Table document. (jaehwa)
+    
+    TAJO-2053: Update description for HBase configuration.
+    (Dongkyu Hwangbo via jaehwa)
+
+    TAJO-2057: Remove redundant class loading in plan optimizer. (jinho)
+
+    TAJO-2032: Change tajo.rest.service.port to be the general style in TAJO.
+    (Byunghwa Yun via jihoon)
+
+    TAJO-1971: Replace 'for' loop with 'foreach'. (Dongkyu Hwangbo via jihoon)
+
     TAJO-2040: Decrease the default size of max request for locality. (jinho)
 
     TAJO-2035: Rewrite README file using Markdown format. 
@@ -77,6 +103,14 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-2066: Fix TestJoinOnPartitionedTables.testPartialFilterPushDown failure.
+    (jinho)
+
+    TAJO-2062: Fix TestQueryResult#testTemporalResultOnClose failure. (jinho)
+
+    TAJO-1921: Hbase Storage can cause NPE when the hbase cluster is restarted.
+    (Byunghwa Yun via hyunsik)
 
     TAJO-2038: NPE in FileScanner#getProgress. (jinho)
 
@@ -149,6 +183,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2065: Increase default heap size. (jinho)
 
     TAJO-2041: Update the Team page. (jaehwa)
 

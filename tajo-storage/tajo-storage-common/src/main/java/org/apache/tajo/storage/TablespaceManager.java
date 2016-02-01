@@ -31,6 +31,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.MetadataProvider;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UndefinedTablespaceException;
@@ -435,9 +436,9 @@ public class TablespaceManager implements StorageService {
   }
 
   @Override
-  public long getTableVolumn(URI tableUri, Optional<EvalNode> filter)
+  public long getTableVolumn(TableDesc table, Optional<EvalNode> filter)
       throws UnsupportedException {
-    return get(tableUri).getTableVolume(tableUri, filter);
+    return get(table.getUri()).getTableVolume(table, filter);
   }
 
   public static Iterable<Tablespace> getAllTablespaces() {

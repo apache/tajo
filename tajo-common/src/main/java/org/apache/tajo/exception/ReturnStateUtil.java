@@ -20,6 +20,7 @@ package org.apache.tajo.exception;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
@@ -83,9 +84,20 @@ public class ReturnStateUtil {
     } else {
       builder.setReturnCode(ResultCode.INTERNAL_ERROR);
       builder.setMessage(ErrorMessages.getInternalErrorMessage(t));
-      builder.setStackTrace(ErrorUtil.convertStacktrace(t));
     }
 
+    builder.setStackTrace(ErrorUtil.convertStacktrace(t));
+    return builder.build();
+  }
+
+  public static ReturnState returnError(Errors.SerializedException e) {
+    ReturnState.Builder builder = ReturnState.newBuilder();
+
+    builder.setReturnCode(e.getReturnCode());
+    builder.setMessage(e.getMessage());
+    if (e.hasStackTrace()) {
+      builder.setStackTrace(e.getStackTrace());
+    }
     return builder.build();
   }
 

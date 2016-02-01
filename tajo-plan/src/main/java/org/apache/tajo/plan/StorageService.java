@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan;
 
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 
@@ -40,5 +41,5 @@ public interface StorageService {
    */
   URI getTableURI(@Nullable String spaceName, String databaseName, String tableName);
 
-  long getTableVolumn(URI uri, Optional<EvalNode> filter) throws UnsupportedException;
+  long getTableVolumn(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException;
 }

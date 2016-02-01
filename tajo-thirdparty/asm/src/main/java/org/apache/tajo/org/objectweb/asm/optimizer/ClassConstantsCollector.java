@@ -70,8 +70,8 @@ public class ClassConstantsCollector extends ClassVisitor {
             cp.newClass(superName);
         }
         if (interfaces != null) {
-            for (int i = 0; i < interfaces.length; ++i) {
-                cp.newClass(interfaces[i]);
+            for (String anInterface : interfaces) {
+                cp.newClass(anInterface);
             }
         }
         cv.visit(version, access, name, signature, superName, interfaces);
@@ -174,8 +174,8 @@ public class ClassConstantsCollector extends ClassVisitor {
         }
         if (exceptions != null) {
             cp.newUTF8("Exceptions");
-            for (int i = 0; i < exceptions.length; ++i) {
-                cp.newClass(exceptions[i]);
+            for (String exception : exceptions) {
+                cp.newClass(exception);
             }
         }
         return new MethodConstantsCollector(cv.visitMethod(access, name, desc,

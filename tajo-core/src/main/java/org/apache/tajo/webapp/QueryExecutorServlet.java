@@ -17,6 +17,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.JSPUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -161,6 +162,11 @@ public class QueryExecutorServlet extends HttpServlet {
         } catch (java.lang.NumberFormatException nfe) {
           queryRunner.sizeLimit = 1048576;
         }
+        try {
+          queryRunner.rowLimit = Integer.parseInt(request.getParameter("limitRow"));
+        } catch (java.lang.NumberFormatException nfe) {
+          queryRunner.rowLimit = 3000000;
+        }
         synchronized(queryRunners) {
           queryRunners.put(queryRunnerId, queryRunner);
         }
@@ -197,7 +203,6 @@ public class QueryExecutorServlet extends HttpServlet {
             errorResponse(response, queryRunner.error);
             return;
           }
-          returnValue.put("numOfRows", queryRunner.numOfRows);
           returnValue.put("resultSize", queryRunner.resultRows);
           returnValue.put("resultData", queryRunner.queryResult);
           returnValue.put("resultColumns", queryRunner.columnNames);
@@ -286,7 +291,7 @@ public class QueryExecutorServlet extends HttpServlet {
     String database;
     long resultRows;
     int sizeLimit;
-    long numOfRows;
+    long rowLimit;
     Exception error;
 
     AtomicInteger progress = new AtomicInteger(0);
@@ -501,20 +506,20 @@ public class QueryExecutorServlet extends HttpServlet {
       }
       queryResult = new ArrayList<>();
 
-      if(sizeLimit < resultRows) {
-        numOfRows = (long)((float)(resultRows) * ((float)sizeLimit / (float) resultRows));
-      } else {
-        numOfRows = resultRows;
-      }
-
+      int currentResultSize = 0;
       int rowCount = 0;
       while (res.next()) {
-        if(rowCount > numOfRows) {
+        if(rowCount > rowLimit || currentResultSize > sizeLimit) {
           break;
         }
         List<Object> row = new ArrayList<>();
         for(int i = 0; i < numOfColumns; i++) {
-          row.add(String.valueOf(res.getObject(i + 1)));
+          String columnValue = String.valueOf(res.getObject(i + 1));
+          try {
+            currentResultSize += columnValue.getBytes(Bytes.UTF8_ENCODING).length;
+          } catch (Exception e) {
+          }
+          row.add(columnValue);
         }
         queryResult.add(row);
         rowCount++;

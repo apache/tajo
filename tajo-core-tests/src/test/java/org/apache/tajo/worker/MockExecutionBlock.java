@@ -36,7 +36,7 @@ public class MockExecutionBlock extends ExecutionBlockContext {
   }
 
   @Override
-  public void fatalError(TaskAttemptId taskAttemptId, String message) {
+  public void fatalError(TaskAttemptId taskAttemptId, Throwable throwable) {
 
   }
 }

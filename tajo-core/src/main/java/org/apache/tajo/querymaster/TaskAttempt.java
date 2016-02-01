@@ -409,7 +409,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
         taskAttempt.fillTaskStatistics(report);
         taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_SUCCEEDED));
       } catch (Throwable t) {
-        taskAttempt.eventHandler.handle(new TaskFatalErrorEvent(taskAttempt.getId(), t.getMessage()));
+        taskAttempt.eventHandler.handle(new TaskFatalErrorEvent(taskAttempt.getId(), t));
         taskAttempt.addDiagnosticInfo(ExceptionUtils.getStackTrace(t));
       }
     }
@@ -432,10 +432,10 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
         throw new IllegalArgumentException("event should be a TaskFatalErrorEvent type.");
       }
       TaskFatalErrorEvent errorEvent = (TaskFatalErrorEvent) event;
-      taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_FAILED));
-      taskAttempt.addDiagnosticInfo(errorEvent.errorMessage());
+      taskAttempt.eventHandler.handle(new TaskTAttemptFailedEvent(taskAttempt.getId(), errorEvent.getError()));
+      taskAttempt.addDiagnosticInfo(errorEvent.getError().getMessage());
       LOG.error(taskAttempt.getId() + " FROM " + taskAttempt.getWorkerConnectionInfo().getHost()
-          + " >> " + errorEvent.errorMessage());
+          + " >> " + errorEvent.getError().getMessage());
     }
   }
 

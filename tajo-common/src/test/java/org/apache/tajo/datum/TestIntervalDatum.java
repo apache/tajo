@@ -122,8 +122,8 @@ public class TestIntervalDatum {
 
     // date '2001-10-01' - integer '7' ==>	date '2001-09-24'
     datum = DatumFactory.createDate(2001, 10, 1);
-    for (int i = 0; i < datums.length; i++) {
-      Datum result2 = datum.minus(datums[i]);
+    for (Datum eachDatum : datums) {
+      Datum result2 = datum.minus(eachDatum);
       assertEquals(TajoDataTypes.Type.DATE, result2.type());
       assertEquals(DatumFactory.createDate(2001, 9, 24), result2);
     }
@@ -177,12 +177,12 @@ public class TestIntervalDatum {
         new Float4Datum(900.0f), new Float8Datum(900.0f)};
 
     datum = new IntervalDatum(1000);
-    for (int i = 0; i < datum900.length; i++) {
-      Datum result2 = datum.multiply(datum900[i]);
+    for (Datum aDatum900 : datum900) {
+      Datum result2 = datum.multiply(aDatum900);
       assertEquals(TajoDataTypes.Type.INTERVAL, result2.type());
       assertEquals(new IntervalDatum(15 * 60 * 1000), result2);
 
-      result2 = datum900[i].multiply(datum);
+      result2 = aDatum900.multiply(datum);
       assertEquals(TajoDataTypes.Type.INTERVAL, result2.type());
       assertEquals(new IntervalDatum(15 * 60 * 1000), result2);
     }

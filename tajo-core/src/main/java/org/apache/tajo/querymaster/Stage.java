@@ -42,7 +42,10 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.error.Errors.SerializedException;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
@@ -63,6 +66,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.RpcParameterFactory;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
 
@@ -289,6 +293,7 @@ public class Stage implements EventHandler<StageEvent> {
   private volatile int succeededObjectCount = 0;
   private volatile int killedObjectCount = 0;
   private volatile int failedObjectCount = 0;
+  private volatile SerializedException failureReason;
   private TaskSchedulerContext schedulerContext;
   private List<IntermediateEntry> hashShuffleIntermediateEntries = Lists.newArrayList();
   private AtomicInteger completedShuffleTasks = new AtomicInteger(0);
@@ -412,6 +417,10 @@ public class Stage implements EventHandler<StageEvent> {
     return completedTaskCount;
   }
 
+  public SerializedException getFailureReason() {
+    return failureReason;
+  }
+
   public ExecutionBlock getBlock() {
     return block;
   }
@@ -533,18 +542,26 @@ public class Stage implements EventHandler<StageEvent> {
     eventHandler.handle(new StageCompletedEvent(getId(), StageState.SUCCEEDED));
   }
 
+  public void abort(StageState finalState) {
+    abort(finalState, null);
+  }
+
   /**
    * It finalizes this stage. Unlike {@link Stage#complete()},
    * it is invoked when a stage is abnormally finished.
    *
    * @param finalState The final stage state
+   * @param reason The failure reason, if exist
    */
-  public void abort(StageState finalState) {
+  public void abort(StageState finalState, Throwable reason) {
     // TODO -
     // - committer.abortStage(...)
     // - record Stage Finish Time
     // - CleanUp Tasks
     // - Record History
+    if(reason != null)
+      failureReason = ErrorUtil.convertException(reason);
+
     cleanup();
     setFinishTime();
     eventHandler.handle(new StageCompletedEvent(getId(), finalState));
@@ -1229,7 +1246,9 @@ public class Stage implements EventHandler<StageEvent> {
         } else if (task.getState() == TaskState.KILLED) {
           stage.killedObjectCount++;
         } else if (task.getState() == TaskState.FAILED) {
+          StageTaskFailedEvent failedEvent = TUtil.checkTypeAndGet(event, StageTaskFailedEvent.class);
           stage.failedObjectCount++;
+          stage.failureReason = failedEvent.getException();
           // if at least one task is failed, try to kill all tasks.
           stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_KILL));
         }
@@ -1407,17 +1426,14 @@ public class Stage implements EventHandler<StageEvent> {
             stage.getSucceededObjectCount(),
             stage.killedObjectCount));
 
-        if (stage.killedObjectCount > 0 || stage.failedObjectCount > 0) {
+        // If the current stage are failed, next stages receives SQ_KILL event
+        if (stage.killedObjectCount + stage.failedObjectCount > 0) {
           if (stage.failedObjectCount > 0) {
             stage.abort(StageState.FAILED);
             return StageState.FAILED;
-          } else if (stage.killedObjectCount > 0) {
+          } else {
             stage.abort(StageState.KILLED);
             return StageState.KILLED;
-          } else {
-            LOG.error("Invalid State " + stage.getSynchronizedState() + " State");
-            stage.abort(StageState.ERROR);
-            return StageState.ERROR;
           }
         } else {
           stage.complete();
@@ -1425,7 +1441,7 @@ public class Stage implements EventHandler<StageEvent> {
         }
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
-        stage.abort(StageState.ERROR);
+        stage.abort(StageState.ERROR, t);
         return StageState.ERROR;
       }
     }

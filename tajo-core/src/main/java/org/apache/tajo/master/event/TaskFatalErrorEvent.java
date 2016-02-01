@@ -20,22 +20,23 @@ package org.apache.tajo.master.event;
 
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.ResourceProtos.TaskFatalErrorReport;
+import org.apache.tajo.error.Errors.SerializedException;
+import org.apache.tajo.exception.ErrorUtil;
 
 public class TaskFatalErrorEvent extends TaskAttemptEvent {
-  private final String message;
+  private final SerializedException error;
 
   public TaskFatalErrorEvent(TaskFatalErrorReport report) {
-    super(new TaskAttemptId(report.getId()),
-        TaskAttemptEventType.TA_FATAL_ERROR);
-    this.message = report.getErrorMessage();
+    super(new TaskAttemptId(report.getId()), TaskAttemptEventType.TA_FATAL_ERROR);
+    this.error = report.getError();
   }
 
-  public TaskFatalErrorEvent(TaskAttemptId attemptId, String message) {
+  public TaskFatalErrorEvent(TaskAttemptId attemptId, Throwable e) {
     super(attemptId, TaskAttemptEventType.TA_FATAL_ERROR);
-    this.message = message;
+    this.error = ErrorUtil.convertException(e);
   }
 
-  public String errorMessage() {
-    return message;
+  public SerializedException getError() {
+    return error;
   }
 }

@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,23 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.rewrite;
+package org.apache.tajo.master.event;
 
-import com.google.common.collect.Lists;
+import org.apache.tajo.TaskId;
+import org.apache.tajo.error.Errors.SerializedException;
+import org.apache.tajo.master.TaskState;
 
-import java.util.Collection;
-import java.util.List;
+/**
+ * Event Class: From Task to Stage
+ */
+public class StageTaskFailedEvent extends StageTaskEvent {
+  private final SerializedException exception;
 
-public class BaseLogicalPlanPreprocessPhaseProvider extends LogicalPlanPreprocessPhaseProvider {
-  private static List<Class<? extends LogicalPlanPreprocessPhase>> phases = Lists.newArrayList();
-
-  static {
-    phases.add(BaseSchemaBuildPhase.class);
-    phases.add(SelfDescSchemaBuildPhase.class);
+  public StageTaskFailedEvent(TaskId taskId, SerializedException exception) {
+    super(taskId, TaskState.FAILED);
+    this.exception = exception;
   }
 
-  @Override
-  public Collection<Class<? extends LogicalPlanPreprocessPhase>> getPhases() {
-    return phases;
+  public SerializedException getException() {
+    return exception;
   }
 }
