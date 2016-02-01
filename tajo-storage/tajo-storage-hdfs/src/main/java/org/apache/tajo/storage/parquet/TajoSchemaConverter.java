@@ -179,6 +179,7 @@ public class TajoSchemaConverter {
                          OriginalType.UTF8);
 
       // OriginalType.DATE should be in recent Parquet version
+      // So it handles just as INT32.
       case DATE:
         return primitive(column.getSimpleName(),
                         PrimitiveTypeName.INT32);
