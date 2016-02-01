@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2052: Upgrading ORC reader version. (Jongyoung Park via jaehwa)
+    
     TAJO-1940: Implement HBaseTablespace::getTableVolume() method. (hyunsik)
 
     TAJO-2061: Add description for EXPLAIN statement. (jaehwa)
