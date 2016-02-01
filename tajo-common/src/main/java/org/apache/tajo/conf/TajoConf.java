@@ -237,7 +237,7 @@ public class TajoConf extends Configuration {
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true, Validators.bool()),
 
     // S3 Configuration --------------------------------------------------
-    S3_MAX_ERROR_RETRIES("tajo.s3.max-error-retries", 50),
+    S3_MAX_ERROR_RETRIES("tajo.s3.max-error-retries", 100),
     S3_SSL_ENABLED("tajo.s3.ssl.enabled", true),
     S3_CONNECT_TIMEOUT("tajo.s3.connect-timeout", "5m"),
     S3_SOCKET_TIMEOUT("tajo.s3.socket-timeout", "5m"),
