@@ -804,6 +804,8 @@ public class FileTablespace extends Tablespace {
       boolean checkExistingPartition = queryContext.getBool(SessionVars.PARTITION_NO_RESULT_OVERWRITE_ENABLED);
 
       try {
+        long startTime = System.currentTimeMillis();
+        LOG.info("Output-commit started");
         if (queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) { // INSERT OVERWRITE INTO
           if (partitions != null) {
             commitInsertOverwriteOrCreateWithPartition(stagingResultDir, finalOutputDir, oldTableDir, partitions,
@@ -836,6 +838,11 @@ public class FileTablespace extends Tablespace {
         // remove the staging directory if the final output dir is given.
         Path stagingDirRoot = stagingDir.getParent();
         fs.delete(stagingDirRoot, true);
+
+        long finishTime = System.currentTimeMillis();
+        long elapsedMills = finishTime - startTime;
+        LOG.info(format("Output-commit finished : %d ms elapsed.", elapsedMills));
+        
       } catch (Throwable t) {
         LOG.error(t);
         throw new IOException(t);
