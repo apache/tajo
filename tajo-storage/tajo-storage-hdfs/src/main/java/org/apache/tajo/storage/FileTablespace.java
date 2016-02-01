@@ -854,7 +854,7 @@ public class FileTablespace extends Tablespace {
     String finalOutputPath = finalOutputDir.toString();
     String oldTablePath = oldTableDir.toString();
 
-    partitions.parallelStream().forEach(partition -> {
+    partitions.stream().forEach(partition -> {
       try {
         Path targetPath = new Path(partition.getPath() + "/");
         Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
@@ -874,7 +874,8 @@ public class FileTablespace extends Tablespace {
         long totalSize = calculateSize(targetPath);
         PartitionDescProto.Builder builder = partition.toBuilder();
         builder.setNumBytes(totalSize);
-        commitHandle.addPartition(builder.build());
+        PartitionDescProto partitionDescProto = builder.build();
+        commitHandle.addPartition(partitionDescProto);
       } catch (IOException e) {
         throw new ConcurrentModificationException();
       }
@@ -892,7 +893,7 @@ public class FileTablespace extends Tablespace {
     fmt.setGroupingUsed(false);
     fmt.setMinimumIntegerDigits(3);
 
-    partitions.parallelStream().forEach(partition -> {
+    partitions.stream().forEach(partition -> {
       try {
         Path targetPath = new Path(partition.getPath() + "/");
         Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
