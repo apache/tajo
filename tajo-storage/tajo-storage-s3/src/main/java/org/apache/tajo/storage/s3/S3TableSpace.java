@@ -33,10 +33,8 @@ import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.iterable.S3Objects;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Ints;
 import io.airlift.units.Duration;
 import org.apache.commons.logging.Log;
@@ -52,7 +50,6 @@ import net.minidev.json.JSONObject;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.nullToEmpty;
-import static java.lang.String.format;
 import static org.apache.hadoop.fs.s3a.Constants.ENDPOINT;
 
 public class S3TableSpace extends FileTablespace {
@@ -99,10 +96,6 @@ public class S3TableSpace extends FileTablespace {
         String msg = "Incorrect endpoint: "  + e.getMessage();
         LOG.error(msg);
         throw new IllegalArgumentException(msg, e);
-      }
-
-      if (!s3.doesBucketExist(uri.getHost())) {
-        throw new IOException("Bucket " + uri.getHost() + " does not exist");
       }
 
       LOG.info("Amazon3Client is initialized.");
@@ -160,5 +153,10 @@ public class S3TableSpace extends FileTablespace {
       key = key.substring(0, key.length() - 1);
     }
     return key;
+  }
+
+  @VisibleForTesting
+  public AmazonS3 getAmazonS3Client() {
+    return s3;
   }
 }
