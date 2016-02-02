@@ -22,18 +22,21 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class OutputCommitHandle {
 
   private List<Path> backupPaths;
   private List<Path> targetPaths;
-  private List<PartitionDescProto> partitions;
+  private Set<PartitionDescProto> partitions;
 
   public OutputCommitHandle() {
     backupPaths = new ArrayList<Path>();
     targetPaths = new ArrayList<Path>();
-    partitions = new ArrayList<PartitionDescProto>();
+    partitions = Collections.newSetFromMap(new ConcurrentHashMap<>());
   }
 
   public List<Path> getBackupPaths() {
@@ -60,11 +63,11 @@ public class OutputCommitHandle {
     this.targetPaths.add(path);
   }
 
-  public List<PartitionDescProto> getPartitions() {
+  public Set<PartitionDescProto> getPartitions() {
     return partitions;
   }
 
-  public void setPartitions(List<PartitionDescProto> partitions) {
+  public void setPartitions(Set<PartitionDescProto> partitions) {
     this.partitions = partitions;
   }
 
