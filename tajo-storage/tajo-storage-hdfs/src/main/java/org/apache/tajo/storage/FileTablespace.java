@@ -867,22 +867,24 @@ public class FileTablespace extends Tablespace {
         Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
         Path backupPath = new Path(partition.getPath().replaceAll(finalOutputPath, oldTablePath));
 
-        // Move existing directory to backup directory.
-        if (checkExistingPartition && fs.exists(targetPath)) {
-          renameDirectory(targetPath, backupPath);
-          commitHandle.addBackupPath(backupPath);
+        if (fs.exists(stagingPath)) {
+          // Move existing directory to backup directory.
+          if (checkExistingPartition && fs.exists(targetPath)) {
+            renameDirectory(targetPath, backupPath);
+            commitHandle.addBackupPath(backupPath);
+          }
+
+          // Move staging directory to target directory
+          renameDirectory(stagingPath, targetPath);
+          commitHandle.addTargetPath(targetPath);
+
+          // Summarize the volume of partitions
+          long totalSize = calculateSize(targetPath);
+          PartitionDescProto.Builder builder = partition.toBuilder();
+          builder.setNumBytes(totalSize);
+          PartitionDescProto partitionDescProto = builder.build();
+          commitHandle.addPartition(partitionDescProto);
         }
-
-        // Move staging directory to target directory
-        renameDirectory(stagingPath, targetPath);
-        commitHandle.addTargetPath(targetPath);
-
-        // Summarize the volume of partitions
-        long totalSize = getTotalFileSize(targetPath);
-        PartitionDescProto.Builder builder = partition.toBuilder();
-        builder.setNumBytes(totalSize);
-        PartitionDescProto partitionDescProto = builder.build();
-        commitHandle.addPartition(partitionDescProto);
       } catch (IOException e) {
         throw new ConcurrentModificationException();
       }
@@ -905,17 +907,19 @@ public class FileTablespace extends Tablespace {
         Path targetPath = new Path(partition.getPath() + "/");
         Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
 
-        if (!fs.exists(targetPath)) {
-          renameDirectory(stagingPath, targetPath);
-        } else {
-          moveResultFromStageToFinal(fs, stagingResultDir, fs.getFileStatus(stagingPath), finalOutputDir, fmt, -1,
-            changeFileSeq, commitHandle);
-        }
+        if (fs.exists(stagingPath)) {
+          if (!fs.exists(targetPath)) {
+            renameDirectory(stagingPath, targetPath);
+          } else {
+            moveResultFromStageToFinal(fs, stagingResultDir, fs.getFileStatus(stagingPath), finalOutputDir, fmt, -1,
+              changeFileSeq, commitHandle);
+          }
 
-        // Summarize the volume of partitions
-        PartitionDescProto.Builder builder = partition.toBuilder();
-        builder.setNumBytes(getTotalFileSize(targetPath));
-        commitHandle.addPartition(builder.build());
+          // Summarize the volume of partitions
+          PartitionDescProto.Builder builder = partition.toBuilder();
+          builder.setNumBytes(calculateSize(targetPath));
+          commitHandle.addPartition(builder.build());
+        }
       } catch (IOException e) {
         throw new ConcurrentModificationException();
       }
