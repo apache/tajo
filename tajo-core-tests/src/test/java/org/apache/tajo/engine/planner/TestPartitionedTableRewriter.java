@@ -35,7 +35,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.partition.PartitionContent;
+import org.apache.tajo.plan.partition.PartitionPruningHandle;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
@@ -169,19 +169,19 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    Path[] filteredPaths = partitionContent.getPartitionPaths();
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(1, filteredPaths.length);
     assertEquals("key=part456", filteredPaths[0].getName());
 
 
-    String[] partitionKeys = partitionContent.getPartitionKeys();
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(1, partitionKeys.length);
     assertEquals("key=part456", partitionKeys[0]);
 
-    assertEquals(10L, partitionContent.getTotalVolume());
+    assertEquals(10L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
@@ -206,22 +206,22 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    Path[] filteredPaths = partitionContent.getPartitionPaths();
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(3, filteredPaths.length);
     assertEquals("key=part123", filteredPaths[0].getName());
     assertEquals("key=part456", filteredPaths[1].getName());
     assertEquals("key=part789", filteredPaths[2].getName());
 
-    String[] partitionKeys = partitionContent.getPartitionKeys();
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(3, partitionKeys.length);
     assertEquals("key=part123", partitionKeys[0]);
     assertEquals("key=part456", partitionKeys[1]);
     assertEquals("key=part789", partitionKeys[2]);
 
-    assertEquals(33L, partitionContent.getTotalVolume());
+    assertEquals(33L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
@@ -248,13 +248,13 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    assertEquals(0, partitionContent.getPartitionPaths().length);
-    assertEquals(0, partitionContent.getPartitionKeys().length);
+    assertEquals(0, partitionPruningHandle.getPartitionPaths().length);
+    assertEquals(0, partitionPruningHandle.getPartitionKeys().length);
 
-    assertEquals(0L, partitionContent.getTotalVolume());
+    assertEquals(0L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
@@ -282,22 +282,22 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    Path[] filteredPaths = partitionContent.getPartitionPaths();
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(3, filteredPaths.length);
     assertEquals("key=part123", filteredPaths[0].getName());
     assertEquals("key=part456", filteredPaths[1].getName());
     assertEquals("key=part789", filteredPaths[2].getName());
 
-    String[] partitionKeys = partitionContent.getPartitionKeys();
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(3, partitionKeys.length);
     assertEquals("key=part123", partitionKeys[0]);
     assertEquals("key=part456", partitionKeys[1]);
     assertEquals("key=part789", partitionKeys[2]);
 
-    assertEquals(33L, partitionContent.getTotalVolume());
+    assertEquals(33L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
@@ -325,20 +325,20 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    Path[] filteredPaths = partitionContent.getPartitionPaths();
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(1, filteredPaths.length);
     assertEquals("key3=3", filteredPaths[0].getName());
     assertEquals("key2=supp789", filteredPaths[0].getParent().getName());
     assertEquals("key1=part789", filteredPaths[0].getParent().getParent().getName());
 
-    String[] partitionKeys = partitionContent.getPartitionKeys();
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(1, partitionKeys.length);
     assertEquals("key1=part789/key2=supp789/key3=3", partitionKeys[0]);
 
-    assertEquals(10L, partitionContent.getTotalVolume());
+    assertEquals(10L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
@@ -369,10 +369,10 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    Path[] filteredPaths = partitionContent.getPartitionPaths();
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(2, filteredPaths.length);
 
     assertEquals("key3=1", filteredPaths[0].getName());
@@ -383,12 +383,12 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key2=supp123", filteredPaths[1].getParent().getName());
     assertEquals("key1=part123", filteredPaths[1].getParent().getParent().getName());
 
-    String[] partitionKeys = partitionContent.getPartitionKeys();
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(2, partitionKeys.length);
     assertEquals("key1=part123/key2=supp123/key3=1", partitionKeys[0]);
     assertEquals("key1=part123/key2=supp123/key3=2", partitionKeys[1]);
 
-    assertEquals(23L, partitionContent.getTotalVolume());
+    assertEquals(23L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
@@ -419,10 +419,10 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    Path[] filteredPaths = partitionContent.getPartitionPaths();
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(2, filteredPaths.length);
 
     assertEquals("key3=1", filteredPaths[0].getName());
@@ -433,12 +433,12 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key2=supp123", filteredPaths[1].getParent().getName());
     assertEquals("key1=part123", filteredPaths[1].getParent().getParent().getName());
 
-    String[] partitionKeys = partitionContent.getPartitionKeys();
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(2, partitionKeys.length);
     assertEquals("key1=part123/key2=supp123/key3=1", partitionKeys[0]);
     assertEquals("key1=part123/key2=supp123/key3=2", partitionKeys[1]);
 
-    assertEquals(23L, partitionContent.getTotalVolume());
+    assertEquals(23L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
@@ -479,22 +479,22 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     rewriter.setCatalog(catalog);
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
-    PartitionContent partitionContent = rewriter.getPartitionContent(conf, scanNode);
-    assertNotNull(partitionContent);
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
 
-    Path[] filteredPaths = partitionContent.getPartitionPaths();
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(3, filteredPaths.length);
     assertEquals("key=17.0", filteredPaths[0].getName());
     assertEquals("key=36.0", filteredPaths[1].getName());
     assertEquals("key=38.0", filteredPaths[2].getName());
 
-    String[] partitionKeys = partitionContent.getPartitionKeys();
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(3, partitionKeys.length);
     assertEquals("key=17.0", partitionKeys[0]);
     assertEquals("key=36.0", partitionKeys[1]);
     assertEquals("key=38.0", partitionKeys[2]);
 
-    assertEquals(12L, partitionContent.getTotalVolume());
+    assertEquals(12L, partitionPruningHandle.getTotalVolume());
 
     executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }

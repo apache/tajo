@@ -20,12 +20,16 @@ package org.apache.tajo.plan.partition;
 
 import org.apache.hadoop.fs.Path;
 
-public class PartitionContent {
-  private final Path[] partitionPaths;
-  private final String[] partitionKeys;
-  private final long totalVolume;
+/**
+ * This includes result informs of partition pruning.
+ *
+ */
+public class PartitionPruningHandle {
+  private Path[] partitionPaths;
+  private String[] partitionKeys;
+  private long totalVolume;
 
-  public PartitionContent(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
+  public PartitionPruningHandle(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
     this.partitionPaths = partitionPaths;
     this.partitionKeys = partitionKeys;
     this.totalVolume = totalVolume;
