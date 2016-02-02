@@ -117,11 +117,11 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
   }
 
-  private PartitionPruningHandle getPartitionContent(OverridableConf queryContext, String tableName,
+  private PartitionPruningHandle getPartitionPruningHandle(OverridableConf queryContext, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
     throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, UnsupportedException {
-    return getPartitionContent(queryContext, tableName, partitionColumns, conjunctiveForms, tablePath, null);
+    return getPartitionPruningHandle(queryContext, tableName, partitionColumns, conjunctiveForms, tablePath, null);
   }
 
   /**
@@ -134,7 +134,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private PartitionPruningHandle getPartitionContent(OverridableConf queryContext, String tableName,
+  private PartitionPruningHandle getPartitionPruningHandle(OverridableConf queryContext, String tableName,
       Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath, ScanNode scanNode)
       throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException, UnsupportedException {
@@ -148,17 +148,19 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       if (conjunctiveForms == null) {
         partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
         if (partitions.isEmpty()) {
-          partitionPruningHandle = getPartitionContentByFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+          partitionPruningHandle = getPartitionPruningHandleByFileSystem(partitionColumns, conjunctiveForms, fs,
+              tablePath);
         } else {
-          partitionPruningHandle = getPartitionContentByPartitionDesc(partitions);
+          partitionPruningHandle = getPartitionPruningHandleByCatalog(partitions);
         }
       } else {
         if (catalog.existPartitions(splits[0], splits[1])) {
           PartitionsByAlgebraProto request = getPartitionsAlgebraProto(splits[0], splits[1], conjunctiveForms);
           partitions = catalog.getPartitionsByAlgebra(request);
-          partitionPruningHandle = getPartitionContentByPartitionDesc(partitions);
+          partitionPruningHandle = getPartitionPruningHandleByCatalog(partitions);
         } else {
-          partitionPruningHandle = getPartitionContentByFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+          partitionPruningHandle = getPartitionPruningHandleByFileSystem(partitionColumns, conjunctiveForms, fs,
+              tablePath);
         }
       }
     } catch (UnsupportedException ue) {
@@ -167,9 +169,10 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       LOG.warn(ue.getMessage());
       partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
       if (partitions.isEmpty()) {
-        partitionPruningHandle = getPartitionContentByFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+        partitionPruningHandle = getPartitionPruningHandleByFileSystem(partitionColumns, conjunctiveForms, fs,
+          tablePath);
       } else {
-        partitionPruningHandle = getPartitionContentByPartitionDesc(partitions);
+        partitionPruningHandle = getPartitionPruningHandleByCatalog(partitions);
       }
       scanNode.setQual(AlgebraicUtil.createSingletonExprFromCNF(conjunctiveForms));
     }
@@ -185,7 +188,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param partitions
    * @return
    */
-  private PartitionPruningHandle getPartitionContentByPartitionDesc(List<PartitionDescProto> partitions) {
+  private PartitionPruningHandle getPartitionPruningHandleByCatalog(List<PartitionDescProto> partitions) {
     long totalVolume = 0L;
     Path[] filteredPaths = new Path[partitions.size()];
     String[] partitionKeys = new String[partitions.size()];
@@ -209,8 +212,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private PartitionPruningHandle getPartitionContentByFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
-                                                  FileSystem fs, Path tablePath) throws IOException{
+  private PartitionPruningHandle getPartitionPruningHandleByFileSystem(Schema partitionColumns, 
+    EvalNode [] conjunctiveForms, FileSystem fs, Path tablePath) throws IOException{
     Path [] filteredPaths = null;
     PathFilter [] filters;
     int startIdx;
@@ -395,10 +398,11 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
-      return getPartitionContent(queryContext, table.getName(), paritionValuesSchema,
+      return getPartitionPruningHandle(queryContext, table.getName(), paritionValuesSchema,
         indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()), scanNode);
     } else { // otherwise, we will get all partition paths.
-      return getPartitionContent(queryContext, table.getName(), paritionValuesSchema, null, new Path(table.getUri()));
+      return getPartitionPruningHandle(queryContext, table.getName(), paritionValuesSchema, null,
+        new Path(table.getUri()));
     }
   }
 
