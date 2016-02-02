@@ -854,7 +854,7 @@ public class FileTablespace extends Tablespace {
     String finalOutputPath = finalOutputDir.toString();
     String oldTablePath = oldTableDir.toString();
 
-    partitions.stream().forEach(partition -> {
+    partitions.parallelStream().forEach(partition -> {
       try {
         Path targetPath = new Path(partition.getPath() + "/");
         Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
@@ -893,7 +893,7 @@ public class FileTablespace extends Tablespace {
     fmt.setGroupingUsed(false);
     fmt.setMinimumIntegerDigits(3);
 
-    partitions.stream().forEach(partition -> {
+    partitions.parallelStream().forEach(partition -> {
       try {
         Path targetPath = new Path(partition.getPath() + "/");
         Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
