@@ -501,34 +501,40 @@ public class Query implements EventHandler<QueryEvent> {
         // In this case, we should use default tablespace.
         Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
 
-        List<PartitionDescProto> partitions = queryContext.hasPartition() ? query.getPartitions() : null;
         Path finalOutputDir = space.commitTable(
-          query.context.getQueryContext(),
-          lastStage.getId(),
-          lastStage.getMasterPlan().getLogicalPlan(),
-          lastStage.getSchema(),
-          tableDesc,
-          partitions);
+            query.context.getQueryContext(),
+            lastStage.getId(),
+            lastStage.getMasterPlan().getLogicalPlan(),
+            lastStage.getSchema(),
+            tableDesc);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
         // Add dynamic partitions to catalog for partition table.
-        if (!query.getPartitions().isEmpty()) {
-          String databaseName, simpleTableName;
+        if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
+          List<PartitionDescProto> partitions = query.getPartitions();
+          if (partitions != null) {
+            // Set contents length and file count to PartitionDescProto by listing final output directories.
+            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
+              finalOutputDir, partitions);
 
-          if (CatalogUtil.isFQTableName(tableDesc.getName())) {
-            String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
-            databaseName = split[0];
-            simpleTableName = split[1];
+            String databaseName, simpleTableName;
+            if (CatalogUtil.isFQTableName(tableDesc.getName())) {
+              String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
+              databaseName = split[0];
+              simpleTableName = split[1];
+            } else {
+              databaseName = queryContext.getCurrentDatabase();
+              simpleTableName = tableDesc.getName();
+            }
+
+            // Store partitions to CatalogStore using alter table statement.
+            catalog.addPartitions(databaseName, simpleTableName, finalPartitions, true);
+            LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
           } else {
-            databaseName = queryContext.getCurrentDatabase();
-            simpleTableName = tableDesc.getName();
+            LOG.info("Can't find partitions for adding.");
           }
-
-          // Store partitions to CatalogStore using alter table statement.
-          catalog.addPartitions(databaseName, simpleTableName, partitions, true);
-          LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
           query.clearPartitions();
         }
       } catch (Throwable e) {
@@ -539,6 +545,21 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       return QueryState.QUERY_SUCCEEDED;
+    }
+
+    private List<PartitionDescProto> getPartitionsWithContentsSummary(TajoConf conf, Path outputDir,
+        List<PartitionDescProto> partitions) throws IOException {
+      List<PartitionDescProto> finalPartitions = new ArrayList<>();
+
+      FileSystem fileSystem = outputDir.getFileSystem(conf);
+      for (PartitionDescProto partition : partitions) {
+        PartitionDescProto.Builder builder = partition.toBuilder();
+        Path partitionPath = new Path(outputDir, partition.getPath());
+        ContentSummary contentSummary = fileSystem.getContentSummary(partitionPath);
+        builder.setNumBytes(contentSummary.getLength());
+        finalPartitions.add(builder.build());
+      }
+      return finalPartitions;
     }
 
     private static interface QueryHook {
@@ -675,14 +696,7 @@ public class Query implements EventHandler<QueryEvent> {
           tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
         }
 
-        long totalVolume = 0L;
-        if (!query.getPartitions().isEmpty()) {
-          totalVolume = query.getPartitions().stream().mapToLong(partition -> partition.getNumBytes()).sum();
-        } else {
-          totalVolume = getTableVolume(queryContext, tableDescTobeCreated);
-        }
-
-        stats.setNumBytes(totalVolume);
+        stats.setNumBytes(getTableVolume(queryContext, tableDescTobeCreated));
         tableDescTobeCreated.setStats(stats);
         query.setResultDesc(tableDescTobeCreated);
 
@@ -721,7 +735,6 @@ public class Query implements EventHandler<QueryEvent> {
         }
 
         long totalVolume = getTableVolume(queryContext, finalTable);
-
         stats.setNumBytes(totalVolume);
         finalTable.setStats(stats);
 
@@ -740,7 +753,6 @@ public class Query implements EventHandler<QueryEvent> {
 
   public static long getTableVolume(QueryContext queryContext, TableDesc tableDesc) throws UnsupportedException {
     Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
-
     return space.getTableVolume(tableDesc, Optional.empty());
   }
 

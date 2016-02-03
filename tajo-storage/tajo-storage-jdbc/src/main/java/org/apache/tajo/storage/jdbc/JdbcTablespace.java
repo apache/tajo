@@ -27,7 +27,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -179,7 +178,7 @@ public abstract class JdbcTablespace extends Tablespace {
 
   @Override
   public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan, Schema schema,
-                          TableDesc tableDesc, List<PartitionDescProto> partitions) throws IOException {
+                          TableDesc tableDesc) throws IOException {
     throw new TajoRuntimeException(new NotImplementedException());
   }
 

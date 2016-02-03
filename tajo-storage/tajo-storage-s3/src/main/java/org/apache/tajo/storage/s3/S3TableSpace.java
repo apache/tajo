@@ -129,7 +129,7 @@ public class S3TableSpace extends FileTablespace {
   }
 
   @Override
-  protected long getTotalFileSize(Path path) throws IOException {
+  public long calculateSize(Path path) throws IOException {
     String key = keyFromPath(path);
     if (!key.isEmpty()) {
       key += "/";
