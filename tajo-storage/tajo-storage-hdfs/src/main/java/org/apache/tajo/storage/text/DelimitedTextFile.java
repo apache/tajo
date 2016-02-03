@@ -268,7 +268,7 @@ public class DelimitedTextFile {
 
     private final long endOffset;
     /** The number of actual read records */
-    private int recordCount = 0;
+    private long recordCount = 0;
 
     private DelimitedLineReader reader;
     private TextLineDeserializer deserializer;
