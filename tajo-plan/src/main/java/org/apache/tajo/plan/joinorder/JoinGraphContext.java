@@ -47,12 +47,12 @@ public class JoinGraphContext {
   }
 
   public void addCandidateJoinConditions(Collection<EvalNode> candidates) {
-    candidates.parallelStream().filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate))
+    candidates.stream().filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate))
       .forEach(candidateJoinConditions::add);
   }
 
   public void addCandidateJoinFilters(Collection<EvalNode> candidates) {
-    candidates.parallelStream().filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate))
+    candidates.stream().filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate))
       .forEach(candidateJoinFilters::add);
   }
 

@@ -1989,7 +1989,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     // serialize the types
     writeTypes(builder, schema);
     // add the stripe information
-    stripes.parallelStream().forEach(builder::addStripes);
+    stripes.forEach(builder::addStripes);
     // add the column statistics
     writeFileStatistics(builder, treeWriter);
     // add all of the user metadata

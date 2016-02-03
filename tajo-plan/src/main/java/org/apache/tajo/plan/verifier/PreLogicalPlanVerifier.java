@@ -86,7 +86,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
     Set<String> names = new HashSet<>();
 
-    expr.getNamedExprs().parallelStream().filter(namedExpr -> namedExpr.hasAlias()).forEach(namedExpr -> {
+    expr.getNamedExprs().stream().filter(namedExpr -> namedExpr.hasAlias()).forEach(namedExpr -> {
       if (names.contains(namedExpr.getAlias())) {
         context.state.addVerification(SyntaxErrorUtil.makeDuplicateAlias(namedExpr.getAlias()));
       } else {

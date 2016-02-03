@@ -243,7 +243,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           }
         } else {
           List<ScanNode> relations = new ArrayList<>(current.getBroadcastRelations());
-          relations.parallelStream().forEach(current::removeBroadcastRelation);
+          relations.forEach(current::removeBroadcastRelation);
         }
       }
     }
