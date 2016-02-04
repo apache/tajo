@@ -19,6 +19,8 @@
 package org.apache.tajo.storage.pgsql;
 
 import net.minidev.json.JSONObject;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -73,4 +75,11 @@ public class PgSQLTablespace extends JdbcTablespace {
   public int hashCode() {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public long calculateSize(Path path) throws IOException {
+    FileSystem fs = path.getFileSystem(conf);
+    return fs.getContentSummary(path).getLength();
+  }
+
 }

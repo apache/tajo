@@ -245,6 +245,7 @@ public class FileTablespace extends Tablespace {
     return tablets;
   }
 
+  @Override
   public long calculateSize(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     long totalSize = 0;

@@ -515,8 +515,8 @@ public class Query implements EventHandler<QueryEvent> {
         if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
           List<PartitionDescProto> partitions = query.getPartitions();
           if (partitions != null) {
-            // Set contents length and file count to PartitionDescProto by listing final output directories.
-            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
+            // Find each partition volume by listing all partitions.
+            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(queryContext,
               finalOutputDir, partitions);
 
             String databaseName, simpleTableName;
@@ -547,16 +547,14 @@ public class Query implements EventHandler<QueryEvent> {
       return QueryState.QUERY_SUCCEEDED;
     }
 
-    private List<PartitionDescProto> getPartitionsWithContentsSummary(TajoConf conf, Path outputDir,
-        List<PartitionDescProto> partitions) throws IOException {
+    private List<PartitionDescProto> getPartitionsWithContentsSummary(QueryContext queryContext,
+        Path outputDir, List<PartitionDescProto> partitions) throws IOException {
       List<PartitionDescProto> finalPartitions = new ArrayList<>();
 
-      FileSystem fileSystem = outputDir.getFileSystem(conf);
       for (PartitionDescProto partition : partitions) {
         PartitionDescProto.Builder builder = partition.toBuilder();
         Path partitionPath = new Path(outputDir, partition.getPath());
-        ContentSummary contentSummary = fileSystem.getContentSummary(partitionPath);
-        builder.setNumBytes(contentSummary.getLength());
+        builder.setNumBytes(calculateSize(queryContext, partitionPath));
         finalPartitions.add(builder.build());
       }
       return finalPartitions;
@@ -659,7 +657,7 @@ public class Query implements EventHandler<QueryEvent> {
                 finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
 
-        stats.setNumBytes(getTableVolume(queryContext, resultTableDesc));
+        stats.setNumBytes(calculateSize(queryContext, finalOutputDir));
         resultTableDesc.setStats(stats);
         query.setResultDesc(resultTableDesc);
       }
@@ -696,7 +694,7 @@ public class Query implements EventHandler<QueryEvent> {
           tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
         }
 
-        stats.setNumBytes(getTableVolume(queryContext, tableDescTobeCreated));
+        stats.setNumBytes(calculateSize(queryContext, finalOutputDir));
         tableDescTobeCreated.setStats(stats);
         query.setResultDesc(tableDescTobeCreated);
 
@@ -734,7 +732,7 @@ public class Query implements EventHandler<QueryEvent> {
           finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir.toUri());
         }
 
-        long totalVolume = getTableVolume(queryContext, finalTable);
+        long totalVolume = calculateSize(queryContext, finalOutputDir);
         stats.setNumBytes(totalVolume);
         finalTable.setStats(stats);
 
@@ -751,9 +749,9 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  public static long getTableVolume(QueryContext queryContext, TableDesc tableDesc) throws UnsupportedException {
+  public static long calculateSize(QueryContext queryContext, Path path) throws IOException {
     Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
-    return space.getTableVolume(tableDesc, Optional.empty());
+    return space.calculateSize(path);
   }
 
   public static class StageCompletedTransition implements SingleArcTransition<Query, QueryEvent> {
