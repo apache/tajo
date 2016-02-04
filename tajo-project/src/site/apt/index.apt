@@ -61,6 +61,8 @@ Features
 
 Releases
 
+  * <<[2016-02-03]>> {{{./downloads.html}Tajo 0.11.1}} ({{{./releases/0.11.1/announcement.html}Announcement}}, {{{./releases/0.11.1/relnotes.html}Release Notes}})
+
   * <<[2015-10-27]>> {{{./downloads.html}Tajo 0.11.0}} ({{{./releases/0.11.0/announcement.html}Announcement}}, {{{./releases/0.11.0/relnotes.html}Release Notes}})
 
   * <<[2015-06-29]>> {{{./downloads.html}Tajo 0.10.1}} ({{{./releases/0.10.1/announcement.html}Announcement}}, {{{./releases/0.10.1/relnotes.html}Release Notes}})
@@ -74,6 +76,8 @@ Releases
   * <<[2013-11-20]>> {{{./downloads.html}Tajo 0.2.0-incubating}} ({{{http://s.apache.org/tajo-0.2-release-notes}Release Notes}})
 
 News
+
+  * <<[2016-02-03]>> Tajo 0.11.1 released.
 
   * <<[2015-10-27]>> Tajo 0.11.0 released.
 
