@@ -6,6 +6,11 @@ Release 0.11.2 - unreleased
 
     TAJO-2070: Remove unnecessarily version property in maven pom. (jinho)
 
+  BUG FIXES
+
+    TAJO-858: Support for hadoop kerberos authentication in Tajo.
+    (Min Zhou via jinho)
+
 
 Release 0.11.1 - released
 
