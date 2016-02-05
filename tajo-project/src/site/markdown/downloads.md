@@ -21,7 +21,7 @@
 ### Latest Release 0.11.1 (Feb 3, 2016)
  * [Announcement] (releases/0.11.1/announcement.html)
  * [Release Notes] (releases/0.11.1/relnotes.html)
- * [User Documentation] (http://tajo.apache.org/docs/0.11.0/index.html)
+ * [User Documentation] (http://tajo.apache.org/docs/0.11.1/index.html)
  * Source: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz' id='tajo-0.11.1-src'>tajo-0.11.1-src.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
  * Binary Tarball: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz' id='tajo-0.11.1-bin'>tajo-0.11.1.tar.gz</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-0.11.1.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
  * JDBC Driver: <a href='http://apache.org/dyn/closer.cgi/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar' id='tajo-jdbc-0.11.1'>tajo-jdbc-0.11.1.jar</a> ([MD5](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.sha512)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.11.1/tajo-jdbc-0.11.1.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
