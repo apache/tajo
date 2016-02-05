@@ -674,13 +674,7 @@ public class Query implements EventHandler<QueryEvent> {
           tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
         }
 
-        long totalVolume = 0L;
-        if (!query.getPartitions().isEmpty()) {
-          totalVolume = query.getPartitions().stream().mapToLong(partition -> partition.getNumBytes()).sum();
-        } else {
-          totalVolume = getTableVolume(query.systemConf, finalOutputDir);
-        }
-
+        long totalVolume = getTableVolume(query.systemConf, finalOutputDir);
         stats.setNumBytes(totalVolume);
         tableDescTobeCreated.setStats(stats);
         query.setResultDesc(tableDescTobeCreated);
