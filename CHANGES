@@ -1,6 +1,13 @@
 Tajo Change Log 
 
-Release 0.11.1 - unreleased
+Release 0.11.2 - unreleased
+
+  TASKS
+
+    TAJO-2070: Remove unnecessarily version property in maven pom. (jinho)
+
+
+Release 0.11.1 - released
 
   NEW FEATURES
 
