@@ -42,7 +42,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.s3.S3Credentials;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.FileTablespace;
 
@@ -50,13 +49,14 @@ import net.minidev.json.JSONObject;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.nullToEmpty;
-import static org.apache.hadoop.fs.s3a.Constants.ENDPOINT;
 
 public class S3TableSpace extends FileTablespace {
   private final Log LOG = LogFactory.getLog(S3TableSpace.class);
 
   private AmazonS3 s3;
   private boolean useInstanceCredentials;
+  //use a custom endpoint?
+  public static final String ENDPOINT = "fs.s3a.endpoint";
 
   public S3TableSpace(String spaceName, URI uri, JSONObject config) {
     super(spaceName, uri, config);
@@ -123,7 +123,7 @@ public class S3TableSpace extends FileTablespace {
   }
 
   private static AWSCredentials getAwsCredentials(URI uri, Configuration conf) {
-    S3Credentials credentials = new S3Credentials();
+    TajoS3Credentials credentials = new TajoS3Credentials();
     credentials.initialize(uri, conf);
     return new BasicAWSCredentials(credentials.getAccessKey(), credentials.getSecretAccessKey());
   }
