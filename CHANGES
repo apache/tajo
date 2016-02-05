@@ -104,6 +104,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-858: Support for hadoop kerberos authentication in Tajo.
+    (Min Zhou via jinho)
+
     TAJO-2066: Fix TestJoinOnPartitionedTables.testPartialFilterPushDown failure.
     (jinho)
 
