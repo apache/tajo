@@ -8,6 +8,9 @@ Release 0.11.2 - unreleased
 
   BUG FIXES
 
+    TAJO-2072: The constructor of RegionSizeCalculator changes for HBase 1.0.0
+    compatibility. (Byunghwa Yun via jinho)
+
     TAJO-858: Support for hadoop kerberos authentication in Tajo.
     (Min Zhou via jinho)
 
