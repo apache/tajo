@@ -591,4 +591,5 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       return null;
     }
   }
+
 }
