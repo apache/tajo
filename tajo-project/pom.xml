@@ -35,7 +35,6 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <hadoop.version>2.7.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
-    <tajo.version>0.12.0-SNAPSHOT</tajo.version>
     <hbase.version>1.1.1</hbase.version>
     <hive.version>1.1.0</hive.version>
     <netty.version>4.0.33.Final</netty.version>
@@ -627,7 +626,7 @@
         <plugin>
           <groupId>org.apache.tajo</groupId>
           <artifactId>tajo-maven-plugins</artifactId>
-          <version>${tajo.version}</version>
+          <version>${project.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -744,162 +743,162 @@
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-common</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>jar</type>
         <scope>compile</scope>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-catalog</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>pom</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-catalog-common</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-catalog-client</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-catalog-server</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-core</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-core-tests</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>test-jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-plan</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>pom</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage-common</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage-hdfs</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage-hbase</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-sql-parser</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage-jdbc</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage-jdbc</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>test-jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-pullserver</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-client</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-client-example</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-cli</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-jdbc</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-rpc</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-rpc-common</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-rpc-protobuf</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-ws-rs</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-algebra</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-algebra</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>test-jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-thirdparty-asm</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-metrics</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-cluster-tests</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>jar</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-cluster-tests</artifactId>
-        <version>${tajo.version}</version>
+        <version>${project.version}</version>
         <type>test-jar</type>
       </dependency>
 
