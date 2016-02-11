@@ -18,7 +18,7 @@
 
 package org.apache.tajo.cli.tsql;
 
-import org.apache.commons.io.output.NullOutputStream;
+import com.google.common.io.NullOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
