@@ -268,7 +268,7 @@ public class LogicalPlan {
   public void removeBlock(QueryBlock block) {
     queryBlocks.remove(block.getName());
     List<Integer> tobeRemoved = queryBlockByPID.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList());
-    tobeRemoved.parallelStream().forEach(rn -> queryBlockByPID.remove(rn));
+    tobeRemoved.forEach(rn -> queryBlockByPID.remove(rn));
   }
 
   public void disconnectBlocks(QueryBlock srcBlock, QueryBlock targetBlock) {

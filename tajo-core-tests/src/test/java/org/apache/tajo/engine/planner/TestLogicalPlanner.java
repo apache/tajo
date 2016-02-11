@@ -526,7 +526,7 @@ public class TestLogicalPlanner {
       }
     }
 
-    qualMap.entrySet().parallelStream().filter(entry -> !entry.getValue()).forEach(entry -> {
+    qualMap.entrySet().stream().filter(entry -> !entry.getValue()).forEach(entry -> {
       Preconditions.checkArgument(false,
         "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
     });
@@ -564,7 +564,7 @@ public class TestLogicalPlanner {
       }
     }
 
-    qualMap.entrySet().parallelStream().filter(entry -> !entry.getValue()).forEach(entry -> {
+    qualMap.entrySet().stream().filter(entry -> !entry.getValue()).forEach(entry -> {
       Preconditions.checkArgument(false,
         "SelectionQual not found. -> required JoinQual:" + entry.getKey().toJson());
     });
@@ -607,7 +607,7 @@ public class TestLogicalPlanner {
       }
     }
 
-    qualMap.entrySet().parallelStream().filter(entry -> !entry.getValue()).forEach(entry -> {
+    qualMap.entrySet().stream().filter(entry -> !entry.getValue()).forEach(entry -> {
       Preconditions.checkArgument(false,
         "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
     });
@@ -674,12 +674,12 @@ public class TestLogicalPlanner {
     }
 
 
-    joinQualMap.entrySet().parallelStream().filter(entry -> !entry.getValue()).forEach(entry -> {
+    joinQualMap.entrySet().stream().filter(entry -> !entry.getValue()).forEach(entry -> {
       Preconditions.checkArgument(false,
         "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
     });
 
-    scanMap.entrySet().parallelStream().filter(entry -> !entry.getValue()).forEach(entry -> {
+    scanMap.entrySet().stream().filter(entry -> !entry.getValue()).forEach(entry -> {
       Preconditions.checkArgument(false,
         "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
     });

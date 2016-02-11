@@ -974,7 +974,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
     }
 
-    matched.parallelStream().forEach(transformed::remove);
+    matched.forEach(transformed::remove);
 
     context.setToOrigin(transformed);
     context.addFiltersTobePushed(notMatched);

@@ -261,7 +261,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       listIndex++;
     }
 
-    tupleSlots.parallelStream().forEach(TupleList::clear);
+    tupleSlots.forEach(TupleList::clear);
     tupleSlots.clear();
 
     currentAggregatedTupleIndex = 0;
