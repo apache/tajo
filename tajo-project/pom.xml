@@ -1100,12 +1100,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>18.0</version>
-      </dependency>
-      <dependency>
-        <groupId>com.google.code.findbugs</groupId>
-        <artifactId>jsr305</artifactId>
-        <version>3.0.1</version>
+        <version>11.0.2</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>

@@ -36,7 +36,6 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <parquet.version>1.5.0</parquet.version>
     <parquet.format.version>2.1.0</parquet.format.version>
-    <joda-time.version>2.8.1</joda-time.version>
   </properties>
 
   <repositories>
@@ -360,17 +359,6 @@
       <groupId>com.facebook.presto</groupId>
       <artifactId>presto-orc</artifactId>
       <version>0.132</version>
-      <exclusions>
-        <exclusion>
-          <groupId>joda-time</groupId>
-          <artifactId>joda-time</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time</artifactId>
-      <version>${joda-time.version}</version>
     </dependency>
   </dependencies>
 

@@ -69,7 +69,7 @@ public class Inet4Datum extends Datum {
 
 	@Override
 	public long asInt8() {
-	  return UnsignedInteger.fromIntBits(address).longValue();
+	  return UnsignedInteger.asUnsigned(address).longValue();
 	}
 
 	@Override
