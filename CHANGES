@@ -104,6 +104,12 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2072: The constructor of RegionSizeCalculator changes for HBase 1.0.0 
+    compatibility. (Byunghwa Yun via jinho)
+
+    TAJO-858: Support for hadoop kerberos authentication in Tajo.
+    (Min Zhou via jinho)
+
     TAJO-2066: Fix TestJoinOnPartitionedTables.testPartialFilterPushDown failure.
     (jinho)
 
@@ -183,6 +189,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2070: Remove unnecessarily version property in maven pom. (jinho)
 
     TAJO-2065: Increase default heap size. (jinho)
 
