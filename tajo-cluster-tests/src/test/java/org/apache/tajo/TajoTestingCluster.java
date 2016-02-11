@@ -715,7 +715,7 @@ public class TajoTestingCluster {
         writer.write('\n');
       }
     } finally {
-      Closeables.closeQuietly(writer);
+      writer.close();
     }
   }
 
