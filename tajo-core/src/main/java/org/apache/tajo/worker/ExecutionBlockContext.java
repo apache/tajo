@@ -187,7 +187,7 @@ public class ExecutionBlockContext {
     }
 
     // If ExecutionBlock is stopped, all running or pending tasks will be marked as failed.
-    tasks.values().parallelStream().filter(task -> task.getTaskContext().getState() == TajoProtos.TaskAttemptState.TA_PENDING ||
+    tasks.values().stream().filter(task -> task.getTaskContext().getState() == TajoProtos.TaskAttemptState.TA_PENDING ||
       task.getTaskContext().getState() == TajoProtos.TaskAttemptState.TA_RUNNING).forEach(task -> {
       try {
         task.abort();

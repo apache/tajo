@@ -95,7 +95,7 @@ public class OldStorageManager {
    */
   public static void shutdown() throws IOException {
     synchronized(storageManagers) {
-      storageManagers.values().parallelStream().forEach(Tablespace::close);
+      storageManagers.values().forEach(Tablespace::close);
     }
     clearCache();
   }

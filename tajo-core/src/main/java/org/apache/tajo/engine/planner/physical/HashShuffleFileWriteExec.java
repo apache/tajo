@@ -234,7 +234,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   @Override
   public void close() throws IOException{
     if (partitionMemoryMap.size() > 0) {
-      partitionMemoryMap.values().parallelStream().forEach(RowBlock::release);
+      partitionMemoryMap.values().forEach(RowBlock::release);
       partitionMemoryMap.clear();
     }
 

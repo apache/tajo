@@ -646,7 +646,7 @@ public class XMLCatalogSchemaManager {
     }
     
     protected void validateSQLObject(List<SQLObject> queries, SQLObject testQuery) {
-      int occurredCount = (int) queries.parallelStream().filter(query -> query.getType() == testQuery.getType()).count();
+      int occurredCount = (int) queries.stream().filter(query -> query.getType() == testQuery.getType()).count();
       
       if (occurredCount > 1) {
         throw new TajoInternalError("Duplicate Query type (" + testQuery.getType() + ") has found.");

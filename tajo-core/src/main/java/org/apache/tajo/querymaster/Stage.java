@@ -494,7 +494,7 @@ public class Stage implements EventHandler<StageEvent> {
     }
 
     Set<Integer> partitions = Sets.newHashSet();
-    getHashShuffleIntermediateEntries().stream().forEach(entry -> partitions.add(entry.getPartId()));
+    getHashShuffleIntermediateEntries().forEach(entry -> partitions.add(entry.getPartId()));
 
     stageHistory.setTotalInputBytes(totalInputBytes);
     stageHistory.setTotalReadBytes(totalReadBytes);

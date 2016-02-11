@@ -41,7 +41,7 @@ class CliClientParamsFactory {
 
   public static Properties get(@Nullable Properties connParam) {
     Properties copy = connParam == null ? new Properties() : (Properties) connParam.clone();
-    DEFAULT_PARAMS.entrySet().parallelStream().filter(entry -> !copy.contains(entry.getKey())).forEach(entry -> {
+    DEFAULT_PARAMS.entrySet().stream().filter(entry -> !copy.contains(entry.getKey())).forEach(entry -> {
       copy.setProperty(entry.getKey(), entry.getValue());
     });
     return copy;

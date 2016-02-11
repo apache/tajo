@@ -438,7 +438,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     public void close() throws IOException {
-      hashTable.values().parallelStream().forEach(TupleMap<FunctionContext[]>::clear);
+      hashTable.values().forEach(TupleMap<FunctionContext[]>::clear);
       hashTable.clear();
       hashTable = null;
       iterator = null;

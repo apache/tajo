@@ -91,7 +91,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
   @Override
   protected void serviceStop() throws Exception {
 
-    executionBlockContextMap.values().parallelStream().forEach(ExecutionBlockContext::stop);
+    executionBlockContextMap.values().forEach(ExecutionBlockContext::stop);
     super.serviceStop();
   }
 
@@ -214,7 +214,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
         QueryStopEvent queryStopEvent = TUtil.checkTypeAndGet(event, QueryStopEvent.class);
 
         //cleanup failure ExecutionBlock
-        executionBlockContextMap.keySet().parallelStream()
+        executionBlockContextMap.keySet().stream()
           .filter(ebId -> ebId.getQueryId().equals(queryStopEvent.getQueryId())).forEach(ebId -> {
           try {
             executionBlockContextMap.remove(ebId).stop();

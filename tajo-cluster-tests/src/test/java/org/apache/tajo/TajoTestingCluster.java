@@ -471,7 +471,7 @@ public class TajoTestingCluster {
     if(this.tajoMaster != null) {
       this.tajoMaster.stop();
     }
-    tajoWorkers.parallelStream().forEach(TajoWorker::stopWorkerForce);
+    tajoWorkers.forEach(TajoWorker::stopWorkerForce);
     tajoWorkers.clear();
     this.tajoMaster= null;
   }

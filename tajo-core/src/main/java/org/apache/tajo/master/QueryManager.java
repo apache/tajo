@@ -95,7 +95,7 @@ public class QueryManager extends CompositeService {
 
   @Override
   public void serviceStop() throws Exception {
-    runningQueries.values().parallelStream().forEach(QueryInProgress::stopProgress);
+    runningQueries.values().forEach(QueryInProgress::stopProgress);
 
     super.serviceStop();
   }
