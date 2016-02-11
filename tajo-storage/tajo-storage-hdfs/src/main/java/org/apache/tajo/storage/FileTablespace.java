@@ -128,14 +128,15 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
-    Path path = new Path(table.getUri());
-    ContentSummary summary;
-    try {
-      summary = fs.getContentSummary(path);
-    } catch (IOException e) {
-      throw new TajoInternalError(e);
-    }
-    return summary.getLength();
+//    Path path = new Path(table.getUri());
+//    ContentSummary summary;
+//    try {
+//      summary = fs.getContentSummary(path);
+//    } catch (IOException e) {
+//      throw new TajoInternalError(e);
+//    }
+//    return summary.getLength();
+    return -1L;
   }
 
   @Override
@@ -248,14 +249,15 @@ public class FileTablespace extends Tablespace {
   }
 
   public long calculateSize(Path tablePath) throws IOException {
-    FileSystem fs = tablePath.getFileSystem(conf);
-    long totalSize = 0;
-
-    if (fs.exists(tablePath)) {
-      totalSize = fs.getContentSummary(tablePath).getLength();
-    }
-
-    return totalSize;
+//    FileSystem fs = tablePath.getFileSystem(conf);
+//    long totalSize = 0;
+//
+//    if (fs.exists(tablePath)) {
+//      totalSize = fs.getContentSummary(tablePath).getLength();
+//    }
+//
+//    return totalSize;
+    return -1L;
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -867,7 +869,7 @@ public class FileTablespace extends Tablespace {
         }
 
         // Move staging directory to target directory
-        renameDirectory(stagingPath, targetPath);
+        commitTask(stagingPath, targetPath);
         commitHandle.addTargetPath(targetPath);
 
         // Summarize the volume of partitions
@@ -899,7 +901,7 @@ public class FileTablespace extends Tablespace {
         Path stagingPath = new Path(partition.getPath().replaceAll(finalOutputPath, stagingResultPath) + "/");
 
         if (!fs.exists(targetPath)) {
-          renameDirectory(stagingPath, targetPath);
+          commitTask(stagingPath, targetPath);
         } else {
           moveResultFromStageToFinal(fs, stagingResultDir, fs.getFileStatus(stagingPath), finalOutputDir, fmt, -1,
             changeFileSeq, commitHandle);
@@ -964,7 +966,7 @@ public class FileTablespace extends Tablespace {
 
       // Move the results to the final output dir.
       for (FileStatus status : fs.listStatus(stagingResultDir)) {
-        fs.rename(status.getPath(), finalOutputDir);
+        commitTask(status.getPath(), finalOutputDir);
       }
 
       // Check the final output dir
@@ -1005,10 +1007,10 @@ public class FileTablespace extends Tablespace {
   private void commitCreate(Path stagingResultDir, Path finalOutputDir) throws IOException {
     if (fs.exists(finalOutputDir)) {
       for (FileStatus status : fs.listStatus(stagingResultDir)) {
-        fs.rename(status.getPath(), finalOutputDir);
+        commitTask(status.getPath(), finalOutputDir);
       }
     } else {
-      fs.rename(stagingResultDir, finalOutputDir);
+      commitTask(stagingResultDir, finalOutputDir);
     }
     LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
   }
@@ -1073,7 +1075,7 @@ public class FileTablespace extends Tablespace {
         if (fs.exists(finalSubPath)) {
           throw new IOException("Already exists data file:" + finalSubPath);
         }
-        boolean success = fs.rename(fileStatus.getPath(), finalSubPath);
+        boolean success = commitTask(fileStatus.getPath(), finalSubPath);
         if (success) {
           LOG.info("Moving staging file[" + fileStatus.getPath() + "] + " +
               "to final output[" + finalSubPath + "]");
@@ -1182,5 +1184,14 @@ public class FileTablespace extends Tablespace {
 
   protected boolean rename(Path sourcePath, Path targetPath) throws IOException {
     return fs.rename(sourcePath, targetPath);
+  }
+
+  protected boolean commitTask(Path sourcePath, Path targetPath) throws IOException {
+    try {
+      renameDirectory(sourcePath, targetPath);
+      return true;
+    } catch (IOException e) {
+      throw new IOException("Failed to commit Task - source:" + sourcePath + ", target:" + targetPath, e);
+    }
   }
 }

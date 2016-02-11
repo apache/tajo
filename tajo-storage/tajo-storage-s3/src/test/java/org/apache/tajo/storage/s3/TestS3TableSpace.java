@@ -19,8 +19,17 @@
 package org.apache.tajo.storage.s3;
 
 import net.minidev.json.JSONObject;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.QueryVars;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TajoIdUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,6 +38,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestS3TableSpace {
@@ -59,4 +69,20 @@ public class TestS3TableSpace {
     assertTrue((TablespaceManager.get(S3_URI)) instanceof S3TableSpace);
     assertEquals(S3_URI, TablespaceManager.get(S3_URI).getUri().toASCIIString());
   }
+
+  @Test
+  public void testGetStagingUri() throws Exception {
+    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
+    QueryId queryId = QueryIdFactory.newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0));
+    conf.put(QueryVars.OUTPUT_TABLE_URI, S3_URI + "tajo/warehouse/test1");
+
+    S3TableSpace tableSpace = TablespaceManager.get(S3_URI);
+    assertNotNull(tableSpace);
+
+    URI stagingUri = tableSpace.getStagingUri(conf, queryId.getId(), meta);
+    assertEquals(stagingUri.getScheme(), "file");
+    assertTrue(stagingUri.toString().startsWith("file:///tmp/tajo"));
+  }
+
 }
