@@ -128,15 +128,14 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
-//    Path path = new Path(table.getUri());
-//    ContentSummary summary;
-//    try {
-//      summary = fs.getContentSummary(path);
-//    } catch (IOException e) {
-//      throw new TajoInternalError(e);
-//    }
-//    return summary.getLength();
-    return -1L;
+    Path path = new Path(table.getUri());
+    ContentSummary summary;
+    try {
+      summary = fs.getContentSummary(path);
+    } catch (IOException e) {
+      throw new TajoInternalError(e);
+    }
+    return summary.getLength();
   }
 
   @Override
@@ -249,15 +248,14 @@ public class FileTablespace extends Tablespace {
   }
 
   public long calculateSize(Path tablePath) throws IOException {
-//    FileSystem fs = tablePath.getFileSystem(conf);
-//    long totalSize = 0;
-//
-//    if (fs.exists(tablePath)) {
-//      totalSize = fs.getContentSummary(tablePath).getLength();
-//    }
-//
-//    return totalSize;
-    return -1L;
+    FileSystem fs = tablePath.getFileSystem(conf);
+    long totalSize = 0;
+
+    if (fs.exists(tablePath)) {
+      totalSize = fs.getContentSummary(tablePath).getLength();
+    }
+
+    return totalSize;
   }
 
   /////////////////////////////////////////////////////////////////////////////
