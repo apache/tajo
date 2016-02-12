@@ -73,6 +73,6 @@ install:
   - mvn clean install -Pdist -DskipTests -Dtar
 
 script: 
-  - mvn TEST_FLAG
+  - mvn $TEST_FLAG
   - sh -c "dmesg | grep -i OOM || exit 0"
   - free -m
