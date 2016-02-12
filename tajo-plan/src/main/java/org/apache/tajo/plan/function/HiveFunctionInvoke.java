@@ -36,9 +36,11 @@ import java.net.URLClassLoader;
 public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
   private Object instance = null;
   private Method evalMethod = null;
+  private Writable [] params;
 
   public HiveFunctionInvoke(FunctionDesc desc) {
     super(desc);
+    params = new Writable[desc.getParamTypes().length];
   }
 
   @Override
@@ -77,7 +79,6 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
   @Override
   public Datum eval(Tuple tuple) {
     Datum resultDatum;
-    Writable [] params = new Writable[tuple.size()];
 
     for (int i=0; i<tuple.size(); i++) {
       params[i] = WritableTypeConverter.convertDatum2Writable(tuple.asDatum(i));
