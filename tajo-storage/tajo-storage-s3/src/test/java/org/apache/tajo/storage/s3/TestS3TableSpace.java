@@ -71,7 +71,7 @@ public class TestS3TableSpace {
   }
 
   @Test
-  public void testGetStagingUri() throws Exception {
+  public void testGetStagingUriWithOutputTableUri() throws Exception {
     OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
     QueryId queryId = QueryIdFactory.newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0));
@@ -85,4 +85,17 @@ public class TestS3TableSpace {
     assertTrue(stagingUri.toString().startsWith("file:///tmp/tajo"));
   }
 
+  @Test
+  public void testGetStagingUriWithoutOutputTableUri() throws Exception {
+    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
+    TableMeta meta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
+    QueryId queryId = QueryIdFactory.newQueryId(TajoIdUtils.MASTER_ID_FORMAT.format(0));
+
+    S3TableSpace tableSpace = TablespaceManager.get(S3_URI);
+    assertNotNull(tableSpace);
+
+    URI stagingUri = tableSpace.getStagingUri(conf, queryId.getId(), meta);
+    assertEquals(stagingUri.getScheme(), null);
+    assertTrue(stagingUri.toString().startsWith("/tmp/tajo"));
+  }
 }
