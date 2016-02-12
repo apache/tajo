@@ -18,26 +18,27 @@ language: java
 git:
   depth: 150
 
-jdk:
-  - oraclejdk8
-
 matrix:
   include:
     # Integration test
-    - env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql"
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql"
 
     # Test tajo-storage-hdfs for hadoop-2.7.1
-    - env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.7.1 -pl org.apache.tajo:tajo-storage-hdfs"
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.7.1 -pl org.apache.tajo:tajo-storage-hdfs"
 
     # Test tajo-storage-hdfs for hadoop-2.6.3
-    - env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.6.3 -pl org.apache.tajo:tajo-storage-hdfs"
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.6.3 -pl org.apache.tajo:tajo-storage-hdfs"
 
     # Test tajo-storage-hdfs for hadoop-2.5.2
-    - env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.5.2 -pl org.apache.tajo:tajo-storage-hdfs"
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.5.2 -pl org.apache.tajo:tajo-storage-hdfs"
 
     # Test tajo-storage-hdfs for hadoop-2.3.0
-    - env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.3.0 -pl org.apache.tajo:tajo-storage-hdfs"
-
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin BUILD_FLAG="clean install -Dhadoop.version=2.3.0 -pl org.apache.tajo:tajo-storage-hdfs"
 
 cache:
   directories:
