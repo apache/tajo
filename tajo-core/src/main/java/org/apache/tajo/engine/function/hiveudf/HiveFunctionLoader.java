@@ -47,15 +47,15 @@ public class HiveFunctionLoader {
     String udfdir = conf.getVar(TajoConf.ConfVars.HIVE_UDF_DIR);
 
     try {
-      FileSystem localFS = FileSystem.getLocal(conf);
       Path udfPath = new Path(udfdir);
+      FileSystem fs = udfPath.getFileSystem(conf);
 
-      if (!localFS.isDirectory(udfPath)) {
+      if (!fs.isDirectory(udfPath)) {
         return null;
       }
 
       // loop each jar file
-      for (FileStatus fstatus : localFS.listStatus(udfPath, (Path path) -> path.getName().endsWith(".jar"))) {
+      for (FileStatus fstatus : fs.listStatus(udfPath, (Path path) -> path.getName().endsWith(".jar"))) {
 
         URL[] urls = new URL[]{new URL("jar:" + fstatus.getPath().toUri().toURL() + "!/")};
 
