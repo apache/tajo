@@ -263,7 +263,6 @@ public class TajoTestingCluster {
     builder.hosts(hosts);
     builder.numDataNodes(servers);
     builder.format(true);
-    builder.storagesPerDatanode(1);
     builder.waitSafeMode(true);
     this.dfsCluster = builder.build();
 
