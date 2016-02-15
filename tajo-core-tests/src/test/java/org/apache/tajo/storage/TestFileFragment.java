@@ -27,6 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.SortedSet;
 
 import static org.junit.Assert.assertEquals;
@@ -85,9 +86,7 @@ public class TestFileFragment {
     }
 
     SortedSet sortedSet = Sets.newTreeSet();
-    for (FileFragment frag : tablets) {
-      sortedSet.add(frag);
-    }
+    Collections.addAll(sortedSet, tablets);
     assertEquals(num, sortedSet.size());
   }
 }
