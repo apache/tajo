@@ -22,6 +22,8 @@ Release 0.11.1 - released
 
   IMPROVEMENT
 
+    TAJO-2073: Upgrade parquet-mr to 1.8.1. (jinho)
+
     TAJO-1940: Implement HBaseTablespace::getTableVolume() method.
     (hyunsik)
 

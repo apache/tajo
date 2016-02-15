@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
@@ -90,7 +91,7 @@ public class TestReadWrite {
     writer.write(tuple);
     writer.close();
 
-    TajoParquetReader reader = new TajoParquetReader(file, schema);
+    TajoParquetReader reader = new TajoParquetReader(new TajoConf(), file, schema, schema);
     tuple = reader.read();
 
     assertNotNull(tuple);
