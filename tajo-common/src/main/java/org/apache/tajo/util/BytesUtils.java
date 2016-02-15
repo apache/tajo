@@ -18,10 +18,14 @@
 
 package org.apache.tajo.util;
 
+import io.netty.buffer.ByteBuf;
+
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static io.netty.util.internal.StringUtil.isSurrogate;
 
 /**
  * Extra utilities for bytes
@@ -249,5 +253,57 @@ public class BytesUtils {
 
   public static byte [] trimBytes(byte [] bytes) {
     return new String(bytes).trim().getBytes();
+  }
+
+  /**
+   * this is an implementation copied from ByteBufUtil in netty4
+   */
+  public static int writeUtf8(ByteBuf buffer, char[] chars, boolean ignoreSurrogate) {
+    int oldWriterIndex = buffer.writerIndex();
+    int writerIndex = oldWriterIndex;
+
+    // We can use the _set methods as these not need to do any index checks and reference checks.
+    // This is possible as we called ensureWritable(...) before.
+    for (int i = 0; i < chars.length; i++) {
+      char c = chars[i];
+      if (c < 0x80) {
+        buffer.setByte(writerIndex++, (byte) c);
+      } else if (c < 0x800) {
+        buffer.setByte(writerIndex++, (byte) (0xc0 | (c >> 6)));
+        buffer.setByte(writerIndex++, (byte) (0x80 | (c & 0x3f)));
+      } else if (!ignoreSurrogate && isSurrogate(c)) {
+        if (!Character.isHighSurrogate(c)) {
+          throw new IllegalArgumentException("Invalid encoding. " +
+              "Expected high (leading) surrogate at index " + i + " but got " + c);
+        }
+        final char c2;
+        try {
+          // Surrogate Pair consumes 2 characters. Optimistically try to get the next character to avoid
+          // duplicate bounds checking with charAt. If an IndexOutOfBoundsException is thrown we will
+          // re-throw a more informative exception describing the problem.
+          c2 = chars[++i];
+        } catch (IndexOutOfBoundsException e) {
+          throw new IllegalArgumentException("Underflow. " +
+              "Expected low (trailing) surrogate at index " + i + " but no more characters found.", e);
+        }
+        if (!Character.isLowSurrogate(c2)) {
+          throw new IllegalArgumentException("Invalid encoding. " +
+              "Expected low (trailing) surrogate at index " + i + " but got " + c2);
+        }
+        int codePoint = Character.toCodePoint(c, c2);
+        // See http://www.unicode.org/versions/Unicode7.0.0/ch03.pdf#G2630.
+        buffer.setByte(writerIndex++, (byte) (0xf0 | (codePoint >> 18)));
+        buffer.setByte(writerIndex++, (byte) (0x80 | ((codePoint >> 12) & 0x3f)));
+        buffer.setByte(writerIndex++, (byte) (0x80 | ((codePoint >> 6) & 0x3f)));
+        buffer.setByte(writerIndex++, (byte) (0x80 | (codePoint & 0x3f)));
+      } else {
+        buffer.setByte(writerIndex++, (byte) (0xe0 | (c >> 12)));
+        buffer.setByte(writerIndex++, (byte) (0x80 | ((c >> 6) & 0x3f)));
+        buffer.setByte(writerIndex++, (byte) (0x80 | (c & 0x3f)));
+      }
+    }
+    // update the writerIndex without any extra checks for performance reasons
+    buffer.writerIndex(writerIndex);
+    return writerIndex - oldWriterIndex;
   }
 }
