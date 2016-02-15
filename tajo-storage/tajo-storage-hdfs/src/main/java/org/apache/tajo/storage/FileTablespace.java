@@ -330,9 +330,7 @@ public class FileTablespace extends Tablespace {
       } else {
         for (FileStatus globStat : matches) {
           if (globStat.isDirectory()) {
-            for (FileStatus stat : fs.listStatus(globStat.getPath(), inputFilter)) {
-              result.add(stat);
-            }
+            Collections.addAll(result, fs.listStatus(globStat.getPath(), inputFilter));
           } else {
             result.add(globStat);
           }
