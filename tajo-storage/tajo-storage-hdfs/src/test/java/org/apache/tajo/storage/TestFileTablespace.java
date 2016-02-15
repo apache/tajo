@@ -122,7 +122,7 @@ public class TestFileTablespace {
   public void testGetSplit() throws Exception {
     final Configuration hdfsConf = getTestHdfsConfiguration();
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(hdfsConf)
-        .numDataNodes(1).storagesPerDatanode(1).format(true).build();
+        .numDataNodes(1).format(true).build();
 
     int testCount = 10;
     Path tablePath = new Path("/testGetSplit");
@@ -174,7 +174,7 @@ public class TestFileTablespace {
   public void testZeroLengthSplit() throws Exception {
     final Configuration hdfsConf = getTestHdfsConfiguration();
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(hdfsConf)
-        .numDataNodes(1).storagesPerDatanode(1).format(true).build();
+        .numDataNodes(1).format(true).build();
 
     int testCount = 10;
     Path tablePath = new Path("/testZeroLengthSplit");
@@ -222,7 +222,7 @@ public class TestFileTablespace {
     hdfsConf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 2);
     hdfsConf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(hdfsConf)
-        .numDataNodes(2).storagesPerDatanode(1).format(true).build();
+        .numDataNodes(2).format(true).build();
 
     int testCount = 10;
     Path tablePath = new Path("/testGetSplitWithBlockStorageLocationsBatching");
@@ -266,7 +266,7 @@ public class TestFileTablespace {
     final Configuration hdfsConf = getTestHdfsConfiguration();
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(hdfsConf)
-            .numDataNodes(1).storagesPerDatanode(1).format(true).build();
+            .numDataNodes(1).format(true).build();
     URI uri = URI.create(cluster.getFileSystem().getUri() + "/tajo");
 
     try {
