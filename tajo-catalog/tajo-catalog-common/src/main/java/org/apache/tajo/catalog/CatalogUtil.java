@@ -765,9 +765,7 @@ public class CatalogUtil {
   };
 
   static {
-    for (String keyword : RESERVED_KEYWORDS) {
-      RESERVED_KEYWORDS_SET.add(keyword);
-    }
+    Collections.addAll(RESERVED_KEYWORDS_SET, RESERVED_KEYWORDS);
   }
 
   public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName,

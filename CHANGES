@@ -4,6 +4,9 @@ Release 0.11.2 - unreleased
 
   TASKS
 
+    TAJO-2017: Replace manual array copy with Collection.
+    (Dongkyu Hwangbo via jinho)
+
     TAJO-2070: Remove unnecessarily version property in maven pom. (jinho)
 
   BUG FIXES

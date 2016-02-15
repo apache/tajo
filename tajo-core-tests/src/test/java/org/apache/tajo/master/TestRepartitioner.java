@@ -501,9 +501,7 @@ public class TestRepartitioner {
   private static void assertFetchProto(FetchProto [] expected, Map<String, List<FetchProto>>[] result) {
     Set<FetchProto> expectedURLs = Sets.newHashSet();
 
-    for (FetchProto f : expected) {
-      expectedURLs.add(f);
-    }
+    Collections.addAll(expectedURLs, expected);
 
     Set<FetchProto> resultURLs = Sets.newHashSet();
 
