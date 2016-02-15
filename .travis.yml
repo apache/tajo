@@ -22,31 +22,31 @@ matrix:
   include:
     # Integration test without TestHBaseTable
     - jdk: oraclejdk8
-      env: PATH=$PATH:$HOME/local/bin TEST_FLAG="test -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Dtest=!TestHBaseTable -DfailIfNoTests=false"
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Dtest=!TestHBaseTable -DfailIfNoTests=false"
 
     # Test tajo-core-tests for hbase
     - jdk: oraclejdk8
-      env: PATH=$PATH:$HOME/local/bin TEST_FLAG="test -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Dtest=TestHBaseTable -pl tajo-core-tests"
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Dtest=TestHBaseTable -pl tajo-core-tests"
 
     # Test tajo-storage-pgsql
     - jdk: oraclejdk8
-      env: PATH=$PATH:$HOME/local/bin TEST_FLAG="test -Ptest-storage-pgsql -DLOG_LEVEL=WARN -pl org.apache.tajo:tajo-storage-pgsql"
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Ptest-storage-pgsql -DLOG_LEVEL=WARN -pl org.apache.tajo:tajo-storage-pgsql"
 
     # Test tajo-storage-hdfs for hadoop-2.7.1
     - jdk: oraclejdk8
-      env: PATH=$PATH:$HOME/local/bin TEST_FLAG="test -Dhadoop.version=2.7.1 -pl org.apache.tajo:tajo-storage-hdfs"
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.7.1" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
 
     # Test tajo-storage-hdfs for hadoop-2.6.3
     - jdk: oraclejdk8
-      env: PATH=$PATH:$HOME/local/bin TEST_FLAG="test -Dhadoop.version=2.6.3 -pl org.apache.tajo:tajo-storage-hdfs"
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.6.3" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
 
     # Test tajo-storage-hdfs for hadoop-2.5.2
     - jdk: oraclejdk8
-      env: PATH=$PATH:$HOME/local/bin TEST_FLAG="test -Dhadoop.version=2.5.2 -pl org.apache.tajo:tajo-storage-hdfs"
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.5.2" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
 
     # Test tajo-storage-hdfs for hadoop-2.3.0
     - jdk: oraclejdk8
-      env: PATH=$PATH:$HOME/local/bin TEST_FLAG="test -Dhadoop.version=2.3.0 -pl org.apache.tajo:tajo-storage-hdfs"
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.3.0" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
 
 cache:
   directories:
@@ -70,7 +70,7 @@ before_install:
 
 install:
   - sh dev-support/travis-install-dependencies.sh
-  - mvn clean install -q -ff -Dsurefire.useFile=false -Pdist -DskipTests -Dtar
+  - mvn clean install -q -ff -Dsurefire.useFile=false $HADOOP_FLAG -Pdist -DskipTests -Dtar
 
 script: 
   - mvn $TEST_FLAG
