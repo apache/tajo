@@ -48,7 +48,6 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DataLocation;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.RpcParameterFactory;
@@ -217,13 +216,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
           stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
-          fragmentsForNonLeafTask = new FileFragment[2];
+          fragmentsForNonLeafTask = new Fragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
           if (castEvent.hasRightFragments()) {
-            FileFragment[] rightFragments = castEvent.getRightFragments().toArray(new FileFragment[]{});
+            Fragment[] rightFragments = castEvent.getRightFragments().toArray(new Fragment[]{});
             fragmentsForNonLeafTask[1] = rightFragments[0];
             if (rightFragments.length > 1) {
-              broadcastFragmentsForNonLeafTask = new FileFragment[rightFragments.length - 1];
+              broadcastFragmentsForNonLeafTask = new Fragment[rightFragments.length - 1];
               System.arraycopy(rightFragments, 1, broadcastFragmentsForNonLeafTask, 0, broadcastFragmentsForNonLeafTask.length);
             } else {
               broadcastFragmentsForNonLeafTask = null;
