@@ -190,6 +190,8 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-1939: Implement PgSQLTablespace::getTableVolume() method. (jihoon)
+
     TAJO-2070: Remove unnecessarily version property in maven pom. (jinho)
 
     TAJO-2065: Increase default heap size. (jinho)
