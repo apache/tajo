@@ -19,13 +19,13 @@
 package org.apache.tajo.storage.parquet;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.parquet.Log;
+import org.apache.parquet.hadoop.api.InitContext;
+import org.apache.parquet.hadoop.api.ReadSupport;
+import org.apache.parquet.io.api.RecordMaterializer;
+import org.apache.parquet.schema.MessageType;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.Tuple;
-import parquet.Log;
-import parquet.hadoop.api.InitContext;
-import parquet.hadoop.api.ReadSupport;
-import parquet.io.api.RecordMaterializer;
-import parquet.schema.MessageType;
 
 import java.util.Map;
 
@@ -69,7 +69,7 @@ public class TajoReadSupport extends ReadSupport<Tuple> {
    * @return A ReadContext that defines how to read the file.
    */
   @Override
-  public ReadContext init(InitContext context) {
+  public ReadSupport.ReadContext init(InitContext context) {
     if (requestedSchema == null) {
       throw new RuntimeException("requestedSchema is null.");
     }
