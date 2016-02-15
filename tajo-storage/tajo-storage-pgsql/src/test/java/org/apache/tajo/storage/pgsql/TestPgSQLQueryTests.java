@@ -119,7 +119,7 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
 //  @SimpleTest
 //  @Test
-  // TODO: enable this test after allowing consecutive cross joins
+  // TODO: enable this test after allowing consecutive cross joins (TAJO-2075)
   @Option(sort = true)
   public void testTPCH_Q5() throws Exception {
     runSimpleTests();
