@@ -279,6 +279,9 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     return message;
   }
 
+  /**
+   * borrowed from Presto
+   */
   private static boolean detectRealTerminal()
   {
     if (Boolean.parseBoolean(System.getProperty("jansi.passthrough"))) {

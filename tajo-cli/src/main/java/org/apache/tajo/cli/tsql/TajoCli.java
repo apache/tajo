@@ -610,7 +610,7 @@ public class TajoCli implements Closeable {
 
         if (TajoClientUtil.isQueryRunning(status.getState())) {
           displayFormatter.printProgress(sout, status);
-          if (isProgressPrinting == false) {
+          if (!isProgressPrinting) {
             isProgressPrinting = true;
           }
         }
@@ -623,9 +623,9 @@ public class TajoCli implements Closeable {
         }
       }
 
-      if (isProgressPrinting == true) {
+      if (isProgressPrinting) {
         displayFormatter.printProgress(sout, status);
-        sout.println();
+        sout.println(); // to print out query result in next line
       }
       if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
         displayFormatter.printErrorMessage(sout, status);
