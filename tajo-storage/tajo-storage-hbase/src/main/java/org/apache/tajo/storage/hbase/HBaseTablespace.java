@@ -40,6 +40,7 @@ import org.apache.hadoop.mapreduce.task.JobContextImpl;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -911,7 +912,7 @@ public class HBaseTablespace extends Tablespace {
   @Override
   public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId,
                           LogicalPlan plan, Schema schema,
-                          TableDesc tableDesc) throws IOException {
+                          TableDesc tableDesc, List<PartitionDescProto> partitions) throws IOException {
     if (tableDesc == null) {
       throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
     }
