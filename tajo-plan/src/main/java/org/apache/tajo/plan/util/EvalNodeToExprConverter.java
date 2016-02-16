@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.util;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DateDatum;
@@ -212,6 +213,8 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
 
         timeValue = new TimeValue(""+timestampDatum.getHourOfDay()
           , ""+timestampDatum.getMinuteOfHour(), ""+timestampDatum.getSecondOfMinute());
+
+        timeValue.setSecondsFraction(StringUtils.leftPad("" + timestampDatum.getMillisOfSecond(), 3, '0'));
 
         value = new TimestampLiteral(dateValue, timeValue);
         break;

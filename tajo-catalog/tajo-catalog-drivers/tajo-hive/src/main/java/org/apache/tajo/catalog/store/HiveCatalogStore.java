@@ -39,6 +39,7 @@ import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.hadoop.mapred.TextInputFormat;
 import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.IsNullPredicate;
@@ -964,6 +965,12 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
     PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
     visitor.setIsHiveCatalog(true);
+
+    if (conf.get(SessionVars.TIMEZONE.getConfVars().keyname()) != null) {
+      visitor.setTimezoneId(conf.get(SessionVars.TIMEZONE.getConfVars().keyname()));
+    } else {
+      visitor.setTimezoneId(TimeZone.getDefault().getID());
+    }
 
     Expr[] filters = AlgebraicUtil.getRearrangedCNFExpressions(databaseName + "." + tableName, partitionColumns, exprs);
 

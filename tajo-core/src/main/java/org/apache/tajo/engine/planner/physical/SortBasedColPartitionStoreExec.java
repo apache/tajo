@@ -21,15 +21,26 @@
  */
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 /**
  * It stores a sorted data set into a number of partition files. It assumes that input tuples are sorted in an
@@ -54,7 +65,12 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
         sb.append('/');
       }
       sb.append(keyNames[i]).append('=');
-      sb.append(StringUtils.escapePathName(datum.asChars()));
+
+      if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+        sb.append(encodeTimestamp(tuple.getTimeDate(keyIds[i])));
+      } else {
+        sb.append(StringUtils.escapePathName(datum.asChars()));
+      }
     }
     return sb.toString();
   }
