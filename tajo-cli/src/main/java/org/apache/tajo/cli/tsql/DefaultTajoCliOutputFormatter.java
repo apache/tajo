@@ -284,20 +284,27 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
    */
   private static boolean detectRealTerminal()
   {
+    // If the jansi.passthrough property is set, then don't interpret
+    // any of the ansi sequences.
     if (Boolean.parseBoolean(System.getProperty("jansi.passthrough"))) {
       return true;
     }
 
+    // If the jansi.strip property is set, then we just strip
+    // the ansi escapes.
     if (Boolean.parseBoolean(System.getProperty("jansi.strip"))) {
       return false;
     }
 
     String os = System.getProperty("os.name");
     if (os.startsWith("Windows")) {
+      // We could support this, but we'd need a windows box
       return true;
     }
 
+    // We must be on some unix variant..
     try {
+      // check if standard out is a terminal
       if (isatty(STDOUT_FILENO) == 0) {
         return false;
       }
