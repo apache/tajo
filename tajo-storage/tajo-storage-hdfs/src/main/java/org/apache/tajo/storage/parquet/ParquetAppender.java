@@ -29,8 +29,8 @@ import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
-import parquet.hadoop.ParquetOutputFormat;
-import parquet.hadoop.metadata.CompressionCodecName;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
+import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
 
@@ -121,7 +121,7 @@ public class ParquetAppender extends FileAppender {
   }
 
   public long getEstimatedOutputSize() throws IOException {
-    return writer.getEstimatedWrittenSize();
+    return writer.getDataSize();
   }
 
   /**

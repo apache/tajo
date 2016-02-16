@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2073: Upgrade parquet-mr to 1.8.1. (jinho)
+
     TAJO-2052: Upgrading ORC reader version. (Jongyoung Park via jaehwa)
     
     TAJO-1940: Implement HBaseTablespace::getTableVolume() method. (hyunsik)
@@ -189,6 +191,13 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2074: Upgrade hadoop and netty. (jinho)
+
+    TAJO-1939: Implement PgSQLTablespace::getTableVolume() method. (jihoon)
+
+    TAJO-2017: Replace manual array copy with Collection.
+    (Dongkyu Hwangbo via jinho)
 
     TAJO-2070: Remove unnecessarily version property in maven pom. (jinho)
 

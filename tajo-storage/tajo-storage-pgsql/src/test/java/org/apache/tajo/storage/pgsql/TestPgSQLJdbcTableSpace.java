@@ -24,6 +24,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -133,5 +135,14 @@ public class TestPgSQLJdbcTableSpace {
     assertNotNull(tempTs);
 
     TablespaceManager.addTableSpaceForTest(ts.get());
+  }
+
+  @Test
+  public void testGetTableVolume() throws UndefinedTablespaceException, UnsupportedException {
+    Tablespace space = TablespaceManager.getByName("pgsql_cluster");
+    MetadataProvider provider = space.getMetadataProvider();
+    TableDesc table = provider.getTableDesc(null, "lineitem");
+    long volume = space.getTableVolume(table, Optional.empty());
+    assertEquals(8192, volume);
   }
 }
