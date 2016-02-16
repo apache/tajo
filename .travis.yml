@@ -68,10 +68,11 @@ before_install:
   - free -m
   - df -h
 
-install: ./dev-support/travis-install-dependencies.sh
+install:
+  - sh dev-support/travis-install-dependencies.sh
+  - mvn clean install -q -ff -Dsurefire.useFile=false $HADOOP_FLAG -Pdist -DskipTests -Dtar
 
-script: 
-  - mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql -Dtest=!TestHBaseTable,!**/ws/rs/**,!**/engine/eval/** -DfailIfNoTests=false
-  - mvn test -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dtest=TestHBaseTable,**/ws/rs/**,**/engine/eval/** -pl tajo-core-tests
+script:
+  - mvn $HADOOP_FLAG $TEST_FLAG
   - sh -c "dmesg | grep -i OOM || exit 0"
   - free -m
