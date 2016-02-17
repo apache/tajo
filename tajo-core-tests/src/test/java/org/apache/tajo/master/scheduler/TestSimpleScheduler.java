@@ -75,7 +75,7 @@ public class TestSimpleScheduler {
   @Before
   public void setup() {
     conf = new TajoConf();
-    nodeResource = NodeResource.createResource(1500, 2, 3);
+    nodeResource = NodeResource.createResource(2000, 2, 3);
     service = new CompositeService(TestSimpleScheduler.class.getSimpleName()) {
 
       @Override

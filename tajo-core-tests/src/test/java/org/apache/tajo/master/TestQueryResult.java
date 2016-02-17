@@ -46,6 +46,9 @@ public class TestQueryResult extends QueryTestCaseBase {
 
     assertResultSet(res);
     cleanupQuery(res);
+
+    // A result data will be deleted asynchronously.
+    Thread.sleep(1000);
     assertFalse(testingCluster.getDefaultFileSystem().exists(resultPath));
   }
 

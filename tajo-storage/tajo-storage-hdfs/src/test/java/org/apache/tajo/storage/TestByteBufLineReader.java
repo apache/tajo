@@ -87,7 +87,7 @@ public class TestByteBufLineReader {
     final Configuration conf = TestFileTablespace.getTestHdfsConfiguration();
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
-        .numDataNodes(2).storagesPerDatanode(1).format(true).build();
+        .numDataNodes(2).format(true).build();
 
     TajoConf tajoConf = new TajoConf(conf);
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");

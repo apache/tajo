@@ -28,7 +28,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -74,7 +73,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
     keyProjector = new KeyProjector(inSchema, keySchema.toArray());
 
-    BSTIndex bst = new BSTIndex(new TajoConf());
+    BSTIndex bst = new BSTIndex(context.getConf());
     this.comp = new BaseTupleComparator(keySchema, sortSpecs);
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);

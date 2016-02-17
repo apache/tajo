@@ -43,6 +43,7 @@ import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ShutdownHookManager;
+import org.apache.tajo.util.VersionInfo;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -409,6 +410,11 @@ public class TajoCli implements Closeable {
     int exitCode;
     ParsingState latestState = SimpleParser.START_STATE;
 
+    sout.write("welcome to \n" +
+      "   _____ ___  _____ ___\n" +
+      "  /_  _/ _  |/_  _/   /\n" +
+      "   / // /_| |_/ // / /\n" +
+      "  /_//_/ /_/___/ \\__/  " + VersionInfo.getVersion() + "\n\n");
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
@@ -595,6 +601,7 @@ public class TajoCli implements Closeable {
     // query execute
     ResultSet res = null;
     QueryStatus status = null;
+    boolean isProgressPrinting = false;
     try {
 
       int initRetries = 0;
@@ -607,8 +614,11 @@ public class TajoCli implements Closeable {
           continue;
         }
 
-        if (TajoClientUtil.isQueryRunning(status.getState()) || status.getState() == QueryState.QUERY_SUCCEEDED) {
+        if (TajoClientUtil.isQueryRunning(status.getState())) {
           displayFormatter.printProgress(sout, status);
+          if (!isProgressPrinting) {
+            isProgressPrinting = true;
+          }
         }
 
         if (TajoClientUtil.isQueryComplete(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
@@ -619,6 +629,10 @@ public class TajoCli implements Closeable {
         }
       }
 
+      if (isProgressPrinting) {
+        displayFormatter.printProgress(sout, status);
+        sout.println(); // to print out query result in next line
+      }
       if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
         displayFormatter.printErrorMessage(sout, status);
         wasError = true;

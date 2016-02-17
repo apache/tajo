@@ -47,7 +47,6 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DataLocation;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.RpcParameterFactory;
@@ -97,7 +96,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   @Override
   public void init(Configuration conf) {
     tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
-    rpcParams = RpcParameterFactory.get(new TajoConf());
+    rpcParams = RpcParameterFactory.get(tajoConf);
 
     scheduledRequests = new ScheduledRequests();
     minTaskMemory = tajoConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY);
@@ -116,11 +115,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               break;
             } else {
               LOG.fatal(e.getMessage(), e);
-              stage.abort(StageState.ERROR);
+              stage.abort(StageState.ERROR, e);
             }
           } catch (Throwable e) {
             LOG.fatal(e.getMessage(), e);
-            stage.abort(StageState.ERROR);
+            stage.abort(StageState.ERROR, e);
             break;
           }
         }
@@ -216,14 +215,14 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
           stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
-          fragmentsForNonLeafTask = new FileFragment[2];
+          fragmentsForNonLeafTask = new Fragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
           if (castEvent.hasRightFragments()) {
             Collection<Fragment> var = castEvent.getRightFragments();
-            FileFragment[] rightFragments = var.toArray(new FileFragment[var.size()]);
+            Fragment[] rightFragments = var.toArray(new Fragment[var.size()]);
             fragmentsForNonLeafTask[1] = rightFragments[0];
             if (rightFragments.length > 1) {
-              broadcastFragmentsForNonLeafTask = new FileFragment[rightFragments.length - 1];
+              broadcastFragmentsForNonLeafTask = new Fragment[rightFragments.length - 1];
               System.arraycopy(rightFragments, 1, broadcastFragmentsForNonLeafTask, 0, broadcastFragmentsForNonLeafTask.length);
             } else {
               broadcastFragmentsForNonLeafTask = null;

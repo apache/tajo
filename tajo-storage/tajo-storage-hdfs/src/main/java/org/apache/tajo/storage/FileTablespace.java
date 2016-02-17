@@ -125,8 +125,8 @@ public class FileTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
-    Path path = new Path(uri);
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
+    Path path = new Path(table.getUri());
     ContentSummary summary;
     try {
       summary = fs.getContentSummary(path);
@@ -330,9 +330,7 @@ public class FileTablespace extends Tablespace {
       } else {
         for (FileStatus globStat : matches) {
           if (globStat.isDirectory()) {
-            for (FileStatus stat : fs.listStatus(globStat.getPath(), inputFilter)) {
-              result.add(stat);
-            }
+            Collections.addAll(result, fs.listStatus(globStat.getPath(), inputFilter));
           } else {
             result.add(globStat);
           }

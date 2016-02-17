@@ -26,10 +26,13 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.MiniHBaseCluster;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.InclusiveStopFilter;
+import org.apache.hadoop.hbase.master.HMaster;
+import org.apache.hadoop.hbase.regionserver.HRegionServer;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoTestingCluster;
@@ -207,7 +210,62 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } finally {
       TablespaceManager.addTableSpaceForTest(existing.get());
     }
+  }
 
+  private void putData(HTableInterface htable, int rownum) throws IOException {
+    for (int i = 0; i < rownum; i++) {
+      Put put = new Put(String.valueOf(i).getBytes());
+      put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
+      put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+      put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
+      put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
+      put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+      htable.put(put);
+    }
+  }
+
+  @Test
+  public void testGetTableVolume() throws Exception {
+    final String tableName = "external_hbase_table";
+
+    Optional<Tablespace> existing = TablespaceManager.removeTablespaceForTest("cluster1");
+    assertTrue(existing.isPresent());
+
+    try {
+      HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf(tableName));
+      hTableDesc.addFamily(new HColumnDescriptor("col1"));
+      hTableDesc.addFamily(new HColumnDescriptor("col2"));
+      hTableDesc.addFamily(new HColumnDescriptor("col3"));
+      testingCluster.getHBaseUtil().createTable(hTableDesc);
+
+      String sql = String.format(
+          "CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+              "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b') " +
+              "LOCATION '%s/external_hbase_table'", tableSpaceUri);
+      executeString(sql).close();
+
+      assertTableExists("external_hbase_mapped_table");
+
+      HBaseTablespace tablespace = (HBaseTablespace)existing.get();
+      HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
+
+      try (HTableInterface htable = hconn.getTable(tableName)) {
+        htable.setAutoFlushTo(true);
+        putData(htable, 4000);
+      }
+      hconn.close();
+
+      Thread.sleep(3000); // sleep here for up-to-date region server load. It may not be a problem in real cluster.
+
+      TableDesc createdTable = client.getTableDesc("external_hbase_mapped_table");
+      assertNotNull(tablespace);
+      long volume = tablespace.getTableVolume(createdTable, Optional.empty());
+      assertTrue(volume > 0 || volume == -1);
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
+
+    } finally {
+      TablespaceManager.addTableSpaceForTest(existing.get());
+    }
   }
 
   @Test
@@ -233,15 +291,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       HConnection hconn = ((HBaseTablespace)existing.get()).getConnection();
 
       try (HTableInterface htable = hconn.getTable("external_hbase_table")) {
-        for (int i = 0; i < 100; i++) {
-          Put put = new Put(String.valueOf(i).getBytes());
-          put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
-          put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-          put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
-          put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
-          put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
-          htable.put(put);
-        }
+        putData(htable, 100);
 
         ResultSet res = executeString("select * from external_hbase_mapped_table where rk > '20'");
         assertResultSet(res);
@@ -1373,6 +1423,59 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE base_table PURGE").close();
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
+    }
+  }
+
+  @Test
+  public void testGetSplitsWhenRestartHBase() throws Exception {
+    executeString("CREATE TABLE hbase_mapped_table1 (rk text, col1 text, col2 text, col3 int) "
+      + "TABLESPACE cluster1 USING hbase WITH ('table'='hbase_table1', 'columns'=':key,col1:a,col2:,col3:#b', "
+      + "'hbase.split.rowkeys'='010,020,030,040,050,060,070,080,090')").close();
+
+    assertTableExists("hbase_mapped_table1");
+    HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
+    HTable htable = null;
+    try {
+      hAdmin.tableExists("hbase_table1");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table1");
+      org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
+      assertEquals(10, keys.getFirst().length);
+
+      DecimalFormat df = new DecimalFormat("000");
+      for (int i = 0; i < 100; i++) {
+        Put put = new Put(String.valueOf(df.format(i)).getBytes());
+        put.add("col1".getBytes(), "a".getBytes(), ("a-" + i).getBytes());
+        put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+        put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
+        put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
+        put.add("col3".getBytes(), "".getBytes(), Bytes.toBytes(i));
+        htable.put(put);
+      }
+
+      ResultSet res = executeString("select * from hbase_mapped_table1");
+      assertResultSet(res);
+      res.close();
+
+      MiniHBaseCluster cluster = testingCluster.getHBaseUtil().getMiniHBaseCluster();
+      HMaster master = cluster.getMaster();
+      master.balanceSwitch(true);
+      assertEquals(1, cluster.getLiveRegionServerThreads().size());
+      HRegionServer orgRegionServer = cluster.getLiveRegionServerThreads().get(0).getRegionServer();
+      cluster.startRegionServer().waitForServerOnline();
+      cluster.startRegionServer().waitForServerOnline();
+      cluster.startRegionServer().waitForServerOnline();
+      cluster.stopRegionServer(orgRegionServer.getServerName());
+      cluster.waitForRegionServerToStop(orgRegionServer.getServerName(), 1000);
+
+      res = executeString("select * from hbase_mapped_table1");
+      assertResultSet(res);
+      res.close();
+    } finally {
+      executeString("DROP TABLE hbase_mapped_table1 PURGE").close();
+      hAdmin.close();
+      if (htable == null) {
+        htable.close();
+      }
     }
   }
 

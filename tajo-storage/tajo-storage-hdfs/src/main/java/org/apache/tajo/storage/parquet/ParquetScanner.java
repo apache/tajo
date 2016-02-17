@@ -21,9 +21,10 @@ package org.apache.tajo.storage.parquet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.storage.EmptyTuple;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -35,6 +36,10 @@ import java.io.IOException;
  */
 public class ParquetScanner extends FileScanner {
   private TajoParquetReader reader;
+  /** The number of actual read records */
+  private long currentRowCount;
+  private long totalRowCount;
+  private boolean closed;
 
   /**
    * Creates a new ParquetScanner.
@@ -58,7 +63,10 @@ public class ParquetScanner extends FileScanner {
     if (targets == null) {
       targets = schema.toArray();
     }
-    reader = new TajoParquetReader(fragment.getPath(), schema, new Schema(targets));
+    reader = new TajoParquetReader(conf, fragment.getPath(), schema, new Schema(targets));
+    totalRowCount = reader.getTotalRowCount();
+    currentRowCount = 0;
+    closed = false;
     super.init();
   }
 
@@ -70,6 +78,16 @@ public class ParquetScanner extends FileScanner {
    */
   @Override
   public Tuple next() throws IOException {
+    // If there is no required column, we just read footer and then return an empty tuple
+    if (targets.length == 0) {
+      if(currentRowCount == totalRowCount) {
+        return null;
+      } else {
+        currentRowCount++;
+        return EmptyTuple.get();
+      }
+    }
+
     return reader.read();
   }
 
@@ -78,6 +96,7 @@ public class ParquetScanner extends FileScanner {
    */
   @Override
   public void reset() throws IOException {
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   /**
@@ -88,6 +107,7 @@ public class ParquetScanner extends FileScanner {
     if (reader != null) {
       reader.close();
     }
+    closed = true;
   }
 
   /**
@@ -112,7 +132,7 @@ public class ParquetScanner extends FileScanner {
 
   @Override
   public void setFilter(EvalNode filter) {
-    throw new TajoRuntimeException(new UnsupportedException());
+    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   /**
@@ -131,7 +151,11 @@ public class ParquetScanner extends FileScanner {
     if (!inited) {
       return super.getProgress();
     } else {
-      return reader.getProgress();
+      if (closed) {
+        return 1.0f;
+      } else {
+        return reader.getProgress();
+      }
     }
   }
 }

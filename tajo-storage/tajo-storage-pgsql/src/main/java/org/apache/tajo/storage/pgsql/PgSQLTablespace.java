@@ -19,10 +19,11 @@
 package org.apache.tajo.storage.pgsql;
 
 import net.minidev.json.JSONObject;
-import org.apache.tajo.catalog.MetadataProvider;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.NullScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -32,6 +33,10 @@ import org.apache.tajo.storage.jdbc.JdbcTablespace;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Optional;
 
 /**
  * Postgresql Database Tablespace
@@ -72,5 +77,22 @@ public class PgSQLTablespace extends JdbcTablespace {
   @Override
   public int hashCode() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
+
+    String sql = "SELECT pg_table_size('" + CatalogUtil.extractSimpleName(table.getName()) + "')";
+
+    try (Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+      if (rs.next()) {
+        return rs.getLong(1);
+      } else {
+        throw new TajoRuntimeException(new UndefinedTableException(table.getName()));
+      }
+    } catch (SQLException e) {
+      throw new TajoInternalError(e);
+    }
   }
 }

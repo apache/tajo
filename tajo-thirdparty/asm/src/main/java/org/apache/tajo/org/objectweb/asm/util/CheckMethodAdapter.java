@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -744,9 +745,7 @@ public class CheckMethodAdapter extends MethodVisitor {
             checkNonDebugLabel(labels[i]);
         }
         super.visitTableSwitchInsn(min, max, dflt, labels);
-        for (Label label : labels) {
-            usedLabels.add(label);
-        }
+        Collections.addAll(usedLabels, labels);
         ++insnCount;
     }
 
@@ -767,9 +766,7 @@ public class CheckMethodAdapter extends MethodVisitor {
         }
         super.visitLookupSwitchInsn(dflt, keys, labels);
         usedLabels.add(dflt);
-        for (Label label : labels) {
-            usedLabels.add(label);
-        }
+        Collections.addAll(usedLabels, labels);
         ++insnCount;
     }
 

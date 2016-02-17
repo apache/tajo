@@ -1,0 +1,189 @@
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<html>
+<head>
+<title>Release Notes - Tajo - Version 0.11.1</title>
+</head>
+
+<body>
+<h1>Release Notes - Tajo - Version 0.11.1</h1>
+    
+<h2>        Sub-task
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1855'>TAJO-1855</a>] -         Add document for tablespace configuration to the Configuration chapter.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1856'>TAJO-1856</a>] -         Add a description about the relationship of tablespace, managed table, and external table to Tablespace section of Table Management chapter
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1992'>TAJO-1992</a>] -         \set timezone in cli doesn&#39;t work because of casesensitive
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1993'>TAJO-1993</a>] -         Table Timezone doesn&#39;t work when Timezone is not exactly same.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2024'>TAJO-2024</a>] -         Remove getContentSummary from HCatalogStore
+</li>
+</ul>
+                            
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1578'>TAJO-1578</a>] -         User configuration for pull server port is ignored.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1643'>TAJO-1643</a>] -         SQLParse can&#39;t parse parentheses table clause
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1753'>TAJO-1753</a>] -         GlobalEngine causes NPE occurs occasionally
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1921'>TAJO-1921</a>] -         Hbase Storage can cause NPE when the hbase cluster is restarted
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1935'>TAJO-1935</a>] -         Some Tasks don&#39;t work after they become TA_ASSIGNED
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1954'>TAJO-1954</a>] -         Fix memory leak in physical operator
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1961'>TAJO-1961</a>] -         Client timezone does not work properly
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1964'>TAJO-1964</a>] -         TestKillQuery::testKillQueryFromInitState causes NPE
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1965'>TAJO-1965</a>] -         TestBlockingRpc::testServerShutdown occassionally fails
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1972'>TAJO-1972</a>] -         Invalid sort order with NULLS FIRST|LAST 
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1977'>TAJO-1977</a>] -         Cannot recognize the space-contained tablename and databasename
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1978'>TAJO-1978</a>] -         Printout message before terminating TSQL
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1980'>TAJO-1980</a>] -         Printout the usage of TajoShellCommand
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1981'>TAJO-1981</a>] -         Invalid nulls sort order in VectorizedSorter
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2000'>TAJO-2000</a>] -         BSTIndex can cause OOM
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2001'>TAJO-2001</a>] -         DirectRawFileScanner.getProgress occasionally fails
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2010'>TAJO-2010</a>] -         Parquet can not read null value
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2013'>TAJO-2013</a>] -         FilterPushDownRule fails due to the unsupported index
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2014'>TAJO-2014</a>] -         TestRpcClientManager fails occasionally
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2016'>TAJO-2016</a>] -         Fix storage tests hangs
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2025'>TAJO-2025</a>] -         HBASE_LIB/metrics-core-*.jar should be included in CLASSPATH
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2034'>TAJO-2034</a>] -         Files required for executing python functions are not copied in testEval()
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2037'>TAJO-2037</a>] -         tajo-storage-hdfs tests occasionally hangs
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2038'>TAJO-2038</a>] -         NPE in FileScanner#getProgress
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2066'>TAJO-2066</a>] -         Fix TestJoinOnPartitionedTables.testPartialFilterPushDown failure
+</li>
+</ul>
+                        
+<h2>        Improvement
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1271'>TAJO-1271</a>] -         Improve memory usage of Hash-shuffle
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1740'>TAJO-1740</a>] -         Update Partition Table document
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1858'>TAJO-1858</a>] -         Aligning error message in execute query page of web UI is needed.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1940'>TAJO-1940</a>] -         Implement HBaseTablespace::getTableVolume() method
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1950'>TAJO-1950</a>] -         Query master uses too much memory during range shuffle
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1966'>TAJO-1966</a>] -         Decrease memory usage of TajoTestingCluster
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1979'>TAJO-1979</a>] -         Usage of some TajoShellCommand is omitted
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1983'>TAJO-1983</a>] -         Improve memory usage of ExternalSortExec
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1985'>TAJO-1985</a>] -         Supporting Metric report via JMX
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1991'>TAJO-1991</a>] -         Tablespace::getVolume should take filter predication
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1998'>TAJO-1998</a>] -         Waiting for gracefully stopping in tajo-deamon.sh is too short
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2005'>TAJO-2005</a>] -         Add TableStatUpdateRewriter
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2007'>TAJO-2007</a>] -         By default, Optimizer should use the table volume in TableStat.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2029'>TAJO-2029</a>] -         Showing query progress percentage in TAJO JDBC
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2032'>TAJO-2032</a>] -         Change tajo.rest.service.port to be the general style in TAJO.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2036'>TAJO-2036</a>] -         Prevent out of memory in the master server, if the query result is large
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2040'>TAJO-2040</a>] -         Decrease the default size of max request for locality
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2048'>TAJO-2048</a>] -         QueryMaster and TajoWorker should support the exception propagation
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2050'>TAJO-2050</a>] -         Adopt TAJO logo in CLI
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2053'>TAJO-2053</a>] -         Update description for HBase configuration.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2057'>TAJO-2057</a>] -         Remove redundant class loading in plan optimizer
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2060'>TAJO-2060</a>] -         Upgrade geoip-api-java library
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2061'>TAJO-2061</a>] -         Add description for EXPLAIN statement
+</li>
+</ul>
+                                                                    
+<h2>        Task
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1705'>TAJO-1705</a>] -         Update document for index support
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1852'>TAJO-1852</a>] -         (Umbrella) Improve documentation for tablespace support
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1854'>TAJO-1854</a>] -         Add in-subquery document
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1857'>TAJO-1857</a>] -         Rename the section of &#39;File Formats&#39; to &#39;Data Formats&#39; and fill compression section of the &#39;Table Management&#39; chapter
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1906'>TAJO-1906</a>] -         Decrease the default size of hash map and array list for testing
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1934'>TAJO-1934</a>] -         Test failures in TestPgSQLQueryTests due to sort order
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1962'>TAJO-1962</a>] -         Add description for session variables
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1963'>TAJO-1963</a>] -         Add more configuration descriptions to document
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1970'>TAJO-1970</a>] -         Change the null first syntax 
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1973'>TAJO-1973</a>] -         Replace &#39;while&#39; loop with &#39;foreach&#39;
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1975'>TAJO-1975</a>] -         Gathering fine-grained column statistics for range shuffle
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1989'>TAJO-1989</a>] -         Upgrade Maven Surefire Plugin to 2.19
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1994'>TAJO-1994</a>] -         Some trivial modification is needed in compression document
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2003'>TAJO-2003</a>] -         Fix typo in worker configuration
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2018'>TAJO-2018</a>] -         Remove redundant &#39;String.toString()&#39;
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2028'>TAJO-2028</a>] -         Refining Hive Integration document including typo
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2041'>TAJO-2041</a>] -         Update the Team page
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2065'>TAJO-2065</a>] -         Increase default heap size
+</li>
+</ul>
+                
+</body>
+</html>

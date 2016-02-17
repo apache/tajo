@@ -39,10 +39,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.QueryNotFoundException;
-import org.apache.tajo.exception.ReturnStateUtil;
-import org.apache.tajo.exception.UnavailableTableLocationException;
-import org.apache.tajo.exception.UndefinedDatabaseException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -61,6 +58,7 @@ import org.apache.tajo.session.Session;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -109,7 +107,7 @@ public class TajoMasterClientService extends AbstractService {
   @Override
   public void serviceStop() throws Exception {
     if (server != null) {
-      server.shutdown();
+      server.shutdown(true);
     }
     super.serviceStop();
   }
@@ -505,6 +503,10 @@ public class TajoMasterClientService extends AbstractService {
               builder.setFinishTime(queryInfo.getFinishTime());
             } else {
               builder.setFinishTime(System.currentTimeMillis());
+
+              if(!StringUtils.isEmpty(queryInfo.getLastMessage())) {
+                builder.setErrorMessage(queryInfo.getLastMessage());
+              }
             }
           } else {
             Session session = context.getSessionManager().getSession(request.getSessionId().getId());
