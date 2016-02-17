@@ -266,4 +266,18 @@ public class TestInnerJoinQuery extends TestJoinQuery {
   public final void testBroadcastTwoPartJoin() throws Exception {
     runSimpleTests();
   }
+
+  @Test
+  @Option(withExplain = false, withExplainGlobal = false, parameterized = true)
+  @SimpleTest()
+  public void testBroadcastJoinWithEmptyRows() throws Exception {
+    executeDDL("create_customer_parquet_ddl.sql", "customer_parquet");
+    executeDDL("create_nation_parquet_ddl.sql", "nation_parquet");
+    try {
+      runSimpleTests();
+    } finally {
+      executeString("DROP TABLE customer_parquet");
+      executeString("DROP TABLE nation_parquet");
+    }
+  }
 }
