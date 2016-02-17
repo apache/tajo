@@ -45,6 +45,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.CharTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.DecimalTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.VarcharTypeInfo;
 import org.apache.hadoop.io.Text;
+import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.IOException;
@@ -1576,7 +1577,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     void write(Datum datum) throws IOException {
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
-        int daysSinceEpoch = datum.asInt4() - DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH;
+        int daysSinceEpoch = datum.asInt4() - DateTimeConstants.UNIX_EPOCH_JDATE;
         // Using the Writable here as it's used directly for writing as well as for stats.
         indexStatistics.updateDate(daysSinceEpoch);
         writer.write(daysSinceEpoch);

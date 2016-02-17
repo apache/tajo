@@ -18,14 +18,19 @@
 
 package org.apache.tajo.util;
 
+import org.apache.hadoop.hive.serde2.io.DateWritable;
+import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 import org.apache.hadoop.io.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.reflections.ReflectionUtils;
 
+import java.sql.Timestamp;
 import java.util.Set;
 
 public class WritableTypeConverter {
@@ -58,6 +63,12 @@ public class WritableTypeConverter {
     if (writableClass == DoubleWritable.class || parents.contains(DoubleWritable.class)) {
       return builder.setType(Type.FLOAT8).build();
     }
+    if (writableClass == DateWritable.class || parents.contains(DateWritable.class)) {
+      return builder.setType(Type.DATE).build();
+    }
+    if (writableClass == TimestampWritable.class || parents.contains(TimestampWritable.class)) {
+      return builder.setType(Type.TIMESTAMP).build();
+    }
     if (writableClass == BytesWritable.class || parents.contains(BytesWritable.class)) {
       return builder.setType(Type.VARBINARY).build();
     }
@@ -74,6 +85,15 @@ public class WritableTypeConverter {
 
       case FLOAT4: return new FloatWritable(value.asFloat4());
       case FLOAT8: return new DoubleWritable(value.asFloat8());
+
+      // NOTE: value should be DateDatum
+      case DATE: return new DateWritable(value.asInt4() - DateTimeConstants.UNIX_EPOCH_JDATE);
+
+      // NOTE: value should be TimestampDatum
+      case TIMESTAMP:
+        TimestampWritable result = new TimestampWritable();
+        result.setTime(DateTimeUtil.julianTimeToJavaTime(value.asInt8()));
+        return result;
 
       case TEXT: return new Text(value.asChars());
       case VARBINARY: return new BytesWritable(value.asByteArray());
@@ -93,6 +113,10 @@ public class WritableTypeConverter {
 
       case FLOAT4: return new Float4Datum(((FloatWritable)value).get());
       case FLOAT8: return new Float8Datum(((DoubleWritable)value).get());
+
+      case DATE: return new DateDatum(((DateWritable)value).getDays() + DateTimeConstants.UNIX_EPOCH_JDATE);
+      case TIMESTAMP: return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(
+          ((TimestampWritable)value).getTimestamp().getTime()));
 
       case TEXT: return new TextDatum(value.toString());
       case VARBINARY: return new BlobDatum(((BytesWritable)value).getBytes());

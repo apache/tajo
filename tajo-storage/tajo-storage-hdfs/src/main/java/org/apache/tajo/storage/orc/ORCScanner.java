@@ -42,6 +42,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import com.facebook.presto.orc.*;
 import com.facebook.presto.orc.metadata.OrcMetadataReader;
 import org.apache.tajo.storage.thirdparty.orc.HdfsOrcDataSource;
+import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.joda.time.DateTimeZone;
 
@@ -269,7 +270,7 @@ public class ORCScanner extends FileScanner {
           return NullDatum.get();
 
         return DatumFactory.createDate(
-          (int) ((LongVector) vector).vector[currentPosInBatch] + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
+          (int) ((LongVector) vector).vector[currentPosInBatch] + DateTimeConstants.UNIX_EPOCH_JDATE);
 
       case INET4:
         if (((LongVector) vector).isNull[currentPosInBatch])
