@@ -192,6 +192,11 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2033: Printing out query status with progress bar in TSQL.
+    (Dongkyu Hwangbo via jihoon)
+
+    TAJO-2076: Add backward compatibility testing with hadoop on travis. (jinho)
+
     TAJO-2074: Upgrade hadoop and netty. (jinho)
 
     TAJO-1939: Implement PgSQLTablespace::getTableVolume() method. (jihoon)
