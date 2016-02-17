@@ -92,6 +92,10 @@ public class MergeJoinExec extends CommonJoinExec {
         outerTupleSlots.clear();
         innerTupleSlots.clear();
 
+        if (innerTuple == null || outerTuple == null) {
+          return null;
+        }
+
         int cmp;
         while ((cmp = joincomparator.compare(outerTuple, innerTuple)) != 0) {
           if (cmp > 0) {
