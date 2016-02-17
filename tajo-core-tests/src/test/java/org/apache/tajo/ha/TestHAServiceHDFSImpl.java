@@ -32,7 +32,6 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.junit.Assert;
-import org.junit.Test;
 
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
@@ -46,7 +45,7 @@ public class TestHAServiceHDFSImpl  {
 
   private Path haPath, activePath, backupPath;
 
-  @Test
+  //@Test TODO: enable this test after TAJO-1866 fixed
   public final void testAutoFailOver() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
 
