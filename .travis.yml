@@ -18,10 +18,35 @@ language: java
 git:
   depth: 150
 
-jdk:
-  - oraclejdk8
+matrix:
+  include:
+    # Integration test without TestHBaseTable
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Dtest=!TestHBaseTable -DfailIfNoTests=false"
 
-env: PATH=$PATH:$HOME/local/bin
+    # Test tajo-core-tests for hbase
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Dtest=TestHBaseTable -pl tajo-core-tests"
+
+    # Test tajo-storage-pgsql
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Ptest-storage-pgsql -DLOG_LEVEL=WARN -pl org.apache.tajo:tajo-storage-pgsql"
+
+    # Test tajo-storage-hdfs for hadoop-2.7.1
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.7.1" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
+
+    # Test tajo-storage-hdfs for hadoop-2.6.3
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.6.3" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
+
+    # Test tajo-storage-hdfs for hadoop-2.5.2
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.5.2" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
+
+    # Test tajo-storage-hdfs for hadoop-2.3.0
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.3.0" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"
 
 cache:
   directories:
@@ -43,10 +68,11 @@ before_install:
   - free -m
   - df -h
 
-install: ./dev-support/travis-install-dependencies.sh
+install:
+  - sh dev-support/travis-install-dependencies.sh
+  - mvn clean install -q -ff -Dsurefire.useFile=false $HADOOP_FLAG -Pdist -DskipTests -Dtar
 
 script: 
-  - mvn clean install -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dmaven.fork.count=2 -Ptest-storage-pgsql -Dtest=!TestHBaseTable,!**/ws/rs/**,!**/engine/eval/** -DfailIfNoTests=false
-  - mvn test -q -ff -Dsurefire.useFile=false -Pparallel-test -DLOG_LEVEL=WARN -Dtest=TestHBaseTable,**/ws/rs/**,**/engine/eval/** -pl tajo-core-tests
+  - mvn $HADOOP_FLAG $TEST_FLAG
   - sh -c "dmesg | grep -i OOM || exit 0"
   - free -m
