@@ -1,0 +1,8 @@
+n_nationkey,  n_name
+-------------------------------
+16,  MOZAMBIQUE
+15,  MOROCCO
+14,  KENYA
+5,  ETHIOPIA
+0,  ALGERIA
+(5 rows, , 137 B selected)

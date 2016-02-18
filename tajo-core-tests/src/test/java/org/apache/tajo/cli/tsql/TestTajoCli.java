@@ -18,16 +18,14 @@
 
 package org.apache.tajo.cli.tsql;
 
+import com.google.common.base.Preconditions;
 import com.google.common.io.NullOutputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.PosixParser;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.ConfigKey;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.commands.TajoShellCommand;
@@ -35,6 +33,7 @@ import org.apache.tajo.client.ClientParameters;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.TestUnionQuery;
 import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
@@ -48,6 +47,8 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
+import java.sql.ResultSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -57,6 +58,9 @@ public class TestTajoCli {
   protected static final TpchTestBase testBase;
   protected static final TajoTestingCluster cluster;
 
+  /** the base path of query directories */
+  protected static Path queryBasePath;
+
   /** the base path of result directories */
   protected static final Path resultBasePath;
   static {
@@ -64,9 +68,14 @@ public class TestTajoCli {
     cluster = testBase.getTestingCluster();
     URL resultBaseURL = ClassLoader.getSystemResource("results");
     resultBasePath = new Path(resultBaseURL.toString());
+
+    URL queryBaseURL = ClassLoader.getSystemResource("queries");
+    Preconditions.checkNotNull(queryBaseURL, "queries directory is absent.");
+    queryBasePath = new Path(queryBaseURL.toString());
   }
 
   private TajoCli tajoCli;
+  protected Path namedQueryPath;
   private Path currentResultPath;
   private ByteArrayOutputStream out;
 
@@ -84,6 +93,11 @@ public class TestTajoCli {
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, "3");
     tajoCli = new TajoCli(cluster.getConfiguration(), new String[]{}, connParams, System.in, out);
+
+    NamedTest namedTest = getClass().getAnnotation(NamedTest.class);
+    if (namedTest != null) {
+      namedQueryPath = new Path(queryBasePath, namedTest.value());
+    }
   }
 
   @After
@@ -517,6 +531,182 @@ public class TestTajoCli {
     }
   }
 
+  @Test
+  public void testUnionAll1() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll2() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll3() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll4() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll5() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll6() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll7() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll8() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll9() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll10() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll11() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll12() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll13() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll14() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll15() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testUnionAll16() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(query);
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
   // TODO: This should be removed at TAJO-1891
   @Test
   public void testAddPartitionNotimplementedException() throws Exception {
@@ -627,5 +817,39 @@ public class TestTajoCli {
   public void testPrintUsageOfUnsetCommand() {
     tajoCli.executeMetaCommand("\\help unset");
     assertTrue(new String(out.toByteArray()).contains("[NAME]"));
+  }
+
+  public String getQueryByClassName(String className) throws Exception {
+    String queryFileName = getMethodName() + ".sql";
+    Path queryFilePath = getQueryFilePath(className, queryFileName);
+    return FileUtil.readTextFile(new File(queryFilePath.toUri()));
+  }
+
+  private Path getQueryFilePath(String className, String fileName) throws IOException {
+    Path currentQueryPath = new Path(queryBasePath, className);
+
+    Path queryFilePath = StorageUtil.concatPath(currentQueryPath, fileName);
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    if (!fs.exists(queryFilePath)) {
+      if (namedQueryPath != null) {
+        queryFilePath = StorageUtil.concatPath(namedQueryPath, fileName);
+        fs = namedQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+        if (!fs.exists(queryFilePath)) {
+          throw new IOException("Cannot find " + fileName + " at " + currentQueryPath + " and " + namedQueryPath);
+        }
+      } else {
+        throw new IOException("Cannot find " + fileName + " at " + currentQueryPath);
+      }
+    }
+    return queryFilePath;
+  }
+
+  protected String getMethodName() {
+    String methodName = name.getMethodName();
+    // In the case of parameter execution name's pattern is methodName[0]
+    if (methodName.endsWith("]")) {
+      methodName = methodName.substring(0, methodName.length() - 3);
+    }
+    return methodName;
   }
 }
