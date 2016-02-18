@@ -47,6 +47,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class TestPartitionedTableRewriter extends QueryTestCaseBase {
+  
   final static String PARTITION_TABLE_NAME = "tb_partition";
   final static String MULTIPLE_PARTITION_TABLE_NAME = "tb_multiple_partition";
 
