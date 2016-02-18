@@ -56,6 +56,7 @@ import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
+import org.apache.tajo.webapp.servlet.WorkerMetricsServlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -224,6 +225,7 @@ public class TajoWorker extends CompositeService {
     try {
       webServer = StaticHttpServer.getInstance(this, "worker", null, httpPort,
           true, null, systemConf, null);
+      webServer.addServlet("workerMetricsServlet", "/metrics", WorkerMetricsServlet.class);
       webServer.start();
       httpPort = webServer.getPort();
       LOG.info("Worker info server started:" + httpPort);
