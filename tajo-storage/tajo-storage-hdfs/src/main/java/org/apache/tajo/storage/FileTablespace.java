@@ -812,6 +812,7 @@ public class FileTablespace extends Tablespace {
         } else {
           String queryType = queryContext.get(QueryVars.COMMAND_TYPE);
           Preconditions.checkNotNull(queryContext);
+          
           if (queryType.equals(NodeType.INSERT.name())) { // INSERT INTO
             if (partitions != null) {
               commitInsertWithPartition(stagingResultDir, finalOutputDir, partitions, commitHandle, changeFileSeq);
