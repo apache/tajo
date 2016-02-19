@@ -27,8 +27,6 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
@@ -39,8 +37,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Random;
-
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
@@ -48,23 +44,15 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertNotEquals;
 
 public class TestHAServiceHDFSImpl  {
-  private TajoConf conf;
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestHAServiceHDFSImpl";
   private TajoTestingCluster util;
   private FileTablespace sm;
-  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestHAServiceHDFSImpl";
   private CatalogService catalog;
   private Path testDir;
-
-  private final int numTuple = 1000;
-  private Random rnd = new Random(System.currentTimeMillis());
-
   private TableDesc employee;
-
-  private Path haPath, activePath, backupPath;
 
   @Before
   public void setUp() throws Exception {
-    this.conf = new TajoConf();
     util = new TajoTestingCluster(true);
 
     util.startMaster();
@@ -73,7 +61,6 @@ public class TestHAServiceHDFSImpl  {
     sm = TablespaceManager.getLocalFs();
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
     Schema schema = new Schema();
     schema.addColumn("managerid", TajoDataTypes.Type.INT4);
@@ -86,15 +73,6 @@ public class TestHAServiceHDFSImpl  {
       .getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
-    VTuple tuple = new VTuple(schema.size());
-    for (int i = 0; i < numTuple; i++) {
-      tuple.put(new Datum[] {
-        DatumFactory.createInt4(rnd.nextInt(50)),
-        DatumFactory.createInt4(rnd.nextInt(100)),
-        DatumFactory.createText("dept_" + i),
-      });
-      appender.addTuple(tuple);
-    }
     appender.flush();
     appender.close();
 
@@ -110,21 +88,27 @@ public class TestHAServiceHDFSImpl  {
 
   @Test
   public final void testAutoFailOver() throws Exception {
-    FileSystem fs = sm.getFileSystem();
-    TajoConf primaryConf = util.getConfiguration();
     TajoMaster primaryMaster = util.getMaster();
     assertNotNull(primaryMaster);
 
-    TajoConf backupConf = getBackupMasterConfiguration();
+    TajoConf conf = getBackupMasterConfiguration();
     TajoMaster backupMaster = new TajoMaster();
-    backupMaster.init(backupConf);
+    backupMaster.init(conf);
     backupMaster.start();
     Assert.assertNotNull(backupMaster);
 
-    ServiceTracker tracker = ServiceTrackerFactory.get(primaryConf);
+    ServiceTracker tracker = ServiceTrackerFactory.get(util.getConfiguration());
     assertNotEquals(primaryMaster.getMasterName(), backupMaster.getMasterName());
 
-    verifySystemDirectories(fs, primaryConf);
+    FileSystem fs = sm.getFileSystem();
+    Path haPath = TajoConf.getSystemHADir(util.getConfiguration());
+    assertTrue(fs.exists(haPath));
+
+    Path activePath = new Path(haPath, TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+    assertTrue(fs.exists(activePath));
+
+    Path backupPath = new Path(haPath, TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
+    assertTrue(fs.exists(backupPath));
 
     assertEquals(2, fs.listStatus(activePath).length);
     assertEquals(1, fs.listStatus(backupPath).length);
@@ -134,11 +118,11 @@ public class TestHAServiceHDFSImpl  {
     assertTrue(fs.exists(new Path(backupPath, backupMaster.getMasterName().replaceAll(":", "_"))));
 
     createDatabaseAndTable(tracker);
-    verifyDataBaseAndTable(tracker);
+    existDataBaseAndTable(tracker);
 
     primaryMaster.stop();
 
-    verifyDataBaseAndTable(tracker);
+    existDataBaseAndTable(tracker);
 
     assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
     assertTrue(fs.exists(new Path(activePath, backupMaster.getMasterName().replaceAll(":", "_"))));
@@ -149,9 +133,8 @@ public class TestHAServiceHDFSImpl  {
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "employee"));
   }
 
-
   private TajoConf getBackupMasterConfiguration() {
-    TajoConf conf = util.getConfiguration();
+    TajoConf conf = new TajoConf(util.getConfiguration());
 
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
       "localhost:" + NetUtils.getFreeSocketPort());
@@ -169,29 +152,7 @@ public class TestHAServiceHDFSImpl  {
     conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
     conf.setIntVar(TajoConf.ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL, 1000);
 
-    //Client API service RPC Server
-    conf.setIntVar(TajoConf.ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM, 2);
-    conf.setIntVar(TajoConf.ConfVars.WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM, 2);
-
-    // Internal RPC Server
-    conf.setIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM, 2);
-    conf.setIntVar(TajoConf.ConfVars.QUERY_MASTER_RPC_SERVER_WORKER_THREAD_NUM, 2);
-    conf.setIntVar(TajoConf.ConfVars.WORKER_RPC_SERVER_WORKER_THREAD_NUM, 2);
-    conf.setIntVar(TajoConf.ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM, 2);
-    conf.setIntVar(TajoConf.ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
-
     return conf;
-  }
-
-  private void verifySystemDirectories(FileSystem fs, TajoConf conf) throws Exception {
-    haPath = TajoConf.getSystemHADir(conf);
-    assertTrue(fs.exists(haPath));
-
-    activePath = new Path(haPath, TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
-    assertTrue(fs.exists(activePath));
-
-    backupPath = new Path(haPath, TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
-    assertTrue(fs.exists(backupPath));
   }
 
   private void createDatabaseAndTable(ServiceTracker tracker) throws Exception {
@@ -205,7 +166,7 @@ public class TestHAServiceHDFSImpl  {
     }
   }
 
-  private void verifyDataBaseAndTable(ServiceTracker tracker) throws Exception {
+  private void existDataBaseAndTable(ServiceTracker tracker) throws Exception {
     TajoClient client = null;
     try {
       client = new TajoClientImpl(tracker);
