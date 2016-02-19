@@ -61,6 +61,7 @@ public class TestTajoCli {
 
   /** the base path of result directories */
   protected static final Path resultBasePath;
+  
   static {
     testBase = TpchTestBase.getInstance();
     cluster = testBase.getTestingCluster();
