@@ -18,8 +18,6 @@
 
 package org.apache.tajo.ha;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.net.NetUtils;
@@ -50,8 +48,6 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertNotEquals;
 
 public class TestHAServiceHDFSImpl  {
-  private static final Log LOG = LogFactory.getLog(TestHAServiceHDFSImpl.class);
-
   private TajoConf conf;
   private TajoTestingCluster util;
   private FileTablespace sm;
