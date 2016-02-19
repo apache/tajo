@@ -136,18 +136,12 @@ public class TestHAServiceHDFSImpl  {
   private TajoConf getBackupMasterConfiguration() {
     TajoConf conf = new TajoConf(util.getConfiguration());
 
-    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-      "localhost:" + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-      "localhost:" + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS,
-      "localhost:" + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS,
-      "localhost:" + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS,
-      "localhost:" + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.REST_SERVICE_ADDRESS,
-      "localhost:" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, "localhost:" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS, "localhost:" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, "localhost:" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "localhost:" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS, "localhost:" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.REST_SERVICE_ADDRESS, "localhost:" + NetUtils.getFreeSocketPort());
 
     conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
     conf.setIntVar(TajoConf.ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL, 1000);
