@@ -761,11 +761,13 @@ public class Stage implements EventHandler<StageEvent> {
     for (ExecutionBlock block : masterPlan.getChilds(parent)) {
       if (block.getId() != stage.getBlock().getId()) {
         Stage childStage = stage.context.getStage(block.getId());
-        if (childStage.getInputStats() != null) {
-          inputStatsList.add(childStage.getInputStats());
-        }
-        if (childStage.getResultStats() != null) {
-          resultStatsList.add(childStage.getResultStats());
+        if (childStage != null) {
+          if (childStage.getInputStats() != null) {
+            inputStatsList.add(childStage.getInputStats());
+          }
+          if (childStage.getResultStats() != null) {
+            resultStatsList.add(childStage.getResultStats());
+          }
         }
       }
     }
