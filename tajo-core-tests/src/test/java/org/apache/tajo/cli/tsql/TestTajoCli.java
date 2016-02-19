@@ -47,8 +47,6 @@ import org.junit.rules.TestName;
 
 import java.io.*;
 import java.net.URL;
-import java.sql.ResultSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
