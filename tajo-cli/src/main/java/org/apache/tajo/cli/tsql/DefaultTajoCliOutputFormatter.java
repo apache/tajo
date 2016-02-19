@@ -199,21 +199,28 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     String lineFormat = "[%s] %d%%  %s";
 
     if (isRealTerminal()) {
+      boolean isLastLine = false;
       if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
         progressBar = "@|green " + progressBar + "|@";
+        isLastLine = true;
       }
       else if (status.getState() == TajoProtos.QueryState.QUERY_ERROR ||
                status.getState() == TajoProtos.QueryState.QUERY_FAILED ||
                status.getState() == TajoProtos.QueryState.QUERY_KILLED) {
         progressBar = "@|red " + progressBar + "|@";
+        isLastLine = true;
       }
 
       String line = String.format(lineFormat, progressBar, progress, responseTime);
       out.print(ansi().eraseLine(Ansi.Erase.ALL).a('\r').render(line));
+
+      if (isLastLine) {
+        out.println();
+      }
     }
     else {
       String line = String.format(lineFormat, progressBar, progress, responseTime);
-      out.print('\n' + line);
+      out.println(line);
     }
 
     out.flush();
