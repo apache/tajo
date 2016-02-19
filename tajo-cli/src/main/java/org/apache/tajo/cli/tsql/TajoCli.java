@@ -601,7 +601,6 @@ public class TajoCli implements Closeable {
     // query execute
     ResultSet res = null;
     QueryStatus status = null;
-    boolean isProgressPrinting = false;
     try {
 
       int initRetries = 0;
@@ -616,12 +615,10 @@ public class TajoCli implements Closeable {
 
         if (TajoClientUtil.isQueryRunning(status.getState())) {
           displayFormatter.printProgress(sout, status);
-          if (!isProgressPrinting) {
-            isProgressPrinting = true;
-          }
         }
 
         if (TajoClientUtil.isQueryComplete(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
+          displayFormatter.printProgress(sout, status);
           break;
         } else {
           Thread.sleep(Math.min(200 * progressRetries, 1000));
@@ -629,10 +626,6 @@ public class TajoCli implements Closeable {
         }
       }
 
-      if (isProgressPrinting) {
-        displayFormatter.printProgress(sout, status);
-        sout.println(); // to print out query result in next line
-      }
       if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
         displayFormatter.printErrorMessage(sout, status);
         wasError = true;
