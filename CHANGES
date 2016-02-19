@@ -106,6 +106,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2078: TestTajoCli.testSelectResultWithNullTrueDeprecated occasionally
+    fails. (Dongkyu Hwangbo via jaehwa)
+
     TAJO-2077: Join condition causes incorrect result, when a table has an empty 
     row file. (jinho)
 
