@@ -88,49 +88,58 @@ public class TestHAServiceHDFSImpl  {
 
   @Test
   public final void testAutoFailOver() throws Exception {
-    TajoMaster primaryMaster = util.getMaster();
-    assertNotNull(primaryMaster);
+    TajoMaster backupMaster = null;
 
-    TajoConf conf = getBackupMasterConfiguration();
-    TajoMaster backupMaster = new TajoMaster();
-    backupMaster.init(conf);
-    backupMaster.start();
-    Assert.assertNotNull(backupMaster);
+    try {
+      TajoMaster primaryMaster = util.getMaster();
+      assertNotNull(primaryMaster);
 
-    ServiceTracker tracker = ServiceTrackerFactory.get(util.getConfiguration());
-    assertNotEquals(primaryMaster.getMasterName(), backupMaster.getMasterName());
+      TajoConf conf = getBackupMasterConfiguration();
+      backupMaster = new TajoMaster();
+      backupMaster.init(conf);
+      backupMaster.start();
+      Assert.assertNotNull(backupMaster);
 
-    FileSystem fs = sm.getFileSystem();
-    Path haPath = TajoConf.getSystemHADir(util.getConfiguration());
-    assertTrue(fs.exists(haPath));
+      ServiceTracker tracker = ServiceTrackerFactory.get(util.getConfiguration());
+      assertNotEquals(primaryMaster.getMasterName(), backupMaster.getMasterName());
 
-    Path activePath = new Path(haPath, TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
-    assertTrue(fs.exists(activePath));
+      FileSystem fs = sm.getFileSystem();
+      Path haPath = TajoConf.getSystemHADir(util.getConfiguration());
+      assertTrue(fs.exists(haPath));
 
-    Path backupPath = new Path(haPath, TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
-    assertTrue(fs.exists(backupPath));
+      Path activePath = new Path(haPath, TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      assertTrue(fs.exists(activePath));
 
-    assertEquals(2, fs.listStatus(activePath).length);
-    assertEquals(1, fs.listStatus(backupPath).length);
+      Path backupPath = new Path(haPath, TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
+      assertTrue(fs.exists(backupPath));
 
-    assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
-    assertTrue(fs.exists(new Path(activePath, primaryMaster.getMasterName().replaceAll(":", "_"))));
-    assertTrue(fs.exists(new Path(backupPath, backupMaster.getMasterName().replaceAll(":", "_"))));
+      assertEquals(2, fs.listStatus(activePath).length);
+      assertEquals(1, fs.listStatus(backupPath).length);
 
-    createDatabaseAndTable(tracker);
-    existDataBaseAndTable(tracker);
+      assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
+      assertTrue(fs.exists(new Path(activePath, primaryMaster.getMasterName().replaceAll(":", "_"))));
+      assertTrue(fs.exists(new Path(backupPath, backupMaster.getMasterName().replaceAll(":", "_"))));
 
-    primaryMaster.stop();
+      createDatabaseAndTable(tracker);
+      existDataBaseAndTable(tracker);
 
-    existDataBaseAndTable(tracker);
+      primaryMaster.stop();
 
-    assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
-    assertTrue(fs.exists(new Path(activePath, backupMaster.getMasterName().replaceAll(":", "_"))));
+      existDataBaseAndTable(tracker);
 
-    assertEquals(2, fs.listStatus(activePath).length);
-    assertEquals(0, fs.listStatus(backupPath).length);
+      assertTrue(fs.exists(new Path(activePath, HAConstants.ACTIVE_LOCK_FILE)));
+      assertTrue(fs.exists(new Path(activePath, backupMaster.getMasterName().replaceAll(":", "_"))));
 
-    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "employee"));
+      assertEquals(2, fs.listStatus(activePath).length);
+      assertEquals(0, fs.listStatus(backupPath).length);
+
+      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "employee"));
+    } finally {
+      if (backupMaster != null) {
+        backupMaster.close();
+      }
+    }
+
   }
 
   private TajoConf getBackupMasterConfiguration() {
