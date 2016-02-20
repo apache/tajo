@@ -504,7 +504,7 @@ public class Query implements EventHandler<QueryEvent> {
             query.context.getQueryContext(),
             lastStage.getId(),
             lastStage.getMasterPlan().getLogicalPlan(),
-            lastStage.getSchema(),
+            lastStage.getOutSchema(),
             tableDesc);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
@@ -653,7 +653,7 @@ public class Query implements EventHandler<QueryEvent> {
         TableDesc resultTableDesc =
             new TableDesc(
                 query.getId().toString(),
-                lastStage.getSchema(),
+                lastStage.getOutSchema(),
                 meta,
                 finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
@@ -730,7 +730,7 @@ public class Query implements EventHandler<QueryEvent> {
           finalTable = catalog.getTableDesc(tableName);
         } else {
           String tableName = query.getId().toString();
-          finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir.toUri());
+          finalTable = new TableDesc(tableName, lastStage.getOutSchema(), meta, finalOutputDir.toUri());
         }
 
         long volume = getTableVolume(query.systemConf, finalOutputDir);

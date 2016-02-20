@@ -109,4 +109,18 @@ public class TestTableSubQuery extends QueryTestCaseBase {
   public void testMultipleSubqueriesWithAggregation() throws Exception {
     runSimpleTests();
   }
+
+  @Test
+  @Option(sort = true)
+  @SimpleTest(
+      queries = @QuerySpec("" +
+          "select sum(t.cnt) as cnt, l_orderkey, l_partkey, 'my view' from (" +
+          "select l_orderkey, l_partkey, CAST(COUNT(1) AS INT4) as cnt from lineitem group by l_orderkey, l_partkey " +
+          "union all " +
+          "select l_orderkey, l_partkey, l_linenumber as cnt from lineitem) as t " +
+          "group by l_orderkey, l_partkey")
+  )
+  public void testGroupbyOnUnion() throws Exception {
+    runSimpleTests();
+  }
 }
