@@ -718,16 +718,17 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   /**
-   * When executing union all query, summarize TableStat of all stages exclusive of current stage.
+   * Compute table stats from all child stages of union all stage.
    *
    * @param stage current stage
-   * @param statses calculated stat of current stage
+   * @param stats calculated stat of current stage
    * @return
    */
-  public static TableStats[] computeStatFromUnionAll(Stage stage, TableStats[] statses) {
+  public static TableStats[] computeStatFromUnionAll(Stage stage, TableStats[] stats) {
     List<TableStats> inputStatsList = Lists.newArrayList();
     List<TableStats> resultStatsList = Lists.newArrayList();
 
+    // 1. Add stats of other stages exclusive of current stage.
     MasterPlan masterPlan = stage.getMasterPlan();
     ExecutionBlock parent = masterPlan.getParent(stage.getBlock());
     for (ExecutionBlock block : masterPlan.getChilds(parent)) {
@@ -744,11 +745,14 @@ public class Stage implements EventHandler<StageEvent> {
       }
     }
 
-    inputStatsList.add(statses[0]);
-    resultStatsList.add(statses[1]);
+    // 2. Add stats of current stage.
+    inputStatsList.add(stats[0]);
+    resultStatsList.add(stats[1]);
 
+    // 3. Finalize stats
     TableStats inputStats = StatisticsUtil.aggregateTableStat(inputStatsList);
     TableStats resultStats = StatisticsUtil.aggregateTableStat(resultStatsList);
+
     return new TableStats[]{inputStats, resultStats};
   }
 
