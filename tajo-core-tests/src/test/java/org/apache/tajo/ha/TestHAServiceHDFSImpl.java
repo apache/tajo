@@ -44,6 +44,7 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertNotEquals;
 
 public class TestHAServiceHDFSImpl  {
+  
   private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestHAServiceHDFSImpl";
   private TajoTestingCluster util;
   private FileTablespace sm;
