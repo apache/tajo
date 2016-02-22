@@ -401,6 +401,66 @@ public class TestUnionAllQueryByTableStats {
     assertEquals(75L, stats.getNumBytes());
   }
 
+  @Test
+  public void testUnionAllWithSameAliasNames() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    SubmitQueryResponse response = client.executeQuery(query);
+    assertNotNull(response);
+
+    QueryId queryId = new QueryId(response.getQueryId());
+    GetQueryResultResponse resultResponse = getQueryResultResponse(queryId);
+
+    TableDescProto desc = resultResponse.getTableDesc();
+    assertNotNull(desc);
+
+    TableStatsProto stats = desc.getStats();
+    assertNotNull(stats);
+
+    assertEquals(10L, stats.getNumRows());
+    assertEquals(120L, stats.getNumBytes());
+  }
+
+  @Test
+  public void testUnionAllWithDifferentAlias() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    SubmitQueryResponse response = client.executeQuery(query);
+    assertNotNull(response);
+
+    QueryId queryId = new QueryId(response.getQueryId());
+    GetQueryResultResponse resultResponse = getQueryResultResponse(queryId);
+
+    TableDescProto desc = resultResponse.getTableDesc();
+    assertNotNull(desc);
+
+    TableStatsProto stats = desc.getStats();
+    assertNotNull(stats);
+
+    assertEquals(2L, stats.getNumRows());
+    assertEquals(44L, stats.getNumBytes());
+  }
+
+  @Test
+  public void testUnionAllWithDifferentAliasAndFunction() throws Exception {
+    String query = getQueryByClassName(TestUnionQuery.class.getSimpleName());
+
+    SubmitQueryResponse response = client.executeQuery(query);
+    assertNotNull(response);
+
+    QueryId queryId = new QueryId(response.getQueryId());
+    GetQueryResultResponse resultResponse = getQueryResultResponse(queryId);
+
+    TableDescProto desc = resultResponse.getTableDesc();
+    assertNotNull(desc);
+
+    TableStatsProto stats = desc.getStats();
+    assertNotNull(stats);
+
+    assertEquals(5L, stats.getNumRows());
+    assertEquals(160L, stats.getNumBytes());
+  }
+
   private GetQueryResultResponse getQueryResultResponse(QueryId queryId) throws Exception {
     while (true) {
       QueryStatus status = client.getQueryStatus(queryId);
