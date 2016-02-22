@@ -14,8 +14,6 @@
 
 package org.apache.tajo.engine.planner.global;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.plan.logical.*;
@@ -30,8 +28,6 @@ import java.util.*;
  * In addition, it includes a logical plan to be executed in each node.
  */
 public class ExecutionBlock {
-  private static Log LOG = LogFactory.getLog(ExecutionBlock.class);
-
   private ExecutionBlockId executionBlockId;
   private LogicalNode plan = null;
   private StoreTableNode store = null;
@@ -115,8 +111,6 @@ public class ExecutionBlock {
     }
 
     LogicalNode node = plan;
-    LOG.info("### EB:" + getId() + ", type:" + node.getType().name() + ", Plan:" + node.getPlanString());
-
     ArrayList<LogicalNode> s = new ArrayList<>();
     s.add(node);
     while (!s.isEmpty()) {
