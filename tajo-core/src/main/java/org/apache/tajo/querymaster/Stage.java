@@ -718,34 +718,6 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   /**
-   * Check if parent stage is a block for UnionAll.
-   *
-   * @return
-   */
-  private boolean isUnionAll() {
-    boolean isUnionAll = false;
-    ExecutionBlock parent = masterPlan.getParent(block);
-    LogicalRootNode rootNode = masterPlan.getLogicalPlan().getRootBlock().getRoot();
-
-    if (rootNode.getChild() instanceof UnionNode) {
-      boolean isDistinct = ((UnionNode) rootNode.getChild()).isDistinct();
-      if (!isDistinct && masterPlan.getRoot() == parent) {
-        isUnionAll = true;
-      }
-    } else if(rootNode.getChild() instanceof TableSubQueryNode) {
-      TableSubQueryNode subQueryNode = (TableSubQueryNode) rootNode.getChild();
-      if (subQueryNode.getChild(0) instanceof UnionNode) {
-        boolean isDistinct = ((UnionNode) subQueryNode.getChild(0)).isDistinct();
-        if (!isDistinct && masterPlan.getRoot() == parent) {
-          isUnionAll = true;
-        }
-      }
-    }
-
-    return isUnionAll;
-  }
-
-  /**
    * When executing union all query, summarize TableStat of all stages exclusive of current stage.
    *
    * @param stage current stage
@@ -846,7 +818,9 @@ public class Stage implements EventHandler<StageEvent> {
     if (block.isUnionOnly()) {
       statsArray = computeStatFromUnionBlock(this);
     } else {
-      if (isUnionAll()) {
+      ExecutionBlock parent = masterPlan.getParent(block);
+
+      if (parent.isUnionAllParent()) {
         TableStats[] currentStats = computeStatFromTasks();
         statsArray = computeStatFromUnionAll(this, currentStats);
       } else {
