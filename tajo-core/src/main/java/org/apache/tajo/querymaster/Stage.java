@@ -45,7 +45,6 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.error.Errors.SerializedException;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
@@ -96,7 +95,7 @@ public class Stage implements EventHandler<StageEvent> {
   private MasterPlan masterPlan;
   private ExecutionBlock block;
   private int priority;
-  private Schema schema;
+  private Schema outSchema;
   private TableMeta meta;
   private TableStats resultStatistics;
   private TableStats inputStatistics;
@@ -592,8 +591,8 @@ public class Stage implements EventHandler<StageEvent> {
     return tasks.get(qid);
   }
 
-  public Schema getSchema() {
-    return schema;
+  public Schema getOutSchema() {
+    return outSchema;
   }
 
   public TableMeta getTableMeta() {
@@ -667,8 +666,7 @@ public class Stage implements EventHandler<StageEvent> {
     long[] numRows = new long[]{0, 0};
     int[] numBlocks = new int[]{0, 0};
     int[] numOutputs = new int[]{0, 0};
-
-    List<ColumnStats> columnStatses = Lists.newArrayList();
+    List<ColumnStats> columnStatses = StatisticsUtil.emptyColumnStats(stage.getDataChannel().getSchema());
 
     MasterPlan masterPlan = stage.getMasterPlan();
     for (ExecutionBlock block : masterPlan.getChilds(stage.getBlock())) {
@@ -687,7 +685,9 @@ public class Stage implements EventHandler<StageEvent> {
         numOutputs[i] += childStatArray[i].getNumShuffleOutputs();
         numRows[i] += childStatArray[i].getNumRows();
       }
-      columnStatses.addAll(childStatArray[1].getColumnStats());
+      if (childStatArray[1].getColumnStats() != null && childStatArray[1].getColumnStats().size() > 0) {
+        columnStatses = StatisticsUtil.aggregateColumnStats(columnStatses, childStatArray[1].getColumnStats());
+      }
     }
 
     for (int i = 0; i < 2; i++) {
@@ -863,7 +863,7 @@ public class Stage implements EventHandler<StageEvent> {
       dataFormat = channel.getDataFormat();
     }
 
-    schema = channel.getSchema();
+    outSchema = channel.getSchema();
     meta = CatalogUtil.newTableMeta(dataFormat, new KeyValueSet());
     inputStatistics = statsArray[0];
     resultStatistics = statsArray[1];
