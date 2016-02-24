@@ -177,8 +177,11 @@ public class StoreTableExec extends UnaryPhysicalExec {
   }
 
   private void addOutputFile() {
-    if (appender instanceof FileAppender) {
-      context.addOutputFile(((FileAppender) appender).getPath().toString());
-    }
+    if (context.getQueryContext().containsKey(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      if (context.getQueryContext().getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
+        && appender instanceof FileAppender) {
+          context.addOutputFile(((FileAppender) appender).getPath().toString());
+        }
+      }
   }
 }

@@ -225,8 +225,11 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   }
 
   public void addOutputFile(Appender app) {
-    if (app instanceof FileAppender) {
-      context.addOutputFile(((FileAppender) app).getPath().toString());
+    if (context.getQueryContext().containsKey(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      if (context.getQueryContext().getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
+        && app instanceof FileAppender) {
+        context.addOutputFile(((FileAppender) app).getPath().toString());
+      }
     }
   }
 }
