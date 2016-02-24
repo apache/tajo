@@ -866,7 +866,7 @@ public class BSTIndex implements IndexMethod {
             start = centerPos;
           }
 
-          centerPos = (start + end) / 2;
+          centerPos = (start + end) >>> 1;
         }
       }
       return offset;
