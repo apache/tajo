@@ -20,6 +20,7 @@ package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -342,6 +343,34 @@ public class Query implements EventHandler<QueryEvent> {
     for(Stage eachStage : getStages()) {
       eachStage.clearPartitions();
     }
+  }
+
+  public List<String> getOutputFiles() {
+    Set<String> files = Sets.newHashSet();
+    getStages().stream().forEach(stage -> {
+      files.addAll(stage.getOutputFiles());
+    });
+    return Lists.newArrayList(files);
+  }
+
+  public void clearOutputFiles() {
+    getStages().stream().forEach(stage -> {
+      stage.clearOutputFiles();
+    });
+  }
+
+  public List<String> getBackupFiles() {
+    Set<String> files = Sets.newHashSet();
+    getStages().stream().forEach(stage -> {
+      files.addAll(stage.getOutputFiles());
+    });
+    return Lists.newArrayList(files);
+  }
+
+  public void clearBackupFiles() {
+    getStages().stream().forEach(stage -> {
+      stage.clearBackupFiles();
+    });
   }
 
   public SerializedException getFailureReason() {

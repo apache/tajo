@@ -20,7 +20,9 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -30,14 +32,14 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.FileTablespace;
-import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This is a physical executor to store a table part into a specified storage.
@@ -77,6 +79,16 @@ public class StoreTableExec extends UnaryPhysicalExec {
 
     openNewFile(writtenFileNum);
     sumStats = new TableStats();
+
+    // Get existing files
+    if(context.getQueryContext().containsKey(QueryVars.OUTPUT_TABLE_URI)) {
+      URI outputTableUri = context.getQueryContext().getOutputTableUri();
+      FileTablespace space = TablespaceManager.get(outputTableUri);
+      List<FileStatus> fileList = space.listStatus(new Path(outputTableUri));
+      fileList.stream().forEach(status -> {
+        context.addBackupFile(status.getPath().toString());
+      });
+    }
   }
 
   public void openNewFile(int suffixId) throws IOException {
@@ -124,6 +136,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
 
       if (maxPerFileSize > 0 && maxPerFileSize <= appender.getEstimatedOutputSize()) {
         appender.close();
+        addOutputFile();
 
         writtenFileNum++;
         StatisticsUtil.aggregateTableStat(sumStats, appender.getStats());
@@ -145,6 +158,8 @@ public class StoreTableExec extends UnaryPhysicalExec {
     if(appender != null){
       appender.flush();
       appender.close();
+      addOutputFile();
+
       // Collect statistics data
       if (sumStats == null) {
         context.setResultStats(appender.getStats());
@@ -159,5 +174,11 @@ public class StoreTableExec extends UnaryPhysicalExec {
 
     appender = null;
     plan = null;
+  }
+
+  private void addOutputFile() {
+    if (appender instanceof FileAppender) {
+      context.addOutputFile(((FileAppender) appender).getPath().toString());
+    }
   }
 }

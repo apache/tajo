@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
@@ -42,6 +43,8 @@ import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.List;
 
 public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(ColPartitionStoreExec.class);
@@ -153,6 +156,17 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
     addPartition(partition);
 
+
+    // Get existing files
+    if(context.getQueryContext().containsKey(QueryVars.OUTPUT_TABLE_URI)) {
+      URI outputTableUri = context.getQueryContext().getOutputTableUri();
+      FileTablespace space = TablespaceManager.get(outputTableUri);
+      List<FileStatus> fileList = space.listStatus(new Path(outputTableUri.getPath(), partition));
+      fileList.stream().forEach(status -> {
+        context.addBackupFile(status.getPath().toString());
+      });
+    }
+
     return appender;
   }
 
@@ -208,5 +222,11 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   @Override
   public void rescan() throws IOException {
     // nothing to do
+  }
+
+  public void addOutputFile(Appender app) {
+    if (app instanceof FileAppender) {
+      context.addOutputFile(((FileAppender) app).getPath().toString());
+    }
   }
 }

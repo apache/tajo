@@ -18,6 +18,7 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.collect.Sets;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -67,6 +68,9 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private CatalogProtos.TableStatsProto resultStats;
 
   private Set<PartitionDescProto> partitions;
+
+  private Set<String> outputFiles;
+  private Set<String> backupFiles;
 
   protected static final StateMachineFactory
       <TaskAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
@@ -192,6 +196,9 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
 
     stateMachine = stateMachineFactory.make(this);
     this.partitions = new HashSet<>();
+
+    this.outputFiles = Sets.newHashSet();
+    this.backupFiles = Sets.newHashSet();
   }
 
   public TaskAttemptState getState() {
@@ -252,6 +259,22 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       return null;
     }
     return new TableStats(resultStats);
+  }
+
+  public Set<String> getOutputFiles() {
+    return outputFiles;
+  }
+
+  public void addOutputFiles(Set<String> files) {
+    this.outputFiles.addAll(files);
+  }
+
+  public Set<String> getBackupFiles() {
+    return backupFiles;
+  }
+
+  public void addBackupFiles(Set<String> files) {
+    this.backupFiles.addAll(files);
   }
 
   public Set<PartitionDescProto> getPartitions() {

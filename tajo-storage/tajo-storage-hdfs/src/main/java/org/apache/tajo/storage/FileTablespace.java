@@ -306,7 +306,7 @@ public class FileTablespace extends Tablespace {
    * @return array of FileStatus objects
    * @throws IOException if zero items.
    */
-  protected List<FileStatus> listStatus(Path... dirs) throws IOException {
+  public List<FileStatus> listStatus(Path... dirs) throws IOException {
     List<FileStatus> result = new ArrayList<>();
     if (dirs.length == 0) {
       throw new IOException("No input paths specified in job");
