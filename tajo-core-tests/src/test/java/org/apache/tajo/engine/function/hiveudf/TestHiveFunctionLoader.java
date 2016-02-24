@@ -107,13 +107,22 @@ public class TestHiveFunctionLoader {
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
     assertEquals("to uppercase", desc.getDescription());
 
-    // Test for UDF without @Description
+    // Test for UDF without @Description and including multi 'evaluate()'
     desc = catService.getFunction("com_example_hive_udf_MyLower", CatalogProtos.FunctionType.UDF,
         CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
 
     assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
     assertEquals(1, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
+
+    // same function for another parameter signature
+    desc = catService.getFunction("com_example_hive_udf_MyLower", CatalogProtos.FunctionType.UDF,
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT), CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT));
+
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
+    assertEquals(2, desc.getParamTypes().length);
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[1].getType());
   }
 
   @Test

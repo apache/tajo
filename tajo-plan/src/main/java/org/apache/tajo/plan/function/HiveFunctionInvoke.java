@@ -20,6 +20,7 @@ package org.apache.tajo.plan.function;
 
 import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.UDFInvocationDesc;
@@ -52,13 +53,13 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
 
     try {
       Class<?> udfclass = loader.loadClass(udfDesc.getName());
-      evalMethod = getEvaluateMethod(udfclass);
+      evalMethod = getEvaluateMethod(functionDesc.getParamTypes(), udfclass);
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
     }
   }
 
-  private Method getEvaluateMethod(Class<?> clazz) {
+  private Method getEvaluateMethod(TajoDataTypes.DataType [] paramTypes, Class<?> clazz) {
     Constructor constructor = clazz.getConstructors()[0];
 
     try {
@@ -69,11 +70,26 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
 
     for (Method m: clazz.getMethods()) {
       if (m.getName().equals("evaluate")) {
-        return m;
+        Class [] methodParamTypes = m.getParameterTypes();
+        if (checkParamTypes(methodParamTypes, paramTypes)) {
+          return m;
+        }
       }
     }
 
     return null;
+  }
+
+  boolean checkParamTypes(Class [] writableParams, TajoDataTypes.DataType [] tajoParams) {
+    int i = 0;
+
+    for (Class writable: writableParams) {
+      if (!WritableTypeConverter.convertWritableToTajoType(writable).equals(tajoParams[i++])) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   @Override

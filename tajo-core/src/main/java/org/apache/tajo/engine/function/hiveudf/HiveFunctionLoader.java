@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDF;
 import org.apache.hadoop.hive.ql.udf.UDFType;
+import org.apache.hadoop.io.Writable;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.FunctionDescBuilder;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -101,29 +102,6 @@ public class HiveFunctionLoader {
         names = new String [] {clazz.getName().replace('.','_')};
       }
 
-      Class hiveUDFretType = null;
-      Class [] hiveUDFparams = null;
-
-      // verify 'evaluate' method and extract return type and parameter types
-      for (Method method: clazz.getMethods()) {
-        if (method.getName().equals("evaluate")) {
-          hiveUDFretType = method.getReturnType();
-          hiveUDFparams = method.getParameterTypes();
-          break;
-        }
-      }
-
-      TajoDataTypes.DataType retType = WritableTypeConverter.convertWritableToTajoType(hiveUDFretType);
-      TajoDataTypes.DataType [] params = null;
-
-      // convert types to ones of Tajo
-      if (hiveUDFparams != null && hiveUDFparams.length > 0) {
-        params = new TajoDataTypes.DataType[hiveUDFparams.length];
-        for (int i=0; i<hiveUDFparams.length; i++) {
-          params[i] = WritableTypeConverter.convertWritableToTajoType(hiveUDFparams[i]);
-        }
-      }
-
       // actual function descriptor building
       FunctionDescBuilder builder = new FunctionDescBuilder();
 
@@ -132,7 +110,7 @@ public class HiveFunctionLoader {
         builder.setDeterministic(type.deterministic());
       }
 
-      builder.setFunctionType(CatalogProtos.FunctionType.UDF).setReturnType(retType).setParams(params);
+      builder.setFunctionType(CatalogProtos.FunctionType.UDF);
 
       if (value != null) {
         builder.setDescription(value);
@@ -144,11 +122,40 @@ public class HiveFunctionLoader {
 
       UDFInvocationDesc udfInvocation = new UDFInvocationDesc(CatalogProtos.UDFtype.HIVE, clazz.getName(), jarurl, true);
 
-      for (String name: names) {
-        builder.setName(name);
-        builder.setUDF(udfInvocation);
-        list.add(builder.build());
+      // verify 'evaluate' method and extract return type and parameter types
+      for (Method method: clazz.getMethods()) {
+        if (method.getName().equals("evaluate")) {
+          registerMethod(method, names, udfInvocation, builder, list);
+        }
       }
     }
+  }
+
+  private static void registerMethod(Method method, String [] names, UDFInvocationDesc udfInvocation,
+                                     FunctionDescBuilder builder, List<FunctionDesc> list) {
+    TajoDataTypes.DataType retType =
+        WritableTypeConverter.convertWritableToTajoType((Class<? extends Writable>)method.getReturnType());
+    TajoDataTypes.DataType[] params = convertTajoParamterTypes(method.getParameterTypes());
+
+    builder.setReturnType(retType).setParams(params);
+
+    for (String name: names) {
+      builder.setName(name);
+      builder.setUDF(udfInvocation);
+      list.add(builder.build());
+    }
+  }
+
+  private static TajoDataTypes.DataType[] convertTajoParamterTypes(Class[] hiveUDFparams) {
+    TajoDataTypes.DataType [] params = null;
+
+    // convert types to ones of Tajo
+    if (hiveUDFparams != null && hiveUDFparams.length > 0) {
+      params = new TajoDataTypes.DataType[hiveUDFparams.length];
+      for (int i=0; i<hiveUDFparams.length; i++) {
+        params[i] = WritableTypeConverter.convertWritableToTajoType(hiveUDFparams[i]);
+      }
+    }
+    return params;
   }
 }
