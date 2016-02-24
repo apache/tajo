@@ -24,11 +24,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
+import org.apache.tajo.ResourceProtos.TaskKilledCompletionReport;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.ResourceProtos.TaskFatalErrorReport;
 import org.apache.tajo.ResourceProtos.TaskCompletionReport;
 import org.apache.tajo.ResourceProtos.ShuffleFileOutput;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
@@ -265,7 +267,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     return outputFiles;
   }
 
-  public void addOutputFiles(Set<String> files) {
+  public void addOutputFiles(List<String> files) {
     this.outputFiles.addAll(files);
   }
 
@@ -273,7 +275,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     return backupFiles;
   }
 
-  public void addBackupFiles(Set<String> files) {
+  public void addBackupFiles(List<String> files) {
     this.backupFiles.addAll(files);
   }
 
@@ -367,7 +369,21 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent event) {
       taskAttempt.getTask().handle(new TaskEvent(taskAttempt.getId().getTaskId(),
-          TaskEventType.T_ATTEMPT_KILLED));
+        TaskEventType.T_ATTEMPT_KILLED));
+
+      if (event instanceof TaskAttemptKilledCompletionEvent) {
+        TaskAttemptKilledCompletionEvent killedCompletionEvent = (TaskAttemptKilledCompletionEvent)event;
+        TaskKilledCompletionReport report = killedCompletionEvent.getReport();
+
+        if (report.getOutputFilesCount() > 0) {
+          taskAttempt.addOutputFiles(report.getOutputFilesList());
+        }
+
+        if (report.getBackupFilesCount() > 0) {
+          taskAttempt.addBackupFiles(report.getBackupFilesList());
+        }
+      }
+
       LOG.info(taskAttempt.getId() + " Received TA_KILLED Status from LocalTask");
     }
   }
@@ -429,6 +445,14 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
           taskAttempt.addPartitions(report.getPartitionsList());
         }
 
+        if (report.getOutputFilesCount() > 0) {
+          taskAttempt.addOutputFiles(report.getOutputFilesList());
+        }
+
+        if (report.getBackupFilesCount() > 0) {
+          taskAttempt.addBackupFiles(report.getBackupFilesList());
+        }
+
         taskAttempt.fillTaskStatistics(report);
         taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_SUCCEEDED));
       } catch (Throwable t) {
@@ -457,6 +481,19 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       TaskFatalErrorEvent errorEvent = (TaskFatalErrorEvent) event;
       taskAttempt.eventHandler.handle(new TaskTAttemptFailedEvent(taskAttempt.getId(), errorEvent.getError()));
       taskAttempt.addDiagnosticInfo(errorEvent.getError().getMessage());
+
+      if (errorEvent.getReport() != null) {
+        TaskFatalErrorReport report = errorEvent.getReport();
+
+        if (report.getOutputFilesCount() > 0) {
+          taskAttempt.addOutputFiles(report.getOutputFilesList());
+        }
+
+        if (report.getBackupFilesCount() > 0 ) {
+          taskAttempt.addBackupFiles(report.getBackupFilesList());
+        }
+      }
+
       LOG.error(taskAttempt.getId() + " FROM " + taskAttempt.getWorkerConnectionInfo().getHost()
           + " >> " + errorEvent.getError().getMessage());
     }

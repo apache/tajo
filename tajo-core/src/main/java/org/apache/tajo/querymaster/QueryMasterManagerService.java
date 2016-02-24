@@ -129,8 +129,17 @@ public class QueryMasterManagerService extends CompositeService
 
       if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
         LOG.warn(attemptId + " Killed");
-        attempt.handle(
-            new TaskAttemptEvent(new TaskAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
+
+        TaskKilledCompletionReport.Builder builder = TaskKilledCompletionReport.newBuilder();
+        builder.setId(request.getId());
+        if (request.getOutputFilesCount() > 0) {
+          builder.addAllOutputFiles(request.getOutputFilesList());
+        }
+        if (request.getBackupFilesCount() > 0) {
+          builder.addAllBackupFiles(request.getBackupFilesList());
+        }
+
+        attempt.handle(new TaskAttemptKilledCompletionEvent(builder.build()));
       } else {
         queryMasterTask.getEventHandler().handle(
             new TaskAttemptStatusUpdateEvent(new TaskAttemptId(request.getId()), request));

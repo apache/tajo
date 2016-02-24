@@ -353,24 +353,12 @@ public class Query implements EventHandler<QueryEvent> {
     return Lists.newArrayList(files);
   }
 
-  public void clearOutputFiles() {
-    getStages().stream().forEach(stage -> {
-      stage.clearOutputFiles();
-    });
-  }
-
   public List<String> getBackupFiles() {
     Set<String> files = Sets.newHashSet();
     getStages().stream().forEach(stage -> {
-      files.addAll(stage.getOutputFiles());
+      files.addAll(stage.getBackupFiles());
     });
     return Lists.newArrayList(files);
-  }
-
-  public void clearBackupFiles() {
-    getStages().stream().forEach(stage -> {
-      stage.clearBackupFiles();
-    });
   }
 
   public SerializedException getFailureReason() {

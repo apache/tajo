@@ -1282,6 +1282,8 @@ public class Stage implements EventHandler<StageEvent> {
         stage.completedTaskCount++;
         stage.getTaskScheduler().releaseTaskAttempt(task.getLastAttempt());
 
+        TaskAttempt lastAttempt = task.getLastAttempt();
+
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
           stage.succeededObjectCount++;
         } else if (task.getState() == TaskState.KILLED) {

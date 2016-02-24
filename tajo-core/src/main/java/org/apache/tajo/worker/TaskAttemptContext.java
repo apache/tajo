@@ -89,8 +89,8 @@ public class TaskAttemptContext {
 
   private List<PartitionDescProto> partitions;
 
-  private List<String> outputFiles;
-  private List<String> backupFiles;
+  private Set<String> outputFiles;
+  private Set<String> backupFiles;
 
   public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
                             final TaskAttemptId taskId,
@@ -126,8 +126,8 @@ public class TaskAttemptContext {
 
     this.partitions = new ArrayList<>();
 
-    this.outputFiles = Lists.newArrayList();
-    this.backupFiles = Lists.newArrayList();
+    this.outputFiles = Sets.newHashSet();
+    this.backupFiles = Sets.newHashSet();
   }
 
   @VisibleForTesting
@@ -433,7 +433,7 @@ public class TaskAttemptContext {
     }
   }
 
-  public List<String> getOutputFiles() {
+  public Set<String> getOutputFiles() {
     return outputFiles;
   }
 
@@ -443,7 +443,7 @@ public class TaskAttemptContext {
     }
   }
 
-  public List<String> getBackupFiles() {
+  public Set<String> getBackupFiles() {
     return backupFiles;
   }
 
