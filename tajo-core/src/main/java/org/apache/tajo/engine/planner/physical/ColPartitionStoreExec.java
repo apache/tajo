@@ -33,6 +33,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.NodeType;
@@ -64,6 +65,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   protected long maxPerFileSize = Long.MAX_VALUE; // default max file size is 2^63
   protected int writtenFileNum = 0;               // how many file are written so far?
   protected Path lastFileName;                    // latest written file name
+
+  protected boolean directOutputCommitterEnabled;
 
   public ColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
@@ -113,6 +116,12 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
         keyIds[i] = plan.getOutSchema().getColumnId(column.getQualifiedName());
       }
     }
+
+    if (context.getConf().getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      directOutputCommitterEnabled = true;
+    } else {
+      directOutputCommitterEnabled = false;
+    }
   }
 
   @Override
@@ -158,7 +167,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
 
 
     // Get existing files
-    if(context.getQueryContext().containsKey(QueryVars.OUTPUT_TABLE_URI)) {
+    if(directOutputCommitterEnabled && context.getQueryContext().containsKey(QueryVars.OUTPUT_TABLE_URI)) {
       URI outputTableUri = context.getQueryContext().getOutputTableUri();
       FileTablespace space = TablespaceManager.get(outputTableUri);
       List<FileStatus> fileList = space.listStatus(new Path(outputTableUri.getPath(), partition));
@@ -225,11 +234,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   }
 
   public void addOutputFile(Appender app) {
-    if (context.getQueryContext().containsKey(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
-      if (context.getQueryContext().getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
-        && app instanceof FileAppender) {
-        context.addOutputFile(((FileAppender) app).getPath().toString());
-      }
+    if (directOutputCommitterEnabled && app instanceof FileAppender) {
+      context.addOutputFile(((FileAppender) app).getPath().toString());
     }
   }
 }

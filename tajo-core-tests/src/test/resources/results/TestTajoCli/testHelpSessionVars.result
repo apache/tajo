@@ -48,5 +48,4 @@ Available Session Variables:
 \set FETCH_ROWNUM [int value] - The number of rows to be fetched from Master at a time
 \set BLOCK_ON_RESULT [true or false] - Whether to block result set on query execution
 \set COMPRESSED_RESULT_TRANSFER [true or false] - Use compression to optimize result transmission.
-\set DIRECT_OUTPUT_COMMITTER_ENABLED [true or false] - Use direct output committer avoiding eventual consistency.
 \set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled

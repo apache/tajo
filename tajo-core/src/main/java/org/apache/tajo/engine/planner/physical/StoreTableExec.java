@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -57,6 +58,8 @@ public class StoreTableExec extends UnaryPhysicalExec {
   private int writtenFileNum = 0;               // how many file are written so far?
   private Path lastFileName;                    // latest written file name
 
+  private boolean directOutputCommitterEnabled;
+
   public StoreTableExec(TaskAttemptContext context, PersistentStoreNode plan, PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     this.plan = plan;
@@ -80,8 +83,14 @@ public class StoreTableExec extends UnaryPhysicalExec {
     openNewFile(writtenFileNum);
     sumStats = new TableStats();
 
+    if (context.getConf().getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      directOutputCommitterEnabled = true;
+    } else {
+      directOutputCommitterEnabled = false;
+    }
+
     // Get existing files
-    if(context.getQueryContext().containsKey(QueryVars.OUTPUT_TABLE_URI)) {
+    if (directOutputCommitterEnabled && context.getQueryContext().containsKey(QueryVars.OUTPUT_TABLE_URI)) {
       URI outputTableUri = context.getQueryContext().getOutputTableUri();
       FileTablespace space = TablespaceManager.get(outputTableUri);
       List<FileStatus> fileList = space.listStatus(new Path(outputTableUri));
@@ -177,11 +186,8 @@ public class StoreTableExec extends UnaryPhysicalExec {
   }
 
   private void addOutputFile() {
-    if (context.getQueryContext().containsKey(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
-      if (context.getQueryContext().getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
-        && appender instanceof FileAppender) {
-          context.addOutputFile(((FileAppender) appender).getPath().toString());
-        }
-      }
+    if (directOutputCommitterEnabled && appender instanceof FileAppender) {
+      context.addOutputFile(((FileAppender) appender).getPath().toString());
+    }
   }
 }

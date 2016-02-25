@@ -562,8 +562,6 @@ public class Task implements EventHandler<TaskEvent> {
 
   private void finishTask() {
     this.finishTime = System.currentTimeMillis();
-    TaskAttempt lastAttempt = getLastAttempt();
-
     finalTaskHistory = makeTaskHistory();
   }
 
