@@ -42,6 +42,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.global.MasterPlan.ShuffleContext;
 import org.apache.tajo.error.Errors.SerializedException;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.TajoException;
@@ -921,7 +922,7 @@ public class Stage implements EventHandler<StageEvent> {
      */
     private static void setShuffleIfNecessary(Stage stage, DataChannel channel) {
       if (channel.getShuffleType() != ShuffleType.NONE_SHUFFLE) {
-        int numTasks = calculateShuffleOutputNum(stage, channel);
+        int numTasks = calculateShuffleOutputNum(stage);
         Repartitioner.setShuffleOutputNumForTwoPhase(stage, numTasks, channel);
       }
     }
@@ -933,119 +934,128 @@ public class Stage implements EventHandler<StageEvent> {
      * @param stage
      * @return
      */
-    public static int calculateShuffleOutputNum(Stage stage, DataChannel channel) {
+    public static int calculateShuffleOutputNum(Stage stage) {
       MasterPlan masterPlan = stage.getMasterPlan();
       ExecutionBlock parent = masterPlan.getParent(stage.getBlock());
 
-      LogicalNode grpNode = null;
-      if (parent != null) {
-        grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
-        if (grpNode == null) {
-          grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.DISTINCT_GROUP_BY);
-        }
-      }
+      Optional<ShuffleContext> optional = masterPlan.getShuffleInfo(stage.getId());
+      if (optional.isPresent()) {
+        return optional.get().getPartitionNum();
 
-      // We assume this execution block the first stage of join if two or more tables are included in this block,
-      if (parent != null && (parent.getNonBroadcastRelNum()) >= 2) {
-        List<ExecutionBlock> childs = masterPlan.getChilds(parent);
-
-        // for outer
-        ExecutionBlock outer = childs.get(0);
-        long outerVolume = getInputVolume(stage.masterPlan, stage.context, outer);
-
-        // for inner
-        ExecutionBlock inner = childs.get(1);
-        long innerVolume = getInputVolume(stage.masterPlan, stage.context, inner);
-        LOG.info(stage.getId() + ", Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
-            + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
-
-        long bigger = Math.max(outerVolume, innerVolume);
-
-        int mb = (int) Math.ceil((double) bigger / 1048576);
-        LOG.info(stage.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
-
-        int taskNum = (int) Math.ceil((double) mb / masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
-
-        if (masterPlan.getContext().containsKey(SessionVars.TEST_MIN_TASK_NUM)) {
-          taskNum = masterPlan.getContext().getInt(SessionVars.TEST_MIN_TASK_NUM);
-          LOG.warn("!!!!! TESTCASE MODE !!!!!");
-        }
-
-        // The shuffle output numbers of join may be inconsistent by execution block order.
-        // Thus, we need to compare the number with DataChannel output numbers.
-        // If the number is right, the number and DataChannel output numbers will be consistent.
-        int outerShuffleOutputNum = 0, innerShuffleOutputNum = 0;
-        for (DataChannel eachChannel : masterPlan.getOutgoingChannels(outer.getId())) {
-          outerShuffleOutputNum = Math.max(outerShuffleOutputNum, eachChannel.getShuffleOutputNum());
-        }
-        for (DataChannel eachChannel : masterPlan.getOutgoingChannels(inner.getId())) {
-          innerShuffleOutputNum = Math.max(innerShuffleOutputNum, eachChannel.getShuffleOutputNum());
-        }
-        if (outerShuffleOutputNum != innerShuffleOutputNum
-            && taskNum != outerShuffleOutputNum
-            && taskNum != innerShuffleOutputNum) {
-          LOG.info(stage.getId() + ", Change determined number of join partitions cause difference of outputNum" +
-                  ", originTaskNum=" + taskNum + ", changedTaskNum=" + Math.max(outerShuffleOutputNum, innerShuffleOutputNum) +
-                  ", outerShuffleOutptNum=" + outerShuffleOutputNum +
-                  ", innerShuffleOutputNum=" + innerShuffleOutputNum);
-          taskNum = Math.max(outerShuffleOutputNum, innerShuffleOutputNum);
-        }
-
-        LOG.info(stage.getId() + ", The determined number of join partitions is " + taskNum);
-
-        return taskNum;
-        // Is this stage the first step of group-by?
-      } else if (grpNode != null) {
-        boolean hasGroupColumns = true;
-        if (grpNode.getType() == NodeType.GROUP_BY) {
-          hasGroupColumns = ((GroupbyNode)grpNode).getGroupingColumns().length > 0;
-        } else if (grpNode.getType() == NodeType.DISTINCT_GROUP_BY) {
-          // Find current distinct stage node.
-          DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(stage.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
-          if (distinctNode == null) {
-            LOG.warn(stage.getId() + ", Can't find current DistinctGroupbyNode");
-            distinctNode = (DistinctGroupbyNode)grpNode;
+      } else {
+        int partitionNum;
+        LogicalNode grpNode = null;
+        if (parent != null) {
+          grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
+          if (grpNode == null) {
+            grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.DISTINCT_GROUP_BY);
           }
-          hasGroupColumns = distinctNode.getGroupingColumns().length > 0;
+        }
 
-          Enforcer enforcer = stage.getBlock().getEnforcer();
-          if (enforcer == null) {
-            LOG.warn(stage.getId() + ", DistinctGroupbyNode's enforcer is null.");
+        // We assume this execution block the first stage of join if two or more tables are included in this block,
+        if (parent != null && (parent.getNonBroadcastRelNum()) >= 2) {
+          List<ExecutionBlock> childs = masterPlan.getChilds(parent);
+
+          // for outer
+          ExecutionBlock outer = childs.get(0);
+          long outerVolume = getInputVolume(stage.masterPlan, stage.context, outer);
+
+          // for inner
+          ExecutionBlock inner = childs.get(1);
+          long innerVolume = getInputVolume(stage.masterPlan, stage.context, inner);
+          LOG.info(stage.getId() + ", Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
+              + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
+
+          long bigger = Math.max(outerVolume, innerVolume);
+
+          int mb = (int) Math.ceil((double) bigger / 1048576);
+          LOG.info(stage.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
+
+          partitionNum = (int) Math.ceil((double) mb / masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
+
+          if (masterPlan.getContext().containsKey(SessionVars.TEST_MIN_TASK_NUM)) {
+            partitionNum = masterPlan.getContext().getInt(SessionVars.TEST_MIN_TASK_NUM);
+            LOG.warn("!!!!! TESTCASE MODE !!!!!");
           }
-          EnforceProperty property = PhysicalPlannerImpl.getAlgorithmEnforceProperty(enforcer, distinctNode);
-          if (property != null) {
-            if (property.getDistinct().getIsMultipleAggregation()) {
-              MultipleAggregationStage multiAggStage = property.getDistinct().getMultipleAggregationStage();
-              if (multiAggStage != MultipleAggregationStage.THRID_STAGE) {
-                hasGroupColumns = true;
+
+//          // The shuffle output numbers of join may be inconsistent by execution block order.
+//          // Thus, we need to compare the number with DataChannel output numbers.
+//          // If the number is right, the number and DataChannel output numbers will be consistent.
+//          int outerShuffleOutputNum = 0, innerShuffleOutputNum = 0;
+//          for (DataChannel eachChannel : masterPlan.getOutgoingChannels(outer.getId())) {
+//            outerShuffleOutputNum = Math.max(outerShuffleOutputNum, eachChannel.getShuffleOutputNum());
+//          }
+//          for (DataChannel eachChannel : masterPlan.getOutgoingChannels(inner.getId())) {
+//            innerShuffleOutputNum = Math.max(innerShuffleOutputNum, eachChannel.getShuffleOutputNum());
+//          }
+//          if (outerShuffleOutputNum != innerShuffleOutputNum
+//              && taskNum != outerShuffleOutputNum
+//              && taskNum != innerShuffleOutputNum) {
+//            LOG.info(stage.getId() + ", Change determined number of join partitions cause difference of outputNum" +
+//                ", originTaskNum=" + taskNum + ", changedTaskNum=" + Math.max(outerShuffleOutputNum, innerShuffleOutputNum) +
+//                ", outerShuffleOutptNum=" + outerShuffleOutputNum +
+//                ", innerShuffleOutputNum=" + innerShuffleOutputNum);
+//            taskNum = Math.max(outerShuffleOutputNum, innerShuffleOutputNum);
+//          }
+
+          LOG.info(stage.getId() + ", The determined number of join partitions is " + partitionNum);
+
+          // Is this stage the first step of group-by?
+        } else if (grpNode != null) {
+          boolean hasGroupColumns = true;
+          if (grpNode.getType() == NodeType.GROUP_BY) {
+            hasGroupColumns = ((GroupbyNode)grpNode).getGroupingColumns().length > 0;
+          } else if (grpNode.getType() == NodeType.DISTINCT_GROUP_BY) {
+            // Find current distinct stage node.
+            DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(stage.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
+            if (distinctNode == null) {
+              LOG.warn(stage.getId() + ", Can't find current DistinctGroupbyNode");
+              distinctNode = (DistinctGroupbyNode)grpNode;
+            }
+            hasGroupColumns = distinctNode.getGroupingColumns().length > 0;
+
+            Enforcer enforcer = stage.getBlock().getEnforcer();
+            if (enforcer == null) {
+              LOG.warn(stage.getId() + ", DistinctGroupbyNode's enforcer is null.");
+            }
+            EnforceProperty property = PhysicalPlannerImpl.getAlgorithmEnforceProperty(enforcer, distinctNode);
+            if (property != null) {
+              if (property.getDistinct().getIsMultipleAggregation()) {
+                MultipleAggregationStage multiAggStage = property.getDistinct().getMultipleAggregationStage();
+                if (multiAggStage != MultipleAggregationStage.THRID_STAGE) {
+                  hasGroupColumns = true;
+                }
               }
             }
           }
-        }
-        if (!hasGroupColumns) {
-          LOG.info(stage.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
-          return 1;
+          if (!hasGroupColumns) {
+            LOG.info(stage.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
+            partitionNum = 1;
+          } else {
+            ExecutionBlock calculateTargetEb = stage.getBlock().hasUnion() ? parent : stage.block;
+            long volume = getInputVolume(stage.masterPlan, stage.context, calculateTargetEb);
+            int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
+            LOG.info(stage.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
+            // determine the number of task
+            partitionNum = (int) Math.ceil((double) volumeByMB /
+                masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
+            LOG.info(stage.getId() + ", The determined number of aggregation partitions is " + partitionNum);
+
+          }
         } else {
+          LOG.info("============>>>>> Unexpected Case! <<<<<================");
           long volume = getInputVolume(stage.masterPlan, stage.context, stage.block);
 
-          int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
-          LOG.info(stage.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
-          // determine the number of task
-          int taskNum = (int) Math.ceil((double) volumeByMB /
-              masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
-          LOG.info(stage.getId() + ", The determined number of aggregation partitions is " + taskNum);
-          return taskNum;
-        }
-      } else {
-        LOG.info("============>>>>> Unexpected Case! <<<<<================");
-        long volume = getInputVolume(stage.masterPlan, stage.context, stage.block);
+          int mb = (int) Math.ceil((double)volume / 1048576);
+          LOG.info(stage.getId() + ", Table's volume is approximately " + mb + " MB");
+          // determine the number of task per 128MB
+          partitionNum = (int) Math.ceil((double)mb / 128);
+          LOG.info(stage.getId() + ", The determined number of partitions is " + partitionNum);
 
-        int mb = (int) Math.ceil((double)volume / 1048576);
-        LOG.info(stage.getId() + ", Table's volume is approximately " + mb + " MB");
-        // determine the number of task per 128MB
-        int taskNum = (int) Math.ceil((double)mb / 128);
-        LOG.info(stage.getId() + ", The determined number of partitions is " + taskNum);
-        return taskNum;
+        }
+
+        masterPlan.addShuffleInfo(stage.getId(), partitionNum);
+        return partitionNum;
       }
     }
 
