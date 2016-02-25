@@ -417,7 +417,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       TaskAttemptId taskAttemptId = null;
 
       if (unassignedTaskForEachVolume.size() >  0) {
-        int retry = unassignedTaskForEachVolume.size();
+        int retry = diskVolumeLoads.size();
         do {
           //clean and get a remaining local task
           taskAttemptId = getAndRemove(volumeId);
@@ -473,6 +473,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           Iterator<TaskAttempt> iterator = list.iterator();
           taskAttempt = iterator.next();
           iterator.remove();
+          remainTasksNum.decrementAndGet();
         }
 
         taskAttemptId = taskAttempt.getId();
@@ -484,6 +485,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         }
 
         increaseConcurrency(volumeId);
+      } else {
+        unassignedTaskForEachVolume.remove(volumeId);
       }
 
       return taskAttemptId;
@@ -526,7 +529,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       } else if (volumeId == REMOTE) {
         // this case has processed all block on host and it will be assigned to remote
         LOG.info("Assigned host : " + host + ", Remaining local tasks : " + getRemainingLocalTaskSize()
-            + ", Remote Concurrency : " + concurrency);
+            + ", Remote Concurrency : " + concurrency + ", Unassigned volumes: " + unassignedTaskForEachVolume.size());
       }
       diskVolumeLoads.put(volumeId, concurrency);
       return concurrency;
@@ -537,13 +540,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
      */
     private synchronized void decreaseConcurrency(int volumeId){
       if(diskVolumeLoads.containsKey(volumeId)){
-        Integer concurrency = diskVolumeLoads.get(volumeId);
+        int concurrency = diskVolumeLoads.get(volumeId);
         if(concurrency > 0){
           diskVolumeLoads.put(volumeId, concurrency - 1);
-        } else {
-          if (volumeId > REMOTE && !unassignedTaskForEachVolume.containsKey(volumeId)) {
-            diskVolumeLoads.remove(volumeId);
-          }
         }
       }
     }
@@ -559,7 +558,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       for (Map.Entry<Integer, Integer> entry : diskVolumeLoads.entrySet()) {
         if(volumeEntry == null) volumeEntry = entry;
 
-        if (volumeEntry.getValue() >= entry.getValue()) {
+        if (entry.getKey() != REMOTE && volumeEntry.getValue() >= entry.getValue()) {
           volumeEntry = entry;
         }
       }
@@ -596,19 +595,16 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   public void cancel(TaskAttempt taskAttempt) {
 
+    TaskAttemptToSchedulerEvent schedulerEvent = new TaskAttemptToSchedulerEvent(
+        EventType.T_SCHEDULE, taskAttempt.getTask().getId().getExecutionBlockId(),
+        null, taskAttempt);
+
     if(taskAttempt.isLeafTask()) {
       releaseTaskAttempt(taskAttempt);
 
-      List<DataLocation> locations = taskAttempt.getTask().getDataLocations();
-
-      for (DataLocation location : locations) {
-        HostVolumeMapping volumeMapping = scheduledRequests.leafTaskHostMapping.get(location.getHost());
-        volumeMapping.addTaskAttempt(location.getVolumeId(), taskAttempt);
-      }
-
-      scheduledRequests.leafTasks.add(taskAttempt.getId());
+      scheduledRequests.addLeafTask(schedulerEvent);
     } else {
-      scheduledRequests.nonLeafTasks.add(taskAttempt.getId());
+      scheduledRequests.addNonLeafTask(schedulerEvent);
     }
 
     context.getMasterContext().getEventHandler().handle(
@@ -826,7 +822,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
                 tailLimit = Math.max(remainingScheduledObjectNum() / nodes, 1);
               }
 
-              if (hostVolumeMapping.getRemoteConcurrency() >= tailLimit) { //remote task throttling per node
+              //remote task throttling per node
+              if (nodes > 1 && hostVolumeMapping.getRemoteConcurrency() >= tailLimit) {
                 continue;
               } else {
                 // assign to remote volume
@@ -904,9 +901,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
                 cancellation++;
               }
 
-              if(LOG.isDebugEnabled()) {
-                LOG.debug("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
-              }
+              LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
               continue;
             }
           } catch (Exception e) {
@@ -1022,9 +1017,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
                 cancellation++;
               }
 
-              if(LOG.isDebugEnabled()) {
-                LOG.debug("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
-              }
+              LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
               continue;
             }
 
