@@ -16,7 +16,10 @@ package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
 import java.util.*;
 
@@ -30,16 +33,9 @@ import java.util.*;
 public class ExecutionBlock {
   private ExecutionBlockId executionBlockId;
   private LogicalNode plan = null;
-  private StoreTableNode store = null;
-  private List<ScanNode> scanlist = new ArrayList<>();
   private Enforcer enforcer = new Enforcer();
-
   // Actual ScanNode's ExecutionBlockId -> Delegated ScanNode's ExecutionBlockId.
   private Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = new HashMap<>();
-
-  private boolean hasJoinPlan;
-  private boolean hasUnionPlan;
-  private boolean isUnionOnly;
 
   private Map<String, ScanNode> broadcastRelations = new HashMap<>();
 
@@ -234,5 +230,26 @@ public class ExecutionBlock {
 
   public boolean isPreservedRow() {
     return preservedRow;
+  }
+
+  private class PlanContext {
+    StoreTableNode store = null;
+
+    List<ScanNode> scanlist = new ArrayList<>();
+
+    boolean hasJoinPlan;
+    boolean hasUnionPlan;
+    boolean isUnionOnly;
+  }
+
+  private class PlanVisitor extends BasicLogicalPlanVisitor<PlanContext, LogicalNode> {
+
+    @Override
+    public LogicalNode visitJoin(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
+                            Stack<LogicalNode> stack) throws TajoException {
+      super.visitJoin(context, plan, block, node, stack);
+
+      return null;
+    }
   }
 }
