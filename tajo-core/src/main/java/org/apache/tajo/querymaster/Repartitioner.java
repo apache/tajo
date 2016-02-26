@@ -50,7 +50,6 @@ import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.storage.*;
@@ -321,12 +320,12 @@ public class Repartitioner {
             if (tbNameToInterm.containsKey(scanEbId)) {
               tbNameToInterm.get(scanEbId).add(intermediateEntry);
             } else {
-              tbNameToInterm.put(scanEbId, new ArrayList<>(Arrays.asList(intermediateEntry)));
+              tbNameToInterm.put(scanEbId, Lists.newArrayList(intermediateEntry));
             }
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                     new HashMap<>();
-            tbNameToInterm.put(scanEbId, new ArrayList<>(Arrays.asList(intermediateEntry)));
+            tbNameToInterm.put(scanEbId, Lists.newArrayList(intermediateEntry));
             hashEntries.put(intermediateEntry.getPartId(), tbNameToInterm);
           }
         }
@@ -999,7 +998,7 @@ public class Repartitioner {
         int partId = eachInterm.getPartId();
         List<IntermediateEntry> partitionInterms = partitionIntermMap.get(partId);
         if (partitionInterms == null) {
-          partitionInterms = Arrays.asList(eachInterm);
+          partitionInterms = Lists.newArrayList(eachInterm);
           partitionIntermMap.put(partId, partitionInterms);
         } else {
           partitionInterms.add(eachInterm);
@@ -1078,7 +1077,7 @@ public class Repartitioner {
           fetchListVolume = 0;
         }
         FetchImpl fetch = new FetchImpl(fetchName, currentInterm.getPullHost(), SCATTERED_HASH_SHUFFLE,
-            ebId, currentInterm.getPartId(), Arrays.asList(currentInterm));
+            ebId, currentInterm.getPartId(), Lists.newArrayList(currentInterm));
         fetch.setOffset(eachSplit.getFirst());
         fetch.setLength(eachSplit.getSecond());
         fetchListForSingleTask.add(fetch.getProto());
@@ -1219,7 +1218,7 @@ public class Repartitioner {
       if (hashed.containsKey(entry.getPartId())) {
         hashed.get(entry.getPartId()).add(entry);
       } else {
-        hashed.put(entry.getPartId(), Arrays.asList(entry));
+        hashed.put(entry.getPartId(), Lists.newArrayList(entry));
       }
     }
 
@@ -1235,7 +1234,7 @@ public class Repartitioner {
       if (hashed.containsKey(host)) {
         hashed.get(host).add(entry);
       } else {
-        hashed.put(host, Arrays.asList(entry));
+        hashed.put(host, Lists.newArrayList(entry));
       }
     }
 

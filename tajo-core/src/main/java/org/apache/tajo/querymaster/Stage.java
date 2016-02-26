@@ -856,6 +856,7 @@ public class Stage implements EventHandler<StageEvent> {
           ExecutionBlock parent = stage.getMasterPlan().getParent(stage.getBlock());
           DataChannel channel = stage.getMasterPlan().getChannel(stage.getId(), parent.getId());
           setShuffleIfNecessary(stage, channel);
+          // TODO: verify changed shuffle plan
           initTaskScheduler(stage);
           // execute pre-processing asyncronously
           stage.getContext().getQueryMasterContext().getSingleEventExecutor()
@@ -940,6 +941,7 @@ public class Stage implements EventHandler<StageEvent> {
 
       Optional<ShuffleContext> optional = masterPlan.getShuffleInfo(stage.getId());
       if (optional.isPresent()) {
+        LOG.info("# of partitions is determined using sibling eb's shuffle information");
         return optional.get().getPartitionNum();
 
       } else {
@@ -1033,6 +1035,9 @@ public class Stage implements EventHandler<StageEvent> {
             partitionNum = 1;
           } else {
             ExecutionBlock calculateTargetEb = stage.getBlock().hasUnion() ? parent : stage.block;
+            if (stage.getBlock().hasUnion()) {
+              LOG.info("Calculate partition number from parent eb for union");
+            }
             long volume = getInputVolume(stage.masterPlan, stage.context, calculateTargetEb);
             int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
             LOG.info(stage.getId() + ", Table's volume is approximately " + volumeByMB + " MB");

@@ -26,6 +26,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
@@ -246,7 +247,8 @@ public class MasterPlan {
     return getChild(executionBlock.getId(), idx);
   }
 
-  public <CONTEXT> void accept(CONTEXT context, ExecutionBlockId v, DirectedGraphVisitor<CONTEXT, ExecutionBlockId> visitor) {
+  public <CONTEXT> void accept(CONTEXT context, ExecutionBlockId v, DirectedGraphVisitor<CONTEXT,
+      ExecutionBlockId> visitor) throws TajoException {
     execBlockGraph.accept(context, v, visitor);
   }
 
