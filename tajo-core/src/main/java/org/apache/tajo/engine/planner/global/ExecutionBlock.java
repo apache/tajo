@@ -190,6 +190,10 @@ public class ExecutionBlock {
     return planContext.hasUnionPlan;
   }
 
+  public boolean hasAgg() {
+    return planContext.hasAggPlan;
+  }
+
   public boolean isUnionOnly() {
     return planContext.isUnionOnly();
   }
@@ -309,6 +313,21 @@ public class ExecutionBlock {
                                  Stack<LogicalNode> stack) throws TajoException {
       context.scanlist.add(node);
       return super.visitScan(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitPartitionedTableScan(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                                 PartitionedTableScanNode node, Stack<LogicalNode> stack)
+        throws TajoException {
+      context.scanlist.add(node);
+      return super.visitPartitionedTableScan(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitIndexScan(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, IndexScanNode node,
+                                      Stack<LogicalNode> stack) throws TajoException {
+      context.scanlist.add(node);
+      return super.visitIndexScan(context, plan, block, node, stack);
     }
   }
 }
