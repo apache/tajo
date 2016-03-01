@@ -697,13 +697,4 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public void testUnionAndFilter() throws Exception {
     runSimpleTests();
   }
-
-  @Test
-  public void testTest() throws Exception {
-    executeString("create table temp as select sum(t.cnt) as cnt, o_orderkey, o_custkey, 'my view' from (\n" +
-        "select o_orderkey, o_custkey, CAST(COUNT(1) AS INT4) as cnt from orders group by o_orderkey, o_custkey\n" +
-        "union all\n" +
-        "select o_orderkey, o_custkey, o_shippriority from orders) as t\n" +
-        "group by o_orderkey, o_custkey;");
-  }
 }
