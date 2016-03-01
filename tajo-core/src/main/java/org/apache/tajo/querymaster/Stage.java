@@ -989,7 +989,7 @@ public class Stage implements EventHandler<StageEvent> {
               }
 
             } else {
-              // NOTE: the below code might be executed during sort, but the partition number is not used anymore.
+              // NOTE: the below code might be executed during sort, but the partition number is not used anymore for sort.
               LOG.info("============>>>>> Unexpected Case! <<<<<================");
               partitionNum = calculatePartitionNumDefault(parent, stage);
               LOG.info(stage.getId() + ", The determined number of partitions is " + partitionNum);
