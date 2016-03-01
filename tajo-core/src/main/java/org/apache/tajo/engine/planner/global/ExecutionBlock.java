@@ -97,10 +97,6 @@ public class ExecutionBlock {
   }
 
   public void setPlan(LogicalNode plan) throws TajoException {
-//    hasJoinPlan = false;
-//    hasUnionPlan = false;
-//    isUnionOnly = true;
-//    this.scanlist.clear();
     this.plan = plan;
 
     if (plan == null) {
@@ -110,42 +106,6 @@ public class ExecutionBlock {
     final PlanVisitor visitor = new PlanVisitor();
     planContext = new PlanContext();
     visitor.visit(planContext, null, null, plan, new Stack<>());
-
-//    LogicalNode node = plan;
-//    ArrayList<LogicalNode> s = new ArrayList<>();
-//    s.add(node);
-//    while (!s.isEmpty()) {
-//      node = s.remove(s.size()-1);
-//      // TODO: the below code should be improved to handle every case
-//      if (isUnionOnly && node.getType() != NodeType.ROOT && node.getType() != NodeType.TABLE_SUBQUERY &&
-//          node.getType() != NodeType.SCAN && node.getType() != NodeType.PARTITIONS_SCAN &&
-//          node.getType() != NodeType.UNION && node.getType() != NodeType.PROJECTION) {
-//        isUnionOnly = false;
-//      }
-//      if (node instanceof UnaryNode) {
-//        UnaryNode unary = (UnaryNode) node;
-//        s.add(s.size(), unary.getChild());
-//      } else if (node instanceof BinaryNode) {
-//        BinaryNode binary = (BinaryNode) node;
-//        if (binary.getType() == NodeType.JOIN) {
-//          hasJoinPlan = true;
-//        } else if (binary.getType() == NodeType.UNION) {
-//          hasUnionPlan = true;
-//        }
-//        s.add(s.size(), binary.getLeftChild());
-//        s.add(s.size(), binary.getRightChild());
-//      } else if (node instanceof ScanNode) {
-//        scanlist.add((ScanNode)node);
-//      } else if (node instanceof TableSubQueryNode) {
-//        TableSubQueryNode subQuery = (TableSubQueryNode) node;
-//        s.add(s.size(), subQuery.getSubQuery());
-//      } else if (node instanceof StoreTableNode) {
-//        store = (StoreTableNode)node;
-//      }
-//    }
-//    if (!hasUnionPlan) {
-//      isUnionOnly = false;
-//    }
   }
 
   public void addUnionScan(ExecutionBlockId realScanEbId, ExecutionBlockId delegatedScanEbId) {

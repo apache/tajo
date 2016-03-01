@@ -697,10 +697,8 @@ public class Repartitioner {
 
       TupleUtil.setMaxRangeIfNull(sortSpecs, sortSchema, totalStat.getColumnStats(), ranges);
       if (LOG.isDebugEnabled()) {
-        if (ranges != null) {
-          for (TupleRange eachRange : ranges) {
-            LOG.debug(stage.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
-          }
+        for (TupleRange eachRange : ranges) {
+          LOG.debug(stage.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
         }
       }
     }
@@ -1277,6 +1275,7 @@ public class Repartitioner {
         channel.setShuffleOutputNum(1);
       } else {
         channel.setShuffleKeys(keys);
+        // NOTE: desiredNum is not used in Sort anymore.
         channel.setShuffleOutputNum(desiredNum);
       }
     }

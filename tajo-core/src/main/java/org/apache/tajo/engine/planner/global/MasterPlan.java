@@ -51,6 +51,9 @@ public class MasterPlan {
 
   private Map<ExecutionBlockId, ShuffleContext> shuffleInfo = new HashMap<>();
 
+  /**
+   *
+   */
   public class ShuffleContext {
     ExecutionBlockId parentEbId;
     int partitionNum;
@@ -69,6 +72,11 @@ public class MasterPlan {
     }
   }
 
+  /**
+   *
+   * @param ebId
+   * @param partitionNum
+   */
   public void addShuffleInfo(ExecutionBlockId ebId, int partitionNum) {
     ExecutionBlockId parentId = getParent(getExecBlock(ebId)).getId();
     shuffleInfo.put(parentId, new ShuffleContext(ebId, partitionNum));
