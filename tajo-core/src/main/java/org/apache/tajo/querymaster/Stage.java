@@ -924,7 +924,7 @@ public class Stage implements EventHandler<StageEvent> {
      * methods and the number of partitions to a given Stage.
      */
     private static void setShuffleIfNecessary(Stage stage, DataChannel channel) {
-      if (channel.getShuffleType() == ShuffleType.HASH_SHUFFLE) {
+      if (channel.isHashShuffle()) {
         int numTasks = calculateShuffleOutputNum(stage);
         Repartitioner.setShuffleOutputNumForTwoPhase(stage, numTasks, channel);
       }
