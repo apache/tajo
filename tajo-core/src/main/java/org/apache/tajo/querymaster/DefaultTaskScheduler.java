@@ -64,8 +64,6 @@ import static org.apache.tajo.ResourceProtos.*;
 public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private static final Log LOG = LogFactory.getLog(DefaultTaskScheduler.class);
 
-  private static final String REQUEST_MAX_NUM = "tajo.qm.task-scheduler.request.max-num";
-
   private final TaskSchedulerContext context;
   private Stage stage;
   private TajoConf tajoConf;
@@ -123,7 +121,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             break;
           }
         }
-        LOG.info("TaskScheduler schedulingThread stopped");
+        info(LOG, "TaskScheduler schedulingThread stopped");
       }
     };
     super.init(conf);
@@ -131,8 +129,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void start() {
-    LOG.info("Start TaskScheduler");
-    maximumRequestContainer = tajoConf.getInt(REQUEST_MAX_NUM, stage.getContext().getWorkerMap().size());
+    info(LOG, "Start TaskScheduler");
+    maximumRequestContainer = Math.min(tajoConf.getIntVar(TajoConf.ConfVars.QUERYMASTER_TASK_SCHEDULER_REQUEST_MAX_NUM)
+        , stage.getContext().getWorkerMap().size());
 
     if (isLeaf) {
       candidateWorkers.addAll(getWorkerIds(getLeafTaskHosts()));
@@ -160,8 +159,12 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
     candidateWorkers.clear();
     scheduledRequests.clear();
-    LOG.info("Task Scheduler stopped");
+    info(LOG, "Task Scheduler stopped");
     super.stop();
+  }
+
+  protected void info(Log log, String message) {
+    log.info(String.format("[%s] %s", stage.getId(), message));
   }
 
   private Fragment[] fragmentsForNonLeafTask;
@@ -522,13 +525,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
 
       if (volumeId > -1) {
-        LOG.info("Assigned host : " + host + ", Volume : " + volumeId + ", Concurrency : " + concurrency);
+        info(LOG, "Assigned host : " + host + ", Volume : " + volumeId + ", Concurrency : " + concurrency);
       } else if (volumeId == -1) {
         // this case is disabled namenode block meta or compressed text file or amazon s3
-        LOG.info("Assigned host : " + host + ", Unknown Volume : " + volumeId + ", Concurrency : " + concurrency);
+        info(LOG, "Assigned host : " + host + ", Unknown Volume : " + volumeId + ", Concurrency : " + concurrency);
       } else if (volumeId == REMOTE) {
         // this case has processed all block on host and it will be assigned to remote
-        LOG.info("Assigned host : " + host + ", Remaining local tasks : " + getRemainingLocalTaskSize()
+        info(LOG, "Assigned host : " + host + ", Remaining local tasks : " + getRemainingLocalTaskSize()
             + ", Remote Concurrency : " + concurrency + ", Unassigned volumes: " + unassignedTaskForEachVolume.size());
       }
       diskVolumeLoads.put(volumeId, concurrency);
@@ -901,7 +904,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
                 cancellation++;
               }
 
-              LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
+              info(LOG, "Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
               continue;
             }
           } catch (Exception e) {
@@ -913,7 +916,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           rackLocalAssigned += rackAssign;
 
           if (rackAssign > 0) {
-            LOG.info(String.format("Assigned Local/Rack/Total: (%d/%d/%d), " +
+            info(LOG, String.format("Assigned Local/Rack/Total: (%d/%d/%d), " +
                     "Attempted Cancel/Assign/Total: (%d/%d/%d), " +
                     "Locality: %.2f%%, Rack host: %s",
                 hostLocalAssigned, rackLocalAssigned, totalAssigned,
@@ -1017,7 +1020,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
                 cancellation++;
               }
 
-              LOG.info("Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
+              info(LOG, "Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
               continue;
             }
 
