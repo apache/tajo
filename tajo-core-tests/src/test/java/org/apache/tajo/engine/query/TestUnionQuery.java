@@ -19,8 +19,13 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.jdbc.TajoResultSetBase;
+import org.apache.tajo.master.QueryInfo;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -50,6 +55,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 8L, 96L);
     cleanupQuery(res);
   }
 
@@ -60,6 +66,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll2() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 10L, 120L);
     cleanupQuery(res);
   }
 
@@ -70,6 +77,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll3() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 2L, 32L);
     cleanupQuery(res);
   }
 
@@ -80,6 +88,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll4() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 1L, 16L);
     cleanupQuery(res);
   }
 
@@ -90,6 +99,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll5() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 1L, 16L);
     cleanupQuery(res);
   }
 
@@ -100,6 +110,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll6() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 1L, 16L);
     cleanupQuery(res);
   }
 
@@ -110,6 +121,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll7() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 10L, 120L);
     cleanupQuery(res);
   }
 
@@ -117,6 +129,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll8() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 1L, 22L);
     cleanupQuery(res);
   }
 
@@ -124,6 +137,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll9() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 5L, 137L);
     cleanupQuery(res);
   }
 
@@ -131,6 +145,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAll10() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 20L, 548L);
     cleanupQuery(res);
   }
 
@@ -139,6 +154,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // test filter pushdown
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 1L, 44L);
     cleanupQuery(res);
   }
 
@@ -148,6 +164,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // with stage in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 5L, 414L);
     cleanupQuery(res);
   }
 
@@ -157,6 +174,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // with stage in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 5L, 414L);
     cleanupQuery(res);
   }
 
@@ -166,6 +184,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // with group by stage in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 7L, 175L);
     cleanupQuery(res);
   }
 
@@ -175,6 +194,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // with group by out of union query and join in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 3L, 75L);
     cleanupQuery(res);
   }
 
@@ -184,6 +204,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // with count distinct out of union query and join in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 3L, 75L);
     cleanupQuery(res);
   }
 
@@ -335,6 +356,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAllWithSameAliasNames() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 10L, 120L);
     cleanupQuery(res);
   }
 
@@ -342,6 +364,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAllWithDifferentAlias() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 2L, 44L);
     cleanupQuery(res);
   }
 
@@ -349,6 +372,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionAllWithDifferentAliasAndFunction() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
+    verifyResultTableStats(res, 5L, 160L);
     cleanupQuery(res);
   }
 
@@ -696,5 +720,14 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public void testUnionAndFilter() throws Exception {
     runSimpleTests();
+  }
+
+  private final void verifyResultTableStats(ResultSet res, Long numRows, Long numBytes) throws Exception {
+    QueryId qid = ((TajoResultSetBase)res).getQueryId();
+    QueryInfo queryInfo = testingCluster.getMaster().getContext().getQueryJobManager().getFinishedQuery(qid);
+    TableDesc desc = queryInfo.getResultDesc();
+    TableStats stats = desc.getStats();
+    assertEquals(numRows, stats.getNumRows());
+    assertEquals(numBytes, stats.getNumBytes());
   }
 }
