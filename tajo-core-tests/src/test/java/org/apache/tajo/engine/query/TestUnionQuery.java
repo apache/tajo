@@ -19,13 +19,8 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.jdbc.TajoResultSetBase;
-import org.apache.tajo.master.QueryInfo;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
