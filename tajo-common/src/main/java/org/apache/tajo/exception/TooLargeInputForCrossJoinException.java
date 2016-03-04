@@ -33,6 +33,6 @@ public class TooLargeInputForCrossJoinException extends TajoException {
   }
 
   public TooLargeInputForCrossJoinException(String[] relations, long currentBroadcastThreshold) {
-    super(ResultCode.TOO_LARGE_INPUT_FOR_CROSS_JOIN, StringUtils.join(relations), currentBroadcastThreshold + " MB");
+    super(ResultCode.TOO_LARGE_INPUT_FOR_CROSS_JOIN, StringUtils.join(relations), currentBroadcastThreshold + " KB");
   }
 }
