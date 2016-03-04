@@ -20,6 +20,8 @@ Release 0.11.2 - unreleased
 
   BUG FIXES
 
+    TAJO-2081: Incorrect task locality on single node. (jinho)
+
     TAJO-2080: ArrayIndexOutOfBoundsException when performing aggregation on an 
     union block. (jihoon)
 
