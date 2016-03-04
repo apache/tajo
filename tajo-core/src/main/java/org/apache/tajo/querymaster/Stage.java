@@ -717,45 +717,6 @@ public class Stage implements EventHandler<StageEvent> {
     return new TableStats[]{inputStats, resultStats};
   }
 
-  /**
-   * Compute table stats from all child stages of union all stage.
-   *
-   * @param stage current stage
-   * @param stats calculated stat of current stage
-   * @return
-   */
-  public static TableStats[] computeStatFromUnionAll(Stage stage, TableStats[] stats) {
-    List<TableStats> inputStatsList = Lists.newArrayList();
-    List<TableStats> resultStatsList = Lists.newArrayList();
-
-    // 1. Add stats of other stages exclusive of current stage.
-    MasterPlan masterPlan = stage.getMasterPlan();
-    ExecutionBlock parent = masterPlan.getParent(stage.getBlock());
-    for (ExecutionBlock block : masterPlan.getChilds(parent)) {
-      if (block.getId() != stage.getBlock().getId()) {
-        Stage childStage = stage.context.getStage(block.getId());
-        if (childStage != null) {
-          if (childStage.getInputStats() != null) {
-            inputStatsList.add(childStage.getInputStats());
-          }
-          if (childStage.getResultStats() != null) {
-            resultStatsList.add(childStage.getResultStats());
-          }
-        }
-      }
-    }
-
-    // 2. Add stats of current stage.
-    inputStatsList.add(stats[0]);
-    resultStatsList.add(stats[1]);
-
-    // 3. Finalize stats
-    TableStats inputStats = StatisticsUtil.aggregateTableStat(inputStatsList);
-    TableStats resultStats = StatisticsUtil.aggregateTableStat(resultStatsList);
-
-    return new TableStats[]{inputStats, resultStats};
-  }
-
   private void stopScheduler() {
     if (taskScheduler != null) {
       taskScheduler.stop();
@@ -818,18 +779,10 @@ public class Stage implements EventHandler<StageEvent> {
    */
   private void finalizeStats() {
     TableStats[] statsArray;
-
     if (block.isUnionOnly()) {
       statsArray = computeStatFromUnionBlock(this);
     } else {
-      ExecutionBlock parent = masterPlan.getParent(block);
-
-      if (parent.isUnionAllParent()) {
-        TableStats[] currentStats = computeStatFromTasks();
-        statsArray = computeStatFromUnionAll(this, currentStats);
-      } else {
-        statsArray = computeStatFromTasks();
-      }
+      statsArray = computeStatFromTasks();
     }
 
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);

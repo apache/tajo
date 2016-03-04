@@ -24,10 +24,6 @@ import org.apache.tajo.TajoConstants;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.sql.ResultSet;
-
-import static org.junit.Assert.assertEquals;
-
 /*
  * Notations
  * - S - select
@@ -187,148 +183,148 @@ public class TestUnionQuery extends QueryTestCaseBase {
     runSimpleTests();
   }
 
-  @Test
   /**
    * S (SA U SA) O
    */
+  @Test
+  @Option(stats = true, numRows = 5, numBytes = 60)
+  @SimpleTest
   public final void testUnion1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S (S U S) O
    */
+  @Test
+  @Option(stats = true, numRows = 3, numBytes = 36)
+  @SimpleTest
   public final void testUnion2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S O ((S G) U (S G))
    */
+  @Test
+  @Option(stats = true, numRows = 2, numBytes = 32)
+  @SimpleTest
   public final void testUnion3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S G (S G)
    */
+  @Test
+  @Option(stats = true, numRows = 1, numBytes = 16)
+  @SimpleTest
   public final void testUnion4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S G (S F G)
    */
+  @Test
+  @Option(stats = true, numRows = 1, numBytes = 16)
+  @SimpleTest
   public final void testUnion5() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S G (SA)
    */
+  @Test
+  @Option(stats = true, numRows = 1, numBytes = 16)
+  @SimpleTest
   public final void testUnion6() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S (SA)
    */
+  @Test
+  @Option(stats = true, numRows = 3, numBytes = 36)
+  @SimpleTest
   public final void testUnion7() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 1, numBytes = 22)
+  @SimpleTest
   public final void testUnion8() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 137)
+  @SimpleTest
   public final void testUnion9() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 137)
+  @SimpleTest
   public final void testUnion10() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 1, numBytes = 44)
+  @SimpleTest
   public final void testUnion11() throws Exception {
     // test filter pushdown
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 414)
+  @SimpleTest
   public final void testUnion12() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 414)
+  @SimpleTest
   public final void testUnion13() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 7, numBytes = 175)
+  @SimpleTest
   public final void testUnion14() throws Exception {
     // test filter pushdown
     // with group by stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 3, numBytes = 75)
+  @SimpleTest
   public final void testUnion15() throws Exception {
     // test filter pushdown
     // with group by out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 3, numBytes = 75)
+  @SimpleTest
   public final void testUnion16() throws Exception {
     // test filter pushdown
     // with count distinct out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -353,346 +349,103 @@ public class TestUnionQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(stats = true, numRows = 3, numBytes = 36)
+  @SimpleTest
   public final void testUnionWithSameAliasNames() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 2, numBytes = 44)
+  @SimpleTest
   public final void testUnionWithDifferentAlias() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 160)
+  @SimpleTest
   public final void testUnionWithDifferentAliasAndFunction() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 8, numBytes = 423)
+  @SimpleTest
   public final void testLeftUnionWithJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-        "select * from ( " +
-        "  select a.id, b.c_name, a.code from ( " +
-        "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-        "    union all " +
-        "    select o_orderkey as id, 'order' as code from orders " +
-         "  ) a " +
-         "  join customer b on a.id = b.c_custkey" +
-        ") c order by id, code"
-    );
-
-    String expected =
-        "id,c_name,code\n" +
-            "-------------------------------\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,order\n" +
-            "2,Customer#000000002,lineitem\n" +
-            "2,Customer#000000002,order\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,order\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 8, numBytes = 423)
+  @SimpleTest
   public final void testRightUnionWithJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-            "select * from ( " +
-            "  select a.id, b.c_name, a.code from customer b " +
-            "  join ( " +
-            "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-            "    union all " +
-            "    select o_orderkey as id, 'order' as code from orders " +
-            "  ) a on a.id = b.c_custkey" +
-            ") c order by id, code"
-    );
-
-    String expected =
-        "id,c_name,code\n" +
-            "-------------------------------\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,order\n" +
-            "2,Customer#000000002,lineitem\n" +
-            "2,Customer#000000002,order\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,order\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 16, numBytes = 1215)
+  @SimpleTest
   public final void testAllUnionWithJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-        "select * from ( " +
-        "  select a.id, a.code as code, b.name, b.code as code2 from ( " +
-        "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-        "    union all " +
-        "    select o_orderkey as id, 'order' as code from orders " +
-        "  ) a " +
-        "  join ( " +
-        "    select c_custkey as id, c_name as name, 'customer' as code from customer " +
-        "    union all " +
-        "    select p_partkey as id, p_name as name, 'part' as code from part " +
-        "  ) b on a.id = b.id" +
-        ") c order by id, code, code2"
-    );
-
-    String expected =
-        "id,code,name,code2\n" +
-            "-------------------------------\n" +
-            "1,lineitem,Customer#000000001,customer\n" +
-            "1,lineitem,Customer#000000001,customer\n" +
-            "1,lineitem,goldenrod lavender spring chocolate lace,part\n" +
-            "1,lineitem,goldenrod lavender spring chocolate lace,part\n" +
-            "1,order,Customer#000000001,customer\n" +
-            "1,order,goldenrod lavender spring chocolate lace,part\n" +
-            "2,lineitem,Customer#000000002,customer\n" +
-            "2,lineitem,blush thistle blue yellow saddle,part\n" +
-            "2,order,Customer#000000002,customer\n" +
-            "2,order,blush thistle blue yellow saddle,part\n" +
-            "3,lineitem,Customer#000000003,customer\n" +
-            "3,lineitem,Customer#000000003,customer\n" +
-            "3,lineitem,spring green yellow purple cornsilk,part\n" +
-            "3,lineitem,spring green yellow purple cornsilk,part\n" +
-            "3,order,Customer#000000003,customer\n" +
-            "3,order,spring green yellow purple cornsilk,part\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 40, numBytes = 2115)
+  @SimpleTest
   public final void testUnionWithCrossJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-        "select * from ( " +
-        "  select a.id, b.c_name, a.code from ( " +
-            "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-            "    union all " +
-            "    select o_orderkey as id, 'order' as code from orders " +
-            "  ) a, " +
-            "  customer b " +
-        ") c order by id, code, c_name"
-    );
-
-    String expected =
-        "id,c_name,code\n" +
-            "-------------------------------\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000002,lineitem\n" +
-            "1,Customer#000000002,lineitem\n" +
-            "1,Customer#000000003,lineitem\n" +
-            "1,Customer#000000003,lineitem\n" +
-            "1,Customer#000000004,lineitem\n" +
-            "1,Customer#000000004,lineitem\n" +
-            "1,Customer#000000005,lineitem\n" +
-            "1,Customer#000000005,lineitem\n" +
-            "1,Customer#000000001,order\n" +
-            "1,Customer#000000002,order\n" +
-            "1,Customer#000000003,order\n" +
-            "1,Customer#000000004,order\n" +
-            "1,Customer#000000005,order\n" +
-            "2,Customer#000000001,lineitem\n" +
-            "2,Customer#000000002,lineitem\n" +
-            "2,Customer#000000003,lineitem\n" +
-            "2,Customer#000000004,lineitem\n" +
-            "2,Customer#000000005,lineitem\n" +
-            "2,Customer#000000001,order\n" +
-            "2,Customer#000000002,order\n" +
-            "2,Customer#000000003,order\n" +
-            "2,Customer#000000004,order\n" +
-            "2,Customer#000000005,order\n" +
-            "3,Customer#000000001,lineitem\n" +
-            "3,Customer#000000001,lineitem\n" +
-            "3,Customer#000000002,lineitem\n" +
-            "3,Customer#000000002,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000004,lineitem\n" +
-            "3,Customer#000000004,lineitem\n" +
-            "3,Customer#000000005,lineitem\n" +
-            "3,Customer#000000005,lineitem\n" +
-            "3,Customer#000000001,order\n" +
-            "3,Customer#000000002,order\n" +
-            "3,Customer#000000003,order\n" +
-            "3,Customer#000000004,order\n" +
-            "3,Customer#000000005,order\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 30, numBytes = 360)
+  @SimpleTest
   public final void testThreeJoinInUnion() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-      "select o_orderkey from (select orders.o_orderkey \n" +
-          "from orders\n" +
-          "join lineitem on orders.o_orderkey = lineitem.l_orderkey\n" +
-          "join customer on orders.o_custkey =  customer.c_custkey\n" +
-          "union all \n" +
-          "select nation.n_nationkey from nation) t order by o_orderkey"
-    );
-    String expected =
-        "o_orderkey\n" +
-            "-------------------------------\n" +
-            "0\n" +
-            "1\n" +
-            "1\n" +
-            "1\n" +
-            "2\n" +
-            "2\n" +
-            "3\n" +
-            "3\n" +
-            "3\n" +
-            "4\n" +
-            "5\n" +
-            "6\n" +
-            "7\n" +
-            "8\n" +
-            "9\n" +
-            "10\n" +
-            "11\n" +
-            "12\n" +
-            "13\n" +
-            "14\n" +
-            "15\n" +
-            "16\n" +
-            "17\n" +
-            "18\n" +
-            "19\n" +
-            "20\n" +
-            "21\n" +
-            "22\n" +
-            "23\n" +
-            "24\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 100)
+  @SimpleTest
   public void testUnionCaseOfFirstEmptyAndJoin() throws Exception {
-    ResultSet res = executeString(
-        "select a.c_custkey, b.c_custkey from " +
-            "  (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
-            "   union all " +
-            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
-            ") a " +
-            "left outer join customer b " +
-            "on a.c_custkey = b.c_custkey "
-    );
-
-    String expected =
-        "c_custkey,c_custkey\n" +
-            "-------------------------------\n" +
-            "1,1\n" +
-            "2,2\n" +
-            "3,3\n" +
-            "4,4\n" +
-            "5,5\n";
-
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 10, numBytes = 200)
+  @SimpleTest
   public void testTajo1368Case1() throws Exception {
-    ResultSet res = executeString(
-        "select * from " +
-            "   (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
-            "   union all " +
-            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
-            ") a " +
-            "union all " +
-            "select * from " +
-            "   (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
-            "   union all " +
-            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
-            ") b ");
-
-    String expected = "c_custkey,c_nationkey\n" +
-        "-------------------------------\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n";
-
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 10, numBytes = 200)
+  @SimpleTest
   public void testTajo1368Case2() throws Exception {
-    ResultSet res = executeString("select * from ( "+
-        "select c_custkey, c_nationkey from ( " +
-        "select c_custkey, c_nationkey from ( " +
-        "select c_custkey, c_nationkey from customer) a " +
-        "union all " +
-        "select c_custkey, c_nationkey from ( " +
-        "select c_custkey, c_nationkey from customer) a " +
-        " ) a " +
-        " ) a ");
-
-    String expected = "c_custkey,c_nationkey\n" +
-        "-------------------------------\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n";
-
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+    runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true)
+  @Option(withExplain = true, withExplainGlobal = true, stats = true, numRows = 4, numBytes = 124)
   @SimpleTest
   public void testComplexUnion1() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain = true, withExplainGlobal = true, sort = true)
+  @Option(withExplain = true, withExplainGlobal = true, sort = true, stats = true, numRows = 5, numBytes = 140)
   @SimpleTest
   public void testComplexUnion2() throws Exception {
     runSimpleTests();
   }
 
   @Test
-  @Option(withExplain =  true, sort = true)
+  @Option(withExplain =  true, sort = true, stats = true, numRows = 5, numBytes = 120)
   @SimpleTest
   public void testUnionAndFilter() throws Exception {
     runSimpleTests();

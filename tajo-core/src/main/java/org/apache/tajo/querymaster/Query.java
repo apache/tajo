@@ -52,6 +52,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
 
@@ -402,6 +403,35 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
+  public boolean hasUnionPlan() {
+    boolean result = false;
+
+    // During executing UNION statement or UNION ALL statement, the terminal block doesn't have join plan and has
+    // two more child blocks. In above case, Tajo should summarize result TableStats from all child stages.
+    ExecutionBlock terminalBlock = this.getPlan().getTerminalBlock();
+    if (!terminalBlock.hasJoin() && this.getPlan().getChilds(terminalBlock.getId()).size() >= 2) {
+      result = true;
+    }
+    return result;
+  }
+
+  public TableStats computeChildResultStats() {
+    TableStats stats = new TableStats();
+    ExecutionBlock terminalBlock = this.getPlan().getTerminalBlock();
+    List<ExecutionBlock> childBlocks = this.getPlan().getChilds(terminalBlock.getId());
+    long totalNumRows = 0L, totalNumBytes = 0L;
+    for(ExecutionBlock childBlock : childBlocks) {
+      Stage childStage = this.getStage(childBlock.getId());
+      TableStats childStats = childStage.getResultStats();
+      totalNumRows += childStats.getNumRows();
+      totalNumBytes += childStats.getNumBytes();
+    }
+    stats.setNumRows(totalNumRows);
+    stats.setNumBytes(totalNumBytes);
+
+    return stats;
+  }
+
   /* non-blocking call for client API */
   public QueryState getState() {
     return queryState;
@@ -658,7 +688,14 @@ public class Query implements EventHandler<QueryEvent> {
                 finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
 
-        stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+        if (query.hasUnionPlan()) {
+          TableStats computedStats = query.computeChildResultStats();
+          stats.setNumRows(computedStats.getNumRows());
+          stats.setNumBytes(computedStats.getNumBytes());
+        } else {
+          stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+        }
+
         resultTableDesc.setStats(stats);
         query.setResultDesc(resultTableDesc);
       }
@@ -695,7 +732,14 @@ public class Query implements EventHandler<QueryEvent> {
           tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
         }
 
-        stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+        if (query.hasUnionPlan()) {
+          TableStats computedStats = query.computeChildResultStats();
+          stats.setNumRows(computedStats.getNumRows());
+          stats.setNumBytes(computedStats.getNumBytes());
+        } else {
+          stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+        }
+
         tableDescTobeCreated.setStats(stats);
         query.setResultDesc(tableDescTobeCreated);
 
@@ -733,8 +777,14 @@ public class Query implements EventHandler<QueryEvent> {
           finalTable = new TableDesc(tableName, lastStage.getOutSchema(), meta, finalOutputDir.toUri());
         }
 
-        long volume = getTableVolume(query.systemConf, finalOutputDir);
-        stats.setNumBytes(volume);
+        if (query.hasUnionPlan()) {
+          TableStats computedStats = query.computeChildResultStats();
+          stats.setNumRows(computedStats.getNumRows());
+          stats.setNumBytes(computedStats.getNumBytes());
+        } else {
+          long volume = getTableVolume(query.systemConf, finalOutputDir);
+          stats.setNumBytes(volume);
+        }
         finalTable.setStats(stats);
 
         if (insertNode.hasTargetTable()) {

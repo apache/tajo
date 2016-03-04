@@ -40,7 +40,6 @@ public class ExecutionBlock {
   private boolean hasJoinPlan;
   private boolean hasUnionPlan;
   private boolean isUnionOnly;
-  private boolean isUnionAllParent;
 
   private Map<String, ScanNode> broadcastRelations = new HashMap<>();
 
@@ -191,14 +190,6 @@ public class ExecutionBlock {
 
   public boolean isUnionOnly() {
     return isUnionOnly;
-  }
-
-  public boolean isUnionAllParent() {
-    return isUnionAllParent;
-  }
-
-  public void setIsUnionAllParent(boolean isUnionAllParent) {
-    this.isUnionAllParent = isUnionAllParent;
   }
 
   public void addBroadcastRelation(ScanNode relationNode) {

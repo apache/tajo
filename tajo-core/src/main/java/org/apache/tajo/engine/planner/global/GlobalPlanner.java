@@ -1235,11 +1235,6 @@ public class GlobalPlanner {
         masterPlan.addConnect(channel);
       }
 
-      // Declare union all query for computing table stats.
-      if (!node.isDistinct()) {
-        execBlock.setIsUnionAllParent(true);
-      }
-
       context.execBlockMap.put(node.getPID(), execBlock);
 
       return node;
