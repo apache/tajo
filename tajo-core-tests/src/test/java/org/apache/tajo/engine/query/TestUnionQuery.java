@@ -730,4 +730,5 @@ public class TestUnionQuery extends QueryTestCaseBase {
     assertEquals(numRows, stats.getNumRows());
     assertEquals(numBytes, stats.getNumBytes());
   }
+  
 }
