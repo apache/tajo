@@ -4,6 +4,9 @@ Release 0.11.2 - unreleased
 
   TASKS
 
+    TAJO-2088: Change QueryTestCaseBase.runSimpleTests() to return a set of 
+    TajoResultSetBase. (jihoon)
+
     TAJO-2076: Add backward compatibility testing with hadoop on travis. (jinho)
 
     TAJO-2074: Upgrade hadoop and netty. (jinho)
