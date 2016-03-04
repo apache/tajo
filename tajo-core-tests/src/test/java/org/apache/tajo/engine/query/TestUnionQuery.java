@@ -48,164 +48,148 @@ public class TestUnionQuery extends QueryTestCaseBase {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
 
-  @Test
   /**
    * S (SA U SA) O
    */
+  @Test
+  @Option(stats = true, numRows = 8, numBytes = 96)
+  @SimpleTest
   public final void testUnionAll1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 8L, 96L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S (S U S) O
    */
+  @Test
+  @Option(stats = true, numRows = 10, numBytes = 120)
+  @SimpleTest
   public final void testUnionAll2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 10L, 120L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S O ((S G) U (S G))
    */
+  @Test
+  @Option(stats = true, numRows = 2, numBytes = 32)
+  @SimpleTest
   public final void testUnionAll3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 2L, 32L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S G (S G)
    */
+  @Test
+  @Option(stats = true, numRows = 1, numBytes = 16)
+  @SimpleTest
   public final void testUnionAll4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 1L, 16L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S G (S F G)
    */
+  @Test
+  @Option(stats = true, numRows = 1, numBytes = 16)
+  @SimpleTest
   public final void testUnionAll5() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 1L, 16L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S G (SA)
    */
+  @Test
+  @Option(stats = true, numRows = 1, numBytes = 16)
+  @SimpleTest
   public final void testUnionAll6() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 1L, 16L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
-  @Test
   /**
    * S (SA)
    */
+  @Test
+  @Option(stats = true, numRows = 10, numBytes = 120)
+  @SimpleTest
   public final void testUnionAll7() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 10L, 120L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 1, numBytes = 22)
+  @SimpleTest
   public final void testUnionAll8() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 1L, 22L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 137)
+  @SimpleTest
   public final void testUnionAll9() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 5L, 137L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 20, numBytes = 548)
+  @SimpleTest
   public final void testUnionAll10() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 20L, 548L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 1, numBytes = 44)
+  @SimpleTest
   public final void testUnionAll11() throws Exception {
     // test filter pushdown
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 1L, 44L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 414)
+  @SimpleTest
   public final void testUnionAll12() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 5L, 414L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 414)
+  @SimpleTest
   public final void testUnionAll13() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 5L, 414L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 7, numBytes = 175)
+  @SimpleTest
   public final void testUnionAll14() throws Exception {
     // test filter pushdown
     // with group by stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 7L, 175L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 3, numBytes = 75)
+  @SimpleTest
   public final void testUnionAll15() throws Exception {
     // test filter pushdown
     // with group by out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 3L, 75L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 3, numBytes = 75)
+  @SimpleTest
   public final void testUnionAll16() throws Exception {
     // test filter pushdown
     // with count distinct out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 3L, 75L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -353,27 +337,24 @@ public class TestUnionQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(stats = true, numRows = 10, numBytes = 120)
+  @SimpleTest
   public final void testUnionAllWithSameAliasNames() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 10L, 120L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 2, numBytes = 44)
+  @SimpleTest
   public final void testUnionAllWithDifferentAlias() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 2L, 44L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
+  @Option(stats = true, numRows = 5, numBytes = 160)
+  @SimpleTest
   public final void testUnionAllWithDifferentAliasAndFunction() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    verifyResultTableStats(res, 5L, 160L);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
@@ -721,14 +702,4 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public void testUnionAndFilter() throws Exception {
     runSimpleTests();
   }
-
-  private final void verifyResultTableStats(ResultSet res, Long numRows, Long numBytes) throws Exception {
-    QueryId qid = ((TajoResultSetBase)res).getQueryId();
-    QueryInfo queryInfo = testingCluster.getMaster().getContext().getQueryJobManager().getFinishedQuery(qid);
-    TableDesc desc = queryInfo.getResultDesc();
-    TableStats stats = desc.getStats();
-    assertEquals(numRows, stats.getNumRows());
-    assertEquals(numBytes, stats.getNumBytes());
-  }
-  
 }
