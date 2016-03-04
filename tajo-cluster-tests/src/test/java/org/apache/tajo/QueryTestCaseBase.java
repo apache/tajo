@@ -44,6 +44,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
+import org.apache.tajo.jdbc.TajoResultSetBase;
 import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
@@ -469,6 +470,7 @@ public class QueryTestCaseBase {
     boolean withExplainGlobal() default false;
     boolean parameterized() default false;
     boolean sort() default false;
+    boolean resultClose() default true;
   }
 
   private static class DummyQuerySpec implements QuerySpec {
@@ -489,17 +491,25 @@ public class QueryTestCaseBase {
     private final boolean withExplainGlobal;
     private final boolean parameterized;
     private final boolean sort;
-    public DummyOption(boolean explain, boolean withExplainGlobal, boolean parameterized, boolean sort) {
+    private final boolean resultClose;
+    public DummyOption(boolean explain, boolean withExplainGlobal, boolean parameterized, boolean sort,
+                       boolean resultClose) {
       this.explain = explain;
       this.withExplainGlobal = withExplainGlobal;
       this.parameterized = parameterized;
       this.sort = sort;
+      this.resultClose = resultClose;
     }
     public Class<? extends Annotation> annotationType() { return Option.class; }
     public boolean withExplain() { return explain;}
     public boolean withExplainGlobal() { return withExplainGlobal;}
     public boolean parameterized() { return parameterized;}
     public boolean sort() { return sort;}
+
+    @Override
+    public boolean resultClose() {
+      return resultClose;
+    }
   }
 
   protected Collection<String> getBatchQueries(Collection<Path> paths) throws IOException, InvalidStatementException {
@@ -558,7 +568,7 @@ public class QueryTestCaseBase {
     }
   }
 
-  protected void runSimpleTests() throws Exception {
+  protected Optional<TajoResultSetBase[]> runSimpleTests() throws Exception {
     String methodName = getMethodName();
     Method method = current.getTestClass().getMethod(methodName);
     SimpleTest annotation = method.getAnnotation(SimpleTest.class);
@@ -570,7 +580,7 @@ public class QueryTestCaseBase {
     QuerySpec[] queries = annotation.queries();
     Option defaultOption = method.getAnnotation(Option.class);
     if (defaultOption == null) {
-      defaultOption = new DummyOption(false, false, false, false);
+      defaultOption = new DummyOption(false, false, false, false, true);
     }
 
     boolean fromFile = false;
@@ -589,6 +599,7 @@ public class QueryTestCaseBase {
       for (String prepare : prepares) {
         client.executeQueryAndGetResult(prepare).close();
       }
+      List<TajoResultSetBase> resultSetBases = new ArrayList<>();
       for (int i = 0; i < queries.length; i++) {
         QuerySpec spec = queries[i];
         Option option = spec.override() ? spec.option() : defaultOption;
@@ -620,6 +631,7 @@ public class QueryTestCaseBase {
 
         testingCluster.getConfiguration().set(TajoConf.ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
         ResultSet result = client.executeQueryAndGetResult(spec.value());
+        resultSetBases.add((TajoResultSetBase) result);
 
         // result test
         String fileName = methodName + (fromFile ? "" : "." + (i + 1)) + ".result";
@@ -633,7 +645,15 @@ public class QueryTestCaseBase {
           LOG.info("New test output for " + current.getDisplayName() + " is written to " + resultPath);
           // should be copied to src directory
         }
-        result.close();
+        if (option.resultClose()) {
+          result.close();
+        }
+      }
+
+      if (resultSetBases.size() > 0) {
+        return Optional.of(resultSetBases.toArray(new TajoResultSetBase[resultSetBases.size()]));
+      } else {
+        return Optional.empty();
       }
     } finally {
       for (String cleanup : annotation.cleanup()) {
@@ -643,6 +663,12 @@ public class QueryTestCaseBase {
           // ignore
         }
       }
+    }
+  }
+
+  protected void closeResultSets(ResultSet... resultSets) throws SQLException {
+    for (ResultSet rs : resultSets) {
+      rs.close();
     }
   }
 

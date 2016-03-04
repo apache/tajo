@@ -201,6 +201,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2088: Change QueryTestCaseBase.runSimpleTests() to return a set of 
+    TajoResultSetBase. (jihoon)
+
     TAJO-2033: Printing out query status with progress bar in TSQL.
     (Dongkyu Hwangbo via jihoon)
 
