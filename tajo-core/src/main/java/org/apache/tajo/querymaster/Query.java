@@ -517,6 +517,10 @@ public class Query implements EventHandler<QueryEvent> {
         // In this case, we should use default tablespace.
         Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
 
+        List<String> backupFiles = query.getBackupFiles();
+        List<String> outputFiles = query.getOutputFiles();
+
+
         Path finalOutputDir = space.commitTable(
             query.context.getQueryContext(),
             lastStage.getId(),

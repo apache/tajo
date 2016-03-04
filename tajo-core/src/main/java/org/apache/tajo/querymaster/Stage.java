@@ -549,8 +549,8 @@ public class Stage implements EventHandler<StageEvent> {
     Set<String> outputFiles = Sets.newHashSet();
     Task[] tasks = getTasks();
     for (Task task : tasks) {
-      if(task.getLastAttempt() != null && !task.getLastAttempt().getOutputFiles().isEmpty()) {
-        outputFiles.addAll(task.getLastAttempt().getOutputFiles());
+      if(task.getLastAttempt() != null && !task.getLastAttempt().getBackupFiles().isEmpty()) {
+        outputFiles.addAll(task.getLastAttempt().getBackupFiles());
       }
     }
     return outputFiles;
@@ -559,8 +559,8 @@ public class Stage implements EventHandler<StageEvent> {
   public void clearBackupFiles() {
     Task[] tasks = getTasks();
     for (Task task : tasks) {
-      if(task.getLastAttempt() != null && !task.getLastAttempt().getOutputFiles().isEmpty()) {
-        task.getLastAttempt().getOutputFiles().clear();
+      if(task.getLastAttempt() != null && !task.getLastAttempt().getBackupFiles().isEmpty()) {
+        task.getLastAttempt().getBackupFiles().clear();
       }
     }
   }

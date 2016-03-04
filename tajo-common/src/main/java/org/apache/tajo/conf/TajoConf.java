@@ -229,7 +229,7 @@ public class TajoConf extends Configuration {
 
     // Query output Configuration --------------------------------------------------
     QUERY_OUTPUT_DEFAULT_FILE_FORMAT("tajo.query.output.file-format", BuiltinStorages.DRAW, Validators.javaString()),
-    QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED("tajo.query.direct-output-committer.enabled", false, Validators.bool()),
+    QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED("tajo.query.direct-output-committer.enabled", true, Validators.bool()),
 
     // Storage Configuration --------------------------------------------------
     ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
