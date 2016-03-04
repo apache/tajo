@@ -398,7 +398,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
      * @param columns a set of columns
      * @return schema build from columns
      */
-    private Schema buildSchemaFromColumnSet(Set<Column> columns) {
+    private Schema buildSchemaFromColumnSet(Set<Column> columns) throws TajoException {
       SchemaGraph schemaGraph = new SchemaGraph();
       Set<ColumnVertex> rootVertexes = new HashSet<>();
       Schema schema = new Schema();

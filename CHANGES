@@ -20,6 +20,9 @@ Release 0.11.2 - unreleased
 
   BUG FIXES
 
+    TAJO-2082: Aggregation on a derived table which includes union can cause 
+    incorrect result. (jihoon)
+
     TAJO-2081: Incorrect task locality on single node. (jinho)
 
     TAJO-2080: ArrayIndexOutOfBoundsException when performing aggregation on an 

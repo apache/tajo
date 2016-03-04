@@ -21,6 +21,8 @@ package org.apache.tajo.util.graph;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -219,12 +221,12 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   }
 
   @Override
-  public void accept(V source, DirectedGraphVisitor<V> visitor) {
+  public void accept(V source, DirectedGraphVisitor<V> visitor) throws TajoException {
     Stack<V> stack = new Stack<V>();
     visitRecursive(stack, source, visitor);
   }
 
-  private void visitRecursive(Stack<V> stack, V current, DirectedGraphVisitor<V> visitor) {
+  private void visitRecursive(Stack<V> stack, V current, DirectedGraphVisitor<V> visitor) throws TajoException {
     stack.push(current);
     for (V child : getChilds(current)) {
       visitRecursive(stack, child, visitor);
@@ -248,7 +250,11 @@ public class SimpleDirectedGraph<V, E> implements DirectedGraph<V,E> {
   public String toStringGraph(V vertex) {
     StringBuilder sb = new StringBuilder();
     QueryGraphTopologyStringBuilder visitor = new QueryGraphTopologyStringBuilder();
-    accept(vertex, visitor);
+    try {
+      accept(vertex, visitor);
+    } catch (TajoException e) {
+      throw new TajoRuntimeException(e);
+    }
     Stack<DepthString> depthStrings = visitor.getDepthStrings();
     while(!depthStrings.isEmpty()) {
       sb.append(printDepthString(depthStrings.pop()));

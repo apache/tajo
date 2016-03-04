@@ -18,8 +18,10 @@
 
 package org.apache.tajo.util.graph;
 
+import org.apache.tajo.exception.TajoException;
+
 import java.util.Stack;
 
 public interface DirectedGraphVisitor<V> {
-  void visit(Stack<V> stack, V v);
+  void visit(Stack<V> stack, V v) throws TajoException;
 }

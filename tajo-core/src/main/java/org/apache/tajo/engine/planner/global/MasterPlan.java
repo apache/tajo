@@ -21,10 +21,13 @@
  */
 package org.apache.tajo.engine.planner.global;
 
+import com.google.common.base.Optional;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
@@ -46,6 +49,45 @@ public class MasterPlan {
   private Map<ExecutionBlockId, ExecutionBlock> execBlockMap = new HashMap<ExecutionBlockId, ExecutionBlock>();
   private SimpleDirectedGraph<ExecutionBlockId, DataChannel> execBlockGraph =
       new SimpleDirectedGraph<ExecutionBlockId, DataChannel>();
+
+  private Map<ExecutionBlockId, ShuffleContext> shuffleInfo = new HashMap<>();
+
+  /**
+   *
+   */
+  public class ShuffleContext {
+    ExecutionBlockId parentEbId;
+    int partitionNum;
+
+    public ShuffleContext(ExecutionBlockId parentEbId, int partitionNum) {
+      this.parentEbId = parentEbId;
+      this.partitionNum = partitionNum;
+    }
+
+    public ExecutionBlockId getParentEbId() {
+      return parentEbId;
+    }
+
+    public int getPartitionNum() {
+      return partitionNum;
+    }
+  }
+
+  /**
+   *
+   * @param ebId
+   * @param partitionNum
+   */
+  public void addShuffleInfo(ExecutionBlockId ebId, int partitionNum) {
+    ExecutionBlockId parentId = getParent(getExecBlock(ebId)).getId();
+    shuffleInfo.put(parentId, new ShuffleContext(ebId, partitionNum));
+  }
+
+  public Optional<ShuffleContext> getShuffleInfo(ExecutionBlockId ebId) {
+    ExecutionBlockId parentId = getParent(getExecBlock(ebId)).getId();
+    return shuffleInfo.containsKey(parentId) ?
+        Optional.of(shuffleInfo.get(parentId)) : Optional.<ShuffleContext>absent();
+  }
 
   public ExecutionBlockId newExecutionBlockId() {
     return new ExecutionBlockId(queryId, nextId.incrementAndGet());
@@ -215,14 +257,13 @@ public class MasterPlan {
     return getChild(executionBlock.getId(), idx);
   }
 
-  public void accept(ExecutionBlockId v, DirectedGraphVisitor<ExecutionBlockId> visitor) {
+  public void accept(ExecutionBlockId v, DirectedGraphVisitor<ExecutionBlockId> visitor) throws TajoException {
     execBlockGraph.accept(v, visitor);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    ExecutionBlockCursor cursor = new ExecutionBlockCursor(this);
     sb.append("-------------------------------------------------------------------------------\n");
     sb.append("Execution Block Graph (TERMINAL - " + getTerminalBlock() + ")\n");
     sb.append("-------------------------------------------------------------------------------\n");

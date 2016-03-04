@@ -606,10 +606,9 @@ public class Repartitioner {
                                                       MasterPlan masterPlan, Stage stage, int maxNum)
       throws IOException {
     DataChannel channel = masterPlan.getIncomingChannels(stage.getBlock().getId()).get(0);
-    if (channel.getShuffleType() == HASH_SHUFFLE
-        || channel.getShuffleType() == SCATTERED_HASH_SHUFFLE) {
+    if (channel.isHashShuffle()) {
       scheduleHashShuffledFetches(schedulerContext, masterPlan, stage, channel, maxNum);
-    } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
+    } else if (channel.isRangeShuffle()) {
       scheduleRangeShuffledFetches(schedulerContext, masterPlan, stage, channel, maxNum);
     } else {
       throw new TajoInternalError("Cannot support partition type");
@@ -1275,12 +1274,12 @@ public class Repartitioner {
     }
 
     // set the partition number for group by and sort
-    if (channel.getShuffleType() == HASH_SHUFFLE) {
+    if (channel.isHashShuffle()) {
       if (execBlock.getPlan().getType() == NodeType.GROUP_BY ||
           execBlock.getPlan().getType() == NodeType.DISTINCT_GROUP_BY) {
         keys = channel.getShuffleKeys();
       }
-    } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
+    } else if (channel.isRangeShuffle()) {
       if (execBlock.getPlan().getType() == NodeType.SORT) {
         SortNode sort = (SortNode) execBlock.getPlan();
         keys = new Column[sort.getSortKeys().length];
