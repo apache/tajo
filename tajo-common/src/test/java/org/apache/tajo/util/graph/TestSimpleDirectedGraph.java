@@ -20,6 +20,7 @@ package org.apache.tajo.util.graph;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
 import org.junit.Test;
@@ -34,7 +35,7 @@ public class TestSimpleDirectedGraph {
   private static final Log LOG = LogFactory.getLog(TestSimpleDirectedGraph.class);
 
   @Test
-  public final void test() {
+  public final void test() throws TajoException {
     SimpleDirectedGraph<String, Integer> graph = new SimpleDirectedGraph<>();
 
     //     root

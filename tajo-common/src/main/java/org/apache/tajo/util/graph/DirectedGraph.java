@@ -19,6 +19,7 @@
 package org.apache.tajo.util.graph;
 
 import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.exception.TajoException;
 
 import java.util.List;
 
@@ -60,5 +61,5 @@ public interface DirectedGraph<V, E> extends Graph<V, E> {
   /**
    * It visits all vertices in a post-order traverse way.
    */
-  <CONTEXT> void accept(CONTEXT context, V src, DirectedGraphVisitor<CONTEXT, V> visitor);
+  <CONTEXT> void accept(CONTEXT context, V src, DirectedGraphVisitor<CONTEXT, V> visitor) throws TajoException;
 }
