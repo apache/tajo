@@ -26,6 +26,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.reflections.ReflectionUtils;
@@ -122,6 +123,6 @@ public class WritableTypeConverter {
       case VARBINARY: return new BlobDatum(((BytesWritable)value).getBytes());
     }
 
-    return NullDatum.get();
+    throw new TajoRuntimeException(new UnsupportedDataTypeException(value.getClass().getTypeName()));
   }
 }
