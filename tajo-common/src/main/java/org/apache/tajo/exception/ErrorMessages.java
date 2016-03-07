@@ -19,8 +19,10 @@
 package org.apache.tajo.exception;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.Map;
 
@@ -138,12 +140,16 @@ public class ErrorMessages {
   }
 
   public static String getInternalErrorMessage(Throwable t) {
-    if (t.getMessage() != null) {
-      return String.format(MESSAGES.get(INTERNAL_ERROR).getFirst(), t.getMessage());
+    if (t != null) {
+      String message = t.getMessage();
+      if (StringUtils.isEmpty(message)) {
+        message = ExceptionUtils.getMessage(t);
+      }
+
+      return String.format(MESSAGES.get(INTERNAL_ERROR).getFirst(), message);
     } else {
       return getInternalErrorMessage();
     }
-
   }
 
   public static String concat(String[] args) {
