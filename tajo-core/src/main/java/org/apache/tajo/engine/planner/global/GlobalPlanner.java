@@ -199,7 +199,7 @@ public class GlobalPlanner {
   }
 
   private ExecutionBlock buildJoinPlan(GlobalPlanContext context, JoinNode joinNode,
-                                        ExecutionBlock leftBlock, ExecutionBlock rightBlock) {
+                                        ExecutionBlock leftBlock, ExecutionBlock rightBlock) throws TajoException {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
@@ -596,7 +596,7 @@ public class GlobalPlanner {
   }
 
   private ExecutionBlock buildGroupBy(GlobalPlanContext context, ExecutionBlock lastBlock,
-                                      GroupbyNode groupbyNode) {
+                                      GroupbyNode groupbyNode) throws TajoException {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
@@ -675,7 +675,7 @@ public class GlobalPlanner {
   }
 
   private ExecutionBlock buildGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
-                                                  GroupbyNode firstPhaseGroupBy, GroupbyNode secondPhaseGroupBy) {
+                                                  GroupbyNode firstPhaseGroupBy, GroupbyNode secondPhaseGroupBy) throws TajoException {
     DataChannel lastDataChannel = null;
 
     // It pushes down the first phase group-by operator into all child blocks.
@@ -715,7 +715,7 @@ public class GlobalPlanner {
   }
 
   private ExecutionBlock buildTwoPhaseGroupby(MasterPlan masterPlan, ExecutionBlock latestBlock,
-                                                     GroupbyNode firstPhaseGroupby, GroupbyNode secondPhaseGroupby) {
+                                                     GroupbyNode firstPhaseGroupby, GroupbyNode secondPhaseGroupby) throws TajoException {
 
     ExecutionBlock childBlock = latestBlock;
     childBlock.setPlan(firstPhaseGroupby);
@@ -780,7 +780,7 @@ public class GlobalPlanner {
     return firstPhaseGroupBy;
   }
 
-  private ExecutionBlock buildSortPlan(GlobalPlanContext context, ExecutionBlock childBlock, SortNode currentNode) {
+  private ExecutionBlock buildSortPlan(GlobalPlanContext context, ExecutionBlock childBlock, SortNode currentNode) throws TajoException {
     MasterPlan masterPlan = context.plan;
     ExecutionBlock currentBlock;
 
@@ -860,7 +860,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildShuffleAndStorePlanNoPartitionedTableWithUnion(GlobalPlanContext context,
                                                                              StoreTableNode currentNode,
-                                                                             ExecutionBlock childBlock) {
+                                                                             ExecutionBlock childBlock) throws TajoException {
     for (ExecutionBlock grandChildBlock : context.plan.getChilds(childBlock)) {
       StoreTableNode copy = PlannerUtil.clone(context.plan.getLogicalPlan(), currentNode);
       copy.setChild(grandChildBlock.getPlan());
@@ -875,7 +875,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildShuffleAndStorePlanToPartitionedTableWithUnion(GlobalPlanContext context,
                                                                              StoreTableNode currentNode,
-                                                                             ExecutionBlock lastBlock) {
+                                                                             ExecutionBlock lastBlock) throws TajoException {
 
     MasterPlan masterPlan = context.plan;
     DataChannel lastChannel = null;
@@ -899,7 +899,7 @@ public class GlobalPlanner {
    */
   private ExecutionBlock buildShuffleAndStorePlanToPartitionedTable(GlobalPlanContext context,
                                                                     StoreTableNode currentNode,
-                                                                    ExecutionBlock lastBlock) {
+                                                                    ExecutionBlock lastBlock) throws TajoException {
     MasterPlan masterPlan = context.plan;
 
     ExecutionBlock nextBlock = masterPlan.newExecutionBlock();
@@ -920,7 +920,7 @@ public class GlobalPlanner {
 
   private ExecutionBlock buildNoPartitionedStorePlan(GlobalPlanContext context,
                                                      StoreTableNode currentNode,
-                                                     ExecutionBlock childBlock) {
+                                                     ExecutionBlock childBlock) throws TajoException {
     if (hasUnionChild(currentNode)) { // when the below is union
       return buildShuffleAndStorePlanNoPartitionedTableWithUnion(context, currentNode, childBlock);
     } else {
@@ -1240,7 +1240,8 @@ public class GlobalPlanner {
       return node;
     }
 
-    private LogicalNode handleUnaryNode(GlobalPlanContext context, LogicalNode child, LogicalNode node) {
+    private LogicalNode handleUnaryNode(GlobalPlanContext context, LogicalNode child, LogicalNode node)
+        throws TajoException {
       ExecutionBlock execBlock = context.execBlockMap.remove(child.getPID());
       execBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), execBlock);
