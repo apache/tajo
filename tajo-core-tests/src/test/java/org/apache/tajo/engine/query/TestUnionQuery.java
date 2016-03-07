@@ -450,5 +450,4 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public void testUnionAndFilter() throws Exception {
     runSimpleTests();
   }
-  
 }
