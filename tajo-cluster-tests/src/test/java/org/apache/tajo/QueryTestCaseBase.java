@@ -33,7 +33,6 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.cli.tsql.InvalidStatementException;
 import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
@@ -47,7 +46,6 @@ import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSetBase;
 import org.apache.tajo.master.GlobalEngine;
-import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -473,9 +471,6 @@ public class QueryTestCaseBase {
     boolean parameterized() default false;
     boolean sort() default false;
     boolean resultClose() default true;
-    boolean stats() default false;
-    long numBytes() default 0L;
-    long numRows() default 0L;
   }
 
   private static class DummyQuerySpec implements QuerySpec {
@@ -497,34 +492,19 @@ public class QueryTestCaseBase {
     private final boolean parameterized;
     private final boolean sort;
     private final boolean resultClose;
-    private final boolean stats;
-    private final long numRows;
-    private final long numBytes;
-
     public DummyOption(boolean explain, boolean withExplainGlobal, boolean parameterized, boolean sort,
                        boolean resultClose) {
-      this(explain, withExplainGlobal, parameterized, sort, resultClose, false, 0L, 0L);
-    }
-
-    public DummyOption(boolean explain, boolean withExplainGlobal, boolean parameterized, boolean sort,
-                     boolean resultClose, boolean stats, long numRows, long numBytes) {
       this.explain = explain;
       this.withExplainGlobal = withExplainGlobal;
       this.parameterized = parameterized;
       this.sort = sort;
       this.resultClose = resultClose;
-      this.stats = stats;
-      this.numRows = numRows;
-      this.numBytes = numBytes;
     }
     public Class<? extends Annotation> annotationType() { return Option.class; }
     public boolean withExplain() { return explain;}
     public boolean withExplainGlobal() { return withExplainGlobal;}
     public boolean parameterized() { return parameterized;}
     public boolean sort() { return sort;}
-    public boolean stats() { return stats; }
-    public long numBytes() { return numBytes; }
-    public long numRows() { return numRows; }
 
     @Override
     public boolean resultClose() {
@@ -665,17 +645,6 @@ public class QueryTestCaseBase {
           LOG.info("New test output for " + current.getDisplayName() + " is written to " + resultPath);
           // should be copied to src directory
         }
-
-        // Verify TableStats
-        if (option.stats()) {
-          QueryId qid = ((TajoResultSetBase)result).getQueryId();
-          QueryInfo queryInfo = testingCluster.getMaster().getContext().getQueryJobManager().getFinishedQuery(qid);
-          TableDesc desc = queryInfo.getResultDesc();
-          TableStats stats = desc.getStats();
-          assertEquals(option.numRows(), stats.getNumRows().longValue());
-          assertEquals(option.numBytes(), stats.getNumBytes().longValue());
-        }
-
         if (option.resultClose()) {
           result.close();
         }
