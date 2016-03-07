@@ -16,7 +16,10 @@ package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
 import java.util.*;
 
@@ -30,18 +33,13 @@ import java.util.*;
 public class ExecutionBlock {
   private ExecutionBlockId executionBlockId;
   private LogicalNode plan = null;
-  private StoreTableNode store = null;
-  private List<ScanNode> scanlist = new ArrayList<>();
   private Enforcer enforcer = new Enforcer();
-
   // Actual ScanNode's ExecutionBlockId -> Delegated ScanNode's ExecutionBlockId.
   private Map<ExecutionBlockId, ExecutionBlockId> unionScanMap = new HashMap<>();
 
-  private boolean hasJoinPlan;
-  private boolean hasUnionPlan;
-  private boolean isUnionOnly;
-
   private Map<String, ScanNode> broadcastRelations = new HashMap<>();
+
+  private PlanContext planContext;
 
   /*
    * An execution block is null-supplying or preserved-row when its output is used as an input for outer join.
@@ -98,52 +96,16 @@ public class ExecutionBlock {
     return executionBlockId;
   }
 
-  public void setPlan(LogicalNode plan) {
-    hasJoinPlan = false;
-    hasUnionPlan = false;
-    isUnionOnly = true;
-    this.scanlist.clear();
+  public void setPlan(LogicalNode plan) throws TajoException {
     this.plan = plan;
 
     if (plan == null) {
       return;
     }
 
-    LogicalNode node = plan;
-    ArrayList<LogicalNode> s = new ArrayList<>();
-    s.add(node);
-    while (!s.isEmpty()) {
-      node = s.remove(s.size()-1);
-      // TODO: the below code should be improved to handle every case
-      if (isUnionOnly && node.getType() != NodeType.ROOT && node.getType() != NodeType.TABLE_SUBQUERY &&
-          node.getType() != NodeType.SCAN && node.getType() != NodeType.PARTITIONS_SCAN &&
-          node.getType() != NodeType.UNION && node.getType() != NodeType.PROJECTION) {
-        isUnionOnly = false;
-      }
-      if (node instanceof UnaryNode) {
-        UnaryNode unary = (UnaryNode) node;
-        s.add(s.size(), unary.getChild());
-      } else if (node instanceof BinaryNode) {
-        BinaryNode binary = (BinaryNode) node;
-        if (binary.getType() == NodeType.JOIN) {
-          hasJoinPlan = true;
-        } else if (binary.getType() == NodeType.UNION) {
-          hasUnionPlan = true;
-        }
-        s.add(s.size(), binary.getLeftChild());
-        s.add(s.size(), binary.getRightChild());
-      } else if (node instanceof ScanNode) {
-        scanlist.add((ScanNode)node);
-      } else if (node instanceof TableSubQueryNode) {
-        TableSubQueryNode subQuery = (TableSubQueryNode) node;
-        s.add(s.size(), subQuery.getSubQuery());
-      } else if (node instanceof StoreTableNode) {
-        store = (StoreTableNode)node;
-      }
-    }
-    if (!hasUnionPlan) {
-      isUnionOnly = false;
-    }
+    final PlanVisitor visitor = new PlanVisitor();
+    planContext = new PlanContext();
+    visitor.visit(planContext, null, null, plan, new Stack<>());
   }
 
   public void addUnionScan(ExecutionBlockId realScanEbId, ExecutionBlockId delegatedScanEbId) {
@@ -163,12 +125,12 @@ public class ExecutionBlock {
   }
 
   public StoreTableNode getStoreTableNode() {
-    return store;
+    return planContext.store;
   }
 
   public int getNonBroadcastRelNum() {
     int nonBroadcastRelNum = 0;
-    for (ScanNode scanNode : scanlist) {
+    for (ScanNode scanNode : planContext.scanlist) {
       if (!broadcastRelations.containsKey(scanNode.getCanonicalName())) {
         nonBroadcastRelNum++;
       }
@@ -177,19 +139,23 @@ public class ExecutionBlock {
   }
 
   public ScanNode [] getScanNodes() {
-    return this.scanlist.toArray(new ScanNode[scanlist.size()]);
+    return planContext.scanlist.toArray(new ScanNode[planContext.scanlist.size()]);
   }
 
   public boolean hasJoin() {
-    return hasJoinPlan;
+    return planContext.hasJoinPlan;
   }
 
   public boolean hasUnion() {
-    return hasUnionPlan;
+    return planContext.hasUnionPlan;
+  }
+
+  public boolean hasAgg() {
+    return planContext.hasAggPlan;
   }
 
   public boolean isUnionOnly() {
-    return isUnionOnly;
+    return planContext.isUnionOnly();
   }
 
   public void addBroadcastRelation(ScanNode relationNode) {
@@ -234,5 +200,94 @@ public class ExecutionBlock {
 
   public boolean isPreservedRow() {
     return preservedRow;
+  }
+
+  private class PlanContext {
+    StoreTableNode store = null;
+
+    List<ScanNode> scanlist = new ArrayList<>();
+
+    boolean hasJoinPlan = false;
+    boolean hasUnionPlan = false;
+    boolean hasAggPlan = false;
+    boolean hasSortPlan = false;
+
+    boolean isUnionOnly() {
+      return hasUnionPlan && !hasJoinPlan && !hasAggPlan && !hasSortPlan;
+    }
+  }
+
+  private class PlanVisitor extends BasicLogicalPlanVisitor<PlanContext, LogicalNode> {
+
+    @Override
+    public LogicalNode visitJoin(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode node,
+                                 Stack<LogicalNode> stack) throws TajoException {
+      context.hasJoinPlan = true;
+      return super.visitJoin(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitGroupBy(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, GroupbyNode node,
+                                    Stack<LogicalNode> stack) throws TajoException {
+      context.hasAggPlan = true;
+      return super.visitGroupBy(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitWindowAgg(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
+                                      Stack<LogicalNode> stack) throws TajoException {
+      context.hasAggPlan = true;
+      return super.visitWindowAgg(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitDistinctGroupby(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                            DistinctGroupbyNode node, Stack<LogicalNode> stack) throws TajoException {
+      context.hasAggPlan = true;
+      return super.visitDistinctGroupby(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitSort(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, SortNode node,
+                                 Stack<LogicalNode> stack) throws TajoException {
+      context.hasSortPlan = true;
+      return super.visitSort(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitUnion(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
+                                  Stack<LogicalNode> stack) throws TajoException {
+      context.hasUnionPlan = true;
+      return super.visitUnion(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitStoreTable(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, StoreTableNode node,
+                                       Stack<LogicalNode> stack) throws TajoException {
+      context.store = node;
+      return super.visitStoreTable(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitScan(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
+                                 Stack<LogicalNode> stack) throws TajoException {
+      context.scanlist.add(node);
+      return super.visitScan(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitPartitionedTableScan(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                                 PartitionedTableScanNode node, Stack<LogicalNode> stack)
+        throws TajoException {
+      context.scanlist.add(node);
+      return super.visitPartitionedTableScan(context, plan, block, node, stack);
+    }
+
+    @Override
+    public LogicalNode visitIndexScan(PlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, IndexScanNode node,
+                                      Stack<LogicalNode> stack) throws TajoException {
+      context.scanlist.add(node);
+      return super.visitIndexScan(context, plan, block, node, stack);
+    }
   }
 }

@@ -30,6 +30,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.GlobalPlanner.GlobalPlanContext;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
@@ -711,7 +712,7 @@ public class DistinctGroupbyBuilder {
 
   private ExecutionBlock buildDistinctGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
                                                          DistinctGroupbyNode firstPhaseGroupBy,
-                                                         DistinctGroupbyNode secondPhaseGroupBy) {
+                                                         DistinctGroupbyNode secondPhaseGroupBy) throws TajoException {
     DataChannel lastDataChannel = null;
 
     // It pushes down the first phase group-by operator into all child blocks.

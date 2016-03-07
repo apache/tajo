@@ -50,7 +50,6 @@ import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.storage.*;
@@ -321,12 +320,12 @@ public class Repartitioner {
             if (tbNameToInterm.containsKey(scanEbId)) {
               tbNameToInterm.get(scanEbId).add(intermediateEntry);
             } else {
-              tbNameToInterm.put(scanEbId, new ArrayList<>(Arrays.asList(intermediateEntry)));
+              tbNameToInterm.put(scanEbId, Lists.newArrayList(intermediateEntry));
             }
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                     new HashMap<>();
-            tbNameToInterm.put(scanEbId, new ArrayList<>(Arrays.asList(intermediateEntry)));
+            tbNameToInterm.put(scanEbId, Lists.newArrayList(intermediateEntry));
             hashEntries.put(intermediateEntry.getPartId(), tbNameToInterm);
           }
         }
@@ -606,10 +605,9 @@ public class Repartitioner {
                                                       MasterPlan masterPlan, Stage stage, int maxNum)
       throws IOException {
     DataChannel channel = masterPlan.getIncomingChannels(stage.getBlock().getId()).get(0);
-    if (channel.getShuffleType() == HASH_SHUFFLE
-        || channel.getShuffleType() == SCATTERED_HASH_SHUFFLE) {
+    if (channel.isHashShuffle()) {
       scheduleHashShuffledFetches(schedulerContext, masterPlan, stage, channel, maxNum);
-    } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
+    } else if (channel.isRangeShuffle()) {
       scheduleRangeShuffledFetches(schedulerContext, masterPlan, stage, channel, maxNum);
     } else {
       throw new TajoInternalError("Cannot support partition type");
@@ -698,10 +696,8 @@ public class Repartitioner {
 
       TupleUtil.setMaxRangeIfNull(sortSpecs, sortSchema, totalStat.getColumnStats(), ranges);
       if (LOG.isDebugEnabled()) {
-        if (ranges != null) {
-          for (TupleRange eachRange : ranges) {
-            LOG.debug(stage.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
-          }
+        for (TupleRange eachRange : ranges) {
+          LOG.debug(stage.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
         }
       }
     }
@@ -999,7 +995,7 @@ public class Repartitioner {
         int partId = eachInterm.getPartId();
         List<IntermediateEntry> partitionInterms = partitionIntermMap.get(partId);
         if (partitionInterms == null) {
-          partitionInterms = Arrays.asList(eachInterm);
+          partitionInterms = Lists.newArrayList(eachInterm);
           partitionIntermMap.put(partId, partitionInterms);
         } else {
           partitionInterms.add(eachInterm);
@@ -1078,7 +1074,7 @@ public class Repartitioner {
           fetchListVolume = 0;
         }
         FetchImpl fetch = new FetchImpl(fetchName, currentInterm.getPullHost(), SCATTERED_HASH_SHUFFLE,
-            ebId, currentInterm.getPartId(), Arrays.asList(currentInterm));
+            ebId, currentInterm.getPartId(), Lists.newArrayList(currentInterm));
         fetch.setOffset(eachSplit.getFirst());
         fetch.setLength(eachSplit.getSecond());
         fetchListForSingleTask.add(fetch.getProto());
@@ -1219,7 +1215,7 @@ public class Repartitioner {
       if (hashed.containsKey(entry.getPartId())) {
         hashed.get(entry.getPartId()).add(entry);
       } else {
-        hashed.put(entry.getPartId(), Arrays.asList(entry));
+        hashed.put(entry.getPartId(), Lists.newArrayList(entry));
       }
     }
 
@@ -1235,7 +1231,7 @@ public class Repartitioner {
       if (hashed.containsKey(host)) {
         hashed.get(host).add(entry);
       } else {
-        hashed.put(host, Arrays.asList(entry));
+        hashed.put(host, Lists.newArrayList(entry));
       }
     }
 
@@ -1258,12 +1254,12 @@ public class Repartitioner {
     }
 
     // set the partition number for group by and sort
-    if (channel.getShuffleType() == HASH_SHUFFLE) {
+    if (channel.isHashShuffle()) {
       if (execBlock.getPlan().getType() == NodeType.GROUP_BY ||
           execBlock.getPlan().getType() == NodeType.DISTINCT_GROUP_BY) {
         keys = channel.getShuffleKeys();
       }
-    } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
+    } else if (channel.isRangeShuffle()) {
       if (execBlock.getPlan().getType() == NodeType.SORT) {
         SortNode sort = (SortNode) execBlock.getPlan();
         keys = new Column[sort.getSortKeys().length];
@@ -1278,6 +1274,7 @@ public class Repartitioner {
         channel.setShuffleOutputNum(1);
       } else {
         channel.setShuffleKeys(keys);
+        // NOTE: desiredNum is not used in Sort anymore.
         channel.setShuffleOutputNum(desiredNum);
       }
     }
