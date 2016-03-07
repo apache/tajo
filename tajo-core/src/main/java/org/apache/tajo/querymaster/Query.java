@@ -407,8 +407,7 @@ public class Query implements EventHandler<QueryEvent> {
   public boolean hasUnionPlan() throws Exception {
     boolean result = false;
 
-    // During executing UNION statement or UNION ALL statement, the terminal block doesn't have join plan and has
-    // two more child blocks. In above case, Tajo should summarize result TableStats from all child stages.
+    // In case of UNION statement or UNION ALL statement, the terminal block has two more child blocks.
     ExecutionBlock terminalBlock = plan.getTerminalBlock();
     if (plan.getChilds(terminalBlock.getId()).size() >= 2) {
       result = true;
