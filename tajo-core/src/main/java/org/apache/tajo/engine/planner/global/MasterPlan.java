@@ -23,8 +23,10 @@ package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
@@ -46,6 +48,44 @@ public class MasterPlan {
   private Map<ExecutionBlockId, ExecutionBlock> execBlockMap = new HashMap<>();
   private SimpleDirectedGraph<ExecutionBlockId, DataChannel> execBlockGraph =
           new SimpleDirectedGraph<>();
+
+  private Map<ExecutionBlockId, ShuffleContext> shuffleInfo = new HashMap<>();
+
+  /**
+   *
+   */
+  public class ShuffleContext {
+    ExecutionBlockId parentEbId;
+    int partitionNum;
+
+    public ShuffleContext(ExecutionBlockId parentEbId, int partitionNum) {
+      this.parentEbId = parentEbId;
+      this.partitionNum = partitionNum;
+    }
+
+    public ExecutionBlockId getParentEbId() {
+      return parentEbId;
+    }
+
+    public int getPartitionNum() {
+      return partitionNum;
+    }
+  }
+
+  /**
+   *
+   * @param ebId
+   * @param partitionNum
+   */
+  public void addShuffleInfo(ExecutionBlockId ebId, int partitionNum) {
+    ExecutionBlockId parentId = getParent(getExecBlock(ebId)).getId();
+    shuffleInfo.put(parentId, new ShuffleContext(ebId, partitionNum));
+  }
+
+  public Optional<ShuffleContext> getShuffleInfo(ExecutionBlockId ebId) {
+    ExecutionBlockId parentId = getParent(getExecBlock(ebId)).getId();
+    return shuffleInfo.containsKey(parentId) ? Optional.of(shuffleInfo.get(parentId)) : Optional.empty();
+  }
 
   public ExecutionBlockId newExecutionBlockId() {
     return new ExecutionBlockId(queryId, nextId.incrementAndGet());
@@ -215,14 +255,14 @@ public class MasterPlan {
     return getChild(executionBlock.getId(), idx);
   }
 
-  public <CONTEXT> void accept(CONTEXT context, ExecutionBlockId v, DirectedGraphVisitor<CONTEXT, ExecutionBlockId> visitor) {
+  public <CONTEXT> void accept(CONTEXT context, ExecutionBlockId v, DirectedGraphVisitor<CONTEXT,
+      ExecutionBlockId> visitor) throws TajoException {
     execBlockGraph.accept(context, v, visitor);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    ExecutionBlockCursor cursor = new ExecutionBlockCursor(this);
     sb.append("-------------------------------------------------------------------------------\n");
     sb.append("Execution Block Graph (TERMINAL - " + getTerminalBlock() + ")\n");
     sb.append("-------------------------------------------------------------------------------\n");
@@ -285,12 +325,7 @@ public class MasterPlan {
         sb.append("\n[Enforcers]\n");
         int i = 0;
         List<EnforceProperty> enforceProperties = block.getEnforcer().getProperties();
-        Collections.sort(enforceProperties, new Comparator<EnforceProperty>() {
-          @Override
-          public int compare(EnforceProperty o1, EnforceProperty o2) {
-            return o1.toString().compareTo(o2.toString());
-          }
-        });
+        Collections.sort(enforceProperties, (e1, e2) -> e1.toString().compareTo(e2.toString()));
         for (EnforceProperty enforce : enforceProperties) {
           sb.append(" ").append(i++).append(": ");
           sb.append(Enforcer.toString(enforce));
