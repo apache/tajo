@@ -99,6 +99,14 @@ public class DataChannel {
     return shuffleType;
   }
 
+  public boolean isHashShuffle() {
+    return shuffleType == ShuffleType.HASH_SHUFFLE || shuffleType == ShuffleType.SCATTERED_HASH_SHUFFLE;
+  }
+
+  public boolean isRangeShuffle() {
+    return shuffleType == ShuffleType.RANGE_SHUFFLE;
+  }
+
   public boolean needShuffle() {
     return shuffleType != ShuffleType.NONE_SHUFFLE;
   }

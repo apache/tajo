@@ -414,7 +414,7 @@ public class PlannerUtil {
    * @param type to find
    * @return a found logical node
    */
-  public static <T extends LogicalNode> T findMostBottomNode(LogicalNode node, NodeType type) {
+  public static <T extends LogicalNode> T findMostBottomNode(LogicalNode node, NodeType... type) {
     Preconditions.checkNotNull(node);
     Preconditions.checkNotNull(type);
 

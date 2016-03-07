@@ -175,7 +175,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     }
 
     @Override
-    public void visit(Context context, Stack<ExecutionBlockId> stack, ExecutionBlockId executionBlockId) {
+    public void visit(Context context, Stack<ExecutionBlockId> stack, ExecutionBlockId executionBlockId)
+        throws TajoException {
       ExecutionBlock current = plan.getExecBlock(executionBlockId);
 
       if (plan.isLeaf(current)) {
@@ -209,7 +210,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      *
      * @param current
      */
-    private void visitNonLeafNode(Context context, ExecutionBlock current) {
+    private void visitNonLeafNode(Context context, ExecutionBlock current) throws TajoException {
       // At non-leaf execution blocks, merge broadcastable children's plan with the current plan.
 
       if (!plan.isTerminal(current)) {
@@ -423,7 +424,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
      * @param parent parent block who has join nodes
      * @return
      */
-    private ExecutionBlock mergeTwoPhaseJoinIfPossible(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
+    private ExecutionBlock mergeTwoPhaseJoinIfPossible(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) throws TajoException {
       ScanNode scanForChild = findScanForChildEb(child, parent);
 
       parentFinder.set(scanForChild);
@@ -446,7 +447,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     }
 
     private void addUnionNodeIfNecessary(Map<ExecutionBlockId, ExecutionBlockId> unionScanMap, MasterPlan plan,
-                                         ExecutionBlock child, ExecutionBlock current) {
+                                         ExecutionBlock child, ExecutionBlock current) throws TajoException {
       if (unionScanMap != null) {
         List<ExecutionBlockId> unionScans = new ArrayList<>();
         ExecutionBlockId representativeId = null;
