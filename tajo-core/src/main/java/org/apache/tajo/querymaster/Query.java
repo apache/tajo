@@ -37,6 +37,7 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -415,22 +416,17 @@ public class Query implements EventHandler<QueryEvent> {
     return result;
   }
 
-  public TableStats computeChildResultStats() throws Exception {
-    TableStats stats = new TableStats();
+  public TableStats aggregateTableStatsOfTerminalBlock() throws Exception {
+    TableStats aggregated = new TableStats();
 
     ExecutionBlock terminalBlock = plan.getTerminalBlock();
     List<ExecutionBlock> childBlocks = plan.getChilds(terminalBlock.getId());
-    long totalNumRows = 0L, totalNumBytes = 0L;
     for(ExecutionBlock childBlock : childBlocks) {
-      Stage childStage = this.getStage(childBlock.getId());
-      TableStats childStats = childStage.getResultStats();
-      totalNumRows += childStats.getNumRows();
-      totalNumBytes += childStats.getNumBytes();
+      Stage childStage = getStage(childBlock.getId());
+      StatisticsUtil.aggregateTableStat(aggregated, childStage.getResultStats());
     }
-    stats.setNumRows(totalNumRows);
-    stats.setNumBytes(totalNumBytes);
 
-    return stats;
+    return aggregated;
   }
 
   /* non-blocking call for client API */
@@ -690,9 +686,9 @@ public class Query implements EventHandler<QueryEvent> {
         resultTableDesc.setExternal(true);
 
         if (query.hasUnionPlan()) {
-          TableStats computedStats = query.computeChildResultStats();
-          stats.setNumRows(computedStats.getNumRows());
-          stats.setNumBytes(computedStats.getNumBytes());
+          TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
+          stats.setNumRows(aggregated.getNumRows());
+          stats.setNumBytes(aggregated.getNumBytes());
         } else {
           stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
         }
@@ -734,9 +730,9 @@ public class Query implements EventHandler<QueryEvent> {
         }
 
         if (query.hasUnionPlan()) {
-          TableStats computedStats = query.computeChildResultStats();
-          stats.setNumRows(computedStats.getNumRows());
-          stats.setNumBytes(computedStats.getNumBytes());
+          TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
+          stats.setNumRows(aggregated.getNumRows());
+          stats.setNumBytes(aggregated.getNumBytes());
         } else {
           stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
         }
@@ -779,9 +775,9 @@ public class Query implements EventHandler<QueryEvent> {
         }
 
         if (query.hasUnionPlan()) {
-          TableStats computedStats = query.computeChildResultStats();
-          stats.setNumRows(computedStats.getNumRows());
-          stats.setNumBytes(computedStats.getNumBytes());
+          TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
+          stats.setNumRows(aggregated.getNumRows());
+          stats.setNumBytes(aggregated.getNumBytes());
         } else {
           long volume = getTableVolume(query.systemConf, finalOutputDir);
           stats.setNumBytes(volume);
