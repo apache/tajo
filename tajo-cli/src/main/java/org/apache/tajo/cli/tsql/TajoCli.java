@@ -658,11 +658,12 @@ public class TajoCli implements Closeable {
           continue;
         }
 
-        if (TajoClientUtil.isQueryRunning(status.getState()) || status.getState() == QueryState.QUERY_SUCCEEDED) {
+        if (TajoClientUtil.isQueryRunning(status.getState())) {
           displayFormatter.printProgress(sout, status);
         }
 
         if (TajoClientUtil.isQueryComplete(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
+          displayFormatter.printProgress(sout, status);
           break;
         } else {
           Thread.sleep(Math.min(200 * progressRetries, 1000));

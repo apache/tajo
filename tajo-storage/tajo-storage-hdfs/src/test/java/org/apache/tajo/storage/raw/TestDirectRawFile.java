@@ -101,7 +101,7 @@ public class TestDirectRawFile {
       cluster = new MiniDFSCluster.Builder(conf)
           .numDataNodes(1)
           .format(true)
-          .storagesPerDatanode(1).build();
+          .build();
 
       fs = cluster.getFileSystem();
     }

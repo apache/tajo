@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.hbase;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
@@ -33,7 +34,6 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.security.UserProvider;
-import org.apache.hadoop.hbase.util.RegionSizeCalculator;
 import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.task.JobContextImpl;
@@ -54,7 +54,10 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.verifier.SyntaxErrorUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.*;
+import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
+import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.Pair;
 
 import javax.annotation.Nullable;
 import java.io.BufferedReader;
@@ -101,8 +104,19 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public long getTableVolume(URI uri, Optional<EvalNode> filter) throws UnsupportedException {
-    throw new UnsupportedException();
+  public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
+    long totalVolume;
+    try {
+      totalVolume = getRawSplits("", table, filter.orElse(null)).stream()
+          .map(f -> f.getLength())
+          .filter(size -> size > 0) // eliminate unknown sizes (-1)
+          .reduce(0L, Long::sum);
+    } catch (TajoException e) {
+      throw new TajoRuntimeException(e);
+    } catch (Throwable ioe) {
+      throw new TajoInternalError(ioe);
+    }
+    return totalVolume;
   }
 
   @Override
@@ -143,8 +157,8 @@ public class HBaseTablespace extends Tablespace {
     ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta.getPropertySet());
     int numRowKeys = 0;
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
-    for (boolean isRowKeyMapping : isRowKeyMappings) {
-      if (isRowKeyMapping) {
+    for (int i = 0; i < isRowKeyMappings.length; i++) {
+      if (isRowKeyMappings[i]) {
         numRowKeys++;
       }
     }
@@ -412,143 +426,165 @@ public class HBaseTablespace extends Tablespace {
     return new Column[]{indexColumn};
   }
 
-  @Override
-  public List<Fragment> getSplits(String inputSourceId,
-                                  TableDesc tableDesc,
-                                  @Nullable EvalNode filterCondition)
-      throws IOException, TajoException {
+  private Pair<List<byte []>, List<byte []>> getSelectedKeyRange(
+      ColumnMapping columnMap,
+      List<IndexPredication> predicates) {
 
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta().getPropertySet());
+    final List<byte[]> startRows;
+    final List<byte[]> stopRows;
 
-    List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, filterCondition);
-    HTable htable = null;
-
-    try {
-      htable = new HTable(hbaseConf, tableDesc.getMeta().getProperty(HBaseStorageConstants.META_TABLE_KEY));
-      RegionSizeCalculator sizeCalculator = new RegionSizeCalculator(htable);
-
-      org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
-      if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
-        HRegionLocation regLoc = htable.getRegionLocation(HConstants.EMPTY_BYTE_ARRAY, false);
-        if (null == regLoc) {
-          throw new IOException("Expecting at least one region.");
-        }
-        List<Fragment> fragments = new ArrayList<>(1);
-        HBaseFragment fragment = new HBaseFragment(
-            tableDesc.getUri(),
-            inputSourceId, htable.getName().getNameAsString(),
-            HConstants.EMPTY_BYTE_ARRAY,
-            HConstants.EMPTY_BYTE_ARRAY,
-            regLoc.getHostname());
-        long regionSize = sizeCalculator.getRegionSize(regLoc.getRegionInfo().getRegionName());
-        if (regionSize == 0) {
-          fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
-        } else {
-          fragment.setLength(regionSize);
-        }
-        fragments.add(fragment);
-        return fragments;
-      }
-
-      final List<byte[]> startRows;
-      final List<byte[]> stopRows;
-
-      if (indexPredications != null && !indexPredications.isEmpty()) {
-        // indexPredications is Disjunctive set
-        startRows = indexPredications.stream()
-            .map(x -> {
-                if (x.getStartValue() != null) {
-                  return serialize(columnMapping, x, x.getStartValue());
-                } else {
-                  return HConstants.EMPTY_START_ROW;
-                }
-              })
-            .collect(Collectors.toList());
-
-        stopRows = indexPredications.stream()
-            .map(x -> {
-              if (x.getStopValue() != null) {
-                return serialize(columnMapping, x, x.getStopValue());
-              } else {
-                return HConstants.EMPTY_START_ROW;
-              }
-            })
-            .collect(Collectors.toList());
-
-      } else {
-        startRows = EMPTY_START_ROW_KEY;
-        stopRows  = EMPTY_END_ROW_KEY;
-      }
-
-      // reference: org.apache.hadoop.hbase.mapreduce.TableInputFormatBase.getSplits(JobContext)
-      // region startkey -> HBaseFragment
-      Map<byte[], HBaseFragment> fragmentMap = new HashMap<>();
-      for (int i = 0; i < keys.getFirst().length; i++) {
-        HRegionLocation location = htable.getRegionLocation(keys.getFirst()[i], false);
-        if (null == location) {
-          throw new IOException("Can't find the region of the key: " +  Bytes.toStringBinary(keys.getFirst()[i]));
-        }
-
-        byte[] regionStartKey = keys.getFirst()[i];
-        byte[] regionStopKey = keys.getSecond()[i];
-
-        int startRowsSize = startRows.size();
-        for (int j = 0; j < startRowsSize; j++) {
-          byte[] startRow = startRows.get(j);
-          byte[] stopRow = stopRows.get(j);
-          // determine if the given start an stop key fall into the region
-          if ((startRow.length == 0 || regionStopKey.length == 0 || Bytes.compareTo(startRow, regionStopKey) < 0)
-              && (stopRow.length == 0 || Bytes.compareTo(stopRow, regionStartKey) > 0)) {
-            byte[] fragmentStart = (startRow.length == 0 || Bytes.compareTo(regionStartKey, startRow) >= 0) ?
-                regionStartKey : startRow;
-
-            byte[] fragmentStop = (stopRow.length == 0 || Bytes.compareTo(regionStopKey, stopRow) <= 0) &&
-                regionStopKey.length > 0 ? regionStopKey : stopRow;
-
-            if (fragmentMap.containsKey(regionStartKey)) {
-              HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
-              if (Bytes.compareTo(fragmentStart, prevFragment.getStartRow()) < 0) {
-                prevFragment.setStartRow(fragmentStart);
-              }
-              if (Bytes.compareTo(fragmentStop, prevFragment.getStopRow()) > 0) {
-                prevFragment.setStopRow(fragmentStop);
-              }
+    if (predicates != null && !predicates.isEmpty()) {
+      // indexPredications is Disjunctive set
+      startRows = predicates.stream()
+          .map(x -> {
+            if (x.getStartValue() != null) {
+              return serialize(columnMap, x, x.getStartValue());
             } else {
-              byte[] regionName = location.getRegionInfo().getRegionName();
-              long regionSize = sizeCalculator.getRegionSize(regionName);
+              return HConstants.EMPTY_START_ROW;
+            }
+          })
+          .collect(Collectors.toList());
 
-              HBaseFragment fragment = new HBaseFragment(tableDesc.getUri(),
-                  inputSourceId,
-                  htable.getName().getNameAsString(),
-                  fragmentStart,
-                  fragmentStop,
-                  location.getHostname());
-              if (regionSize == 0) {
-                fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
-              } else {
-                fragment.setLength(regionSize);
-              }
+      stopRows = predicates.stream()
+          .map(x -> {
+            if (x.getStopValue() != null) {
+              return serialize(columnMap, x, x.getStopValue());
+            } else {
+              return HConstants.EMPTY_START_ROW;
+            }
+          })
+          .collect(Collectors.toList());
 
-              fragmentMap.put(regionStartKey, fragment);
-              if (LOG.isDebugEnabled()) {
-                LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
-              }
+    } else {
+      startRows = EMPTY_START_ROW_KEY;
+      stopRows  = EMPTY_END_ROW_KEY;
+    }
+
+    return new Pair(startRows, stopRows);
+  }
+
+  private boolean isEmptyRegion(org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> tableRange) {
+    return tableRange == null || tableRange.getFirst() == null || tableRange.getFirst().length == 0;
+  }
+
+  private long getRegionSize(RegionSizeCalculator calculator, byte [] regionName) {
+    long regionSize = calculator.getRegionSize(regionName);
+    if (regionSize == 0) {
+      return TajoConstants.UNKNOWN_LENGTH;
+    } else {
+      return regionSize;
+    }
+  }
+
+  private List<HBaseFragment> createEmptyFragment(TableDesc table, String sourceId, HTable htable,
+                                                  RegionSizeCalculator sizeCalculator) throws IOException {
+    HRegionLocation regLoc = htable.getRegionLocation(HConstants.EMPTY_BYTE_ARRAY, false);
+    if (null == regLoc) {
+      throw new IOException("Expecting at least one region.");
+    }
+
+    HBaseFragment fragment = new HBaseFragment(
+        table.getUri(),
+        sourceId, htable.getName().getNameAsString(),
+        HConstants.EMPTY_BYTE_ARRAY,
+        HConstants.EMPTY_BYTE_ARRAY,
+        regLoc.getHostname());
+
+    fragment.setLength(getRegionSize(sizeCalculator, regLoc.getRegionInfo().getRegionName()));
+    return ImmutableList.of(fragment);
+  }
+
+  private Collection<HBaseFragment> convertRangeToFragment(
+      TableDesc table, String inputSourceId, HTable htable, RegionSizeCalculator sizeCalculator,
+      org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> tableRange,
+      Pair<List<byte[]>, List<byte[]>> selectedRange) throws IOException {
+
+    final Map<byte[], HBaseFragment> fragmentMap = new HashMap<>();
+
+    for (int i = 0; i < tableRange.getFirst().length; i++) {
+      HRegionLocation location = htable.getRegionLocation(tableRange.getFirst()[i], false);
+      if (location == null) {
+        throw new IOException("Can't find the region of the key: " + Bytes.toStringBinary(tableRange.getFirst()[i]));
+      }
+
+      final byte[] regionStartKey = tableRange.getFirst()[i];
+      final byte[] regionStopKey = tableRange.getSecond()[i];
+
+      int startRowsSize = selectedRange.getFirst().size();
+      for (int j = 0; j < startRowsSize; j++) {
+        byte[] startRow = selectedRange.getFirst().get(j);
+        byte[] stopRow = selectedRange.getSecond().get(j);
+        // determine if the given start an stop key fall into the region
+        if ((startRow.length == 0 || regionStopKey.length == 0 || Bytes.compareTo(startRow, regionStopKey) < 0)
+            && (stopRow.length == 0 || Bytes.compareTo(stopRow, regionStartKey) > 0)) {
+          final byte[] fragmentStart = (startRow.length == 0 || Bytes.compareTo(regionStartKey, startRow) >= 0) ?
+              regionStartKey : startRow;
+
+          final byte[] fragmentStop = (stopRow.length == 0 || Bytes.compareTo(regionStopKey, stopRow) <= 0) &&
+              regionStopKey.length > 0 ? regionStopKey : stopRow;
+
+          if (fragmentMap.containsKey(regionStartKey)) {
+            final HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
+            if (Bytes.compareTo(fragmentStart, prevFragment.getStartRow()) < 0) {
+              prevFragment.setStartRow(fragmentStart);
+            }
+            if (Bytes.compareTo(fragmentStop, prevFragment.getStopRow()) > 0) {
+              prevFragment.setStopRow(fragmentStop);
+            }
+          } else {
+
+            final HBaseFragment fragment = new HBaseFragment(table.getUri(),
+                inputSourceId,
+                htable.getName().getNameAsString(),
+                fragmentStart,
+                fragmentStop,
+                location.getHostname());
+
+            fragment.setLength(getRegionSize(sizeCalculator, location.getRegionInfo().getRegionName()));
+            fragmentMap.put(regionStartKey, fragment);
+
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
             }
           }
         }
       }
+    }
 
-      List<HBaseFragment> fragments = new ArrayList<>(fragmentMap.values());
+    return fragmentMap.values();
+  }
+
+  @Override
+  public List<Fragment> getSplits(String inputSourceId,
+                                  TableDesc table,
+                                  @Nullable EvalNode filterCondition) throws IOException, TajoException {
+    return (List<Fragment>) (List) getRawSplits(inputSourceId, table, filterCondition);
+  }
+
+  private List<HBaseFragment> getRawSplits(String inputSourceId,
+                                           TableDesc table,
+                                           @Nullable EvalNode filterCondition) throws IOException, TajoException {
+    final ColumnMapping columnMapping = new ColumnMapping(table.getSchema(), table.getMeta().getPropertySet());
+
+    try (final HTable htable = new HTable(hbaseConf, table.getMeta().getProperty(HBaseStorageConstants.META_TABLE_KEY))) {
+      final RegionSizeCalculator sizeCalculator = new RegionSizeCalculator(htable);
+      final org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> tableRange = htable.getStartEndKeys();
+      if (isEmptyRegion(tableRange)) {
+        return createEmptyFragment(table, inputSourceId, htable, sizeCalculator);
+      }
+
+      final Pair<List<byte []>, List<byte []>> selectedRange = getSelectedKeyRange(
+          columnMapping,
+          getIndexPredications(columnMapping, table, filterCondition));
+
+      // region startkey -> HBaseFragment
+      List<HBaseFragment> fragments = new ArrayList<>(convertRangeToFragment(table, inputSourceId, htable, sizeCalculator, tableRange, selectedRange));
       Collections.sort(fragments);
       if (!fragments.isEmpty()) {
         fragments.get(fragments.size() - 1).setLast(true);
       }
 
-      return (ArrayList<Fragment>) (ArrayList) fragments;
-    } finally {
-      if (htable != null) {
-        htable.close();
-      }
+      return ImmutableList.copyOf(fragments);
     }
   }
 

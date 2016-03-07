@@ -104,9 +104,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     }
     for (GroupbyNode eachGroupby : groupbyNodes) {
       Set<Column> groupingColumnSet = new HashSet<>();
-      for (Column column: eachGroupby.getGroupingColumns()) {
-        groupingColumnSet.add(column);
-      }
+      Collections.addAll(groupingColumnSet, eachGroupby.getGroupingColumns());
       for (Target eachTarget: eachGroupby.getTargets()) {
         if (!groupingColumnSet.contains(eachTarget.getNamedColumn())) {
           //aggr function

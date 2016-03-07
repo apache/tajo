@@ -57,13 +57,14 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   @BeforeClass
   public static void setup() throws Exception {
     TestJoinQuery.setup();
-    client.executeQuery("CREATE TABLE if not exists customer_parts " +
+    client.executeQueryAndGetResult("CREATE TABLE if not exists customer_parts " +
         "(c_custkey INT4, c_name TEXT, c_address TEXT, c_phone TEXT, c_acctbal FLOAT8, c_mktsegment TEXT, c_comment TEXT) " +
         "PARTITION BY COLUMN (c_nationkey INT4) as " +
-        "SELECT c_custkey, c_name, c_address, c_phone, c_acctbal, c_mktsegment, c_comment, c_nationkey FROM customer;");
+        "SELECT c_custkey, c_name, c_address, c_phone, c_acctbal, c_mktsegment, c_comment, c_nationkey FROM customer;")
+        .close();
     client.executeQueryAndGetResult("create table if not exists nation_partitioned (n_name text) " +
         "partition by column(n_nationkey int4, n_regionkey int4) " +
-        "as select n_name, n_nationkey, n_regionkey from nation");
+        "as select n_name, n_nationkey, n_regionkey from nation").close();
     addEmptyDataFile("nation_partitioned", true);
   }
 

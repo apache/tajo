@@ -22,93 +22,112 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import parquet.filter.UnboundRecordFilter;
-import parquet.hadoop.Footer;
-import parquet.hadoop.ParquetFileReader;
-import parquet.hadoop.api.InitContext;
-import parquet.hadoop.api.ReadSupport;
-import parquet.hadoop.api.ReadSupport.ReadContext;
-import parquet.hadoop.metadata.BlockMetaData;
-import parquet.hadoop.metadata.GlobalMetaData;
-import parquet.schema.MessageType;
+import org.apache.parquet.Preconditions;
+import org.apache.parquet.filter.UnboundRecordFilter;
+import org.apache.parquet.filter2.compat.FilterCompat;
+import org.apache.parquet.filter2.compat.FilterCompat.Filter;
+import org.apache.parquet.filter2.compat.RowGroupFilter;
+import org.apache.parquet.hadoop.Footer;
+import org.apache.parquet.hadoop.ParquetFileReader;
+import org.apache.parquet.hadoop.api.ReadSupport;
+import org.apache.parquet.hadoop.metadata.BlockMetaData;
+import org.apache.parquet.hadoop.util.HiddenFileFilter;
+import org.apache.parquet.schema.MessageType;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+import static org.apache.parquet.Preconditions.checkNotNull;
 
 /**
+ * This class is borrowed from parquet-mr-1.8.1, but it is modified in order to fix the PARQUET-363 and progress.
+ *
  * Read records from a Parquet file.
  */
 public class ParquetReader<T> implements Closeable {
 
-  private ReadSupport<T> readSupport;
-  private UnboundRecordFilter filter;
-  private Configuration conf;
-  private ReadContext readContext;
-  private Iterator<Footer> footersIterator;
+  private final ReadSupport<T> readSupport;
+  private final Configuration conf;
+  private final Iterator<Footer> footersIterator;
+  private final FilterCompat.Filter filter;
+
   private InternalParquetRecordReader<T> reader;
-  private GlobalMetaData globalMetaData;
+  private long totalRowCount;
 
   /**
    * @param file the file to read
    * @param readSupport to materialize records
-   * @throws java.io.IOException
+   * @throws IOException
+   * @deprecated use {@link #builder(ReadSupport, Path)}
    */
+  @Deprecated
   public ParquetReader(Path file, ReadSupport<T> readSupport) throws IOException {
-    this(file, readSupport, null);
+    this(new Configuration(), file, readSupport, FilterCompat.NOOP);
   }
 
   /**
    * @param conf the configuration
    * @param file the file to read
    * @param readSupport to materialize records
-   * @throws java.io.IOException
+   * @throws IOException
+   * @deprecated use {@link #builder(ReadSupport, Path)}
    */
+  @Deprecated
   public ParquetReader(Configuration conf, Path file, ReadSupport<T> readSupport) throws IOException {
-    this(conf, file, readSupport, null);
+    this(conf, file, readSupport, FilterCompat.NOOP);
   }
 
   /**
    * @param file the file to read
    * @param readSupport to materialize records
-   * @param filter the filter to use to filter records
-   * @throws java.io.IOException
+   * @param unboundRecordFilter the filter to use to filter records
+   * @throws IOException
+   * @deprecated use {@link #builder(ReadSupport, Path)}
    */
-  public ParquetReader(Path file, ReadSupport<T> readSupport, UnboundRecordFilter filter) throws IOException {
-    this(new Configuration(), file, readSupport, filter);
+  @Deprecated
+  public ParquetReader(Path file, ReadSupport<T> readSupport, UnboundRecordFilter unboundRecordFilter) throws IOException {
+    this(new Configuration(), file, readSupport, FilterCompat.get(unboundRecordFilter));
   }
 
   /**
    * @param conf the configuration
    * @param file the file to read
    * @param readSupport to materialize records
-   * @param filter the filter to use to filter records
-   * @throws java.io.IOException
+   * @param unboundRecordFilter the filter to use to filter records
+   * @throws IOException
+   * @deprecated use {@link #builder(ReadSupport, Path)}
    */
-  public ParquetReader(Configuration conf, Path file, ReadSupport<T> readSupport, UnboundRecordFilter filter) throws IOException {
+  @Deprecated
+  public ParquetReader(Configuration conf, Path file, ReadSupport<T> readSupport, UnboundRecordFilter unboundRecordFilter) throws IOException {
+    this(conf, file, readSupport, FilterCompat.get(unboundRecordFilter));
+  }
+
+  private ParquetReader(Configuration conf,
+                        Path file,
+                        ReadSupport<T> readSupport,
+                        Filter filter) throws IOException {
     this.readSupport = readSupport;
-    this.filter = filter;
+    this.filter = checkNotNull(filter, "filter");
     this.conf = conf;
 
     FileSystem fs = file.getFileSystem(conf);
-    List<FileStatus> statuses = Arrays.asList(fs.listStatus(file));
-    List<Footer> footers = ParquetFileReader.readAllFootersInParallelUsingSummaryFiles(conf, statuses);
+    List<FileStatus> statuses = Arrays.asList(fs.listStatus(file, HiddenFileFilter.INSTANCE));
+    List<Footer> footers = ParquetFileReader.readAllFootersInParallelUsingSummaryFiles(conf, statuses, false);
     this.footersIterator = footers.iterator();
-    globalMetaData = ParquetFileWriter.getGlobalMetaData(footers);
 
-    List<BlockMetaData> blocks = new ArrayList<>();
     for (Footer footer : footers) {
-      blocks.addAll(footer.getParquetMetadata().getBlocks());
+      for(BlockMetaData block : footer.getParquetMetadata().getBlocks()) {
+        totalRowCount += block.getRowCount();
+      }
     }
-
-    MessageType schema = globalMetaData.getSchema();
-    Map<String, Set<String>> extraMetadata = globalMetaData.getKeyValueMetaData();
-    readContext = readSupport.init(new InitContext(conf, extraMetadata, schema));
   }
 
   /**
    * @return the next record or null if finished
-   * @throws java.io.IOException
+   * @throws IOException
    */
   public T read() throws IOException {
     try {
@@ -130,10 +149,17 @@ public class ParquetReader<T> implements Closeable {
     }
     if (footersIterator.hasNext()) {
       Footer footer = footersIterator.next();
-      reader = new InternalParquetRecordReader<>(readSupport, filter);
-      reader.initialize(
-          readContext.getRequestedSchema(), globalMetaData.getSchema(), footer.getParquetMetadata().getFileMetaData().getKeyValueMetaData(),
-          readContext.getReadSupportMetadata(), footer.getFile(), footer.getParquetMetadata().getBlocks(), conf);
+
+      List<BlockMetaData> blocks = footer.getParquetMetadata().getBlocks();
+
+      MessageType fileSchema = footer.getParquetMetadata().getFileMetaData().getSchema();
+
+      List<BlockMetaData> filteredBlocks = RowGroupFilter.filterRowGroups(
+          filter, blocks, fileSchema);
+
+      reader = new InternalParquetRecordReader<T>(readSupport, filter);
+      reader.initialize(footer.getParquetMetadata().getFileMetaData(),
+          footer.getFile(), filteredBlocks, conf);
     }
   }
 
@@ -145,10 +171,64 @@ public class ParquetReader<T> implements Closeable {
   }
 
   public float getProgress() {
-    if (!footersIterator.hasNext()) {
-      return 1.0f;
+    if (reader != null) {
+      return reader.getProgress();
     } else {
-      return reader != null ? reader.getProgress() : 0.0f;
+      if (!footersIterator.hasNext()) {
+        return 1.0f;
+      } else {
+        return 0.0f;
+      }
+    }
+  }
+
+  public long getTotalRowCount() {
+    return totalRowCount;
+  }
+
+  public static <T> Builder<T> builder(ReadSupport<T> readSupport, Path path) {
+    return new Builder<T>(readSupport, path);
+  }
+
+  public static class Builder<T> {
+    private final ReadSupport<T> readSupport;
+    private final Path file;
+    private Filter filter;
+    protected Configuration conf;
+
+    private Builder(ReadSupport<T> readSupport, Path path) {
+      this.readSupport = checkNotNull(readSupport, "readSupport");
+      this.file = checkNotNull(path, "path");
+      this.conf = new Configuration();
+      this.filter = FilterCompat.NOOP;
+    }
+
+    protected Builder(Path path) {
+      this.readSupport = null;
+      this.file = checkNotNull(path, "path");
+      this.conf = new Configuration();
+      this.filter = FilterCompat.NOOP;
+    }
+
+    public Builder<T> withConf(Configuration conf) {
+      this.conf = checkNotNull(conf, "conf");
+      return this;
+    }
+
+    public Builder<T> withFilter(Filter filter) {
+      this.filter = checkNotNull(filter, "filter");
+      return this;
+    }
+
+    protected ReadSupport<T> getReadSupport() {
+      // if readSupport is null, the protected constructor must have been used
+      Preconditions.checkArgument(readSupport != null,
+          "[BUG] Classes that extend Builder should override getReadSupport()");
+      return readSupport;
+    }
+
+    public ParquetReader<T> build() throws IOException {
+      return new ParquetReader<T>(conf, file, getReadSupport(), filter);
     }
   }
 }

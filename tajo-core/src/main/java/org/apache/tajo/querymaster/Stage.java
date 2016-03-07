@@ -42,6 +42,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.engine.planner.global.MasterPlan.ShuffleContext;
 import org.apache.tajo.error.Errors.SerializedException;
 import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.exception.TajoException;
@@ -51,6 +52,7 @@ import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -96,7 +98,7 @@ public class Stage implements EventHandler<StageEvent> {
   private MasterPlan masterPlan;
   private ExecutionBlock block;
   private int priority;
-  private Schema schema;
+  private Schema outSchema;
   private TableMeta meta;
   private TableStats resultStatistics;
   private TableStats inputStatistics;
@@ -592,8 +594,8 @@ public class Stage implements EventHandler<StageEvent> {
     return tasks.get(qid);
   }
 
-  public Schema getSchema() {
-    return schema;
+  public Schema getOutSchema() {
+    return outSchema;
   }
 
   public TableMeta getTableMeta() {
@@ -667,8 +669,7 @@ public class Stage implements EventHandler<StageEvent> {
     long[] numRows = new long[]{0, 0};
     int[] numBlocks = new int[]{0, 0};
     int[] numOutputs = new int[]{0, 0};
-
-    List<ColumnStats> columnStatses = Lists.newArrayList();
+    List<ColumnStats> columnStatses = StatisticsUtil.emptyColumnStats(stage.getDataChannel().getSchema());
 
     MasterPlan masterPlan = stage.getMasterPlan();
     for (ExecutionBlock block : masterPlan.getChilds(stage.getBlock())) {
@@ -687,7 +688,9 @@ public class Stage implements EventHandler<StageEvent> {
         numOutputs[i] += childStatArray[i].getNumShuffleOutputs();
         numRows[i] += childStatArray[i].getNumRows();
       }
-      columnStatses.addAll(childStatArray[1].getColumnStats());
+      if (childStatArray[1].getColumnStats() != null && childStatArray[1].getColumnStats().size() > 0) {
+        columnStatses = StatisticsUtil.aggregateColumnStats(columnStatses, childStatArray[1].getColumnStats());
+      }
     }
 
     for (int i = 0; i < 2; i++) {
@@ -794,7 +797,7 @@ public class Stage implements EventHandler<StageEvent> {
       dataFormat = channel.getDataFormat();
     }
 
-    schema = channel.getSchema();
+    outSchema = channel.getSchema();
     meta = CatalogUtil.newTableMeta(dataFormat, new KeyValueSet());
     inputStatistics = statsArray[0];
     resultStatistics = statsArray[1];
@@ -855,6 +858,7 @@ public class Stage implements EventHandler<StageEvent> {
           ExecutionBlock parent = stage.getMasterPlan().getParent(stage.getBlock());
           DataChannel channel = stage.getMasterPlan().getChannel(stage.getId(), parent.getId());
           setShuffleIfNecessary(stage, channel);
+          // TODO: verify changed shuffle plan
           initTaskScheduler(stage);
           // execute pre-processing asyncronously
           stage.getContext().getQueryMasterContext().getSingleEventExecutor()
@@ -920,8 +924,8 @@ public class Stage implements EventHandler<StageEvent> {
      * methods and the number of partitions to a given Stage.
      */
     private static void setShuffleIfNecessary(Stage stage, DataChannel channel) {
-      if (channel.getShuffleType() != ShuffleType.NONE_SHUFFLE) {
-        int numTasks = calculateShuffleOutputNum(stage, channel);
+      if (channel.isHashShuffle()) {
+        int numTasks = calculateShuffleOutputNum(stage);
         Repartitioner.setShuffleOutputNumForTwoPhase(stage, numTasks, channel);
       }
     }
@@ -933,120 +937,152 @@ public class Stage implements EventHandler<StageEvent> {
      * @param stage
      * @return
      */
-    public static int calculateShuffleOutputNum(Stage stage, DataChannel channel) {
+    public static int calculateShuffleOutputNum(Stage stage) {
       MasterPlan masterPlan = stage.getMasterPlan();
-      ExecutionBlock parent = masterPlan.getParent(stage.getBlock());
 
-      LogicalNode grpNode = null;
-      if (parent != null) {
-        grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY);
-        if (grpNode == null) {
-          grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.DISTINCT_GROUP_BY);
-        }
+      // For test
+      if (masterPlan.getContext().containsKey(SessionVars.TEST_MIN_TASK_NUM)) {
+        int partitionNum = masterPlan.getContext().getInt(SessionVars.TEST_MIN_TASK_NUM);
+        LOG.info(stage.getId() + ", The determined number of partitions is " + partitionNum + " for test");
+        return partitionNum;
       }
 
-      // We assume this execution block the first stage of join if two or more tables are included in this block,
-      if (parent != null && (parent.getNonBroadcastRelNum()) >= 2) {
-        List<ExecutionBlock> childs = masterPlan.getChilds(parent);
+      Optional<ShuffleContext> optional = masterPlan.getShuffleInfo(stage.getId());
+      if (optional.isPresent()) {
+        LOG.info("# of partitions is determined as " + optional.get().getPartitionNum() +
+            "to match with sibling eb's partition number");
+        return optional.get().getPartitionNum();
 
-        // for outer
-        ExecutionBlock outer = childs.get(0);
-        long outerVolume = getInputVolume(stage.masterPlan, stage.context, outer);
+      } else {
+        ExecutionBlock parent = masterPlan.getParent(stage.getBlock());
+        int partitionNum;
 
-        // for inner
-        ExecutionBlock inner = childs.get(1);
-        long innerVolume = getInputVolume(stage.masterPlan, stage.context, inner);
-        LOG.info(stage.getId() + ", Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
-            + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
+        if (parent != null) {
+          // We assume this execution block the first stage of join if two or more tables are included in this block,
+          if (parent.hasJoin()) {
+            if (parent.getNonBroadcastRelNum() > 1) {
+              // repartition join
+              partitionNum = calculatePartitionNumForRepartitionJoin(parent, stage);
+              LOG.info(stage.getId() + ", The determined number of partitions for repartition join is " + partitionNum);
+            } else {
+              // broadcast join
+              // partition number is calculated using the volume of the large table
+              partitionNum = calculatePartitionNumDefault(parent, stage);
+              LOG.info(stage.getId() + ", The determined number of partitions for broadcast join is " + partitionNum);
+            }
 
-        long bigger = Math.max(outerVolume, innerVolume);
+          } else {
+            // Is this stage the first step of group-by?
+            if (parent.hasAgg()) {
+              LogicalNode grpNode = PlannerUtil.findMostBottomNode(parent.getPlan(), NodeType.GROUP_BY,
+                  NodeType.DISTINCT_GROUP_BY, NodeType.WINDOW_AGG);
+              if (grpNode == null) {
+                throw new TajoInternalError("Cannot find aggregation plan for " + stage.getId());
+              }
 
-        int mb = (int) Math.ceil((double) bigger / 1048576);
-        LOG.info(stage.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
+              if (!hasGroupKeys(stage, grpNode)) {
+                LOG.info(stage.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
+                partitionNum = 1;
+              } else {
+                partitionNum = calculatePartitionNumForAgg(parent, stage);
+                LOG.info(stage.getId() + ", The determined number of aggregation partitions is " + partitionNum);
+              }
 
-        int taskNum = (int) Math.ceil((double) mb / masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
+            } else {
+              // NOTE: the below code might be executed during sort, but the partition number is not used anymore for sort.
+              LOG.info("============>>>>> Unexpected Case! <<<<<================");
+              partitionNum = calculatePartitionNumDefault(parent, stage);
+              LOG.info(stage.getId() + ", The determined number of partitions is " + partitionNum);
+            }
 
-        if (masterPlan.getContext().containsKey(SessionVars.TEST_MIN_TASK_NUM)) {
-          taskNum = masterPlan.getContext().getInt(SessionVars.TEST_MIN_TASK_NUM);
-          LOG.warn("!!!!! TESTCASE MODE !!!!!");
-        }
-
-        // The shuffle output numbers of join may be inconsistent by execution block order.
-        // Thus, we need to compare the number with DataChannel output numbers.
-        // If the number is right, the number and DataChannel output numbers will be consistent.
-        int outerShuffleOutputNum = 0, innerShuffleOutputNum = 0;
-        for (DataChannel eachChannel : masterPlan.getOutgoingChannels(outer.getId())) {
-          outerShuffleOutputNum = Math.max(outerShuffleOutputNum, eachChannel.getShuffleOutputNum());
-        }
-        for (DataChannel eachChannel : masterPlan.getOutgoingChannels(inner.getId())) {
-          innerShuffleOutputNum = Math.max(innerShuffleOutputNum, eachChannel.getShuffleOutputNum());
-        }
-        if (outerShuffleOutputNum != innerShuffleOutputNum
-            && taskNum != outerShuffleOutputNum
-            && taskNum != innerShuffleOutputNum) {
-          LOG.info(stage.getId() + ", Change determined number of join partitions cause difference of outputNum" +
-                  ", originTaskNum=" + taskNum + ", changedTaskNum=" + Math.max(outerShuffleOutputNum, innerShuffleOutputNum) +
-                  ", outerShuffleOutptNum=" + outerShuffleOutputNum +
-                  ", innerShuffleOutputNum=" + innerShuffleOutputNum);
-          taskNum = Math.max(outerShuffleOutputNum, innerShuffleOutputNum);
-        }
-
-        LOG.info(stage.getId() + ", The determined number of join partitions is " + taskNum);
-
-        return taskNum;
-        // Is this stage the first step of group-by?
-      } else if (grpNode != null) {
-        boolean hasGroupColumns = true;
-        if (grpNode.getType() == NodeType.GROUP_BY) {
-          hasGroupColumns = ((GroupbyNode)grpNode).getGroupingColumns().length > 0;
-        } else if (grpNode.getType() == NodeType.DISTINCT_GROUP_BY) {
-          // Find current distinct stage node.
-          DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(stage.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
-          if (distinctNode == null) {
-            LOG.warn(stage.getId() + ", Can't find current DistinctGroupbyNode");
-            distinctNode = (DistinctGroupbyNode)grpNode;
           }
-          hasGroupColumns = distinctNode.getGroupingColumns().length > 0;
+        } else {
+          // This case means that the parent eb does not exist even though data shuffle is required after the current eb.
+          throw new TajoInternalError("Cannot find parent execution block of " + stage.block.getId());
+        }
 
-          Enforcer enforcer = stage.getBlock().getEnforcer();
-          if (enforcer == null) {
-            LOG.warn(stage.getId() + ", DistinctGroupbyNode's enforcer is null.");
-          }
+        // Record the partition number for sibling execution blocks
+        masterPlan.addShuffleInfo(stage.getId(), partitionNum);
+        return partitionNum;
+      }
+    }
+
+    private static int calculatePartitionNumForRepartitionJoin(ExecutionBlock parent, Stage currentStage) {
+      List<ExecutionBlock> childs = currentStage.masterPlan.getChilds(parent);
+
+      // for outer
+      ExecutionBlock outer = childs.get(0);
+      long outerVolume = getInputVolume(currentStage.masterPlan, currentStage.context, outer);
+
+      // for inner
+      ExecutionBlock inner = childs.get(1);
+      long innerVolume = getInputVolume(currentStage.masterPlan, currentStage.context, inner);
+      LOG.info(currentStage.getId() + ", Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
+          + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
+
+      long bigger = Math.max(outerVolume, innerVolume);
+
+      int mb = (int) Math.ceil((double) bigger / 1048576);
+      LOG.info(currentStage.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
+
+      return (int) Math.ceil((double) mb /
+          currentStage.masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
+    }
+
+    private static int calculatePartitionNumForAgg(ExecutionBlock parent, Stage stage) {
+      int volumeByMB = getInputVolumeMB(parent, stage);
+      LOG.info(stage.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
+      // determine the number of task
+      return (int) Math.ceil((double) volumeByMB /
+          stage.masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
+
+    }
+
+    private static boolean hasGroupKeys(Stage currentStage, LogicalNode aggNode) {
+      if (aggNode.getType() == NodeType.GROUP_BY) {
+        return ((GroupbyNode)aggNode).getGroupingColumns().length > 0;
+      } else if (aggNode.getType() == NodeType.DISTINCT_GROUP_BY) {
+        // Find current distinct stage node.
+        DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(currentStage.getBlock().getPlan(),
+            NodeType.DISTINCT_GROUP_BY);
+        if (distinctNode == null) {
+          LOG.warn(currentStage.getId() + ", Can't find current DistinctGroupbyNode");
+          distinctNode = (DistinctGroupbyNode)aggNode;
+        }
+        boolean hasGroupColumns = distinctNode.getGroupingColumns().length > 0;
+
+        Enforcer enforcer = currentStage.getBlock().getEnforcer();
+        if (enforcer == null) {
+          LOG.warn(currentStage.getId() + ", DistinctGroupbyNode's enforcer is null.");
+        } else {
           EnforceProperty property = PhysicalPlannerImpl.getAlgorithmEnforceProperty(enforcer, distinctNode);
           if (property != null) {
             if (property.getDistinct().getIsMultipleAggregation()) {
               MultipleAggregationStage multiAggStage = property.getDistinct().getMultipleAggregationStage();
-              if (multiAggStage != MultipleAggregationStage.THRID_STAGE) {
-                hasGroupColumns = true;
-              }
+              hasGroupColumns = multiAggStage != MultipleAggregationStage.THRID_STAGE;
             }
           }
         }
-        if (!hasGroupColumns) {
-          LOG.info(stage.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
-          return 1;
-        } else {
-          long volume = getInputVolume(stage.masterPlan, stage.context, stage.block);
-
-          int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
-          LOG.info(stage.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
-          // determine the number of task
-          int taskNum = (int) Math.ceil((double) volumeByMB /
-              masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
-          LOG.info(stage.getId() + ", The determined number of aggregation partitions is " + taskNum);
-          return taskNum;
-        }
+        return hasGroupColumns;
       } else {
-        LOG.info("============>>>>> Unexpected Case! <<<<<================");
-        long volume = getInputVolume(stage.masterPlan, stage.context, stage.block);
-
-        int mb = (int) Math.ceil((double)volume / 1048576);
-        LOG.info(stage.getId() + ", Table's volume is approximately " + mb + " MB");
-        // determine the number of task per 128MB
-        int taskNum = (int) Math.ceil((double)mb / 128);
-        LOG.info(stage.getId() + ", The determined number of partitions is " + taskNum);
-        return taskNum;
+        return ((WindowAggNode) aggNode).hasPartitionKeys();
       }
+    }
+
+    private static int calculatePartitionNumDefault(ExecutionBlock parent, Stage currentStage) {
+      int mb = getInputVolumeMB(parent, currentStage);
+      LOG.info(currentStage.getId() + ", Table's volume is approximately " + mb + " MB");
+      // determine the number of task per 128 MB
+      return (int) Math.ceil((double)mb / 128);
+    }
+
+    private static int getInputVolumeMB(ExecutionBlock parent, Stage currentStage) {
+      // NOTE: Get input volume from the parent EB.
+      // If the parent EB contains an UNION query, the volume of the whole input for the UNION is returned.
+      // Otherwise, only the input volume of the current EB is returned.
+      long volume = getInputVolume(currentStage.masterPlan, currentStage.context, parent);
+
+      return (int) Math.ceil((double)volume / StorageUnit.MB);
     }
 
     private static void schedule(Stage stage) throws IOException, TajoException {

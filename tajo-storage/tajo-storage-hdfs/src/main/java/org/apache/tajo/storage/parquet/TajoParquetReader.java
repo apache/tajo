@@ -18,11 +18,12 @@
 
 package org.apache.tajo.storage.parquet;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.parquet.filter.UnboundRecordFilter;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.thirdparty.parquet.ParquetReader;
-import parquet.filter.UnboundRecordFilter;
 
 import java.io.IOException;
 
@@ -32,54 +33,34 @@ import java.io.IOException;
  * directly.
  */
 public class TajoParquetReader extends ParquetReader<Tuple> {
-  /**
-   * Creates a new TajoParquetReader.
-   *
-   * @param file The file to read from.
-   * @param readSchema Tajo schema of the table.
-   */
-  public TajoParquetReader(Path file, Schema readSchema) throws IOException {
-    super(file, new TajoReadSupport(readSchema));
-  }
 
   /**
    * Creates a new TajoParquetReader.
    *
+   * @param conf the configuration
    * @param file The file to read from.
    * @param readSchema Tajo schema of the table.
    * @param requestedSchema Tajo schema of the projection.
    */
-  public TajoParquetReader(Path file, Schema readSchema,
+  public TajoParquetReader(Configuration conf, Path file, Schema readSchema,
                            Schema requestedSchema) throws IOException {
-    super(file, new TajoReadSupport(readSchema, requestedSchema));
+    super(conf, file, new TajoReadSupport(readSchema, requestedSchema));
   }
 
   /**
    * Creates a new TajoParquetReader.
    *
-   * @param file The file to read from.
-   * @param readSchema Tajo schema of the table.
-   * @param recordFilter Record filter.
-   */
-  public TajoParquetReader(Path file, Schema readSchema,
-                           UnboundRecordFilter recordFilter)
-      throws IOException {
-    super(file, new TajoReadSupport(readSchema), recordFilter);
-  }
-
-  /**
-   * Creates a new TajoParquetReader.
-   *
+   * @param conf the configuration
    * @param file The file to read from.
    * @param readSchema Tajo schema of the table.
    * @param requestedSchema Tajo schema of the projection.
    * @param recordFilter Record filter.
    */
-  public TajoParquetReader(Path file, Schema readSchema,
+  public TajoParquetReader(Configuration conf, Path file, Schema readSchema,
                            Schema requestedSchema,
                            UnboundRecordFilter recordFilter)
       throws IOException {
-    super(file, new TajoReadSupport(readSchema, requestedSchema),
+    super(conf, file, new TajoReadSupport(readSchema, requestedSchema),
           recordFilter);
   }
 }
