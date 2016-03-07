@@ -686,8 +686,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         if (query.hasUnionPlan()) {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
-          stats.setNumRows(aggregated.getNumRows());
-          stats.setNumBytes(aggregated.getNumBytes());
+          stats.setValues(aggregated);
         } else {
           stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
         }
@@ -730,15 +729,13 @@ public class Query implements EventHandler<QueryEvent> {
 
         if (query.hasUnionPlan()) {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
-          stats.setNumRows(aggregated.getNumRows());
-          stats.setNumBytes(aggregated.getNumBytes());
+          stats.setValues(aggregated);
         } else {
           stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
         }
 
         tableDescTobeCreated.setStats(stats);
         query.setResultDesc(tableDescTobeCreated);
-
         catalog.createTable(tableDescTobeCreated);
       }
     }
@@ -775,8 +772,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         if (query.hasUnionPlan()) {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
-          stats.setNumRows(aggregated.getNumRows());
-          stats.setNumBytes(aggregated.getNumBytes());
+          stats.setValues(aggregated);
         } else {
           long volume = getTableVolume(query.systemConf, finalOutputDir);
           stats.setNumBytes(volume);
