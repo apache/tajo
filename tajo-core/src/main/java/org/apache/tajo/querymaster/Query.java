@@ -409,7 +409,6 @@ public class Query implements EventHandler<QueryEvent> {
     // During executing UNION statement or UNION ALL statement, the terminal block doesn't have join plan and has
     // two more child blocks. In above case, Tajo should summarize result TableStats from all child stages.
     ExecutionBlock terminalBlock = plan.getTerminalBlock();
-    terminalBlock.setPlan(terminalBlock.getPlan());
     if (plan.getChilds(terminalBlock.getId()).size() >= 2) {
       result = true;
     }
@@ -420,8 +419,6 @@ public class Query implements EventHandler<QueryEvent> {
     TableStats stats = new TableStats();
 
     ExecutionBlock terminalBlock = plan.getTerminalBlock();
-    terminalBlock.setPlan(terminalBlock.getPlan());
-
     List<ExecutionBlock> childBlocks = plan.getChilds(terminalBlock.getId());
     long totalNumRows = 0L, totalNumBytes = 0L;
     for(ExecutionBlock childBlock : childBlocks) {
@@ -687,7 +684,7 @@ public class Query implements EventHandler<QueryEvent> {
         TableDesc resultTableDesc =
             new TableDesc(
                 query.getId().toString(),
-                lastStage.getOutSchema(),
+              lastStage.getOutSchema(),
                 meta,
                 finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
