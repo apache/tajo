@@ -138,7 +138,7 @@ public class HelpCommand extends TajoShellCommand {
   }
 
   @Override
-  public ArgumentCompleter getArgumentComplementer() {
+  public ArgumentCompleter getArgumentCompleter() {
     List<String> cmds = new ArrayList<>(Arrays.asList(getAliases()));
     cmds.add(getCommand());
 

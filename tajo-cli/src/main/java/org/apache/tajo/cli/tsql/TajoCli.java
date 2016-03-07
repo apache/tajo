@@ -389,7 +389,7 @@ public class TajoCli implements Closeable {
       }
 
       // make completers for console auto-completion
-      compList.add(cmd.getArgumentComplementer());
+      compList.add(cmd.getArgumentCompleter());
 
       commands.put(cmd.getCommand(), cmd);
       for (String alias : cmd.getAliases()) {
@@ -412,18 +412,18 @@ public class TajoCli implements Closeable {
   }
 
   private Collection<String> getKeywords() {
-    List<String> klist = new ArrayList<>();
+    List<String> keywords = new ArrayList<>();
 
     // SQL keywords
-    klist.addAll(Arrays.asList(SQLKeywords.keywords));
+    keywords.addAll(Arrays.asList(SQLKeywords.keywords));
 
     // DB and table names
     for (String db: client.getAllDatabaseNames()) {
-      klist.add(db);
-      klist.addAll(client.getTableList(db));
+      keywords.add(db);
+      keywords.addAll(client.getTableList(db));
     }
 
-    return klist;
+    return keywords;
   }
 
   private void addShutdownHook() {

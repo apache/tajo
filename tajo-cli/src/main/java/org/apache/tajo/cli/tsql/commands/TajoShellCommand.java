@@ -137,7 +137,7 @@ public abstract class TajoShellCommand {
     return columnWidths;
   }
 
-  public ArgumentCompleter getArgumentComplementer() {
+  public ArgumentCompleter getArgumentCompleter() {
     List<String> cmds = new ArrayList<>(Arrays.asList(getAliases()));
     cmds.add(getCommand());
 

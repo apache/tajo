@@ -64,7 +64,7 @@ public class TajoGetConfCommand extends TajoShellCommand {
   }
 
   @Override
-  public ArgumentCompleter getArgumentComplementer() {
+  public ArgumentCompleter getArgumentCompleter() {
     TajoConf.ConfVars[] vars = TajoConf.ConfVars.values();
     List<String> confNames = new ArrayList<>();
 

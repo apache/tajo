@@ -126,7 +126,7 @@ public class DescFunctionCommand extends TajoShellCommand {
   }
 
   @Override
-  public ArgumentCompleter getArgumentComplementer() {
+  public ArgumentCompleter getArgumentCompleter() {
     return new ArgumentCompleter(
         new StringsCompleter(getCommand()),
         new FunctionNameCompleter(),
