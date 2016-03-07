@@ -475,18 +475,21 @@ public class TestUnionQuery extends QueryTestCaseBase {
   private void verifyResultStats(Optional<TajoResultSetBase[]> existing, long numRows) throws Exception {
     assertTrue(existing.isPresent());
 
+    // Get TableStats using TajoResultSetBase.
     TajoResultSetBase[] resultSet = existing.get();
     QueryId qid = resultSet[0].getQueryId();
     QueryInfo queryInfo = testingCluster.getMaster().getContext().getQueryJobManager().getFinishedQuery(qid);
-
     TableDesc desc = queryInfo.getResultDesc();
+    TableStats stats = desc.getStats();
+
+    // Compare specified number of rows to the number of rows in TableStats.
+    assertEquals(numRows, stats.getNumRows().longValue());
+
+    // Compare the volume number of directRaw to the number of rows in TableStats.
     FileSystem fs = FileSystem.get(conf);
     Path path = new Path(desc.getUri());
     assertTrue(fs.exists(path));
     ContentSummary summary = fs.getContentSummary(path);
-
-    TableStats stats = desc.getStats();
-    assertEquals(numRows, stats.getNumRows().longValue());
     assertEquals(summary.getLength(), stats.getNumBytes().longValue());
 
     closeResultSets(resultSet);
