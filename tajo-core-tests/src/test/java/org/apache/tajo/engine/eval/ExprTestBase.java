@@ -102,7 +102,7 @@ public class ExprTestBase {
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.loadBuiltinFunctions();
     List<FunctionDesc> list = new ArrayList<>(map.values());
-    list.addAll(FunctionLoader.loadUserDefinedFunctions(conf));
+    list.addAll(FunctionLoader.loadUserDefinedFunctions(conf).orElse(new ArrayList<>()));
     for (FunctionDesc funcDesc : list) {
       cat.createFunction(funcDesc);
     }

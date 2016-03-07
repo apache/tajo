@@ -43,7 +43,7 @@ import java.net.URLClassLoader;
 import java.util.*;
 
 public class HiveFunctionLoader {
-  public static Collection<FunctionDesc> loadHiveUDFs(TajoConf conf) {
+  public static Optional<List<FunctionDesc>> loadHiveUDFs(TajoConf conf) {
     ArrayList<FunctionDesc> funcList = new ArrayList<>();
     String udfdir = conf.getVar(TajoConf.ConfVars.HIVE_UDF_DIR);
 
@@ -52,7 +52,7 @@ public class HiveFunctionLoader {
       FileSystem fs = udfPath.getFileSystem(conf);
 
       if (!fs.isDirectory(udfPath)) {
-        return null;
+        return Optional.empty();
       }
 
       // loop each jar file
@@ -70,7 +70,7 @@ public class HiveFunctionLoader {
       throw new TajoInternalError(e);
     }
 
-    return funcList;
+    return Optional.of(funcList);
   }
 
   private static <T> Set<Class<? extends T>> getSubclassesFromJarEntry(URL[] urls, Class<T> targetCls) {

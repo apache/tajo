@@ -95,6 +95,7 @@ public class TajoMaster extends CompositeService {
   @SuppressWarnings("OctalInteger")
   final public static FsPermission SYSTEM_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
   final public static FsPermission SYSTEM_RESOURCE_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
@@ -111,9 +112,6 @@ public class TajoMaster extends CompositeService {
   private TajoConf systemConf;
   private FileSystem defaultFS;
   private Clock clock;
-
-  private Path tajoRootPath;
-  private Path wareHousePath;
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
@@ -220,8 +218,6 @@ public class TajoMaster extends CompositeService {
 
   private Collection<FunctionDesc> loadFunctions() throws IOException, AmbiguousFunctionException {
     List<FunctionDesc> functionList = new ArrayList<>(FunctionLoader.loadBuiltinFunctions().values());
-    Collection<FunctionDesc> udfs = FunctionLoader.loadUserDefinedFunctions(systemConf);
-    Collection<FunctionDesc> hiveUDFs = HiveFunctionLoader.loadHiveUDFs(systemConf);
 
     HashMap<Integer, FunctionDesc> funcSet = new HashMap<>();
 
@@ -229,24 +225,29 @@ public class TajoMaster extends CompositeService {
       funcSet.put(desc.hashCodeWithoutType(), desc);
     }
 
-    if (udfs != null) {
-      checkUDFduplicates(udfs, funcSet, functionList);
-    }
-
-    if (hiveUDFs != null) {
-      checkUDFduplicates(hiveUDFs, funcSet, functionList);
-    }
+    checkUDFduplicateAndMerge(FunctionLoader.loadUserDefinedFunctions(systemConf), funcSet, functionList);
+    checkUDFduplicateAndMerge(HiveFunctionLoader.loadHiveUDFs(systemConf), funcSet, functionList);
 
     return functionList;
   }
 
-  private void checkUDFduplicates(Collection<FunctionDesc> udfs, HashMap<Integer, FunctionDesc> funcSet, List<FunctionDesc> funcList)
+  /**
+   * Checks duplicates between pre-loaded functions and UDFs. And they are meged to funcList.
+   *
+   * @param udfs UDF list
+   * @param funcSet set for pre-loaded functions to match signature
+   * @param funcList list to be merged
+   * @throws AmbiguousFunctionException
+   */
+  private void checkUDFduplicateAndMerge(Optional<List<FunctionDesc>> udfs, HashMap<Integer, FunctionDesc> funcSet, List<FunctionDesc> funcList)
       throws AmbiguousFunctionException {
-    for (FunctionDesc desc: udfs) {
+    for (FunctionDesc desc: udfs.orElse(new ArrayList<>())) {
+      // check
       if (funcSet.containsKey(desc.hashCodeWithoutType())) {
         throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
       }
 
+      // merge
       funcSet.put(desc.hashCodeWithoutType(), desc);
       funcList.add(desc);
     }
@@ -277,7 +278,7 @@ public class TajoMaster extends CompositeService {
 
   private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
-    this.tajoRootPath = TajoConf.getTajoRootDir(systemConf);
+    Path tajoRootPath = TajoConf.getTajoRootDir(systemConf);
     LOG.info("Tajo Root Directory: " + tajoRootPath);
 
     // Check and Create Tajo root dir
@@ -302,7 +303,7 @@ public class TajoMaster extends CompositeService {
     }
 
     // Get Warehouse dir
-    this.wareHousePath = TajoConf.getWarehouseDir(systemConf);
+    Path wareHousePath = TajoConf.getWarehouseDir(systemConf);
     LOG.info("Tajo Warehouse dir: " + wareHousePath);
 
     // Check and Create Warehouse dir
