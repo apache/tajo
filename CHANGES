@@ -108,6 +108,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1793: result row count unmatched for UNION ALL. (jaehwa)
+
     TAJO-2082: Aggregation on a derived table which includes union can cause 
     incorrect result. (jihoon)
 
