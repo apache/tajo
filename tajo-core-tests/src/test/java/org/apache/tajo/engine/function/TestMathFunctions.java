@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
@@ -396,8 +397,8 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select pow(9,3) as col1 ", new String[]{String.valueOf(Math.pow(9, 3))});
     testSimpleEval("select pow(1.0,3) as col1 ", new String[]{String.valueOf(Math.pow(1.0, 3))});
     testSimpleEval("select pow(20.1,3.1) as col1 ", new String[]{String.valueOf(Math.pow(20.1, 3.1))});
-    testSimpleEval("select pow(null,3.1) as col1 ", new String[]{""});
-    testSimpleEval("select pow(20.1,null) as col1 ", new String[]{""});
+    testSimpleEval("select pow(null,3.1) as col1 ", new String[]{NullDatum.get().toString()});
+    testSimpleEval("select pow(20.1,null) as col1 ", new String[]{NullDatum.get().toString()});
 
     Schema schema = new Schema();
     schema.addColumn("col1", FLOAT4);
@@ -465,6 +466,6 @@ public class TestMathFunctions extends ExprTestBase {
     schema.addColumn("col1", FLOAT8);
     schema.addColumn("col2", INT4);
 
-    testEval(schema, "table1", ",", "select round(col1, col2) from table1", new String[]{""});
+    testEval(schema, "table1", ",", "select round(col1, col2) from table1", new String[]{NullDatum.get().toString()});
   }
 }

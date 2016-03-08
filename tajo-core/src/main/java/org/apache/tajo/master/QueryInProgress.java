@@ -269,7 +269,7 @@ public class QueryInProgress {
       // if any error occurs, print outs the error message
       if (this.queryInfo.getQueryState() == QueryState.QUERY_FAILED ||
           this.queryInfo.getQueryState() == QueryState.QUERY_ERROR) {
-        LOG.warn(queryId + " is stopped because " + queryInfo.getLastMessage());
+        LOG.error(queryId + " is stopped because " + queryInfo.getLastMessage());
       }
 
       // terminal state will let client to retrieve a query result

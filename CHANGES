@@ -2,6 +2,10 @@ Tajo Change Log
 
 Release 0.11.2 - unreleased
 
+  IMPROVEMENT
+
+    TAJO-2089: Improve null handling in UDF. (jinho)
+
   TASKS
 
     TAJO-2088: Change QueryTestCaseBase.runSimpleTests() to return a set of 
