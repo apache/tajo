@@ -2,7 +2,6 @@ Tajo Change Log
 
 Release 0.12.0 - unreleased
 
-
   NEW FEATURES
 
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
