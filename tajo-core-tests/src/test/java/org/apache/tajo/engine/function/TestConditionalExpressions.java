@@ -20,6 +20,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.eval.ExprTestBase;
@@ -67,7 +68,7 @@ public class TestConditionalExpressions extends ExprTestBase {
         new String[]{"str2"});
     testEval(schema, "table1", ",str2",
         "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
-        new String[]{""});
+        new String[]{NullDatum.get().toString()});
   }
 
   @Test
@@ -117,7 +118,7 @@ public class TestConditionalExpressions extends ExprTestBase {
 
     testEval(schema, "table1", "1,2,3",
         "SELECT CASE col1 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
-        new String [] {""});
+        new String [] {NullDatum.get().toString()});
     testEval(schema, "table1", "1,2,3",
         "SELECT CASE col2 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",
         new String [] {"2"});
@@ -133,7 +134,7 @@ public class TestConditionalExpressions extends ExprTestBase {
         new String [] {"2"});
     testEval(schema, "table1", "1,2,3",
         "SELECT CASE col3 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE NULL END FROM table1",
-        new String [] {""});
+        new String [] {NullDatum.get().toString()});
   }
 
   @Test
@@ -144,7 +145,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     testSimpleEval("select coalesce('value1', null, 'value3');", new String[]{"value1"});
     testSimpleEval("select coalesce(null, 'value2', 'value3');", new String[]{"value2"});
     testSimpleEval("select coalesce('value1');", new String[]{"value1"});
-    testSimpleEval("select coalesce(null);", new String[]{""});
+    testSimpleEval("select coalesce(null);", new String[]{NullDatum.get().toString()});
 
     //no matched function
     try {
@@ -163,7 +164,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     testSimpleEval("select coalesce(1, null, 3);", new String[]{"1"});
     testSimpleEval("select coalesce(null, 2, 3);", new String[]{"2"});
     testSimpleEval("select coalesce(1);", new String[]{"1"});
-    testSimpleEval("select coalesce(null);", new String[]{""});
+    testSimpleEval("select coalesce(null);", new String[]{NullDatum.get().toString()});
 
     //no matched function
     try {
@@ -182,7 +183,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     testSimpleEval("select coalesce(1.0, null, 3.0);", new String[]{"1.0"});
     testSimpleEval("select coalesce(null, 2.0, 3.0);", new String[]{"2.0"});
     testSimpleEval("select coalesce(1.0);", new String[]{"1.0"});
-    testSimpleEval("select coalesce(null);", new String[]{""});
+    testSimpleEval("select coalesce(null);", new String[]{NullDatum.get().toString()});
 
     //no matched function
     try {
