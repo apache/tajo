@@ -89,7 +89,7 @@ public class TajoGetConfCommand extends TajoShellCommand {
 
       // it means just "if candidates are too many". 10 is arbitrary default.
       if (candidates.size() > 10) {
-        Set<CharSequence> delimited = new LinkedHashSet<CharSequence>();
+        Set<CharSequence> delimited = new LinkedHashSet<>();
         for (CharSequence candidate : candidates) {
           Iterator<String> it = Splitter.on(".").split(
               candidate.subSequence(cur, candidate.length())).iterator();
