@@ -77,37 +77,37 @@ public class TajoGetConfCommand extends TajoShellCommand {
         new ConfCompleter(confNames.toArray(new String[confNames.size()])),
         NullCompleter.INSTANCE);
   }
-}
 
-class ConfCompleter extends StringsCompleter {
-  ConfCompleter(String [] confs) {
-    super(confs);
-  }
-  
-  @Override
-  public int complete(final String buf, final int cur, final List<CharSequence> candidates) {
-    int result = super.complete(buf, cur, candidates);
-
-    // it means just "if candidates are too many". 10 is arbitrary default.
-    if (candidates.size() > 10) {
-      Set<CharSequence> delimited = new LinkedHashSet<CharSequence>();
-      for (CharSequence candidate : candidates) {
-        Iterator<String> it = Splitter.on(".").split(
-            candidate.subSequence(cur, candidate.length())).iterator();
-        if (it.hasNext()) {
-          String next = it.next();
-          if (next.isEmpty()) {
-            next = ".";
-          }
-          candidate = buf != null ? buf.substring(0, cur) + next : next;
-        }
-        delimited.add(candidate);
-      }
-
-      candidates.clear();
-      candidates.addAll(delimited);
+  private static class ConfCompleter extends StringsCompleter {
+    ConfCompleter(String [] confs) {
+      super(confs);
     }
 
-    return result;
+    @Override
+    public int complete(final String buf, final int cur, final List<CharSequence> candidates) {
+      int result = super.complete(buf, cur, candidates);
+
+      // it means just "if candidates are too many". 10 is arbitrary default.
+      if (candidates.size() > 10) {
+        Set<CharSequence> delimited = new LinkedHashSet<CharSequence>();
+        for (CharSequence candidate : candidates) {
+          Iterator<String> it = Splitter.on(".").split(
+              candidate.subSequence(cur, candidate.length())).iterator();
+          if (it.hasNext()) {
+            String next = it.next();
+            if (next.isEmpty()) {
+              next = ".";
+            }
+            candidate = buf != null ? buf.substring(0, cur) + next : next;
+          }
+          delimited.add(candidate);
+        }
+
+        candidates.clear();
+        candidates.addAll(delimited);
+      }
+
+      return result;
+    }
   }
 }
