@@ -37,6 +37,7 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -403,6 +404,30 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
+  public boolean hasUnionPlan() throws Exception {
+    boolean result = false;
+
+    // In case of UNION statement or UNION ALL statement, the terminal block has two more child blocks.
+    ExecutionBlock terminalBlock = plan.getTerminalBlock();
+    if (plan.getChilds(terminalBlock.getId()).size() >= 2) {
+      result = true;
+    }
+    return result;
+  }
+
+  public TableStats aggregateTableStatsOfTerminalBlock() throws Exception {
+    TableStats aggregated = new TableStats();
+
+    ExecutionBlock terminalBlock = plan.getTerminalBlock();
+    List<ExecutionBlock> childBlocks = plan.getChilds(terminalBlock.getId());
+    for(ExecutionBlock childBlock : childBlocks) {
+      Stage childStage = getStage(childBlock.getId());
+      StatisticsUtil.aggregateTableStat(aggregated, childStage.getResultStats());
+    }
+
+    return aggregated;
+  }
+
   /* non-blocking call for client API */
   public QueryState getState() {
     return queryState;
@@ -641,8 +666,14 @@ public class Query implements EventHandler<QueryEvent> {
                 finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
 
-        stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
-        resultTableDesc.setStats(stats);
+        if (query.hasUnionPlan()) {
+          TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
+          resultTableDesc.setStats(aggregated);
+        } else {
+          stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+          resultTableDesc.setStats(stats);
+        }
+
         query.setResultDesc(resultTableDesc);
       }
     }
@@ -678,10 +709,15 @@ public class Query implements EventHandler<QueryEvent> {
           tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
         }
 
-        stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
-        tableDescTobeCreated.setStats(stats);
-        query.setResultDesc(tableDescTobeCreated);
+        if (query.hasUnionPlan()) {
+          TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
+          tableDescTobeCreated.setStats(aggregated);
+        } else {
+          stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+          tableDescTobeCreated.setStats(stats);
+        }
 
+        query.setResultDesc(tableDescTobeCreated);
         catalog.createTable(tableDescTobeCreated);
       }
     }
@@ -716,14 +752,19 @@ public class Query implements EventHandler<QueryEvent> {
           finalTable = new TableDesc(tableName, lastStage.getOutSchema(), meta, finalOutputDir.toUri());
         }
 
-        long volume = getTableVolume(query.systemConf, finalOutputDir);
-        stats.setNumBytes(volume);
-        finalTable.setStats(stats);
+        if (query.hasUnionPlan()) {
+          TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
+          finalTable.setStats(aggregated);
+        } else {
+          long volume = getTableVolume(query.systemConf, finalOutputDir);
+          stats.setNumBytes(volume);
+          finalTable.setStats(stats);
+        }
 
         if (insertNode.hasTargetTable()) {
           UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
           builder.setTableName(finalTable.getName());
-          builder.setStats(stats.getProto());
+          builder.setStats(finalTable.getStats().getProto());
 
           catalog.updateTableStats(builder.build());
         }
