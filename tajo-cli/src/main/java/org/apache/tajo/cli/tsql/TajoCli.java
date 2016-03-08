@@ -43,6 +43,7 @@ import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.parser.sql.SQLLexer;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -54,6 +55,8 @@ import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TajoCli implements Closeable {
   public static final int SHUTDOWN_HOOK_PRIORITY = 50;
@@ -412,16 +415,24 @@ public class TajoCli implements Closeable {
   }
 
   private Collection<String> getKeywords() {
-    List<String> keywords = new ArrayList<>();
+    // SQL reserved keywords
+    Stream<String> tokens = Arrays.stream(SQLLexer.tokenNames);
+    Stream<String> rules = Arrays.stream(SQLLexer.ruleNames);
 
-    // SQL keywords
-    keywords.addAll(Arrays.asList(SQLKeywords.keywords));
+    List<String> keywords = Stream.concat(tokens, rules)
+        .filter((str) -> str.matches("[A-Z_]+") && str.length() > 1)
+        .distinct()
+        .map(String::toLowerCase)
+        .collect(Collectors.toList());
 
     // DB and table names
     for (String db: client.getAllDatabaseNames()) {
       keywords.add(db);
       keywords.addAll(client.getTableList(db));
     }
+
+    tokens.close();
+    rules.close();
 
     return keywords;
   }
