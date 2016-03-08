@@ -685,12 +685,12 @@ public class Query implements EventHandler<QueryEvent> {
 
         if (query.hasUnionPlan()) {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
-          stats.setValues(aggregated);
+          resultTableDesc.setStats(aggregated);
         } else {
           stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+          resultTableDesc.setStats(stats);
         }
 
-        resultTableDesc.setStats(stats);
         query.setResultDesc(resultTableDesc);
       }
     }
@@ -728,12 +728,12 @@ public class Query implements EventHandler<QueryEvent> {
 
         if (query.hasUnionPlan()) {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
-          stats.setValues(aggregated);
+          tableDescTobeCreated.setStats(aggregated);
         } else {
           stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+          tableDescTobeCreated.setStats(stats);
         }
 
-        tableDescTobeCreated.setStats(stats);
         query.setResultDesc(tableDescTobeCreated);
         catalog.createTable(tableDescTobeCreated);
       }
@@ -771,17 +771,17 @@ public class Query implements EventHandler<QueryEvent> {
 
         if (query.hasUnionPlan()) {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
-          stats.setValues(aggregated);
+          finalTable.setStats(aggregated);
         } else {
           long volume = getTableVolume(query.systemConf, finalOutputDir);
           stats.setNumBytes(volume);
+          finalTable.setStats(stats);
         }
-        finalTable.setStats(stats);
 
         if (insertNode.hasTargetTable()) {
           UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
           builder.setTableName(finalTable.getName());
-          builder.setStats(stats.getProto());
+          builder.setStats(finalTable.getStats().getProto());
 
           catalog.updateTableStats(builder.build());
         }
