@@ -26,7 +26,7 @@ If the tablespace is not specified, the default tablespace of the table's databa
 Configuration
 =============
 
-By default, Tajo use in ``${tajo.rootdir}/warehouse`` in :doc:`conf/tajo-site.xml</configuration/tajo-site-xml>` as a default tablespace. It also allows users to register additional tablespaces using ``storage-site.json`` file like below.
+By default, Tajo use ``${tajo.rootdir}/warehouse`` in :doc:`conf/tajo-site.xml</configuration/tajo-site-xml>` as a default tablespace. It also allows users to register additional tablespaces using ``storage-site.json`` file like below.
 
 ---------------------------
 conf/storage-site.json file
@@ -39,7 +39,7 @@ The configuration file has the following struct:
   {
     "spaces": {
       "${tablespace_name}": {
-        "uri": "hbase://quorum1:port,quorum2:port/"
+        "uri": "hbase:zk://quorum1:port,quorum2:port/"
       }
     }
   }
@@ -51,7 +51,7 @@ The following is an example for two tablespaces for hbase and hdfs:
   {
     "spaces": {
       "hbase_cluster1": {
-        "uri": "hbase://quorum1:port,quorum2:port/"
+        "uri": "hbase:zk://quorum1:port,quorum2:port/"
       },
 
       "ssd": {

@@ -18,14 +18,14 @@
 
 package org.apache.tajo.storage.parquet;
 
+import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.OriginalType;
+import org.apache.parquet.schema.PrimitiveType;
+import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
+import org.apache.parquet.schema.Type;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import parquet.schema.MessageType;
-import parquet.schema.OriginalType;
-import parquet.schema.PrimitiveType;
-import parquet.schema.PrimitiveType.PrimitiveTypeName;
-import parquet.schema.Type;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,8 +55,7 @@ public class TajoSchemaConverter {
 
   private Schema convertFields(List<Type> parquetFields) {
     List<Column> columns = new ArrayList<>();
-    for (int i = 0; i < parquetFields.size(); ++i) {
-      Type fieldType = parquetFields.get(i);
+    for (Type fieldType : parquetFields) {
       if (fieldType.isRepetition(Type.Repetition.REPEATED)) {
         throw new RuntimeException("REPEATED not supported outside LIST or" +
             " MAP. Type: " + fieldType);

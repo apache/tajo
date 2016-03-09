@@ -346,7 +346,10 @@ public class QueryManager extends CompositeService {
     queryInfo.setQueryMaster(connectionInfo.getHost());
     queryInfo.setQueryMasterPort(connectionInfo.getQueryMasterPort());
     queryInfo.setQueryMasterclientPort(connectionInfo.getClientPort());
-    queryInfo.setLastMessage(queryHeartbeat.getStatusMessage());
+    if(queryHeartbeat.hasError()) {
+      //TODO set error instead of last message
+      queryInfo.setLastMessage(queryHeartbeat.getError().getMessage());
+    }
     queryInfo.setQueryState(queryHeartbeat.getState());
     queryInfo.setProgress(queryHeartbeat.getQueryProgress());
 

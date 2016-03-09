@@ -290,8 +290,7 @@ public class SimpleVerifier extends BasicVerifier {
                 return true;
             }
             if (currentClassInterfaces != null) {
-                for (int i = 0; i < currentClassInterfaces.size(); ++i) {
-                    Type v = currentClassInterfaces.get(i);
+                for (Type v : currentClassInterfaces) {
                     if (isAssignableFrom(t, v)) {
                         return true;
                     }

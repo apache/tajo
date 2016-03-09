@@ -1,0 +1,7 @@
+c_custkey,c_name,n_name
+-------------------------------
+1,Customer#000000001,MOROCCO
+2,Customer#000000002,JORDAN
+3,Customer#000000003,ARGENTINA
+4,Customer#000000004,EGYPT
+5,Customer#000000005,CANADA

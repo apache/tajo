@@ -37,14 +37,12 @@ import java.util.Iterator;
 import java.util.List;
 
 public class MergeScanner implements Scanner {
-  private Configuration conf;
   private TableMeta meta;
   private Schema schema;
   private List<Fragment> fragments;
   private Iterator<Fragment> iterator;
   private Fragment currentFragment;
   private Scanner currentScanner;
-  private Tuple tuple;
   private boolean projectable = false;
   private boolean selectable = false;
   private Schema target;
@@ -59,7 +57,6 @@ public class MergeScanner implements Scanner {
   public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<Fragment> rawFragmentList,
                       Schema target)
       throws IOException {
-    this.conf = conf;
     this.schema = schema;
     this.meta = meta;
     this.target = target;
@@ -101,12 +98,15 @@ public class MergeScanner implements Scanner {
 
   @Override
   public Tuple next() throws IOException {
-    if (currentScanner != null)
+    Tuple tuple;
+    while (currentScanner != null) {
       tuple = currentScanner.next();
 
-    if (tuple != null) {
-      return tuple;
-    } else {
+      if (tuple != null) {
+        return tuple;
+      }
+
+      // since read tuple is null, close the current scanner.
       if (currentScanner != null) {
         currentScanner.close();
         TableStats scannerTableStsts = currentScanner.getInputStats();
@@ -114,13 +114,13 @@ public class MergeScanner implements Scanner {
           tableStats.setReadBytes(tableStats.getReadBytes() + scannerTableStsts.getReadBytes());
           tableStats.setNumRows(tableStats.getNumRows() + scannerTableStsts.getNumRows());
         }
+        currentScanner = null;
       }
+
       currentScanner = getNextScanner();
-      if (currentScanner != null) {
-        tuple = currentScanner.next();
-      }
     }
-    return tuple;
+
+    return null;
   }
 
   @Override
@@ -201,10 +201,10 @@ public class MergeScanner implements Scanner {
         currentScannerReadBytes = scannerTableStsts.getReadBytes();
       }
 
-      return (float)(tableStats.getReadBytes() + currentScannerReadBytes) / (float)tableStats.getNumBytes();
-    } else {
-      return progress;
+      progress = (float)(tableStats.getReadBytes() + currentScannerReadBytes) / (float)tableStats.getNumBytes();
     }
+
+    return progress;
   }
 
   @Override

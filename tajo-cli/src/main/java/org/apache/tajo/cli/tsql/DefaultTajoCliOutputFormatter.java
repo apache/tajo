@@ -18,19 +18,29 @@
 
 package org.apache.tajo.cli.tsql;
 
+import jline.TerminalFactory;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.util.FileUtil;
+import org.fusesource.jansi.Ansi;
 
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+
+import static com.google.common.base.Strings.repeat;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static org.fusesource.jansi.Ansi.ansi;
+import static org.fusesource.jansi.internal.CLibrary.STDOUT_FILENO;
+import static org.fusesource.jansi.internal.CLibrary.isatty;
 
 public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private int printPauseRecords;
@@ -38,6 +48,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private boolean printErrorTrace;
   private String nullChar;
   public static final char QUIT_COMMAND = 'q';
+  public static final boolean REAL_TERMINAL = detectRealTerminal();
 
   @Override
   public void init(TajoCli.TajoCliContext context) {
@@ -146,10 +157,77 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
 
   @Override
   public void printProgress(PrintWriter sout, QueryStatus status) {
-    sout.println("Progress: " + (int)(status.getProgress() * 100.0f)
-        + "%, response time: "
-        + getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0)));
-    sout.flush();
+    int terminalWidth = TerminalFactory.get().getWidth();
+    int progressWidth = (min(terminalWidth, 100) - 75) + 17; // progress bar is 17-42 characters wide
+
+    int progress = (int)(status.getProgress() * 100.0f);
+    String responseTime = getResponseTimeReadable((float)((status.getFinishTime() - status.getSubmitTime()) / 1000.0));
+    String progressBar = formatProgressBar(progressWidth, progress);
+
+    reprintProgressLine(sout, progressBar, progress, responseTime, status);
+  }
+
+  public String formatProgressBar(int width, int progress) {
+    if (progress == 0) {
+      return repeat(" ", width);
+    }
+
+    // compute nominal lengths
+    int completeLength = min(width, ceil(progress * width, 100));
+    int remainLength = width;
+    int runningLength = 1;
+
+    // adjust to fix rounding errors
+    if (((completeLength + runningLength + remainLength) != width) && (remainLength > 0)) {
+      remainLength = max(0, width - completeLength - runningLength);
+    }
+
+    if (((completeLength + runningLength + remainLength) > width) && (progress > 0)) {
+      completeLength = max(0, width - runningLength - remainLength);
+    }
+
+    return repeat("=", completeLength) + repeat(">", runningLength) + repeat(" ", remainLength);
+  }
+
+  private int ceil(int dividend, int divisor) {
+    return ((dividend + divisor) - 1) / divisor;
+  }
+
+  public void reprintProgressLine(PrintWriter out, String progressBar, int progress, String responseTime,
+                                  QueryStatus status) {
+    // [=====>>                                   ] 10%  3.18 sec
+    String lineFormat = "[%s] %d%%  %s";
+
+    if (isRealTerminal()) {
+      boolean isLastLine = false;
+      if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        progressBar = "@|green " + progressBar + "|@";
+        isLastLine = true;
+      }
+      else if (status.getState() == TajoProtos.QueryState.QUERY_ERROR ||
+               status.getState() == TajoProtos.QueryState.QUERY_FAILED ||
+               status.getState() == TajoProtos.QueryState.QUERY_KILLED) {
+        progressBar = "@|red " + progressBar + "|@";
+        isLastLine = true;
+      }
+
+      String line = String.format(lineFormat, progressBar, progress, responseTime);
+      out.print(ansi().eraseLine(Ansi.Erase.ALL).a('\r').render(line));
+
+      if (isLastLine) {
+        out.println();
+      }
+    }
+    else {
+      String line = String.format(lineFormat, progressBar, progress, responseTime);
+      out.println(line);
+    }
+
+    out.flush();
+  }
+
+  public boolean isRealTerminal() {
+    return REAL_TERMINAL;
   }
 
   @Override
@@ -205,5 +283,40 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     }
 
     return message;
+  }
+
+  /**
+   * borrowed from Presto
+   */
+  private static boolean detectRealTerminal() {
+    // If the jansi.passthrough property is set, then don't interpret
+    // any of the ansi sequences.
+    if (Boolean.parseBoolean(System.getProperty("jansi.passthrough"))) {
+      return true;
+    }
+
+    // If the jansi.strip property is set, then we just strip
+    // the ansi escapes.
+    if (Boolean.parseBoolean(System.getProperty("jansi.strip"))) {
+      return false;
+    }
+
+    String os = System.getProperty("os.name");
+    if (os.startsWith("Windows")) {
+      // We could support this, but we'd need a windows box
+      return true;
+    }
+
+    // We must be on some unix variant..
+    try {
+      // check if standard out is a terminal
+      if (isatty(STDOUT_FILENO) == 0) {
+        return false;
+      }
+    }
+    catch (NoClassDefFoundError | UnsatisfiedLinkError ignore) {
+      // These errors happen if the JNI lib is not available for your platform.
+    }
+    return true;
   }
 }

@@ -31,6 +31,7 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.TaskRequestImpl;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
@@ -157,7 +158,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
     if (executionBlockContext.getTasks().containsKey(taskAttemptId)) {
       String errorMessage = "Duplicate Task Attempt: " + taskAttemptId;
       LOG.error(errorMessage);
-      executionBlockContext.fatalError(taskAttemptId, errorMessage);
+      executionBlockContext.fatalError(taskAttemptId, new TajoInternalError(errorMessage));
     } else {
       task = new TaskImpl(new TaskRequestImpl(taskRequest), executionBlockContext);
       executionBlockContext.getTasks().put(task.getTaskContext().getTaskId(), task);

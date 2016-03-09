@@ -18,7 +18,16 @@
 
 package org.apache.tajo.storage.orc;
 
+import com.facebook.presto.orc.OrcDataSource;
+import com.facebook.presto.orc.OrcPredicate;
+import com.facebook.presto.orc.OrcReader;
+import com.facebook.presto.orc.OrcRecordReader;
+import com.facebook.presto.orc.memory.AggregatedMemoryContext;
+import com.facebook.presto.orc.metadata.OrcMetadataReader;
+import com.facebook.presto.spi.block.Block;
+import com.facebook.presto.spi.type.*;
 import com.google.protobuf.InvalidProtocolBufferException;
+import io.airlift.units.DataSize;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -39,15 +48,13 @@ import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
-import com.facebook.presto.orc.*;
-import com.facebook.presto.orc.metadata.OrcMetadataReader;
 import org.apache.tajo.storage.thirdparty.orc.HdfsOrcDataSource;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.joda.time.DateTimeZone;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 /**
@@ -56,40 +63,14 @@ import java.util.TimeZone;
 public class ORCScanner extends FileScanner {
   private static final Log LOG = LogFactory.getLog(ORCScanner.class);
   private OrcRecordReader recordReader;
-  private Vector [] vectors;
+  private Block[] blocks;
   private int currentPosInBatch = 0;
   private int batchSize = 0;
   private Tuple outTuple;
+  private AggregatedMemoryContext aggrMemoryContext = new AggregatedMemoryContext();
 
   public ORCScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment) {
     super(conf, schema, meta, fragment);
-  }
-
-  private Vector createOrcVector(TajoDataTypes.DataType type) {
-    switch (type.getType()) {
-      case INT1: case INT2: case INT4: case INT8:
-      case INET4:
-      case TIMESTAMP:
-      case DATE:
-        return new LongVector();
-
-      case FLOAT4:
-      case FLOAT8:
-        return new DoubleVector();
-
-      case BOOLEAN:
-      case NULL_TYPE:
-        return new BooleanVector();
-
-      case BLOB:
-      case TEXT:
-      case CHAR:
-      case PROTOBUF:
-        return new SliceVector();
-
-      default:
-        throw new TajoRuntimeException(new NotImplementedException(type.getType().name() + " for orc"));
-    }
   }
 
   private FileSystem fs;
@@ -108,12 +89,14 @@ public class ORCScanner extends FileScanner {
   @Override
   public void init() throws IOException {
     OrcReader orcReader;
+    DataSize maxMergeDistance = new DataSize(Double.parseDouble(meta.getProperty(StorageConstants.ORC_MAX_MERGE_DISTANCE,
+            StorageConstants.DEFAULT_ORC_MAX_MERGE_DISTANCE)), DataSize.Unit.BYTE);
+    DataSize maxReadSize = new DataSize(Double.parseDouble(meta.getProperty(StorageConstants.ORC_MAX_READ_BUFFER_SIZE,
+        StorageConstants.DEFAULT_ORC_MAX_READ_BUFFER_SIZE)), DataSize.Unit.BYTE);
 
     if (targets == null) {
       targets = schema.toArray();
     }
-
-    super.init();
 
     outTuple = new VTuple(targets.length);
 
@@ -131,8 +114,8 @@ public class ORCScanner extends FileScanner {
         this.fragment.getPath().toString(),
         fis,
         fs.getFileStatus(path).getLen(),
-        Integer.parseInt(meta.getProperty(StorageConstants.ORC_MAX_MERGE_DISTANCE,
-          StorageConstants.DEFAULT_ORC_MAX_MERGE_DISTANCE)));
+        maxMergeDistance,
+        maxReadSize);
 
     targetColInfo = new ColumnInfo[targets.length];
     for (int i=0; i<targets.length; i++) {
@@ -142,27 +125,25 @@ public class ORCScanner extends FileScanner {
       targetColInfo[i] = cinfo;
     }
 
-    // creating vectors for buffering
-    vectors = new Vector[targetColInfo.length];
-    for (int i=0; i<targetColInfo.length; i++) {
-      vectors[i] = createOrcVector(targetColInfo[i].type);
-    }
+    // creating blocks for buffering
+    blocks = new Block[targetColInfo.length];
 
-    Set<Integer> columnSet = new HashSet<>();
+    Map<Integer, Type> columnMap = new HashMap<>();
     for (ColumnInfo colInfo: targetColInfo) {
-      columnSet.add(colInfo.id);
+      columnMap.put(colInfo.id, createFBtypeByTajoType(colInfo.type));
     }
 
-    orcReader = new OrcReader(orcDataSource, new OrcMetadataReader());
+    orcReader = new OrcReader(orcDataSource, new OrcMetadataReader(), maxMergeDistance, maxReadSize);
 
     TimeZone timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
       TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
 
     // TODO: make OrcPredicate useful
     // presto-orc uses joda timezone, so it needs to be converted.
-    recordReader = orcReader.createRecordReader(columnSet, OrcPredicate.TRUE,
-        fragment.getStartKey(), fragment.getLength(), DateTimeZone.forTimeZone(timezone));
+    recordReader = orcReader.createRecordReader(columnMap, OrcPredicate.TRUE,
+        fragment.getStartKey(), fragment.getLength(), DateTimeZone.forTimeZone(timezone), aggrMemoryContext);
 
+    super.init();
     LOG.debug("file fragment { path: " + fragment.getPath() +
       ", start offset: " + fragment.getStartKey() +
       ", length: " + fragment.getLength() + "}");
@@ -180,7 +161,7 @@ public class ORCScanner extends FileScanner {
     }
 
     for (int i=0; i<targetColInfo.length; i++) {
-      outTuple.put(i, createValueDatum(vectors[i], targetColInfo[i].type));
+      outTuple.put(i, createValueDatum(blocks[i], targetColInfo[i].type));
     }
 
     currentPosInBatch++;
@@ -188,95 +169,101 @@ public class ORCScanner extends FileScanner {
     return outTuple;
   }
 
-  // TODO: support more types
-  private Datum createValueDatum(Vector vector, TajoDataTypes.DataType type) {
-    switch (type.getType()) {
+  private Type createFBtypeByTajoType(TajoDataTypes.DataType type) {
+    switch(type.getType()) {
+      case BOOLEAN:
+        return BooleanType.BOOLEAN;
+
       case INT1:
       case INT2:
-        if (((LongVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
-        return DatumFactory.createInt2((short) ((LongVector) vector).vector[currentPosInBatch]);
-
       case INT4:
-        if (((LongVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
-        return DatumFactory.createInt4((int) ((LongVector) vector).vector[currentPosInBatch]);
-
       case INT8:
-        if (((LongVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
+      case INET4:
+      case NULL_TYPE: // meaningless
+        return BigintType.BIGINT;
 
-        return DatumFactory.createInt8(((LongVector) vector).vector[currentPosInBatch]);
+      case TIMESTAMP:
+        return TimestampType.TIMESTAMP;
+
+      case DATE:
+        return DateType.DATE;
 
       case FLOAT4:
-        if (((DoubleVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
-        return DatumFactory.createFloat4((float) ((DoubleVector) vector).vector[currentPosInBatch]);
-
       case FLOAT8:
-        if (((DoubleVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
-        return DatumFactory.createFloat8(((DoubleVector) vector).vector[currentPosInBatch]);
-
-      case BOOLEAN:
-        if (((BooleanVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
-        return ((BooleanVector) vector).vector[currentPosInBatch] ? BooleanDatum.TRUE : BooleanDatum.FALSE;
+        return DoubleType.DOUBLE;
 
       case CHAR:
-        if (((SliceVector) vector).vector[currentPosInBatch] == null)
-          return NullDatum.get();
-
-        return DatumFactory.createChar(((SliceVector) vector).vector[currentPosInBatch].toStringUtf8());
-
       case TEXT:
-        if (((SliceVector) vector).vector[currentPosInBatch] == null)
-          return NullDatum.get();
-
-        return DatumFactory.createText(((SliceVector) vector).vector[currentPosInBatch].getBytes());
+        return VarcharType.VARCHAR;
 
       case BLOB:
-        if (((SliceVector) vector).vector[currentPosInBatch] == null)
-          return NullDatum.get();
+      case PROTOBUF:
+        return VarbinaryType.VARBINARY;
 
-        return DatumFactory.createBlob(((SliceVector) vector).vector[currentPosInBatch].getBytes());
+      default:
+        throw new TajoRuntimeException(new NotImplementedException(type.getType().name() + " for orc"));
+    }
+  }
+
+  // TODO: support more types
+  private Datum createValueDatum(Block block, TajoDataTypes.DataType type) {
+    if (block.isNull(currentPosInBatch))
+      return NullDatum.get();
+
+    // NOTE: block.get***() methods are determined by the type size wich is in createFBtypeByTajoType()
+    switch (type.getType()) {
+      case INT1:
+        return DatumFactory.createInt2((short)block.getLong(currentPosInBatch, 0));
+
+      case INT2:
+        return DatumFactory.createInt2((short)block.getLong(currentPosInBatch, 0));
+
+      case INT4:
+        return DatumFactory.createInt4((int)block.getLong(currentPosInBatch, 0));
+
+      case INT8:
+        return DatumFactory.createInt8(block.getLong(currentPosInBatch, 0));
+
+      case FLOAT4:
+        return DatumFactory.createFloat4((float)block.getDouble(currentPosInBatch, 0));
+
+      case FLOAT8:
+        return DatumFactory.createFloat8(block.getDouble(currentPosInBatch, 0));
+
+      case BOOLEAN:
+        return DatumFactory.createBool(block.getByte(currentPosInBatch, 0) != 0);
+
+      case CHAR:
+        return DatumFactory.createChar(block.getSlice(currentPosInBatch, 0,
+            block.getLength(currentPosInBatch)).getBytes());
+
+      case TEXT:
+        return DatumFactory.createText(block.getSlice(currentPosInBatch, 0,
+            block.getLength(currentPosInBatch)).getBytes());
+
+      case BLOB:
+        return DatumFactory.createBlob(block.getSlice(currentPosInBatch, 0,
+            block.getLength(currentPosInBatch)).getBytes());
 
       case PROTOBUF:
         try {
-          if (((SliceVector) vector).vector[currentPosInBatch] == null)
-            return NullDatum.get();
-
-          return ProtobufDatumFactory.createDatum(type,
-            ((SliceVector) vector).vector[currentPosInBatch].getBytes());
+          return ProtobufDatumFactory.createDatum(type, block.getSlice(currentPosInBatch, 0,
+              block.getLength(currentPosInBatch)).getBytes());
         } catch (InvalidProtocolBufferException e) {
           LOG.error("ERROR", e);
           return NullDatum.get();
         }
 
       case TIMESTAMP:
-        if (((LongVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
         return DatumFactory.createTimestamp(
-          DateTimeUtil.javaTimeToJulianTime(((LongVector) vector).vector[currentPosInBatch]));
+            DateTimeUtil.javaTimeToJulianTime(block.getLong(currentPosInBatch, 0)));
 
       case DATE:
-        if (((LongVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
         return DatumFactory.createDate(
-          (int) ((LongVector) vector).vector[currentPosInBatch] + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
+            block.getInt(currentPosInBatch, 0) + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
 
       case INET4:
-        if (((LongVector) vector).isNull[currentPosInBatch])
-          return NullDatum.get();
-
-        return DatumFactory.createInet4((int) ((LongVector) vector).vector[currentPosInBatch]);
+        return DatumFactory.createInet4((int)block.getLong(currentPosInBatch, 0));
 
       case NULL_TYPE:
         return NullDatum.get();
@@ -287,7 +274,7 @@ public class ORCScanner extends FileScanner {
   }
 
   /**
-   * Fetch next batch from ORC file to vectors as many as batch size
+   * Fetch next batch from ORC file and write to block data structure as many as batch size
    *
    * @throws IOException
    */
@@ -299,7 +286,7 @@ public class ORCScanner extends FileScanner {
       return;
 
     for (int i=0; i<targetColInfo.length; i++) {
-      recordReader.readVector(targetColInfo[i].id, vectors[i]);
+      blocks[i] = recordReader.readBlock(createFBtypeByTajoType(targetColInfo[i].type), targetColInfo[i].id);
     }
 
     currentPosInBatch = 0;
@@ -307,6 +294,8 @@ public class ORCScanner extends FileScanner {
 
   @Override
   public float getProgress() {
+    if(!inited) return super.getProgress();
+
     return recordReader.getProgress();
   }
 

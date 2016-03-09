@@ -71,6 +71,21 @@ function addListener(element, type, callback) {
 }
 
 function ga_event_load() {
+        var dn_src_0_11_1 = document.getElementById('tajo-0.11.1-src');
+        var dn_bin_0_11_1 = document.getElementById('tajo-0.11.1-bin');
+        var dn_jdbc_0_11_1 = document.getElementById('tajo-jdbc-0.11.1');
+
+        addListener(dn_src_0_11_1, 'click', function() {
+          ga('send', 'event', 'tajo-0.11.1-src', 'click', 'tajo-0.11.1-src');
+        });
+        addListener(dn_bin_0_11_1, 'click', function() {
+          ga('send', 'event', 'tajo-0.11.1-bin', 'click', 'tajo-0.11.1-bin');
+        });
+        addListener(dn_jdbc_0_11_1, 'click', function() {
+          ga('send', 'event', 'tajo-jdbc-0.11.1', 'click', 'tajo-jdbc-0.11.1');
+        });
+
+
         var dn_src_0_11_0 = document.getElementById('tajo-0.11.0-src');
         var dn_bin_0_11_0 = document.getElementById('tajo-0.11.0-bin');
         var dn_jdbc_0_11_0 = document.getElementById('tajo-jdbc-0.11.0');
@@ -154,7 +169,7 @@ window.onload = ga_event_load;
 
     <menu name="Documentation">
       <item name="Devel" href="http://tajo.apache.org/docs/devel/index.html" />
-      <item name="Current (0.11.0)" href="http://tajo.apache.org/docs/current/index.html" />
+      <item name="Current (0.11.1)" href="http://tajo.apache.org/docs/current/index.html" />
     </menu>
 
     <menu name="Contributes">

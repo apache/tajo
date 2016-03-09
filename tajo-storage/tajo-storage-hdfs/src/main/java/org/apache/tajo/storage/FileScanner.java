@@ -102,20 +102,7 @@ public abstract class FileScanner implements Scanner {
   }
 
   public static FileSystem getFileSystem(TajoConf tajoConf, Path path) throws IOException {
-    String tajoUser = tajoConf.getVar(TajoConf.ConfVars.USERNAME);
-    FileSystem fs;
-    if(tajoUser != null) {
-      try {
-        fs = FileSystem.get(path.toUri(), tajoConf, tajoUser);
-      } catch (InterruptedException e) {
-        LOG.warn("Occur InterruptedException while FileSystem initiating with user[" + tajoUser + "]");
-        fs = FileSystem.get(path.toUri(), tajoConf);
-      }
-    } else {
-      fs = FileSystem.get(path.toUri(), tajoConf);
-    }
-
-    return fs;
+    return FileSystem.get(path.toUri(), tajoConf);
   }
 
   @Override

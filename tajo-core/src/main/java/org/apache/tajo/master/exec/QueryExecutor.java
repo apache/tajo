@@ -381,8 +381,8 @@ public class QueryExecutor {
 
   public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, List<Target> targets)
       throws IOException {
-    for (int i = 0; i < targets.size(); i++) {
-      EvalNode eval = targets.get(i).getEvalTree();
+    for (Target target : targets) {
+      EvalNode eval = target.getEvalTree();
       if (eval instanceof GeneralFunctionEval) {
         GeneralFunctionEval functionEval = (GeneralFunctionEval) eval;
         if (functionEval.getFuncDesc().getInvocation().hasPython()) {

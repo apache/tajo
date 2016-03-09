@@ -262,9 +262,10 @@
       <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.dspace.dependencies</groupId>
-      <artifactId>dspace-geoip</artifactId>
-      <version>1.2.3</version>
+      <groupId>com.maxmind.geoip</groupId>
+      <artifactId>geoip-api</artifactId>
+      <version>1.2.15</version>
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

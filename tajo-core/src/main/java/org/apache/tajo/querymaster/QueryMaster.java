@@ -37,7 +37,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.QueryCoordinatorProtocolService;
 import org.apache.tajo.master.event.QueryStartEvent;
@@ -351,9 +351,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
         builder.setResultDesc(queryMasterTask.getQuery().getResultDesc().getProto());
       }
       builder.setQueryProgress(queryMasterTask.getQuery().getProgress());
+
+      if(queryMasterTask.getQuery().getFailureReason() != null) {
+        builder.setError(queryMasterTask.getQuery().getFailureReason());
+      }
     }
     if (queryMasterTask.isInitError()) {
-      builder.setStatusMessage(ReturnStateUtil.returnError(queryMasterTask.getInitError()).getMessage());
+      builder.setError(ErrorUtil.convertException(queryMasterTask.getInitError()));
     }
     return builder.build();
   }

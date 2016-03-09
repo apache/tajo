@@ -319,7 +319,7 @@ public class ExprTestBase {
         } else if (outTuple.type(i) == Type.TIME) {
           outTupleAsChars = TimeDatum.asChars(outTuple.getTimeDate(i), timeZone, false);
         } else {
-          outTupleAsChars = outTuple.getText(i);
+          outTupleAsChars = outTuple.asDatum(i).toString();
         }
         assertEquals(query, expected[i], outTupleAsChars);
       }

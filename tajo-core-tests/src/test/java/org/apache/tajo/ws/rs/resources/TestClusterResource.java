@@ -18,6 +18,7 @@
 
 package org.apache.tajo.ws.rs.resources;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +51,8 @@ public class TestClusterResource extends QueryTestCaseBase {
   
   @Before
   public void setUp() throws Exception {
-    int restPort = testBase.getTestingCluster().getConfiguration().getIntVar(ConfVars.REST_SERVICE_PORT);
-    restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
+    InetSocketAddress address = testBase.getTestingCluster().getConfiguration().getSocketAddrVar(ConfVars.REST_SERVICE_ADDRESS);
+    restServiceURI = new URI("http", null, address.getHostName(), address.getPort(), "/rest", null, null);
     clusterURI = new URI(restServiceURI + "/cluster");
     restClient = ClientBuilder.newBuilder()
         .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))

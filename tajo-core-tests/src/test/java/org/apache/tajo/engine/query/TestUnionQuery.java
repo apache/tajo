@@ -18,15 +18,23 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.*;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.jdbc.TajoResultSetBase;
+import org.apache.tajo.master.QueryInfo;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.sql.ResultSet;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /*
  * Notations
@@ -41,660 +49,450 @@ public class TestUnionQuery extends QueryTestCaseBase {
 
   public TestUnionQuery() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
+    conf.setBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED, true);
   }
 
-  @Test
+  @AfterClass
+  public static void tearDown() throws Exception {
+    conf.setBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED, false);
+  }
+
   /**
    * S (SA U SA) O
    */
+  @Test
+  @SimpleTest
   public final void testUnionAll1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 8L);
   }
 
-  @Test
   /**
    * S (S U S) O
    */
+  @Test
+  @SimpleTest
   public final void testUnionAll2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 10L);
   }
 
-  @Test
   /**
    * S O ((S G) U (S G))
    */
+  @Test
+  @SimpleTest
   public final void testUnionAll3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 2L);
   }
 
-  @Test
   /**
    * S G (S G)
    */
+  @Test
+  @SimpleTest
   public final void testUnionAll4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
-  @Test
   /**
    * S G (S F G)
    */
+  @Test
+  @SimpleTest
   public final void testUnionAll5() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
-  @Test
   /**
    * S G (SA)
    */
+  @Test
+  @SimpleTest
   public final void testUnionAll6() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
-  @Test
   /**
    * S (SA)
    */
+  @Test
+  @SimpleTest
   public final void testUnionAll7() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 10L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll8() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll9() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll10() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 20L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll11() throws Exception {
     // test filter pushdown
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll12() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll13() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll14() throws Exception {
     // test filter pushdown
     // with group by stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 7L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll15() throws Exception {
     // test filter pushdown
     // with group by out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 3L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAll16() throws Exception {
     // test filter pushdown
     // with count distinct out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 3L);
   }
 
-  @Test
   /**
    * S (SA U SA) O
    */
+  @Test
+  @SimpleTest
   public final void testUnion1() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
-  @Test
   /**
    * S (S U S) O
    */
+  @Test
+  @SimpleTest
   public final void testUnion2() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 3L);
   }
 
-  @Test
   /**
    * S O ((S G) U (S G))
    */
+  @Test
+  @SimpleTest
   public final void testUnion3() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 2L);
   }
 
-  @Test
   /**
    * S G (S G)
    */
+  @Test
+  @SimpleTest
   public final void testUnion4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
-  @Test
   /**
    * S G (S F G)
    */
+  @Test
+  @SimpleTest
   public final void testUnion5() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
-  @Test
   /**
    * S G (SA)
    */
+  @Test
+  @SimpleTest
   public final void testUnion6() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
-  @Test
   /**
    * S (SA)
    */
+  @Test
+  @SimpleTest
   public final void testUnion7() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 3L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion8() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion9() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion10() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion11() throws Exception {
     // test filter pushdown
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 1L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion12() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion13() throws Exception {
     // test filter pushdown
     // with stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion14() throws Exception {
     // test filter pushdown
     // with group by stage in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 7L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion15() throws Exception {
     // test filter pushdown
     // with group by out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 3L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnion16() throws Exception {
     // test filter pushdown
     // with count distinct out of union query and join in union query
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 3L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAllWithSameAliasNames() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 10L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAllWithDifferentAlias() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 2L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionAllWithDifferentAliasAndFunction() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionWithSameAliasNames() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 3L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionWithDifferentAlias() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 2L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionWithDifferentAliasAndFunction() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public final void testLeftUnionWithJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-        "select * from ( " +
-        "  select a.id, b.c_name, a.code from ( " +
-        "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-        "    union all " +
-        "    select o_orderkey as id, 'order' as code from orders " +
-         "  ) a " +
-         "  join customer b on a.id = b.c_custkey" +
-        ") c order by id, code"
-    );
-
-    String expected =
-        "id,c_name,code\n" +
-            "-------------------------------\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,order\n" +
-            "2,Customer#000000002,lineitem\n" +
-            "2,Customer#000000002,order\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,order\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 8L);
   }
 
   @Test
+  @SimpleTest
   public final void testRightUnionWithJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-            "select * from ( " +
-            "  select a.id, b.c_name, a.code from customer b " +
-            "  join ( " +
-            "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-            "    union all " +
-            "    select o_orderkey as id, 'order' as code from orders " +
-            "  ) a on a.id = b.c_custkey" +
-            ") c order by id, code"
-    );
-
-    String expected =
-        "id,c_name,code\n" +
-            "-------------------------------\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,order\n" +
-            "2,Customer#000000002,lineitem\n" +
-            "2,Customer#000000002,order\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,order\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 8L);
   }
 
   @Test
+  @SimpleTest
   public final void testAllUnionWithJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-        "select * from ( " +
-        "  select a.id, a.code as code, b.name, b.code as code2 from ( " +
-        "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-        "    union all " +
-        "    select o_orderkey as id, 'order' as code from orders " +
-        "  ) a " +
-        "  join ( " +
-        "    select c_custkey as id, c_name as name, 'customer' as code from customer " +
-        "    union all " +
-        "    select p_partkey as id, p_name as name, 'part' as code from part " +
-        "  ) b on a.id = b.id" +
-        ") c order by id, code, code2"
-    );
-
-    String expected =
-        "id,code,name,code2\n" +
-            "-------------------------------\n" +
-            "1,lineitem,Customer#000000001,customer\n" +
-            "1,lineitem,Customer#000000001,customer\n" +
-            "1,lineitem,goldenrod lavender spring chocolate lace,part\n" +
-            "1,lineitem,goldenrod lavender spring chocolate lace,part\n" +
-            "1,order,Customer#000000001,customer\n" +
-            "1,order,goldenrod lavender spring chocolate lace,part\n" +
-            "2,lineitem,Customer#000000002,customer\n" +
-            "2,lineitem,blush thistle blue yellow saddle,part\n" +
-            "2,order,Customer#000000002,customer\n" +
-            "2,order,blush thistle blue yellow saddle,part\n" +
-            "3,lineitem,Customer#000000003,customer\n" +
-            "3,lineitem,Customer#000000003,customer\n" +
-            "3,lineitem,spring green yellow purple cornsilk,part\n" +
-            "3,lineitem,spring green yellow purple cornsilk,part\n" +
-            "3,order,Customer#000000003,customer\n" +
-            "3,order,spring green yellow purple cornsilk,part\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 16L);
   }
 
   @Test
+  @SimpleTest
   public final void testUnionWithCrossJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-        "select * from ( " +
-        "  select a.id, b.c_name, a.code from ( " +
-            "    select l_orderkey as id, 'lineitem' as code from lineitem " +
-            "    union all " +
-            "    select o_orderkey as id, 'order' as code from orders " +
-            "  ) a, " +
-            "  customer b " +
-        ") c order by id, code, c_name"
-    );
-
-    String expected =
-        "id,c_name,code\n" +
-            "-------------------------------\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000001,lineitem\n" +
-            "1,Customer#000000002,lineitem\n" +
-            "1,Customer#000000002,lineitem\n" +
-            "1,Customer#000000003,lineitem\n" +
-            "1,Customer#000000003,lineitem\n" +
-            "1,Customer#000000004,lineitem\n" +
-            "1,Customer#000000004,lineitem\n" +
-            "1,Customer#000000005,lineitem\n" +
-            "1,Customer#000000005,lineitem\n" +
-            "1,Customer#000000001,order\n" +
-            "1,Customer#000000002,order\n" +
-            "1,Customer#000000003,order\n" +
-            "1,Customer#000000004,order\n" +
-            "1,Customer#000000005,order\n" +
-            "2,Customer#000000001,lineitem\n" +
-            "2,Customer#000000002,lineitem\n" +
-            "2,Customer#000000003,lineitem\n" +
-            "2,Customer#000000004,lineitem\n" +
-            "2,Customer#000000005,lineitem\n" +
-            "2,Customer#000000001,order\n" +
-            "2,Customer#000000002,order\n" +
-            "2,Customer#000000003,order\n" +
-            "2,Customer#000000004,order\n" +
-            "2,Customer#000000005,order\n" +
-            "3,Customer#000000001,lineitem\n" +
-            "3,Customer#000000001,lineitem\n" +
-            "3,Customer#000000002,lineitem\n" +
-            "3,Customer#000000002,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000003,lineitem\n" +
-            "3,Customer#000000004,lineitem\n" +
-            "3,Customer#000000004,lineitem\n" +
-            "3,Customer#000000005,lineitem\n" +
-            "3,Customer#000000005,lineitem\n" +
-            "3,Customer#000000001,order\n" +
-            "3,Customer#000000002,order\n" +
-            "3,Customer#000000003,order\n" +
-            "3,Customer#000000004,order\n" +
-            "3,Customer#000000005,order\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 40L);
   }
 
   @Test
+  @SimpleTest
   public final void testThreeJoinInUnion() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
-    ResultSet res = executeString(
-      "select o_orderkey from (select orders.o_orderkey \n" +
-          "from orders\n" +
-          "join lineitem on orders.o_orderkey = lineitem.l_orderkey\n" +
-          "join customer on orders.o_custkey =  customer.c_custkey\n" +
-          "union all \n" +
-          "select nation.n_nationkey from nation) t order by o_orderkey"
-    );
-    String expected =
-        "o_orderkey\n" +
-            "-------------------------------\n" +
-            "0\n" +
-            "1\n" +
-            "1\n" +
-            "1\n" +
-            "2\n" +
-            "2\n" +
-            "3\n" +
-            "3\n" +
-            "3\n" +
-            "4\n" +
-            "5\n" +
-            "6\n" +
-            "7\n" +
-            "8\n" +
-            "9\n" +
-            "10\n" +
-            "11\n" +
-            "12\n" +
-            "13\n" +
-            "14\n" +
-            "15\n" +
-            "16\n" +
-            "17\n" +
-            "18\n" +
-            "19\n" +
-            "20\n" +
-            "21\n" +
-            "22\n" +
-            "23\n" +
-            "24\n";
-
-    assertEquals(expected, resultSetToString(res));
-
-    cleanupQuery(res);
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 30L);
   }
 
   @Test
+  @SimpleTest
   public void testUnionCaseOfFirstEmptyAndJoin() throws Exception {
-    ResultSet res = executeString(
-        "select a.c_custkey, b.c_custkey from " +
-            "  (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
-            "   union all " +
-            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
-            ") a " +
-            "left outer join customer b " +
-            "on a.c_custkey = b.c_custkey "
-    );
-
-    String expected =
-        "c_custkey,c_custkey\n" +
-            "-------------------------------\n" +
-            "1,1\n" +
-            "2,2\n" +
-            "3,3\n" +
-            "4,4\n" +
-            "5,5\n";
-
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
+  @SimpleTest
   public void testTajo1368Case1() throws Exception {
-    ResultSet res = executeString(
-        "select * from " +
-            "   (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
-            "   union all " +
-            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
-            ") a " +
-            "union all " +
-            "select * from " +
-            "   (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
-            "   union all " +
-            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
-            ") b ");
-
-    String expected = "c_custkey,c_nationkey\n" +
-        "-------------------------------\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n";
-
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 10L);
   }
 
   @Test
+  @SimpleTest
   public void testTajo1368Case2() throws Exception {
-    ResultSet res = executeString("select * from ( "+
-        "select c_custkey, c_nationkey from ( " +
-        "select c_custkey, c_nationkey from ( " +
-        "select c_custkey, c_nationkey from customer) a " +
-        "union all " +
-        "select c_custkey, c_nationkey from ( " +
-        "select c_custkey, c_nationkey from customer) a " +
-        " ) a " +
-        " ) a ");
-
-    String expected = "c_custkey,c_nationkey\n" +
-        "-------------------------------\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n" +
-        "1,15\n" +
-        "2,13\n" +
-        "3,1\n" +
-        "4,4\n" +
-        "5,3\n";
-
-    assertEquals(expected, resultSetToString(res));
-    res.close();
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 10L);
   }
 
   @Test
   @Option(withExplain = true, withExplainGlobal = true)
   @SimpleTest
   public void testComplexUnion1() throws Exception {
-    runSimpleTests();
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 4L);
   }
 
   @Test
   @Option(withExplain = true, withExplainGlobal = true, sort = true)
   @SimpleTest
   public void testComplexUnion2() throws Exception {
-    runSimpleTests();
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
 
   @Test
   @Option(withExplain =  true, sort = true)
   @SimpleTest
   public void testUnionAndFilter() throws Exception {
-    runSimpleTests();
+    Optional<TajoResultSetBase[]> existing = runSimpleTests();
+    verifyResultStats(existing, 5L);
   }
+
+  private void verifyResultStats(Optional<TajoResultSetBase[]> existing, long numRows) throws Exception {
+    assertTrue(existing.isPresent());
+
+    // Get TableStats using TajoResultSetBase.
+    TajoResultSetBase[] resultSet = existing.get();
+    QueryId qid = resultSet[0].getQueryId();
+    QueryInfo queryInfo = testingCluster.getMaster().getContext().getQueryJobManager().getFinishedQuery(qid);
+    TableDesc desc = queryInfo.getResultDesc();
+    TableStats stats = desc.getStats();
+
+    // Compare specified number of rows to the number of rows in TableStats.
+    assertEquals(numRows, stats.getNumRows().longValue());
+
+    // Compare the volume number of directRaw to the number of rows in TableStats.
+    FileSystem fs = FileSystem.get(conf);
+    Path path = new Path(desc.getUri());
+    assertTrue(fs.exists(path));
+    ContentSummary summary = fs.getContentSummary(path);
+    assertEquals(summary.getLength(), stats.getNumBytes().longValue());
+
+    closeResultSets(resultSet);
+  }
+
 }
