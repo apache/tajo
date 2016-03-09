@@ -289,7 +289,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     if(hosts.isEmpty()) return new HashSet<>();
 
     return stage.getContext().getWorkerMap().values().stream().filter(worker -> hosts.contains(worker.getHost()))
-        .map(WorkerConnectionInfo::getId).collect(Collectors.toSet());
+        .map(WorkerConnectionInfo::getId).collect(Collectors.toCollection(HashSet::new));
   }
 
 

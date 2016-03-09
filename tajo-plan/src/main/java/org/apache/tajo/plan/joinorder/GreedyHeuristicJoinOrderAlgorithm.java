@@ -47,7 +47,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
       throws TajoException {
 
-    Set<JoinVertex> vertexes = block.getRelations().stream().map(RelationVertex::new).collect(Collectors.toSet());
+    Set<JoinVertex> vertexes = block.getRelations().stream().map(RelationVertex::new)
+        .collect(Collectors.toCollection(HashSet::new));
 
     // As illustrated at LogicalOptimizer.JoinGraphBuilder, the join graph initially forms a kind of tree.
     // This join graph can be updated by adding new join edges or removing existing join edges
