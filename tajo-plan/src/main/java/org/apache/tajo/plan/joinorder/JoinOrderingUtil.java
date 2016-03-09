@@ -44,9 +44,9 @@ public class JoinOrderingUtil {
   public static Set<EvalNode> findJoinConditionForJoinVertex(Set<EvalNode> candidates, JoinEdge edge,
                                                              boolean isOnPredicates) {
     return candidates.stream()
-        .filter(predicate -> EvalTreeUtil.isJoinQual(predicate, false)
-                             && checkIfEvaluatedAtEdge(predicate, edge, isOnPredicates))
-        .collect(Collectors.toCollection(HashSet::new));
+        .filter(predicate ->
+            EvalTreeUtil.isJoinQual(predicate, false) && checkIfEvaluatedAtEdge(predicate, edge, isOnPredicates))
+        .collect(Collectors.toSet());
   }
 
   /**

@@ -127,7 +127,7 @@ public abstract class NameResolver {
   public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName) {
 
     return block.getRelations().stream().filter(rel -> rel.getLogicalSchema().contains(columnName))
-        .collect(Collectors.toCollection(HashSet::new));
+        .collect(Collectors.toSet());
   }
 
   /**

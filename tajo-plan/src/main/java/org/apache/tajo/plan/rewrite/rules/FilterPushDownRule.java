@@ -152,8 +152,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
       // check if it can be evaluated here
       Set<EvalNode> matched = context.pushingDownFilters.stream()
-          .filter(eachEval -> LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode))
-          .collect(Collectors.toCollection(HashSet::new));
+          .filter(eachEval -> LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode)).collect(Collectors.toSet());
 
       // if there are search conditions which can be evaluated here,
       // push down them and remove them from context.pushingDownFilters.
@@ -627,7 +626,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private Collection<EvalNode> reverseTransform(BiMap<EvalNode, EvalNode> map, Set<EvalNode> remainFilters) {
-    return remainFilters.stream().map(map::get).collect(Collectors.toCollection(HashSet::new));
+    return remainFilters.stream().map(map::get).collect(Collectors.toSet());
   }
 
   private BiMap<EvalNode, EvalNode> findCanPushdownAndTransform(
@@ -762,8 +761,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     // find aggregation column
     Set<Column> groupingColumns = new HashSet<>(Arrays.asList(groupByNode.getGroupingColumns()));
     Set<String> aggrFunctionOutColumns = groupByNode.getOutSchema().getRootColumns().stream()
-        .filter(column -> !groupingColumns.contains(column)).map(Column::getQualifiedName)
-        .collect(Collectors.toCollection(HashSet::new));
+        .filter(column -> !groupingColumns.contains(column)).map(Column::getQualifiedName).collect(Collectors.toSet());
 
     List<EvalNode> aggrEvalOrigins = new ArrayList<>();
     List<EvalNode> aggrEvals = new ArrayList<>();
