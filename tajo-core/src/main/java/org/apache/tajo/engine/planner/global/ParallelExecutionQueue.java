@@ -76,9 +76,8 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
   public synchronized ExecutionBlock[] first() {
     int max = Math.min(maximum, executable.size());
     List<ExecutionBlock> result = new ArrayList<>();
-    executable.stream().filter(queue -> result.size() < max && isExecutableNow(queue.peekLast())).forEach(queue -> {
-      result.add(queue.removeLast());
-    });
+    executable.stream().filter(queue -> result.size() < max && isExecutableNow(queue.peekLast()))
+      .forEach(queue -> result.add(queue.removeLast()));
     LOG.info("Initial executable blocks " + result);
     return result.toArray(new ExecutionBlock[result.size()]);
   }

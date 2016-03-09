@@ -29,6 +29,7 @@ import org.apache.tajo.plan.serder.PlanProto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
@@ -221,42 +222,37 @@ public class TaskRequestImpl implements TaskRequest {
       return;
     }
     TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-    this.fetches = new ArrayList<>();
-    p.getFetchesList().forEach(fetch -> fetches.add(fetch));
+    this.fetches = p.getFetchesList().stream().collect(Collectors.toList());
   }
 
   private void maybeInitBuilder() {
-		if (viaProto || builder == null) {
-			builder = TaskRequestProto.newBuilder(proto);
-		}
-		viaProto = true;
-	}
+	if (viaProto || builder == null) {
+      builder = TaskRequestProto.newBuilder(proto);
+    }
+    viaProto = true;
+  }
 	
-	private void mergeLocalToBuilder() {
-		if (id != null) {
-			builder.setId(this.id.getProto());
-		}
-		if (fragments != null) {
-      for (FragmentProto fragment : fragments) {
-        builder.addFragments(fragment);
-			}
-		}
-		if (this.outputTable != null) {
-			builder.setOutputTable(this.outputTable);
-		}
-		if (this.isUpdated) {
-			builder.setClusteredOutput(this.clusteredOutput);
-		}
-		if (this.plan != null) {
-			builder.setPlan(this.plan);
-		}
-		if (this.interQuery != null) {
-		  builder.setInterQuery(this.interQuery);
-		}
+  private void mergeLocalToBuilder() {
+    if (id != null) {
+      builder.setId(this.id.getProto());
+    }
+    if (fragments != null) {
+      fragments.forEach(builder::addFragments);
+    }
+    if (this.outputTable != null) {
+      builder.setOutputTable(this.outputTable);
+    }
+    if (this.isUpdated) {
+      builder.setClusteredOutput(this.clusteredOutput);
+    }
+    if (this.plan != null) {
+      builder.setPlan(this.plan);
+    }
+    if (this.interQuery != null) {
+      builder.setInterQuery(this.interQuery);
+    }
     if (this.fetches != null) {
-      for (FetchProto fetch : fetches) {
-        builder.addFetches(fetch);
-      }
+      fetches.forEach(builder::addFetches);
     }
     if (this.queryMasterHostAndPort != null) {
       builder.setQueryMasterHostAndPort(this.queryMasterHostAndPort);
@@ -270,14 +266,14 @@ public class TaskRequestImpl implements TaskRequest {
     if (this.enforcer != null) {
       builder.setEnforcer(enforcer.getProto());
     }
-	}
+  }
 
-	private void mergeLocalToProto() {
-		if(viaProto) {
-			maybeInitBuilder();
-		}
-		mergeLocalToBuilder();
-		proto = builder.build();
-		viaProto = true;
-	}
+  private void mergeLocalToProto() {
+    if(viaProto) {
+      maybeInitBuilder();
+    }
+    mergeLocalToBuilder();
+    proto = builder.build();
+    viaProto = true;
+  }
 }

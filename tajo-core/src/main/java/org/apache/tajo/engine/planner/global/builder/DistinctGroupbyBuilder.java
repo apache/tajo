@@ -519,9 +519,9 @@ public class DistinctGroupbyBuilder {
         List<Target> oldTargets = secondStageGroupbyNode.getTargets();
         List<Target> secondGroupbyTargets = new ArrayList<>();
         LinkedHashSet<Column> distinctColumns = EvalTreeUtil.findUniqueColumns(secondStageGroupbyNode.getAggFunctions().get(0));
-        List<Column> uniqueDistinctColumn = new ArrayList<>();
         // remove origin group by column from distinctColumns
-        distinctColumns.stream().filter(eachColumn -> !originGroupColumns.contains(eachColumn)).forEach(uniqueDistinctColumn::add);
+        List<Column> uniqueDistinctColumn = distinctColumns.stream()
+          .filter(eachColumn -> !originGroupColumns.contains(eachColumn)).collect(Collectors.toList());
         for (int i = 0; i < originGroupColumns.size(); i++) {
           secondGroupbyTargets.add(oldTargets.get(i));
           if (grpIdx > 0) {

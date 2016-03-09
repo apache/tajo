@@ -284,9 +284,8 @@ public class LogicalPlan {
   }
 
   public List<QueryBlock> getChildBlocks(QueryBlock block) {
-    List<QueryBlock> childBlocks = queryBlockGraph.getChilds(block.getName()).stream()
-      .map(blockName -> queryBlocks.get(blockName)).collect(Collectors.toList());
-    return childBlocks;
+    return queryBlockGraph.getChilds(block.getName()).stream()
+        .map(blockName -> queryBlocks.get(blockName)).collect(Collectors.toList());
   }
 
   public void mapExprToBlock(Expr expr, String blockName) {
