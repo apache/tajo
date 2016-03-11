@@ -32,7 +32,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.function.UDFInvocationDesc;
-import org.apache.tajo.util.WritableTypeConverter;
+import org.apache.tajo.plan.util.WritableTypeConverter;
 import org.reflections.Reflections;
 import org.reflections.util.ConfigurationBuilder;
 

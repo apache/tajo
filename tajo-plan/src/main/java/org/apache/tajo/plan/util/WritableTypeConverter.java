@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.util;
+package org.apache.tajo.plan.util;
 
 import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.serde2.io.TimestampWritable;
@@ -31,7 +31,6 @@ import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.reflections.ReflectionUtils;
 
-import java.sql.Timestamp;
 import java.util.Set;
 
 public class WritableTypeConverter {

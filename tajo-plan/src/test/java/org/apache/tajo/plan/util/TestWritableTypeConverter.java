@@ -16,7 +16,7 @@
  *  limitations under the License.
  */
 
-package org.apache.tajo.util;
+package org.apache.tajo.plan.util;
 
 import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.serde2.io.TimestampWritable;
