@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.function.hiveudf;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -43,6 +45,8 @@ import java.net.URLClassLoader;
 import java.util.*;
 
 public class HiveFunctionLoader {
+  private static final Log LOG = LogFactory.getLog(HiveFunctionLoader.class);
+
   public static Optional<List<FunctionDesc>> loadHiveUDFs(TajoConf conf) {
     ArrayList<FunctionDesc> funcList = new ArrayList<>();
     String udfdir = conf.getVar(TajoConf.ConfVars.HIVE_UDF_DIR);
@@ -52,6 +56,7 @@ public class HiveFunctionLoader {
       FileSystem fs = udfPath.getFileSystem(conf);
 
       if (!fs.isDirectory(udfPath)) {
+        LOG.warn("Hive UDF directory doesn't exist");
         return Optional.empty();
       }
 
