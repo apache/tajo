@@ -71,15 +71,8 @@ public class TestWritableTypeConverter {
   }
 
   private static class DummyWritable implements Writable {
-    @Override
-    public void write(DataOutput dataOutput) throws IOException {
-
-    }
-
-    @Override
-    public void readFields(DataInput dataInput) throws IOException {
-
-    }
+    @Override public void write(DataOutput dataOutput) throws IOException {}
+    @Override public void readFields(DataInput dataInput) throws IOException {}
   }
 
   @Test

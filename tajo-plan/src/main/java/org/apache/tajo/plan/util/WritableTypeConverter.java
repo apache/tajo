@@ -18,7 +18,9 @@
 
 package org.apache.tajo.plan.util;
 
+import org.apache.hadoop.hive.common.type.HiveChar;
 import org.apache.hadoop.hive.serde2.io.DateWritable;
+import org.apache.hadoop.hive.serde2.io.HiveCharWritable;
 import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 import org.apache.hadoop.io.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -35,11 +37,12 @@ import java.util.Set;
 
 public class WritableTypeConverter {
 
+  private static DataType.Builder builder = DataType.newBuilder();
+
   public static DataType convertWritableToTajoType(Class<? extends Writable> writableClass) {
     if (writableClass == null)
       return null;
 
-    DataType.Builder builder = DataType.newBuilder();
     Set<Class<?>> parents = ReflectionUtils.getAllSuperTypes(writableClass);
 
     if (writableClass == ByteWritable.class || parents.contains(ByteWritable.class)) {
@@ -53,6 +56,9 @@ public class WritableTypeConverter {
     }
     if (writableClass == LongWritable.class || parents.contains(LongWritable.class)) {
       return builder.setType(Type.INT8).build();
+    }
+    if (writableClass == HiveCharWritable.class || parents.contains(HiveCharWritable.class)) {
+      return builder.setType(Type.CHAR).build();
     }
     if (writableClass == Text.class || parents.contains(Text.class)) {
       return builder.setType(Type.TEXT).build();
@@ -95,6 +101,10 @@ public class WritableTypeConverter {
         result.setTime(DateTimeUtil.julianTimeToJavaTime(value.asInt8()));
         return result;
 
+      case CHAR: {
+        String str = value.asChars();
+        return new HiveCharWritable(new HiveChar(str, str.length()));
+      }
       case TEXT: return new Text(value.asChars());
       case VARBINARY: return new BytesWritable(value.asByteArray());
     }
@@ -118,6 +128,7 @@ public class WritableTypeConverter {
       case TIMESTAMP: return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(
           ((TimestampWritable)value).getTimestamp().getTime()));
 
+      case CHAR: return new CharDatum(value.toString());
       case TEXT: return new TextDatum(value.toString());
       case VARBINARY: return new BlobDatum(((BytesWritable)value).getBytes());
     }
