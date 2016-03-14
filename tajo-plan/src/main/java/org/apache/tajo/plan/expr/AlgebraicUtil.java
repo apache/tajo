@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.expr;
 
+import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.exception.TajoException;
@@ -133,6 +134,13 @@ public class AlgebraicUtil {
   }
 
   private static class AlgebraicOptimizer extends SimpleEvalNodeVisitor<Object> {
+    private final Map<EvalType, Integer> counter;
+
+    public AlgebraicOptimizer() {
+      counter = Maps.newHashMap();
+      counter.put(EvalType.FUNCTION, 0);
+      counter.put(EvalType.CONST, 0);
+    }
 
     @Override
     public EvalNode visitBinaryEval(Object context, Stack<EvalNode> stack, BinaryEval binaryEval) {
@@ -172,6 +180,10 @@ public class AlgebraicUtil {
     public EvalNode visitFuncCall(Object context, FunctionEval evalNode, Stack<EvalNode> stack) {
       boolean constantOfAllDescendents = true;
 
+      int functionCount = counter.get(EvalType.FUNCTION);
+      functionCount++;
+      counter.put(EvalType.FUNCTION, functionCount);
+
       if ("sleep".equals(evalNode.funcDesc.getFunctionName())) {
         constantOfAllDescendents = false;
       } else {
@@ -184,14 +196,33 @@ public class AlgebraicUtil {
       }
 
       if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
+        int constCount = counter.get(EvalType.CONST);
+        constCount++;
+        counter.put(EvalType.CONST, constCount);
+
         return new ConstEval(evalNode.bind(null, null).eval(null));
       } else {
         return evalNode;
       }
     }
+
+    public boolean acceptableConstantFolding() {
+      return counter.get(EvalType.FUNCTION).equals(counter.get(EvalType.CONST));
+    }
   }
 
   private final static AlgebraicOptimizer algebraicOptimizer = new AlgebraicOptimizer();
+
+  /**
+   * Check whether all FunctionEvals of specified expr can be changed to ConstEval.
+   *
+   * @param expr to be evaluated if functions of expr can be changed to constants.
+   * @return true if functions of expr is constants.
+   */
+  public static boolean acceptableConstantFolding(EvalNode expr) {
+    algebraicOptimizer.visit(null, expr, new Stack<EvalNode>());
+    return algebraicOptimizer.acceptableConstantFolding();
+  }
   
   /**
    * Simplify the given expr. That is, all subexprs consisting of only constants
