@@ -579,5 +579,4 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
     executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }
-
 }
