@@ -33,6 +33,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -674,8 +675,8 @@ public class CheckMethodAdapter extends MethodVisitor {
             throw new IllegalArgumentException("invalid handle tag "
                     + bsm.getTag());
         }
-        for (int i = 0; i < bsmArgs.length; i++) {
-            checkLDCConstant(bsmArgs[i]);
+        for (Object bsmArg : bsmArgs) {
+            checkLDCConstant(bsmArg);
         }
         super.visitInvokeDynamicInsn(name, desc, bsm, bsmArgs);
         ++insnCount;
@@ -744,9 +745,7 @@ public class CheckMethodAdapter extends MethodVisitor {
             checkNonDebugLabel(labels[i]);
         }
         super.visitTableSwitchInsn(min, max, dflt, labels);
-        for (int i = 0; i < labels.length; ++i) {
-            usedLabels.add(labels[i]);
-        }
+        Collections.addAll(usedLabels, labels);
         ++insnCount;
     }
 
@@ -767,9 +766,7 @@ public class CheckMethodAdapter extends MethodVisitor {
         }
         super.visitLookupSwitchInsn(dflt, keys, labels);
         usedLabels.add(dflt);
-        for (int i = 0; i < labels.length; ++i) {
-            usedLabels.add(labels[i]);
-        }
+        Collections.addAll(usedLabels, labels);
         ++insnCount;
     }
 

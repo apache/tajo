@@ -263,7 +263,6 @@ public class TajoTestingCluster {
     builder.hosts(hosts);
     builder.numDataNodes(servers);
     builder.format(true);
-    builder.storagesPerDatanode(1);
     builder.waitSafeMode(true);
     this.dfsCluster = builder.build();
 
@@ -359,7 +358,7 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_TEMPORAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
-    c.setIntVar(ConfVars.REST_SERVICE_PORT, 0);
+    c.setVar(ConfVars.REST_SERVICE_ADDRESS, "localhost:0");
 
     if (!local) {
       String tajoRootDir = getMiniDFSCluster().getFileSystem().getUri().toString() + "/tajo";
@@ -394,8 +393,8 @@ public class TajoTestingCluster {
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
     
     InetSocketAddress tajoRestAddress = tajoMaster.getContext().getRestServer().getBindAddress();
-    
-    this.conf.setIntVar(ConfVars.REST_SERVICE_PORT, tajoRestAddress.getPort());
+
+    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, tajoRestAddress.getHostName() + ":" + tajoRestAddress.getPort());
 
     startTajoWorkers(numSlaves);
 

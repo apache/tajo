@@ -99,8 +99,8 @@ public class TajoRestService extends CompositeService {
         .property(ServerProperties.METAINF_SERVICES_LOOKUP_DISABLE, true);
     TajoConf tajoConf = (TajoConf) conf;
 
-    int port = TajoConf.getIntVar(tajoConf, TajoConf.ConfVars.REST_SERVICE_PORT);
-    URI restServiceURI = new URI("http", null, "0.0.0.0", port, "/rest", null, null);
+    InetSocketAddress address = tajoConf.getSocketAddrVar(TajoConf.ConfVars.REST_SERVICE_ADDRESS);
+    URI restServiceURI = new URI("http", null, address.getHostName(), address.getPort(), "/rest", null, null);
     int workerCount = TajoConf.getIntVar(tajoConf, TajoConf.ConfVars.REST_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
     restServer = NettyRestServerFactory.createNettyRestServer(restServiceURI, resourceConfig, workerCount, false);
 

@@ -48,6 +48,7 @@ import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -96,6 +97,14 @@ public class TestStorages {
       "    { \"name\": \"col12\", \"type\": [\"null\", \"bytes\"] }\n" +
       "  ]\n" +
       "}\n";
+
+  private static String TEST_EMPTY_FILED_AVRO_SCHEMA =
+      "{\n" +
+          "  \"type\": \"record\",\n" +
+          "  \"namespace\": \"org.apache.tajo\",\n" +
+          "  \"name\": \"testEmptySchema\",\n" +
+          "  \"fields\": []\n" +
+          "}\n";
 
   private static String TEST_MAX_VALUE_AVRO_SCHEMA =
       "{\n" +
@@ -152,6 +161,11 @@ public class TestStorages {
         {BuiltinStorages.TEXT, true, true, true, false},
         {BuiltinStorages.JSON, true, true, false, false},
     });
+  }
+
+  @After
+  public void tearDown() throws IOException {
+   fs.delete(testDir, true);
   }
 
   @Test
@@ -1117,7 +1131,6 @@ public class TestStorages {
   public void testLessThanSchemaSize() throws IOException {
     /* Internal storage must be same with schema size */
     if (internalType || dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)
-        || dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)
         || dataFormat.equalsIgnoreCase(BuiltinStorages.ORC)) {
       return;
     }
@@ -1302,5 +1315,107 @@ public class TestStorages {
     } finally {
       IOUtils.cleanup(null, appender);
     }
+  }
+
+  @Test
+  public void testProgress() throws IOException {
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.FLOAT4);
+    schema.addColumn("col2", Type.FLOAT8);
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+
+    KeyValueSet options = new KeyValueSet();
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
+    }
+
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Path tablePath = new Path(testDir, "testProgress.data");
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.init();
+
+    VTuple tuple = new VTuple(new Datum[]{
+        DatumFactory.createFloat4(Float.MAX_VALUE),
+        DatumFactory.createFloat8(Double.MAX_VALUE),
+        DatumFactory.createInt2(Short.MAX_VALUE),
+        DatumFactory.createInt4(Integer.MAX_VALUE),
+        DatumFactory.createInt8(Long.MAX_VALUE)
+    });
+
+    appender.addTuple(tuple);
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner =  sm.getScanner(meta, schema, fragment, null);
+
+    assertEquals(0.0f, scanner.getProgress(), 0.0f);
+
+    scanner.init();
+    assertNotNull(scanner.next());
+    assertNull(null, scanner.next());
+
+    scanner.close();
+    assertEquals(1.0f, scanner.getProgress(), 0.0f);
+  }
+
+  @Test
+  public void testEmptySchema() throws IOException {
+    if (internalType) return;
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("score", Type.FLOAT4);
+
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
+          TEST_PROJECTION_AVRO_SCHEMA);
+    }
+
+    Path tablePath = new Path(testDir, "testEmptySchema.data");
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.init();
+
+
+    Tuple expect = new VTuple(schema.size());
+    expect.put(new Datum[]{
+        DatumFactory.createInt4(Integer.MAX_VALUE),
+        DatumFactory.createInt8(Long.MAX_VALUE),
+        DatumFactory.createFloat4(Float.MAX_VALUE)
+    });
+
+    appender.addTuple(expect);
+    appender.flush();
+    appender.close();
+
+    assertTrue(fs.exists(tablePath));
+    FileStatus status = fs.getFileStatus(tablePath);
+
+    if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
+      meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
+          TEST_EMPTY_FILED_AVRO_SCHEMA);
+    }
+
+    //e,g select count(*) from table
+    Schema target = new Schema();
+    assertEquals(0, target.size());
+
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, target);
+    scanner.init();
+
+    Tuple tuple = scanner.next();
+    assertNotNull(tuple);
+    assertEquals(0, tuple.size());
+    scanner.close();
   }
 }

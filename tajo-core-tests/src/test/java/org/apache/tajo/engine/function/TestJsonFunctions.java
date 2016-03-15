@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function;
 
 
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
@@ -41,9 +42,9 @@ public class TestJsonFunctions extends ExprTestBase {
     testSimpleEval("select json_array_get('" + JSON_ARRAY + "', 2)", new String[]{"300"});
     testSimpleEval("select json_array_get('" + JSON_ARRAY + "', -1)", new String[]{"500"});
     testSimpleEval("select json_array_get('" + JSON_ARRAY + "', -2)", new String[]{"400"});
-    testSimpleEval("select json_array_get('" + JSON_ARRAY + "', 10)", new String[]{""});
-    testSimpleEval("select json_array_get('" + JSON_ARRAY + "', -10)", new String[]{""});
-    testSimpleEval("select json_array_get('" + JSON_EMPTY_ARRAY + "', 0)", new String[]{""});
+    testSimpleEval("select json_array_get('" + JSON_ARRAY + "', 10)", new String[]{NullDatum.get().toString()});
+    testSimpleEval("select json_array_get('" + JSON_ARRAY + "', -10)", new String[]{NullDatum.get().toString()});
+    testSimpleEval("select json_array_get('" + JSON_EMPTY_ARRAY + "', 0)", new String[]{NullDatum.get().toString()});
   }
 
   @Test

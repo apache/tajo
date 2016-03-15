@@ -668,8 +668,7 @@ public class DDLExecutor {
 
     String[] partitionKeyPairs = partitionName.split("/");
 
-    for(int i = 0; i < partitionKeyPairs.length; i++) {
-      String partitionKeyPair = partitionKeyPairs[i];
+    for (String partitionKeyPair : partitionKeyPairs) {
       String[] split = partitionKeyPair.split("=");
 
       PartitionKeyProto.Builder keyBuilder = PartitionKeyProto.newBuilder();

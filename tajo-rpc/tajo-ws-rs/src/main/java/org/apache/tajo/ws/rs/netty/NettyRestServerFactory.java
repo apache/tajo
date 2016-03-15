@@ -74,7 +74,7 @@ public final class NettyRestServerFactory {
 
     handler.setRootPath(uri.getPath());
 
-    InetSocketAddress bindAddress = new InetSocketAddress(port);
+    InetSocketAddress bindAddress = new InetSocketAddress(uri.getHost(), port);
     NettyRestServer nettyRestServer = new NettyRestServer("Tajo-REST", bindAddress, workerCount);
 
     nettyRestServer.setHandler(handler);

@@ -119,8 +119,8 @@ public abstract class Remapper {
 
         Type[] args = Type.getArgumentTypes(desc);
         StringBuffer s = new StringBuffer("(");
-        for (int i = 0; i < args.length; i++) {
-            s.append(mapDesc(args[i].getDescriptor()));
+        for (Type arg : args) {
+            s.append(mapDesc(arg.getDescriptor()));
         }
         Type returnType = Type.getReturnType(desc);
         if (returnType == Type.VOID_TYPE) {

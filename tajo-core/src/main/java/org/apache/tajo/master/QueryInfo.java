@@ -44,6 +44,8 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
   private volatile long startTime;
   @Expose
   private volatile  long finishTime;
+
+  @Deprecated
   @Expose
   private String lastMessage;
   @Expose

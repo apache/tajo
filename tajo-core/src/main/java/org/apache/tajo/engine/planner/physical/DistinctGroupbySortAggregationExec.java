@@ -109,11 +109,11 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     }
 
     int mergeTupleIndex = 0;
-    for (int i = 0; i < currentTuples.length; i++) {
-      int tupleSize = currentTuples[i].size();
+    for (Tuple currentTuple : currentTuples) {
+      int tupleSize = currentTuple.size();
       for (int j = 0; j < tupleSize; j++) {
         if (resultColumnIdIndexes[mergeTupleIndex] >= 0) {
-          outTuple.put(resultColumnIdIndexes[mergeTupleIndex], currentTuples[i].asDatum(j));
+          outTuple.put(resultColumnIdIndexes[mergeTupleIndex], currentTuple.asDatum(j));
         }
         mergeTupleIndex++;
       }

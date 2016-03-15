@@ -18,10 +18,14 @@
 
 package org.apache.tajo.catalog.statistics;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class StatisticsUtil {
@@ -152,5 +156,30 @@ public class StatisticsUtil {
     }
 
     return aggregated;
+  }
+
+  public static List<ColumnStats> aggregateColumnStats(List<ColumnStats> stats1, List<ColumnStats> stats2) {
+    Preconditions.checkState(stats1.size() == stats2.size());
+    List<ColumnStats> result = new ArrayList<>(stats1.size());
+    for (int i = 0; i < result.size(); i++) {
+      Preconditions.checkState(stats1.get(i).getColumn().getTypeDesc().equals(stats2.get(i).getColumn().getTypeDesc()));
+      ColumnStats resultStats = new ColumnStats(stats1.get(i).getColumn());
+      // TODO: resultStats.setNumDistValues();
+      resultStats.setNumNulls(stats1.get(i).getNumNulls() + stats2.get(i).getNumNulls());
+      resultStats.setMaxValue(stats1.get(i).getMaxValue().compareTo(stats2.get(i).getMaxValue()) > 0 ?
+          stats1.get(i).getMaxValue() : stats2.get(i).getMaxValue());
+      resultStats.setMinValue(stats1.get(i).getMinValue().compareTo(stats2.get(i).getMinValue()) < 0 ?
+          stats1.get(i).getMinValue() : stats2.get(i).getMinValue());
+      result.add(resultStats);
+    }
+    return result;
+  }
+
+  public static List<ColumnStats> emptyColumnStats(Schema schema) {
+    List<ColumnStats> stats = new ArrayList<>(schema.size());
+    for (Column column : schema.getRootColumns()) {
+      stats.add(new ColumnStats(column));
+    }
+    return stats;
   }
 }
