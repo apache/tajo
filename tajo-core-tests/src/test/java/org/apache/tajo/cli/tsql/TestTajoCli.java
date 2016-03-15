@@ -332,7 +332,7 @@ public class TestTajoCli {
     String stdoutResult = new String(out.toByteArray());
     assertOutputResult(stdoutResult);
     String stdErrResult = new String(err.toByteArray());
-    assertErrorResult(stdErrResult, true);
+    assertErrorResult(stdErrResult, false);
   }
 
   @Test
