@@ -78,6 +78,22 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     return unaryEval;
   }
 
+
+  protected EvalNode visitBetween(LogicalPlanner.PlanContext context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
+    stack.push(evalNode);
+
+    EvalNode predicand = visit(context, evalNode.getPredicand(), stack);
+    EvalNode begin = visit(context, evalNode.getBegin(), stack);
+    EvalNode end = visit(context, evalNode.getEnd(), stack);
+
+    evalNode.setPredicand(predicand);
+    evalNode.setBegin(begin);
+    evalNode.setEnd(end);
+
+    return evalNode;
+  }
+
+
   // exceptional func names not to use constant folding
   private static final Set<String> NON_CONSTANT_FUNC_NAMES = new HashSet<String>(Arrays.asList("sleep", "random"));
 

@@ -290,8 +290,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    */
   private boolean checkIfIndexablePredicate(EvalNode evalNode) {
     // TODO - LIKE with a trailing wild-card character and IN with an array can be indexable
-    return  AlgebraicUtil.isIndexableOperator(evalNode) && (AlgebraicUtil.containSingleVar(evalNode)
-      || AlgebraicUtil.acceptableConstantFolding(evalNode));
+    return AlgebraicUtil.containSingleVar(evalNode) && AlgebraicUtil.isIndexableOperator(evalNode);
   }
 
   /**
