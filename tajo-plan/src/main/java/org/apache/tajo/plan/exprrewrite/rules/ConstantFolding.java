@@ -79,7 +79,8 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
   }
 
 
-  protected EvalNode visitBetween(LogicalPlanner.PlanContext context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitBetween(LogicalPlanner.PlanContext context, BetweenPredicateEval evalNode,
+                                  Stack<EvalNode> stack) {
     stack.push(evalNode);
 
     EvalNode predicand = visit(context, evalNode.getPredicand(), stack);
