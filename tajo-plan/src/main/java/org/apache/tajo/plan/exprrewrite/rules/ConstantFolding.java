@@ -78,7 +78,6 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     return unaryEval;
   }
 
-
   @Override
   protected EvalNode visitBetween(LogicalPlanner.PlanContext context, BetweenPredicateEval evalNode,
                                   Stack<EvalNode> stack) {
@@ -94,7 +93,6 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
 
     return evalNode;
   }
-
 
   // exceptional func names not to use constant folding
   private static final Set<String> NON_CONSTANT_FUNC_NAMES = new HashSet<String>(Arrays.asList("sleep", "random"));
