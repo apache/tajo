@@ -22,6 +22,7 @@ package org.apache.tajo.engine.codegen;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
@@ -111,12 +112,12 @@ public class TestEvalCodeGenerator extends ExprTestBase {
     testSimpleEval("select (1 > null AND false)", new String[] {"f"}); // unknown - false -> false
     testSimpleEval("select (1::int8 > null) is null", new String[] {"t"});
 
-    testSimpleEval("select 1 = null;", new String [] {""});
-    testSimpleEval("select 1 <> null;", new String [] {""});
-    testSimpleEval("select 1 > null;", new String [] {""});
-    testSimpleEval("select 1 >= null;", new String [] {""});
-    testSimpleEval("select 1 < null;", new String [] {""});
-    testSimpleEval("select 1 <= null;", new String [] {""});
+    testSimpleEval("select 1 = null;", new String [] {NullDatum.get().toString()});
+    testSimpleEval("select 1 <> null;", new String [] {NullDatum.get().toString()});
+    testSimpleEval("select 1 > null;", new String [] {NullDatum.get().toString()});
+    testSimpleEval("select 1 >= null;", new String [] {NullDatum.get().toString()});
+    testSimpleEval("select 1 < null;", new String [] {NullDatum.get().toString()});
+    testSimpleEval("select 1 <= null;", new String [] {NullDatum.get().toString()});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col2 from table1;", new String [] {"f"});
