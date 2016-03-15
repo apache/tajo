@@ -65,6 +65,9 @@ public class FileTablespace extends Tablespace {
   private final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
+
+  static final String DIRECT_OUTPUT_FILE_PREFIX="UUID-";
+
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
       new ThreadLocal<NumberFormat>() {
         @Override
@@ -274,13 +277,11 @@ public class FileTablespace extends Tablespace {
         directOutputCommitter = true;
     }
 
-    // When using direct output committer, each task attempts should have different name for avoiding file name
-    // duplication. In other case, the final result of a task will be written in a file named part-ss-nnnnnnn, where
-    // ss is the stage id associated with this task, and nnnnnn is the task id.
     Path outFilePath = null;
     if(directOutputCommitter) {
-      outFilePath = StorageUtil.concatPath(workDir, OUTPUT_FILE_PREFIX
-        + taskAttemptId.toString().substring(3).replace("_", "-"));
+      outFilePath = StorageUtil.concatPath(workDir, DIRECT_OUTPUT_FILE_PREFIX
+        + taskAttemptId.getTaskId().getExecutionBlockId().getQueryId().toString().substring(2)
+        + "-" + OUTPUT_FILE_FORMAT_SEQ.get().format(0));
     } else {
       outFilePath = StorageUtil.concatPath(workDir, TajoConstants.RESULT_DIR_NAME,
         OUTPUT_FILE_PREFIX +
