@@ -42,7 +42,7 @@ public class TajoGetConfCommand extends TajoShellCommand {
 
       getconf.runCommand(getConfCommands);
     } catch (Exception e) {
-      context.getOutput().println("ERROR: " + e.getMessage());
+      context.getError().println("ERROR: " + e.getMessage());
     }
   }
 

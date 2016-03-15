@@ -71,7 +71,7 @@ public class SetCommand extends TajoShellCommand {
       }
 
       if (SessionVars.isDeprecated(key)) {
-        context.getOutput().println("Warning: deprecated to directly use config key in TajoConf.ConfVars. " +
+        context.getError().println("Warning: deprecated to directly use config key in TajoConf.ConfVars. " +
             "Please execute '\\help set'.");
       }
     } else {

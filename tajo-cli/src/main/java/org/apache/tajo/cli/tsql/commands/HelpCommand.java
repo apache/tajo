@@ -96,7 +96,7 @@ public class HelpCommand extends TajoShellCommand {
       if (context.getCommands().containsKey(slashCommand)) {
         context.getCommands().get(slashCommand).printHelp();
       } else {
-        context.getOutput().println("Command not found: " + cmd[1]);
+        context.getError().println("Command not found: " + cmd[1]);
       }
     }
   }
