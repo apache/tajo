@@ -831,20 +831,6 @@ public class FileTablespace extends Tablespace {
       fs.mkdirs(backupDir);
     }
 
-    // 1. Backup all existing files to temporary directory
-    // - 1.1 insert into, don't backup
-    // - 1.2 insert overwrite into with non-partitioned table or CTAS, backup all files
-    // - 1.3 insert overwrite into with partitioned table, backup matched partitions
-    // 2. In fail to commit
-    // - 2.1 remove files which had been committed
-    // - 2.2 Rollback backup files to output directory
-    // 3. Delete backup files
-
-    // output commit history table schema
-    // - databaseId, queryId, outputPath, rollbackPath, startDate, finishDate
-    // When starting TajoMaster, check whether non-finished output commit logs
-    // If it find non-finished logs, it execute rollback process
-
     String queryType = queryContext.get(QueryVars.COMMAND_TYPE);
 
     String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.toString().substring(2).replaceAll("_", "-");
@@ -853,26 +839,13 @@ public class FileTablespace extends Tablespace {
 
     try {
       if (queryType.equals(NodeType.INSERT.name()) && queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) {
-        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) { // non-partitioned table
-          for (FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
-            renameDirectory(status.getPath(), backupDir);
-          }
-        } else { // partitioned table
-          if (partitions != null) {
-            for(PartitionDescProto partition : partitions) {
-              Path partitionPath = new Path(partition.getPath());
-              for(FileStatus status : fs.listStatus(partitionPath, backupPathFilter)) {
-                renameDirectory(status.getPath(), backupDir);
-              }
-            }
-          }
-        }
-      } else if (queryType.equals(NodeType.CREATE_TABLE.name())) { // CTAS
-        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) { // non-partitioned table
-          for (FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
-            renameDirectory(status.getPath(), backupDir);
+        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
+          // Backup existing files
+          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
+            fs.rename(status.getPath(), backupDir);
           }
         } else {
+          // Backup existing files on added partition directory.
           if (partitions != null) {
             for(PartitionDescProto partition : partitions) {
               Path partitionPath = new Path(partition.getPath());
@@ -882,27 +855,30 @@ public class FileTablespace extends Tablespace {
             }
           }
         }
+      } else if (queryType.equals(NodeType.CREATE_TABLE.name())) {
+        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
+          // Backup existing files
+          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
+            fs.rename(status.getPath(), backupDir);
+          }
+        } else {
+          // Backup existing files on existing partition directory.
+          renameRecursiveDirectory(finalOutputDir, backupDir, backupPathFilter);
+        }
       }
+      // Delete backup files
       fs.delete(backupDir, true);
     } catch (Exception e) {
       PathFilter outputPathFilter = committerFilter.getOutputPathFilter();
+      // Delete added files
       deleteOutputFiles(finalOutputDir, outputPathFilter);
+      // Recover backup files to output directory
       for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
         renameDirectory(status.getPath(), finalOutputDir);
       }
+      throw new IOException(e);
     }
     return finalOutputDir;
-  }
-
-  private void deleteOutputFiles(Path path, PathFilter filter) throws IOException {
-    if (fs.isFile(path)) {
-      fs.delete(path, false);
-    } else {
-      FileStatus[] statuses = fs.listStatus(path, filter);
-      for (FileStatus status : statuses) {
-        deleteOutputFiles(status.getPath(), filter);
-      }
-    }
   }
 
   private class directOutputCommitterFileFilter {
@@ -930,6 +906,35 @@ public class FileTablespace extends Tablespace {
           && name.startsWith(prefix);
       };
       return pathFilter;
+    }
+  }
+
+  private void deleteOutputFiles(Path path, PathFilter filter) throws IOException {
+    if (fs.isFile(path)) {
+      fs.delete(path, false);
+    } else {
+      FileStatus[] statuses = fs.listStatus(path, filter);
+      for (FileStatus status : statuses) {
+        deleteOutputFiles(status.getPath(), filter);
+      }
+    }
+  }
+
+  protected void renameRecursiveDirectory(Path sourcePath, Path targetPath, PathFilter filter) throws IOException {
+    int fileCount = 0;
+    FileStatus[] statuses = fs.listStatus(sourcePath, filter);
+
+    for(FileStatus status : statuses) {
+      if(fs.isFile(status.getPath())) {
+        fileCount++;
+      } else {
+        renameRecursiveDirectory(status.getPath(), targetPath, filter);
+      }
+    }
+
+    // Check the number of files to avoid added directory
+    if (fileCount > 0) {
+      renameDirectory(sourcePath, targetPath);
     }
   }
 
