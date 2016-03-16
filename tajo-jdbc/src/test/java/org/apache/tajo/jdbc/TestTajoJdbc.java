@@ -598,7 +598,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     try {
       if (!testingCluster.isHiveCatalogStoreRunning()) {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
-          tajoMasterAddress.getPort(), "TestTajoJdbc");
+            tajoMasterAddress.getPort(), "TestTajoJdbc");
 
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
@@ -687,7 +687,6 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     }
   }
-
 
   @Test
   public void testGetMoreResults() throws Exception {
