@@ -41,6 +41,7 @@ Available Session Variables:
 \set AGG_HASH_TABLE_SIZE [int value] - The initial size of list for in-memory aggregation
 \set SORT_LIST_SIZE [int value] - The initial size of list for in-memory sort
 \set JOIN_HASH_TABLE_SIZE [int value] - The initial size of hash table for in-memory hash join
+\set EXECUTOR_DIRECT_MEMORY_ENABLE [true or false] - If true, the executor data will be kept in direct memory
 \set INDEX_ENABLED [true or false] - index scan enabled
 \set INDEX_SELECTIVITY_THRESHOLD [real value] - the selectivity threshold for index scan
 \set PARTITION_NO_RESULT_OVERWRITE_ENABLED [true or false] - If true, a partitioned table is overwritten even if a sub query leads to no result. Otherwise, the table data will be kept if there is no result

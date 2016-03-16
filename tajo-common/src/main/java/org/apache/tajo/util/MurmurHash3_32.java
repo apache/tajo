@@ -77,9 +77,7 @@ public class MurmurHash3_32 {
       // fallthrough
     case 1:
       k1 |= (data[roundedEnd] & 0xff);
-      k1 *= C1;
-      k1 = (k1 << 15) | (k1 >>> 17);  // ROTL32(k1,15);
-      k1 *= C2;
+      k1 = mixK1(k1);
       h1 ^= k1;
     }
 
@@ -153,9 +151,7 @@ public class MurmurHash3_32 {
       // fallthrough
     case 1:
       k1 |= (UnsafeUtil.unsafe.getByte(offset) & 0xff);
-      k1 *= C1;
-      k1 = (k1 << 15) | (k1 >>> 17);  // ROTL32(k1,15);
-      k1 *= C2;
+      k1 = mixK1(k1);
       h1 ^= k1;
     }
 

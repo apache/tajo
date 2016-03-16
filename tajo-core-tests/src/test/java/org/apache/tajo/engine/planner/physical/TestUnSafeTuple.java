@@ -125,7 +125,7 @@ public class TestUnSafeTuple {
 
     UnSafeTupleList unSafeTupleList = new UnSafeTupleList(SchemaUtil.toDataTypes(schema), 1, StorageUnit.KB);
     unSafeTupleList.addTuple(tuple);
-    UnSafeTuple tuple1 = (UnSafeTuple) unSafeTupleList.get(0);
+    UnSafeTuple tuple1 = unSafeTupleList.get(0);
 
     assertEquals(tuple.hashCode(), tuple1.hashCode());
 
