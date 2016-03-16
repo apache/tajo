@@ -97,8 +97,4 @@ public abstract class FileAppender implements Appender {
   public long getOffset() throws IOException {
     throw new IOException(new NotImplementedException());
   }
-
-  public Path getPath() {
-    return path;
-  }
 }
