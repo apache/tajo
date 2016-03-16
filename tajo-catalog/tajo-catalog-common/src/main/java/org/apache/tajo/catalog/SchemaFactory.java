@@ -16,29 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function;
+package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.eval.ExprTestBase;
-import org.apache.tajo.exception.TajoException;
-import org.junit.Test;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.exception.TajoInternalError;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
-
-public class TestUserDefinedFunctions extends ExprTestBase {
-
-  @Test
-  public void testNullHandling() throws TajoException {
-    testSimpleEval("select null_test()", new String[]{NullDatum.get().toString()});
+public class SchemaFactory {
+  public static Schema newV1() {
+    return new SchemaLegacy();
   }
 
-  @Test
-  public void testNullHandling2() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", BOOLEAN);
+  public static Schema newV1(CatalogProtos.SchemaProto proto) {
+    return new SchemaLegacy(proto);
+  }
 
-    testEval(schema, "table1", "", "select null_test() from table1", new String[]{NullDatum.get().toString()});
+  public static Schema newV1(Schema schema) {
+    try {
+      return (Schema) schema.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new TajoInternalError(e);
+    }
+  }
+
+  public static Schema newV1(Column [] columns) {
+    return new SchemaLegacy(columns);
+  }
+
+  public static Schema newV1(Iterable<Column> columns) {
+    return new SchemaLegacy(columns);
   }
 }

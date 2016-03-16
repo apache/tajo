@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
@@ -543,7 +544,7 @@ public class BSTIndex implements IndexMethod {
       SchemaProto.Builder builder = SchemaProto.newBuilder();
       builder.mergeFrom(schemaBytes);
       SchemaProto proto = builder.build();
-      this.keySchema = new Schema(proto);
+      this.keySchema = SchemaFactory.newV1(proto);
       this.rowStoreDecoder = RowStoreUtil.createDecoder(keySchema);
 
       // comparator

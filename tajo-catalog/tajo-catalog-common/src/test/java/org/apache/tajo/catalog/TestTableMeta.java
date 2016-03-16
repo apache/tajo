@@ -38,7 +38,7 @@ public class TestTableMeta {
   
   @Test
   public void testTableMetaTableProto() {    
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
     TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
@@ -49,7 +49,7 @@ public class TestTableMeta {
   
   @Test
   public final void testClone() throws CloneNotSupportedException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
     TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
@@ -61,7 +61,7 @@ public class TestTableMeta {
   
   @Test
   public void testSchema() throws CloneNotSupportedException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
     TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
@@ -78,7 +78,7 @@ public class TestTableMeta {
   
   @Test
   public void testEqualsObject() {   
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("name", Type.BLOB);
     schema2.addColumn("addr", Type.TEXT);
     TableMeta meta2 = CatalogUtil.newTableMeta("TEXT");

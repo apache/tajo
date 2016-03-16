@@ -290,7 +290,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private final TableMeta pipeMeta = CatalogUtil.newTableMeta("TEXT");
 
   private final Tuple EMPTY_INPUT = new VTuple(0);
-  private final Schema EMPTY_SCHEMA = new Schema();
+  private final Schema EMPTY_SCHEMA = SchemaFactory.newV1();
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
@@ -388,27 +388,27 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private void setSchema() {
     if (invocationDesc.isScalarFunction()) {
       TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-      inSchema = new Schema();
+      inSchema = SchemaFactory.newV1();
       for (int i = 0; i < paramTypes.length; i++) {
         inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
       }
-      outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+      outSchema = SchemaFactory.newV1(new Column[]{new Column("out", functionSignature.getReturnType())});
     } else {
       // UDAF
       if (firstPhase) {
         // first phase
         TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-        inSchema = new Schema();
+        inSchema = SchemaFactory.newV1();
         for (int i = 0; i < paramTypes.length; i++) {
           inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
         }
-        outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        outSchema = SchemaFactory.newV1(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
       } else if (lastPhase) {
-        inSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
-        outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+        inSchema = SchemaFactory.newV1(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        outSchema = SchemaFactory.newV1(new Column[]{new Column("out", functionSignature.getReturnType())});
       } else {
         // intermediate phase
-        inSchema = outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        inSchema = outSchema = SchemaFactory.newV1(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
       }
     }
     projectionCols = new int[outSchema.size()];

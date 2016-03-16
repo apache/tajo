@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -39,7 +40,7 @@ import java.net.URL;
 import static org.junit.Assert.*;
 
 public class TestJsonSerDe {
-  private static Schema schema = new Schema();
+  private static Schema schema = SchemaFactory.newV1();
 
   static {
     schema.addColumn("col1", TajoDataTypes.Type.BOOLEAN);
@@ -104,7 +105,7 @@ public class TestJsonSerDe {
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
 
-    Schema  schema = new Schema();
+    Schema  schema = SchemaFactory.newV1();
     schema.addColumn("col1", TajoDataTypes.Type.TEXT);
     schema.addColumn("col2", TajoDataTypes.Type.TEXT);
     schema.addColumn("col3", TajoDataTypes.Type.TEXT);

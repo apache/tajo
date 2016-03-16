@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.hbase;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.KeyValueSet;
@@ -35,7 +36,7 @@ public class TestColumnMapping {
     keyValueSet.set(HBaseStorageConstants.META_TABLE_KEY, "test");
     keyValueSet.set(HBaseStorageConstants.META_COLUMNS_KEY, ":key,col2:key:,col2:value:#b,col3:");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("c1", Type.TEXT);
     schema.addColumn("c2", Type.TEXT);
     schema.addColumn("c3", Type.TEXT);

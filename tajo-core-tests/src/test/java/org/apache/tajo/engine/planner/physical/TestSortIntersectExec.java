@@ -84,7 +84,7 @@ public class TestSortIntersectExec {
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
 
-    Schema employeeSchema1 = new Schema();
+    Schema employeeSchema1 = SchemaFactory.newV1();
     employeeSchema1.addColumn("managerid", TajoDataTypes.Type.INT4);
     employeeSchema1.addColumn("empid", TajoDataTypes.Type.INT4);
     employeeSchema1.addColumn("memid", TajoDataTypes.Type.INT4);
@@ -111,7 +111,7 @@ public class TestSortIntersectExec {
     employee1 = CatalogUtil.newTableDesc("default.employee1", employeeSchema1, employeeMeta1, employeePath1);
     catalog.createTable(employee1);
 
-    Schema employeeSchema2 = new Schema();
+    Schema employeeSchema2 = SchemaFactory.newV1();
     employeeSchema2.addColumn("managerid", TajoDataTypes.Type.INT4);
     employeeSchema2.addColumn("empid", TajoDataTypes.Type.INT4);
     employeeSchema2.addColumn("memid", TajoDataTypes.Type.INT4);

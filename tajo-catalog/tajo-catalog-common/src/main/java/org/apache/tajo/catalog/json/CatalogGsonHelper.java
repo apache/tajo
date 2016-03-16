@@ -21,6 +21,7 @@ package org.apache.tajo.catalog.json;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -46,6 +47,7 @@ public class CatalogGsonHelper {
     adapters.put(Function.class, new FunctionAdapter());
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
+    adapters.put(Schema.class, new SchemaAdapter());
     return adapters;
   }
 
