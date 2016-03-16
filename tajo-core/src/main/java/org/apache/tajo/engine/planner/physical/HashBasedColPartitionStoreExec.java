@@ -24,7 +24,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
-import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -87,7 +86,6 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
     for (Appender app : appenderMap.values()) {
       app.flush();
       app.close();
-      addOutputFile(app);
       statSet.add(app.getStats());
     }
 

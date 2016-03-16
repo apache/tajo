@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
@@ -33,7 +32,6 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.NodeType;
@@ -44,8 +42,6 @@ import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.List;
 
 public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(ColPartitionStoreExec.class);
@@ -65,8 +61,6 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   protected long maxPerFileSize = Long.MAX_VALUE; // default max file size is 2^63
   protected int writtenFileNum = 0;               // how many file are written so far?
   protected Path lastFileName;                    // latest written file name
-
-  protected boolean directOutputCommitterEnabled;
 
   public ColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
@@ -116,12 +110,6 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
         keyIds[i] = plan.getOutSchema().getColumnId(column.getQualifiedName());
       }
     }
-
-    if (context.getConf().getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)) {
-      directOutputCommitterEnabled = true;
-    } else {
-      directOutputCommitterEnabled = false;
-    }
   }
 
   @Override
@@ -164,17 +152,6 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     openAppender(0);
 
     addPartition(partition);
-
-
-    // Get existing files
-    if(directOutputCommitterEnabled && context.getQueryContext().containsKey(QueryVars.OUTPUT_TABLE_URI)) {
-      URI outputTableUri = context.getQueryContext().getOutputTableUri();
-      FileTablespace space = TablespaceManager.get(outputTableUri);
-      List<FileStatus> fileList = space.listStatus(new Path(outputTableUri.getPath(), partition));
-      fileList.stream().forEach(status -> {
-        context.addBackupFile(status.getPath().toString());
-      });
-    }
 
     return appender;
   }
@@ -231,11 +208,5 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   @Override
   public void rescan() throws IOException {
     // nothing to do
-  }
-
-  public void addOutputFile(Appender app) {
-    if (directOutputCommitterEnabled && app instanceof FileAppender) {
-      context.addOutputFile(((FileAppender) app).getPath().toString());
-    }
   }
 }

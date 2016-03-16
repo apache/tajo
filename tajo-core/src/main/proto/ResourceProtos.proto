@@ -103,8 +103,6 @@ message TaskStatusProto {
   optional TableStatsProto input_stats = 6;
   optional TableStatsProto result_stats = 7;
   repeated ShuffleFileOutput shuffle_file_outputs = 8;
-  repeated string outputFiles = 9;
-  repeated string backupFiles = 10;
 }
 
 message TaskCompletionReport {
@@ -114,21 +112,11 @@ message TaskCompletionReport {
   optional TableStatsProto result_stats = 4;
   repeated ShuffleFileOutput shuffle_file_outputs = 5;
   repeated PartitionDescProto partitions = 6;
-  repeated string outputFiles = 7;
-  repeated string backupFiles = 8;
 }
 
 message TaskFatalErrorReport {
   required TaskAttemptIdProto id = 1;
   required tajo.error.SerializedException error = 2;
-  repeated string outputFiles = 3;
-  repeated string backupFiles = 4;
-}
-
-message TaskKilledCompletionReport {
-  required TaskAttemptIdProto id = 1;
-  repeated string outputFiles = 2;
-  repeated string backupFiles = 3;
 }
 
 message FailureIntermediateProto {

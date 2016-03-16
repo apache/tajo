@@ -528,47 +528,6 @@ public class Stage implements EventHandler<StageEvent> {
     }
   }
 
-  public Set<String> getOutputFiles() {
-    Set<String> outputFiles = Sets.newHashSet();
-    Task[] tasks = getTasks();
-    for (Task task : tasks) {
-      if(task.getLastAttempt() != null && !task.getLastAttempt().getOutputFiles().isEmpty()) {
-        outputFiles.addAll(task.getLastAttempt().getOutputFiles());
-      }
-    }
-    return outputFiles;
-  }
-
-  public void clearOutputFiles() {
-    Task[] tasks = getTasks();
-    for (Task task : tasks) {
-      if(task.getLastAttempt() != null && !task.getLastAttempt().getOutputFiles().isEmpty()) {
-        task.getLastAttempt().getOutputFiles().clear();
-      }
-    }
-  }
-
-  public Set<String> getBackupFiles() {
-    Set<String> outputFiles = Sets.newHashSet();
-    Task[] tasks = getTasks();
-    for (Task task : tasks) {
-      if(task.getLastAttempt() != null && !task.getLastAttempt().getBackupFiles().isEmpty()) {
-        outputFiles.addAll(task.getLastAttempt().getBackupFiles());
-      }
-    }
-    return outputFiles;
-  }
-
-  public void clearBackupFiles() {
-    Task[] tasks = getTasks();
-    for (Task task : tasks) {
-      if(task.getLastAttempt() != null && !task.getLastAttempt().getBackupFiles().isEmpty()) {
-        task.getLastAttempt().getBackupFiles().clear();
-      }
-    }
-  }
-
-
   /**
    * It finalizes this stage. It is only invoked when the stage is finalizing.
    */
@@ -1317,8 +1276,6 @@ public class Stage implements EventHandler<StageEvent> {
       } else {
         stage.completedTaskCount++;
         stage.getTaskScheduler().releaseTaskAttempt(task.getLastAttempt());
-
-        TaskAttempt lastAttempt = task.getLastAttempt();
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
           stage.succeededObjectCount++;

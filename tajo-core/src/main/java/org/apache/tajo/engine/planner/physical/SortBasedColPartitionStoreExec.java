@@ -25,7 +25,6 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.logical.StoreTableNode;
-import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -84,8 +83,6 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
 
       if (maxPerFileSize > 0 && maxPerFileSize <= appender.getEstimatedOutputSize()) {
         appender.close();
-        addOutputFile(appender);
-
         writtenFileNum++;
         StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
 
@@ -100,7 +97,6 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
   public void close() throws IOException {
     if (appender != null) {
       appender.close();
-      addOutputFile(appender);
 
       // Collect statistics data
       StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());

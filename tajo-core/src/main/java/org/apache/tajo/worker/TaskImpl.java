@@ -301,15 +301,6 @@ public class TaskImpl implements Task {
     if (context.getResultStats() != null) {
       builder.setResultStats(context.getResultStats().getProto());
     }
-
-    if (!context.getOutputFiles().isEmpty()) {
-      builder.addAllOutputFiles(context.getOutputFiles());
-    }
-
-    if (!context.getBackupFiles().isEmpty()) {
-      builder.addAllBackupFiles(context.getBackupFiles());
-    }
-
     return builder.build();
   }
 
@@ -358,14 +349,6 @@ public class TaskImpl implements Task {
 
     if (!context.getPartitions().isEmpty()) {
       builder.addAllPartitions(context.getPartitions());
-    }
-
-    if (!context.getOutputFiles().isEmpty()) {
-      builder.addAllOutputFiles(context.getOutputFiles());
-    }
-
-    if (!context.getBackupFiles().isEmpty()) {
-      builder.addAllBackupFiles(context.getBackupFiles());
     }
 
     Iterator<Entry<Integer, String>> it = context.getShuffleFileOutputs();
@@ -469,15 +452,6 @@ public class TaskImpl implements Task {
 
           errorBuilder.setId(getId().getProto());
           errorBuilder.setError(ErrorUtil.convertException(error));
-
-          if (!context.getOutputFiles().isEmpty()) {
-            errorBuilder.addAllOutputFiles(context.getOutputFiles());
-          }
-
-          if (!context.getBackupFiles().isEmpty()) {
-            errorBuilder.addAllBackupFiles(context.getBackupFiles());
-          }
-
           queryMasterStub.fatalError(null, errorBuilder.build(), NullCallback.get());
           executionBlockContext.failedTasksNum.incrementAndGet();
         }

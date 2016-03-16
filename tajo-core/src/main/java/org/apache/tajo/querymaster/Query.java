@@ -20,7 +20,6 @@ package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -346,22 +345,6 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  public List<String> getOutputFiles() {
-    Set<String> files = Sets.newHashSet();
-    getStages().stream().forEach(stage -> {
-      files.addAll(stage.getOutputFiles());
-    });
-    return Lists.newArrayList(files);
-  }
-
-  public List<String> getBackupFiles() {
-    Set<String> files = Sets.newHashSet();
-    getStages().stream().forEach(stage -> {
-      files.addAll(stage.getBackupFiles());
-    });
-    return Lists.newArrayList(files);
-  }
-
   public SerializedException getFailureReason() {
     return failureReason;
   }
@@ -541,9 +524,6 @@ public class Query implements EventHandler<QueryEvent> {
         // If there is not tabledesc, it is a select query without insert or ctas.
         // In this case, we should use default tablespace.
         Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
-
-        List<String> backupFiles = query.getBackupFiles();
-        List<String> outputFiles = query.getOutputFiles();
 
         List<PartitionDescProto> partitions = null;
         if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {

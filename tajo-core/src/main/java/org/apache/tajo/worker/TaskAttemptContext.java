@@ -20,9 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -89,9 +87,6 @@ public class TaskAttemptContext {
 
   private List<PartitionDescProto> partitions;
 
-  private Set<String> outputFiles;
-  private Set<String> backupFiles;
-
   public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
                             final TaskAttemptId taskId,
                             final FragmentProto[] fragments,
@@ -125,9 +120,6 @@ public class TaskAttemptContext {
     this.partitionOutputVolume = Maps.newHashMap();
 
     this.partitions = new ArrayList<>();
-
-    this.outputFiles = Sets.newHashSet();
-    this.backupFiles = Sets.newHashSet();
   }
 
   @VisibleForTesting
@@ -430,26 +422,6 @@ public class TaskAttemptContext {
   public void addPartition(PartitionDescProto partition) {
     if (!partitions.contains(partition)) {
       partitions.add(partition);
-    }
-  }
-
-  public Set<String> getOutputFiles() {
-    return outputFiles;
-  }
-
-  public void addOutputFile(String outputFile) {
-    if (!outputFiles.contains(outputFile)) {
-      outputFiles.add(outputFile);
-    }
-  }
-
-  public Set<String> getBackupFiles() {
-    return backupFiles;
-  }
-
-  public void addBackupFile(String backupFile) {
-    if (!backupFiles.contains(backupFile)) {
-      backupFiles.add(backupFile);
     }
   }
 }

@@ -25,12 +25,10 @@ import org.apache.tajo.exception.ErrorUtil;
 
 public class TaskFatalErrorEvent extends TaskAttemptEvent {
   private final SerializedException error;
-  private TaskFatalErrorReport report;
 
   public TaskFatalErrorEvent(TaskFatalErrorReport report) {
     super(new TaskAttemptId(report.getId()), TaskAttemptEventType.TA_FATAL_ERROR);
     this.error = report.getError();
-    this.report = report;
   }
 
   public TaskFatalErrorEvent(TaskAttemptId attemptId, Throwable e) {
@@ -40,9 +38,5 @@ public class TaskFatalErrorEvent extends TaskAttemptEvent {
 
   public SerializedException getError() {
     return error;
-  }
-
-  public TaskFatalErrorReport getReport() {
-    return report;
   }
 }
