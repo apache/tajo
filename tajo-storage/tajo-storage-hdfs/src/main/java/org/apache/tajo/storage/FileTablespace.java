@@ -265,20 +265,17 @@ public class FileTablespace extends Tablespace {
   // FileInputFormat Area
   /////////////////////////////////////////////////////////////////////////////
   public Path getAppenderFilePath(TaskAttemptId taskAttemptId, Path workDir) {
+    return getAppenderFilePath(taskAttemptId, workDir, false);
+  }
+
+  public Path getAppenderFilePath(TaskAttemptId taskAttemptId, Path workDir, boolean isDirectOutputCommit) {
     if (taskAttemptId == null) {
       // For testcase
       return workDir;
     }
 
-    boolean directOutputCommitter = false;
-
-    if (conf.getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)
-      && !workDir.toString().startsWith(this.stagingRootPath.toString())) {
-        directOutputCommitter = true;
-    }
-
     Path outFilePath = null;
-    if(directOutputCommitter) {
+    if (isDirectOutputCommit && !workDir.toString().startsWith(this.stagingRootPath.toString())) {
       QueryId queryId = taskAttemptId.getTaskId().getExecutionBlockId().getQueryId();
       outFilePath = StorageUtil.concatPath(workDir, DIRECT_OUTPUT_FILE_PREFIX +
         queryId.toString().substring(2).replaceAll("_", "-") + "-" +
@@ -720,7 +717,7 @@ public class FileTablespace extends Tablespace {
       // for temporarily written in the storage directory
       stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
     } else {
-      if (context.getConf().getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      if (context.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
         stagingDir = new Path(context.get(QueryVars.OUTPUT_TABLE_URI));
       } else {
         Tablespace space = TablespaceManager.get(outputPath);
@@ -757,7 +754,7 @@ public class FileTablespace extends Tablespace {
     // Create Output Directory
     ////////////////////////////////////////////
 
-    if (!conf.getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+    if (!context.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
       if (fs.exists(stagingDir)) {
         throw new IOException("The staging directory '" + stagingDir + "' already exists");
       }
@@ -786,7 +783,7 @@ public class FileTablespace extends Tablespace {
       fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
     }
 
-    if (!conf.getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+    if (!context.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
       Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
       fs.mkdirs(stagingResultDir);
     }
@@ -803,7 +800,7 @@ public class FileTablespace extends Tablespace {
                           Schema schema, TableDesc tableDesc, List<PartitionDescProto> partitions) throws IOException {
 
     if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()) {
-      if (queryContext.getConf().getBoolVar(TajoConf.ConfVars.QUERY_DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
         return directOutputCommitData(queryContext, finalEbId.getQueryId(), partitions);
       } else {
         return outputCommitData(queryContext, true);

@@ -26,22 +26,52 @@ import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@RunWith(Parameterized.class)
 public class TestInsertQuery extends QueryTestCaseBase {
+  private boolean isDirectOutputCommit = false;
+
+  public TestInsertQuery(boolean isDirectOutputCommit) {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+
+    this.isDirectOutputCommit = isDirectOutputCommit;
+
+    Map<String, String> variables = new HashMap<>();
+    variables.put(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname(), Boolean.toString(isDirectOutputCommit));
+    client.updateSessionVariables(variables);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    client.unsetSessionVariables(Arrays.asList(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname()));
+  }
+
+  @Parameterized.Parameters
+  public static Collection<Object[]> generateParameters() {
+    return Arrays.asList(new Object[][]{
+      {false},
+      {true},
+    });
+  }
 
   @Test
   public final void testInsertOverwrite() throws Exception {
@@ -85,14 +115,19 @@ public class TestInsertQuery extends QueryTestCaseBase {
     List<Path> dataFiles = listTableFiles("table1");
     assertEquals(2, dataFiles.size());
 
-    //TODO : Add to check direct output committer
-//    for (int i = 0; i < dataFiles.size(); i++) {
-//      String name = dataFiles.get(i).getName();
-//      assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
-//      String[] tokens = name.split("-");
-//      assertEquals(4, tokens.length);
-//      assertEquals(i, Integer.parseInt(tokens[3]));
-//    }
+    for (int i = 0; i < dataFiles.size(); i++) {
+      String name = dataFiles.get(i).getName();
+      if (isDirectOutputCommit) {
+        assertTrue(name.matches("UUID-[0-9]*-[0-9]*-[0-9]*-[0-9]*-[0-9]*"));
+        String[] tokens = name.split("-");
+        assertEquals(6, tokens.length);
+      } else {
+        assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+        String[] tokens = name.split("-");
+        assertEquals(4, tokens.length);
+        assertEquals(i, Integer.parseInt(tokens[3]));
+      }
+    }
 
     String tableDatas = getTableFileContents("table1");
 
@@ -146,11 +181,14 @@ public class TestInsertQuery extends QueryTestCaseBase {
       assertNotNull(files);
       assertEquals(1, files.length);
 
-      // TODO : Add to check direct output committer
-//      for (FileStatus eachFileStatus : files) {
-//        String name = eachFileStatus.getPath().getName();
-//        assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
-//      }
+      for (FileStatus eachFileStatus : files) {
+        String name = eachFileStatus.getPath().getName();
+        if (isDirectOutputCommit) {
+          assertTrue(name.matches("UUID-[0-9]*-[0-9]*-[0-9]*-[0-9]*-[0-9]*"));
+        } else {
+          assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+        }
+      }
 
       executeString("insert into location '" + path + "' select l_orderkey, l_partkey, l_linenumber from default.lineitem").close();
       resultFileData = getTableFileContents(path);
@@ -166,11 +204,14 @@ public class TestInsertQuery extends QueryTestCaseBase {
       assertNotNull(files);
       assertEquals(2, files.length);
 
-      // TODO : Add to check direct output committer
-//      for (FileStatus eachFileStatus : files) {
-//        String name = eachFileStatus.getPath().getName();
-//        assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
-//      }
+      for (FileStatus eachFileStatus : files) {
+        String name = eachFileStatus.getPath().getName();
+        if (isDirectOutputCommit) {
+          assertTrue(name.matches("UUID-[0-9]*-[0-9]*-[0-9]*-[0-9]*-[0-9]*"));
+        } else {
+          assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+        }
+      }
     } finally {
       if (fs != null) {
         fs.delete(path, true);
@@ -291,11 +332,15 @@ public class TestInsertQuery extends QueryTestCaseBase {
         assertTrue(eachFileStatus.getPath().getName().indexOf("n_nationkey=") == 0);
         FileStatus[] dataFiles = fs.listStatus(eachFileStatus.getPath());
         assertEquals(2, dataFiles.length);
-        // TODO : Add to check direct output committer
-//        for (FileStatus eachDataFileStatus: dataFiles) {
-//          String name = eachDataFileStatus.getPath().getName();
-//          assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
-//        }
+
+        for (FileStatus eachDataFileStatus: dataFiles) {
+          String name = eachDataFileStatus.getPath().getName();
+          if (isDirectOutputCommit) {
+            assertTrue(name.matches("UUID-[0-9]*-[0-9]*-[0-9]*-[0-9]*-[0-9]*"));
+          } else {
+            assertTrue(name.matches("part-[0-9]*-[0-9]*-[0-9]*"));
+          }
+        }
       }
     } finally {
       executeString("DROP TABLE " + tableName + " PURGE");
