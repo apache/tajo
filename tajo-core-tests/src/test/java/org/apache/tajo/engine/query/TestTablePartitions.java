@@ -80,7 +80,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       //type
       {NodeType.INSERT, false},
       {NodeType.INSERT, true},
-      {NodeType.CREATE_TABLE, true},
+      {NodeType.CREATE_TABLE, false},
       {NodeType.CREATE_TABLE, true},
     });
   }
@@ -1245,6 +1245,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       ResultSet res = executeString("select * from testIgnoreFilesInIntermediateDir;");
       assertFalse(res.next());
       res.close();
+      executeString("DROP TABLE testIgnoreFilesInIntermediateDir PURGE").close();
     }
   }
 
