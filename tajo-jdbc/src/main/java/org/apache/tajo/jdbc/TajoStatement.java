@@ -237,11 +237,28 @@ public class TajoStatement implements Statement {
 
   @Override
   public boolean getMoreResults() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMoreResults() is not supported yet.");
+    checkConnection();
+    if (resultSet != null) {
+      resultSet.close();
+    }
+    return false;
   }
 
   @Override
   public boolean getMoreResults(int current) throws SQLException {
+    checkConnection();
+
+    if (current == CLOSE_CURRENT_RESULT) {
+      if (resultSet != null) {
+        resultSet.close();
+      }
+      return false;
+    }
+
+    if (current != KEEP_CURRENT_RESULT && current != CLOSE_ALL_RESULTS) {
+      throw new SQLException("Invalid argument: " + current);
+    }
+
     throw new SQLFeatureNotSupportedException("getMoreResults() is not supported yet.");
   }
 
