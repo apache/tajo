@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.exception.SQLSyntaxError;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
