@@ -24,6 +24,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
@@ -363,7 +364,8 @@ public abstract class Tablespace {
   public abstract Path commitTable(OverridableConf queryContext,
                                    ExecutionBlockId finalEbId,
                                    LogicalPlan plan, Schema schema,
-                                   TableDesc tableDesc) throws IOException;
+                                   TableDesc tableDesc,
+                                   List<PartitionDescProto> partitions) throws IOException;
 
   public abstract void rollbackTable(LogicalNode node) throws IOException, TajoException;
 

@@ -545,41 +545,42 @@ public class Query implements EventHandler<QueryEvent> {
         List<String> backupFiles = query.getBackupFiles();
         List<String> outputFiles = query.getOutputFiles();
 
+        List<PartitionDescProto> partitions = null;
+        if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
+          partitions = query.getPartitions();
+        }
 
         Path finalOutputDir = space.commitTable(
-            query.context.getQueryContext(),
-            lastStage.getId(),
-            lastStage.getMasterPlan().getLogicalPlan(),
-            lastStage.getOutSchema(),
-            tableDesc);
+          query.context.getQueryContext(),
+          lastStage.getId(),
+          lastStage.getMasterPlan().getLogicalPlan(),
+          lastStage.getOutSchema(),
+          tableDesc,
+          partitions);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
         // Add dynamic partitions to catalog for partition table.
-        if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
-          List<PartitionDescProto> partitions = query.getPartitions();
-          if (partitions != null) {
-            // Set contents length and file count to PartitionDescProto by listing final output directories.
-            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
-              finalOutputDir, partitions);
+        if (partitions != null) {
+          // Set contents length and file count to PartitionDescProto by listing final output directories.
+          List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
+            finalOutputDir, partitions);
 
-            String databaseName, simpleTableName;
-            if (CatalogUtil.isFQTableName(tableDesc.getName())) {
-              String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
-              databaseName = split[0];
-              simpleTableName = split[1];
-            } else {
-              databaseName = queryContext.getCurrentDatabase();
-              simpleTableName = tableDesc.getName();
-            }
-
-            // Store partitions to CatalogStore using alter table statement.
-            catalog.addPartitions(databaseName, simpleTableName, finalPartitions, true);
-            LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
+          String databaseName, simpleTableName;
+          if (CatalogUtil.isFQTableName(tableDesc.getName())) {
+            String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
+            databaseName = split[0];
+            simpleTableName = split[1];
           } else {
-            LOG.info("Can't find partitions for adding.");
+            databaseName = queryContext.getCurrentDatabase();
+            simpleTableName = tableDesc.getName();
           }
+
+          // Store partitions to CatalogStore using alter table statement.
+          catalog.addPartitions(databaseName, simpleTableName, finalPartitions, true);
+          LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
+
           query.clearPartitions();
         }
       } catch (Throwable e) {
