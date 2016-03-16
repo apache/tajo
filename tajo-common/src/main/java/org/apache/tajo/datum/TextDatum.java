@@ -25,7 +25,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.util.MurmurHash;
+import org.apache.tajo.util.MurmurHash3_32;
 import org.apache.tajo.util.StringUtils;
 
 import java.nio.charset.Charset;
@@ -128,9 +128,12 @@ public class TextDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof TextDatum) {
       TextDatum o = (TextDatum) obj;
-      return COMPARATOR.compare(this.bytes, o.bytes) == 0;
+      return size() == o.size() && COMPARATOR.compare(this.bytes, o.bytes) == 0;
     }
 
     return false;
@@ -152,7 +155,7 @@ public class TextDatum extends Datum {
 
   @Override
   public int hashCode() {
-    return MurmurHash.hash(bytes);
+    return MurmurHash3_32.hash(bytes);
   }
 
   @Override

@@ -412,6 +412,9 @@ public class IntervalDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof IntervalDatum) {
       return asInt8() == ((IntervalDatum)obj).asInt8();
     } else {

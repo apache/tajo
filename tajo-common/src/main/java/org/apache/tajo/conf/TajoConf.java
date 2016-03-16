@@ -367,6 +367,7 @@ public class TajoConf extends Configuration {
     $AGG_HASH_TABLE_SIZE("tajo.executor.aggregate.hash-table.size", 10000),
     $SORT_LIST_SIZE("tajo.executor.sort.list.size", 100000),
     $JOIN_HASH_TABLE_SIZE("tajo.executor.join.hash-table.size", 100000),
+    $EXECUTOR_MEMORY_DIRECT("tajo.executor.memory.direct", true),
 
     // for index
     $INDEX_ENABLED("tajo.query.index.enabled", false),

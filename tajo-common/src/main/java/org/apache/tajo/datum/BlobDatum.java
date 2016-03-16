@@ -124,17 +124,20 @@ public class BlobDatum extends Datum {
     return bb.hashCode();
   }
 
-  @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof BlobDatum) {
-      BlobDatum other = (BlobDatum) obj;
-      initFromBytes();
-      other.initFromBytes();
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+
+		if (obj instanceof BlobDatum) {
+			BlobDatum other = (BlobDatum) obj;
+			initFromBytes();
+			other.initFromBytes();
 			return Arrays.equals(this.val, other.val);
 		}
-    
-    return false;
-  }
+
+		return false;
+	}
 
   @Override
   public Datum equalsTo(Datum datum) {

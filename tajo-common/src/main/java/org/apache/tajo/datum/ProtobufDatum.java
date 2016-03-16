@@ -58,6 +58,9 @@ public class ProtobufDatum extends Datum {
 
   @Override
   public boolean equals(Object object) {
+    if (this == object)
+      return true;
+
     if (object instanceof ProtobufDatum) {
       ProtobufDatum another = (ProtobufDatum) object;
       return value.equals(another.value);

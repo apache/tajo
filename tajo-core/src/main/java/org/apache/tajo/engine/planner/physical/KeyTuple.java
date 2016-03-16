@@ -24,7 +24,7 @@ import org.apache.tajo.storage.VTuple;
 
 /**
  * KeyTuple is to keep its hash value in memory to avoid frequent expensive hash calculation.
- * Datum.hashCode() uses MurmurHash, so its cost is not so cheap.
+ * Datum.hashCode() uses MurmurHash3_32, so its cost is not so cheap.
  *
  */
 public class KeyTuple extends VTuple implements Cloneable {

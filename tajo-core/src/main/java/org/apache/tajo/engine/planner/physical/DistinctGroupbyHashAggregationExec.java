@@ -32,6 +32,7 @@ import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.memory.TupleList;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -110,7 +111,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
   }
 
-  TupleList currentAggregatedTuples = null;
+  TupleList<Tuple> currentAggregatedTuples = null;
   int currentAggregatedTupleIndex = 0;
   int currentAggregatedTupleSize = 0;
 
@@ -148,13 +149,13 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     // Groupby_Key2 | Distinct1_Column_V3 |                     |                          |
     //--------------------------------------------------------------------------------------
 
-    List<TupleList> tupleSlots = new ArrayList<>();
+    List<TupleList<Tuple>> tupleSlots = new ArrayList<>();
 
     // aggregation with single grouping key
     for (HashAggregator hashAggregator : hashAggregators) {
       if (!hashAggregator.iterator.hasNext()) {
         nullCount++;
-        tupleSlots.add(new TupleList());
+        tupleSlots.add(new HeapTupleList());
         continue;
       }
       Entry<KeyTuple, TupleMap<FunctionContext[]>> entry = hashAggregator.iterator.next();
@@ -208,7 +209,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
 
     // currentAggregatedTuples has tuples which has same group key.
     if (currentAggregatedTuples == null) {
-      currentAggregatedTuples = new TupleList();
+      currentAggregatedTuples = new HeapTupleList();
     } else {
       currentAggregatedTuples.clear();
     }
@@ -421,7 +422,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
     }
 
     public TupleList aggregate(Map<KeyTuple, FunctionContext[]> groupTuples) {
-      TupleList aggregatedTuples = new TupleList();
+      TupleList aggregatedTuples = new HeapTupleList();
 
       for (Entry<KeyTuple, FunctionContext[]> entry : groupTuples.entrySet()) {
         Tuple groupbyKey = entry.getKey();

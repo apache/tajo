@@ -19,26 +19,35 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.memory.TupleList;
 
 import java.util.ArrayList;
 
 /**
- * In TupleList, input tuples are automatically cloned whenever the add() method is called.
- * This data structure is usually used in physical operators like hash join or hash aggregation.
+ * In ReferenceTupleList, input tuples are not cloned whenever the add() method is called.
  */
-public class TupleList extends ArrayList<Tuple> {
+public class ReferenceTupleList extends ArrayList<Tuple> implements TupleList<Tuple> {
 
-  public TupleList() {
+  public ReferenceTupleList() {
     super();
   }
 
-  public TupleList(int initialCapacity) {
+  public ReferenceTupleList(int initialCapacity) {
     super(initialCapacity);
   }
 
   @Override
   public boolean add(Tuple tuple) {
-    return super.add(new VTuple(tuple));
+    return super.add(tuple);
+  }
+
+  @Override
+  public boolean addTuple(Tuple tuple) {
+    return add(tuple);
+  }
+
+  @Override
+  public void release() {
+    super.clear();
   }
 }

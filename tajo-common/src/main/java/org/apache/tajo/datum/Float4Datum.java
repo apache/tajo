@@ -23,7 +23,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.util.MurmurHash;
+import org.apache.tajo.util.MurmurHash3_32;
 import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -107,11 +107,14 @@ public class Float4Datum extends NumericDatum {
 
   @Override
   public int hashCode() {
-    return MurmurHash.hash(val);
+    return MurmurHash3_32.hash(val);
   }
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof Float4Datum) {
       Float4Datum other = (Float4Datum) obj;
       return val == other.val;

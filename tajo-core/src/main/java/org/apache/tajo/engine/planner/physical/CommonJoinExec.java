@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
@@ -59,6 +60,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
   protected final Schema rightSchema;
 
   protected final FrameTuple frameTuple;
+  protected final boolean directMemory;
 
   // projection
   protected Projector projector;
@@ -82,6 +84,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
 
     // for join
     this.frameTuple = new FrameTuple();
+    this.directMemory = context.getQueryContext().getBool(SessionVars.EXECUTOR_DIRECT_MEMORY_ENABLE);
   }
 
   /**

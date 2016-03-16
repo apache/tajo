@@ -21,6 +21,7 @@ package org.apache.tajo.datum;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.util.MurmurHash3_32;
 
 import java.util.Arrays;
 
@@ -49,12 +50,12 @@ public class CharDatum extends Datum {
   }
 
   public CharDatum(String val) {
-    this(val.getBytes());
+    this(val.getBytes(TextDatum.DEFAULT_CHARSET));
   }
 
   private String getString() {
     if (chars == null) {
-      chars = new String(bytes);
+      chars = new String(bytes, TextDatum.DEFAULT_CHARSET);
     }
     return chars;
   }
@@ -115,11 +116,14 @@ public class CharDatum extends Datum {
   
   @Override
   public int hashCode() {
-    return getString().hashCode();
+    return MurmurHash3_32.hash(bytes);
   }
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof CharDatum) {
       CharDatum other = (CharDatum) obj;
       return this.size == other.size &&

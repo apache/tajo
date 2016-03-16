@@ -31,6 +31,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.memory.TupleList;
 import org.junit.Test;
 
 import java.util.*;
@@ -74,7 +75,7 @@ public class TestTupleSorter {
     long[] time1 = new long[ITERATION];
     long[] time2 = new long[ITERATION];
     for(int iteration = 0; iteration < ITERATION; iteration++) {
-      TupleList target = new TupleList(tuples.length);
+      TupleList target = new HeapTupleList(tuples.length);
       target.addAll(Arrays.asList(Arrays.copyOf(tuples, tuples.length)));
       Set<Integer> keys = new TreeSet<>();
       for (int i = 0; i < MAX_SORT_KEY; i++) {

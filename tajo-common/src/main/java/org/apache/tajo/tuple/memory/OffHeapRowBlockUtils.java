@@ -28,6 +28,7 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.util.UnsafeUtil;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -230,5 +231,35 @@ public class OffHeapRowBlockUtils {
 
   public static void convert(Tuple tuple, RowWriter writer) {
     tupleConverter.convert(tuple, writer);
+  }
+
+  public static boolean equals(long  ptr1, int length1, long ptr2, int length2) {
+    if (length1 != length2) {
+      return false;
+    }
+
+    final int longCount = length1 >>> 3;
+    final int byteCount = length1 & 7;
+
+    int aIndex = 0;
+    int bIndex = 0;
+
+    for (int i = longCount; i > 0; i --) {
+      if (UnsafeUtil.unsafe.getLong(ptr1) != UnsafeUtil.unsafe.getLong(ptr2)) {
+        return false;
+      }
+      ptr1 += 8;
+      ptr2 += 8;
+    }
+
+    for (int i = byteCount; i > 0; i --) {
+      if (UnsafeUtil.unsafe.getByte(ptr1) != UnsafeUtil.unsafe.getByte(ptr2)) {
+        return false;
+      }
+      ptr1 ++;
+      ptr2 ++;
+    }
+
+    return true;
   }
 }

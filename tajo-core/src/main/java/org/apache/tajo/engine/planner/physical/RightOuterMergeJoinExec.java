@@ -20,12 +20,15 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.memory.TupleList;
+import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -39,8 +42,8 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
   private Tuple nextLeft = null;
   private Tuple nullPaddedTuple;
 
-  private TupleList leftTupleSlots;
-  private TupleList innerTupleSlots;
+  private TupleList<? extends Tuple> leftTupleSlots;
+  private TupleList<? extends Tuple> innerTupleSlots;
 
   private JoinTupleComparator joinComparator = null;
   private TupleComparator [] tupleComparator = null;
@@ -60,8 +63,14 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         "but there is no join condition");
 
     final int INITIAL_TUPLE_SLOT = context.getQueryContext().getInt(SessionVars.JOIN_HASH_TABLE_SIZE);
-    this.leftTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
-    this.innerTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
+    if (directMemory) {
+      this.leftTupleSlots = new UnSafeTupleList(SchemaUtil.toDataTypes(outer.getSchema()), INITIAL_TUPLE_SLOT);
+      this.innerTupleSlots = new UnSafeTupleList(SchemaUtil.toDataTypes(inner.getSchema()), INITIAL_TUPLE_SLOT);
+    } else {
+      this.leftTupleSlots = new HeapTupleList(INITIAL_TUPLE_SLOT);
+      this.innerTupleSlots = new HeapTupleList(INITIAL_TUPLE_SLOT);
+    }
+
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = outerSortKey;
     sortSpecs[1] = innerSortKey;
@@ -221,7 +230,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
             prevLeftTuple.put(leftTuple.getValues());
           }
           do {
-            leftTupleSlots.add(leftTuple);
+            leftTupleSlots.addTuple(leftTuple);
             leftTuple = leftChild.next();
             if( leftTuple == null) {
               endOuter = true;
@@ -235,7 +244,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
             prevRightTuple.put(rightTuple.getValues());
           }
           do {
-            innerTupleSlots.add(rightTuple);
+            innerTupleSlots.addTuple(rightTuple);
             rightTuple = rightChild.next();
             if(rightTuple == null) {
               endInner = true;
@@ -330,8 +339,8 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
   @Override
   public void close() throws IOException {
     super.close();
-    leftTupleSlots.clear();
-    innerTupleSlots.clear();
+    leftTupleSlots.release();
+    innerTupleSlots.release();
     leftTupleSlots = null;
     innerTupleSlots = null;
   }

@@ -26,6 +26,7 @@
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
+<%@ page import="org.apache.tajo.storage.BufferPool" %>
 
 <%
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -47,9 +48,8 @@
   <h2>Tajo Worker: <%=tajoWorker.getWorkerContext().getWorkerName()%></h2>
   <hr/>
   <table border=0>
-    <tr><td width='100'>MaxHeap: </td><td><%=Runtime.getRuntime().maxMemory()/1024/1024%> MB</td>
-    <tr><td width='100'>TotalHeap: </td><td><%=Runtime.getRuntime().totalMemory()/1024/1024%> MB</td>
-    <tr><td width='100'>FreeHeap: </td><td><%=Runtime.getRuntime().freeMemory()/1024/1024%> MB</td>
+    <tr><td width='100'>Heap memory: </td><td><%= BufferPool.printHeapMemoryUsage() %></td>
+    <tr><td width='100'>Direct memory: </td><td><%= BufferPool.printDirectMemoryUsage() %></td>
     <tr><td width='100'>Available Resource: </td><td><%= tajoWorker.getWorkerContext().getNodeResourceManager().getAvailableResource() %></td>
     <tr><td width='100'>Running Tasks: </td><td><%= tajoWorker.getWorkerContext().getTaskManager().getRunningTasks() %></td>
     <tr><td width="100">Configuration:</td><td><a href='conf.jsp'>detail...</a></td></tr>
