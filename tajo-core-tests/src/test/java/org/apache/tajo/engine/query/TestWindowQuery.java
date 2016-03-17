@@ -204,10 +204,10 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @Option(sort = true)
+  @SimpleTest()
   public final void testWindowWithAggregation4() throws Exception {
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    runSimpleTests();
   }
 
   @Test
