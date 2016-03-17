@@ -47,8 +47,8 @@ public class PlanGsonHelper {
   private PlanGsonHelper() {
   }
 	
-	public static Map<Type, GsonSerDerAdapter> registerAdapters() {
-    Map<Type, GsonSerDerAdapter> adapters = new HashMap<>();
+	public static Map<Type, GsonSerDerAdapter<?>> registerAdapters() {
+    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
     adapters.put(Path.class, new PathSerializer());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(LogicalNode.class, new LogicalNodeAdapter());

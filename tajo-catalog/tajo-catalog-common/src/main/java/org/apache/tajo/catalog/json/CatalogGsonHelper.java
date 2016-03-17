@@ -23,9 +23,9 @@ import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.function.Function;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.json.*;
 
 import java.lang.reflect.Type;
@@ -39,8 +39,8 @@ public class CatalogGsonHelper {
   private CatalogGsonHelper() {
   }
 
-  private static Map<Type, GsonSerDerAdapter> registerAdapters() {
-    Map<Type, GsonSerDerAdapter> adapters = new HashMap<>();
+  private static Map<Type, GsonSerDerAdapter<?>> registerAdapters() {
+    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(Path.class, new PathSerializer());
     adapters.put(TableMeta.class, new TableMetaAdapter());

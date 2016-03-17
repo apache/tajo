@@ -37,8 +37,8 @@ public class CommonGsonHelper {
   private CommonGsonHelper() {
   }
 
-	private static Map<Type, GsonSerDerAdapter> registerAdapters() {
-    Map<Type, GsonSerDerAdapter> adapters = new HashMap<>();
+	private static Map<Type, GsonSerDerAdapter<?>> registerAdapters() {
+    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
     adapters.put(Datum.class, new DatumAdapter());
 
     return adapters;
