@@ -398,9 +398,8 @@ public class TestStorages {
     schema.addColumn("col8", Type.TEXT);
     schema.addColumn("col9", Type.BLOB);
     schema.addColumn("col10", Type.INET4);
-    schema.addColumn("col11", Type.NULL_TYPE);
     if (handleProtobuf) {
-      schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schema.addColumn("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
 
     KeyValueSet options = new KeyValueSet();
@@ -419,7 +418,7 @@ public class TestStorages {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    VTuple tuple = new VTuple(11 + (handleProtobuf ? 1 : 0));
+    VTuple tuple = new VTuple(10 + (handleProtobuf ? 1 : 0));
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createChar("hyunsik"),
@@ -431,11 +430,10 @@ public class TestStorages {
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get()
     });
 
     if (handleProtobuf) {
-      tuple.put(11, factory.createDatum(queryid.getProto()));
+      tuple.put(10, factory.createDatum(queryid.getProto()));
     }
 
     appender.addTuple(tuple);
@@ -675,14 +673,13 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL_TYPE);
-    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     meta.putProperty(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
-    Path tablePath = new Path(testDir, "testVariousTypes.data");
+    Path tablePath = new Path(testDir, "testRCFileTextSerializeDeserialize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
@@ -703,7 +700,6 @@ public class TestStorages {
         DatumFactory.createText("jinho"),
         DatumFactory.createBlob("hyunsik babo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
         factory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
@@ -744,14 +740,13 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL_TYPE);
-    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     meta.putProperty(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
-    Path tablePath = new Path(testDir, "testVariousTypes.data");
+    Path tablePath = new Path(testDir, "testRCFileBinarySerializeDeserialize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
@@ -772,7 +767,6 @@ public class TestStorages {
         DatumFactory.createText("jinho"),
         DatumFactory.createBlob("hyunsik babo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
         factory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
@@ -813,14 +807,13 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL_TYPE);
-    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
     meta.putProperty(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
-    Path tablePath = new Path(testDir, "testVariousTypes.data");
+    Path tablePath = new Path(testDir, "testSequenceFileTextSerializeDeserialize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
     Appender appender = sm.getAppender(meta, schema, tablePath);
     appender.enableStats();
@@ -840,7 +833,6 @@ public class TestStorages {
         DatumFactory.createText("jinho"),
         DatumFactory.createBlob("hyunsik babo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
         ProtobufDatumFactory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
@@ -885,8 +877,7 @@ public class TestStorages {
     schema.addColumn("col9", Type.TEXT);
     schema.addColumn("col10", Type.BLOB);
     schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL_TYPE);
-    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -900,8 +891,7 @@ public class TestStorages {
 
     QueryId queryid = new QueryId("12345", 5);
 
-    VTuple tuple = new VTuple(13);
-    tuple.put(new Datum[] {
+    VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
@@ -913,7 +903,6 @@ public class TestStorages {
         DatumFactory.createText("jinho"),
         DatumFactory.createBlob("hyunsik babo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
         ProtobufDatumFactory.createDatum(queryid.getProto())
     });
     appender.addTuple(tuple);
