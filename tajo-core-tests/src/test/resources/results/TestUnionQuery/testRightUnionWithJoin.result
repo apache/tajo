@@ -1,0 +1,10 @@
+id,c_name,code
+-------------------------------
+1,Customer#000000001,lineitem
+1,Customer#000000001,lineitem
+1,Customer#000000001,order
+2,Customer#000000002,lineitem
+2,Customer#000000002,order
+3,Customer#000000003,lineitem
+3,Customer#000000003,lineitem
+3,Customer#000000003,order

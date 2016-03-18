@@ -21,6 +21,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
@@ -126,9 +127,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select regexp_replace('abcdef','bc','--') as col1 ", new String[]{"a--def"});
 
     // null test
-    testSimpleEval("select regexp_replace(null, 'bc', '--') as col1 ", new String[]{""});
-    testSimpleEval("select regexp_replace('abcdef', null, '--') as col1 ", new String[]{""});
-    testSimpleEval("select regexp_replace('abcdef','bc', null) as col1 ", new String[]{""});
+    testSimpleEval("select regexp_replace(null, 'bc', '--') as col1 ", new String[]{NullDatum.get().toString()});
+    testSimpleEval("select regexp_replace('abcdef', null, '--') as col1 ", new String[]{NullDatum.get().toString()});
+    testSimpleEval("select regexp_replace('abcdef','bc', null) as col1 ", new String[]{NullDatum.get().toString()});
 
     Schema schema = new Schema();
     schema.addColumn("col1", TEXT);
@@ -141,9 +142,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
     // null test from a table
     testEval(schema, "table1", ",(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
-        new String[]{""});
+        new String[]{NullDatum.get().toString()});
     testEval(schema, "table1", "------,(^--|--$),", "select regexp_replace(col1, col2, col3) as str from table1",
-        new String[]{""});
+        new String[]{NullDatum.get().toString()});
   }
 
   @Test
@@ -305,7 +306,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
       new String[]{"59ff99b0e274eb3d8e10f221b6b949bfc1244d2a1226c5c720062fb03d82272be633e4a0f2babccffbfdff7cc1cb06fb"});
     testSimpleEval("select digest('tajo', 'sha512') as col1 ", 
       new String[]{"ee8ba254d331ddfb1bca9aaf0c4b8c58aea5331928cbd20168c87828afb853b0c096af71ec69a23b669217a1dddd2934edaac33b1296fe526b22abd28a15c4b3"});
-    testSimpleEval("select digest('tajo', 'not') as col1 ", new String[]{""});
+    testSimpleEval("select digest('tajo', 'not') as col1 ", new String[]{NullDatum.get().toString()});
   }
 
   @Test
