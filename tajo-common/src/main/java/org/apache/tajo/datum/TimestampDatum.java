@@ -125,7 +125,7 @@ public class TimestampDatum extends Datum {
 
   /**
    *
-   * @param tm TimeMEta
+   * @param tm TimeMeta
    * @param timeZone Timezone
    * @param includeTimeZone Add timezone if it is true. It is usually used for TIMEZONEZ
    * @return A timestamp string

@@ -45,6 +45,7 @@ import org.apache.hadoop.hive.serde2.typeinfo.CharTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.DecimalTypeInfo;
 import org.apache.hadoop.hive.serde2.typeinfo.VarcharTypeInfo;
 import org.apache.hadoop.io.Text;
+import org.apache.tajo.unit.TimeUnit;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.IOException;
@@ -1467,7 +1468,6 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     }
   }
 
-  static final int MILLIS_PER_SECOND = 1000;
   static final String BASE_TIMESTAMP_STRING = "2015-01-01 00:00:00";
 
   private static class TimestampTreeWriter extends TreeWriter {
@@ -1489,7 +1489,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
           OrcProto.Stream.Kind.SECONDARY), false, isDirectV2, writer);
       recordPosition(rowIndexPosition);
       // for unit tests to set different time zones
-      this.base_timestamp = Timestamp.valueOf(BASE_TIMESTAMP_STRING).getTime() / MILLIS_PER_SECOND;
+      this.base_timestamp = Timestamp.valueOf(BASE_TIMESTAMP_STRING).getTime() / TimeUnit.MILLIS_PER_SECOND;
       writer.useWriterTimeZone(true);
       timeZone = writer.getTimeZone();
     }
@@ -1515,7 +1515,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
 
         Timestamp val = new Timestamp(javaTimestamp);
         indexStatistics.updateTimestamp(val);
-        seconds.write((val.getTime() / MILLIS_PER_SECOND) - base_timestamp);
+        seconds.write((val.getTime() / TimeUnit.MILLIS_PER_SECOND) - base_timestamp);
         nanos.write(formatNanos(val.getNanos()));
         if (createBloomFilter) {
           bloomFilter.addLong(val.getTime());

@@ -78,6 +78,7 @@ public class TestHiveCatalogStore {
     conf.set(HiveConf.ConfVars.METASTOREWAREHOUSE.varname, warehousePath.toUri().toString());
     conf.set(HiveConf.ConfVars.METASTORECONNECTURLKEY.varname, jdbcUri);
     conf.set(TajoConf.ConfVars.WAREHOUSE_DIR.varname, warehousePath.toUri().toString());
+    conf.setBoolean("datanucleus.schema.autoCreateAll", true); // TODO: check this is valid
 
     // create local HiveCatalogStore.
     TajoConf tajoConf = new TajoConf(conf);

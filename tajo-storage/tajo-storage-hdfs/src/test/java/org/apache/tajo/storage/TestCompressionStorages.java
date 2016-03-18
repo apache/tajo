@@ -38,6 +38,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.storage.text.DelimitedTextFile;
+import org.apache.tajo.storage.thirdparty.orc.OrcFile.OrcTableProperties;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -61,6 +62,7 @@ public class TestCompressionStorages {
   public TestCompressionStorages(String type) throws IOException {
     this.dataFormat = type;
     conf = new TajoConf();
+    conf.setBoolean("hive.exec.orc.zerocopy", true);
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
@@ -71,7 +73,8 @@ public class TestCompressionStorages {
     return Arrays.asList(new Object[][]{
         {BuiltinStorages.TEXT},
         {BuiltinStorages.RCFILE},
-        {BuiltinStorages.SEQUENCE_FILE}
+        {BuiltinStorages.SEQUENCE_FILE},
+        {BuiltinStorages.ORC}
     });
   }
 
@@ -119,6 +122,14 @@ public class TestCompressionStorages {
     meta.putProperty("compression.type", SequenceFile.CompressionType.BLOCK.name());
     meta.putProperty("rcfile.serde", TextSerializerDeserializer.class.getName());
     meta.putProperty("sequencefile.serde", TextSerializerDeserializer.class.getName());
+
+    if (codec.equals(SnappyCodec.class)) {
+      meta.putProperty(OrcTableProperties.COMPRESSION.name(), "SNAPPY");
+    } else if (codec.equals(Lz4Codec.class)) {
+      meta.putProperty(OrcTableProperties.COMPRESSION.name(), "ZLIB");
+    } else {
+      meta.putProperty(OrcTableProperties.COMPRESSION.name(), "NONE");
+    }
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);

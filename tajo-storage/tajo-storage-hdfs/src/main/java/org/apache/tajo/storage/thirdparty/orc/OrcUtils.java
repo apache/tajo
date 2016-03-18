@@ -21,6 +21,10 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
+import org.apache.orc.*;
+import org.apache.orc.CompressionCodec;
+import org.apache.orc.impl.*;
+import org.apache.orc.impl.SnappyCodec;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -198,4 +202,35 @@ public class OrcUtils {
     return numWriters;
   }
 
+  public static org.apache.orc.CompressionCodec createCodec(org.apache.orc.CompressionKind kind) {
+    switch (kind) {
+      case NONE:
+        return null;
+      case ZLIB:
+        return new org.apache.orc.impl.ZlibCodec();
+      case SNAPPY:
+        return new SnappyCodec();
+      case LZO:
+        try {
+          ClassLoader loader = Thread.currentThread().getContextClassLoader();
+          if (loader == null) {
+            throw new RuntimeException("error while getting a class loader");
+          }
+          @SuppressWarnings("unchecked")
+          Class<? extends org.apache.orc.CompressionCodec> lzo =
+              (Class<? extends CompressionCodec>)
+                  loader.loadClass("org.apache.hadoop.hive.ql.io.orc.LzoCodec");
+          return lzo.newInstance();
+        } catch (ClassNotFoundException e) {
+          throw new IllegalArgumentException("LZO is not available.", e);
+        } catch (InstantiationException e) {
+          throw new IllegalArgumentException("Problem initializing LZO", e);
+        } catch (IllegalAccessException e) {
+          throw new IllegalArgumentException("Insufficient access to LZO", e);
+        }
+      default:
+        throw new IllegalArgumentException("Unknown compression codec: " +
+            kind);
+    }
+  }
 }

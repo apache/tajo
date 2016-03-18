@@ -44,6 +44,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.IsNullPredicate;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;

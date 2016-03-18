@@ -52,7 +52,7 @@ public final class OrcFile {
    */
   public static enum Version {
     V_0_11("0.11", 0, 11),
-      V_0_12("0.12", 0, 12);
+    V_0_12("0.12", 0, 12);
 
     public static final Version CURRENT = V_0_12;
 

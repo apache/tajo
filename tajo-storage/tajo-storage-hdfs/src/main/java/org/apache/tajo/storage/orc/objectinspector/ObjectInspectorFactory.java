@@ -83,7 +83,7 @@ public class ObjectInspectorFactory {
         break;
 
       default:
-        throw new UnsupportedException(dataType.name()+" is not supported yet in OrcAppender");
+        throw new UnsupportedException(dataType.name()+" is not supported yet in ORCAppender");
     }
 
     return oi;

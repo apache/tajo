@@ -26,4 +26,6 @@ public class TimeUnit {
 	public static final int DAY = HOUR * 24;
 	
 	public static final int PART_UNIT = 5*TimeUnit.MIN;
+
+	public static final int MILLIS_PER_SECOND = 1000;
 }
