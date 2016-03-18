@@ -1285,7 +1285,7 @@ public class TestLogicalPlanner {
     "ALTER TABLE partitioned_table DROP PARTITION (col1 = '2015' , col2 = '01', col3 = '11' )", //1
   };
 
-  // TODO: This should be added at TAJO-1891
+  @Test
   public final void testAddPartitionAndDropPartition() throws TajoException {
     String tableName = CatalogUtil.normalizeIdentifier("partitioned_table");
     String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);
