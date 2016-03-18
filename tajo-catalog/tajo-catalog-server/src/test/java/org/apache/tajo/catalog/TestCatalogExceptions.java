@@ -171,7 +171,7 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
-  @Test
+  @Test(expected = DuplicatePartitionException.class)
   public void testAddDuplicatePartition() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
@@ -194,7 +194,7 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
-  @Test
+  @Test(expected = UndefinedTableException.class)
   public void testAddPartitionToUndefinedTable() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
