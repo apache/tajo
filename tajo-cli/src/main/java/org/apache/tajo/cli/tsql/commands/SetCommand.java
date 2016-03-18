@@ -18,6 +18,9 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.exception.NoSuchSessionVariableException;
@@ -129,5 +132,13 @@ public class SetCommand extends TajoShellCommand {
     } else {
       return clazz.getSimpleName();
     }
+  }
+
+  @Override
+  public ArgumentCompleter getArgumentCompleter() {
+    return new ArgumentCompleter(
+        new StringsCompleter(getCommand()),
+        new SessionVarCompleter(),
+        NullCompleter.INSTANCE);
   }
 }
