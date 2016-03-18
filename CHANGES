@@ -24,6 +24,9 @@ Release 0.11.2 - unreleased
 
   BUG FIXES
 
+    TAJO-2092: TestStorages.testNullHandlingTypesWithProjection occasionally fail.
+    (jinho)
+
     TAJO-2095: HiveCatalogStore::existIndexesByTable should not throw 
     UnsupportedOperationException. (hyunsik)
 
