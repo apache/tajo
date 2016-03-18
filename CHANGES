@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2064: Supporting auto-completion in Tsql. (Jongyoung Park via jaehwa)
+
     TAJO-2043: Implement new data type and schema. (hyunsik)
 
     TAJO-2090: Bump up orc version to 0.141. (hyunsik)

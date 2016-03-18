@@ -18,9 +18,19 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.Completer;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.cli.tsql.TajoCli;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public abstract class TajoShellCommand {
   public abstract String getCommand();
@@ -125,5 +135,57 @@ public abstract class TajoShellCommand {
 
     println();
     return columnWidths;
+  }
+
+  public ArgumentCompleter getArgumentCompleter() {
+    List<String> cmds = new ArrayList<>(Arrays.asList(getAliases()));
+    cmds.add(getCommand());
+
+    return new ArgumentCompleter(new StringsCompleter(cmds.toArray(new String[cmds.size()])), NullCompleter.INSTANCE);
+  }
+
+  class SessionVarCompleter implements Completer {
+    @Override
+    public int complete(String s, int i, List<CharSequence> list) {
+      return new StringsCompleter(client.getAllSessionVariables().keySet().toArray(new String[1]))
+          .complete(s, i, list);
+
+    }
+  }
+
+  class DbNameCompleter implements Completer {
+    @Override
+    public int complete(String s, int i, List<CharSequence> list) {
+      return new StringsCompleter(client.getAllDatabaseNames().toArray(new String[1]))
+          .complete(s, i, list);
+    }
+  }
+
+  class TableNameCompleter implements Completer {
+    @Override
+    public int complete(String s, int i, List<CharSequence> list) {
+      List<String> tableList = client.getTableList(client.getCurrentDatabase());
+
+      if (tableList.isEmpty()) {
+        return -1;
+      }
+
+      return new StringsCompleter(tableList.toArray(new String[1])).complete(s, i, list);
+    }
+  }
+
+  class FunctionNameCompleter implements Completer {
+    @Override
+    public int complete(String s, int i, List<CharSequence> list) {
+      List<CatalogProtos.FunctionDescProto> functionProtos = client.getFunctions("");
+      if (functionProtos.isEmpty()) {
+        return -1;
+      }
+
+      List<String> names = functionProtos.stream().map(
+          (proto) -> proto.getSignature().getName()).collect(Collectors.toList());
+
+      return new StringsCompleter(names.toArray(new String [1])).complete(s, i, list);
+    }
   }
 }

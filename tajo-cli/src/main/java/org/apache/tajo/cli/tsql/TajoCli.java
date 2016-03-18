@@ -18,12 +18,16 @@
 
 package org.apache.tajo.cli.tsql;
 
-import com.google.common.collect.Maps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Maps;
 import com.google.protobuf.ServiceException;
 import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
+import jline.console.completer.AggregateCompleter;
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.Completer;
+import jline.console.completer.StringsCompleter;
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
@@ -39,6 +43,7 @@ import org.apache.tajo.exception.ExceptionUtil;
 import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.parser.sql.SQLLexer;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -50,6 +55,8 @@ import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TajoCli implements Closeable {
   public static final int SHUTDOWN_HOOK_PRIORITY = 50;
@@ -92,6 +99,10 @@ public class TajoCli implements Closeable {
       TajoGetConfCommand.class,
       TajoHAAdminCommand.class
   };
+
+  private AggregateCompleter cliCompleter;
+  private ArgumentCompleter sqlCompleter;
+
   private final Map<String, TajoShellCommand> commands = new TreeMap<>();
 
   protected static final Options options;
@@ -256,6 +267,9 @@ public class TajoCli implements Closeable {
       initHistory();
       initCommands();
 
+      reader.addCompleter(cliCompleter);
+      reader.addCompleter(sqlCompleter);
+
       if (cmd.getOptionValues("conf") != null) {
         processSessionVarCommand(cmd.getOptionValues("conf"));
       }
@@ -365,8 +379,10 @@ public class TajoCli implements Closeable {
   }
 
   private void initCommands() {
+    List<Completer> compList = new ArrayList<>();
     for (Class clazz : registeredCommands) {
       TajoShellCommand cmd = null;
+
       try {
          Constructor cons = clazz.getConstructor(new Class[] {TajoCliContext.class});
          cmd = (TajoShellCommand) cons.newInstance(context);
@@ -374,11 +390,51 @@ public class TajoCli implements Closeable {
         System.err.println(e.getMessage());
         throw new RuntimeException(e.getMessage());
       }
+
+      // make completers for console auto-completion
+      compList.add(cmd.getArgumentCompleter());
+
       commands.put(cmd.getCommand(), cmd);
       for (String alias : cmd.getAliases()) {
         commands.put(alias, cmd);
       }
     }
+
+    cliCompleter = new AggregateCompleter(compList);
+
+    sqlCompleter = new ArgumentCompleter(
+        new ArgumentCompleter.AbstractArgumentDelimiter() {
+          @Override
+          public boolean isDelimiterChar(CharSequence buf, int pos) {
+            char c = buf.charAt(pos);
+            return Character.isWhitespace(c) || !(Character.isLetterOrDigit(c)) && c != '_';
+          }
+        },
+        new StringsCompleter(getKeywords())
+    );
+  }
+
+  private Collection<String> getKeywords() {
+    // SQL reserved keywords
+    Stream<String> tokens = Arrays.stream(SQLLexer.tokenNames);
+    Stream<String> rules = Arrays.stream(SQLLexer.ruleNames);
+
+    List<String> keywords = Stream.concat(tokens, rules)
+        .filter((str) -> str.matches("[A-Z_]+") && str.length() > 1)
+        .distinct()
+        .map(String::toLowerCase)
+        .collect(Collectors.toList());
+
+    // DB and table names
+    for (String db: client.getAllDatabaseNames()) {
+      keywords.add(db);
+      keywords.addAll(client.getTableList(db));
+    }
+
+    tokens.close();
+    rules.close();
+
+    return keywords;
   }
 
   private void addShutdownHook() {
