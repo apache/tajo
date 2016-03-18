@@ -18,10 +18,16 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.util.VersionInfo;
 
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class HelpCommand extends TajoShellCommand {
   private String targetDocVersion = "";
@@ -129,5 +135,17 @@ public class HelpCommand extends TajoShellCommand {
   @Override
   public String getDescription() {
     return "show command lists and their usages";
+  }
+
+  @Override
+  public ArgumentCompleter getArgumentCompleter() {
+    List<String> cmds = new ArrayList<>(Arrays.asList(getAliases()));
+    cmds.add(getCommand());
+
+    return new ArgumentCompleter(
+        new StringsCompleter(cmds.toArray(new String[cmds.size()])),
+        new StringsCompleter("copyright", "version", "?", "help", "q", "l", "c", "d", "df", "!", "dfs", "admin",
+            "set", "unset", "haadmin", "getconf"), // same order as help string
+        NullCompleter.INSTANCE);
   }
 }
