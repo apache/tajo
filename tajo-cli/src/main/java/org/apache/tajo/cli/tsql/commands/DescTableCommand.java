@@ -18,6 +18,9 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.TajoConstants;
@@ -155,5 +158,13 @@ public class DescTableCommand extends TajoShellCommand {
     }
 
     return sb.toString();
+  }
+
+  @Override
+  public ArgumentCompleter getArgumentCompleter() {
+    return new ArgumentCompleter(
+        new StringsCompleter(getCommand()),
+        new TableNameCompleter(),
+        NullCompleter.INSTANCE);
   }
 }
