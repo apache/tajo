@@ -60,7 +60,8 @@ enum Type {
   BLOB = 45;
 
   RECORD = 51; // nested structure type
-  MAP    = 52; // map type
+  ARRAY  = 52; // array type
+  MAP    = 53; // map type
 
   ANY = 61; // Any type
   UDT = 62; // user-defined function
