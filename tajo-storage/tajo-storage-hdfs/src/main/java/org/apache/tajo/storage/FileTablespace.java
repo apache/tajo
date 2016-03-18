@@ -800,7 +800,6 @@ public class FileTablespace extends Tablespace {
     if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()) {
       finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
       boolean checkExistingPartition = queryContext.getBool(SessionVars.PARTITION_NO_RESULT_OVERWRITE_ENABLED);
-
       try {
         if (queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) { // INSERT OVERWRITE INTO
           if (partitions != null) {
