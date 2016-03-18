@@ -21,6 +21,7 @@ package org.apache.tajo.querymaster;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -33,6 +34,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.engine.query.TaskRequestImpl;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.QueryCoordinatorProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -53,9 +55,11 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
 
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -166,6 +170,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
   protected void info(Log log, String message) {
     log.info(String.format("[%s] %s", stage.getId(), message));
+  }
+
+  protected void warn(Log log, String message) {
+    log.warn(String.format("[%s] %s", stage.getId(), message));
   }
 
   private Fragment[] fragmentsForNonLeafTask;
@@ -596,7 +604,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
   }
 
-  public void cancel(TaskAttempt taskAttempt) {
+  protected void cancel(TaskAttempt taskAttempt) {
 
     TaskAttemptToSchedulerEvent schedulerEvent = new TaskAttemptToSchedulerEvent(
         EventType.T_SCHEDULE, taskAttempt.getTask().getId().getExecutionBlockId(),
@@ -612,6 +620,16 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
     context.getMasterContext().getEventHandler().handle(
         new TaskAttemptEvent(taskAttempt.getId(), TaskAttemptEventType.TA_ASSIGN_CANCEL));
+  }
+
+  protected int cancel(List<TaskAllocationProto> tasks) {
+    int canceled = 0;
+    for (TaskAllocationProto proto : tasks) {
+      TaskAttemptId attemptId = new TaskAttemptId(proto.getTaskRequest().getId());
+      cancel(stage.getTask(attemptId.getTaskId()).getAttempt(attemptId));
+      canceled++;
+    }
+    return canceled;
   }
 
   private class ScheduledRequests {
@@ -899,17 +917,20 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             BatchAllocationResponse responseProto = callFuture.get();
 
             if (responseProto.getCancellationTaskCount() > 0) {
-              for (TaskAllocationProto proto : responseProto.getCancellationTaskList()) {
-                cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
-                cancellation++;
-              }
-
+              cancellation += cancel(responseProto.getCancellationTaskList());
               info(LOG, "Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
               continue;
             }
+          } catch (ExecutionException | ConnectException e) {
+            cancellation += cancel(requestProto.getTaskRequestList());
+
+            warn(LOG, "Canceled requests: " + requestProto.getTaskRequestCount()
+                + " by " + ExceptionUtils.getFullStackTrace(e));
+            continue;
           } catch (Exception e) {
-            LOG.error(e);
+            throw new TajoInternalError(e);
           }
+
           scheduledObjectNum--;
           totalAssigned++;
           hostLocalAssigned += localAssign;
@@ -1009,26 +1030,29 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           try {
             tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true,
                 rpcParams);
+
             TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
             tajoWorkerRpcClient.allocateTasks(callFuture.getController(), requestProto.build(), callFuture);
 
             BatchAllocationResponse responseProto = callFuture.get();
 
             if(responseProto.getCancellationTaskCount() > 0) {
-              for (TaskAllocationProto proto : responseProto.getCancellationTaskList()) {
-                cancel(task.getAttempt(new TaskAttemptId(proto.getTaskRequest().getId())));
-                cancellation++;
-              }
-
+              cancellation += cancel(responseProto.getCancellationTaskList());
               info(LOG, "Canceled requests: " + responseProto.getCancellationTaskCount() + " from " +  addr);
               continue;
             }
 
-            totalAssigned++;
-            scheduledObjectNum--;
+          } catch (ExecutionException | ConnectException e) {
+            cancellation += cancel(requestProto.getTaskRequestList());
+            warn(LOG, "Canceled requests: " + requestProto.getTaskRequestCount()
+                + " by " + ExceptionUtils.getFullStackTrace(e));
+            continue;
           } catch (Exception e) {
-            LOG.error(e);
+            throw new TajoInternalError(e);
           }
+
+          totalAssigned++;
+          scheduledObjectNum--;
         }
       }
     }

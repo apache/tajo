@@ -24,6 +24,9 @@ Release 0.11.2 - unreleased
 
   BUG FIXES
 
+    TAJO-2100: Add missing cancellation in defaultTaskScheduler when a worker is 
+    no respond. (jinho)
+
     TAJO-2092: TestStorages.testNullHandlingTypesWithProjection occasionally fail.
     (jinho)
 
