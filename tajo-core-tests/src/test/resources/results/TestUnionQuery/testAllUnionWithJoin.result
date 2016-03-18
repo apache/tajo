@@ -1,0 +1,18 @@
+id,code,name,code2
+-------------------------------
+1,lineitem,Customer#000000001,customer
+1,lineitem,Customer#000000001,customer
+1,lineitem,goldenrod lavender spring chocolate lace,part
+1,lineitem,goldenrod lavender spring chocolate lace,part
+1,order,Customer#000000001,customer
+1,order,goldenrod lavender spring chocolate lace,part
+2,lineitem,Customer#000000002,customer
+2,lineitem,blush thistle blue yellow saddle,part
+2,order,Customer#000000002,customer
+2,order,blush thistle blue yellow saddle,part
+3,lineitem,Customer#000000003,customer
+3,lineitem,Customer#000000003,customer
+3,lineitem,spring green yellow purple cornsilk,part
+3,lineitem,spring green yellow purple cornsilk,part
+3,order,Customer#000000003,customer
+3,order,spring green yellow purple cornsilk,part
