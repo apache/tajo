@@ -1112,76 +1112,62 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public final void addFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final void deleteFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final void existFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final List<String> getAllFunctionNames() {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void createIndex(CatalogProtos.IndexDescProto proto) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void dropIndex(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public CatalogProtos.IndexDescProto getIndexByName(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) {
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public boolean existIndexByName(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
-  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) {
+    return false;
   }
 
   @Override
   public List<String> getAllIndexNamesByTable(String databaseName, String tableName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return Collections.EMPTY_LIST;
   }
 
   @Override
   public boolean existIndexesByTable(String databaseName, String tableName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
@@ -1220,22 +1206,22 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<ColumnProto> getAllColumns() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<DatabaseProto> getAllDatabases() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<IndexDescProto> getAllIndexes() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TablePartitionProto> getAllPartitions() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -1288,17 +1274,17 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<TableOptionProto> getAllTableProperties() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TableStatsProto> getAllTableStats() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TableDescriptorProto> getAllTables() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
