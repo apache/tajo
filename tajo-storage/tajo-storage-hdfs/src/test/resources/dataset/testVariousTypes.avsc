@@ -13,8 +13,7 @@
     { "name": "col8", "type": "string" },
     { "name": "col9", "type": "bytes" },
     { "name": "col10", "type": "bytes" },
-    { "name": "col11", "type": "null" },
-    { "name": "col12", "type": "bytes" }
+    { "name": "col11", "type": "bytes" }
   ]
 }
 
