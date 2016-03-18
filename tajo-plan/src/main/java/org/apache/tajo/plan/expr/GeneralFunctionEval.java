@@ -23,6 +23,7 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.function.FunctionInvoke;
 import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
@@ -57,7 +58,12 @@ public class GeneralFunctionEval extends FunctionEval {
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
-    return funcInvoke.eval(evalParams(tuple));
+    Datum datum = funcInvoke.eval(evalParams(tuple));
+    if (datum == null) {
+      return NullDatum.get();
+    } else {
+      return datum;
+    }
   }
 
 	@Override
