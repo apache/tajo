@@ -19,6 +19,9 @@
 package org.apache.tajo.cli.tsql.commands;
 
 import com.google.common.collect.Lists;
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.tajo.cli.tsql.TajoCli;
 
 public class UnsetCommand extends TajoShellCommand {
@@ -49,5 +52,13 @@ public class UnsetCommand extends TajoShellCommand {
   @Override
   public String getDescription() {
     return "unset a session variable";
+  }
+
+  @Override
+  public ArgumentCompleter getArgumentCompleter() {
+    return new ArgumentCompleter(
+        new StringsCompleter(getCommand()),
+        new SessionVarCompleter(),
+        NullCompleter.INSTANCE);
   }
 }

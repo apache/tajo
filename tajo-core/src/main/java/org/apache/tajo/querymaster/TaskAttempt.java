@@ -321,6 +321,7 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
       }
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
       taskAttempt.workerConnectionInfo = castEvent.getWorkerConnectionInfo();
+      taskAttempt.getTask().setLaunchTime(System.currentTimeMillis());
       taskAttempt.eventHandler.handle(
           new TaskTAttemptEvent(taskAttempt.getId(),
               TaskEventType.T_ATTEMPT_LAUNCHED));
