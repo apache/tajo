@@ -26,8 +26,10 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.rules.ExpectedException;
 
 import java.net.InetSocketAddress;
 import java.sql.*;
@@ -38,6 +40,9 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestTajoJdbc extends QueryTestCaseBase {
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
   private static InetSocketAddress tajoMasterAddress;
 
   @BeforeClass
@@ -675,6 +680,74 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     } finally {
       if (statement != null) {
         statement.close();
+      }
+      if (conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testGetMoreResults() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+      DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    Statement stmt = null;
+    ResultSet res = null;
+    try {
+      stmt = conn.createStatement();
+
+      assertTrue(stmt.execute("SELECT 123456, 'tajo' y"));
+      ResultSet result = stmt.getResultSet();
+      assertNotNull(result);
+      assertFalse(result.isClosed());
+      stmt.getMoreResults();
+      assertTrue(result.isClosed());
+
+      assertTrue(stmt.execute("SELECT 123456, 'tajo' y"));
+      result = stmt.getResultSet();
+      assertNotNull(result);
+      assertFalse(result.isClosed());
+
+      assertTrue(stmt.execute("SELECT 123456, 'tajo' y"));
+      assertFalse(stmt.getMoreResults(Statement.CLOSE_CURRENT_RESULT));
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+      if (stmt != null) {
+        stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testGetMoreResultsException() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+      DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    exception.expect(SQLFeatureNotSupportedException.class);
+    exception.expectMessage("getMoreResults() is not supported yet.");
+
+    Statement stmt = null;
+    ResultSet res = null;
+    try {
+      stmt = conn.createStatement();
+      assertTrue(stmt.execute("SELECT 123456, 'tajo' y"));
+      stmt.getMoreResults(Statement.KEEP_CURRENT_RESULT);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+      if (stmt != null) {
+        stmt.close();
       }
       if (conn != null) {
         conn.close();
