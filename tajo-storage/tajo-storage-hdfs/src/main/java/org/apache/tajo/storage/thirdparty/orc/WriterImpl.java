@@ -870,7 +870,6 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
         boolean val = datum.asBool();
-        // TODO: validate the below line
         indexStatistics.updateBoolean(val, 1);
         writer.write(val ? 1 : 0);
       }

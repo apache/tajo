@@ -17,20 +17,17 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.hadoop.hive.serde2.typeinfo.*;
 import org.apache.orc.CompressionCodec;
 import org.apache.orc.TypeDescription;
-import org.apache.orc.TypeDescription.Category;
 import org.apache.orc.impl.SnappyCodec;
+import org.apache.orc.impl.ZlibCodec;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TypeDesc;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 
@@ -215,7 +212,7 @@ public class OrcUtils {
       case NONE:
         return null;
       case ZLIB:
-        return new org.apache.orc.impl.ZlibCodec();
+        return new ZlibCodec();
       case SNAPPY:
         return new SnappyCodec();
       case LZO:

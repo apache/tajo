@@ -242,8 +242,10 @@ public class OrcScanner extends FileScanner {
 
   private static Options buildReaderOptions(TableMeta meta) {
     return new Options()
-        .useZeroCopy(Boolean.parseBoolean(meta.getProperty(OrcConf.USE_ZEROCOPY.getAttribute(), String.valueOf(OrcConf.USE_ZEROCOPY.getDefaultValue()))))
-        .skipCorruptRecords(Boolean.parseBoolean(meta.getProperty(OrcConf.SKIP_CORRUPT_DATA.getAttribute(), String.valueOf(OrcConf.SKIP_CORRUPT_DATA.getDefaultValue()))));
+        .useZeroCopy(Boolean.parseBoolean(meta.getProperty(OrcConf.USE_ZEROCOPY.getAttribute(),
+            String.valueOf(OrcConf.USE_ZEROCOPY.getDefaultValue()))))
+        .skipCorruptRecords(Boolean.parseBoolean(meta.getProperty(OrcConf.SKIP_CORRUPT_DATA.getAttribute(),
+            String.valueOf(OrcConf.SKIP_CORRUPT_DATA.getDefaultValue()))));
   }
 
   @Override

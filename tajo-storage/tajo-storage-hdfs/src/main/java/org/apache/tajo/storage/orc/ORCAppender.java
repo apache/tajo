@@ -111,14 +111,22 @@ public class ORCAppender extends FileAppender {
     return OrcFile.writerOptions(conf)
         .setSchema(OrcUtils.convertSchema(schema))
         .compress(getCompressionKind(meta))
-        .stripeSize(Long.parseLong(meta.getProperty(OrcConf.STRIPE_SIZE.getAttribute(), String.valueOf(OrcConf.STRIPE_SIZE.getDefaultValue()))))
-        .blockSize(Long.parseLong(meta.getProperty(OrcConf.BLOCK_SIZE.getAttribute(), String.valueOf(OrcConf.BLOCK_SIZE.getDefaultValue()))))
-        .rowIndexStride(Integer.parseInt(meta.getProperty(OrcConf.ROW_INDEX_STRIDE.getAttribute(), String.valueOf(OrcConf.ROW_INDEX_STRIDE.getDefaultValue()))))
-        .bufferSize(Integer.parseInt(meta.getProperty(OrcConf.BUFFER_SIZE.getAttribute(), String.valueOf(OrcConf.BUFFER_SIZE.getDefaultValue()))))
-        .blockPadding(Boolean.parseBoolean(meta.getProperty(OrcConf.BLOCK_PADDING.getAttribute(), String.valueOf(OrcConf.BLOCK_PADDING.getDefaultValue()))))
-        .encodingStrategy(EncodingStrategy.valueOf(meta.getProperty(OrcConf.ENCODING_STRATEGY.getAttribute(), String.valueOf(OrcConf.ENCODING_STRATEGY.getDefaultValue()))))
-        .bloomFilterFpp(Double.parseDouble(meta.getProperty(OrcConf.BLOOM_FILTER_FPP.getAttribute(), String.valueOf(OrcConf.BLOOM_FILTER_FPP.getDefaultValue()))))
-        .bloomFilterColumns(meta.getProperty(OrcConf.BLOOM_FILTER_COLUMNS.getAttribute(), String.valueOf(OrcConf.BLOOM_FILTER_COLUMNS.getDefaultValue())));
+        .stripeSize(Long.parseLong(meta.getProperty(OrcConf.STRIPE_SIZE.getAttribute(),
+            String.valueOf(OrcConf.STRIPE_SIZE.getDefaultValue()))))
+        .blockSize(Long.parseLong(meta.getProperty(OrcConf.BLOCK_SIZE.getAttribute(),
+            String.valueOf(OrcConf.BLOCK_SIZE.getDefaultValue()))))
+        .rowIndexStride(Integer.parseInt(meta.getProperty(OrcConf.ROW_INDEX_STRIDE.getAttribute(),
+            String.valueOf(OrcConf.ROW_INDEX_STRIDE.getDefaultValue()))))
+        .bufferSize(Integer.parseInt(meta.getProperty(OrcConf.BUFFER_SIZE.getAttribute(),
+            String.valueOf(OrcConf.BUFFER_SIZE.getDefaultValue()))))
+        .blockPadding(Boolean.parseBoolean(meta.getProperty(OrcConf.BLOCK_PADDING.getAttribute(),
+            String.valueOf(OrcConf.BLOCK_PADDING.getDefaultValue()))))
+        .encodingStrategy(EncodingStrategy.valueOf(meta.getProperty(OrcConf.ENCODING_STRATEGY.getAttribute(),
+            String.valueOf(OrcConf.ENCODING_STRATEGY.getDefaultValue()))))
+        .bloomFilterFpp(Double.parseDouble(meta.getProperty(OrcConf.BLOOM_FILTER_FPP.getAttribute(),
+            String.valueOf(OrcConf.BLOOM_FILTER_FPP.getDefaultValue()))))
+        .bloomFilterColumns(meta.getProperty(OrcConf.BLOOM_FILTER_COLUMNS.getAttribute(),
+            String.valueOf(OrcConf.BLOOM_FILTER_COLUMNS.getDefaultValue())));
   }
 
   private static CompressionKind getCompressionKind(TableMeta meta) {
