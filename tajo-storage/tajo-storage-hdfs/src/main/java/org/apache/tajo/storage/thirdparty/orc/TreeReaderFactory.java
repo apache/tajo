@@ -39,6 +39,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.unit.TimeUnit;
+import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.EOFException;
@@ -889,7 +890,7 @@ public class TreeReaderFactory {
 
     // borrowed from Facebook's TimestampStreamReader
     private static long decodeTimestamp(long seconds, long serializedNanos, long baseTimestampInSeconds) {
-      long millis = (seconds + baseTimestampInSeconds) * TimeUnit.MILLIS_PER_SECOND;
+      long millis = (seconds + baseTimestampInSeconds) * DateTimeConstants.MSECS_PER_SEC;
       long nanos = parseNanos(serializedNanos);
 
       // the rounding error exists because java always rounds up when dividing integers

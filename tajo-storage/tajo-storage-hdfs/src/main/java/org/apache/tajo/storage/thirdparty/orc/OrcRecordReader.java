@@ -25,8 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.io.DiskRange;
 import org.apache.hadoop.hive.common.io.DiskRangeList;
-import org.apache.orc.CompressionCodec;
-import org.apache.orc.DataReader;
+import org.apache.orc.*;
 import org.apache.orc.OrcProto;
 import org.apache.orc.impl.*;
 import org.apache.orc.impl.StreamName;
@@ -51,7 +50,7 @@ public class OrcRecordReader implements Closeable {
 
   private final Path path;
   private final long firstRow;
-  private final List<OrcProto.StripeInformation> stripes = new ArrayList<>();
+  private final List<StripeInformation> stripes = new ArrayList<>();
   private OrcProto.StripeFooter stripeFooter;
   private final long totalRowCount;
   private final CompressionCodec codec;
@@ -69,12 +68,12 @@ public class OrcRecordReader implements Closeable {
   private final OrcProto.RowIndex[] indexes;
   private final OrcProto.BloomFilterIndex[] bloomFilterIndices;
   private final Configuration conf;
-  private final org.apache.tajo.storage.thirdparty.orc.MetadataReader metadata;
+  private final MetadataReader metadata;
   private final DataReader dataReader;
   private final Tuple result;
 
   public OrcRecordReader(TableMeta meta,
-                            List<OrcProto.StripeInformation> stripes,
+                            List<StripeInformation> stripes,
                             FileSystem fileSystem,
                             Schema schema,
                             Column[] target,
@@ -101,13 +100,13 @@ public class OrcRecordReader implements Closeable {
       included[i] = targetSchema.contains(schema.getColumn(i - 1));
     }
     this.rowIndexStride = strideRate;
-    this.metadata = new org.apache.tajo.storage.thirdparty.orc.MetadataReader(fileSystem, path, codec, bufferSize, types.size());
+    this.metadata = new MetadataReaderImpl(fileSystem, path, codec, bufferSize, types.size());
 
     long rows = 0;
     long skippedRows = 0;
     long offset = fragment.getStartKey();
     long maxOffset = fragment.getStartKey() + fragment.getLength();
-    for(OrcProto.StripeInformation stripe: stripes) {
+    for(StripeInformation stripe: stripes) {
       long stripeStart = stripe.getOffset();
       if (offset > stripeStart) {
         skippedRows += stripe.getNumberOfRows();
@@ -191,7 +190,7 @@ public class OrcRecordReader implements Closeable {
     }
   }
 
-  private void readPartialDataStreams(OrcProto.StripeInformation stripe) throws IOException {
+  private void readPartialDataStreams(StripeInformation stripe) throws IOException {
     List<OrcProto.Stream> streamList = stripeFooter.getStreamsList();
     DiskRangeList toRead = planReadPartialDataStreams(streamList, included, true);
     if (LOG.isDebugEnabled()) {
@@ -283,7 +282,7 @@ public class OrcRecordReader implements Closeable {
    * @throws IOException
    */
   private void readStripe() throws IOException {
-    OrcProto.StripeInformation stripe = beginReadStripe();
+    StripeInformation stripe = beginReadStripe();
 
     // if we haven't skipped the whole stripe, read the data
     if (rowInStripe < rowCountInStripe) {
@@ -323,12 +322,12 @@ public class OrcRecordReader implements Closeable {
     streams.clear();
   }
 
-  OrcProto.StripeFooter readStripeFooter(OrcProto.StripeInformation stripe) throws IOException {
+  OrcProto.StripeFooter readStripeFooter(StripeInformation stripe) throws IOException {
     return metadata.readStripeFooter(stripe);
   }
 
-  private OrcProto.StripeInformation beginReadStripe() throws IOException {
-    OrcProto.StripeInformation stripe = stripes.get(currentStripe);
+  private StripeInformation beginReadStripe() throws IOException {
+    StripeInformation stripe = stripes.get(currentStripe);
     stripeFooter = readStripeFooter(stripe);
     clearStreams();
     // setup the position in the stripe
@@ -345,7 +344,7 @@ public class OrcRecordReader implements Closeable {
     return stripe;
   }
 
-  private void readAllDataStreams(OrcProto.StripeInformation stripe) throws IOException {
+  private void readAllDataStreams(StripeInformation stripe) throws IOException {
     long start = stripe.getIndexLength();
     long end = start + stripe.getDataLength();
     // explicitly trigger 1 big read
@@ -365,7 +364,7 @@ public class OrcRecordReader implements Closeable {
 
   private int findStripe(long rowNumber) {
     for (int i = 0; i < stripes.size(); i++) {
-      OrcProto.StripeInformation stripe = stripes.get(i);
+      StripeInformation stripe = stripes.get(i);
       if (stripe.getNumberOfRows() > rowNumber) {
         return i;
       }
@@ -381,7 +380,7 @@ public class OrcRecordReader implements Closeable {
 
   OrcIndex readRowIndex(int stripeIndex, boolean[] included, OrcProto.RowIndex[] indexes,
                         OrcProto.BloomFilterIndex[] bloomFilterIndex) throws IOException {
-    OrcProto.StripeInformation stripe = stripes.get(stripeIndex);
+    StripeInformation stripe = stripes.get(stripeIndex);
     OrcProto.StripeFooter stripeFooter = null;
     // if this is the current stripe, use the cached objects.
     if (stripeIndex == currentStripe) {

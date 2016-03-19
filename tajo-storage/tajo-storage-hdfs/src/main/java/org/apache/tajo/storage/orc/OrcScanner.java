@@ -28,9 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.io.DiskRange;
 import org.apache.hadoop.io.Text;
-import org.apache.orc.CompressionCodec;
-import org.apache.orc.FileMetaInfo;
-import org.apache.orc.OrcProto;
+import org.apache.orc.*;
 import org.apache.orc.impl.BufferChunk;
 import org.apache.orc.impl.InStream;
 import org.apache.tajo.catalog.Schema;
@@ -39,12 +37,12 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.thirdparty.orc.OrcFile;
 import org.apache.tajo.storage.thirdparty.orc.OrcRecordReader;
 import org.apache.tajo.storage.thirdparty.orc.OrcUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OrcScanner extends FileScanner {
@@ -63,7 +61,7 @@ public class OrcScanner extends FileScanner {
   protected List<OrcProto.Type> types;
   private List<OrcProto.UserMetadataItem> userMetadata;
   private List<OrcProto.ColumnStatistics> fileStats;
-  private List<OrcProto.StripeInformation> stripes;
+  private List<StripeInformation> stripes;
   protected int rowIndexStride;
   private long contentLength, numberOfRows;
 
@@ -264,7 +262,7 @@ public class OrcScanner extends FileScanner {
     this.userMetadata = rInfo.footer.getMetadataList();
     this.fileStats = rInfo.footer.getStatisticsList();
     this.versionList = footerMetaData.versionList;
-    this.stripes = rInfo.footer.getStripesList();
+    this.stripes = convertProtoStripesToStripes(rInfo.footer.getStripesList());
 
     recordReader = getRecordReader();
   }
@@ -392,6 +390,61 @@ public class OrcScanner extends FileScanner {
 
       footerBuffer.position(position);
     }
+  }
+
+  public static class StripeInformationImpl
+      implements org.apache.orc.StripeInformation {
+    private final OrcProto.StripeInformation stripe;
+
+    public StripeInformationImpl(OrcProto.StripeInformation stripe) {
+      this.stripe = stripe;
+    }
+
+    @Override
+    public long getOffset() {
+      return stripe.getOffset();
+    }
+
+    @Override
+    public long getLength() {
+      return stripe.getDataLength() + getIndexLength() + getFooterLength();
+    }
+
+    @Override
+    public long getDataLength() {
+      return stripe.getDataLength();
+    }
+
+    @Override
+    public long getFooterLength() {
+      return stripe.getFooterLength();
+    }
+
+    @Override
+    public long getIndexLength() {
+      return stripe.getIndexLength();
+    }
+
+    @Override
+    public long getNumberOfRows() {
+      return stripe.getNumberOfRows();
+    }
+
+    @Override
+    public String toString() {
+      return "offset: " + getOffset() + " data: " + getDataLength() +
+          " rows: " + getNumberOfRows() + " tail: " + getFooterLength() +
+          " index: " + getIndexLength();
+    }
+  }
+
+  private static List<StripeInformation> convertProtoStripesToStripes(
+      List<OrcProto.StripeInformation> stripes) {
+    List<StripeInformation> result = new ArrayList<>(stripes.size());
+    for (OrcProto.StripeInformation info : stripes) {
+      result.add(new StripeInformationImpl(info));
+    }
+    return result;
   }
 
 }

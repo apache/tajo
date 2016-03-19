@@ -27,6 +27,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.io.compress.zlib.ZlibFactory;
 import org.apache.hadoop.util.NativeCodeLoader;
+import org.apache.orc.OrcConf;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -38,7 +39,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.storage.text.DelimitedTextFile;
-import org.apache.tajo.storage.thirdparty.orc.OrcFile.OrcTableProperties;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -124,11 +124,11 @@ public class TestCompressionStorages {
     meta.putProperty("sequencefile.serde", TextSerializerDeserializer.class.getName());
 
     if (codec.equals(SnappyCodec.class)) {
-      meta.putProperty(OrcTableProperties.COMPRESSION.name(), "SNAPPY");
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "SNAPPY");
     } else if (codec.equals(Lz4Codec.class)) {
-      meta.putProperty(OrcTableProperties.COMPRESSION.name(), "ZLIB");
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "ZLIB");
     } else {
-      meta.putProperty(OrcTableProperties.COMPRESSION.name(), "NONE");
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "NONE");
     }
 
     String fileName = "Compression_" + codec.getSimpleName();

@@ -17,14 +17,22 @@
  */
 package org.apache.tajo.storage.thirdparty.orc;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.serde2.objectinspector.*;
-import org.apache.orc.*;
+import org.apache.hadoop.hive.serde2.typeinfo.*;
 import org.apache.orc.CompressionCodec;
-import org.apache.orc.impl.*;
+import org.apache.orc.TypeDescription;
+import org.apache.orc.TypeDescription.Category;
 import org.apache.orc.impl.SnappyCodec;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TypeDesc;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -231,6 +239,57 @@ public class OrcUtils {
       default:
         throw new IllegalArgumentException("Unknown compression codec: " +
             kind);
+    }
+  }
+
+  public static TypeDescription convertSchema(Schema schema) {
+    TypeDescription description = TypeDescription.createStruct();
+
+    for (Column eachColumn : schema.getRootColumns()) {
+      description.addField(eachColumn.getQualifiedName(),
+          convertTypeInfo(eachColumn.getTypeDesc()));
+    }
+    return description;
+  }
+
+  public static TypeDescription convertTypeInfo(TypeDesc desc) {
+    switch (desc.getDataType().getType()) {
+      case BOOLEAN:
+        return TypeDescription.createBoolean();
+      case BIT:
+        return TypeDescription.createByte();
+      case INT2:
+        return TypeDescription.createShort();
+      case INT4:
+      case INET4:
+        return TypeDescription.createInt();
+      case INT8:
+        return TypeDescription.createLong();
+      case FLOAT4:
+        return TypeDescription.createFloat();
+      case FLOAT8:
+        return TypeDescription.createDouble();
+      case TEXT:
+        return TypeDescription.createString();
+      case DATE:
+        return TypeDescription.createDate();
+      case TIMESTAMP:
+        return TypeDescription.createTimestamp();
+      case BLOB:
+        return TypeDescription.createBinary();
+      case CHAR:
+        return TypeDescription.createChar()
+            .withMaxLength(desc.getDataType().getLength());
+      case RECORD: {
+        TypeDescription result = TypeDescription.createStruct();
+        for (Column eachColumn : desc.getNestedSchema().getRootColumns()) {
+          result.addField(eachColumn.getQualifiedName(),
+              convertTypeInfo(eachColumn.getTypeDesc()));
+        }
+        return result;
+      }
+      default:
+        throw new TajoRuntimeException(new UnsupportedDataTypeException(desc.getDataType().getType().name()));
     }
   }
 }
