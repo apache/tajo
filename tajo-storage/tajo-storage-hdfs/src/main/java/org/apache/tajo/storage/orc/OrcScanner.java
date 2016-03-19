@@ -29,12 +29,15 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.io.DiskRange;
 import org.apache.hadoop.io.Text;
 import org.apache.orc.*;
+import org.apache.orc.Reader.Options;
 import org.apache.orc.impl.BufferChunk;
 import org.apache.orc.impl.InStream;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.thirdparty.orc.OrcRecordReader;
@@ -44,6 +47,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 
 public class OrcScanner extends FileScanner {
   private static final Log LOG = LogFactory.getLog(OrcScanner.class);
@@ -230,11 +234,16 @@ public class OrcScanner extends FileScanner {
     );
   }
 
-  public OrcRecordReader getRecordReader() throws IOException {
-    boolean skipCorruptRecords = conf.getBoolean("orc.skip.corrupt-records", false);
+  public OrcRecordReader createRecordReader() throws IOException {
+    return new OrcRecordReader(this.stripes, fileSystem, schema, targets, fragment, types, codec, bufferSize,
+        rowIndexStride, buildReaderOptions(meta), conf,
+        TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE)));
+  }
 
-    return new OrcRecordReader(meta, this.stripes, fileSystem, schema, targets, fragment,
-        skipCorruptRecords, types, codec, bufferSize, rowIndexStride, conf);
+  private static Options buildReaderOptions(TableMeta meta) {
+    return new Options()
+        .useZeroCopy(Boolean.parseBoolean(meta.getProperty(OrcConf.USE_ZEROCOPY.getAttribute(), String.valueOf(OrcConf.USE_ZEROCOPY.getDefaultValue()))))
+        .skipCorruptRecords(Boolean.parseBoolean(meta.getProperty(OrcConf.SKIP_CORRUPT_DATA.getAttribute(), String.valueOf(OrcConf.SKIP_CORRUPT_DATA.getDefaultValue()))));
   }
 
   @Override
@@ -264,7 +273,7 @@ public class OrcScanner extends FileScanner {
     this.versionList = footerMetaData.versionList;
     this.stripes = convertProtoStripesToStripes(rInfo.footer.getStripesList());
 
-    recordReader = getRecordReader();
+    recordReader = createRecordReader();
   }
 
   @Override
@@ -280,7 +289,7 @@ public class OrcScanner extends FileScanner {
   public void reset() throws IOException {
     // TODO: improve this
     this.close();
-    recordReader = getRecordReader();
+    recordReader = createRecordReader();
   }
 
   @Override

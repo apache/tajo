@@ -24,21 +24,14 @@ import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
 import org.apache.hadoop.io.Text;
 import org.apache.orc.OrcProto;
 import org.apache.orc.impl.*;
-import org.apache.orc.impl.DynamicByteArray;
-import org.apache.orc.impl.SerializationUtils;
-import org.apache.orc.impl.StreamName;
 import org.apache.orc.impl.WriterImpl;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.TypeDesc;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.unit.TimeUnit;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 
@@ -759,11 +752,11 @@ public class TreeReaderFactory {
     private TimeZone writerTimeZone;
     private boolean hasSameTZRules;
 
-    TimestampTreeReader(TableMeta meta, int columnId, boolean skipCorrupt) throws IOException {
-      this(meta, columnId, null, null, null, null, skipCorrupt);
+    TimestampTreeReader(TimeZone timeZone, int columnId, boolean skipCorrupt) throws IOException {
+      this(timeZone, columnId, null, null, null, null, skipCorrupt);
     }
 
-    protected TimestampTreeReader(TableMeta meta, int columnId, InStream presentStream, InStream dataStream,
+    protected TimestampTreeReader(TimeZone timeZone, int columnId, InStream presentStream, InStream dataStream,
                                   InStream nanosStream, OrcProto.ColumnEncoding encoding, boolean skipCorrupt)
         throws IOException {
       super(columnId, presentStream);
@@ -772,8 +765,7 @@ public class TreeReaderFactory {
       this.readerTimeZone = TimeZone.getDefault();
       this.writerTimeZone = readerTimeZone;
       this.hasSameTZRules = writerTimeZone.hasSameRules(readerTimeZone);
-      this.base_timestamp = getBaseTimestamp(TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
-          TajoConstants.DEFAULT_SYSTEM_TIMEZONE)).getID());
+      this.base_timestamp = getBaseTimestamp(timeZone.getID());
       if (encoding != null) {
         checkEncoding(encoding);
 
@@ -1414,6 +1406,7 @@ public class TreeReaderFactory {
     }
   }
 
+  // TODO: enable this to support record type
 //  protected static class StructTreeReader extends TreeReader {
 //    private final int fileColumnCount;
 //    private final int resultColumnCount;
@@ -1533,10 +1526,10 @@ public class TreeReaderFactory {
 //    }
 //  }
 
-  public static DatumTreeReader createTreeReader(TableMeta meta,
-                                            int columnId,
-                                            Column column,
-                                            boolean skipCorrupt
+  public static DatumTreeReader createTreeReader(TimeZone timeZone,
+                                                 int columnId,
+                                                 Column column,
+                                                 boolean skipCorrupt
   ) throws IOException {
     TypeDesc typeDesc = column.getTypeDesc();
     int orcColumnId = columnId + 1; // root record column is considered
@@ -1562,7 +1555,7 @@ public class TreeReaderFactory {
       case BLOB:
         return new BinaryTreeReader(orcColumnId);
       case TIMESTAMP:
-        return new TimestampTreeReader(meta, orcColumnId, skipCorrupt);
+        return new TimestampTreeReader(timeZone, orcColumnId, skipCorrupt);
       case DATE:
         return new DateTreeReader(orcColumnId);
       case INET4:

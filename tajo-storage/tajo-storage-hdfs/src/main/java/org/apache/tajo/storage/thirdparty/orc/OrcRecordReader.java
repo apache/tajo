@@ -39,10 +39,7 @@ import org.apache.tajo.storage.thirdparty.orc.TreeReaderFactory.DatumTreeReader;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class OrcRecordReader implements Closeable {
 
@@ -72,19 +69,18 @@ public class OrcRecordReader implements Closeable {
   private final DataReader dataReader;
   private final Tuple result;
 
-  public OrcRecordReader(TableMeta meta,
-                            List<StripeInformation> stripes,
-                            FileSystem fileSystem,
-                            Schema schema,
-                            Column[] target,
-                            FileFragment fragment,
-                            boolean skipCorruptRecords,
-                            List<OrcProto.Type> types,
-                            CompressionCodec codec,
-                            int bufferSize,
-                            long strideRate,
-                            Configuration conf
-  ) throws IOException {
+  public OrcRecordReader(List<StripeInformation> stripes,
+                         FileSystem fileSystem,
+                         Schema schema,
+                         Column[] target,
+                         FileFragment fragment,
+                         List<OrcProto.Type> types,
+                         CompressionCodec codec,
+                         int bufferSize,
+                         long strideRate,
+                         Reader.Options options,
+                         Configuration conf,
+                         TimeZone timeZone) throws IOException {
 
     result = new VTuple(target.length);
 
@@ -117,17 +113,16 @@ public class OrcRecordReader implements Closeable {
     }
 
     // TODO: we could change the ctor to pass this externally
-    this.dataReader = RecordReaderUtils.createDefaultDataReader(fileSystem, path, true, codec);
+    this.dataReader = RecordReaderUtils.createDefaultDataReader(fileSystem, path, options.getUseZeroCopy(), codec);
     this.dataReader.open();
 
     firstRow = skippedRows;
     totalRowCount = rows;
-    Boolean skipCorrupt = skipCorruptRecords;
 
     reader = new DatumTreeReader[target.length];
     for (int i = 0; i < reader.length; i++) {
-      reader[i] = TreeReaderFactory.createTreeReader(meta, schema.getColumnId(target[i].getQualifiedName()), target[i],
-          skipCorrupt);
+      reader[i] = TreeReaderFactory.createTreeReader(timeZone, schema.getColumnId(target[i].getQualifiedName()), target[i],
+          options.getSkipCorruptRecords());
     }
 
     indexes = new OrcProto.RowIndex[types.size()];
