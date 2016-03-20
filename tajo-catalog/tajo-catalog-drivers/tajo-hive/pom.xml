@@ -33,8 +33,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <parquet.version>1.5.0</parquet.version>
-    <parquet.format.version>2.1.0</parquet.format.version>
   </properties>
 
   <build>
@@ -279,8 +277,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.twitter</groupId>
-      <artifactId>parquet-hive-bundle</artifactId>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-hadoop-bundle</artifactId>
       <version>${parquet.version}</version>
     </dependency>
   </dependencies>

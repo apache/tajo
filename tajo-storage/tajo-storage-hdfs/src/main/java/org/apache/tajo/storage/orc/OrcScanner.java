@@ -26,17 +26,14 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.common.io.DiskRange;
 import org.apache.hadoop.io.Text;
 import org.apache.orc.*;
 import org.apache.orc.Reader.Options;
 import org.apache.orc.impl.BufferChunk;
 import org.apache.orc.impl.InStream;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.StorageConstants;
@@ -360,7 +357,7 @@ public class OrcScanner extends FileScanner {
     bb.position(footerAbsPos);
     bb.limit(footerAbsPos + footerSize);
     return OrcProto.Footer.parseFrom(InStream.createCodedInputStream("footer",
-        Lists.<DiskRange>newArrayList(new BufferChunk(bb, 0)), footerSize, codec, bufferSize));
+        Lists.newArrayList(new BufferChunk(bb, 0)), footerSize, codec, bufferSize));
   }
 
   private static OrcProto.Metadata extractMetadata(ByteBuffer bb, int metadataAbsPos,
@@ -368,7 +365,7 @@ public class OrcScanner extends FileScanner {
     bb.position(metadataAbsPos);
     bb.limit(metadataAbsPos + metadataSize);
     return OrcProto.Metadata.parseFrom(InStream.createCodedInputStream("metadata",
-        Lists.<DiskRange>newArrayList(new BufferChunk(bb, 0)), metadataSize, codec, bufferSize));
+        Lists.newArrayList(new BufferChunk(bb, 0)), metadataSize, codec, bufferSize));
   }
 
   /**
