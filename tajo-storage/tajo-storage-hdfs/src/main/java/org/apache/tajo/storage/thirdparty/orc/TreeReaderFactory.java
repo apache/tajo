@@ -24,7 +24,6 @@ import org.apache.hadoop.hive.ql.exec.vector.LongColumnVector;
 import org.apache.hadoop.io.Text;
 import org.apache.orc.OrcProto;
 import org.apache.orc.impl.*;
-import org.apache.orc.impl.WriterImpl;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TypeDesc;
 import org.apache.tajo.datum.Datum;
@@ -38,12 +37,15 @@ import org.apache.tajo.util.datetime.DateTimeUtil;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+
+import static org.apache.tajo.storage.thirdparty.orc.WriterImpl.BASE_TIMESTAMP_STRING;
 
 public class TreeReaderFactory {
 
@@ -751,6 +753,7 @@ public class TreeReaderFactory {
     private final TimeZone readerTimeZone;
     private TimeZone writerTimeZone;
     private boolean hasSameTZRules;
+    private final TimeZone timeZone;
 
     TimestampTreeReader(TimeZone timeZone, int columnId, boolean skipCorrupt) throws IOException {
       this(timeZone, columnId, null, null, null, null, skipCorrupt);
@@ -765,7 +768,7 @@ public class TreeReaderFactory {
       this.readerTimeZone = TimeZone.getDefault();
       this.writerTimeZone = readerTimeZone;
       this.hasSameTZRules = writerTimeZone.hasSameRules(readerTimeZone);
-      this.base_timestamp = getBaseTimestamp(timeZone.getID());
+      this.base_timestamp = getBaseTimestamp(readerTimeZone.getID());
       if (encoding != null) {
         checkEncoding(encoding);
 
@@ -777,6 +780,7 @@ public class TreeReaderFactory {
           this.nanos = createIntegerReader(encoding.getKind(), nanosStream, false, skipCorrupt);
         }
       }
+      this.timeZone = timeZone;
     }
 
     @Override
@@ -800,6 +804,7 @@ public class TreeReaderFactory {
           streams.get(new org.apache.orc.impl.StreamName(columnId,
               OrcProto.Stream.Kind.SECONDARY)), false, skipCorrupt);
       base_timestamp = getBaseTimestamp(stripeFooter.getWriterTimezone());
+      this.base_timestamp = Timestamp.valueOf(BASE_TIMESTAMP_STRING).getTime() / DateTimeConstants.MSECS_PER_SEC;
     }
 
     private long getBaseTimestamp(String timeZoneId) throws IOException {
@@ -814,8 +819,7 @@ public class TreeReaderFactory {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         sdf.setTimeZone(writerTimeZone);
         try {
-          long epoch =
-              sdf.parse(org.apache.orc.impl.WriterImpl.BASE_TIMESTAMP_STRING).getTime() / WriterImpl.MILLIS_PER_SECOND;
+          long epoch = sdf.parse(BASE_TIMESTAMP_STRING).getTime() / DateTimeConstants.MSECS_PER_SEC;
           baseTimestampMap.put(timeZoneId, epoch);
           return epoch;
         } catch (ParseException e) {
@@ -846,23 +850,24 @@ public class TreeReaderFactory {
 
       if (valuePresent) {
         long millis = decodeTimestamp(data.next(), nanos.next(), base_timestamp);
-        long offset = 0;
-        // If reader and writer time zones have different rules, adjust the timezone difference
-        // between reader and writer taking day light savings into account.
-        if (!hasSameTZRules) {
-          offset = writerTimeZone.getOffset(millis) - readerTimeZone.getOffset(millis);
-        }
-        long adjustedMillis = millis + offset;
-
-        // Sometimes the reader timezone might have changed after adding the adjustedMillis.
-        // To account for that change, check for any difference in reader timezone after
-        // adding adjustedMillis. If so use the new offset (offset at adjustedMillis point of time).
-        if (!hasSameTZRules &&
-            (readerTimeZone.getOffset(millis) != readerTimeZone.getOffset(adjustedMillis))) {
-          long newOffset =
-              writerTimeZone.getOffset(millis) - readerTimeZone.getOffset(adjustedMillis);
-          adjustedMillis = millis + newOffset;
-        }
+        long adjustedMillis = millis - timeZone.getRawOffset();
+//        long offset = 0;
+//        // If reader and writer time zones have different rules, adjust the timezone difference
+//        // between reader and writer taking day light savings into account.
+//        if (!hasSameTZRules) {
+//          offset = writerTimeZone.getOffset(millis) - readerTimeZone.getOffset(millis);
+//        }
+//        long adjustedMillis = millis + offset;
+//
+//        // Sometimes the reader timezone might have changed after adding the adjustedMillis.
+//        // To account for that change, check for any difference in reader timezone after
+//        // adding adjustedMillis. If so use the new offset (offset at adjustedMillis point of time).
+//        if (!hasSameTZRules &&
+//            (readerTimeZone.getOffset(millis) != readerTimeZone.getOffset(adjustedMillis))) {
+//          long newOffset =
+//              writerTimeZone.getOffset(millis) - readerTimeZone.getOffset(adjustedMillis);
+//          adjustedMillis = millis + newOffset;
+//        }
         return DatumFactory.createTimestamp(DateTimeUtil.javaTimeToJulianTime(adjustedMillis));
       } else {
         return NullDatum.get();
