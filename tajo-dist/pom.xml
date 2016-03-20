@@ -154,6 +154,9 @@
                       run cp -r ${project.basedir}/src/main/conf .
                       run rm -rf lib/tajo-*-${project.version}.jar
 
+                      run mkdir -p lib
+                      run cp -r $ROOT/tajo-storage/tajo-storage-hdfs/target/lib/hive-*.jar lib/
+
                       run mkdir hive
                       run mv lib/hive-*.jar hive/
 
@@ -161,9 +164,6 @@
                       run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}-jar-with-dependencies.jar ./share/jdbc-dist/tajo-jdbc-${project.version}.jar
 
                       run mkdir -p extlib
-
-                      run mkdir -p lib
-                      run cp -r $ROOT/tajo-storage/tajo-storage-hdfs/target/lib/hive-*.jar lib/
 
                       echo
                       echo "Tajo dist layout available at: ${project.build.directory}/tajo-${project.version}"
