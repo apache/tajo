@@ -372,41 +372,41 @@
       <artifactId>hive-storage-api</artifactId>
       <version>${hive.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-serde</artifactId>
-      <version>${hive.version}</version>
-      <exclusions>
-        <exclusion>
-          <artifactId>log4j-slf4j-impl</artifactId>
-          <groupId>org.apache.logging.log4j</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>log4j-1.2-api</artifactId>
-          <groupId>org.apache.logging.log4j</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>hive-common</artifactId>
-          <groupId>org.apache.hive</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>libthrift</artifactId>
-          <groupId>org.apache.thrift</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>opencsv</artifactId>
-          <groupId>net.sf.opencsv</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>hadoop-yarn-server-resourcemanager</artifactId>
-          <groupId>org.apache.hadoop</groupId>
-        </exclusion>
-        <exclusion>
-          <artifactId>hive-shims-scheduler</artifactId>
-          <groupId>org.apache.hive.shims</groupId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>org.apache.hive</groupId>-->
+      <!--<artifactId>hive-serde</artifactId>-->
+      <!--<version>${hive.version}</version>-->
+      <!--<exclusions>-->
+        <!--<exclusion>-->
+          <!--<artifactId>log4j-slf4j-impl</artifactId>-->
+          <!--<groupId>org.apache.logging.log4j</groupId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<artifactId>log4j-1.2-api</artifactId>-->
+          <!--<groupId>org.apache.logging.log4j</groupId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<artifactId>hive-common</artifactId>-->
+          <!--<groupId>org.apache.hive</groupId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<artifactId>libthrift</artifactId>-->
+          <!--<groupId>org.apache.thrift</groupId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<artifactId>opencsv</artifactId>-->
+          <!--<groupId>net.sf.opencsv</groupId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<artifactId>hadoop-yarn-server-resourcemanager</artifactId>-->
+          <!--<groupId>org.apache.hadoop</groupId>-->
+        <!--</exclusion>-->
+        <!--<exclusion>-->
+          <!--<artifactId>hive-shims-scheduler</artifactId>-->
+          <!--<groupId>org.apache.hive.shims</groupId>-->
+        <!--</exclusion>-->
+      <!--</exclusions>-->
+    <!--</dependency>-->
 
   </dependencies>
 

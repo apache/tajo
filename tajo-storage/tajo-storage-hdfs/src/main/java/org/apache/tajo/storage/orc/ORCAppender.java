@@ -20,7 +20,6 @@ package org.apache.tajo.storage.orc;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.orc.CompressionKind;
 import org.apache.orc.OrcConf;
 import org.apache.orc.TypeDescription;
@@ -152,7 +151,6 @@ public class ORCAppender extends FileAppender {
    */
   public static class WriterOptions extends OrcFile.WriterOptions {
     private boolean explicitSchema = false;
-    private ObjectInspector inspector = null;
     // Setting the default batch size to 1000 makes the memory check at 5000
     // rows work the same as the row by row writer. (If it was the default 1024,
     // the smallest stripe size would be 5120 rows, which changes the output
@@ -177,10 +175,6 @@ public class ORCAppender extends FileAppender {
     protected WriterOptions batchSize(int maxSize) {
       batchSize = maxSize;
       return this;
-    }
-
-    ObjectInspector getInspector() {
-      return inspector;
     }
 
     int getBatchSize() {

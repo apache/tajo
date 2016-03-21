@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,23 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.orc.objectinspector;
+package org.apache.tajo.storage.thirdparty.orc;
 
-import org.apache.hadoop.hive.serde2.objectinspector.PrimitiveObjectInspector;
+import org.apache.hadoop.io.ByteBufferPool;
 
-public abstract class TajoPrimitiveObjectInspector implements PrimitiveObjectInspector {
-  @Override
-  public Category getCategory() {
-    return Category.PRIMITIVE;
+import java.nio.ByteBuffer;
+
+public class ByteBufferPoolAdapter implements ByteBufferPool {
+  private ByteBufferAllocatorPool pool;
+
+  public ByteBufferPoolAdapter(ByteBufferAllocatorPool pool) {
+    this.pool = pool;
   }
 
   @Override
-  public int precision() {
-    return 0;
+  public final ByteBuffer getBuffer(boolean direct, int length) {
+    return this.pool.getBuffer(direct, length);
   }
 
   @Override
-  public int scale() {
-    return 0;
+  public final void putBuffer(ByteBuffer buffer) {
+    this.pool.putBuffer(buffer);
   }
 }
