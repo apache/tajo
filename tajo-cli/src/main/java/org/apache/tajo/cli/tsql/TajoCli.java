@@ -71,6 +71,7 @@ public class TajoCli implements Closeable {
   private final ConsoleReader reader;
   private final InputStream sin;
   private final PrintWriter sout;
+  private final PrintWriter serr;
   private TajoFileHistory history;
 
   private final boolean reconnect;  // reconnect on invalid session
@@ -143,6 +144,10 @@ public class TajoCli implements Closeable {
       return sout;
     }
 
+    public PrintWriter getError() {
+      return serr;
+    }
+
     public TajoConf getConf() {
       return conf;
     }
@@ -188,7 +193,7 @@ public class TajoCli implements Closeable {
     }
   }
 
-  public TajoCli(TajoConf c, String [] args, @Nullable Properties clientParams, InputStream in, OutputStream out)
+  public TajoCli(TajoConf c, String [] args, @Nullable Properties clientParams, InputStream in, OutputStream out, OutputStream err)
       throws Exception {
 
     CommandLineParser parser = new PosixParser();
@@ -205,6 +210,7 @@ public class TajoCli implements Closeable {
 
     this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
+    this.serr = new PrintWriter(new OutputStreamWriter(err, "UTF-8"));
     initFormatter();
 
     if (cmd.hasOption("help")) {
@@ -278,6 +284,7 @@ public class TajoCli implements Closeable {
         displayFormatter.setScriptMode();
         int exitCode = executeScript(cmd.getOptionValue("c"));
         sout.flush();
+        serr.flush();
         System.exit(exitCode);
       }
       if (cmd.hasOption("f")) {
@@ -289,6 +296,7 @@ public class TajoCli implements Closeable {
           script = replaceParam(script, cmd.getOptionValues("param"));
           int exitCode = executeScript(script);
           sout.flush();
+          serr.flush();
           System.exit(exitCode);
         } else {
           System.err.println(ERROR_PREFIX + "No such a file \"" + cmd.getOptionValue("f") + "\"");
@@ -549,6 +557,7 @@ public class TajoCli implements Closeable {
         onError(t);
         return -1;
       } finally {
+        context.getError().flush();
         context.getOutput().flush();
       }
 
@@ -670,11 +679,11 @@ public class TajoCli implements Closeable {
         }
 
         if (TajoClientUtil.isQueryRunning(status.getState())) {
-          displayFormatter.printProgress(sout, status);
+          displayFormatter.printProgress(serr, status);
         }
 
         if (TajoClientUtil.isQueryComplete(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
-          displayFormatter.printProgress(sout, status);
+          displayFormatter.printProgress(serr, status);
           break;
         } else {
           Thread.sleep(Math.min(200 * progressRetries, 1000));
@@ -683,10 +692,10 @@ public class TajoCli implements Closeable {
       }
 
       if (status.getState() == QueryState.QUERY_ERROR || status.getState() == QueryState.QUERY_FAILED) {
-        displayFormatter.printErrorMessage(sout, status);
+        displayFormatter.printErrorMessage(serr, status);
         wasError = true;
       } else if (status.getState() == QueryState.QUERY_KILLED) {
-        displayFormatter.printKilledMessage(sout, queryId);
+        displayFormatter.printKilledMessage(serr, queryId);
         wasError = true;
       } else {
         if (status.getState() == QueryState.QUERY_SUCCEEDED) {
@@ -727,18 +736,18 @@ public class TajoCli implements Closeable {
 
   private void printUsage() {
     HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp("tsql [options] [database]", options);
+    formatter.printUsage(this.serr, 80, "tsql [options] [database]", options);
   }
 
   private void printInvalidCommand(String command) {
-    sout.println("Invalid command " + command + ". Try \\? for help.");
+    serr.println("Invalid command " + command + ". Try \\? for help.");
   }
 
   private void onError(Throwable t) {
     Preconditions.checkNotNull(t);
 
     wasError = true;
-    displayFormatter.printErrorMessage(sout, t.getMessage());
+    displayFormatter.printErrorMessage(serr, t.getMessage());
 
     if (reconnect && (t instanceof InvalidClientSessionException)) {
       try {
@@ -763,7 +772,7 @@ public class TajoCli implements Closeable {
 
   public static void main(String [] args) throws Exception {
     TajoConf conf = new TajoConf();
-    TajoCli shell = new TajoCli(conf, args, new Properties(), System.in, System.out);
+    TajoCli shell = new TajoCli(conf, args, new Properties(), System.in, System.out, System.err);
     System.out.println();
     System.exit(shell.runShell());
   }
