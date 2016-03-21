@@ -366,6 +366,15 @@ public class FileTablespace extends Tablespace {
     return split;
   }
 
+  protected boolean isPartitionSplittable(TableMeta meta, Schema schema, Path path, String partitionKeys,
+                                          FileStatus status) throws IOException {
+    Fragment fragment = new PartitionFileFragment(path.getName(), path, 0, status.getLen(), partitionKeys);
+    Scanner scanner = getScanner(meta, schema, fragment, null);
+    boolean split = scanner.isSplittable();
+    scanner.close();
+    return split;
+  }
+
   private static final double SPLIT_SLOP = 1.1;   // 10% slop
 
   protected int getBlockIndex(BlockLocation[] blkLocations,
@@ -441,7 +450,6 @@ public class FileTablespace extends Tablespace {
   public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
       throws IOException {
     // generate splits'
-
     List<Fragment> splits = Lists.newArrayList();
     List<Fragment> volumeSplits = Lists.newArrayList();
     List<BlockLocation> blockLocations = Lists.newArrayList();
@@ -643,7 +651,7 @@ public class FileTablespace extends Tablespace {
         if (length > 0) {
           // Get locations of blocks of file
           BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
-          boolean splittable = isSplittable(meta, schema, path, file);
+          boolean splittable = isPartitionSplittable(meta, schema, path, partitionKeys[i], file);
           if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
 
             if (splittable) {
@@ -676,10 +684,8 @@ public class FileTablespace extends Tablespace {
               // for s3
               while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
                 int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-
                 splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, splitSize,
                   blkLocations[blkIndex].getHosts(), partitionKeys[i]));
-
                 bytesRemaining -= splitSize;
               }
               if (bytesRemaining > 0) {

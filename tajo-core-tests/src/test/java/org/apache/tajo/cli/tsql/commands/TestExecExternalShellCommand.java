@@ -33,8 +33,9 @@ public class TestExecExternalShellCommand {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ByteArrayOutputStream err = new ByteArrayOutputStream();
 
-    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, null, out);
+    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, null, out, err);
 
     cli.executeMetaCommand("\\! echo \"this is test\"");
     String consoleResult = new String(out.toByteArray());

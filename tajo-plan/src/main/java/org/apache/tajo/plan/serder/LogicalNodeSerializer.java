@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -472,8 +471,12 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   public LogicalNode visitPartitionedTableScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
       throws TajoException {
-    ScanNode scanNode = (ScanNode) node;
-    return visitScan(context, plan, block, scanNode, stack);
+
+    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setScan(scanBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+    return node;
   }
 
   @Override

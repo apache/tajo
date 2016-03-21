@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -31,6 +30,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.*;
@@ -89,7 +89,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
   public void setCatalog(CatalogService catalog) {
     this.catalog = catalog;
-  }
+ }
 
   private static class PartitionPathFilter implements PathFilter {
 
@@ -117,11 +117,11 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
   }
 
-  private PartitionPruningHandle getPartitionPruningHandle(OverridableConf queryContext, String tableName,
+  private PartitionPruningHandle getPartitionPruningHandle(TajoConf conf, String tableName,
                                     Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
     throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, UnsupportedException {
-    return getPartitionPruningHandle(queryContext, tableName, partitionColumns, conjunctiveForms, tablePath, null);
+    return getPartitionPruningHandle(conf, tableName, partitionColumns, conjunctiveForms, tablePath, null);
   }
 
   /**
@@ -134,13 +134,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private PartitionPruningHandle getPartitionPruningHandle(OverridableConf queryContext, String tableName,
+  private PartitionPruningHandle getPartitionPruningHandle(TajoConf conf, String tableName,
       Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath, ScanNode scanNode)
       throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
       UndefinedOperatorException, UnsupportedException {
 
     PartitionPruningHandle partitionPruningHandle = null;
-    FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
+    FileSystem fs = tablePath.getFileSystem(conf);
     String [] splits = CatalogUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
 
@@ -356,10 +356,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     return paths;
   }
 
-  @VisibleForTesting
-  public PartitionPruningHandle getPartitionPruningHandle(OverridableConf queryContext, ScanNode scanNode)
+  public PartitionPruningHandle getPartitionPruningHandle(TajoConf conf, ScanNode scanNode)
     throws IOException, UndefinedDatabaseException, UndefinedTableException, UndefinedPartitionMethodException,
     UndefinedOperatorException, UnsupportedException {
+    long startTime = System.currentTimeMillis();
+    PartitionPruningHandle pruningHandle = null;
+
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
@@ -398,12 +400,18 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     }
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
-      return getPartitionPruningHandle(queryContext, table.getName(), paritionValuesSchema,
+      pruningHandle = getPartitionPruningHandle(conf, table.getName(), paritionValuesSchema,
         indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getUri()), scanNode);
     } else { // otherwise, we will get all partition paths.
-      return getPartitionPruningHandle(queryContext, table.getName(), paritionValuesSchema, null,
+      pruningHandle = getPartitionPruningHandle(conf, table.getName(), paritionValuesSchema, null,
         new Path(table.getUri()));
     }
+
+    long finishTime = System.currentTimeMillis();
+    long elapsedMills = finishTime - startTime;
+
+    LOG.info(String.format("Partition pruning: %d ms elapsed.", elapsedMills));
+    return pruningHandle;
   }
 
   private boolean checkIfIndexablePredicateOnTargetColumn(EvalNode evalNode, Column targetColumn) {
@@ -563,32 +571,17 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         return null;
       }
 
-      try {
-        long startTime = System.currentTimeMillis();
-        PartitionPruningHandle partitionPruningHandle = getPartitionPruningHandle(queryContext, scanNode);
+      PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
+      rewrittenScanNode.init(scanNode);
 
-        Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
-        plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
-
-        PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
-        rewrittenScanNode.init(scanNode, filteredPaths, partitionPruningHandle.getPartitionKeys());
-        rewrittenScanNode.getTableDesc().getStats().setNumBytes(partitionPruningHandle.getTotalVolume());
-
-        // if it is topmost node, set it as the rootnode of this block.
-        if (stack.empty() || block.getRoot().equals(scanNode)) {
-          block.setRoot(rewrittenScanNode);
-        } else {
-          PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
-        }
-        block.registerNode(rewrittenScanNode);
-
-        long finishTime = System.currentTimeMillis();
-        long elapsedMills = finishTime - startTime;
-        
-        LOG.info(String.format("Partition pruning: %d ms elapsed.", elapsedMills));
-      } catch (IOException e) {
-        throw new TajoInternalError("Partitioned Table Rewrite Failed: \n" + e.getMessage());
+      // if it is topmost node, set it as the rootnode of this block.
+      if (stack.empty() || block.getRoot().equals(scanNode)) {
+        block.setRoot(rewrittenScanNode);
+      } else {
+        PlannerUtil.replaceNode(plan, stack.peek(), scanNode, rewrittenScanNode);
       }
+
+      block.registerNode(rewrittenScanNode);
       return null;
     }
   }
