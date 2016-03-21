@@ -851,23 +851,6 @@ public class TreeReaderFactory {
       if (valuePresent) {
         long millis = decodeTimestamp(data.next(), nanos.next(), base_timestamp);
         long adjustedMillis = millis - timeZone.getRawOffset();
-//        long offset = 0;
-//        // If reader and writer time zones have different rules, adjust the timezone difference
-//        // between reader and writer taking day light savings into account.
-//        if (!hasSameTZRules) {
-//          offset = writerTimeZone.getOffset(millis) - readerTimeZone.getOffset(millis);
-//        }
-//        long adjustedMillis = millis + offset;
-//
-//        // Sometimes the reader timezone might have changed after adding the adjustedMillis.
-//        // To account for that change, check for any difference in reader timezone after
-//        // adding adjustedMillis. If so use the new offset (offset at adjustedMillis point of time).
-//        if (!hasSameTZRules &&
-//            (readerTimeZone.getOffset(millis) != readerTimeZone.getOffset(adjustedMillis))) {
-//          long newOffset =
-//              writerTimeZone.getOffset(millis) - readerTimeZone.getOffset(adjustedMillis);
-//          adjustedMillis = millis + newOffset;
-//        }
         return DatumFactory.createTimestamp(DateTimeUtil.javaTimeToJulianTime(adjustedMillis));
       } else {
         return NullDatum.get();
