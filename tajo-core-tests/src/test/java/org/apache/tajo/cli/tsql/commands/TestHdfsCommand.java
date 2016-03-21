@@ -34,13 +34,14 @@ public class TestHdfsCommand {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
+    ByteArrayOutputStream err = new ByteArrayOutputStream();
 
     System.setOut(new PrintStream(out));
-    System.setErr(new PrintStream(out));
-    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, null, out);
+    System.setErr(new PrintStream(err));
+    TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, null, out, err);
 
     cli.executeMetaCommand("\\dfs -test");
-    String consoleResult = new String(out.toByteArray());
+    String consoleResult = new String(err.toByteArray());
     assertEquals("-test: Not enough arguments: expected 1 but got 0\n" +
         "Usage: hadoop fs [generic options] -test -[defsz] <path>\n", consoleResult);
   }

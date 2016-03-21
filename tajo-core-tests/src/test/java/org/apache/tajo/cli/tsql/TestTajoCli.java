@@ -68,6 +68,7 @@ public class TestTajoCli {
   private TajoCli tajoCli;
   private Path currentResultPath;
   private ByteArrayOutputStream out;
+  private ByteArrayOutputStream err;
 
   @Rule
   public TestName name = new TestName();
@@ -80,14 +81,16 @@ public class TestTajoCli {
   @Before
   public void setUp() throws Exception {
     out = new ByteArrayOutputStream();
+    err = new ByteArrayOutputStream();
     Properties connParams = new Properties();
     connParams.setProperty(RpcConstants.CLIENT_RETRY_NUM, "3");
-    tajoCli = new TajoCli(cluster.getConfiguration(), new String[]{}, connParams, System.in, out);
+    tajoCli = new TajoCli(cluster.getConfiguration(), new String[]{}, connParams, System.in, out, err);
   }
 
   @After
   public void tearDown() throws IOException {
     out.close();
+    err.close();
     if (tajoCli != null) {
       tajoCli.close();
     }
@@ -105,17 +108,33 @@ public class TestTajoCli {
     assertOutputResult(name.getMethodName() + ".result", actual);
   }
 
+  private void assertErrorResult(String actual, boolean required) throws Exception {
+    String fileName = name.getMethodName() + ".err";
+    if (required) {
+      assertOutputResult(fileName, actual);
+    }
+  }
+
   private void assertOutputResult(String expectedResultFile, String actual) throws Exception {
     assertOutputResult(expectedResultFile, actual, null, null);
   }
 
+  private boolean existsFile(String fileName) throws IOException {
+    FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    Path filePath = StorageUtil.concatPath(currentResultPath, fileName);
+    return fs.exists(filePath);
+  }
+
+  private Path getAbsolutePath(String fileName) {
+    return StorageUtil.concatPath(currentResultPath, fileName);
+  }
+
   private void assertOutputResult(String expectedResultFile, String actual, String[] paramKeys, String[] paramValues)
     throws Exception {
-    FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
-    Path resultFile = StorageUtil.concatPath(currentResultPath, expectedResultFile);
-    assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
+    Path path = getAbsolutePath(expectedResultFile);
+    assertTrue(path.toString() + " existence check", existsFile(expectedResultFile));
 
-    String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
+    String expectedResult = FileUtil.readTextFile(new File(path.toUri()));
 
     if (paramKeys != null) {
       for (int i = 0; i < paramKeys.length; i++) {
@@ -163,12 +182,9 @@ public class TestTajoCli {
     assertEquals("tajo.executor.join.inner.in-memory-table-num=256", confValues[1]);
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-    TajoCli testCli = new TajoCli(tajoConf, args, null, System.in, System.out);
-    try {
+    try (TajoCli testCli = new TajoCli(tajoConf, args, null, System.in, System.out, err)) {
       assertEquals("false", testCli.getContext().get(SessionVars.CLI_PAGING_ENABLED));
       assertEquals("256", testCli.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
-    } finally {
-      testCli.close();
     }
   }
 
@@ -312,8 +328,10 @@ public class TestTajoCli {
 
     tajoCli.executeScript(sql);
 
-    String consoleResult = new String(out.toByteArray());
-    assertOutputResult(consoleResult);
+    String stdoutResult = new String(out.toByteArray());
+    assertOutputResult(stdoutResult);
+    String stdErrResult = new String(err.toByteArray());
+    assertErrorResult(stdErrResult, false);
   }
 
   @Test
@@ -345,10 +363,10 @@ public class TestTajoCli {
   public void testGetConf() throws Exception {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out);
-    try {
+    
+    try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+         ByteArrayOutputStream err = new ByteArrayOutputStream();
+         TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out, err)) {
       tajoCli.executeMetaCommand("\\getconf tajo.rootdir");
 
       String consoleResult = new String(out.toByteArray());
@@ -364,7 +382,7 @@ public class TestTajoCli {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out);
+    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, null, System.in, out, err);
     tajoCli.executeMetaCommand("\\admin -showmasters");
 
     String consoleResult = new String(out.toByteArray());
@@ -400,7 +418,7 @@ public class TestTajoCli {
           setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
           Properties connParams = new Properties();
           connParams.setProperty(ClientParameters.RETRY, "3");
-          TajoCli tc = new TajoCli(tajoConf, new String[]{}, connParams, is, out);
+          TajoCli tc = new TajoCli(tajoConf, new String[]{}, connParams, is, out, err);
 
           tc.executeMetaCommand("\\set ON_ERROR_STOP false");
           assertSessionVar(tc, SessionVars.ON_ERROR_STOP.keyname(), "false");
@@ -489,14 +507,13 @@ public class TestTajoCli {
   @Test(timeout = 3000)
   public void testNonForwardQueryPause() throws Exception {
     final String sql = "select * from default.lineitem";
-    TajoCli cli = null;
-    try {
-      TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
-      assertNotNull(tableDesc);
-      assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
 
-      InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
-      cli = new TajoCli(cluster.getConfiguration(), new String[]{}, null, testInput, out);
+    TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
+    assertNotNull(tableDesc);
+    assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
+
+    try (InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
+         TajoCli cli = new TajoCli(cluster.getConfiguration(), new String[]{}, null, testInput, out, err)) {
       setVar(cli, SessionVars.CLI_PAGE_ROWS, "2");
       setVar(cli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
@@ -505,15 +522,13 @@ public class TestTajoCli {
       String consoleResult;
       consoleResult = new String(out.toByteArray());
       assertOutputResult(consoleResult);
-    } finally {
-      cli.close();
     }
   }
 
   @Test
   public void testResultRowNumWhenSelectingOnPartitionedTable() throws Exception {
     try (TajoCli cli2 = new TajoCli(cluster.getConfiguration(), new String[]{}, null, System.in,
-        new NullOutputStream())) {
+        new NullOutputStream(), new NullOutputStream())) {
       cli2.executeScript("create table region_part (r_regionkey int8, r_name text) " +
           "partition by column (r_comment text) as select * from region");
 

@@ -69,7 +69,7 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
         );
 
       } catch (TajoException se) {
-        context.getOutput().write(String.format("ERROR: %s%n", se.getMessage()));
+        context.getError().write(String.format("ERROR: %s%n", se.getMessage()));
       }
     }
   }

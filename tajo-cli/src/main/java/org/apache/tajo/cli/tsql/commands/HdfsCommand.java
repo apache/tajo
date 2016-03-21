@@ -42,7 +42,7 @@ public class HdfsCommand extends TajoShellCommand {
 
       fsShell.run(dfsCommands);
     } catch (Exception e) {
-      context.getOutput().println("ERROR: " + e.getMessage());
+      context.getError().println("ERROR: " + e.getMessage());
     }
   }
 

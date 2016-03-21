@@ -66,7 +66,7 @@ public class TestDefaultCliOutputFormatter {
   public void setUp() throws Exception {
     conf = cluster.getConfiguration();
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(conf, new String[]{}, null, System.in, out);
+    tajoCli = new TajoCli(conf, new String[]{}, null, System.in, out, out);
     cliContext = tajoCli.getContext();
   }
 
