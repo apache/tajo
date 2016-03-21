@@ -61,7 +61,7 @@ public class DescTableCommand extends TajoShellCommand {
       String tableName = tableNameMaker.toString().replace("\"", "");
       TableDesc desc = client.getTableDesc(tableName);
       if (desc == null) {
-        context.getOutput().println("Did not find any relation named \"" + tableName + "\"");
+        context.getError().println("Did not find any relation named \"" + tableName + "\"");
       } else {
         context.getOutput().println(toFormattedString(desc));
         // If there exists any indexes for the table, print index information
@@ -84,7 +84,7 @@ public class DescTableCommand extends TajoShellCommand {
     } else if (cmd.length == 1) {
       List<String> tableList = client.getTableList(null);
       if (tableList.size() == 0) {
-        context.getOutput().println("No Relation Found");
+        context.getError().println("No Relation Found");
       }
       for (String table : tableList) {
         context.getOutput().println(table);
