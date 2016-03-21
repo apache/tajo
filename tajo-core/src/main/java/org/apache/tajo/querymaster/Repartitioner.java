@@ -32,6 +32,7 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
@@ -45,6 +46,8 @@ import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
+import org.apache.tajo.plan.partition.PartitionPruningHandle;
+import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -386,7 +389,9 @@ public class Repartitioner {
         Collection<Fragment> scanFragments = null;
 
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
-          scanFragments = getFragmentsFromPartitionedTable(space, eachScan, tableDesc);
+          CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+          TajoConf conf = stage.getContext().getQueryContext().getConf();
+          scanFragments = getFragmentsFromPartitionedTable(space, eachScan, tableDesc, catalog, conf);
         } else {
           scanFragments = space.getSplits(eachScan.getCanonicalName(), tableDesc, eachScan.getQual());
         }
@@ -459,18 +464,21 @@ public class Repartitioner {
    * It creates a number of fragments for all partitions.
    */
   public static List<Fragment> getFragmentsFromPartitionedTable(Tablespace tsHandler,
-                                                                          ScanNode scan,
-                                                                          TableDesc table) throws IOException {
+    ScanNode scan, TableDesc table, CatalogService catalog, TajoConf conf) throws IOException, TajoException {
     Preconditions.checkArgument(tsHandler instanceof FileTablespace, "tsHandler must be FileTablespace");
     if (!(scan instanceof PartitionedTableScanNode)) {
       throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
     }
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
+    partitionsScan.init(scan);
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
+    PartitionPruningHandle pruningHandle = rewriter.getPartitionPruningHandle(conf, partitionsScan);
 
-    fragments.addAll(((FileTablespace) tsHandler).getPartitionSplits(
-      scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getPartitionKeys(),
-      partitionsScan.getInputPaths()));
+    FileTablespace tablespace = (FileTablespace) tsHandler;
+    fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
+      , pruningHandle.getPartitionKeys(), pruningHandle.getPartitionPaths()));
 
     return fragments;
   }
@@ -506,7 +514,9 @@ public class Repartitioner {
 
       Tablespace space = TablespaceManager.get(desc.getUri());
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-        scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
+        CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+        TajoConf conf = stage.getContext().getQueryContext().getConf();
+        scanFragments = getFragmentsFromPartitionedTable(space, scan, desc, catalog, conf);
       } else {
         scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan.getQual());
       }

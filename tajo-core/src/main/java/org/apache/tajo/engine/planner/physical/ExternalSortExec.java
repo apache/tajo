@@ -142,6 +142,7 @@ public class ExternalSortExec extends SortExec {
     mergedInputFragments = new ArrayList<>();
     for (CatalogProtos.FragmentProto proto : fragments) {
       FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);
+      LOG.debug("### fragment:" + fragment.toString());
       mergedInputFragments.add(new Chunk(inSchema, fragment, scanNode.getTableDesc().getMeta()));
     }
   }

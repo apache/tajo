@@ -20,7 +20,6 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.annotation.Nullable;
@@ -119,6 +118,8 @@ public class LogicalNodeDeserializer {
         current = convertUnion(nodeMap, protoNode);
         break;
       case PARTITIONS_SCAN:
+        current = convertPartitionedTableScan(context, evalContext, protoNode);
+        break;
       case SCAN:
         current = convertScan(context, evalContext, protoNode);
         break;
@@ -409,6 +410,13 @@ public class LogicalNodeDeserializer {
     fillScanNode(context, evalContext, protoNode, scan);
 
     return scan;
+  }
+
+  private static PartitionedTableScanNode convertPartitionedTableScan(OverridableConf context, EvalContext evalContext,
+                                                      PlanProto.LogicalNode protoNode) {
+    PartitionedTableScanNode partitionedTableScan = new PartitionedTableScanNode(protoNode.getNodeId());
+    fillScanNode(context, evalContext, protoNode, partitionedTableScan);
+    return partitionedTableScan;
   }
 
   private static void fillScanNode(OverridableConf context, EvalContext evalContext, PlanProto.LogicalNode protoNode,
