@@ -249,8 +249,6 @@ public class OrcScanner extends FileScanner {
 
   @Override
   public void init() throws IOException {
-    super.init();
-
     FileMetaInfo footerMetaData = extractMetaInfoFromFooter(fileSystem, path, maxLength);
     this.footerMetaAndPsBuffer = footerMetaData.footerMetaAndPsBuffer;
     MetaInfoObjExtractor rInfo =
@@ -275,6 +273,8 @@ public class OrcScanner extends FileScanner {
     this.stripes = convertProtoStripesToStripes(rInfo.footer.getStripesList());
 
     recordReader = createRecordReader();
+
+    super.init();
   }
 
   @Override

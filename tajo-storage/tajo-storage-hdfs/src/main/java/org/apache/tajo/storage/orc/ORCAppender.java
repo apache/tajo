@@ -86,10 +86,9 @@ public class ORCAppender extends FileAppender {
   public void close() throws IOException {
     writer.close();
 
-    // TODO: getOffset is not implemented yet
-//    if (tableStatsEnabled) {
-//      stats.setNumBytes(getOffset());
-//    }
+    if (tableStatsEnabled) {
+      stats.setNumBytes(writer.getRawDataSize());
+    }
   }
 
   @Override
@@ -103,7 +102,7 @@ public class ORCAppender extends FileAppender {
 
   @Override
   public long getEstimatedOutputSize() throws IOException {
-    return writer.getRawDataSize() * writer.getNumberOfRows();
+    return writer.getRawDataSize();
   }
 
   private static OrcFile.WriterOptions buildWriterOptions(Configuration conf, TableMeta meta, Schema schema) {
@@ -129,7 +128,8 @@ public class ORCAppender extends FileAppender {
   }
 
   private static CompressionKind getCompressionKind(TableMeta meta) {
-    String kindstr = meta.getProperty(StorageConstants.ORC_COMPRESSION, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
+    String kindstr = meta.getProperty(OrcConf.COMPRESS.getAttribute(),
+        String.valueOf(OrcConf.COMPRESS.getDefaultValue()));
 
     if (kindstr.equalsIgnoreCase(CompressionKind.ZLIB.name())) {
       return CompressionKind.ZLIB;
