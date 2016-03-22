@@ -35,6 +35,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerializer;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -117,14 +118,14 @@ public class JsonLineSerializer extends TextLineSerializer {
 
     case TIMESTAMP:
       if (hasTimezone) {
-        json.put(fieldName, TimestampDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
+        json.put(fieldName, DateTimeUtil.tmToChars(input.getTimeDate(fieldIndex), timezone, false));
       } else {
         json.put(fieldName, input.asDatum(fieldIndex).asChars());
       }
       break;
     case TIME:
       if (hasTimezone) {
-        json.put(fieldName, TimeDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
+        json.put(fieldName, DateTimeUtil.tmToChars(input.getTimeDate(fieldIndex), timezone, false));
       } else {
         json.put(fieldName, input.asDatum(fieldIndex).asChars());
       }

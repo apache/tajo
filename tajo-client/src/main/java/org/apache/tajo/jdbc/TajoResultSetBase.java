@@ -22,7 +22,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -268,10 +267,10 @@ public abstract class TajoResultSetBase implements ResultSet {
     switch(tuple.type(index)) {
       case BOOLEAN:
         return String.valueOf(tuple.getBool(index));
+      case DATE:
       case TIME:
-        return TimeDatum.asChars(tuple.getTimeDate(index), timezone, false);
       case TIMESTAMP:
-        return TimestampDatum.asChars(tuple.getTimeDate(index), timezone, false);
+        return DateTimeUtil.tmToChars(tuple.getTimeDate(index), timezone, false);
       default :
         return tuple.asDatum(index).asChars();
     }

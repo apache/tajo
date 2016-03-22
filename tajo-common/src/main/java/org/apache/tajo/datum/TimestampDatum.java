@@ -123,23 +123,8 @@ public class TimestampDatum extends Datum {
     return asChars();
   }
 
-  /**
-   *
-   * @param tm TimeMeta
-   * @param timeZone Timezone
-   * @param includeTimeZone Add timezone if it is true. It is usually used for TIMEZONEZ
-   * @return A timestamp string
-   */
-  public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
-    DateTimeUtil.toUserTimezone(tm, timeZone);
-    if (includeTimeZone) {
-      tm.timeZone = timeZone.getRawOffset() / 1000;
-    }
-    return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
-  }
-
   public String toString(TimeZone timeZone, boolean includeTimeZone) {
-    return asChars(asTimeMeta(), timeZone, includeTimeZone);
+    return DateTimeUtil.tmToChars(asTimeMeta(), timeZone, includeTimeZone);
   }
 
   @Override
