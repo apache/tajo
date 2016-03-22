@@ -98,8 +98,16 @@ public class TimeDatum extends Datum {
     return DateTimeUtil.encodeTime(tm, DateStyle.ISO_DATES);
   }
 
+  public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
+    DateTimeUtil.toUserTimezone(tm, timeZone);
+    if (includeTimeZone) {
+      tm.timeZone = timeZone.getRawOffset() / 1000;
+    }
+    return DateTimeUtil.encodeTime(tm, DateStyle.ISO_DATES);
+  }
+
   public String toString(TimeZone timeZone, boolean includeTimeZone) {
-    return DateTimeUtil.tmToChars(asTimeMeta(), timeZone, includeTimeZone);
+    return asChars(asTimeMeta(), timeZone, includeTimeZone);
   }
 
   @Override

@@ -315,9 +315,9 @@ public class ExprTestBase {
       for (int i = 0; i < expected.length; i++) {
         String outTupleAsChars;
         if (outTuple.type(i) == Type.TIMESTAMP) {
-          outTupleAsChars = DateTimeUtil.tmToChars(outTuple.getTimeDate(i), timeZone, false);
+          outTupleAsChars = TimestampDatum.asChars(outTuple.getTimeDate(i), timeZone, false);
         } else if (outTuple.type(i) == Type.TIME) {
-          outTupleAsChars = DateTimeUtil.tmToChars(outTuple.getTimeDate(i), timeZone, false);
+          outTupleAsChars = TimeDatum.asChars(outTuple.getTimeDate(i), timeZone, false);
         } else {
           outTupleAsChars = outTuple.asDatum(i).toString();
         }

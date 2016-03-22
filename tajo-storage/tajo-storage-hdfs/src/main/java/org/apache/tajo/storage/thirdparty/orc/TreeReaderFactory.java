@@ -803,7 +803,8 @@ public class TreeReaderFactory {
       nanos = createIntegerReader(stripeFooter.getColumnsList().get(columnId).getKind(),
           streams.get(new org.apache.orc.impl.StreamName(columnId,
               OrcProto.Stream.Kind.SECONDARY)), false, skipCorrupt);
-      getBaseTimestamp(stripeFooter.getWriterTimezone());
+      base_timestamp = getBaseTimestamp(stripeFooter.getWriterTimezone());
+      this.base_timestamp = Timestamp.valueOf(BASE_TIMESTAMP_STRING).getTime() / DateTimeConstants.MSECS_PER_SEC;
     }
 
     private long getBaseTimestamp(String timeZoneId) throws IOException {
@@ -849,7 +850,7 @@ public class TreeReaderFactory {
 
       if (valuePresent) {
         long millis = decodeTimestamp(data.next(), nanos.next(), base_timestamp);
-        long adjustedMillis = millis - writerTimeZone.getRawOffset();
+        long adjustedMillis = millis - timeZone.getRawOffset();
         return DatumFactory.createTimestamp(DateTimeUtil.javaTimeToJulianTime(adjustedMillis));
       } else {
         return NullDatum.get();

@@ -30,8 +30,6 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.util.TimeZone;
-
 public class DateDatum extends Datum {
   public static final int SIZE = 4;
 
@@ -186,21 +184,6 @@ public class DateDatum extends Datum {
   @Override
   public String asChars() {
     return DateTimeUtil.encodeDate(asTimeMeta(), DateStyle.ISO_DATES);
-  }
-
-  /**
-   *
-   * @param tm TimeMeta
-   * @param timeZone Timezone
-   * @param includeTimeZone Add timezone if it is true. It is usually used for TIMEZONEZ
-   * @return A timestamp string
-   */
-  public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
-    DateTimeUtil.toUserTimezone(tm, timeZone);
-    if (includeTimeZone) {
-      tm.timeZone = timeZone.getRawOffset() / 1000;
-    }
-    return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
   }
 
   public String toChars(String format) {

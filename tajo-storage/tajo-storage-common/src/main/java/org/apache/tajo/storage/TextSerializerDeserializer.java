@@ -28,7 +28,6 @@ import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.NumberUtil;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -102,12 +101,12 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         out.write(bytes);
         break;
       case TIME:
-        bytes = DateTimeUtil.tmToChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
+        bytes = TimeDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
         length = bytes.length;
         out.write(bytes);
         break;
       case TIMESTAMP:
-        bytes = DateTimeUtil.tmToChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
+        bytes = TimestampDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
         length = bytes.length;
         out.write(bytes);
         break;

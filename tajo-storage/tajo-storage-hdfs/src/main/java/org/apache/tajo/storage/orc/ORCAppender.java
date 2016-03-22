@@ -50,9 +50,8 @@ public class ORCAppender extends FileAppender {
                      TableMeta meta, Path workDir) {
     super(conf, taskAttemptId, schema, meta, workDir);
 
-    timezone = meta.containsProperty(StorageConstants.TIMEZONE) ?
-        TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE)) :
-        TimeZone.getDefault();
+    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
+        TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
   }
 
   @Override
@@ -87,9 +86,9 @@ public class ORCAppender extends FileAppender {
   public void close() throws IOException {
     writer.close();
 
-//    if (tableStatsEnabled) {
-//      stats.setNumBytes(getOffset());
-//    }
+    if (tableStatsEnabled) {
+      stats.setNumBytes(writer.getRawDataSize());
+    }
   }
 
   @Override
@@ -151,6 +150,7 @@ public class ORCAppender extends FileAppender {
    * Options for creating ORC file writers.
    */
   public static class WriterOptions extends OrcFile.WriterOptions {
+    private boolean explicitSchema = false;
     // Setting the default batch size to 1000 makes the memory check at 5000
     // rows work the same as the row by row writer. (If it was the default 1024,
     // the smallest stripe size would be 5120 rows, which changes the output
@@ -167,6 +167,7 @@ public class ORCAppender extends FileAppender {
      * @return this
      */
     public WriterOptions setSchema(TypeDescription schema) {
+      this.explicitSchema = true;
       super.setSchema(schema);
       return this;
     }

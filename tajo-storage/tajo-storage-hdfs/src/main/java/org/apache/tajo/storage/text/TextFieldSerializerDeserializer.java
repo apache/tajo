@@ -35,7 +35,6 @@ import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.NumberUtil;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -125,7 +124,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIME:
         if (hasTimezone) {
-          bytes = DateTimeUtil.tmToChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
+          bytes = TimeDatum.asChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
         } else {
           bytes = tuple.getTextBytes(columnIndex);
         }
@@ -134,7 +133,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case TIMESTAMP:
         if (hasTimezone) {
-          bytes = DateTimeUtil.tmToChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
+          bytes = TimestampDatum.asChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
         } else {
           bytes = tuple.getTextBytes(columnIndex);
         }
