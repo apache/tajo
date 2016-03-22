@@ -60,6 +60,7 @@ public class HiveFunctionLoader {
         return Optional.empty();
       }
 
+      // Read jar paths from the directory and change to URLs
       URL [] urls = Arrays.stream(fs.listStatus(udfPath, (Path path) -> path.getName().endsWith(".jar")))
           .map(fstatus -> {
             try {
@@ -72,6 +73,7 @@ public class HiveFunctionLoader {
           })
           .toArray(URL[]::new);
 
+      // Extract UDF classes and build function information
       Set<Class<? extends UDF>> udfClasses = getSubclassesFromJarEntry(urls, UDF.class);
       buildFunctionsFromUDF(udfClasses, funcList, "jar:"+urls[0].getPath());
 
