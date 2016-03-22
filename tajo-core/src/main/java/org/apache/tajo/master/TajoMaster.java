@@ -225,8 +225,8 @@ public class TajoMaster extends CompositeService {
       funcSet.put(desc.hashCodeWithoutType(), desc);
     }
 
-    checkUDFduplicateAndMerge(FunctionLoader.loadUserDefinedFunctions(systemConf), funcSet, functionList);
-    checkUDFduplicateAndMerge(HiveFunctionLoader.loadHiveUDFs(systemConf), funcSet, functionList);
+    checkUDFduplicateAndMerge(FunctionLoader.loadUserDefinedFunctions(systemConf).orElse(Collections.emptyList()), funcSet, functionList);
+    checkUDFduplicateAndMerge(HiveFunctionLoader.loadHiveUDFs(systemConf).orElse(Collections.emptyList()), funcSet, functionList);
 
     return functionList;
   }
@@ -239,9 +239,9 @@ public class TajoMaster extends CompositeService {
    * @param funcList list to be merged
    * @throws AmbiguousFunctionException
    */
-  private void checkUDFduplicateAndMerge(Optional<List<FunctionDesc>> udfs, HashMap<Integer, FunctionDesc> funcSet, List<FunctionDesc> funcList)
+  private static void checkUDFduplicateAndMerge(List<FunctionDesc> udfs, HashMap<Integer, FunctionDesc> funcSet, List<FunctionDesc> funcList)
       throws AmbiguousFunctionException {
-    for (FunctionDesc desc: udfs.orElse(new ArrayList<>())) {
+    for (FunctionDesc desc: udfs) {
       // check
       if (funcSet.containsKey(desc.hashCodeWithoutType())) {
         throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
@@ -557,7 +557,7 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  String getThreadTaskName(long id, String name) {
+  private String getThreadTaskName(long id, String name) {
     if (name == null) {
       return Long.toString(id);
     }
