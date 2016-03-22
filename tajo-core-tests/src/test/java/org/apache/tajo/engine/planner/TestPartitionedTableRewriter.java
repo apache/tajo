@@ -584,7 +584,6 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
     rewriter.setCatalog(catalog);
-    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
     assertNotNull(partitionPruningHandle);
@@ -625,7 +624,6 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
     rewriter.setCatalog(catalog);
-    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
 
     PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
     assertNotNull(partitionPruningHandle);
