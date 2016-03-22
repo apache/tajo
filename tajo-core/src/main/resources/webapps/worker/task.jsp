@@ -39,6 +39,11 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
 <%@ page import="org.apache.tajo.conf.TajoConf.ConfVars" %>
+<%@ page import="org.apache.tajo.storage.fragment.PartitionFileFragment" %>
+<%@ page import="org.apache.tajo.engine.query.QueryContext" %>
+<%@ page import="org.apache.tajo.plan.util.PlannerUtil" %>
+<%@ page import="org.apache.tajo.plan.logical.NodeType" %>
+<%@ page import="org.apache.tajo.plan.logical.PartitionedTableScanNode" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -103,8 +108,17 @@
 
     String fragmentInfo = "";
     String delim = "";
+
+    PartitionedTableScanNode partitionedTable =  PlannerUtil.findTopNode(stage.getBlock().getPlan(),
+        NodeType.PARTITIONS_SCAN);
+
     for (CatalogProtos.FragmentProto eachFragment : task.getAllFragments()) {
-        Fragment fragment = FragmentConvertor.convert(tajoWorker.getConfig(), eachFragment);
+        Fragment fragment = null;
+        if (partitionedTable != null) {
+            fragment = FragmentConvertor.convert(PartitionFileFragment.class, eachFragment);
+        } else {
+            fragment = FragmentConvertor.convert(tajoWorker.getConfig(), eachFragment);
+        }
         fragmentInfo += delim + fragment.toString();
         delim = "<br/>";
     }
