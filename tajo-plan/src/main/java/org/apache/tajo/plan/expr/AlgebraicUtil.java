@@ -192,7 +192,7 @@ public class AlgebraicUtil {
   }
 
   private final static AlgebraicOptimizer algebraicOptimizer = new AlgebraicOptimizer();
-  
+
   /**
    * Simplify the given expr. That is, all subexprs consisting of only constants
    * are calculated immediately.

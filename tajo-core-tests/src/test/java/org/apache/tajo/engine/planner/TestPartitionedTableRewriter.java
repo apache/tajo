@@ -41,7 +41,9 @@ import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import static org.junit.Assert.*;
 
@@ -49,6 +51,10 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   final static String PARTITION_TABLE_NAME = "tb_partition";
   final static String MULTIPLE_PARTITION_TABLE_NAME = "tb_multiple_partition";
+
+  // for getting a method name
+  @Rule
+  public TestName name = new TestName();
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -384,7 +390,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
   public final void testPartitionPruningWitCTAS() throws Exception {
-    String tableName = "testPartitionPruningUsingDirectories".toLowerCase();
+    String tableName = name.getMethodName().toLowerCase();
     String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
 
     executeString(
@@ -426,6 +432,150 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("key=17.0", filteredPaths[0].getName());
     assertEquals("key=36.0", filteredPaths[1].getName());
     assertEquals("key=38.0", filteredPaths[2].getName());
+
+    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
+  }
+
+
+  @Test
+  public void testConstantFoldingWithStringFunctions() throws Exception {
+    Expr expr = sqlParser.parse("SELECT * FROM " + MULTIPLE_PARTITION_TABLE_NAME
+      + " WHERE key1 between lower('PART123') and lower('PART125') order by n_nationkey");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
+
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    ProjectionNode projNode = root.getChild();
+
+    assertEquals(NodeType.SORT, projNode.getChild().getType());
+    SortNode sortNode = projNode.getChild();
+
+    assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
+    SelectionNode selNode = sortNode.getChild();
+    assertTrue(selNode.hasQual());
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    scanNode.setQual(selNode.getQual());
+
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
+
+    Path[] filteredPaths = rewriter.findFilteredPartitionPaths(conf, scanNode);
+    assertNotNull(filteredPaths);
+
+    assertEquals(2, filteredPaths.length);
+
+    assertEquals("key3=1", filteredPaths[0].getName());
+    assertEquals("key2=supp123", filteredPaths[0].getParent().getName());
+    assertEquals("key1=part123", filteredPaths[0].getParent().getParent().getName());
+
+    assertEquals("key3=2", filteredPaths[1].getName());
+    assertEquals("key2=supp123", filteredPaths[1].getParent().getName());
+    assertEquals("key1=part123", filteredPaths[1].getParent().getParent().getName());
+  }
+
+  @Test
+  public final void testConstantFoldingWithExpression() throws Exception {
+    String tableName = name.getMethodName().toLowerCase();
+    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
+
+    executeString(
+      "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
+        + " as select l_orderkey, l_partkey, l_quantity from default.lineitem");
+
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    assertNotNull(tableDesc);
+
+    Expr expr = sqlParser.parse("SELECT * FROM " + canonicalTableName
+      + " WHERE key between round(abs(35.0 + 1.0)) and round(abs(37.0 + 1.0)) ORDER BY key");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
+
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    ProjectionNode projNode = root.getChild();
+
+    assertEquals(NodeType.SORT, projNode.getChild().getType());
+    SortNode sortNode = projNode.getChild();
+
+    assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
+    SelectionNode selNode = sortNode.getChild();
+    assertTrue(selNode.hasQual());
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    scanNode.setQual(selNode.getQual());
+
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
+
+    Path[] filteredPaths = rewriter.findFilteredPartitionPaths(conf, scanNode);
+    assertNotNull(filteredPaths);
+
+    assertEquals(2, filteredPaths.length);
+    assertEquals("key=36.0", filteredPaths[0].getName());
+    assertEquals("key=38.0", filteredPaths[1].getName());
+
+    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
+  }
+
+  @Test
+  public final void testConstantFoldingWithDateFunctions() throws Exception {
+    String tableName = name.getMethodName().toLowerCase();
+    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"TestPartitionedTableRewriter\"", tableName);
+
+    String[] partitionKeys = new String[] {"20160315", "20160316", "20160317"};
+
+    executeString(
+      "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(reg_date text) "
+        + " as select l_orderkey, l_partkey" +
+        ", case " +
+        " when l_orderkey = 2 then '20160315' " +
+        " when l_orderkey = 3 then '20160316' " +
+        " else '20160317' end as reg_date" +
+        " from default.lineitem");
+
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
+    assertNotNull(tableDesc);
+
+    Expr expr = sqlParser.parse("SELECT * FROM " + canonicalTableName
+      + " WHERE reg_date between  TO_CHAR( ADD_DAYS(TO_DATE('2016-03-14','YYYY-MM-DD'), -1) , 'YYYYMMDD') " +
+      " AND TO_CHAR( ADD_DAYS(TO_DATE('2016-03-14','YYYY-MM-DD'), 1) , 'YYYYMMDD') ORDER BY reg_date");
+
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
+
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    ProjectionNode projNode = root.getChild();
+
+    assertEquals(NodeType.SORT, projNode.getChild().getType());
+    SortNode sortNode = projNode.getChild();
+
+    assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
+    SelectionNode selNode = sortNode.getChild();
+    assertTrue(selNode.hasQual());
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    scanNode.setQual(selNode.getQual());
+
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    OverridableConf conf = CommonTestingUtil.getSessionVarsForTest();
+
+    Path[] filteredPaths = rewriter.findFilteredPartitionPaths(conf, scanNode);
+    assertNotNull(filteredPaths);
+
+    assertEquals(1, filteredPaths.length);
+    assertEquals("reg_date=" + partitionKeys[0], filteredPaths[0].getName());
 
     executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }
