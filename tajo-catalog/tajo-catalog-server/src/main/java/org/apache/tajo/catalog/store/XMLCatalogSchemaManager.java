@@ -44,6 +44,7 @@ import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class XMLCatalogSchemaManager {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -598,9 +599,8 @@ public class XMLCatalogSchemaManager {
         }
       }
 
-      orderedObjects.stream().filter(object -> object != null).forEach(mergedObjects::add);
-
-      unorderedObjects.stream().filter(object -> object != null).forEach(mergedObjects::add);
+      Stream.concat(orderedObjects.stream(), unorderedObjects.stream())
+          .filter(object -> object != null).forEach(mergedObjects::add);
       
       return mergedObjects;
     }
@@ -630,12 +630,9 @@ public class XMLCatalogSchemaManager {
     }
     
     protected void mergePatches(List<SchemaPatch> patches) {
-      final List<DatabaseObject> objects = new ArrayList<>();
-
       patches.stream().forEachOrdered(patch -> {
         validatePatch(patches, patch);
 
-        objects.clear();
         List<DatabaseObject> tempObjects = new ArrayList<>();
         tempObjects.addAll(patch.getObjects());
         patch.clearObjects();
@@ -651,22 +648,6 @@ public class XMLCatalogSchemaManager {
       if (occurredCount > 1) {
         throw new TajoInternalError("Duplicate Query type (" + testQuery.getType() + ") has found.");
       }
-    }
-    
-    protected void mergeExistQueries(List<SQLObject> queries) {
-      queries.forEach(query -> {
-        validateSQLObject(queries, query);
-
-        targetStore.addExistQuery(query);
-      });
-    }
-    
-    protected void mergeDropStatements(List<SQLObject> queries) {
-      queries.forEach(query -> {
-        validateSQLObject(queries, query);
-
-        targetStore.addDropStatement(query);
-      });
     }
     
     public StoreObject merge() {
@@ -687,8 +668,14 @@ public class XMLCatalogSchemaManager {
         }
 
         mergePatches(store.getPatches());
-        mergeExistQueries(store.getExistQueries());
-        mergeDropStatements(store.getDropStatements());
+        store.getExistQueries().forEach(query -> {
+          validateSQLObject(store.getExistQueries(), query);
+          targetStore.addExistQuery(query);
+        });
+        store.getDropStatements().forEach(query -> {
+          validateSQLObject(store.getDropStatements(), query);
+          targetStore.addDropStatement(query);
+        });
       }
       
       return this.targetStore;

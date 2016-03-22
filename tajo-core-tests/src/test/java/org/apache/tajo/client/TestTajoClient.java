@@ -57,7 +57,6 @@ import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -176,8 +175,7 @@ public class TestTajoClient {
     String prefixName = "key_";
     String prefixValue = "val_";
 
-    List<String> unsetList = client.getAllSessionVariables().entrySet().stream()
-      .map(Map.Entry<String, String>::getKey).collect(Collectors.toList());
+    List<String> unsetList = new ArrayList<>(client.getAllSessionVariables().keySet());
     client.unsetSessionVariables(unsetList);
 
     for (int i = 0; i < 10; i++) {

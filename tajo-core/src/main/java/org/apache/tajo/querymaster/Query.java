@@ -300,12 +300,8 @@ public class Query implements EventHandler<QueryEvent> {
 
   public QueryHistory getQueryHistory() {
     QueryHistory queryHistory = makeQueryHistory();
-    queryHistory.setStageHistories(makeStageHistories());
+    queryHistory.setStageHistories(getStages().stream().map(Stage::getStageHistory).collect(Collectors.toList()));
     return queryHistory;
-  }
-
-  private List<StageHistory> makeStageHistories() {
-    return getStages().stream().map(Stage::getStageHistory).collect(Collectors.toList());
   }
 
   private QueryHistory makeQueryHistory() {
