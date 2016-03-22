@@ -77,14 +77,10 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
         if (checkParamTypes(methodParamTypes, tajoParamTypes)) {
           return m;
         }
-        else {
-          throw new TajoInternalError(new UndefinedFunctionException(
-              String.format("Hive UDF (%s)", clazz.getSimpleName())));
-        }
       }
     }
-
-    return null;
+    
+    throw new TajoInternalError(new UndefinedFunctionException(String.format("Hive UDF (%s)", clazz.getSimpleName())));
   }
 
   private boolean checkParamTypes(Class [] writableParams, TajoDataTypes.DataType [] tajoParams) {
