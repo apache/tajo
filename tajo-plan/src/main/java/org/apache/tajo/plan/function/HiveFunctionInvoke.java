@@ -22,7 +22,9 @@ import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.plan.util.WritableTypeConverter;
@@ -33,6 +35,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 
 public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
   private Object instance = null;
@@ -59,7 +62,7 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
     }
   }
 
-  private Method getEvaluateMethod(TajoDataTypes.DataType [] paramTypes, Class<?> clazz) {
+  private Method getEvaluateMethod(TajoDataTypes.DataType [] tajoParamTypes, Class<?> clazz) {
     Constructor constructor = clazz.getConstructors()[0];
 
     try {
@@ -71,8 +74,12 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
     for (Method m: clazz.getMethods()) {
       if (m.getName().equals("evaluate")) {
         Class [] methodParamTypes = m.getParameterTypes();
-        if (checkParamTypes(methodParamTypes, paramTypes)) {
+        if (checkParamTypes(methodParamTypes, tajoParamTypes)) {
           return m;
+        }
+        else {
+          throw new TajoInternalError(new UndefinedFunctionException(
+              String.format("Hive UDF (%s)", clazz.getSimpleName())));
         }
       }
     }
@@ -80,7 +87,7 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
     return null;
   }
 
-  boolean checkParamTypes(Class [] writableParams, TajoDataTypes.DataType [] tajoParams) {
+  private boolean checkParamTypes(Class [] writableParams, TajoDataTypes.DataType [] tajoParams) {
     int i = 0;
 
     for (Class writable: writableParams) {
