@@ -20,7 +20,6 @@ package org.apache.tajo.engine.function.hiveudf;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.ql.exec.Description;
@@ -40,6 +39,7 @@ import org.reflections.util.ConfigurationBuilder;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
@@ -60,17 +60,21 @@ public class HiveFunctionLoader {
         return Optional.empty();
       }
 
-      // loop each jar file
-      for (FileStatus fstatus : fs.listStatus(udfPath, (Path path) -> path.getName().endsWith(".jar"))) {
+      URL [] urls = Arrays.stream(fs.listStatus(udfPath, (Path path) -> path.getName().endsWith(".jar")))
+          .map(fstatus -> {
+            try {
+              return new URL("jar:" + fstatus.getPath().toUri().toURL() + "!/");
+            } catch (MalformedURLException e) {
+              e.printStackTrace();
+            }
 
-        URL[] urls = new URL[]{new URL("jar:" + fstatus.getPath().toUri().toURL() + "!/")};
+            return null;
+          })
+          .toArray(URL[]::new);
 
-        // extract and register UDF's decendants (legacy Hive UDF form)
-        Set<Class<? extends UDF>> udfClasses = getSubclassesFromJarEntry(urls, UDF.class);
-        if (udfClasses != null) {
-          buildFunctionsFromUDF(udfClasses, funcList, "jar:"+urls[0].getPath());
-        }
-      }
+      Set<Class<? extends UDF>> udfClasses = getSubclassesFromJarEntry(urls, UDF.class);
+      buildFunctionsFromUDF(udfClasses, funcList, "jar:"+urls[0].getPath());
+
     } catch (IOException e) {
       throw new TajoInternalError(e);
     }
