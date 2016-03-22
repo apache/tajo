@@ -566,8 +566,10 @@ public class TestTajoCli {
 
     tajoCli.executeScript("alter table " + tableName + " drop partition (col3 = 0.1, col4 = 10)");
 
-    String consoleResult = new String(out.toByteArray());
-    assertOutputResult(consoleResult);
+    String stdoutResult = new String(out.toByteArray());
+    assertOutputResult(stdoutResult);
+    String stdErrResult = new String(err.toByteArray());
+    assertErrorResult(stdErrResult, false);
   }
 
   public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {
