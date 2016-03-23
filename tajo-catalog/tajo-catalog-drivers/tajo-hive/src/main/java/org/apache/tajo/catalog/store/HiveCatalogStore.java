@@ -564,6 +564,16 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           table.putToParameters(ParquetOutputFormat.COMPRESSION,
               tableDesc.getMeta().getProperty(ParquetOutputFormat.COMPRESSION));
         }
+      } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.ORC)) {
+        StorageFormatDescriptor descriptor = storageFormatFactory.get(IOConstants.ORC);
+        sd.setInputFormat(descriptor.getInputFormat());
+        sd.setOutputFormat(descriptor.getOutputFormat());
+        sd.getSerdeInfo().setSerializationLib(descriptor.getSerde());
+
+        if (tableDesc.getMeta().containsProperty(StorageConstants.ORC_COMPRESSION)) {
+          table.putToParameters(StorageConstants.ORC_COMPRESSION,
+              tableDesc.getMeta().getProperty(StorageConstants.ORC_COMPRESSION));
+        }
       } else {
         throw new UnsupportedException(tableDesc.getMeta().getDataFormat() + " in HivecatalogStore");
       }

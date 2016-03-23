@@ -303,10 +303,6 @@ if [ ! -z ${HIVE_HOME} ] && [ -d ${HIVE_HOME} ] && [ -d ${HIVE_LIB} ]; then
   for f in ${HIVE_LIB}/datanucleus-*.jar; do
     CLASSPATH=${CLASSPATH}:$f;
   done
-else
-  for f in $TAJO_HOME/hive/*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
 fi
 
 if [ "${HIVE_JDBC_DRIVER_DIR}" != "" ]; then

@@ -650,6 +650,41 @@ public class TestHiveCatalogStore {
   }
 
   @Test
+  public void testTableUsingORC() throws Exception {
+    TableMeta meta = new TableMeta("ORC", new KeyValueSet());
+
+    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+    schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("c_name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_address", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
+    schema.addColumn("c_phone", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_acctbal", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("c_mktsegment", TajoDataTypes.Type.TEXT);
+    schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
+
+    TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
+        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
+    store.createTable(table.getProto());
+    assertTrue(store.existTable(DB_NAME, CUSTOMER));
+
+    StorageFormatDescriptor descriptor = formatFactory.get(IOConstants.ORC);
+    org.apache.hadoop.hive.ql.metadata.Table hiveTable = store.getHiveTable(DB_NAME, CUSTOMER);
+    assertEquals(descriptor.getInputFormat(), hiveTable.getSd().getInputFormat());
+    assertEquals(descriptor.getOutputFormat(), hiveTable.getSd().getOutputFormat());
+
+    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
+    assertEquals(table.getName(), table1.getName());
+    assertEquals(table.getUri(), table1.getUri());
+    assertEquals(table.getSchema().size(), table1.getSchema().size());
+    for (int i = 0; i < table.getSchema().size(); i++) {
+      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+    }
+
+    store.dropTable(DB_NAME, CUSTOMER);
+  }
+
+  @Test
   public void testDataTypeCompatibility() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testDataTypeCompatibility");
 
