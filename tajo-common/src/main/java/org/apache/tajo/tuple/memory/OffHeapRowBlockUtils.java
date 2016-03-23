@@ -68,7 +68,7 @@ public class OffHeapRowBlockUtils {
                                             boolean[] asc, boolean[] nullFirst) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
     UnSafeTuple[] out = new UnSafeTuple[list.size()];
-    int[] positions = new int[256];
+    int[] positions = new int[65536];
 
 //    UnSafeTuple[] sorted = longRadixSortRecur(in, out, positions, 0, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
     UnSafeTuple[] sorted = longRadixSort(in, out, positions, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
@@ -84,14 +84,14 @@ public class OffHeapRowBlockUtils {
                                      int[] sortKeyIds, Type[] sortKeyTypes,
                                      boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
     UnSafeTuple[] tmp;
-    for (int pass = 0; pass < maxPass - 1; pass++) {
+    for (int pass = 0; pass < maxPass - 1; pass += 2) {
       // Make histogram
       for (UnSafeTuple eachTuple : in) {
-        short key = 255; // for null
+        int key = 65535; // for null
         if (!eachTuple.isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
           // TODO: consider sign
-          key = PlatformDependent.getByte(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-          if (key < 0) key = (short) (256 + key);
+          key = PlatformDependent.getShort(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+          if (key < 0) key = (65536 + key);
         }
         positions[key] += 1;
       }
@@ -103,11 +103,11 @@ public class OffHeapRowBlockUtils {
 
       if (positions[0] != in.length) {
         for (int i = in.length - 1; i >= 0; i--) {
-          short key = 255;
+          int key = 65535; // for null
           if (!in[i].isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
             // TODO: consider sign
-            key = PlatformDependent.getByte(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-            if (key < 0) key = (short) (256 + key);
+            key = PlatformDependent.getShort(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+            if (key < 0) key = (65536 + key);
           }
           out[positions[key] - 1] = in[i];
           positions[key] -= 1;
