@@ -40,12 +40,10 @@ import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
@@ -276,18 +274,10 @@ public class Task implements EventHandler<TaskEvent> {
       }
     }
 
-    PartitionedTableScanNode partitionedTable =  PlannerUtil.findTopNode(lastAttempt.getTask().getLogicalPlan(),
-      NodeType.PARTITIONS_SCAN);
-
     List<String> fragmentList = new ArrayList<>();
     for (FragmentProto eachFragment : getAllFragments()) {
       try {
-        Fragment fragment = null;
-        if (partitionedTable != null) {
-          fragment = FragmentConvertor.convert(PartitionFileFragment.class, eachFragment);
-        } else {
-          fragment = FragmentConvertor.convert(systemConf, eachFragment);
-        }
+        Fragment fragment = FragmentConvertor.convert(systemConf, eachFragment);
         fragmentList.add(fragment.toString());
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
@@ -296,7 +286,7 @@ public class Task implements EventHandler<TaskEvent> {
     }
     taskHistory.setFragments(fragmentList.toArray(new String[fragmentList.size()]));
 
-    List < String[]> fetchList = new ArrayList<>();
+    List<String[]> fetchList = new ArrayList<>();
     for (Map.Entry<String, Set<FetchProto>> e : getFetchMap().entrySet()) {
       for (FetchProto f : e.getValue()) {
         for (URI uri : Repartitioner.createSimpleURIs(maxUrlLength, f)) {
