@@ -366,15 +366,6 @@ public class FileTablespace extends Tablespace {
     return split;
   }
 
-  protected boolean isPartitionSplittable(TableMeta meta, Schema schema, Path path, String partitionKeys,
-                                          FileStatus status) throws IOException {
-    Fragment fragment = new PartitionFileFragment(path.getName(), path, 0, status.getLen(), partitionKeys);
-    Scanner scanner = getScanner(meta, schema, fragment, null);
-    boolean split = scanner.isSplittable();
-    scanner.close();
-    return split;
-  }
-
   private static final double SPLIT_SLOP = 1.1;   // 10% slop
 
   protected int getBlockIndex(BlockLocation[] blkLocations,
@@ -567,6 +558,33 @@ public class FileTablespace extends Tablespace {
   // The below code is for splitting partitioned table.
   ////////////////////////////////////////////////////////////////////////////////
 
+
+  /**
+   * Is the given filename splitable? Usually, true, but if the file is
+   * stream compressed, it will not be.
+   * <p/>
+   * <code>FileInputFormat</code> implementations can override this and return
+   * <code>false</code> to ensure that individual input files are never split-up
+   * so that Mappers process entire files.
+   *
+   *
+   * @param meta the metadata of target table
+   * @param schema the schema of target table
+   * @param path the file name to check
+   * @param partitionKeys keys of target partition
+   * @param status get the file length
+   * @return is this file isSplittable?
+   * @throws IOException
+   */
+  protected boolean isPartitionSplittable(TableMeta meta, Schema schema, Path path, String partitionKeys,
+                                          FileStatus status) throws IOException {
+    Fragment fragment = new PartitionFileFragment(path.getName(), path, 0, status.getLen(), partitionKeys);
+    Scanner scanner = getScanner(meta, schema, fragment, null);
+    boolean split = scanner.isSplittable();
+    scanner.close();
+    return split;
+  }
+
   /**
    * Build a fragment for partition table
    *
@@ -699,7 +717,7 @@ public class FileTablespace extends Tablespace {
           }
         }
       }
-      if(LOG.isDebugEnabled()){
+      if (LOG.isDebugEnabled()){
         LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
       }
       i++;

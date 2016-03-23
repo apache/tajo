@@ -12,8 +12,7 @@
     { "name": "col7", "type": "double" },
     { "name": "col8", "type": "string" },
     { "name": "col9", "type": "bytes" },
-    { "name": "col10", "type": "bytes" },
-    { "name": "col11", "type": "bytes" }
+    { "name": "col10", "type": "bytes" }
   ]
 }
 
