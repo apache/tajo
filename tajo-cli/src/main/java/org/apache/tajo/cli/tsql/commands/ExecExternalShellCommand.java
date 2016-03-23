@@ -53,12 +53,13 @@ public class ExecExternalShellCommand extends TajoShellCommand {
     execCommand[2] = builtCommand;
 
     PrintWriter sout = context.getOutput();
+    PrintWriter serr = context.getError();
 
     CountDownLatch latch = new CountDownLatch(2);
     Process process = Runtime.getRuntime().exec(execCommand);
     try {
       InputStreamConsoleWriter inWriter = new InputStreamConsoleWriter(process.getInputStream(), sout, "", latch);
-      InputStreamConsoleWriter errWriter = new InputStreamConsoleWriter(process.getErrorStream(), sout, "ERROR: ", latch);
+      InputStreamConsoleWriter errWriter = new InputStreamConsoleWriter(process.getErrorStream(), serr, "ERROR: ", latch);
 
       inWriter.start();
       errWriter.start();

@@ -38,12 +38,15 @@ import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.orc.OrcConf;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.IsNullPredicate;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -56,10 +59,8 @@ import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.thrift.TException;
-import parquet.hadoop.ParquetOutputFormat;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
@@ -563,6 +564,16 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         if (tableDesc.getMeta().containsProperty(ParquetOutputFormat.COMPRESSION)) {
           table.putToParameters(ParquetOutputFormat.COMPRESSION,
               tableDesc.getMeta().getProperty(ParquetOutputFormat.COMPRESSION));
+        }
+      } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.ORC)) {
+        StorageFormatDescriptor descriptor = storageFormatFactory.get(IOConstants.ORC);
+        sd.setInputFormat(descriptor.getInputFormat());
+        sd.setOutputFormat(descriptor.getOutputFormat());
+        sd.getSerdeInfo().setSerializationLib(descriptor.getSerde());
+
+        if (tableDesc.getMeta().containsProperty(OrcConf.COMPRESS.getAttribute())) {
+          table.putToParameters(OrcConf.COMPRESS.getAttribute(),
+              tableDesc.getMeta().getProperty(OrcConf.COMPRESS.getAttribute()));
         }
       } else {
         throw new UnsupportedException(tableDesc.getMeta().getDataFormat() + " in HivecatalogStore");
@@ -1112,76 +1123,62 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public final void addFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final void deleteFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final void existFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final List<String> getAllFunctionNames() {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void createIndex(CatalogProtos.IndexDescProto proto) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void dropIndex(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public CatalogProtos.IndexDescProto getIndexByName(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) {
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public boolean existIndexByName(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
-  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) {
+    return false;
   }
 
   @Override
   public List<String> getAllIndexNamesByTable(String databaseName, String tableName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return Collections.EMPTY_LIST;
   }
 
   @Override
   public boolean existIndexesByTable(String databaseName, String tableName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
@@ -1220,22 +1217,22 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<ColumnProto> getAllColumns() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<DatabaseProto> getAllDatabases() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<IndexDescProto> getAllIndexes() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TablePartitionProto> getAllPartitions() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -1288,17 +1285,17 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<TableOptionProto> getAllTableProperties() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TableStatsProto> getAllTableStats() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TableDescriptorProto> getAllTables() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
