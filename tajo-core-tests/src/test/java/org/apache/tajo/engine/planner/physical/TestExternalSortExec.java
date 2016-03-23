@@ -30,6 +30,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
@@ -63,7 +64,7 @@ public class TestExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 10;
+  private final int numTuple = 1_000_000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -80,7 +81,7 @@ public class TestExternalSortExec {
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
     Schema schema = new Schema();
-    schema.addColumn("managerid", Type.INT4);
+    schema.addColumn("managerid", Type.INT8);
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
@@ -93,12 +94,18 @@ public class TestExternalSortExec {
     VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < numTuple; i++) {
       tuple.put(new Datum[] {
-          DatumFactory.createInt4(rnd.nextInt(50)),
+          DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
           DatumFactory.createInt4(rnd.nextInt(100)),
           DatumFactory.createText("dept_" + i),
       });
       appender.addTuple(tuple);
     }
+    tuple.put(new Datum[] {
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+    });
+    appender.addTuple(tuple);
     appender.flush();
     appender.close();
 
@@ -146,13 +153,12 @@ public class TestExternalSortExec {
     long start = System.currentTimeMillis();
     BaseTupleComparator comparator = new BaseTupleComparator(proj.getSchema(),
         new SortSpec[]{
-            new SortSpec(new Column("managerid", Type.INT4)),
+            new SortSpec(new Column("managerid", Type.INT8)),
 //            new SortSpec(new Column("empid", Type.INT4))
         });
 
     while ((tuple = exec.next()) != null) {
       curVal = tuple;
-      System.err.println(curVal);
       if (preVal != null) {
         assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
       }
@@ -160,7 +166,7 @@ public class TestExternalSortExec {
       cnt++;
     }
     long end = System.currentTimeMillis();
-    assertEquals(numTuple, cnt);
+    assertEquals(numTuple + 1, cnt);
 
     // for rescan test
     preVal = null;
@@ -174,7 +180,7 @@ public class TestExternalSortExec {
       preVal = curVal;
       cnt++;
     }
-    assertEquals(numTuple, cnt);
+    assertEquals(numTuple + 1, cnt);
     exec.close();
     System.out.println("Sort Time: " + (end - start) + " msc");
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);

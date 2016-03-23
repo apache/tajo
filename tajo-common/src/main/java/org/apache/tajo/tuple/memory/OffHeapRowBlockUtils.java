@@ -20,6 +20,7 @@ package org.apache.tajo.tuple.memory;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.*;
+import io.netty.util.internal.PlatformDependent;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.IntervalDatum;
@@ -65,21 +66,123 @@ public class OffHeapRowBlockUtils {
 
   public static List<UnSafeTuple> radixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
                                             boolean[] asc, boolean[] nullFirst) {
-    UnSafeTupleList in = list;
-    UnSafeTupleList out = new UnSafeTupleList(list.getDataTypes(), list.size());
-    out.addAll(in);
+    UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
+    UnSafeTuple[] out = new UnSafeTuple[list.size()];
     int[] positions = new int[256];
 
-    return intRadixSort(in, out, positions, 0, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+//    UnSafeTuple[] sorted = longRadixSortRecur(in, out, positions, 0, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+    UnSafeTuple[] sorted = longRadixSort(in, out, positions, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+    ListIterator<UnSafeTuple> it = list.listIterator();
+    for (UnSafeTuple t : sorted) {
+      it.next();
+      it.set(t);
+    }
+    return list;
   }
 
-  static List<UnSafeTuple> intRadixSort(UnSafeTupleList in, UnSafeTupleList out, int[] positions, int pass,
+  static UnSafeTuple[] longRadixSort(UnSafeTuple[] in, UnSafeTuple[] out, int[] positions, int maxPass,
+                                     int[] sortKeyIds, Type[] sortKeyTypes,
+                                     boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
+    UnSafeTuple[] tmp;
+    for (int pass = 0; pass < maxPass - 1; pass++) {
+      // Make histogram
+      for (UnSafeTuple eachTuple : in) {
+        short key = 255; // for null
+        if (!eachTuple.isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
+          // TODO: consider sign
+          key = PlatformDependent.getByte(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+          if (key < 0) key = (short) (256 + key);
+        }
+        positions[key] += 1;
+      }
+
+      int nonZeroCnt = 0;
+      for (int i = 0; i < positions.length - 1; i++) {
+        positions[i + 1] += positions[i];
+      }
+
+      if (positions[0] != in.length) {
+        for (int i = in.length - 1; i >= 0; i--) {
+          short key = 255;
+          if (!in[i].isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
+            // TODO: consider sign
+            key = PlatformDependent.getByte(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+            if (key < 0) key = (short) (256 + key);
+          }
+          out[positions[key] - 1] = in[i];
+          positions[key] -= 1;
+        }
+
+        // directly go to the next pass
+        if (pass < maxPass - 1) {
+          tmp = in;
+          in = out;
+          out = tmp;
+        }
+      }
+      Arrays.fill(positions, 0);
+    }
+    return in;
+  }
+
+  static UnSafeTuple[] longRadixSortRecur(UnSafeTuple[] in, UnSafeTuple[] out, int[] positions, int pass,
+                                          int[] sortKeyIds, Type[] sortKeyTypes,
+                                          boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
+    // Make histogram
+    for (UnSafeTuple eachTuple : in) {
+      short key = 255; // for null
+      if (!eachTuple.isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
+        // TODO: consider sign
+        key = PlatformDependent.getByte(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+        if (key < 0) key = (short) (256 + key);
+      }
+      positions[key] += 1;
+    }
+
+    int nonZeroCnt = 0;
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+    }
+
+    if (positions[0] != in.length) {
+      for (int i = in.length - 1; i >= 0; i--) {
+        short key = 255;
+        if (!in[i].isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
+          // TODO: consider sign
+          key = PlatformDependent.getByte(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+          if (key < 0) key = (short) (256 + key);
+        }
+        out[positions[key] - 1] = in[i];
+        positions[key] -= 1;
+      }
+
+      if (pass < 7) {
+        Arrays.fill(positions, 0);
+        return longRadixSortRecur(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+      } else {
+        return out;
+      }
+
+    } else {
+      // directly go to the next pass
+      if (pass < 7) {
+        Arrays.fill(positions, 0);
+        return longRadixSortRecur(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+      } else {
+        return in;
+      }
+    }
+  }
+
+  static UnSafeTuple[] intRadixSort(UnSafeTuple[] in, UnSafeTuple[] out, int[] positions, int pass,
                                         int[] sortKeyIds, Type[] sortKeyTypes,
                                         boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
     // Make histogram
     for (UnSafeTuple eachTuple : in) {
       // TODO: consider sign
-      int key = eachTuple.getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
+//      int key = eachTuple.getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
+      short key = PlatformDependent.getByte(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+      if (key < 0) key = (short) (256 + key);
       positions[key] += 1;
     }
 
@@ -91,10 +194,12 @@ public class OffHeapRowBlockUtils {
 //      }
     }
 
-    if (positions[0] != in.size()) {
-      for (int i = in.size() - 1; i >= 0; i--) {
-        int key = in.get(i).getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
-        out.set(positions[key] - 1, in.get(i));
+    if (positions[0] != in.length) {
+      for (int i = in.length - 1; i >= 0; i--) {
+//        int key = in[i].getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
+        short key = PlatformDependent.getByte(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+        if (key < 0) key = (short) (256 + key);
+        out[positions[key] - 1] = in[i];
         positions[key] -= 1;
       }
 
@@ -111,7 +216,7 @@ public class OffHeapRowBlockUtils {
         Arrays.fill(positions, 0);
         return intRadixSort(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
       } else {
-        System.arraycopy(in, 0, out, 0, in.size());
+        System.arraycopy(in, 0, out, 0, in.length);
         return in;
       }
     }
