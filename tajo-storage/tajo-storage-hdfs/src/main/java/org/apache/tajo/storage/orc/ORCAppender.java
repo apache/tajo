@@ -20,6 +20,9 @@ package org.apache.tajo.storage.orc;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.orc.CompressionKind;
+import org.apache.orc.OrcConf;
+import org.apache.orc.TypeDescription;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
@@ -29,12 +32,14 @@ import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.orc.objectinspector.ObjectInspectorFactory;
-import org.apache.tajo.storage.thirdparty.orc.CompressionKind;
 import org.apache.tajo.storage.thirdparty.orc.OrcFile;
+import org.apache.tajo.storage.thirdparty.orc.OrcFile.EncodingStrategy;
+import org.apache.tajo.storage.thirdparty.orc.OrcUtils;
 import org.apache.tajo.storage.thirdparty.orc.Writer;
+import org.apache.tajo.storage.thirdparty.orc.WriterImpl;
 
 import java.io.IOException;
+import java.util.Properties;
 import java.util.TimeZone;
 
 public class ORCAppender extends FileAppender {
@@ -46,21 +51,14 @@ public class ORCAppender extends FileAppender {
                      TableMeta meta, Path workDir) {
     super(conf, taskAttemptId, schema, meta, workDir);
 
-    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
-        TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+    timezone = meta.containsOption(StorageConstants.TIMEZONE) ?
+        TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE)) :
+        TimeZone.getDefault();
   }
 
   @Override
   public void init() throws IOException {
-    writer = OrcFile.createWriter(workDir.getFileSystem(conf), path, conf,
-      ObjectInspectorFactory.buildStructObjectInspector(schema),
-      Long.parseLong(meta.getOption(StorageConstants.ORC_STRIPE_SIZE,
-        StorageConstants.DEFAULT_ORC_STRIPE_SIZE)), getCompressionKind(),
-      Integer.parseInt(meta.getOption(StorageConstants.ORC_BUFFER_SIZE,
-        StorageConstants.DEFAULT_ORC_BUFFER_SIZE)),
-      Integer.parseInt(meta.getOption(StorageConstants.ORC_ROW_INDEX_STRIDE,
-        StorageConstants.DEFAULT_ORC_ROW_INDEX_STRIDE)),
-      timezone);
+    writer = OrcFile.createWriter(path, buildWriterOptions(conf, meta, schema), timezone);
 
     if (tableStatsEnabled) {
       this.stats = new TableStatistics(schema, columnStatsEnabled);
@@ -90,7 +88,6 @@ public class ORCAppender extends FileAppender {
   public void close() throws IOException {
     writer.close();
 
-    // TODO: getOffset is not implemented yet
 //    if (tableStatsEnabled) {
 //      stats.setNumBytes(getOffset());
 //    }
@@ -107,24 +104,81 @@ public class ORCAppender extends FileAppender {
 
   @Override
   public long getEstimatedOutputSize() throws IOException {
-    return writer.getRawDataSize() * writer.getNumberOfRows();
+    return writer.getRawDataSize();
   }
 
-  private CompressionKind getCompressionKind() {
-    String kindstr = meta.getOption(StorageConstants.ORC_COMPRESSION, StorageConstants.DEFAULT_ORC_COMPRESSION_KIND);
+  private static OrcFile.WriterOptions buildWriterOptions(Configuration conf, TableMeta meta, Schema schema) {
+    return OrcFile.writerOptions(conf)
+        .setSchema(OrcUtils.convertSchema(schema))
+        .compress(getCompressionKind(meta))
+        .stripeSize(Long.parseLong(meta.getOption(OrcConf.STRIPE_SIZE.getAttribute(),
+            String.valueOf(OrcConf.STRIPE_SIZE.getDefaultValue()))))
+        .blockSize(Long.parseLong(meta.getOption(OrcConf.BLOCK_SIZE.getAttribute(),
+            String.valueOf(OrcConf.BLOCK_SIZE.getDefaultValue()))))
+        .rowIndexStride(Integer.parseInt(meta.getOption(OrcConf.ROW_INDEX_STRIDE.getAttribute(),
+            String.valueOf(OrcConf.ROW_INDEX_STRIDE.getDefaultValue()))))
+        .bufferSize(Integer.parseInt(meta.getOption(OrcConf.BUFFER_SIZE.getAttribute(),
+            String.valueOf(OrcConf.BUFFER_SIZE.getDefaultValue()))))
+        .blockPadding(Boolean.parseBoolean(meta.getOption(OrcConf.BLOCK_PADDING.getAttribute(),
+            String.valueOf(OrcConf.BLOCK_PADDING.getDefaultValue()))))
+        .encodingStrategy(EncodingStrategy.valueOf(meta.getOption(OrcConf.ENCODING_STRATEGY.getAttribute(),
+            String.valueOf(OrcConf.ENCODING_STRATEGY.getDefaultValue()))))
+        .bloomFilterFpp(Double.parseDouble(meta.getOption(OrcConf.BLOOM_FILTER_FPP.getAttribute(),
+            String.valueOf(OrcConf.BLOOM_FILTER_FPP.getDefaultValue()))))
+        .bloomFilterColumns(meta.getOption(OrcConf.BLOOM_FILTER_COLUMNS.getAttribute(),
+            String.valueOf(OrcConf.BLOOM_FILTER_COLUMNS.getDefaultValue())));
+  }
 
-    if (kindstr.equalsIgnoreCase(StorageConstants.ORC_COMPRESSION_KIND_ZIP)) {
+  private static CompressionKind getCompressionKind(TableMeta meta) {
+    String kindstr = meta.getOption(OrcConf.COMPRESS.getAttribute(),
+        String.valueOf(OrcConf.COMPRESS.getDefaultValue()));
+
+    if (kindstr.equalsIgnoreCase(CompressionKind.ZLIB.name())) {
       return CompressionKind.ZLIB;
     }
 
-    if (kindstr.equalsIgnoreCase(StorageConstants.ORC_COMPRESSION_KIND_SNAPPY)) {
+    if (kindstr.equalsIgnoreCase(CompressionKind.SNAPPY.name())) {
       return CompressionKind.SNAPPY;
     }
 
-    if (kindstr.equalsIgnoreCase(StorageConstants.ORC_COMPRESSION_KIND_LZO)) {
+    if (kindstr.equalsIgnoreCase(CompressionKind.LZO.name())) {
       return CompressionKind.LZO;
     }
 
     return CompressionKind.NONE;
+  }
+
+  /**
+    * Options for creating ORC file writers.
+    */
+  public static class WriterOptions extends OrcFile.WriterOptions {
+    // Setting the default batch size to 1000 makes the memory check at 5000
+    // rows work the same as the row by row writer. (If it was the default 1024,
+    // the smallest stripe size would be 5120 rows, which changes the output
+    // of some of the tests.)
+    private int batchSize = 1000;
+
+    public WriterOptions(Properties tableProperties, Configuration conf) {
+      super(tableProperties, conf);
+    }
+
+    /**
+     * Set the schema for the file. This is a required parameter.
+     * @param schema the schema for the file.
+     * @return this
+     */
+    public WriterOptions setSchema(TypeDescription schema) {
+      super.setSchema(schema);
+      return this;
+    }
+
+    protected WriterOptions batchSize(int maxSize) {
+      batchSize = maxSize;
+      return this;
+    }
+
+    int getBatchSize() {
+      return batchSize;
+    }
   }
 }

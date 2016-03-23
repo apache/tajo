@@ -300,6 +300,14 @@ if [ ! -z ${HIVE_HOME} ] && [ -d ${HIVE_HOME} ] && [ -d ${HIVE_LIB} ]; then
     CLASSPATH=${CLASSPATH}:$f;
   done
 
+  for f in ${HIVE_LIB}/javax.jdo-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HIVE_LIB}/log4j-core-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
   for f in ${HIVE_LIB}/datanucleus-*.jar; do
     CLASSPATH=${CLASSPATH}:$f;
   done

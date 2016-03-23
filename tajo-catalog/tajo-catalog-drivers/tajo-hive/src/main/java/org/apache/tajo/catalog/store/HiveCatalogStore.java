@@ -37,9 +37,12 @@ import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.orc.OrcConf;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -51,7 +54,6 @@ import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.thrift.TException;
-import parquet.hadoop.ParquetOutputFormat;
 
 import java.io.IOException;
 import java.util.*;
@@ -566,6 +568,16 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         if (tableDesc.getMeta().containsOption(ParquetOutputFormat.COMPRESSION)) {
           table.putToParameters(ParquetOutputFormat.COMPRESSION,
               tableDesc.getMeta().getOption(ParquetOutputFormat.COMPRESSION));
+        }
+      } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.ORC)) {
+        StorageFormatDescriptor descriptor = storageFormatFactory.get(IOConstants.ORC);
+        sd.setInputFormat(descriptor.getInputFormat());
+        sd.setOutputFormat(descriptor.getOutputFormat());
+        sd.getSerdeInfo().setSerializationLib(descriptor.getSerde());
+
+        if (tableDesc.getMeta().containsOption(OrcConf.COMPRESS.getAttribute())) {
+          table.putToParameters(OrcConf.COMPRESS.getAttribute(),
+              tableDesc.getMeta().getOption(OrcConf.COMPRESS.getAttribute()));
         }
       } else {
         throw new UnsupportedException(tableDesc.getMeta().getDataFormat() + " in HivecatalogStore");

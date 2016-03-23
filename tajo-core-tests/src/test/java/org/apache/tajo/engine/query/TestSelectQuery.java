@@ -682,25 +682,6 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE IF EXISTS timezoned_load2 PURGE");
     }
   }
-
-  @Test
-  public void testTimezonedORCTable() throws Exception {
-    try {
-
-      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", "timezoned");
-      executeDDL("datetime_table_timezoned_orc_ddl.sql", null, "timezoned_orc");
-
-      executeString("INSERT OVERWRITE INTO timezoned_orc SELECT t_timestamp, t_date FROM timezoned");
-
-      ResultSet res = executeQuery();
-      assertResultSet(res, "testTimezonedORCTable.result");
-      executeString("SET TIME ZONE 'GMT'");
-      cleanupQuery(res);
-    } finally {
-      executeString("DROP TABLE IF EXISTS timezoned");
-      executeString("DROP TABLE IF EXISTS timezoned_orc PURGE");
-    }
-  }
   
   @Test
   public void testMultiBytesDelimiter1() throws Exception {

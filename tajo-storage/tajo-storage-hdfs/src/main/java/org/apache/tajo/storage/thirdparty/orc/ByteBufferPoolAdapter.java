@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,25 +18,24 @@
 
 package org.apache.tajo.storage.thirdparty.orc;
 
-import java.util.List;
+import org.apache.hadoop.io.ByteBufferPool;
 
-public class StripeStatistics {
-  private final List<OrcProto.ColumnStatistics> cs;
+import java.nio.ByteBuffer;
 
-  StripeStatistics(List<OrcProto.ColumnStatistics> list) {
-    this.cs = list;
+public class ByteBufferPoolAdapter implements ByteBufferPool {
+  private ByteBufferAllocatorPool pool;
+
+  public ByteBufferPoolAdapter(ByteBufferAllocatorPool pool) {
+    this.pool = pool;
   }
 
-  /**
-   * Return list of column statistics
-   *
-   * @return column stats
-   */
-  public ColumnStatistics[] getColumnStatistics() {
-    ColumnStatistics[] result = new ColumnStatistics[cs.size()];
-    for (int i = 0; i < result.length; ++i) {
-      result[i] = ColumnStatisticsImpl.deserialize(cs.get(i));
-    }
-    return result;
+  @Override
+  public final ByteBuffer getBuffer(boolean direct, int length) {
+    return this.pool.getBuffer(direct, length);
+  }
+
+  @Override
+  public final void putBuffer(ByteBuffer buffer) {
+    this.pool.putBuffer(buffer);
   }
 }
