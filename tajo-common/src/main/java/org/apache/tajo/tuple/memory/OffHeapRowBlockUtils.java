@@ -21,6 +21,7 @@ package org.apache.tajo.tuple.memory;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.*;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -29,10 +30,7 @@ import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.RowBlockReader;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class OffHeapRowBlockUtils {
   private static TupleConverter tupleConverter;
@@ -65,9 +63,65 @@ public class OffHeapRowBlockUtils {
     return tupleList;
   }
 
-  public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator) {
-    Collections.sort(list, comparator);
-    return list;
+  public static List<UnSafeTuple> radixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
+                                            boolean[] asc, boolean[] nullFirst) {
+    UnSafeTupleList in = list;
+    UnSafeTupleList out = new UnSafeTupleList(list.getDataTypes(), list.size());
+    out.addAll(in);
+    int[] positions = new int[256];
+
+    return intRadixSort(in, out, positions, 0, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+  }
+
+  static List<UnSafeTuple> intRadixSort(UnSafeTupleList in, UnSafeTupleList out, int[] positions, int pass,
+                                        int[] sortKeyIds, Type[] sortKeyTypes,
+                                        boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
+    // Make histogram
+    for (UnSafeTuple eachTuple : in) {
+      // TODO: consider sign
+      int key = eachTuple.getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
+      positions[key] += 1;
+    }
+
+    int nonZeroCnt = 0;
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+//      if (positions[i] > 0) {
+//        nonZeroCnt++;
+//      }
+    }
+
+    if (positions[0] != in.size()) {
+      for (int i = in.size() - 1; i >= 0; i--) {
+        int key = in.get(i).getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
+        out.set(positions[key] - 1, in.get(i));
+        positions[key] -= 1;
+      }
+
+      if (pass < 3) {
+        Arrays.fill(positions, 0);
+        return intRadixSort(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+      } else {
+        return out;
+      }
+
+    } else {
+      // directly go to the next pass
+      if (pass < 3) {
+        Arrays.fill(positions, 0);
+        return intRadixSort(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+      } else {
+        System.arraycopy(in, 0, out, 0, in.size());
+        return in;
+      }
+    }
+  }
+
+  public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator, int[] sortKeyIds, Type[] sortKeyTypes,
+                                       boolean[] asc, boolean[] nullFirst) {
+//    Collections.sort(list, comparator);
+//    return list;
+    return radixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst);
   }
 
   public static Tuple[] sortToArray(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {

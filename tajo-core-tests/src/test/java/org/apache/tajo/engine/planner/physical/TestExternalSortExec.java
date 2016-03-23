@@ -63,7 +63,7 @@ public class TestExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 1000;
+  private final int numTuple = 10;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -147,11 +147,12 @@ public class TestExternalSortExec {
     BaseTupleComparator comparator = new BaseTupleComparator(proj.getSchema(),
         new SortSpec[]{
             new SortSpec(new Column("managerid", Type.INT4)),
-            new SortSpec(new Column("empid", Type.INT4))
+//            new SortSpec(new Column("empid", Type.INT4))
         });
 
     while ((tuple = exec.next()) != null) {
       curVal = tuple;
+      System.err.println(curVal);
       if (preVal != null) {
         assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
       }
