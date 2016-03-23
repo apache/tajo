@@ -34,7 +34,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <parquet.version>1.8.1</parquet.version>
   </properties>
 
   <repositories>
@@ -129,7 +128,6 @@
                 <argument>--proto_path=../../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/StorageFragmentProtos.proto</argument>
-                <argument>src/main/proto/orc_proto.proto</argument>
               </arguments>
             </configuration>
             <goals>
@@ -160,6 +158,26 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-report-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeScope>runtime</includeScope>
+              <outputDirectory>${project.build.directory}/lib</outputDirectory>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>false</overWriteSnapshots>
+              <overWriteIfNewer>true</overWriteIfNewer>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -345,10 +363,16 @@
       <artifactId>netty-buffer</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.facebook.presto</groupId>
-      <artifactId>presto-orc</artifactId>
-      <version>0.141</version>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-orc</artifactId>
+      <version>${hive.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-storage-api</artifactId>
+      <version>${hive.version}</version>
+    </dependency>
+
   </dependencies>
 
   <profiles>
