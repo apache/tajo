@@ -130,7 +130,7 @@
 
   <property>
     <name>tajo.storage.scanner-handler.orc.class</name>
-    <value>org.apache.tajo.storage.orc.ORCScanner</value>
+    <value>org.apache.tajo.storage.orc.OrcScanner</value>
   </property>
 
   <property>
