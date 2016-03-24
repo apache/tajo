@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,38 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.storage.thirdparty.orc;
 
-import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.hadoop.io.ByteBufferPool;
 
-public class ExitCommand extends TajoShellCommand {
+import java.nio.ByteBuffer;
 
-  // Sharing the exit command string publicly to filter it out from the command history.
-  public static final String COMMAND_STRING = "\\q";
+public class ByteBufferPoolAdapter implements ByteBufferPool {
+  private ByteBufferAllocatorPool pool;
 
-  public ExitCommand(TajoCli.TajoCliContext context) {
-    super(context);
+  public ByteBufferPoolAdapter(ByteBufferAllocatorPool pool) {
+    this.pool = pool;
   }
 
   @Override
-  public String getCommand() {
-    return COMMAND_STRING;
+  public final ByteBuffer getBuffer(boolean direct, int length) {
+    return this.pool.getBuffer(direct, length);
   }
 
   @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getError().println("bye!");
-    context.getError().flush();
-    System.exit(0);
-  }
-
-  @Override
-  public String getUsage() {
-    return "";
-  }
-
-  @Override
-  public String getDescription() {
-    return "quit";
+  public final void putBuffer(ByteBuffer buffer) {
+    this.pool.putBuffer(buffer);
   }
 }

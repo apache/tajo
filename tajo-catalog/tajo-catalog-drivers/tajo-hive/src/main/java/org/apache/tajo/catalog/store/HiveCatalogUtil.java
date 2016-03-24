@@ -22,6 +22,7 @@ import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.ql.io.RCFileInputFormat;
+import org.apache.hadoop.hive.ql.io.orc.OrcSerde;
 import org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
@@ -137,6 +138,8 @@ public class HiveCatalogUtil {
       return BuiltinStorages.PARQUET;
     } else if (AvroSerDe.class.getName().equals(serde)) {
       return BuiltinStorages.AVRO;
+    } else if (OrcSerde.class.getName().equals(serde)) {
+      return BuiltinStorages.ORC;
     } else {
       throw new TajoRuntimeException(new UnknownDataFormatException(inputFormat));
     }
