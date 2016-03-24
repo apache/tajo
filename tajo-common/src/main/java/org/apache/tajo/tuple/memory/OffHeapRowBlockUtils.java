@@ -130,11 +130,11 @@ public class OffHeapRowBlockUtils {
                                           boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
     // Make histogram
     for (UnSafeTuple eachTuple : in) {
-      short key = 255; // for null
+      int key = 65535; // for null
       if (!eachTuple.isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
         // TODO: consider sign
-        key = PlatformDependent.getByte(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-        if (key < 0) key = (short) (256 + key);
+        key = PlatformDependent.getShort(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+        if (key < 0) key = (65536 + key);
       }
       positions[key] += 1;
     }
@@ -146,11 +146,11 @@ public class OffHeapRowBlockUtils {
 
     if (positions[0] != in.length) {
       for (int i = in.length - 1; i >= 0; i--) {
-        short key = 255;
+        int key = 65535; // for null
         if (!in[i].isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
           // TODO: consider sign
-          key = PlatformDependent.getByte(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-          if (key < 0) key = (short) (256 + key);
+          key = PlatformDependent.getShort(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
+          if (key < 0) key = (65536 + key);
         }
         out[positions[key] - 1] = in[i];
         positions[key] -= 1;
@@ -158,16 +158,16 @@ public class OffHeapRowBlockUtils {
 
       if (pass < 7) {
         Arrays.fill(positions, 0);
-        return longRadixSortRecur(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+        return longRadixSortRecur(out, in, positions, pass + 2, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
       } else {
-        return out;
+        return in;
       }
 
     } else {
       // directly go to the next pass
       if (pass < 7) {
         Arrays.fill(positions, 0);
-        return longRadixSortRecur(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+        return longRadixSortRecur(out, in, positions, pass + 2, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
       } else {
         return in;
       }
@@ -223,10 +223,13 @@ public class OffHeapRowBlockUtils {
   }
 
   public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator, int[] sortKeyIds, Type[] sortKeyTypes,
-                                       boolean[] asc, boolean[] nullFirst) {
-//    Collections.sort(list, comparator);
-//    return list;
+                                       boolean[] asc, boolean[] nullFirst, boolean useRadix) {
+    if (useRadix) {
     return radixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst);
+    } else {
+      Collections.sort(list, comparator);
+      return list;
+    }
   }
 
   public static Tuple[] sortToArray(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.physical;
+package org.apache.tajo.engine.util;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
@@ -27,35 +27,43 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.planner.physical.PhysicalExec;
+import org.apache.tajo.engine.planner.physical.ProjectionExec;
+import org.apache.tajo.engine.planner.physical.TestExternalSortExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.SortNode;
+import org.apache.tajo.plan.logical.SortNode.SortAlgorithm;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.io.IOException;
 import java.util.Random;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
-public class TestExternalSortExec {
+@State(Scope.Benchmark)
+public class BenchmarkSort {
   private TajoConf conf;
   private TajoTestingCluster util;
   private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestExternalSortExec";
@@ -69,8 +77,17 @@ public class TestExternalSortExec {
 
   private TableDesc employee;
 
-  @Before
-  public void setUp() throws Exception {
+  String[] QUERIES = {
+      "select managerId, empId from employee order by managerId, empId"
+  };
+
+  @State(Scope.Thread)
+  public static class BenchContext {
+    int sortBufferSize;
+  }
+
+  @Setup
+  public void setup() throws Exception {
     this.conf = new TajoConf();
     util = new TajoTestingCluster();
     util.startCatalogCluster();
@@ -128,21 +145,18 @@ public class TestExternalSortExec {
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
   }
 
-  @After
-  public void tearDown() throws Exception {
+  @TearDown
+  public void tearDown() throws IOException {
     CommonTestingUtil.cleanupTestDir(TEST_PATH);
     util.shutdownCatalogCluster();
   }
 
-  String[] QUERIES = {
-      "select managerId, empId from employee order by managerId, empId"
-  };
-
-  @Test
-  public final void testNext() throws IOException, TajoException {
-//    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
+  @Benchmark
+  @BenchmarkMode(Mode.All)
+  public void timSortThroughput(BenchContext context) throws InterruptedException, IOException, TajoException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-//    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
+//    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, context.sortBufferSize);
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
@@ -153,49 +167,49 @@ public class TestExternalSortExec {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
+    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
+    sortNode.setSortAlgorithm(SortAlgorithm.TIM_SORT);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    
-    ProjectionExec proj = (ProjectionExec) exec;
-    Tuple tuple;
-    Tuple preVal = null;
-    Tuple curVal;
-    int cnt = 0;
     exec.init();
-    long start = System.currentTimeMillis();
-    BaseTupleComparator comparator = new BaseTupleComparator(proj.getSchema(),
-        new SortSpec[]{
-            new SortSpec(new Column("managerid", Type.INT8)),
-//            new SortSpec(new Column("empid", Type.INT4))
-        });
-
-    while ((tuple = exec.next()) != null) {
-      curVal = tuple;
-//      if (preVal != null) {
-//        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
-//      }
-      preVal = new VTuple(curVal);
-      cnt++;
-    }
-    long end = System.currentTimeMillis();
-    assertEquals(numTuple + 1, cnt);
-
-    // for rescan test
-    preVal = null;
-    exec.rescan();
-    cnt = 0;
-    while ((tuple = exec.next()) != null) {
-      curVal = tuple;
-      if (preVal != null) {
-        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
-      }
-      preVal = curVal;
-      cnt++;
-    }
-    assertEquals(numTuple + 1, cnt);
+    while (exec.next() != null) {}
     exec.close();
-    System.out.println("Sort Time: " + (end - start) + " msc");
-    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);
+  }
+
+  @Benchmark
+  @BenchmarkMode(Mode.All)
+  public void radixSortThroughput(BenchContext context) throws InterruptedException, IOException, TajoException {
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
+
+    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
+        new Path(employee.getUri()), Integer.MAX_VALUE);
+    Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
+    TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
+        LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
+    ctx.setEnforcer(new Enforcer());
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
+    sortNode.setSortAlgorithm(SortAlgorithm.RADIX_SORT);
+
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
+    while (exec.next() != null) {}
+    exec.close();
+  }
+
+  public static void main(String[] args) throws RunnerException {
+    Options opt = new OptionsBuilder()
+        .include(BenchmarkSort.class.getSimpleName())
+        .warmupIterations(5)
+        .measurementIterations(25)
+        .forks(1)
+        .build();
+
+    new Runner(opt).run();
   }
 }

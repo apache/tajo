@@ -41,6 +41,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.logical.SortNode;
+import org.apache.tajo.plan.logical.SortNode.SortAlgorithm;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -122,6 +123,7 @@ public class ExternalSortExec extends SortExec {
   private final Type[] sortKeyTypes;
   private final boolean[] asc;
   private final boolean[] nullFirst;
+  private final boolean useRadix;
 
   private ExternalSortExec(final TaskAttemptContext context, final SortNode plan)
       throws PhysicalPlanningException {
@@ -154,6 +156,7 @@ public class ExternalSortExec extends SortExec {
       this.nullFirst[i] = sortSpecs[i].isNullsFirst();
       this.sortKeyTypes[i] = sortSpecs[i].getSortKey().getDataType().getType();
     }
+    this.useRadix = plan.getSortAlgorithm().equals(SortAlgorithm.RADIX_SORT);
   }
 
   public ExternalSortExec(final TaskAttemptContext context,final SortNode plan, final ScanNode scanNode,
@@ -201,7 +204,7 @@ public class ExternalSortExec extends SortExec {
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
-    OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst);
+    OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, useRadix);
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -548,7 +551,7 @@ public class ExternalSortExec extends SortExec {
     if (chunk.isMemory()) {
       long sortStart = System.currentTimeMillis();
 
-      OffHeapRowBlockUtils.sort(inMemoryTable, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst);
+      OffHeapRowBlockUtils.sort(inMemoryTable, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, useRadix);
       Scanner scanner = new MemTableScanner<>(inMemoryTable, inMemoryTable.size(), inMemoryTable.usedMem());
       if(LOG.isDebugEnabled()) {
         debug(LOG, "Memory Chunk sort (" + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false)

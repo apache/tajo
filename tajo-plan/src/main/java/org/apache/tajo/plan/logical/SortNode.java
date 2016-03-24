@@ -28,12 +28,27 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
 public final class SortNode extends UnaryNode implements Cloneable {
+  public SortAlgorithm getSortAlgorithm() {
+    return sortAlgorithm;
+  }
+
+  public void setSortAlgorithm(SortAlgorithm sortAlgorithm) {
+    this.sortAlgorithm = sortAlgorithm;
+  }
+
   public enum SortPurpose {
     NORMAL,
     STORAGE_SPECIFIED
   }
+
+  public enum SortAlgorithm{
+    TIM_SORT,
+    RADIX_SORT,
+  }
+
 	@Expose private SortSpec [] sortKeys;
   @Expose private SortPurpose sortPurpose;
+  @Expose private SortAlgorithm sortAlgorithm = SortAlgorithm.RADIX_SORT;
 
   public SortNode(int pid) {
     super(pid, NodeType.SORT);
