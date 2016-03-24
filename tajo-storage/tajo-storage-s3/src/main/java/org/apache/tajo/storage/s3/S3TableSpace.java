@@ -51,7 +51,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.nullToEmpty;
 
 public class S3TableSpace extends FileTablespace {
-  private final Log LOG = LogFactory.getLog(S3TableSpace.class);
+  private final static Log LOG = LogFactory.getLog(S3TableSpace.class);
 
   private AmazonS3 s3;
   private boolean useInstanceCredentials;
@@ -82,9 +82,7 @@ public class S3TableSpace extends FileTablespace {
       .withSocketTimeout(Ints.checkedCast(socketTimeout.toMillis()))
       .withMaxConnections(maxConnections);
 
-    Path tajoRootPath = TajoConf.getTajoRootDir(conf);
-    FileSystem defaultFS = tajoRootPath.getFileSystem(conf);
-    this.s3 = createAmazonS3Client(defaultFS.getUri(), conf, configuration);
+    this.s3 = createAmazonS3Client(uri, conf, configuration);
 
     if (s3 != null) {
       String endPoint = conf.getTrimmed(ENDPOINT,"");
