@@ -39,6 +39,7 @@
     <module>tajo-storage-hbase</module>
     <module>tajo-storage-jdbc</module>
     <module>tajo-storage-pgsql</module>
+    <module>tajo-storage-mysql</module>
     <module>tajo-storage-s3</module>
   </modules>
 
