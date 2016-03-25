@@ -68,10 +68,9 @@ public class OffHeapRowBlockUtils {
                                             boolean[] asc, boolean[] nullFirst) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
     UnSafeTuple[] out = new UnSafeTuple[list.size()];
-    int[] positions = new int[65536];
 
 //    UnSafeTuple[] sorted = longRadixSortRecur(in, out, positions, 0, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
-    UnSafeTuple[] sorted = longRadixSort(in, out, positions, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+    UnSafeTuple[] sorted = longLsdRadixSort(in, out, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : sorted) {
       it.next();
@@ -80,10 +79,10 @@ public class OffHeapRowBlockUtils {
     return list;
   }
 
-  static UnSafeTuple[] longRadixSort(UnSafeTuple[] in, UnSafeTuple[] out, int[] positions, int maxPass,
-                                     int[] sortKeyIds, Type[] sortKeyTypes,
-                                     boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    UnSafeTuple[] tmp;
+  static UnSafeTuple[] longLsdRadixSort(UnSafeTuple[] in, UnSafeTuple[] out, int maxPass,
+                                        int[] sortKeyIds, Type[] sortKeyTypes,
+                                        boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
+    int[] positions = new int[65536];
     for (int pass = 0; pass < maxPass - 1; pass += 2) {
       // Make histogram
       for (UnSafeTuple eachTuple : in) {
@@ -112,114 +111,10 @@ public class OffHeapRowBlockUtils {
           out[positions[key] - 1] = in[i];
           positions[key] -= 1;
         }
-
-        // directly go to the next pass
-        if (pass < maxPass - 1) {
-          tmp = in;
-          in = out;
-          out = tmp;
-        }
       }
       Arrays.fill(positions, 0);
     }
     return in;
-  }
-
-  static UnSafeTuple[] longRadixSortRecur(UnSafeTuple[] in, UnSafeTuple[] out, int[] positions, int pass,
-                                          int[] sortKeyIds, Type[] sortKeyTypes,
-                                          boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    // Make histogram
-    for (UnSafeTuple eachTuple : in) {
-      int key = 65535; // for null
-      if (!eachTuple.isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
-        // TODO: consider sign
-        key = PlatformDependent.getShort(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-        if (key < 0) key = (65536 + key);
-      }
-      positions[key] += 1;
-    }
-
-    int nonZeroCnt = 0;
-    for (int i = 0; i < positions.length - 1; i++) {
-      positions[i + 1] += positions[i];
-    }
-
-    if (positions[0] != in.length) {
-      for (int i = in.length - 1; i >= 0; i--) {
-        int key = 65535; // for null
-        if (!in[i].isBlankOrNull(sortKeyIds[curSortKeyIdx])) {
-          // TODO: consider sign
-          key = PlatformDependent.getShort(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-          if (key < 0) key = (65536 + key);
-        }
-        out[positions[key] - 1] = in[i];
-        positions[key] -= 1;
-      }
-
-      if (pass < 7) {
-        Arrays.fill(positions, 0);
-        return longRadixSortRecur(out, in, positions, pass + 2, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-      } else {
-        return in;
-      }
-
-    } else {
-      // directly go to the next pass
-      if (pass < 7) {
-        Arrays.fill(positions, 0);
-        return longRadixSortRecur(out, in, positions, pass + 2, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-      } else {
-        return in;
-      }
-    }
-  }
-
-  static UnSafeTuple[] intRadixSort(UnSafeTuple[] in, UnSafeTuple[] out, int[] positions, int pass,
-                                        int[] sortKeyIds, Type[] sortKeyTypes,
-                                        boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    // Make histogram
-    for (UnSafeTuple eachTuple : in) {
-      // TODO: consider sign
-//      int key = eachTuple.getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
-      short key = PlatformDependent.getByte(eachTuple.getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-      if (key < 0) key = (short) (256 + key);
-      positions[key] += 1;
-    }
-
-    int nonZeroCnt = 0;
-    for (int i = 0; i < positions.length - 1; i++) {
-      positions[i + 1] += positions[i];
-//      if (positions[i] > 0) {
-//        nonZeroCnt++;
-//      }
-    }
-
-    if (positions[0] != in.length) {
-      for (int i = in.length - 1; i >= 0; i--) {
-//        int key = in[i].getInt4(sortKeyIds[curSortKeyIdx]) >> (8 * pass);
-        short key = PlatformDependent.getByte(in[i].getFieldAddr(sortKeyIds[curSortKeyIdx]) + (pass));
-        if (key < 0) key = (short) (256 + key);
-        out[positions[key] - 1] = in[i];
-        positions[key] -= 1;
-      }
-
-      if (pass < 3) {
-        Arrays.fill(positions, 0);
-        return intRadixSort(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-      } else {
-        return out;
-      }
-
-    } else {
-      // directly go to the next pass
-      if (pass < 3) {
-        Arrays.fill(positions, 0);
-        return intRadixSort(out, in, positions, pass + 1, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-      } else {
-        System.arraycopy(in, 0, out, 0, in.length);
-        return in;
-      }
-    }
   }
 
   public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator, int[] sortKeyIds, Type[] sortKeyTypes,

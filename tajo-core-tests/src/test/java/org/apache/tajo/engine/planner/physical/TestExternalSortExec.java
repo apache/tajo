@@ -92,27 +92,27 @@ public class TestExternalSortExec {
     appender.enableStats();
     appender.init();
     VTuple tuple = new VTuple(schema.size());
-//    for (int i = 0; i < numTuple; i++) {
-//      tuple.put(new Datum[] {
-//          DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//          DatumFactory.createInt4(rnd.nextInt(100)),
-//          DatumFactory.createText("dept_" + i),
-//      });
-//      appender.addTuple(tuple);
-//    }
-
-    int cnt = 0;
-    while (cnt < numTuple) {
-      int n = 100_000 + rnd.nextInt(50);
-      for (int i = 0; i < 1000 && cnt < numTuple; i++, cnt++) {
-        tuple.put(new Datum[] {
-            DatumFactory.createInt8(n),
-            DatumFactory.createInt4(rnd.nextInt(100)),
-            DatumFactory.createText("dept_" + i),
-        });
-        appender.addTuple(tuple);
-      }
+    for (int i = 0; i < numTuple; i++) {
+      tuple.put(new Datum[] {
+          DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+          DatumFactory.createInt4(rnd.nextInt(100)),
+          DatumFactory.createText("dept_" + i),
+      });
+      appender.addTuple(tuple);
     }
+
+//    int cnt = 0;
+//    while (cnt < numTuple) {
+//      int n = 100_000 + rnd.nextInt(50);
+//      for (int i = 0; i < 1000 && cnt < numTuple; i++, cnt++) {
+//        tuple.put(new Datum[] {
+//            DatumFactory.createInt8(n),
+//            DatumFactory.createInt4(rnd.nextInt(100)),
+//            DatumFactory.createText("dept_" + i),
+//        });
+//        appender.addTuple(tuple);
+//      }
+//    }
     tuple.put(new Datum[] {
         NullDatum.get(),
         NullDatum.get(),
