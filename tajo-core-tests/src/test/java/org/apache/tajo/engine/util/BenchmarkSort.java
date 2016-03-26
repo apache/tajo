@@ -34,10 +34,8 @@ import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
-import org.apache.tajo.engine.planner.physical.ProjectionExec;
 import org.apache.tajo.engine.planner.physical.TestExternalSortExec;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.exception.SQLSyntaxError;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
@@ -45,10 +43,13 @@ import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.SortNode;
-import org.apache.tajo.plan.logical.SortNode.SortAlgorithm;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.SortAlgorithm;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.openjdk.jmh.annotations.*;
@@ -153,7 +154,7 @@ public class BenchmarkSort {
 
   @Benchmark
   @BenchmarkMode(Mode.All)
-  public void timSortThroughput(BenchContext context) throws InterruptedException, IOException, TajoException {
+  public void timSort(BenchContext context) throws InterruptedException, IOException, TajoException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, context.sortBufferSize);
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
@@ -179,7 +180,7 @@ public class BenchmarkSort {
 
   @Benchmark
   @BenchmarkMode(Mode.All)
-  public void radixSortThroughput(BenchContext context) throws InterruptedException, IOException, TajoException {
+  public void lsdRadixSort(BenchContext context) throws InterruptedException, IOException, TajoException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
 
@@ -193,7 +194,32 @@ public class BenchmarkSort {
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
     SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
-    sortNode.setSortAlgorithm(SortAlgorithm.RADIX_SORT);
+    sortNode.setSortAlgorithm(SortAlgorithm.LSD_RADIX_SORT);
+
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
+    while (exec.next() != null) {}
+    exec.close();
+  }
+
+  @Benchmark
+  @BenchmarkMode(Mode.All)
+  public void msdRadixSort(BenchContext context) throws InterruptedException, IOException, TajoException {
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
+
+    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
+        new Path(employee.getUri()), Integer.MAX_VALUE);
+    Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
+    TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
+        LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
+    ctx.setEnforcer(new Enforcer());
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
+    sortNode.setSortAlgorithm(SortAlgorithm.MSD_RADIX_SORT);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);

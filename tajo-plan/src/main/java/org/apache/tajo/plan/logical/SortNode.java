@@ -25,6 +25,7 @@ import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.PlanString;
+import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.SortAlgorithm;
 import org.apache.tajo.util.TUtil;
 
 public final class SortNode extends UnaryNode implements Cloneable {
@@ -41,14 +42,9 @@ public final class SortNode extends UnaryNode implements Cloneable {
     STORAGE_SPECIFIED
   }
 
-  public enum SortAlgorithm{
-    TIM_SORT,
-    RADIX_SORT,
-  }
-
 	@Expose private SortSpec [] sortKeys;
   @Expose private SortPurpose sortPurpose;
-  @Expose private SortAlgorithm sortAlgorithm = SortAlgorithm.RADIX_SORT;
+  @Expose private SortAlgorithm sortAlgorithm = SortAlgorithm.TIM_SORT;
 
   public SortNode(int pid) {
     super(pid, NodeType.SORT);

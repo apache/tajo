@@ -172,9 +172,9 @@ public class TestExternalSortExec {
 
     while ((tuple = exec.next()) != null) {
       curVal = tuple;
-//      if (preVal != null) {
-//        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
-//      }
+      if (preVal != null) {
+        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
+      }
       preVal = new VTuple(curVal);
       cnt++;
     }
