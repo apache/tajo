@@ -93,7 +93,8 @@ public class OffHeapRowBlockUtils {
                                             boolean[] asc, boolean[] nullFirst) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
 
-    longMsdRadixSort(in, 0, in.length, 7, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+//    longMsdRadixSort(in, 0, in.length, 7, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+    longMsdRadixSort(in, 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : in) {
       it.next();
@@ -122,12 +123,11 @@ public class OffHeapRowBlockUtils {
     return key;
   }
 
-  static void build8Histogram(UnSafeTuple[] in, int start, int length,
+  static void build8Histogram(UnSafeTuple[] in, int start, int exclusiveEnd,
                                int[] positions, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
                                boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    int end = start + length;
-    for (int i = start; i < end; i++) {
+    for (int i = start; i < exclusiveEnd; i++) {
       int key = get8RadixKey(in[i], sortKeyIds[curSortKeyIdx], pass);
       positions[key] += 1;
     }
@@ -138,12 +138,11 @@ public class OffHeapRowBlockUtils {
     }
   }
 
-  static void build16Histogram(UnSafeTuple[] in, int start, int length,
+  static void build16Histogram(UnSafeTuple[] in, int start, int exclusiveEnd,
                                int[] positions, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
                                boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    int end = start + length;
-    for (int i = start; i < end; i++) {
+    for (int i = start; i < exclusiveEnd; i++) {
       int key = get16RadixKey(in[i], sortKeyIds[curSortKeyIdx], pass);
       positions[key] += 1;
     }
@@ -178,34 +177,41 @@ public class OffHeapRowBlockUtils {
     return out;
   }
 
-  private final static int BIN_SIZE = 256; // 65536
-  private final static int MAX_BIN_IDX = 255; //65535
+  private final static int BIN_SIZE = 65536; // 65536
+  private final static int MAX_BIN_IDX = 65535; //65535
 
-  static void longMsdRadixSort(UnSafeTuple[] in, int start, int length, int pass,
+  static void longMsdRadixSort(UnSafeTuple[] in, int start, int exclusiveEnd, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
                                boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    if (length < 2) {
+    if (exclusiveEnd - start < 2) {
       return;
     }
+//    StringBuilder sb = new StringBuilder("Before swap\n");
+//    for (UnSafeTuple t : in) {
+//      sb.append(t).append("\n");
+//    }
+//    LOG.info(sb.toString());
+
     // TODO: the total size of arrays is 1 MB. Consider 65536 -> 256
     // TODO: should they be created for each call longMsdRadixSort()?
     int[] binEndIdx = new int[BIN_SIZE];
     int[] binNextElemIdx = new int [BIN_SIZE];
 
     // Make histogram
-    build8Histogram(in, start, length,
+//    build8Histogram(in, start, exclusiveEnd,
+//        binEndIdx, pass, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+    build16Histogram(in, start, exclusiveEnd,
         binEndIdx, pass, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
 
     // Initialize bins
     binNextElemIdx[0] = start;
     System.arraycopy(binEndIdx, 0, binNextElemIdx, 1, MAX_BIN_IDX);
 
-    int end = start + length;
-    for (int i = 0; i < MAX_BIN_IDX && binNextElemIdx[i] < end; i++) {
+    for (int i = 0; binNextElemIdx[i] < exclusiveEnd && i < MAX_BIN_IDX; i++) {
       while (binNextElemIdx[i] < binEndIdx[i]) {
-        for (int key = get8RadixKey(in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass);
+        for (int key = get16RadixKey(in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass);
              key != i;
-             key = get8RadixKey(in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass)) {
+             key = get16RadixKey(in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass)) {
           UnSafeTuple tmp = in[binNextElemIdx[i]];
           in[binNextElemIdx[i]] = in[binNextElemIdx[key]];
           in[binNextElemIdx[key]] = tmp;
@@ -216,18 +222,22 @@ public class OffHeapRowBlockUtils {
       }
     }
 
-    // Since every other bin is already fixed, bin[65535] should also be.
+//    sb = new StringBuilder("After swap\n");
+//    for (UnSafeTuple t : in) {
+//      sb.append(t).append("\n");
+//    }
+//    LOG.info(sb.toString());
+
+    // Since every other bin is already fixed, the last bin should also be. So, skip it.
 
     if (pass > 0) {
-      int nextPass = pass - 1;
-      longMsdRadixSort(in, 0, binEndIdx[0], nextPass,
+      int nextPass = pass - 2;
+      longMsdRadixSort(in, start, binEndIdx[0], nextPass,
           sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-      for (int i = 0; i < MAX_BIN_IDX; i++) {
-        longMsdRadixSort(in, binEndIdx[i], binEndIdx[i + 1] - binEndIdx[i], nextPass,
+      for (int i = 0; i < MAX_BIN_IDX && binEndIdx[i] < exclusiveEnd; i++) {
+        longMsdRadixSort(in, binEndIdx[i], binEndIdx[i + 1], nextPass,
             sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
       }
-      longMsdRadixSort(in, binEndIdx[MAX_BIN_IDX], in.length - binEndIdx[MAX_BIN_IDX], nextPass,
-          sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
     }
   }
 

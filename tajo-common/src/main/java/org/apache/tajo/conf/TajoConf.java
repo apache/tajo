@@ -411,6 +411,8 @@ public class TajoConf extends Configuration {
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
     $RESULT_SET_BLOCK_WAIT("tajo.resultset.block.wait", true),
     $COMPRESSED_RESULT_TRANSFER("tajo.resultset.compression", false),
+
+    $SORT_ALGORITHM("tajo.sort.algorithm", "TIM"),
     ;
 
     public final String varname;

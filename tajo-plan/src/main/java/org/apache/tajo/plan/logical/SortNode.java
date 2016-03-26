@@ -18,25 +18,15 @@
 
 package org.apache.tajo.plan.logical;
 
-import java.util.Arrays;
-
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.SortAlgorithm;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+
 public final class SortNode extends UnaryNode implements Cloneable {
-  public SortAlgorithm getSortAlgorithm() {
-    return sortAlgorithm;
-  }
-
-  public void setSortAlgorithm(SortAlgorithm sortAlgorithm) {
-    this.sortAlgorithm = sortAlgorithm;
-  }
-
   public enum SortPurpose {
     NORMAL,
     STORAGE_SPECIFIED
@@ -44,7 +34,6 @@ public final class SortNode extends UnaryNode implements Cloneable {
 
 	@Expose private SortSpec [] sortKeys;
   @Expose private SortPurpose sortPurpose;
-  @Expose private SortAlgorithm sortAlgorithm = SortAlgorithm.TIM_SORT;
 
   public SortNode(int pid) {
     super(pid, NodeType.SORT);

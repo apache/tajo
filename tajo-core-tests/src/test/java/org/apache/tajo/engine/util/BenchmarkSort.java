@@ -41,15 +41,11 @@ import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.plan.logical.SortNode;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.SortAlgorithm;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.openjdk.jmh.annotations.*;
@@ -158,6 +154,7 @@ public class BenchmarkSort {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, context.sortBufferSize);
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "TIM");
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
@@ -168,8 +165,6 @@ public class BenchmarkSort {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
-    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
-    sortNode.setSortAlgorithm(SortAlgorithm.TIM_SORT);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -183,6 +178,7 @@ public class BenchmarkSort {
   public void lsdRadixSort(BenchContext context) throws InterruptedException, IOException, TajoException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
@@ -193,8 +189,6 @@ public class BenchmarkSort {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
-    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
-    sortNode.setSortAlgorithm(SortAlgorithm.LSD_RADIX_SORT);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -208,6 +202,7 @@ public class BenchmarkSort {
   public void msdRadixSort(BenchContext context) throws InterruptedException, IOException, TajoException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
@@ -218,8 +213,6 @@ public class BenchmarkSort {
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
-    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
-    sortNode.setSortAlgorithm(SortAlgorithm.MSD_RADIX_SORT);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -231,8 +224,8 @@ public class BenchmarkSort {
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()
         .include(BenchmarkSort.class.getSimpleName())
-        .warmupIterations(5)
-        .measurementIterations(25)
+        .warmupIterations(1)
+        .measurementIterations(1)
         .forks(1)
         .build();
 

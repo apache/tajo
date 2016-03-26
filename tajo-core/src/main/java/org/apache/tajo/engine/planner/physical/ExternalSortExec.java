@@ -37,6 +37,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -156,7 +157,18 @@ public class ExternalSortExec extends SortExec {
       this.nullFirst[i] = sortSpecs[i].isNullsFirst();
       this.sortKeyTypes[i] = sortSpecs[i].getSortKey().getDataType().getType();
     }
-    this.sortAlgorithm = plan.getSortAlgorithm();
+    this.sortAlgorithm = getSortAlgorithm(context.getQueryContext());
+  }
+
+  private static SortAlgorithm getSortAlgorithm(QueryContext context) {
+    String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, "TIM");
+    if (sortAlgorithm.equalsIgnoreCase("TIM")) {
+      return SortAlgorithm.TIM_SORT;
+    } else if (sortAlgorithm.equalsIgnoreCase("MSD_RADIX")) {
+      return SortAlgorithm.MSD_RADIX_SORT;
+    } else {
+      return SortAlgorithm.LSD_RADIX_SORT;
+    }
   }
 
   public ExternalSortExec(final TaskAttemptContext context,final SortNode plan, final ScanNode scanNode,

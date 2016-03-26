@@ -94,7 +94,7 @@ public class TestExternalSortExec {
     VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < numTuple; i++) {
       tuple.put(new Datum[] {
-          DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+          DatumFactory.createInt8(rnd.nextInt(100_000)),
           DatumFactory.createInt4(rnd.nextInt(100)),
           DatumFactory.createText("dept_" + i),
       });
@@ -142,6 +142,7 @@ public class TestExternalSortExec {
   public final void testNext() throws IOException, TajoException {
 //    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),

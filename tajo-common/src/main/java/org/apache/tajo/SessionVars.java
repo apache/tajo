@@ -165,6 +165,8 @@ public enum SessionVars implements ConfigKey {
   COMPRESSED_RESULT_TRANSFER(ConfVars.$COMPRESSED_RESULT_TRANSFER, "Use compression to optimize result transmission.",
       CLI_SIDE_VAR, Boolean.class, Validators.bool()),
 
+  SORT_ALGORITHM(ConfVars.$SORT_ALGORITHM, "sort algorithm", DEFAULT),
+
   //-------------------------------------------------------------------------------
   // Only for Unit Testing
   //-------------------------------------------------------------------------------
