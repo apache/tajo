@@ -96,7 +96,7 @@ public class MySQLTestServer {
           String sql = JavaResourceUtil.readTextFromResource("mysql/" + tableName + ".sql");
           statement.execute(sql);
 
-          // restore the table contents into a file stored in a local file system for PgSQL COPY command
+          // restore the table contents into a file stored in a local file system for MySQL LOAD DATA command
           String path = restoreTableContents(tableName);
           String copyCommand = genLoadStatement(tableName, path);
           statement.execute(copyCommand);

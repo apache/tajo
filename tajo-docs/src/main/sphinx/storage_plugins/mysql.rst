@@ -16,7 +16,7 @@ MySQL storage handler is a builtin storage handler. So, you can eaisly register 
 
   {
     "spaces": {
-      "pgsql_db1": {
+      "mysql_db1": {
         "uri": "jdbc:mysql://hostname:port/db1",
         "configs": {
           "mapped_database": "tajo_db1",
