@@ -33,6 +33,7 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.RowBlockReader;
+import sun.misc.Contended;
 
 import java.util.*;
 
@@ -75,12 +76,12 @@ public class OffHeapRowBlockUtils {
     return tupleList;
   }
 
-  public static List<UnSafeTuple> radixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-                                            boolean[] asc, boolean[] nullFirst) {
+  public static List<UnSafeTuple> lsdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
+                                               boolean[] asc, boolean[] nullFirst) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
     UnSafeTuple[] out = new UnSafeTuple[list.size()];
 
-    longLsdRadixSort(in, out, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+    longLsdRadixSort(new RadixSortContext(in), out, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : in) {
       it.next();
@@ -90,11 +91,11 @@ public class OffHeapRowBlockUtils {
   }
 
   public static List<UnSafeTuple> msdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-                                            boolean[] asc, boolean[] nullFirst) {
+                                            boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
 
 //    longMsdRadixSort(in, 0, in.length, 7, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
-    longMsdRadixSort(in, 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+    longMsdRadixSort(new RadixSortContext(in), 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : in) {
       it.next();
@@ -107,8 +108,9 @@ public class OffHeapRowBlockUtils {
     int key = 255; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
       // TODO: consider sign & improve this
-      key = PlatformDependent.getByte(tuple.getFieldAddr(sortKeyId) + (pass));
-      if (key < 0) key = (256 + key);
+//      key = PlatformDependent.getByte(tuple.getFieldAddr(sortKeyId) + (pass));
+//      if (key < 0) key = (256 + key);
+      key = PlatformDependent.getByte(tuple.getFieldAddr(sortKeyId) + (pass)) & 0xFF;
     }
     return key;
   }
@@ -117,18 +119,19 @@ public class OffHeapRowBlockUtils {
     int key = 65535; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
       // TODO: consider sign & improve this
-      key = PlatformDependent.getShort(tuple.getFieldAddr(sortKeyId) + (pass));
-      if (key < 0) key = (65536 + key);
+//      key = PlatformDependent.getShort(tuple.getFieldAddr(sortKeyId) + (pass));
+//      if (key < 0) key = (65536 + key);
+      key = PlatformDependent.getShort(tuple.getFieldAddr(sortKeyId) + (pass)) & 0xFFFF;
     }
     return key;
   }
 
-  static void build8Histogram(UnSafeTuple[] in, int start, int exclusiveEnd,
+  static void build8Histogram(RadixSortContext context, int start, int exclusiveEnd,
                                int[] positions, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
                                boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
     for (int i = start; i < exclusiveEnd; i++) {
-      int key = get8RadixKey(in[i], sortKeyIds[curSortKeyIdx], pass);
+      int key = get8RadixKey(context.in[i], sortKeyIds[curSortKeyIdx], pass);
       positions[key] += 1;
     }
 
@@ -138,12 +141,12 @@ public class OffHeapRowBlockUtils {
     }
   }
 
-  static void build16Histogram(UnSafeTuple[] in, int start, int exclusiveEnd,
+  static void build16Histogram(RadixSortContext context, int start, int exclusiveEnd,
                                int[] positions, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
                                boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
     for (int i = start; i < exclusiveEnd; i++) {
-      int key = get16RadixKey(in[i], sortKeyIds[curSortKeyIdx], pass);
+      int key = get16RadixKey(context.in[i], sortKeyIds[curSortKeyIdx], pass);
       positions[key] += 1;
     }
 
@@ -153,25 +156,33 @@ public class OffHeapRowBlockUtils {
     }
   }
 
-  static UnSafeTuple[] longLsdRadixSort(UnSafeTuple[] in, UnSafeTuple[] out, int maxPass,
+  private static class RadixSortContext {
+    @Contended UnSafeTuple[] in;
+
+    public RadixSortContext(UnSafeTuple[] in) {
+      this.in = in;
+    }
+  }
+
+  static UnSafeTuple[] longLsdRadixSort(RadixSortContext context, UnSafeTuple[] out, int maxPass,
                                         int[] sortKeyIds, Type[] sortKeyTypes,
                                         boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
     int[] positions = new int[65536];
     for (int pass = 0; pass < maxPass - 1; pass += 2) {
       // Make histogram
-      build16Histogram(in, 0, in.length,
+      build16Histogram(context, 0, context.in.length,
           positions, pass, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
 
-      if (positions[0] != in.length) {
-        for (int i = in.length - 1; i >= 0; i--) {
-          int key = get16RadixKey(in[i], sortKeyIds[curSortKeyIdx], pass);
-          out[positions[key] - 1] = in[i];
+      if (positions[0] != context.in.length) {
+        for (int i = context.in.length - 1; i >= 0; i--) {
+          int key = get16RadixKey(context.in[i], sortKeyIds[curSortKeyIdx], pass);
+          out[positions[key] - 1] = context.in[i];
           positions[key] -= 1;
         }
       }
       Arrays.fill(positions, 0);
-      UnSafeTuple[] tmp = in;
-      in = out;
+      UnSafeTuple[] tmp = context.in;
+      context.in = out;
       out = tmp;
     }
     return out;
@@ -180,17 +191,16 @@ public class OffHeapRowBlockUtils {
   private final static int BIN_SIZE = 65536; // 65536
   private final static int MAX_BIN_IDX = 65535; //65535
 
-  static void longMsdRadixSort(UnSafeTuple[] in, int start, int exclusiveEnd, int pass,
+  static void longMsdRadixSort(RadixSortContext context, int start, int exclusiveEnd, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
-                               boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    if (exclusiveEnd - start < 2) {
+                               boolean[] asc, boolean[] nullFirst, int curSortKeyIdx,
+                               Comparator<UnSafeTuple> comp) {
+    int len = exclusiveEnd - start;
+    if (len < 2) {
       return;
+    } else if (len < BIN_SIZE) {
+      Arrays.sort(context.in, comp);
     }
-//    StringBuilder sb = new StringBuilder("Before swap\n");
-//    for (UnSafeTuple t : in) {
-//      sb.append(t).append("\n");
-//    }
-//    LOG.info(sb.toString());
 
     // TODO: the total size of arrays is 1 MB. Consider 65536 -> 256
     // TODO: should they be created for each call longMsdRadixSort()?
@@ -200,7 +210,7 @@ public class OffHeapRowBlockUtils {
     // Make histogram
 //    build8Histogram(in, start, exclusiveEnd,
 //        binEndIdx, pass, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-    build16Histogram(in, start, exclusiveEnd,
+    build16Histogram(context, start, exclusiveEnd,
         binEndIdx, pass, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
 
     // Initialize bins
@@ -209,12 +219,12 @@ public class OffHeapRowBlockUtils {
 
     for (int i = 0; binNextElemIdx[i] < exclusiveEnd && i < MAX_BIN_IDX; i++) {
       while (binNextElemIdx[i] < binEndIdx[i]) {
-        for (int key = get16RadixKey(in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass);
+        for (int key = get16RadixKey(context.in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass);
              key != i;
-             key = get16RadixKey(in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass)) {
-          UnSafeTuple tmp = in[binNextElemIdx[i]];
-          in[binNextElemIdx[i]] = in[binNextElemIdx[key]];
-          in[binNextElemIdx[key]] = tmp;
+             key = get16RadixKey(context.in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass)) {
+          UnSafeTuple tmp = context.in[binNextElemIdx[i]];
+          context.in[binNextElemIdx[i]] = context.in[binNextElemIdx[key]];
+          context.in[binNextElemIdx[key]] = tmp;
           binNextElemIdx[key]++;
         }
 
@@ -222,21 +232,15 @@ public class OffHeapRowBlockUtils {
       }
     }
 
-//    sb = new StringBuilder("After swap\n");
-//    for (UnSafeTuple t : in) {
-//      sb.append(t).append("\n");
-//    }
-//    LOG.info(sb.toString());
-
     // Since every other bin is already fixed, the last bin should also be. So, skip it.
 
     if (pass > 0) {
       int nextPass = pass - 2;
-      longMsdRadixSort(in, start, binEndIdx[0], nextPass,
-          sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+      longMsdRadixSort(context, start, binEndIdx[0], nextPass,
+          sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, comp);
       for (int i = 0; i < MAX_BIN_IDX && binEndIdx[i] < exclusiveEnd; i++) {
-        longMsdRadixSort(in, binEndIdx[i], binEndIdx[i + 1], nextPass,
-            sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
+        longMsdRadixSort(context, binEndIdx[i], binEndIdx[i + 1], nextPass,
+            sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, comp);
       }
     }
   }
@@ -249,9 +253,9 @@ public class OffHeapRowBlockUtils {
         Collections.sort(list, comparator);
         return list;
       case LSD_RADIX_SORT:
-        return radixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst);
+        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst);
       case MSD_RADIX_SORT:
-        return msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst);
+        return msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
       default:
         throw new TajoRuntimeException(new NotImplementedException(algorithm.name()));
     }

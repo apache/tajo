@@ -142,7 +142,7 @@ public class TestExternalSortExec {
   public final void testNext() throws IOException, TajoException {
 //    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
