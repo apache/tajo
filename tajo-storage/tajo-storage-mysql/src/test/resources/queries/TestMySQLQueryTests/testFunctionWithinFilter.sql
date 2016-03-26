@@ -1,0 +1,1 @@
+select * from lineitem where concat(l_returnflag, l_linestatus) = 'NO'
