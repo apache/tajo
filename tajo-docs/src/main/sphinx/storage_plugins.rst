@@ -9,3 +9,4 @@ This section describes the storage plugins available in Tajo to access datasets 
 
     storage_plugins/overview
     storage_plugins/postgresql
+    storage_plugins/mysql
