@@ -78,11 +78,11 @@ public class OffHeapRowBlockUtils {
   }
 
   public static List<UnSafeTuple> lsdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-                                               boolean[] asc, boolean[] nullFirst) {
+                                               boolean[] asc, boolean[] nullFirst, int cacheSize) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
     UnSafeTuple[] out = new UnSafeTuple[list.size()];
 
-    longLsdRadixSort(new RadixSortContext(in), out, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
+    longLsdRadixSort(new RadixSortContext(in, cacheSize), out, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : in) {
       it.next();
@@ -92,11 +92,12 @@ public class OffHeapRowBlockUtils {
   }
 
   public static List<UnSafeTuple> msdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-                                            boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
+                                            boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp, int cacheSize) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
 
 //    longMsdRadixSort(in, 0, in.length, 7, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
-    longMsdRadixSort(new RadixSortContext(in), 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
+//    longMsdRadixSort(new RadixSortContext(in), 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
+    splitIntoBinsAndMsdRadixSort(new RadixSortContext(in, cacheSize), sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : in) {
       it.next();
@@ -131,6 +132,20 @@ public class OffHeapRowBlockUtils {
     return key;
   }
 
+  static int getNRadixKey(UnSafeTuple tuple, int sortKeyId, int n) {
+    int key = n - 1; // for null
+    if (!tuple.isBlankOrNull(sortKeyId)) {
+      // TODO: consider sign
+      int bitNum = (int) Math.ceil(Math.log(n) / Math.log(2));
+      if (bitNum > 8) {
+        throw new TajoRuntimeException(new UnsupportedException(bitNum + " length key"));
+      }
+      byte b = (byte) (PlatformDependent.getByte(getFieldAddr(tuple.address(), sortKeyId) + 6) & 0xFF);
+      key = b >> (8 - bitNum);
+    }
+    return key;
+  }
+
   static void build8Histogram(RadixSortContext context, int start, int exclusiveEnd,
                                int[] positions, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
@@ -161,13 +176,29 @@ public class OffHeapRowBlockUtils {
     }
   }
 
+  static void buildNHistogram(RadixSortContext context,
+                              int[] positions, int[] keys,
+                              int[] sortKeyIds, Type[] sortKeyTypes,
+                              boolean[] asc, boolean[] nullFirst, int curSortKeyIdx, int n) {
+    for (int i = 0; i < context.in.length; i++) {
+      keys[i] = getNRadixKey(context.in[i], sortKeyIds[curSortKeyIdx], n);
+      positions[keys[i]] += 1;
+    }
+
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+    }
+  }
+
   private static class RadixSortContext {
     @Contended UnSafeTuple[] in;
-    @Contended int[] binEndIdx = new int[BIN_SIZE];
-    @Contended int[] binNextElemIdx = new int [BIN_SIZE];
+    @Contended int[] binEndIdx = new int[BIN_NUM];
+    @Contended int[] binNextElemIdx = new int [BIN_NUM];
+    final int cacheSize;
 
-    public RadixSortContext(UnSafeTuple[] in) {
+    public RadixSortContext(UnSafeTuple[] in, int cacheSize) {
       this.in = in;
+      this.cacheSize = cacheSize;
     }
   }
 
@@ -196,9 +227,49 @@ public class OffHeapRowBlockUtils {
     return out;
   }
 
-  private final static int BIN_SIZE = 65536; // 65536
+  private final static int BIN_NUM = 65536; // 65536
   private final static int MAX_BIN_IDX = 65535; //65535
   private final static int TIM_SORT_THRESHOLD = 128;
+
+  /**
+   * Split into sub-buckets to fit in cpu cache
+   * @return
+   */
+  static void splitIntoBinsAndMsdRadixSort(RadixSortContext context, int[] sortKeyIds, Type[] sortKeyTypes,
+                                           boolean[] asc, boolean[] nullFirst, int curSortKeyIdx, Comparator<UnSafeTuple> comp) {
+    int subBucketNum = (int) Math.ceil((double)8 * context.in.length / (double)context.cacheSize);
+    int[] binEndIdx = new int[subBucketNum];
+    int[] binNextElemIdx = new int[subBucketNum];
+    int[] keys = new int[context.in.length];
+    int maxSubbucketIdx = subBucketNum - 1;
+
+    buildNHistogram(context, binEndIdx, keys, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, subBucketNum);
+    if (binEndIdx.length > 1) {
+      System.arraycopy(binEndIdx, 0, binNextElemIdx, 1, maxSubbucketIdx);
+    }
+
+    for (int i = 0; i < subBucketNum; i++) {
+      while (binNextElemIdx[i] < binEndIdx[i]) {
+        for (int key = keys[binNextElemIdx[i]]; key != i; key = keys[binNextElemIdx[i]]) {
+          UnSafeTuple tmp = context.in[binNextElemIdx[i]];
+          context.in[binNextElemIdx[i]] = context.in[binNextElemIdx[key]];
+          context.in[binNextElemIdx[key]] = tmp;
+          int tmpKey = keys[binNextElemIdx[i]];
+          keys[binNextElemIdx[i]] = keys[binNextElemIdx[key]];
+          keys[binNextElemIdx[key]] = tmpKey;
+          binNextElemIdx[key]++;
+        }
+
+        binNextElemIdx[i]++;
+      }
+    }
+
+    longMsdRadixSort(context, 0, binEndIdx[0], 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
+    for (int i = 0; i < maxSubbucketIdx; i++) {
+      longMsdRadixSort(context, binEndIdx[i], binEndIdx[i + 1], 6,
+          sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, comp);
+    }
+  }
 
   static void longMsdRadixSort(RadixSortContext context, int start, int exclusiveEnd, int pass,
                                int[] sortKeyIds, Type[] sortKeyTypes,
@@ -206,8 +277,6 @@ public class OffHeapRowBlockUtils {
                                Comparator<UnSafeTuple> comp) {
     // TODO: the total size of arrays is 1 MB. Consider 65536 -> 256
     // TODO: should they be created for each call longMsdRadixSort()?
-//    int[] binEndIdx = new int[BIN_SIZE];
-//    int[] binNextElemIdx = new int [BIN_SIZE];
     int[] binEndIdx = context.binEndIdx;
     int[] binNextElemIdx = context.binNextElemIdx;
     Arrays.fill(binEndIdx, 0);
@@ -224,9 +293,6 @@ public class OffHeapRowBlockUtils {
     // Swap tuples
     for (int i = 0; binNextElemIdx[i] < exclusiveEnd && i < MAX_BIN_IDX; i++) {
       while (binNextElemIdx[i] < binEndIdx[i]) {
-//        for (int key = get16RadixKey(context.in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass);
-//             key != i;
-//             key = get16RadixKey(context.in[binNextElemIdx[i]], sortKeyIds[curSortKeyIdx], pass)) {
         for (int key = keys[binNextElemIdx[i]]; key != i; key = keys[binNextElemIdx[i]]) {
           UnSafeTuple tmp = context.in[binNextElemIdx[i]];
           context.in[binNextElemIdx[i]] = context.in[binNextElemIdx[key]];
@@ -269,16 +335,16 @@ public class OffHeapRowBlockUtils {
   }
 
   public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator, int[] sortKeyIds, Type[] sortKeyTypes,
-                                       boolean[] asc, boolean[] nullFirst, SortAlgorithm algorithm) {
+                                       boolean[] asc, boolean[] nullFirst, SortAlgorithm algorithm, int cacheSize) {
     LOG.info(algorithm.name() + " is used for sort");
     switch (algorithm) {
       case TIM_SORT:
         Collections.sort(list, comparator);
         return list;
       case LSD_RADIX_SORT:
-        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst);
+        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, cacheSize);
       case MSD_RADIX_SORT:
-        return msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
+        return msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator, cacheSize);
       default:
         throw new TajoRuntimeException(new NotImplementedException(algorithm.name()));
     }
