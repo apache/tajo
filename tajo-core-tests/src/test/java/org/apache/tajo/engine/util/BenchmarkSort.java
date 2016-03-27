@@ -98,6 +98,18 @@ public class BenchmarkSort {
     schema.addColumn("managerid", Type.INT8);
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
+    schema.addColumn("col1", Type.INT8);
+    schema.addColumn("col2", Type.INT8);
+    schema.addColumn("col3", Type.INT8);
+    schema.addColumn("col4", Type.INT8);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.INT8);
+    schema.addColumn("col7", Type.INT8);
+    schema.addColumn("col8", Type.INT8);
+    schema.addColumn("col9", Type.INT8);
+    schema.addColumn("col10", Type.INT8);
+    schema.addColumn("col11", Type.INT8);
+    schema.addColumn("col12", Type.INT8);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
@@ -106,32 +118,64 @@ public class BenchmarkSort {
     appender.enableStats();
     appender.init();
     VTuple tuple = new VTuple(schema.size());
-//    for (int i = 0; i < numTuple; i++) {
-//      tuple.put(new Datum[] {
-//          DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//          DatumFactory.createInt4(rnd.nextInt(100)),
-//          DatumFactory.createText("dept_" + i),
-//      });
-//      appender.addTuple(tuple);
-//    }
-
-    int cnt = 0;
-    while (cnt < numTuple) {
-      int n = 100_000 + rnd.nextInt(50);
-      for (int i = 0; i < 1000 && cnt < numTuple; i++, cnt++) {
+    for (int i = 0; i < numTuple; i++) {
+      if (rnd.nextInt(10000) == 0) {
         tuple.put(new Datum[] {
-            DatumFactory.createInt8(n),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+        });
+      } else {
+        tuple.put(new Datum[]{
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
             DatumFactory.createInt4(rnd.nextInt(100)),
             DatumFactory.createText("dept_" + i),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
         });
-        appender.addTuple(tuple);
       }
+      appender.addTuple(tuple);
     }
-    tuple.put(new Datum[] {
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-    });
+
+//    int cnt = 0;
+//    while (cnt < numTuple) {
+//      int n = 100_000 + rnd.nextInt(50);
+//      for (int i = 0; i < 1000 && cnt < numTuple; i++, cnt++) {
+//        tuple.put(new Datum[] {
+//            DatumFactory.createInt8(n),
+//            DatumFactory.createInt4(rnd.nextInt(100)),
+//            DatumFactory.createText("dept_" + i),
+//        });
+//        appender.addTuple(tuple);
+//      }
+//    }
+//    tuple.put(new Datum[] {
+//        NullDatum.get(),
+//        NullDatum.get(),
+//        NullDatum.get(),
+//    });
     appender.addTuple(tuple);
     appender.flush();
     appender.close();

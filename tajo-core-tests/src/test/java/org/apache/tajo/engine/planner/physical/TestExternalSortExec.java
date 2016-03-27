@@ -84,6 +84,18 @@ public class TestExternalSortExec {
     schema.addColumn("managerid", Type.INT8);
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
+    schema.addColumn("col1", Type.INT8);
+    schema.addColumn("col2", Type.INT8);
+    schema.addColumn("col3", Type.INT8);
+    schema.addColumn("col4", Type.INT8);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.INT8);
+    schema.addColumn("col7", Type.INT8);
+    schema.addColumn("col8", Type.INT8);
+    schema.addColumn("col9", Type.INT8);
+    schema.addColumn("col10", Type.INT8);
+    schema.addColumn("col11", Type.INT8);
+    schema.addColumn("col12", Type.INT8);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
@@ -93,11 +105,43 @@ public class TestExternalSortExec {
     appender.init();
     VTuple tuple = new VTuple(schema.size());
     for (int i = 0; i < numTuple; i++) {
-      tuple.put(new Datum[] {
-          DatumFactory.createInt8(rnd.nextInt(100_000)),
-          DatumFactory.createInt4(rnd.nextInt(100)),
-          DatumFactory.createText("dept_" + i),
-      });
+      if (rnd.nextInt(1000) == 0) {
+        tuple.put(new Datum[] {
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+            NullDatum.get(),
+        });
+      } else {
+        tuple.put(new Datum[]{
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt4(rnd.nextInt(100)),
+            DatumFactory.createText("dept_" + i),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+        });
+      }
       appender.addTuple(tuple);
     }
 
@@ -113,11 +157,6 @@ public class TestExternalSortExec {
 //        appender.addTuple(tuple);
 //      }
 //    }
-    tuple.put(new Datum[] {
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-    });
     appender.addTuple(tuple);
     appender.flush();
     appender.close();
@@ -142,7 +181,7 @@ public class TestExternalSortExec {
   public final void testNext() throws IOException, TajoException {
 //    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
