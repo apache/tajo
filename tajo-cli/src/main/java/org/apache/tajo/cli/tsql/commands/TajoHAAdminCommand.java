@@ -42,7 +42,7 @@ public class TajoHAAdminCommand extends TajoShellCommand {
 
       haAdmin.runCommand(haAdminCommands);
     } catch (Exception e) {
-      context.getOutput().println("ERROR: " + e.getMessage());
+      context.getError().println("ERROR: " + e.getMessage());
     }
   }
 
