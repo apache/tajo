@@ -876,7 +876,7 @@ public class TajoMasterClientService extends AbstractService {
 
         Schema schema = null;
         if (request.hasSchema()) {
-          schema = new Schema(request.getSchema());
+          schema = SchemaFactory.newV1(request.getSchema());
         }
 
         TableMeta meta = new TableMeta(request.getMeta());

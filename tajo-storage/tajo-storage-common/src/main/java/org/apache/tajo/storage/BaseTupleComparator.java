@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
@@ -68,7 +69,7 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
   }
 
   public BaseTupleComparator(TupleComparatorProto proto) {
-    this.schema = new Schema(proto.getSchema());
+    this.schema = SchemaFactory.newV1(proto.getSchema());
 
     this.sortSpecs = new SortSpec[proto.getSortSpecsCount()];
     for (int i = 0; i < proto.getSortSpecsCount(); i++) {

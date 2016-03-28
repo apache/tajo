@@ -31,6 +31,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -185,7 +186,7 @@ public class TestStorages {
   @Test
   public void testSplitable() throws IOException {
     if (splitable) {
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT8);
 
@@ -239,7 +240,7 @@ public class TestStorages {
 
   @Test
   public void testZeroRows() throws IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
     schema.addColumn("score", Type.FLOAT4);
@@ -283,7 +284,7 @@ public class TestStorages {
   @Test
   public void testRCFileSplitable() throws IOException {
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT8);
 
@@ -337,7 +338,7 @@ public class TestStorages {
 
   @Test
   public void testProjection() throws IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
     schema.addColumn("score", Type.FLOAT4);
@@ -368,7 +369,7 @@ public class TestStorages {
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("testReadAndWrite", tablePath, 0, status.getLen());
 
-    Schema target = new Schema();
+    Schema target = SchemaFactory.newV1();
     target.addColumn("age", Type.INT8);
     target.addColumn("score", Type.FLOAT4);
     Scanner scanner = sm.getScanner(meta, schema, fragment, target);
@@ -400,7 +401,7 @@ public class TestStorages {
 
   @Test
   public void testVariousTypes() throws IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.CHAR, 7);
     schema.addColumn("col3", Type.INT2);
@@ -469,7 +470,7 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.CHAR, 7);
     schema.addColumn("col3", Type.INT2);
@@ -564,7 +565,7 @@ public class TestStorages {
   public void testNullHandlingTypesWithProjection() throws IOException {
     if (internalType) return;
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.CHAR, 7);
     schema.addColumn("col3", Type.INT2);
@@ -635,7 +636,7 @@ public class TestStorages {
 
 
     // Making projection schema with different column positions
-    Schema target = new Schema();
+    Schema target = SchemaFactory.newV1();
     Random random = new Random();
     for (int i = 1; i < schema.size(); i++) {
       int num = random.nextInt(schema.size() - 1) + 1;
@@ -670,7 +671,7 @@ public class TestStorages {
   public void testRCFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.BIT);
     schema.addColumn("col3", Type.CHAR, 7);
@@ -737,7 +738,7 @@ public class TestStorages {
   public void testRCFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.BIT);
     schema.addColumn("col3", Type.CHAR, 7);
@@ -804,7 +805,7 @@ public class TestStorages {
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.BIT);
     schema.addColumn("col3", Type.CHAR, 7);
@@ -874,7 +875,7 @@ public class TestStorages {
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.BIT);
     schema.addColumn("col3", Type.CHAR, 7);
@@ -945,7 +946,7 @@ public class TestStorages {
     if (dateTypeSupport() || timeTypeSupport()) {
 
       int index = 2;
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("col1", Type.TIMESTAMP);
       if (dateTypeSupport()) {
         schema.addColumn("col" + index++, Type.DATE);
@@ -996,7 +997,7 @@ public class TestStorages {
       return;
     }
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
     schema.addColumn("comment", Type.TEXT);
@@ -1071,7 +1072,7 @@ public class TestStorages {
   @Test
   public void testMaxValue() throws IOException {
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.FLOAT4);
     schema.addColumn("col2", Type.FLOAT8);
     schema.addColumn("col3", Type.INT2);
@@ -1138,7 +1139,7 @@ public class TestStorages {
       return;
     }
 
-    Schema dataSchema = new Schema();
+    Schema dataSchema = SchemaFactory.newV1();
     dataSchema.addColumn("col1", Type.FLOAT4);
     dataSchema.addColumn("col2", Type.FLOAT8);
     dataSchema.addColumn("col3", Type.INT2);
@@ -1166,7 +1167,7 @@ public class TestStorages {
 
     assertTrue(fs.exists(tablePath));
     FileStatus status = fs.getFileStatus(tablePath);
-    Schema inSchema = new Schema();
+    Schema inSchema = SchemaFactory.newV1();
     inSchema.addColumn("col1", Type.FLOAT4);
     inSchema.addColumn("col2", Type.FLOAT8);
     inSchema.addColumn("col3", Type.INT2);
@@ -1176,7 +1177,7 @@ public class TestStorages {
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, inSchema, fragment, null);
 
-    Schema target = new Schema();
+    Schema target = SchemaFactory.newV1();
 
     target.addColumn("col2", Type.FLOAT8);
     target.addColumn("col5", Type.INT8);
@@ -1204,7 +1205,7 @@ public class TestStorages {
       return;
     }
 
-    Schema dataSchema = new Schema();
+    Schema dataSchema = SchemaFactory.newV1();
     dataSchema.addColumn("col1", Type.CHAR);
 
     KeyValueSet options = new KeyValueSet();
@@ -1247,7 +1248,7 @@ public class TestStorages {
       return;
     }
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.TEXT);
 
     KeyValueSet options = new KeyValueSet();
@@ -1288,7 +1289,7 @@ public class TestStorages {
 
     if (internalType) return;
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
     schema.addColumn("score", Type.FLOAT4);
@@ -1323,7 +1324,7 @@ public class TestStorages {
   @Test
   public void testProgress() throws IOException {
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.FLOAT4);
     schema.addColumn("col2", Type.FLOAT8);
     schema.addColumn("col3", Type.INT2);
@@ -1371,7 +1372,7 @@ public class TestStorages {
   public void testEmptySchema() throws IOException {
     if (internalType) return;
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.INT8);
     schema.addColumn("score", Type.FLOAT4);
@@ -1409,7 +1410,7 @@ public class TestStorages {
     }
 
     //e,g select count(*) from table
-    Schema target = new Schema();
+    Schema target = SchemaFactory.newV1();
     assertEquals(0, target.size());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());

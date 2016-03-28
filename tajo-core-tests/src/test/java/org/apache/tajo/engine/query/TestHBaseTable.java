@@ -37,6 +37,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -821,7 +822,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
     List<String> datas = new ArrayList<>();
@@ -877,7 +878,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
     List<String> datas = new ArrayList<>();
@@ -935,7 +936,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
     List<String> datas = new ArrayList<>();
@@ -993,7 +994,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id1", Type.TEXT);
     schema.addColumn("id2", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
@@ -1050,7 +1051,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
     List<String> datas = new ArrayList<>();
@@ -1106,7 +1107,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("rk", Type.TEXT);
     schema.addColumn("col2_key", Type.TEXT);
     schema.addColumn("col2_value", Type.TEXT);
@@ -1195,7 +1196,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
     List<String> datas = new ArrayList<>();
@@ -1267,7 +1268,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
     List<String> datas = new ArrayList<>();
@@ -1388,7 +1389,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("id", Type.TEXT);
       schema.addColumn("name", Type.TEXT);
       schema.addColumn("comment", Type.TEXT);

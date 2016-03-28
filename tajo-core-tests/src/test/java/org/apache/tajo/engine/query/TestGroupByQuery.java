@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.StorageConstants;
@@ -420,7 +421,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("code", Type.TEXT);
     schema.addColumn("qty", Type.INT4);
@@ -474,7 +475,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.TEXT);
     schema.addColumn("col2", Type.TEXT);
     schema.addColumn("col3", Type.TEXT);
@@ -504,7 +505,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.TEXT);
     schema.addColumn("col2", Type.TEXT);
 
@@ -691,7 +692,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.TEXT);
     schema.addColumn("col2", Type.TEXT);
 

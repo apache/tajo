@@ -605,7 +605,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         , new ArrayList<MetaDataTuple>());
   }
 
-  private final static Schema importedExportedSchema = new Schema()
+  private final static Schema importedExportedSchema = SchemaFactory.newV1()
       .addColumn("PKTABLE_CAT", Type.VARCHAR)   // 0
       .addColumn("PKTABLE_SCHEM", Type.VARCHAR) // 1
       .addColumn("PKTABLE_NAME", Type.VARCHAR)  // 2

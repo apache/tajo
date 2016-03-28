@@ -181,7 +181,7 @@ public class TestCatalog {
   }
 
   private TableDesc createMockupTable(String databaseName, String tableName) throws IOException {
-    schema1 = new Schema();
+    schema1 = SchemaFactory.newV1();
     schema1.addColumn(FieldName1, Type.BLOB);
     schema1.addColumn(FieldName2, Type.INT4);
     schema1.addColumn(FieldName3, Type.INT8);
@@ -299,7 +299,7 @@ public class TestCatalog {
 	
 	@Test
 	public void testGetTable() throws Exception {
-		schema1 = new Schema();
+		schema1 = SchemaFactory.newV1();
 		schema1.addColumn(FieldName1, Type.BLOB);
 		schema1.addColumn(FieldName2, Type.INT4);
 		schema1.addColumn(FieldName3, Type.INT8);
@@ -361,18 +361,18 @@ public class TestCatalog {
     //      |- s8
     //  |- s9
 
-    Schema nestedSchema = new Schema();
+    Schema nestedSchema = SchemaFactory.newV1();
     nestedSchema.addColumn("s1", Type.INT8);
 
     nestedSchema.addColumn("s2", Type.INT8);
 
-    Schema s5 = new Schema();
+    Schema s5 = SchemaFactory.newV1();
     s5.addColumn("s6", Type.INT8);
 
-    Schema s7 = new Schema();
+    Schema s7 = SchemaFactory.newV1();
     s7.addColumn("s5", new TypeDesc(s5));
 
-    Schema s3 = new Schema();
+    Schema s3 = SchemaFactory.newV1();
     s3.addColumn("s4", Type.INT8);
     s3.addColumn("s7", new TypeDesc(s7));
     s3.addColumn("s8", Type.INT8);
@@ -398,18 +398,18 @@ public class TestCatalog {
     //      |- s3
     //  |- s4
 
-    Schema nestedSchema = new Schema();
+    Schema nestedSchema = SchemaFactory.newV1();
     nestedSchema.addColumn("s1", Type.INT8);
 
     nestedSchema.addColumn("s2", Type.INT8);
 
-    Schema s5 = new Schema();
+    Schema s5 = SchemaFactory.newV1();
     s5.addColumn("s6", Type.INT8);
 
-    Schema s7 = new Schema();
+    Schema s7 = SchemaFactory.newV1();
     s7.addColumn("s5", new TypeDesc(s5));
 
-    Schema s3 = new Schema();
+    Schema s3 = SchemaFactory.newV1();
     s3.addColumn("s4", Type.INT8);
     s3.addColumn("s7", new TypeDesc(s7));
     s3.addColumn("s8", Type.INT8);
@@ -426,7 +426,7 @@ public class TestCatalog {
   static Schema relationSchema;
 
   public static TableDesc prepareTable() throws IOException {
-    relationSchema = new Schema();
+    relationSchema = SchemaFactory.newV1();
     relationSchema.addColumn(DEFAULT_DATABASE_NAME + ".indexed.id", Type.INT4)
         .addColumn(DEFAULT_DATABASE_NAME + ".indexed.name", Type.TEXT)
         .addColumn(DEFAULT_DATABASE_NAME + ".indexed.age", Type.INT4)
@@ -625,7 +625,7 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByHash1() throws Exception {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4)
         .addColumn("name", Type.TEXT)
         .addColumn("age", Type.INT4)
@@ -637,7 +637,7 @@ public class TestCatalog {
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
 
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("id", Type.INT4);
 
     PartitionMethodDesc partitionDesc =
@@ -665,7 +665,7 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByHash2() throws Exception {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4)
         .addColumn("name", Type.TEXT)
         .addColumn("age", Type.INT4)
@@ -676,7 +676,7 @@ public class TestCatalog {
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("id", Type.INT4);
     PartitionMethodDesc partitionDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
@@ -703,7 +703,7 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByList() throws Exception {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4)
         .addColumn("name", Type.TEXT)
         .addColumn("age", Type.INT4)
@@ -714,7 +714,7 @@ public class TestCatalog {
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("id", Type.INT4);
     PartitionMethodDesc partitionDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
@@ -740,7 +740,7 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByRange() throws Exception {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4)
         .addColumn("name", Type.TEXT)
         .addColumn("age", Type.INT4)
@@ -751,7 +751,7 @@ public class TestCatalog {
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("id", Type.INT4);
     PartitionMethodDesc partitionDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName, CatalogProtos.PartitionType.RANGE,
@@ -777,7 +777,7 @@ public class TestCatalog {
 
   // TODO: This should be added at TAJO-1891
   public final void testAddAndDeleteTablePartitionByColumn() throws Exception {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4)
         .addColumn("name", Type.TEXT)
         .addColumn("age", Type.INT4)
@@ -789,7 +789,7 @@ public class TestCatalog {
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("id", Type.INT4);
     partSchema.addColumn("name", Type.TEXT);
 
