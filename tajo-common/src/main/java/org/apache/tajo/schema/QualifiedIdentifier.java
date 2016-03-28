@@ -24,12 +24,11 @@ import org.apache.tajo.util.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.List;
 
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 
 public class QualifiedIdentifier {
-  private List<Identifier> names;
+  private ImmutableList<Identifier> names;
 
   private QualifiedIdentifier(ImmutableList<Identifier> names) {
     this.names = names;
