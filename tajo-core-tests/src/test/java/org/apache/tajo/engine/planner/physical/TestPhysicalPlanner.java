@@ -104,12 +104,12 @@ public class TestPhysicalPlanner {
       catalog.createFunction(funcDesc);
     }
 
-    Schema employeeSchema = new Schema();
+    Schema employeeSchema = SchemaFactory.newV1();
     employeeSchema.addColumn("name", Type.TEXT);
     employeeSchema.addColumn("empid", Type.INT4);
     employeeSchema.addColumn("deptname", Type.TEXT);
 
-    Schema scoreSchema = new Schema();
+    Schema scoreSchema = SchemaFactory.newV1();
     scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("class", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);

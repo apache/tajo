@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,34 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.json;
+package org.apache.tajo.catalog;
 
-import com.google.gson.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.exception.TajoInternalError;
 
-import java.lang.reflect.Type;
-import java.util.Map;
-
-public class GsonHelper {
-  private final GsonBuilder builder;
-  private final Gson gson;
-
-  public GsonHelper(Map<Type, GsonSerDerAdapter<?>> adapters) {
-    builder = new GsonBuilder().excludeFieldsWithoutExposeAnnotation();
-    registerAdapters(builder, adapters);
-    gson = builder.create();
+public class SchemaFactory {
+  public static Schema newV1() {
+    return new SchemaLegacy();
   }
 
-  public static void registerAdapters(GsonBuilder builder, Map<Type, GsonSerDerAdapter<?>> adapters) {
-    for (Map.Entry<Type, GsonSerDerAdapter<?>> entry : adapters.entrySet()) {
-      try {
-        builder.registerTypeAdapter(entry.getKey(), entry.getValue());
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+  public static Schema newV1(CatalogProtos.SchemaProto proto) {
+    return new SchemaLegacy(proto);
+  }
+
+  public static Schema newV1(Schema schema) {
+    try {
+      return (Schema) schema.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new TajoInternalError(e);
     }
   }
 
-  public Gson getGson() {
-    return gson;
+  public static Schema newV1(Column [] columns) {
+    return new SchemaLegacy(columns);
+  }
+
+  public static Schema newV1(Iterable<Column> columns) {
+    return new SchemaLegacy(columns);
   }
 }

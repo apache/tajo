@@ -69,7 +69,7 @@ public class TestResultSet {
     conf = util.getConfiguration();
     sm = TablespaceManager.getDefault();
 
-    scoreSchema = new Schema();
+    scoreSchema = SchemaFactory.newV1();
     scoreSchema.addColumn("deptname", Type.TEXT);
     scoreSchema.addColumn("score", Type.INT4);
     scoreMeta = CatalogUtil.newTableMeta("TEXT");
@@ -197,7 +197,7 @@ public class TestResultSet {
       String query = "select col1, col2, col3 from " + tableName;
 
       String [] table = new String[] {tableName};
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("col1", Type.DATE);
       schema.addColumn("col2", Type.TIME);
       schema.addColumn("col3", Type.TIMESTAMP);

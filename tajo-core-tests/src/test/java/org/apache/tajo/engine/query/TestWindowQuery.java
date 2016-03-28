@@ -23,6 +23,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -265,7 +266,7 @@ public class TestWindowQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("time", TajoDataTypes.Type.TIME);
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
@@ -300,7 +301,7 @@ public class TestWindowQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("time", TajoDataTypes.Type.TIME);
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
@@ -335,7 +336,7 @@ public class TestWindowQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("time", TajoDataTypes.Type.TIME);
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
@@ -384,7 +385,7 @@ public class TestWindowQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("time", TajoDataTypes.Type.TIME);
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
@@ -440,7 +441,7 @@ public class TestWindowQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("time", TajoDataTypes.Type.TIME);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);

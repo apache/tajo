@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -40,7 +41,7 @@ public class TestLazyTuple {
   public void setUp() {
     nullbytes = "\\N".getBytes();
 
-    schema = new Schema();
+    schema = SchemaFactory.newV1();
     schema.addColumn("col1", TajoDataTypes.Type.BOOLEAN);
     schema.addColumn("col2", TajoDataTypes.Type.BIT);
     schema.addColumn("col3", TajoDataTypes.Type.CHAR, 7);
@@ -197,7 +198,7 @@ public class TestLazyTuple {
   @Test
   public void testInvalidNumber() {
     byte[][] bytes = BytesUtils.splitPreserveAllTokens(" 1| |2 ||".getBytes(), '|', 5);
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
     schema.addColumn("col3", TajoDataTypes.Type.INT8);

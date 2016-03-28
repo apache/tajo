@@ -23,10 +23,7 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.NotImplementedException;
@@ -455,7 +452,7 @@ public class LogicalNodeDeserializer {
       predicates[i] = new SimplePredicate(indexScanSpec.getPredicates(i));
     }
 
-    indexScan.set(new Schema(indexScanSpec.getKeySchema()), predicates,
+    indexScan.set(SchemaFactory.newV1(indexScanSpec.getKeySchema()), predicates,
         TUtil.stringToURI(indexScanSpec.getIndexPath()));
 
     return indexScan;
@@ -675,7 +672,7 @@ public class LogicalNodeDeserializer {
     for (int i = 0; i < keySortSpecs.length; i++) {
       keySortSpecs[i] = new SortSpec(createIndexProto.getKeySortSpecs(i));
     }
-    createIndex.setKeySortSpecs(new Schema(createIndexProto.getTargetRelationSchema()),
+    createIndex.setKeySortSpecs(SchemaFactory.newV1(createIndexProto.getTargetRelationSchema()),
         keySortSpecs);
     createIndex.setUnique(createIndexProto.getIsUnique());
     createIndex.setClustered(createIndexProto.getIsClustered());
@@ -719,7 +716,7 @@ public class LogicalNodeDeserializer {
   }
 
   public static Schema convertSchema(CatalogProtos.SchemaProto proto) {
-    return new Schema(proto);
+    return SchemaFactory.newV1(proto);
   }
 
   public static Column[] convertColumns(List<CatalogProtos.ColumnProto> columnProtos) {

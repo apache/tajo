@@ -1228,7 +1228,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static Schema getNaturalJoinSchema(LogicalNode left, LogicalNode right) {
-    Schema joinSchema = new Schema();
+    Schema joinSchema = SchemaFactory.newV1();
     Schema commons = SchemaUtil.getNaturalJoinColumns(left.getOutSchema(), right.getOutSchema());
     joinSchema.addColumns(commons);
     for (Column c : left.getOutSchema().getRootColumns()) {
@@ -1677,7 +1677,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
       ColumnReferenceExpr [] targets = expr.getTargetColumns();
-      Schema targetColumns = new Schema();
+      Schema targetColumns = SchemaFactory.newV1();
       for (ColumnReferenceExpr target : targets) {
         Column targetColumn = desc.getLogicalSchema().getColumn(target.getCanonicalName().replace(".", "/"));
 
@@ -1697,7 +1697,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       Schema tableSchema = desc.getLogicalSchema();
       Schema projectedSchema = insertNode.getChild().getOutSchema();
 
-      Schema targetColumns = new Schema();
+      Schema targetColumns = SchemaFactory.newV1();
       for (int i = 0; i < projectedSchema.size(); i++) {
         targetColumns.addColumn(tableSchema.getColumn(i));
       }
@@ -1956,7 +1956,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
               queryOutputSchema.size() < partitionExpressionSchema.size()) {
             throw makeSyntaxError("Partition columns cannot be more than table columns.");
           }
-          Schema tableSchema = new Schema();
+          Schema tableSchema = SchemaFactory.newV1();
           for (int i = 0; i < queryOutputSchema.size() - partitionExpressionSchema.size(); i++) {
             tableSchema.addColumn(queryOutputSchema.getColumn(i));
           }
@@ -1964,7 +1964,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           createTableNode.setTableSchema(tableSchema);
         } else {
           // Convert the schema of subquery into the target table's one.
-          Schema schema = new Schema(subQuery.getOutSchema());
+          Schema schema = SchemaFactory.newV1(subQuery.getOutSchema());
           schema.setQualifier(createTableNode.getTableName());
           createTableNode.setOutSchema(schema);
           createTableNode.setTableSchema(schema);
@@ -2040,7 +2040,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private Schema convertColumnsToSchema(ColumnDefinition[] elements) {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
 
     for (ColumnDefinition columnDefinition: elements) {
       schema.addColumn(convertColumn(columnDefinition));
@@ -2056,7 +2056,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private static Schema convertTableElementsSchema(ColumnDefinition[] elements) {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
 
     for (ColumnDefinition columnDefinition: elements) {
       schema.addColumn(convertColumn(columnDefinition));

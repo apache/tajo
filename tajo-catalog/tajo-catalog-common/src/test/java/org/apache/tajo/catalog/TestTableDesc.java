@@ -41,7 +41,7 @@ public class TestTableDesc {
 	
 	@Before
 	public void setup() throws IOException {
-	  schema = new Schema();
+	  schema = SchemaFactory.newV1();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
     info = CatalogUtil.newTableMeta("TEXT");
@@ -67,7 +67,7 @@ public class TestTableDesc {
 
   @Test
   public void test() throws CloneNotSupportedException, IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
     TableMeta info = CatalogUtil.newTableMeta("TEXT");

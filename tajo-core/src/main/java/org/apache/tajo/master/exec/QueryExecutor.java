@@ -218,7 +218,7 @@ public class QueryExecutor {
       explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
     }
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("explain", TajoDataTypes.Type.TEXT);
 
     SerializedResultSet.Builder serializedResBuilder = SerializedResultSet.newBuilder();

@@ -22,6 +22,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.StorageConstants;
@@ -58,7 +59,7 @@ public class TestNullValues {
   @Test
   public final void testIsNull() throws Exception {
     String [] table = new String[] {"nulltable1"};
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.INT4);
     schema.addColumn("col2", Type.TEXT);
     schema.addColumn("col3", Type.FLOAT4);
@@ -83,7 +84,7 @@ public class TestNullValues {
   @Test
   public final void testIsNotNull() throws Exception {
     String [] table = new String[] {"nulltable2"};
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.INT4);
     schema.addColumn("col2", Type.TEXT);
     Schema [] schemas = new Schema[] {schema};
@@ -108,7 +109,7 @@ public class TestNullValues {
   @Test
   public final void testIsNotNull2() throws Exception {
     String [] table = new String[] {"nulltable3"};
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.INT8);
     schema.addColumn("col2", Type.INT8);
     schema.addColumn("col3", Type.INT8);
@@ -138,7 +139,7 @@ public class TestNullValues {
   @Test
   public final void testIsNotNull3() throws Exception {
     String [] table = new String[] {"nulltable4"};
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.INT8);
     schema.addColumn("col2", Type.INT8);
     schema.addColumn("col3", Type.INT8);
@@ -251,7 +252,7 @@ public class TestNullValues {
 
   private ResultSet runNullTableQuery(String tableName, String query, TajoClient client) throws Exception {
     String [] table = new String[] {tableName};
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.INT4);
     schema.addColumn("col2", Type.TEXT);
     schema.addColumn("col3", Type.FLOAT4);
