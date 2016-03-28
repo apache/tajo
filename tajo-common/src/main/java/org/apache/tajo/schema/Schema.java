@@ -52,7 +52,7 @@ public class Schema {
   }
 
   public static NamedStructType Struct(String name, NamedType... namedTypes) {
-    return new NamedStructType(name, Arrays.asList(namedTypes));
+    return Struct(name, Arrays.asList(namedTypes));
   }
 
   public static NamedStructType Struct(String name, Collection<NamedType> namedTypes) {
