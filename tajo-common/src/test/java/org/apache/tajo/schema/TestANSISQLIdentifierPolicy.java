@@ -22,7 +22,6 @@ import org.junit.Test;
 
 import static org.apache.tajo.schema.Identifier._;
 import static org.apache.tajo.schema.IdentifierPolicy.ANSISQLPolicy;
-import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 import static org.apache.tajo.schema.QualifiedIdentifier.QualifiedIdentifier;
 import static org.apache.tajo.schema.TestTajoIdentifier.assertIdentifier;
 import static org.apache.tajo.schema.TestTajoIdentifier.assertQualifiedIdentifier;

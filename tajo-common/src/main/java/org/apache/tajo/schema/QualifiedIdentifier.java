@@ -36,7 +36,7 @@ public class QualifiedIdentifier {
   }
 
   public String displayString(final IdentifierPolicy policy) {
-    return StringUtils.join(names, ".", new Function<Identifier, String>() {
+    return StringUtils.join(names, policy.getIdentifierSeperator(), new Function<Identifier, String>() {
       @Override
       public String apply(@Nullable Identifier identifier) {
         return identifier.displayString(policy);
