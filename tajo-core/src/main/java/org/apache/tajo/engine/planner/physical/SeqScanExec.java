@@ -142,7 +142,7 @@ public class SeqScanExec extends ScanExec {
     // in the case where projected column or expression are given
     // the target can be an empty list.
     if (plan.hasTargets()) {
-      projected = new Schema();
+      projected = SchemaFactory.newV1();
       Set<Column> columnSet = new HashSet<>();
 
       if (plan.hasQual()) {

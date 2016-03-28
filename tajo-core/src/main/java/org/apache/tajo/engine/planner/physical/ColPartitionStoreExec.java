@@ -25,10 +25,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -87,7 +84,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     if (plan.getType() == NodeType.INSERT && keyNum > 0) {
       Column[] removedPartitionColumns = new Column[this.outSchema.size() - keyNum];
       System.arraycopy(this.outSchema.toArray(), 0, removedPartitionColumns, 0, removedPartitionColumns.length);
-      this.outSchema = new Schema(removedPartitionColumns);
+      this.outSchema = SchemaFactory.newV1(removedPartitionColumns);
     }
 
     keyIds = new int[keyNum];

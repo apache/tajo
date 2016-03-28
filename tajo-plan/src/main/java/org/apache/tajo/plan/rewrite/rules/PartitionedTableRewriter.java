@@ -334,7 +334,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
-    Schema paritionValuesSchema = new Schema();
+    Schema paritionValuesSchema = SchemaFactory.newV1();
     for (Column column : partitionDesc.getExpressionSchema().getRootColumns()) {
       paritionValuesSchema.addColumn(column);
     }

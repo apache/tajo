@@ -70,7 +70,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	}
 	
 	public TableDesc(TableDescProto proto) {
-	  this(proto.getTableName(), proto.hasSchema() ? new Schema(proto.getSchema()) : null,
+	  this(proto.getTableName(), proto.hasSchema() ? SchemaFactory.newV1(proto.getSchema()) : null,
         new TableMeta(proto.getMeta()), proto.hasPath() ? URI.create(proto.getPath()) : null, proto.getIsExternal());
     if(proto.hasStats()) {
       this.stats = new TableStats(proto.getStats());
@@ -122,7 +122,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 
   public Schema getLogicalSchema() {
     if (hasPartition()) {
-      Schema logicalSchema = new Schema(schema);
+      Schema logicalSchema = SchemaFactory.newV1(schema);
       logicalSchema.addColumns(getPartitionMethod().getExpressionSchema());
       logicalSchema.setQualifier(tableName);
       return logicalSchema;

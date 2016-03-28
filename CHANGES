@@ -8,6 +8,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2099: Implement an Adapter for the legacy Schema. (hyunsik)
+
     TAJO-2091: Error or progress update should use stderr instead of stdout. 
     (hyunsik)
 

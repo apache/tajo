@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -67,7 +68,7 @@ public class TestReadWrite {
     columns.add(new Column("mynull", Type.NULL_TYPE));
     Column[] columnsArray = new Column[columns.size()];
     columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaFactory.newV1(columnsArray);
   }
 
   @Test

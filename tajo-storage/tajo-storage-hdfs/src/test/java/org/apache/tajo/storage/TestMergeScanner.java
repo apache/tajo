@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -98,7 +99,7 @@ public class TestMergeScanner {
 
   @Test
   public void testMultipleFiles() throws IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("file", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
@@ -160,7 +161,7 @@ public class TestMergeScanner {
     fragment[0] = new FileFragment("tablet1", table1Path, 0, status1.getLen());
     fragment[1] = new FileFragment("tablet1", table2Path, 0, status2.getLen());
 
-    Schema targetSchema = new Schema();
+    Schema targetSchema = SchemaFactory.newV1();
     targetSchema.addColumn(schema.getColumn(0));
     targetSchema.addColumn(schema.getColumn(2));
 
