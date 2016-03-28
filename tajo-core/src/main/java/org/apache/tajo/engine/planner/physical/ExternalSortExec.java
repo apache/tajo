@@ -159,7 +159,7 @@ public class ExternalSortExec extends SortExec {
       this.sortKeyTypes[i] = sortSpecs[i].getSortKey().getDataType().getType();
     }
     this.sortAlgorithm = getSortAlgorithm(context.getQueryContext());
-    this.cacheSize = context.getQueryContext().getInt(SessionVars.CPU_CACHE_SIZE);
+    this.cacheSize = context.getQueryContext().getInt(SessionVars.CPU_CACHE_SIZE) * StorageUnit.MB;
   }
 
   private static SortAlgorithm getSortAlgorithm(QueryContext context) {
