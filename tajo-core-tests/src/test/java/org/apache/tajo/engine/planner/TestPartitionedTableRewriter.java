@@ -24,10 +24,7 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -56,7 +53,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     FileSystem fs = FileSystem.get(conf);
     Path rootDir = TajoConf.getWarehouseDir(testingCluster.getConfiguration());
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("n_nationkey", TajoDataTypes.Type.INT8);
     schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
     schema.addColumn("n_regionkey", TajoDataTypes.Type.INT8);
@@ -69,7 +66,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   private static void createExternalTableIncludedOnePartitionKeyColumn(FileSystem fs, Path rootDir, Schema schema,
                                                                        TableMeta meta) throws Exception {
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("key", TajoDataTypes.Type.TEXT);
 
     PartitionMethodDesc partitionMethodDesc =
@@ -99,7 +96,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   private static void createExternalTableIncludedMultiplePartitionKeyColumns(FileSystem fs, Path rootDir,
     Schema schema, TableMeta meta) throws Exception {
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("key1", TajoDataTypes.Type.TEXT);
     partSchema.addColumn("key2", TajoDataTypes.Type.TEXT);
     partSchema.addColumn("key3", TajoDataTypes.Type.INT8);
