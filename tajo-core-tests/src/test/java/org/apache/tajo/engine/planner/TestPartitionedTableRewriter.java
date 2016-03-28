@@ -143,7 +143,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   private static void createExternalTableIncludeArbitraryDirectories(FileSystem fs, Path rootDir,
                                                                              Schema schema, TableMeta meta) throws Exception {
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("year", TajoDataTypes.Type.TEXT);
     partSchema.addColumn("month", TajoDataTypes.Type.TEXT);
     partSchema.addColumn("day", TajoDataTypes.Type.TEXT);
