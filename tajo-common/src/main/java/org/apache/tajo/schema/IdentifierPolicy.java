@@ -18,6 +18,9 @@
 
 package org.apache.tajo.schema;
 
+/**
+ * Policy to describe how to deal identifiers
+ */
 public abstract class IdentifierPolicy {
 
   /** Quote String */
