@@ -86,16 +86,16 @@ public class TestLogicalPlanner {
       catalog.createFunction(funcDesc);
     }
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("name", Type.TEXT);
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("deptname", Type.TEXT);
     schema2.addColumn("manager", Type.TEXT);
 
-    Schema schema3 = new Schema();
+    Schema schema3 = SchemaFactory.newV1();
     schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", Type.INT4);
 
@@ -222,7 +222,7 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(root);
     testCloneLogicalNode(root);
 
-    Schema expectedSchema = new Schema();
+    Schema expectedSchema = SchemaFactory.newV1();
     expectedSchema.addColumn("name", Type.TEXT);
     expectedSchema.addColumn("empid", Type.INT4);
     expectedSchema.addColumn("deptname", Type.TEXT);
@@ -291,7 +291,7 @@ public class TestLogicalPlanner {
 
   static Schema expectedJoinSchema;
   static {
-    expectedJoinSchema = new Schema();
+    expectedJoinSchema = SchemaFactory.newV1();
     expectedJoinSchema.addColumn("name", Type.TEXT);
     expectedJoinSchema.addColumn("deptname", Type.TEXT);
     expectedJoinSchema.addColumn("score", Type.INT4);
@@ -1290,7 +1290,7 @@ public class TestLogicalPlanner {
     String tableName = CatalogUtil.normalizeIdentifier("partitioned_table");
     String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4)
       .addColumn("name", Type.TEXT)
       .addColumn("age", Type.INT4)
@@ -1299,7 +1299,7 @@ public class TestLogicalPlanner {
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
 
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn("id", Type.INT4);
     partSchema.addColumn("name", Type.TEXT);
 

@@ -115,7 +115,7 @@ public class TestCatalogExceptions {
   public void testCreateTableWithWrongUri() throws Exception {
     // TODO: currently, wrong uri does not occur any exception.
     String tableName = "wrongUri";
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn(CatalogUtil.buildFQName(tableName, "Column"), Type.BLOB);
     schema.addColumn(CatalogUtil.buildFQName(tableName, "column"), Type.INT4);
     schema.addColumn(CatalogUtil.buildFQName(tableName, "cOlumn"), Type.INT8);

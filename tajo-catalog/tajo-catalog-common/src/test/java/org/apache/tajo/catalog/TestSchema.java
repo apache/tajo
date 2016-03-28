@@ -40,10 +40,10 @@ public class TestSchema {
 
   static {
     // simple nested schema
-    nestedSchema1 = new Schema();
+    nestedSchema1 = SchemaFactory.newV1();
     nestedSchema1.addColumn("s1", Type.INT8);
 
-    Schema nestedRecordSchema = new Schema();
+    Schema nestedRecordSchema = SchemaFactory.newV1();
     nestedRecordSchema.addColumn("s2", Type.FLOAT4);
     nestedRecordSchema.addColumn("s3", Type.TEXT);
 
@@ -63,10 +63,10 @@ public class TestSchema {
     //  |- s8
     //     |- s6
     //     |- s7
-    nestedSchema2 = new Schema();
+    nestedSchema2 = SchemaFactory.newV1();
     nestedSchema2.addColumn("s1", Type.INT8);
 
-    Schema nestedRecordSchema1 = new Schema();
+    Schema nestedRecordSchema1 = SchemaFactory.newV1();
     nestedRecordSchema1.addColumn("s2", Type.FLOAT4);
     nestedRecordSchema1.addColumn("s3", Type.TEXT);
 
@@ -75,7 +75,7 @@ public class TestSchema {
 
     nestedSchema2.addColumn("s5", Type.FLOAT8);
 
-    Schema nestedRecordSchema2 = new Schema();
+    Schema nestedRecordSchema2 = SchemaFactory.newV1();
     nestedRecordSchema2.addColumn("s6", Type.FLOAT4);
     nestedRecordSchema2.addColumn("s7", Type.TEXT);
 
@@ -95,18 +95,18 @@ public class TestSchema {
     //      |- s8
     //  |- s9
 
-    nestedSchema3 = new Schema();
+    nestedSchema3 = SchemaFactory.newV1();
     nestedSchema3.addColumn("s1", Type.INT8);
 
     nestedSchema3.addColumn("s2", Type.INT8);
 
-    Schema s5 = new Schema();
+    Schema s5 = SchemaFactory.newV1();
     s5.addColumn("s6", Type.INT8);
 
-    Schema s7 = new Schema();
+    Schema s7 = SchemaFactory.newV1();
     s7.addColumn("s5", new TypeDesc(s5));
 
-    Schema s3 = new Schema();
+    Schema s3 = SchemaFactory.newV1();
     s3.addColumn("s4", Type.INT8);
     s3.addColumn("s7", new TypeDesc(s7));
     s3.addColumn("s8", Type.INT8);
@@ -117,7 +117,7 @@ public class TestSchema {
 
 	@Before
 	public void setUp() throws Exception {
-		schema = new Schema();
+		schema = SchemaFactory.newV1();
 		col1 = new Column("name", Type.TEXT);
 		schema.addColumn(col1);
 		col2 = new Column("age", Type.INT4);
@@ -128,14 +128,14 @@ public class TestSchema {
 
 	@Test
 	public final void testSchemaSchema() {
-		Schema schema2 = new Schema(schema);
+		Schema schema2 = SchemaFactory.newV1(schema);
 		
 		assertEquals(schema, schema2);
 	}
 
 	@Test
 	public final void testSchemaSchemaProto() {
-		Schema schema2 = new Schema(schema.getProto());
+		Schema schema2 = SchemaFactory.newV1(schema.getProto());
 		
 		assertEquals(schema, schema2);
 	}
@@ -149,7 +149,7 @@ public class TestSchema {
 
 	@Test
 	public final void testAddField() {
-		Schema schema = new Schema();
+		Schema schema = SchemaFactory.newV1();
 		assertFalse(schema.containsByQualifiedName("studentId"));
 		schema.addColumn("studentId", Type.INT4);
 		assertTrue(schema.containsByQualifiedName("studentId"));
@@ -157,7 +157,7 @@ public class TestSchema {
 
 	@Test
 	public final void testEqualsObject() {
-		Schema schema2 = new Schema();
+		Schema schema2 = SchemaFactory.newV1();
 		schema2.addColumn("name", Type.TEXT);
 		schema2.addColumn("age", Type.INT4);
 		schema2.addColumn("addr", Type.TEXT);
@@ -176,11 +176,11 @@ public class TestSchema {
 	
 	@Test
 	public final void testClone() throws CloneNotSupportedException {
-	  Schema schema = new Schema();
+	  Schema schema = SchemaFactory.newV1();
 	  schema.addColumn("abc", Type.FLOAT8);
 	  schema.addColumn("bbc", Type.FLOAT8);
 	  
-	  Schema schema2 = new Schema(schema.getProto());
+	  Schema schema2 = SchemaFactory.newV1(schema.getProto());
 	  assertEquals(schema.getProto(), schema2.getProto());
 	  assertEquals(schema.getColumn(0), schema2.getColumn(0));
 	  assertEquals(schema.size(), schema2.size());
@@ -193,7 +193,7 @@ public class TestSchema {
 	
 	@Test(expected = TajoRuntimeException.class)
 	public final void testAddExistColumn() {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("abc", Type.FLOAT8);
     schema.addColumn("bbc", Type.FLOAT8);
     schema.addColumn("abc", Type.INT4);
@@ -201,31 +201,31 @@ public class TestSchema {
 
 	@Test
 	public final void testJson() {
-		Schema schema2 = new Schema(schema.getProto());
+		Schema schema2 = SchemaFactory.newV1(schema.getProto());
 		String json = schema2.toJson();
-		Schema fromJson = CatalogGsonHelper.fromJson(json, Schema.class);
+		Schema fromJson = CatalogGsonHelper.fromJson(json, SchemaLegacy.class);
 		assertEquals(schema2, fromJson);
     assertEquals(schema2.getProto(), fromJson.getProto());
 	}
 
   @Test
   public final void testProto() {
-    Schema schema2 = new Schema(schema.getProto());
+    Schema schema2 = SchemaFactory.newV1(schema.getProto());
     SchemaProto proto = schema2.getProto();
-    Schema fromJson = new Schema(proto);
-    assertEquals(schema2, fromJson);
+    Schema fromProto = SchemaFactory.newV1(proto);
+    assertEquals(schema2, fromProto);
   }
 
   @Test
   public final void testSetQualifier() {
-    Schema schema2 = new Schema(schema.getProto());
+    Schema schema2 = SchemaFactory.newV1(schema.getProto());
     schema2.setQualifier("test1");
     Column column = schema2.getColumn(1);
     assertEquals(1, schema2.getColumnIdByName("age"));
     assertEquals(column, schema2.getColumn("age"));
     assertEquals(column, schema2.getColumn("test1.age"));
 
-    Schema schema3 = new Schema();
+    Schema schema3 = SchemaFactory.newV1();
     schema3.addColumn("tb1.col1", Type.INT4);
     schema3.addColumn("col2", Type.INT4);
     assertEquals("tb1", schema3.getColumn(0).getQualifier());
@@ -267,17 +267,17 @@ public class TestSchema {
 
   @Test
   public void testNestedRecord4() {
-    Schema root = new Schema();
+    Schema root = SchemaFactory.newV1();
 
-    Schema nf2DotNf1 = new Schema();
+    Schema nf2DotNf1 = SchemaFactory.newV1();
     nf2DotNf1.addColumn("f1", Type.INT8);
     nf2DotNf1.addColumn("f2", Type.INT8);
 
-    Schema nf2DotNf2 = new Schema();
+    Schema nf2DotNf2 = SchemaFactory.newV1();
     nf2DotNf2.addColumn("f1", Type.INT8);
     nf2DotNf2.addColumn("f2", Type.INT8);
 
-    Schema nf2 = new Schema();
+    Schema nf2 = SchemaFactory.newV1();
     nf2.addColumn("f1", Type.INT8);
     nf2.addColumn("nf1", new TypeDesc(nf2DotNf1));
     nf2.addColumn("nf2", new TypeDesc(nf2DotNf2));
@@ -295,7 +295,7 @@ public class TestSchema {
     assertEquals(s1, s1);
 
     SchemaProto proto = s1.getProto();
-    assertEquals("Proto (de)serialized schema is different from the original: ", s1, new Schema(proto));
+    assertEquals("Proto (de)serialized schema is different from the original: ", s1, SchemaFactory.newV1(proto));
 
     Schema cloned = null;
     try {

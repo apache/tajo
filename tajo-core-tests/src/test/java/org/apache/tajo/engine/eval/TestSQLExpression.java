@@ -21,6 +21,7 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
@@ -39,7 +40,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testQuotedIdentifiers() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("컬럼1", TEXT);
     schema.addColumn("컬럼2", TEXT);
     testEval(schema, "테이블1", "123,234", "select \"컬럼1\"::float, cast (\"컬럼2\" as float4) as a from \"테이블1\"",
@@ -93,7 +94,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testExplicitCast() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", INT1);
     schema.addColumn("col1", INT2);
     schema.addColumn("col2", INT4);
@@ -173,7 +174,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt1() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -275,7 +276,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt2() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -377,7 +378,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt4() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -480,7 +481,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt8() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -587,7 +588,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForFloat4() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -706,7 +707,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForFloat8() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -826,7 +827,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testSigned() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -870,7 +871,7 @@ public class TestSQLExpression extends ExprTestBase {
     queryContext.put(SessionVars.TIMEZONE, "GMT-6");
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
 
@@ -902,7 +903,7 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select true", new String[] {"t"});
     testSimpleEval("select false", new String[]{"f"});
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
     testEval(schema, "table1", "123,234", "select col1, col2 from table1 where true", new String[]{"123", "234"});

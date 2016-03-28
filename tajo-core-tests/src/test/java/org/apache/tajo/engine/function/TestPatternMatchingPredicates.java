@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
@@ -30,7 +31,7 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
 
   @Test
   public void testLike() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TEXT);
 
     // test for null values
