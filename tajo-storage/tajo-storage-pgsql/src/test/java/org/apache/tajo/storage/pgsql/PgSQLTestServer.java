@@ -50,7 +50,7 @@ public class PgSQLTestServer {
   };
 
   public static final String SPACENAME = "pgsql_cluster";
-  public static final String DATABASE_NAME = "tpch";
+  public static final String DATABASE_NAME = "pgsql_tpch";
   public static final String USERNAME = "testuser";
   public static final String PASSWORD = "";
 

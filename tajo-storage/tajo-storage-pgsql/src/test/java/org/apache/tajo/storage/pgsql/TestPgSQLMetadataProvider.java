@@ -48,7 +48,7 @@ public class TestPgSQLMetadataProvider {
   public void testGetDatabaseName() throws Exception {
     Tablespace tablespace = TablespaceManager.get(jdbcUrl);
     MetadataProvider provider = tablespace.getMetadataProvider();
-    assertEquals("tpch", provider.getDatabaseName());
+    assertEquals("pgsql_tpch", provider.getDatabaseName());
   }
 
   @Test
@@ -77,7 +77,7 @@ public class TestPgSQLMetadataProvider {
 
     for (String tableName : PgSQLTestServer.TPCH_TABLES) {
       TableDesc table = provider.getTableDesc(null, tableName);
-      assertEquals("tpch." + tableName, table.getName());
+      assertEquals("pgsql_tpch." + tableName, table.getName());
       assertEquals(jdbcUrl + "&table=" + tableName, table.getUri().toASCIIString());
     }
   }
