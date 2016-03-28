@@ -189,7 +189,7 @@ public class TestTupleUtil {
 
   @Test
   public void testBuildTupleFromPartitionName() {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("key1", Type.INT8);
     schema.addColumn("key2", Type.TEXT);
 
