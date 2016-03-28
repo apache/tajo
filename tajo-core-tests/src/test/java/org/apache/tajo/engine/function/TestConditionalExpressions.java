@@ -20,6 +20,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
@@ -32,7 +33,7 @@ import static org.junit.Assert.fail;
 public class TestConditionalExpressions extends ExprTestBase {
   @Test
   public void testCaseWhens1() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TajoDataTypes.Type.INT1);
     schema.addColumn("col2", TajoDataTypes.Type.INT2);
     schema.addColumn("col3", TajoDataTypes.Type.INT4);
@@ -59,7 +60,7 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithNullReturn() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TajoDataTypes.Type.TEXT);
     schema.addColumn("col2", TajoDataTypes.Type.TEXT);
 
@@ -73,7 +74,7 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithCommonExpression() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
     schema.addColumn("col3", TajoDataTypes.Type.INT4);
@@ -111,7 +112,7 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithCommonExpressionAndNull() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TajoDataTypes.Type.INT4);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
     schema.addColumn("col3", TajoDataTypes.Type.INT4);

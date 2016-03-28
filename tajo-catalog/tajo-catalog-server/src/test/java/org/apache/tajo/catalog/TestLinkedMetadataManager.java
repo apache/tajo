@@ -42,25 +42,25 @@ public class TestLinkedMetadataManager {
 
   static TableDesc TABLE1 = new TableDesc(
       "table1",
-      new Schema(new Column[]{new Column("c1", Type.INT8)}),
+      SchemaFactory.newV1(new Column[]{new Column("c1", Type.INT8)}),
       "TEXT", new KeyValueSet(), URI.create("http://space1/x/table1")
   );
 
   static TableDesc TABLE2 = new TableDesc(
       "table2",
-          new Schema(new Column[]{new Column("c1", Type.INT8)}),
+          SchemaFactory.newV1(new Column[]{new Column("c1", Type.INT8)}),
       "TEXT", new KeyValueSet(), URI.create("http://space1/x/table2")
   );
 
   static TableDesc TABLE3 = new TableDesc(
       "table3",
-      new Schema(new Column[]{new Column("c1", Type.INT8)}),
+      SchemaFactory.newV1(new Column[]{new Column("c1", Type.INT8)}),
       "TEXT", new KeyValueSet(), URI.create("http://space1/x/table3")
   );
 
   static TableDesc TABLE4 = new TableDesc(
       "table4",
-          new Schema(new Column[]{new Column("c1", Type.INT8)}),
+          SchemaFactory.newV1(new Column[]{new Column("c1", Type.INT8)}),
       "TEXT", new KeyValueSet(), URI.create("http://space1/x/table4")
   );
 
@@ -211,7 +211,7 @@ public class TestLinkedMetadataManager {
   public void testCreateTable() throws Exception {
     TableDesc tb = new TableDesc(
         "space1.errortable",
-        new Schema(),
+        SchemaFactory.newV1(),
         new TableMeta("x", new KeyValueSet()),
         URI.create("file:///"));
 

@@ -31,6 +31,7 @@ import org.apache.orc.impl.*;
 import org.apache.orc.impl.StreamName;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -91,7 +92,7 @@ public class OrcRecordReader implements Closeable {
     this.bufferSize = bufferSize;
     this.included = new boolean[schema.size() + 1];
     included[0] = target.length > 0; // always include root column except when target schema size is 0
-    Schema targetSchema = new Schema(target);
+    Schema targetSchema = SchemaFactory.newV1(target);
     for (int i = 1; i < included.length; i++) {
       included[i] = targetSchema.contains(schema.getColumn(i - 1));
     }

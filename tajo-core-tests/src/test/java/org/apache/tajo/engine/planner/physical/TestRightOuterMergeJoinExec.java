@@ -104,7 +104,7 @@ public class TestRightOuterMergeJoinExec {
     //  7     | dep_7     | 1007
     //  8     | dep_8     | 1008
     //  9     | dep_9     | 1009
-    Schema dep3Schema = new Schema();
+    Schema dep3Schema = SchemaFactory.newV1();
     dep3Schema.addColumn("dep_id", Type.INT4);
     dep3Schema.addColumn("dep_name", Type.TEXT);
     dep3Schema.addColumn("loc_id", Type.INT4);
@@ -143,7 +143,7 @@ public class TestRightOuterMergeJoinExec {
     //  8     | dep_8     | 1008
     //  9     | dep_9     | 1009
     // 10     | dep_10    | 1010
-    Schema dep4Schema = new Schema();
+    Schema dep4Schema = SchemaFactory.newV1();
     dep4Schema.addColumn("dep_id", Type.INT4);
     dep4Schema.addColumn("dep_name", Type.TEXT);
     dep4Schema.addColumn("loc_id", Type.INT4);
@@ -176,7 +176,7 @@ public class TestRightOuterMergeJoinExec {
     //   102    |  job_102
     //   103    |  job_103
 
-    Schema job3Schema = new Schema();
+    Schema job3Schema = SchemaFactory.newV1();
     job3Schema.addColumn("job_id", Type.INT4);
     job3Schema.addColumn("job_title", Type.TEXT);
 
@@ -212,7 +212,7 @@ public class TestRightOuterMergeJoinExec {
     //  21     |  fn_21     |  ln_21    |  1     | 123    | 101
     //  23     |  fn_23     |  ln_23    |  3     | 369    | 103
 
-    Schema emp3Schema = new Schema();
+    Schema emp3Schema = SchemaFactory.newV1();
     emp3Schema.addColumn("emp_id", Type.INT4);
     emp3Schema.addColumn("first_name", Type.TEXT);
     emp3Schema.addColumn("last_name", Type.TEXT);
@@ -269,7 +269,7 @@ public class TestRightOuterMergeJoinExec {
     // -----------------------------------------------
     // this table is empty, no rows
 
-    Schema phone3Schema = new Schema();
+    Schema phone3Schema = SchemaFactory.newV1();
     phone3Schema.addColumn("emp_id", Type.INT4);
     phone3Schema.addColumn("phone_number", Type.TEXT);
 

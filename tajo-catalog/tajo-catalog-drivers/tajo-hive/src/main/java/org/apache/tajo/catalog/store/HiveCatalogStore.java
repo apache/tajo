@@ -148,7 +148,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       path = table.getPath();
 
       // convert HiveCatalogStore field schema into tajo field schema.
-      schema = new org.apache.tajo.catalog.Schema();
+      schema = SchemaFactory.newV1();
 
       List<FieldSchema> fieldSchemaList = table.getCols();
       boolean isPartitionKey;
@@ -238,7 +238,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<FieldSchema> partitionKeys = table.getPartitionKeys();
 
       if (null != partitionKeys) {
-        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+        org.apache.tajo.catalog.Schema expressionSchema = SchemaFactory.newV1();
         StringBuilder sb = new StringBuilder();
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
@@ -814,7 +814,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<FieldSchema> partitionKeys = table.getPartitionKeys();
 
       if (partitionKeys != null && partitionKeys.size() > 0) {
-        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+        org.apache.tajo.catalog.Schema expressionSchema = SchemaFactory.newV1();
         StringBuilder sb = new StringBuilder();
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {

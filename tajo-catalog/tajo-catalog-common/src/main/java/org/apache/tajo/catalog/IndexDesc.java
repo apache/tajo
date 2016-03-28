@@ -58,7 +58,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
           proto.getIndexName(), new URI(proto.getIndexPath()),
           keySortSpecs,
           proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(),
-          new Schema(proto.getTargetRelationSchema()));
+          SchemaFactory.newV1(proto.getTargetRelationSchema()));
     } catch (URISyntaxException e) {
       e.printStackTrace();
     }

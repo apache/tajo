@@ -81,7 +81,7 @@ public class TestSortExec {
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
     sm = TablespaceManager.getLocalFs();
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("managerid", Type.INT4);
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
@@ -156,7 +156,7 @@ public class TestSortExec {
    * Later it should be moved TestUniformPartitions.
    */
   public void testTAJO_946() {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("l_orderkey", Type.INT8);
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 

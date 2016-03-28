@@ -27,6 +27,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoInternalError;
@@ -144,7 +145,7 @@ public class EvalTreeUtil {
   }
   
   public static Schema getSchemaByTargets(Schema inputSchema, List<Target> targets) {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     for (Target target : targets) {
       schema.addColumn(
           target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
