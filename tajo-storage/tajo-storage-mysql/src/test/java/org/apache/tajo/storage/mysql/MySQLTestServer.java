@@ -107,7 +107,7 @@ public class MySQLTestServer {
         statement.executeUpdate(sql);
         Path filePath = new Path(testPath, "datetime_types.txt");
         storeTableContents("mysql/datetime_types.txt", filePath);
-        String copyCommand = genLoadStatement("datetime_types", filePath.toUri().getPath());
+        String copyCommand = genLoadStatement("DATETIME_TYPES", filePath.toUri().getPath());
         LOG.info(copyCommand);
         statement.execute(copyCommand);
 
