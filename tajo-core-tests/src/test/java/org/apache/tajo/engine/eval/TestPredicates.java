@@ -20,6 +20,7 @@ package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
@@ -86,7 +87,7 @@ public class TestPredicates extends ExprTestBase {
 
     testSimpleEval("select (not (1 > null)) is null;", new String[] {"t"});
 
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     schema1.addColumn("col3", INT4);
@@ -112,7 +113,7 @@ public class TestPredicates extends ExprTestBase {
   public void testComparisonEqual() throws TajoException {
 
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col0", TajoDataTypes.Type.INT1);
     schema.addColumn("col1", TajoDataTypes.Type.INT2);
     schema.addColumn("col2", TajoDataTypes.Type.INT4);
@@ -125,7 +126,7 @@ public class TestPredicates extends ExprTestBase {
 
     testEval(schema, "t1", "0,1,2,3,4.1,5.1,cmp,asm,", "SELECT col6 = 'cmp' from t1", new String [] {"t"});
 
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     schema1.addColumn("col3", INT4);
@@ -142,7 +143,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonNotEqual() throws TajoException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     schema1.addColumn("col3", INT4);
@@ -159,7 +160,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonLessThan() throws TajoException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     schema1.addColumn("col3", INT4);
@@ -176,7 +177,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonLessThanEqual() throws TajoException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     schema1.addColumn("col3", INT4);
@@ -193,7 +194,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonGreaterThan() throws TajoException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     schema1.addColumn("col3", INT4);
@@ -210,7 +211,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonGreaterThanEqual() throws TajoException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     schema1.addColumn("col3", INT4);
@@ -231,7 +232,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testBetween() throws TajoException {
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
     schema2.addColumn("col3", TEXT);
@@ -255,7 +256,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testBetween2() throws TajoException { // for TAJO-249
-    Schema schema3 = new Schema();
+    Schema schema3 = SchemaFactory.newV1();
     schema3.addColumn("date_a", INT4);
     schema3.addColumn("date_b", INT4);
     schema3.addColumn("date_c", INT4);
@@ -294,7 +295,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testInPredicateWithConstant() throws TajoException {
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
     schema2.addColumn("col3", TEXT);
@@ -319,7 +320,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testInPredicateWithSimpleExprs() throws TajoException {
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", INT4);
     schema2.addColumn("col3", TEXT);
@@ -343,7 +344,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testIsNullPredicate() throws TajoException {
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("col1", INT4);
     schema1.addColumn("col2", INT4);
     testEval(schema1, "table1", "123,", "select col1 is null, col2 is null as a from table1",
@@ -354,7 +355,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testIsNullPredicateWithFunction() throws TajoException {
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("col1", TEXT);
     schema2.addColumn("col2", TEXT);
     testEval(schema2, "table1", "_123,", "select ltrim(col1, '_') is null, upper(col2) is null as a from table1",
@@ -393,7 +394,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testBooleanTestOnTable() throws TajoException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", BOOLEAN);
     schema.addColumn("col2", BOOLEAN);
     testEval(schema, "table1", "t,f", "select col1 is true, col2 is false from table1", new String [] {"t", "t"});

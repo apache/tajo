@@ -22,6 +22,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.Test;
 
@@ -80,7 +81,7 @@ public class TestSchemaConverter {
     columns.add(new Column("myprotobuf", Type.PROTOBUF));
     Column[] columnsArray = new Column[columns.size()];
     columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaFactory.newV1(columnsArray);
   }
 
   private Schema createAllTypesConvertedSchema() {
@@ -95,7 +96,7 @@ public class TestSchemaConverter {
     columns.add(new Column("myfixed", Type.BLOB));
     Column[] columnsArray = new Column[columns.size()];
     columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaFactory.newV1(columnsArray);
   }
 
   private void testTajoToParquetConversion(

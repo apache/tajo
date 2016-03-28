@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -41,7 +42,7 @@ import static org.junit.Assert.*;
 public class TestDelimitedTextFile {
   private static final Log LOG = LogFactory.getLog(TestDelimitedTextFile.class);
 
-  private static Schema schema = new Schema();
+  private static Schema schema = SchemaFactory.newV1();
 
   private static Tuple baseTuple;
 

@@ -23,6 +23,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -53,7 +54,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value", TajoDataTypes.Type.INT8);
     String[] data = new String[]{ "1|-111", "2|\\N", "3|-333" };
@@ -79,7 +80,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("value", TajoDataTypes.Type.DATE);
     String[] data = new String[]{ "2014-01-02", "2014-12-01", "2015-01-01", "1999-08-09", "2000-03-01" };
     TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
@@ -103,7 +104,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("value", TajoDataTypes.Type.DATE);
     String[] data = new String[]{ "2014-01-02", "2014-12-01", "\\N", "\\N", "2000-03-01" };
     TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
@@ -127,7 +128,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("value", TajoDataTypes.Type.TIME);
     String[] data = new String[]{ "11:11:11", "23:12:50", "00:00:01", "09:59:59", "12:13:14" };
     TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
@@ -151,7 +152,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("value", TajoDataTypes.Type.TIME);
     String[] data = new String[]{ "11:11:11", "\\N", "\\N", "09:59:59", "12:13:14" };
     TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
@@ -175,7 +176,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("value", TajoDataTypes.Type.TIMESTAMP);
     String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "2016-12-24 00:00:01", 
             "1977-05-04 09:59:59", "2002-11-21 12:13:14" };
@@ -200,7 +201,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("value", TajoDataTypes.Type.TIMESTAMP);
     String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "\\N",
             "\\N", "2002-11-21 12:13:14" };
@@ -232,7 +233,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value", TajoDataTypes.Type.INT8);
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
@@ -265,7 +266,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     String[] data = new String[]{ "1|\\N", "2|\\N", "3|\\N" };
@@ -298,7 +299,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("name", TajoDataTypes.Type.TEXT);
     String[] data = new String[]{ "1|def", "2|\\N", "3|abc" };
@@ -359,7 +360,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -388,7 +389,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -417,7 +418,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -446,7 +447,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -475,7 +476,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -507,7 +508,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -539,7 +540,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -571,7 +572,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -603,7 +604,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -634,7 +635,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -665,7 +666,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -696,7 +697,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);
@@ -757,11 +758,11 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
     
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     String[] data = new String[] {"1", "3", "2", "4"};
     TajoTestingCluster.createTable("rank_table1", schema, tableOptions, data, 1);
-    schema = new Schema();
+    schema = SchemaFactory.newV1();
     schema.addColumn("refid", TajoDataTypes.Type.INT4);
     schema.addColumn("value", TajoDataTypes.Type.TEXT);
     data = new String[] {"1|efgh", "2|abcd", "4|erjk", "8|dfef"};
@@ -795,7 +796,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", TajoDataTypes.Type.INT4);
     schema.addColumn("value_int", TajoDataTypes.Type.INT4);
     schema.addColumn("value_long", TajoDataTypes.Type.INT8);

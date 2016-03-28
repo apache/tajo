@@ -401,7 +401,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     private Schema buildSchemaFromColumnSet(Set<Column> columns) throws TajoException {
       SchemaGraph schemaGraph = new SchemaGraph();
       Set<ColumnVertex> rootVertexes = new HashSet<>();
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
 
       Set<Column> simpleColumns = new HashSet<>();
       List<Column> columnList = new ArrayList<>(columns);
@@ -523,7 +523,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         if (graph.isLeaf(schemaVertex)) {
           schemaVertex.column = new Column(schemaVertex.name, schemaVertex.type);
         } else {
-          Schema schema = new Schema();
+          Schema schema = SchemaFactory.newV1();
           for (ColumnVertex eachChild : graph.getChilds(schemaVertex)) {
             schema.addColumn(eachChild.column);
           }
