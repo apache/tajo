@@ -22,10 +22,10 @@ import org.junit.Test;
 
 import static org.apache.tajo.schema.Identifier._;
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
-import static org.apache.tajo.schema.QualifiedIdentifier.QualifiedIdentifier;
+import static org.apache.tajo.schema.QualifiedIdentifier.$;
 import static org.junit.Assert.assertEquals;
 
-public class TestTajoIdentifier {
+public class TestTajoIdentifierPolicy {
   @Test
   public void testIdentifiers() throws Exception {
     assertIdentifier(DefaultPolicy(), _("xyz"), "xyz");
@@ -37,11 +37,11 @@ public class TestTajoIdentifier {
 
   @Test
   public void testQualifiedIdentifiers() throws Exception {
-    assertQualifiedIdentifier(DefaultPolicy(), QualifiedIdentifier(_("xyz"), _("opq")), "xyz.opq");
-    assertQualifiedIdentifier(DefaultPolicy(), QualifiedIdentifier(_("XYZ"), _("opq")), "xyz.opq");
+    assertQualifiedIdentifier(DefaultPolicy(), $(_("xyz"), _("opq")), "xyz.opq");
+    assertQualifiedIdentifier(DefaultPolicy(), $(_("XYZ"), _("opq")), "xyz.opq");
 
-    assertQualifiedIdentifier(DefaultPolicy(), QualifiedIdentifier(_("xyz", true), _("opq", false)), "'xyz'.opq");
-    assertQualifiedIdentifier(DefaultPolicy(), QualifiedIdentifier(_("xYz", true), _("opq", true)), "'xYz'.'opq'");
+    assertQualifiedIdentifier(DefaultPolicy(), $(_("xyz", true), _("opq", false)), "'xyz'.opq");
+    assertQualifiedIdentifier(DefaultPolicy(), $(_("xYz", true), _("opq", true)), "'xYz'.'opq'");
   }
 
   public static void assertIdentifier(IdentifierPolicy p, Identifier id, String expected) {

@@ -22,9 +22,9 @@ import org.junit.Test;
 
 import static org.apache.tajo.schema.Identifier._;
 import static org.apache.tajo.schema.IdentifierPolicy.ANSISQLPolicy;
-import static org.apache.tajo.schema.QualifiedIdentifier.QualifiedIdentifier;
-import static org.apache.tajo.schema.TestTajoIdentifier.assertIdentifier;
-import static org.apache.tajo.schema.TestTajoIdentifier.assertQualifiedIdentifier;
+import static org.apache.tajo.schema.QualifiedIdentifier.$;
+import static org.apache.tajo.schema.TestTajoIdentifierPolicy.assertIdentifier;
+import static org.apache.tajo.schema.TestTajoIdentifierPolicy.assertQualifiedIdentifier;
 
 public class TestANSISQLIdentifierPolicy {
 
@@ -39,10 +39,10 @@ public class TestANSISQLIdentifierPolicy {
 
   @Test
   public void testQualifiedIdentifiers() throws Exception {
-    assertQualifiedIdentifier(ANSISQLPolicy(), QualifiedIdentifier(_("xyz"), _("opq")), "XYZ.OPQ");
-    assertQualifiedIdentifier(ANSISQLPolicy(), QualifiedIdentifier(_("XYZ"), _("opq")), "XYZ.OPQ");
+    assertQualifiedIdentifier(ANSISQLPolicy(), $(_("xyz"), _("opq")), "XYZ.OPQ");
+    assertQualifiedIdentifier(ANSISQLPolicy(), $(_("XYZ"), _("opq")), "XYZ.OPQ");
 
-    assertQualifiedIdentifier(ANSISQLPolicy(), QualifiedIdentifier(_("xyz", true), _("opq", false)), "'xyz'.OPQ");
-    assertQualifiedIdentifier(ANSISQLPolicy(), QualifiedIdentifier(_("xYz", true), _("opq", true)), "'xYz'.'opq'");
+    assertQualifiedIdentifier(ANSISQLPolicy(), $(_("xyz", true), _("opq", false)), "'xyz'.OPQ");
+    assertQualifiedIdentifier(ANSISQLPolicy(), $(_("xYz", true), _("opq", true)), "'xYz'.'opq'");
   }
 }
