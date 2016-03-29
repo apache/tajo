@@ -64,7 +64,7 @@ public class TestExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 1_000_000;
+  private final int numTuple = 10_000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;

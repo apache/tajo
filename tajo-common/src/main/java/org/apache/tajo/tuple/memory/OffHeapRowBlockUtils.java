@@ -96,10 +96,11 @@ public class OffHeapRowBlockUtils {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
 
 //    longMsdRadixSort(in, 0, in.length, 7, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
-//    longMsdRadixSort(new RadixSortContext(in), 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
-    splitIntoBinsAndMsdRadixSort(new RadixSortContext(in, cacheSize), sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
+    RadixSortContext context = new RadixSortContext(in, cacheSize);
+    longMsdRadixSort(context, 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
+//    splitIntoBinsAndMsdRadixSort(new RadixSortContext(in, cacheSize), sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
     ListIterator<UnSafeTuple> it = list.listIterator();
-    for (UnSafeTuple t : in) {
+    for (UnSafeTuple t : context.in) {
       it.next();
       it.set(t);
     }
@@ -192,12 +193,14 @@ public class OffHeapRowBlockUtils {
 
   private static class RadixSortContext {
     @Contended UnSafeTuple[] in;
+    @Contended UnSafeTuple[] out;
     @Contended int[] binEndIdx = new int[BIN_NUM];
     @Contended int[] binNextElemIdx = new int [BIN_NUM];
     final int cacheSize;
 
     public RadixSortContext(UnSafeTuple[] in, int cacheSize) {
       this.in = in;
+      this.out = new UnSafeTuple[in.length];
       this.cacheSize = cacheSize;
     }
   }
@@ -229,7 +232,7 @@ public class OffHeapRowBlockUtils {
 
   private final static int BIN_NUM = 65536; // 65536
   private final static int MAX_BIN_IDX = 65535; //65535
-  private final static int TIM_SORT_THRESHOLD = 128;
+  private final static int TIM_SORT_THRESHOLD = 64;
 
   /**
    * Split into sub-buckets to fit in cpu cache
@@ -287,25 +290,34 @@ public class OffHeapRowBlockUtils {
         binEndIdx, pass, keys, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
 
     // Initialize bins
-    binNextElemIdx[0] = start;
-    System.arraycopy(binEndIdx, 0, binNextElemIdx, 1, MAX_BIN_IDX);
+//    binNextElemIdx[0] = start;
+//    System.arraycopy(binEndIdx, 0, binNextElemIdx, 1, MAX_BIN_IDX);
+    System.arraycopy(binEndIdx, 0, binNextElemIdx, 0, BIN_NUM);
 
     // Swap tuples
-    for (int i = 0; binNextElemIdx[i] < exclusiveEnd && i < MAX_BIN_IDX; i++) {
-      while (binNextElemIdx[i] < binEndIdx[i]) {
-        for (int key = keys[binNextElemIdx[i]]; key != i; key = keys[binNextElemIdx[i]]) {
-          UnSafeTuple tmp = context.in[binNextElemIdx[i]];
-          context.in[binNextElemIdx[i]] = context.in[binNextElemIdx[key]];
-          context.in[binNextElemIdx[key]] = tmp;
-          int tmpKey = keys[binNextElemIdx[i]];
-          keys[binNextElemIdx[i]] = keys[binNextElemIdx[key]];
-          keys[binNextElemIdx[key]] = tmpKey;
-          binNextElemIdx[key]++;
-        }
+//    for (int i = 0; binNextElemIdx[i] < exclusiveEnd && i < MAX_BIN_IDX; i++) {
+//      while (binNextElemIdx[i] < binEndIdx[i]) {
+//        for (int key = keys[binNextElemIdx[i]]; key != i; key = keys[binNextElemIdx[i]]) {
+//          UnSafeTuple tmp = context.in[binNextElemIdx[i]];
+//          context.in[binNextElemIdx[i]] = context.in[binNextElemIdx[key]];
+//          context.in[binNextElemIdx[key]] = tmp;
+//          int tmpKey = keys[binNextElemIdx[i]];
+//          keys[binNextElemIdx[i]] = keys[binNextElemIdx[key]];
+//          keys[binNextElemIdx[key]] = tmpKey;
+//          binNextElemIdx[key]++;
+//        }
+//
+//        binNextElemIdx[i]++;
+//      }
+//    }
 
-        binNextElemIdx[i]++;
-      }
+    for (int i = start; i < exclusiveEnd; i++) {
+      context.out[binNextElemIdx[keys[i]] - 1] = context.in[i];
+      binNextElemIdx[keys[i]] -= 1;
     }
+    UnSafeTuple[] tmp = context.in;
+    context.in = context.out;
+    context.out = tmp;
 
     // Since every other bin is already fixed, the last bin should also be. So, skip it.
 
