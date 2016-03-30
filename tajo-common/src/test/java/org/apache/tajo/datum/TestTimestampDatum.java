@@ -209,6 +209,7 @@ public class TestTimestampDatum {
     assertEquals(NullDatum.get(), theday.equalsTo(NullDatum.get()));
     try {
       theday.equalsTo(new Int4Datum(123));
+      assertTrue(false);  // should never happen
     } catch (Exception e) {
       assertTrue(e instanceof InvalidOperationException);
     }
