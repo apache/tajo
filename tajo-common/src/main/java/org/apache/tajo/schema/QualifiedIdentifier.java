@@ -18,6 +18,7 @@
 
 package org.apache.tajo.schema;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.util.StringUtils;
@@ -43,15 +44,42 @@ public class QualifiedIdentifier {
     });
   }
 
+  @Override
   public String toString() {
     return displayString(DefaultPolicy());
   }
 
-  public static QualifiedIdentifier QualifiedIdentifier(Collection<Identifier> names) {
+  @Override
+  public int hashCode() {
+    return names.hashCode();
+  }
+
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj instanceof QualifiedIdentifier) {
+      QualifiedIdentifier other = (QualifiedIdentifier) obj;
+      return names.equals(other.names);
+    }
+
+    return false;
+  }
+
+  public static QualifiedIdentifier $(Collection<Identifier> names) {
     return new QualifiedIdentifier(ImmutableList.copyOf(names));
   }
 
-  public static QualifiedIdentifier QualifiedIdentifier(Identifier...names) {
+  public static QualifiedIdentifier $(Identifier...names) {
     return new QualifiedIdentifier(ImmutableList.copyOf(names));
+  }
+
+  @VisibleForTesting
+  public static QualifiedIdentifier $(String...names) {
+    ImmutableList.Builder<Identifier> builder = new ImmutableList.Builder();
+    for (String n :names) {
+      builder.add(Identifier._(n));
+    }
+    return new QualifiedIdentifier(builder.build());
   }
 }

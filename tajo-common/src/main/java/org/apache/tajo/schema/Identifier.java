@@ -20,6 +20,8 @@ package org.apache.tajo.schema;
 
 import org.apache.tajo.schema.IdentifierPolicy.IdentifierCase;
 
+import java.util.Objects;
+
 /**
  * Identifier Element
  */
@@ -67,7 +69,25 @@ public class Identifier {
     }
   }
 
+  @Override
   public String toString() {
     return displayString(IdentifierPolicy.DefaultPolicy());
+  }
+
+  public int hashCode() {
+    return Objects.hash(name, quoted);
+  }
+
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+
+    if (obj instanceof Identifier) {
+      Identifier other = (Identifier) obj;
+      return other.name == other.name && quoted == other.quoted;
+    }
+
+    return false;
   }
 }
