@@ -20,6 +20,7 @@ package org.apache.tajo.engine.util;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
@@ -38,7 +39,7 @@ import static org.junit.Assert.*;
 public class TestTupleUtil {
   @Test
   public final void testFixedSizeChar() {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.CHAR, 5);
 
     Tuple tuple = new VTuple(1);
@@ -56,7 +57,7 @@ public class TestTupleUtil {
 
   @Test
   public final void testToBytesAndToTuple() {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.BOOLEAN);
     schema.addColumn("col2", Type.BIT);
     schema.addColumn("col3", Type.CHAR);
@@ -97,7 +98,7 @@ public class TestTupleUtil {
     VTuple sTuple = new VTuple(7);
     VTuple eTuple = new VTuple(7);
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
 
     schema.addColumn("numByte", Type.BIT);
     schema.addColumn("numChar", Type.CHAR);
@@ -141,7 +142,7 @@ public class TestTupleUtil {
   @Test
   public void testBuildTupleFromPartitionPath() {
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("key1", Type.INT8);
     schema.addColumn("key2", Type.TEXT);
 

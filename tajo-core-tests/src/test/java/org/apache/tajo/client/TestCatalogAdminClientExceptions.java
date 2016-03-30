@@ -23,6 +23,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
@@ -67,20 +68,20 @@ public class TestCatalogAdminClientExceptions extends QueryTestCaseBase {
 
   @Test(expected = UnavailableTableLocationException.class)
   public final void testCreateExternalTableUnavailableLocation() throws TajoException {
-    client.createExternalTable("table128237", new Schema(), URI.create("/tajo/test1bcd"),
+    client.createExternalTable("table128237", SchemaFactory.newV1(), URI.create("/tajo/test1bcd"),
         new TableMeta("TEXT", new KeyValueSet()));
   }
 
   @Test(expected = DuplicateTableException.class)
   public final void testCreateExternalTableDuplicated() throws TajoException {
-    client.createExternalTable("default.lineitem", new Schema(), URI.create("/"),
+    client.createExternalTable("default.lineitem", SchemaFactory.newV1(), URI.create("/"),
         new TableMeta("TEXT", new KeyValueSet()));
   }
 
   @Test(expected = InsufficientPrivilegeException.class)
   public final void testCreateExternalTableInsufficientPrivilege() throws TajoException {
     Path p = TajoConf.getWarehouseDir(conf);
-    client.createExternalTable("information_schema.table1237891", new Schema(), p.toUri(),
+    client.createExternalTable("information_schema.table1237891", SchemaFactory.newV1(), p.toUri(),
         new TableMeta("TEXT", new KeyValueSet()));
   }
 

@@ -208,7 +208,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       });
 
       // transform the pair list into collection for columns
-      final Schema schema = new Schema(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
+      final Schema schema = SchemaFactory.newV1(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
         @Override
         public Column apply(@Nullable Pair<Integer, Column> columnPair) {
           return columnPair.getSecond();

@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
@@ -74,7 +75,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 		queriesURI = new URI(restServiceURI + "/queries");
 		sessionsURI = new URI(restServiceURI + "/sessions");
 		restClient = ClientBuilder.newBuilder()
-        .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
+        .register(new GsonFeature(PlanGsonHelper.registerAdapters()))
         .register(LoggingFilter.class)
         .property(ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
         .property(ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE, true)

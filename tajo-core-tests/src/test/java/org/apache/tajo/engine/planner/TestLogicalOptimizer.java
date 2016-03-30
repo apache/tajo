@@ -65,16 +65,16 @@ public class TestLogicalOptimizer {
       catalog.createFunction(funcDesc);
     }
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("name", Type.TEXT);
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
 
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("deptname", Type.TEXT);
     schema2.addColumn("manager", Type.TEXT);
 
-    Schema schema3 = new Schema();
+    Schema schema3 = SchemaFactory.newV1();
     schema3.addColumn("deptname", Type.TEXT);
     schema3.addColumn("score", Type.INT4);
     schema3.addColumn("phone", Type.INT4);

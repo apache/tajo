@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.*;
@@ -44,7 +45,7 @@ public class TestTupleComparator {
 
   @Test
   public final void testCompare() {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", Type.INT4);
     schema.addColumn("col2", Type.INT4);
     schema.addColumn("col3", Type.INT4);
@@ -77,7 +78,7 @@ public class TestTupleComparator {
 
   @Test
   public void testNullFirst() throws Exception {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
 
@@ -117,7 +118,7 @@ public class TestTupleComparator {
 
   @Test
   public void testNullLast() throws Exception {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
 

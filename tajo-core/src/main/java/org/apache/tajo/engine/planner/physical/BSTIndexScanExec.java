@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -93,7 +94,7 @@ public class BSTIndexScanExec extends ScanExec {
   }
 
   private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, List<Target> targets, EvalNode qual) {
-    Schema mergedSchema = new Schema();
+    Schema mergedSchema = SchemaFactory.newV1();
     Set<Column> qualAndTargets = new HashSet<>();
     qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(qual));
     for (Target target : targets) {
@@ -131,7 +132,7 @@ public class BSTIndexScanExec extends ScanExec {
     // in the case where projected column or expression are given
     // the target can be an empty list.
     if (plan.hasTargets()) {
-      projected = new Schema();
+      projected = SchemaFactory.newV1();
       Set<Column> columnSet = new HashSet<>();
 
       if (plan.hasQual()) {
