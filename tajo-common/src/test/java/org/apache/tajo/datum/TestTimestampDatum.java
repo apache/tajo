@@ -207,11 +207,12 @@ public class TestTimestampDatum {
 
     assertTrue(theday.equalsTo(theday).asBool());
     assertEquals(NullDatum.get(), theday.equalsTo(NullDatum.get()));
-    try {
-      theday.equalsTo(new Int4Datum(123));
-      assertTrue(false);  // should never happen
-    } catch (Exception e) {
-      assertTrue(e instanceof InvalidOperationException);
-    }
+  }
+
+  @Test(expected = InvalidOperationException.class)
+  public void testEqualsToInvalidCase() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+
+    theday.equalsTo(new Int4Datum(123));
   }
 }
