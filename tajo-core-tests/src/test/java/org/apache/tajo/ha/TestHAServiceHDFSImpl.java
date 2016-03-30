@@ -62,7 +62,7 @@ public class TestHAServiceHDFSImpl  {
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("managerid", TajoDataTypes.Type.INT4);
     schema.addColumn("empid", TajoDataTypes.Type.INT4);
     schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
