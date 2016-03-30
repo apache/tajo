@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -69,7 +70,7 @@ public class TPCH extends BenchmarkSet {
 
   @Override
   public void loadSchemas() {
-    Schema lineitem = new Schema()
+    Schema lineitem = SchemaFactory.newV1()
         .addColumn("l_orderkey", Type.INT4) // 0
         .addColumn("l_partkey", Type.INT4) // 1
         .addColumn("l_suppkey", Type.INT4) // 2
@@ -90,7 +91,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("l_comment", Type.TEXT); // 15
     schemas.put(LINEITEM, lineitem);
 
-    Schema customer = new Schema()
+    Schema customer = SchemaFactory.newV1()
         .addColumn("c_custkey", Type.INT4) // 0
         .addColumn("c_name", Type.TEXT) // 1
         .addColumn("c_address", Type.TEXT) // 2
@@ -101,7 +102,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("c_comment", Type.TEXT); // 7
     schemas.put(CUSTOMER, customer);
 
-    Schema customerParts = new Schema()
+    Schema customerParts = SchemaFactory.newV1()
         .addColumn("c_custkey", Type.INT4) // 0
         .addColumn("c_name", Type.TEXT) // 1
         .addColumn("c_address", Type.TEXT) // 2
@@ -111,14 +112,14 @@ public class TPCH extends BenchmarkSet {
         .addColumn("c_comment", Type.TEXT); // 6
     schemas.put(CUSTOMER_PARTS, customerParts);
 
-    Schema nation = new Schema()
+    Schema nation = SchemaFactory.newV1()
         .addColumn("n_nationkey", Type.INT4) // 0
         .addColumn("n_name", Type.TEXT) // 1
         .addColumn("n_regionkey", Type.INT4) // 2
         .addColumn("n_comment", Type.TEXT); // 3
     schemas.put(NATION, nation);
 
-    Schema part = new Schema()
+    Schema part = SchemaFactory.newV1()
         .addColumn("p_partkey", Type.INT4) // 0
         .addColumn("p_name", Type.TEXT) // 1
         .addColumn("p_mfgr", Type.TEXT) // 2
@@ -130,13 +131,13 @@ public class TPCH extends BenchmarkSet {
         .addColumn("p_comment", Type.TEXT); // 8
     schemas.put(PART, part);
 
-    Schema region = new Schema()
+    Schema region = SchemaFactory.newV1()
         .addColumn("r_regionkey", Type.INT4) // 0
         .addColumn("r_name", Type.TEXT) // 1
         .addColumn("r_comment", Type.TEXT); // 2
     schemas.put(REGION, region);
 
-    Schema orders = new Schema()
+    Schema orders = SchemaFactory.newV1()
         .addColumn("o_orderkey", Type.INT4) // 0
         .addColumn("o_custkey", Type.INT4) // 1
         .addColumn("o_orderstatus", Type.TEXT) // 2
@@ -151,7 +152,7 @@ public class TPCH extends BenchmarkSet {
     schemas.put(EMPTY_ORDERS, orders);
 
 
-    Schema partsupp = new Schema()
+    Schema partsupp = SchemaFactory.newV1()
         .addColumn("ps_partkey", Type.INT4) // 0
         .addColumn("ps_suppkey", Type.INT4) // 1
         .addColumn("ps_availqty", Type.INT4) // 2
@@ -159,7 +160,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("ps_comment", Type.TEXT); // 4
     schemas.put(PARTSUPP, partsupp);
 
-    Schema supplier = new Schema()
+    Schema supplier = SchemaFactory.newV1()
         .addColumn("s_suppkey", Type.INT4) // 0
         .addColumn("s_name", Type.TEXT) // 1
         .addColumn("s_address", Type.TEXT) // 2
@@ -171,7 +172,7 @@ public class TPCH extends BenchmarkSet {
   }
 
   public void loadOutSchema() {
-    Schema q2 = new Schema()
+    Schema q2 = SchemaFactory.newV1()
         .addColumn("s_acctbal", Type.FLOAT8)
         .addColumn("s_name", Type.TEXT)
         .addColumn("n_name", Type.TEXT)
@@ -207,7 +208,7 @@ public class TPCH extends BenchmarkSet {
 
     PartitionMethodDesc partitionMethodDesc = null;
     if (tableName.equals(CUSTOMER_PARTS)) {
-      Schema expressionSchema = new Schema();
+      Schema expressionSchema = SchemaFactory.newV1();
       expressionSchema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
       partitionMethodDesc = new PartitionMethodDesc(
           tajo.getCurrentDatabase(),

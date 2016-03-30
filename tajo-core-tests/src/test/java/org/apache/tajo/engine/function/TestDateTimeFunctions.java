@@ -21,6 +21,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
@@ -119,7 +120,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
     TimeZone GMT = TimeZone.getTimeZone("GMT");
     TimeZone PST = TimeZone.getTimeZone("PST");
 
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("col1", TIMESTAMP);
     testEval(schema2, "table1",
         "1970-01-17 10:09:37",
@@ -135,7 +136,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
         new String[]{"1970.0", "1.0", "17.0"});
 
     // Currently TIME type can be loaded with INT8 type.
-    Schema schema3 = new Schema();
+    Schema schema3 = SchemaFactory.newV1();
     schema3.addColumn("col1", TIME);
     testEval(schema3, "table1",
         "10:09:37.5",
@@ -150,7 +151,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
         "select extract(hour from col1), extract(minute from col1), extract(second from col1) from table1;",
         new String[]{"18.0", "9.0", "37.5"});
 
-    Schema schema4 = new Schema();
+    Schema schema4 = SchemaFactory.newV1();
     schema4.addColumn("col1", DATE);
     testEval(schema4, "table1",
         "1970-01-17",
@@ -235,7 +236,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
     TimeZone GMT = TimeZone.getTimeZone("GMT");
     TimeZone PST = TimeZone.getTimeZone("PST");
 
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("col1", TIMESTAMP);
 
     testEval(schema2, "table1",
@@ -251,7 +252,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
         "select date_part('year', col1), date_part('month', col1), date_part('day', col1) from table1;",
         new String[]{"1970.0", "1.0", "18.0"});
 
-    Schema schema3 = new Schema();
+    Schema schema3 = SchemaFactory.newV1();
     schema3.addColumn("col1", TIME);
     testEval(schema3, "table1", "10:09:37.5",
         "select date_part('hour', col1), date_part('minute', col1), date_part('second', col1) from table1;",
@@ -263,7 +264,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
         "select date_part('hour', col1), date_part('minute', col1), date_part('second', col1) from table1;",
         new String[]{"18.0", "9.0", "37.5"});
 
-    Schema schema4 = new Schema();
+    Schema schema4 = SchemaFactory.newV1();
     schema4.addColumn("col1", DATE);
     testEval(schema4, "table1",
         "1970-01-17",

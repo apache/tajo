@@ -21,6 +21,7 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
@@ -42,7 +43,7 @@ public class TestEvalTree extends ExprTestBase {
     FieldEval e2 = new FieldEval("table1.score", CatalogUtil.newSimpleDataType(INT4)); // it indicates
     assertCloneEqual(e2);
 
-    Schema schema1 = new Schema();
+    Schema schema1 = SchemaFactory.newV1();
     schema1.addColumn("table1.id", INT4);
     schema1.addColumn("table1.score", INT4);
     
@@ -395,7 +396,7 @@ public class TestEvalTree extends ExprTestBase {
       assertEquals(caseWhenEval.bind(null, null).eval(null).asInt4(), 1);
     }
 
-    Schema schema = new Schema(new Column[]{new Column("test", TajoDataTypes.Type.INT4)});
+    Schema schema = SchemaFactory.newV1(new Column[]{new Column("test", TajoDataTypes.Type.INT4)});
     Tuple tuple = new VTuple(new Datum[]{DatumFactory.createText("aaa")});
     RegexPredicateEval regexEval = new RegexPredicateEval(false, new FieldEval("test",
         CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4)), new ConstEval(DatumFactory.createText("a*")), false);

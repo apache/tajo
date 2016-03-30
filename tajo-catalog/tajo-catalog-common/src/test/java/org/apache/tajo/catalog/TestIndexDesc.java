@@ -40,7 +40,7 @@ public class TestIndexDesc {
 
   @BeforeClass
   public static void setUp() throws Exception {
-    relationSchema = new Schema(new Column[]{new Column("id", Type.INT4),
+    relationSchema = SchemaFactory.newV1(new Column[]{new Column("id", Type.INT4),
         new Column("score", Type.FLOAT8), new Column("name", Type.TEXT)});
     SortSpec[] colSpecs1 = new SortSpec[1];
     colSpecs1[0] = new SortSpec(new Column("id", Type.INT4), true, true);

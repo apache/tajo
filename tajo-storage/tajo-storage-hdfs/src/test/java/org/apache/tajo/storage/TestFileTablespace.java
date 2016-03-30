@@ -27,6 +27,7 @@ import org.apache.hadoop.hdfs.*;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -81,7 +82,7 @@ public class TestFileTablespace {
 
   @Test
 	public final void testGetScannerAndAppender() throws IOException {
-		Schema schema = new Schema();
+		Schema schema = SchemaFactory.newV1();
 		schema.addColumn("id", Type.INT4);
 		schema.addColumn("age",Type.INT4);
 		schema.addColumn("name",Type.TEXT);
@@ -144,7 +145,7 @@ public class TestFileTablespace {
       TablespaceManager.addTableSpaceForTest(space);
       assertEquals(fs.getUri(), space.getUri());
 
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age",Type.INT4);
       schema.addColumn("name",Type.TEXT);
@@ -198,7 +199,7 @@ public class TestFileTablespace {
       TablespaceManager.addTableSpaceForTest(space);
       assertEquals(fs.getUri(), space.getUri());
 
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age",Type.INT4);
       schema.addColumn("name",Type.TEXT);
@@ -241,7 +242,7 @@ public class TestFileTablespace {
       TablespaceManager.addTableSpaceForTest(sm);
       assertEquals(fs.getUri(), sm.getUri());
 
-      Schema schema = new Schema();
+      Schema schema = SchemaFactory.newV1();
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT4);
       schema.addColumn("name", Type.TEXT);

@@ -42,7 +42,7 @@ public class SchemaUtil {
   // The essential solution would be https://issues.apache.org/jira/browse/TAJO-895.
   static int tmpColumnSeq = 0;
   public static Schema merge(Schema left, Schema right) {
-    Schema merged = new Schema();
+    Schema merged = SchemaFactory.newV1();
     for(Column col : left.getRootColumns()) {
       if (!merged.containsByQualifiedName(col.getQualifiedName())) {
         merged.addColumn(col);
@@ -67,7 +67,7 @@ public class SchemaUtil {
    * Get common columns to be used as join keys of natural joins.
    */
   public static Schema getNaturalJoinColumns(Schema left, Schema right) {
-    Schema common = new Schema();
+    Schema common = SchemaFactory.newV1();
     for (Column outer : left.getRootColumns()) {
       if (!common.containsByName(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {
         common.addColumn(new Column(outer.getSimpleName(), outer.getDataType()));
@@ -78,7 +78,7 @@ public class SchemaUtil {
   }
 
   public static Schema getQualifiedLogicalSchema(TableDesc tableDesc, String tableName) {
-    Schema logicalSchema = new Schema(tableDesc.getLogicalSchema());
+    Schema logicalSchema = SchemaFactory.newV1(tableDesc.getLogicalSchema());
     if (tableName != null) {
       logicalSchema.setQualifier(tableName);
     }
@@ -208,7 +208,7 @@ public class SchemaUtil {
    */
   public static int estimateRowByteSizeWithSchema(Schema schema) {
     int size = 0;
-    for (Column column : schema.fields) {
+    for (Column column : schema.getAllColumns()) {
       size += getColByteSize(column);
     }
     return size;

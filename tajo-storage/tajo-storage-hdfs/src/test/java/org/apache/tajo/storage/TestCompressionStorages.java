@@ -27,9 +27,11 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.io.compress.zlib.ZlibFactory;
 import org.apache.hadoop.util.NativeCodeLoader;
+import org.apache.orc.OrcConf;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -61,6 +63,7 @@ public class TestCompressionStorages {
   public TestCompressionStorages(String type) throws IOException {
     this.dataFormat = type;
     conf = new TajoConf();
+    conf.setBoolean("hive.exec.orc.zerocopy", true);
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
@@ -71,7 +74,8 @@ public class TestCompressionStorages {
     return Arrays.asList(new Object[][]{
         {BuiltinStorages.TEXT},
         {BuiltinStorages.RCFILE},
-        {BuiltinStorages.SEQUENCE_FILE}
+        {BuiltinStorages.SEQUENCE_FILE},
+        {BuiltinStorages.ORC}
     });
   }
 
@@ -109,7 +113,7 @@ public class TestCompressionStorages {
   }
 
   private void storageCompressionTest(String dataFormat, Class<? extends CompressionCodec> codec) throws IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("age", Type.FLOAT4);
     schema.addColumn("name", Type.TEXT);
@@ -119,6 +123,14 @@ public class TestCompressionStorages {
     meta.putProperty("compression.type", SequenceFile.CompressionType.BLOCK.name());
     meta.putProperty("rcfile.serde", TextSerializerDeserializer.class.getName());
     meta.putProperty("sequencefile.serde", TextSerializerDeserializer.class.getName());
+
+    if (codec.equals(SnappyCodec.class)) {
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "SNAPPY");
+    } else if (codec.equals(Lz4Codec.class)) {
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "ZLIB");
+    } else {
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "NONE");
+    }
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);
