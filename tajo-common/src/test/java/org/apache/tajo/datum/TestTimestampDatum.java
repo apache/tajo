@@ -199,4 +199,11 @@ public class TestTimestampDatum {
     
     assertThat(theday.compareTo(date) > 0, is(true));
   }
+
+  @Test
+  public void testEqualsTo() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+
+    assertTrue(theday.equalsTo(theday).asBool());
+  }
 }
