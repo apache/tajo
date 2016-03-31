@@ -18,6 +18,7 @@
 
 package org.apache.tajo.tuple.memory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.*;
 import io.netty.util.internal.PlatformDependent;
@@ -232,7 +233,7 @@ public class OffHeapRowBlockUtils {
 
   private final static int BIN_NUM = 65536; // 65536
   private final static int MAX_BIN_IDX = 65535; //65535
-  private final static int TIM_SORT_THRESHOLD = 64;
+  private final static int TIM_SORT_THRESHOLD = 0;
 
   /**
    * Split into sub-buckets to fit in cpu cache
@@ -311,19 +312,24 @@ public class OffHeapRowBlockUtils {
 //      }
 //    }
 
-    for (int i = start; i < exclusiveEnd; i++) {
-      context.out[binNextElemIdx[keys[i]] - 1] = context.in[i];
-      binNextElemIdx[keys[i]] -= 1;
+    if (binEndIdx[0] < exclusiveEnd) {
+      for (int i = start; i < exclusiveEnd; i++) {
+        int targetIdx = binNextElemIdx[keys[i]] - 1;
+        context.out[targetIdx] = context.in[i];
+        binNextElemIdx[keys[i]]--;
+      }
+
+      for (int i = start; i < exclusiveEnd; i++) {
+        context.in[i] = context.out[i];
+      }
     }
-    UnSafeTuple[] tmp = context.in;
-    context.in = context.out;
-    context.out = tmp;
 
     // Since every other bin is already fixed, the last bin should also be. So, skip it.
 
     if (pass > 0) {
       int nextPass = pass - 2;
       int len = binEndIdx[0] - start;
+
       if (len > 1) {
         if (len < TIM_SORT_THRESHOLD) {
           Arrays.sort(context.in, start, binEndIdx[0], comp);

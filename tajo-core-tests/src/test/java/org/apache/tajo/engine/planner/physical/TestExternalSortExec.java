@@ -64,7 +64,7 @@ public class TestExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 10_000;
+  private final int numTuple = 1_000_000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -157,6 +157,24 @@ public class TestExternalSortExec {
 //        appender.addTuple(tuple);
 //      }
 //    }
+
+    tuple.put(new Datum[] {
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+        NullDatum.get(),
+    });
     appender.addTuple(tuple);
     appender.flush();
     appender.close();
@@ -213,7 +231,7 @@ public class TestExternalSortExec {
     while ((tuple = exec.next()) != null) {
       curVal = tuple;
       if (preVal != null) {
-        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
+        assertTrue("prev: " + preVal + ", but cur: " + curVal + ", cnt: " + cnt, comparator.compare(preVal, curVal) <= 0);
       }
       preVal = new VTuple(curVal);
       cnt++;
