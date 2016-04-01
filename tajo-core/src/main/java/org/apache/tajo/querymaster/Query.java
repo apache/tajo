@@ -23,8 +23,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
@@ -47,6 +45,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.error.Errors.SerializedException;
 import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -539,8 +538,8 @@ public class Query implements EventHandler<QueryEvent> {
         if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
           List<PartitionDescProto> partitions = query.getPartitions();
           if (partitions != null) {
-            // Set contents length and file count to PartitionDescProto by listing final output directories.
-            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
+            // Find each partition volume by listing all partitions.
+            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(queryContext,
               finalOutputDir, partitions);
 
             String databaseName, simpleTableName;
@@ -571,16 +570,14 @@ public class Query implements EventHandler<QueryEvent> {
       return QueryState.QUERY_SUCCEEDED;
     }
 
-    private List<PartitionDescProto> getPartitionsWithContentsSummary(TajoConf conf, Path outputDir,
-        List<PartitionDescProto> partitions) throws IOException {
+    private List<PartitionDescProto> getPartitionsWithContentsSummary(QueryContext queryContext,
+        Path outputDir, List<PartitionDescProto> partitions) throws IOException {
       List<PartitionDescProto> finalPartitions = new ArrayList<>();
 
-      FileSystem fileSystem = outputDir.getFileSystem(conf);
       for (PartitionDescProto partition : partitions) {
         PartitionDescProto.Builder builder = partition.toBuilder();
         Path partitionPath = new Path(outputDir, partition.getPath());
-        ContentSummary contentSummary = fileSystem.getContentSummary(partitionPath);
-        builder.setNumBytes(contentSummary.getLength());
+        builder.setNumBytes(calculateSize(queryContext, partitionPath));
         finalPartitions.add(builder.build());
       }
       return finalPartitions;
@@ -687,7 +684,7 @@ public class Query implements EventHandler<QueryEvent> {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
           resultTableDesc.setStats(aggregated);
         } else {
-          stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+          stats.setNumBytes(calculateSize(queryContext, finalOutputDir));
           resultTableDesc.setStats(stats);
         }
 
@@ -730,7 +727,7 @@ public class Query implements EventHandler<QueryEvent> {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
           tableDescTobeCreated.setStats(aggregated);
         } else {
-          stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
+          stats.setNumBytes(calculateSize(queryContext, finalOutputDir));
           tableDescTobeCreated.setStats(stats);
         }
 
@@ -773,7 +770,7 @@ public class Query implements EventHandler<QueryEvent> {
           TableStats aggregated = query.aggregateTableStatsOfTerminalBlock();
           finalTable.setStats(aggregated);
         } else {
-          long volume = getTableVolume(query.systemConf, finalOutputDir);
+          long volume = calculateSize(queryContext, finalOutputDir);
           stats.setNumBytes(volume);
           finalTable.setStats(stats);
         }
@@ -791,10 +788,9 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  public static long getTableVolume(TajoConf systemConf, Path tablePath) throws IOException {
-    FileSystem fs = tablePath.getFileSystem(systemConf);
-    ContentSummary directorySummary = fs.getContentSummary(tablePath);
-    return directorySummary.getLength();
+  public static long calculateSize(QueryContext queryContext, Path path) throws IOException {
+    Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
+    return space.calculateSize(path);
   }
 
   public static class StageCompletedTransition implements SingleArcTransition<Query, QueryEvent> {

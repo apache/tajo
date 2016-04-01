@@ -101,6 +101,8 @@ public abstract class Tablespace {
 
   public abstract long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException;
 
+  public abstract long calculateSize(Path path) throws IOException;
+
   /**
    * if {@link StorageProperty#isArbitraryPathAllowed} is true,
    * the storage allows arbitrary path accesses. In this case, the storage must provide the root URI.
