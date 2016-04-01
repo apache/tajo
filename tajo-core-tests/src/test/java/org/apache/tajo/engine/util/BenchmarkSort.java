@@ -38,6 +38,7 @@ import org.apache.tajo.engine.planner.physical.TestExternalSortExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
+import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -67,6 +68,7 @@ public class BenchmarkSort {
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
+  private LogicalOptimizer optimizer;
   private Path testDir;
 
   private final int numTuple = 1_000_000;
@@ -176,7 +178,6 @@ public class BenchmarkSort {
 //        NullDatum.get(),
 //        NullDatum.get(),
 //    });
-    appender.addTuple(tuple);
     appender.flush();
     appender.close();
 
@@ -184,6 +185,7 @@ public class BenchmarkSort {
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
+    optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
   }
 
   @TearDown
@@ -208,7 +210,7 @@ public class BenchmarkSort {
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
-    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -232,7 +234,7 @@ public class BenchmarkSort {
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
-    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -256,7 +258,7 @@ public class BenchmarkSort {
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
-    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
