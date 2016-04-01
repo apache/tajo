@@ -106,6 +106,10 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     return hosts;
   }
 
+  public void setHosts(String[] hosts) {
+    this.hosts = hosts;
+  }
+
   /**
    * Get the list of Disk Ids
    * Unknown disk is -1. Others 0 ~ N
@@ -125,6 +129,10 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
   @Override
   public String getTableName() {
     return this.tableName;
+  }
+
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
   }
 
   public Path getPath() {
@@ -147,6 +155,10 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
   @Override
   public long getLength() {
     return this.length;
+  }
+
+  public void setLength(long length) {
+    this.length = length;
   }
 
   @Override

@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -41,8 +40,6 @@ import org.apache.tajo.plan.serder.PlanProto.LogicalNodeTree;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.ProtoUtil;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -476,21 +473,9 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       throws TajoException {
 
     PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
-
-    PlanProto.PartitionScanSpec.Builder partitionScan = PlanProto.PartitionScanSpec.newBuilder();
-    List<String> pathStrs = new ArrayList<>();
-    if (node.getInputPaths() != null) {
-      for (Path p : node.getInputPaths()) {
-        pathStrs.add(p.toString());
-      }
-      partitionScan.addAllPaths(pathStrs);
-    }
-
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setScan(scanBuilder);
-    nodeBuilder.setPartitionScan(partitionScan);
     context.treeBuilder.addNodes(nodeBuilder);
-
     return node;
   }
 

@@ -36,8 +36,8 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -98,11 +98,12 @@ public class SeqScanExec extends ScanExec {
 
     Tuple partitionRow = null;
     if (fragments != null && fragments.length > 0) {
-      List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
+      List<PartitionFileFragment> partitionFileFragments = FragmentConvertor.convert(PartitionFileFragment
+        .class, fragments);
 
-      // Get a partition key value from a given path
-      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
-              columnPartitionSchema, fileFragments.get(0).getPath(), false);
+      // Get tuple from first partition fragment using parition keys
+      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionKeys(columnPartitionSchema,
+        partitionFileFragments.get(0).getPartitionKeys());
     }
 
     // Targets or search conditions may contain column references.

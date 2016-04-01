@@ -24,7 +24,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
@@ -44,13 +43,10 @@ import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAgg
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
-import org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 import org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.unit.StorageUnit;
@@ -61,7 +57,6 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
@@ -904,12 +899,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
       throws IOException {
+    FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
     // check if an input is sorted in the same order to the subsequence sort operator.
     if (checkIfSortEquivalance(ctx, scanNode, node)) {
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (fragments == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new ExternalSortExec(ctx, (SortNode) node.peek(), scanNode, fragments);
     } else {
       Enforcer enforcer = ctx.getEnforcer();
@@ -923,31 +918,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         }
       }
 
-      if (scanNode instanceof PartitionedTableScanNode
-          && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
-          ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
-
-        if (broadcastFlag) {
-          PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<Fragment> fileFragments = new ArrayList<>();
-
-          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
-          for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(Arrays.asList(space.split(scanNode.getCanonicalName(), path)));
-          }
-
-          FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
-
-          ctx.addFragments(scanNode.getCanonicalName(), fragments);
-          return new PartitionMergeScanExec(ctx, scanNode, fragments);
-        }
+      if (scanNode.getTableDesc().hasPartition() && broadcastFlag && fragments != null) {
+        ctx.addFragments(scanNode.getCanonicalName(), fragments);
+        return new PartitionMergeScanExec(ctx, scanNode, fragments);
       }
 
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (fragments == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
+
       return new SeqScanExec(ctx, scanNode, fragments);
     }
   }
