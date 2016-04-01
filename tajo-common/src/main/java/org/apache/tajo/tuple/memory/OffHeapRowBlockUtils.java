@@ -233,7 +233,7 @@ public class OffHeapRowBlockUtils {
 
   private final static int BIN_NUM = 65536; // 65536
   private final static int MAX_BIN_IDX = 65535; //65535
-  private final static int TIM_SORT_THRESHOLD = 0;
+  private final static int TIM_SORT_THRESHOLD = 64;
 
   /**
    * Split into sub-buckets to fit in cpu cache

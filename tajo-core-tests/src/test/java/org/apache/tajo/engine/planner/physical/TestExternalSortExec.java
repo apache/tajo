@@ -158,24 +158,6 @@ public class TestExternalSortExec {
 //      }
 //    }
 
-    tuple.put(new Datum[] {
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-    });
-    appender.addTuple(tuple);
     appender.flush();
     appender.close();
 
@@ -237,7 +219,7 @@ public class TestExternalSortExec {
       cnt++;
     }
     long end = System.currentTimeMillis();
-    assertEquals(numTuple + 1, cnt);
+    assertEquals(numTuple, cnt);
 
     // for rescan test
     preVal = null;
@@ -251,7 +233,7 @@ public class TestExternalSortExec {
       preVal = curVal;
       cnt++;
     }
-    assertEquals(numTuple + 1, cnt);
+    assertEquals(numTuple, cnt);
     exec.close();
     System.out.println("Sort Time: " + (end - start) + " msc");
     conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.defaultIntVal);
