@@ -78,10 +78,14 @@ public class Schema {
   public static class NamedPrimitiveType extends NamedType {
     private final Type type;
 
-    NamedPrimitiveType(QualifiedIdentifier name, Type type) {
+    public NamedPrimitiveType(QualifiedIdentifier name, Type type) {
       super(name);
       Preconditions.checkArgument(type.baseType() != RECORD);
       this.type = type;
+    }
+
+    public Type type() {
+      return type;
     }
 
     @Override
@@ -91,16 +95,20 @@ public class Schema {
   }
 
   public static class NamedStructType extends NamedType {
-    private final ImmutableList<NamedType> namedTypes;
+    private final ImmutableList<NamedType> fields;
 
-    public NamedStructType(QualifiedIdentifier name, Collection<NamedType> namedTypes) {
+    public NamedStructType(QualifiedIdentifier name, Collection<NamedType> fields) {
       super(name);
-      this.namedTypes = ImmutableList.copyOf(namedTypes);
+      this.fields = ImmutableList.copyOf(fields);
+    }
+
+    public Collection<NamedType> fields() {
+      return this.fields;
     }
 
     @Override
     public String toString() {
-      return name + " record (" + StringUtils.join(namedTypes, ",") + ")";
+      return name + " record (" + StringUtils.join(fields, ",") + ")";
     }
   }
 }

@@ -21,6 +21,8 @@ package org.apache.tajo.catalog;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.TajoInternalError;
 
+import java.util.Collection;
+
 public class SchemaFactory {
   public static Schema newV1() {
     return new SchemaLegacy();
