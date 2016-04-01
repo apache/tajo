@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo;
+package org.apache.tajo.catalog;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoRuntimeException;

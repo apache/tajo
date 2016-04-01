@@ -21,7 +21,6 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.TypeConverter;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.schema.Identifier;
 import org.apache.tajo.schema.IdentifierPolicy;
