@@ -24,6 +24,11 @@ import org.apache.tajo.exception.TajoInternalError;
 import java.util.Collection;
 
 public class SchemaFactory {
+
+  public static SchemaBuilder builder() {
+    return new SchemaBuilder();
+  }
+
   public static Schema newV1() {
     return new SchemaLegacy();
   }
