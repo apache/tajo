@@ -166,6 +166,8 @@ public class ExternalSortExec extends SortExec {
       return SortAlgorithm.TIM_SORT;
     } else if (sortAlgorithm.equalsIgnoreCase("MSD_RADIX")) {
       return SortAlgorithm.MSD_RADIX_SORT;
+    } else if (sortAlgorithm.equalsIgnoreCase("LSD_RADIX")) {
+      return SortAlgorithm.LSD_RADIX_SORT;
     } else {
       throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm));
     }

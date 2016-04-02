@@ -184,15 +184,16 @@ public class TestExternalSortExec {
 
   String[] QUERIES = {
 //      "select managerId, empId from employee order by managerId, empId"
-//      "select managerId from employee order by managerId"
-      "select managerId, col1, col11, col12 from employee order by managerId, col1, col11, col12"
+      "select managerId from employee order by managerId"
+//      "select managerId, col1, col11, col12 from employee order by managerId, col1, col11, col12"
   };
 
   @Test
   public final void testNext() throws IOException, TajoException {
 //    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
+//    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
 //    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "TIM");
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
 
@@ -217,18 +218,18 @@ public class TestExternalSortExec {
     exec.init();
     Schema sortSchema = new Schema(new Column[] {
         new Column("managerid", Type.INT8),
-        new Column("col1", Type.INT8),
-        new Column("col11", Type.INT8),
-        new Column("col12", Type.INT8),
+//        new Column("col1", Type.INT8),
+//        new Column("col11", Type.INT8),
+//        new Column("col12", Type.INT8),
     });
 
     BaseTupleComparator comparator = new BaseTupleComparator(sortSchema,
         new SortSpec[]{
             new SortSpec(new Column("managerid", Type.INT8)),
 //            new SortSpec(new Column("empid", Type.INT4)),
-            new SortSpec(new Column("col1", Type.INT8)),
-            new SortSpec(new Column("col11", Type.INT8)),
-            new SortSpec(new Column("col12", Type.INT8)),
+//            new SortSpec(new Column("col1", Type.INT8)),
+//            new SortSpec(new Column("col11", Type.INT8)),
+//            new SortSpec(new Column("col12", Type.INT8)),
         });
 
     long start = System.currentTimeMillis();

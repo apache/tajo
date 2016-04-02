@@ -49,6 +49,7 @@ public class OffHeapRowBlockUtils {
   public enum SortAlgorithm{
     TIM_SORT,
     MSD_RADIX_SORT,
+    LSD_RADIX_SORT,
   }
 
   public static List<Tuple> sort(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {
@@ -81,6 +82,20 @@ public class OffHeapRowBlockUtils {
 
     RadixSortContext context = new RadixSortContext(in, sortKeyIds, sortKeyTypes, asc, nullFirst, comp);
     msdRadixSort(context, 0, in.length, 0, calculateInitialPass(sortKeyTypes[0]));
+    ListIterator<UnSafeTuple> it = list.listIterator();
+    for (UnSafeTuple t : context.in) {
+      it.next();
+      it.set(t);
+    }
+    return list;
+  }
+
+  public static List<UnSafeTuple> lsdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
+                                               boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
+    UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
+
+    RadixSortContext context = new RadixSortContext(in, sortKeyIds, sortKeyTypes, asc, nullFirst, comp);
+    lsdRadixSort(context);
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : context.in) {
       it.next();
@@ -131,7 +146,7 @@ public class OffHeapRowBlockUtils {
     return key;
   }
 
-  static int integer16AscNullLastRadixKey(UnSafeTuple tuple, int sortKeyId, boolean asc, boolean nullFirst, int pass) {
+  static int integer16AscNullLastRadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
     int key = MAX_BIN_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
       // TODO: consider sign
@@ -157,8 +172,7 @@ public class OffHeapRowBlockUtils {
   static void build16AscNullLastHistogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
                                           int[] positions, int[] keys) {
     for (int i = start; i < exclusiveEnd; i++) {
-      keys[i] = integer16AscNullLastRadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx],
-          context.asc[curSortKeyIdx], context.nullFirst[curSortKeyIdx], pass);
+      keys[i] = integer16AscNullLastRadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
       positions[keys[i]] += 1;
     }
 
@@ -169,11 +183,12 @@ public class OffHeapRowBlockUtils {
   }
 
   private static class RadixSortContext {
-    @Contended final UnSafeTuple[] in;
-    @Contended final UnSafeTuple[] out;
+    @Contended UnSafeTuple[] in;
+    @Contended UnSafeTuple[] out;
     @Contended final int[] keys;
 
     final int[] sortKeyIds;
+    final int maxSortKeyId;
     final Type[] sortKeyTypes;
     final boolean[] asc;
     final boolean[] nullFirst;
@@ -185,6 +200,7 @@ public class OffHeapRowBlockUtils {
       this.out = new UnSafeTuple[in.length];
       this.keys = new int[in.length];
       this.sortKeyIds = sortKeyIds;
+      this.maxSortKeyId = sortKeyIds.length - 1;
       this.sortKeyTypes = sortKeyTypes;
       this.asc = asc;
       this.nullFirst = nullFirst;
@@ -213,6 +229,33 @@ public class OffHeapRowBlockUtils {
 //  private final static int MAX_BIN_IDX = 255;
   private final static int TIM_SORT_THRESHOLD = 0;
 
+  static void lsdRadixSort(RadixSortContext context) {
+    int[] positions = new int[BIN_NUM];
+    int[] keys = context.keys;
+
+    for (int curSortKeyIdx = 0; curSortKeyIdx < context.sortKeyIds.length; curSortKeyIdx++) {
+      int maxPass = calculateInitialPass(context.sortKeyTypes[curSortKeyIdx]) + 2;
+
+      for (int pass = 0; pass < maxPass; pass += 2) {
+        build16AscNullLastHistogram(context, 0, context.in.length, curSortKeyIdx, pass, positions, keys);
+
+        if (positions[0] < context.in.length) {
+          for (int i = context.in.length - 1; i >= 0; i--) {
+            context.out[--positions[keys[i]]] = context.in[i];
+          }
+        }
+//        LOG.info("pass: " + pass);
+//        for (int i = 0; i < context.in.length; i++) {
+//          LOG.info(context.out[i]);
+//        }
+        Arrays.fill(positions, 0);
+        UnSafeTuple[] tmp = context.in;
+        context.in = context.out;
+        context.out = tmp;
+      }
+    }
+  }
+
   static void msdRadixSort(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass) {
     int[] binEndIdx = new int[BIN_NUM];
     int[] binNextElemIdx = new int[BIN_NUM];
@@ -238,7 +281,7 @@ public class OffHeapRowBlockUtils {
 //      LOG.info(context.in[i]);
 //    }
 
-    if (pass > 0 || curSortKeyIdx < context.sortKeyIds.length - 1) {
+    if (pass > 0 || curSortKeyIdx < context.maxSortKeyId) {
       int nextPass;
       if (pass > 0) {
         nextPass = pass - 2;
@@ -278,6 +321,8 @@ public class OffHeapRowBlockUtils {
         return list;
       case MSD_RADIX_SORT:
         return msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
+      case LSD_RADIX_SORT:
+        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
       default:
         throw new TajoRuntimeException(new UnsupportedException(algorithm.name()));
     }
