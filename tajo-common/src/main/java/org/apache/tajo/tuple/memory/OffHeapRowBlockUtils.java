@@ -18,7 +18,6 @@
 
 package org.apache.tajo.tuple.memory;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.*;
 import io.netty.util.internal.PlatformDependent;
@@ -28,7 +27,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
-import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.exception.ValueOutOfRangeException;
@@ -50,7 +48,6 @@ public class OffHeapRowBlockUtils {
 
   public enum SortAlgorithm{
     TIM_SORT,
-    LSD_RADIX_SORT,
     MSD_RADIX_SORT,
   }
 
@@ -78,28 +75,12 @@ public class OffHeapRowBlockUtils {
     return tupleList;
   }
 
-  public static List<UnSafeTuple> lsdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-                                               boolean[] asc, boolean[] nullFirst, int cacheSize) {
-    UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
-    UnSafeTuple[] out = new UnSafeTuple[list.size()];
-
-    longLsdRadixSort(new RadixSortContext(in, cacheSize), out, 8, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
-    ListIterator<UnSafeTuple> it = list.listIterator();
-    for (UnSafeTuple t : in) {
-      it.next();
-      it.set(t);
-    }
-    return list;
-  }
-
   public static List<UnSafeTuple> msdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-                                            boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp, int cacheSize) {
+                                               boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
 
-//    longMsdRadixSort(in, 0, in.length, 7, sortKeyIds, sortKeyTypes, asc, nullFirst, 0);
-    RadixSortContext context = new RadixSortContext(in, cacheSize);
-    longMsdRadixSort(context, 0, in.length, 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
-//    splitIntoBinsAndMsdRadixSort(new RadixSortContext(in, cacheSize), sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
+    RadixSortContext context = new RadixSortContext(in, sortKeyIds, sortKeyTypes, asc, nullFirst, comp);
+    msdRadixSort(context, 0, in.length, 0, calculateInitialPass(sortKeyTypes[0]));
     ListIterator<UnSafeTuple> it = list.listIterator();
     for (UnSafeTuple t : context.in) {
       it.next();
@@ -116,17 +97,42 @@ public class OffHeapRowBlockUtils {
     return address + getFieldOffset(address, fieldId);
   }
 
-  static int get8RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = 255; // for null
+  static int integer8RadixKey(UnSafeTuple tuple, int sortKeyId, boolean asc, boolean nullFirst, int pass) {
+    int key = nullFirst ? 0 : MAX_BIN_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
       // TODO: consider sign
       key = PlatformDependent.getByte(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFF;
+      if (!asc) key = MAX_BIN_IDX - key;
     }
     return key;
   }
 
-  static int get16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = 65535; // for null
+  static void build8Histogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
+                               int[] positions, int[] keys) {
+    for (int i = start; i < exclusiveEnd; i++) {
+      keys[i] = integer8RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx],
+          context.asc[curSortKeyIdx], context.nullFirst[curSortKeyIdx], pass);
+      positions[keys[i]] += 1;
+    }
+
+    positions[0] += start;
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+    }
+  }
+
+  static int integer16RadixKey(UnSafeTuple tuple, int sortKeyId, boolean asc, boolean nullFirst, int pass) {
+    int key = nullFirst ? 0 : MAX_BIN_IDX; // for null
+    if (!tuple.isBlankOrNull(sortKeyId)) {
+      // TODO: consider sign
+      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
+      if (!asc) key = MAX_BIN_IDX - key;
+    }
+    return key;
+  }
+
+  static int integer16AscNullLastRadixKey(UnSafeTuple tuple, int sortKeyId, boolean asc, boolean nullFirst, int pass) {
+    int key = MAX_BIN_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
       // TODO: consider sign
       key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
@@ -134,41 +140,11 @@ public class OffHeapRowBlockUtils {
     return key;
   }
 
-  static int getNRadixKey(UnSafeTuple tuple, int sortKeyId, int n) {
-    int key = n - 1; // for null
-    if (!tuple.isBlankOrNull(sortKeyId)) {
-      // TODO: consider sign
-      int bitNum = (int) Math.ceil(Math.log(n) / Math.log(2));
-      if (bitNum > 8) {
-        throw new TajoRuntimeException(new UnsupportedException(bitNum + " length key"));
-      }
-      byte b = (byte) (PlatformDependent.getByte(getFieldAddr(tuple.address(), sortKeyId) + 6) & 0xFF);
-      key = b >> (8 - bitNum);
-    }
-    return key;
-  }
-
-  static void build8Histogram(RadixSortContext context, int start, int exclusiveEnd,
-                               int[] positions, int pass,
-                               int[] sortKeyIds, Type[] sortKeyTypes,
-                               boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
+  static void build16Histogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
+                               int[] positions, int[] keys) {
     for (int i = start; i < exclusiveEnd; i++) {
-      int key = get8RadixKey(context.in[i], sortKeyIds[curSortKeyIdx], pass);
-      positions[key] += 1;
-    }
-
-    positions[0] += start;
-    for (int i = 0; i < positions.length - 1; i++) {
-      positions[i + 1] += positions[i];
-    }
-  }
-
-  static void build16Histogram(RadixSortContext context, int start, int exclusiveEnd,
-                               int[] positions, int pass, int[] keys,
-                               int[] sortKeyIds, Type[] sortKeyTypes,
-                               boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    for (int i = start; i < exclusiveEnd; i++) {
-      keys[i] = get16RadixKey(context.in[i], sortKeyIds[curSortKeyIdx], pass);
+      keys[i] = integer16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx],
+          context.asc[curSortKeyIdx], context.nullFirst[curSortKeyIdx], pass);
       positions[keys[i]] += 1;
     }
 
@@ -178,174 +154,115 @@ public class OffHeapRowBlockUtils {
     }
   }
 
-  static void buildNHistogram(RadixSortContext context,
-                              int[] positions, int[] keys,
-                              int[] sortKeyIds, Type[] sortKeyTypes,
-                              boolean[] asc, boolean[] nullFirst, int curSortKeyIdx, int n) {
-    for (int i = 0; i < context.in.length; i++) {
-      keys[i] = getNRadixKey(context.in[i], sortKeyIds[curSortKeyIdx], n);
+  static void build16AscNullLastHistogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
+                                          int[] positions, int[] keys) {
+    for (int i = start; i < exclusiveEnd; i++) {
+      keys[i] = integer16AscNullLastRadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx],
+          context.asc[curSortKeyIdx], context.nullFirst[curSortKeyIdx], pass);
       positions[keys[i]] += 1;
     }
 
+    positions[0] += start;
     for (int i = 0; i < positions.length - 1; i++) {
       positions[i + 1] += positions[i];
     }
   }
 
   private static class RadixSortContext {
-    @Contended UnSafeTuple[] in;
-    @Contended UnSafeTuple[] out;
-    @Contended int[] binEndIdx = new int[BIN_NUM];
-    @Contended int[] binNextElemIdx = new int [BIN_NUM];
-    final int cacheSize;
+    @Contended final UnSafeTuple[] in;
+    @Contended final UnSafeTuple[] out;
+    @Contended final int[] keys;
 
-    public RadixSortContext(UnSafeTuple[] in, int cacheSize) {
+    final int[] sortKeyIds;
+    final Type[] sortKeyTypes;
+    final boolean[] asc;
+    final boolean[] nullFirst;
+    final Comparator<UnSafeTuple> comparator;
+
+    public RadixSortContext(UnSafeTuple[] in, int[] sortKeyIds, Type[] sortKeyTypes, boolean[] asc, boolean[] nullFirst,
+                            Comparator<UnSafeTuple> comparator) {
       this.in = in;
       this.out = new UnSafeTuple[in.length];
-      this.cacheSize = cacheSize;
-    }
-  }
-
-  static UnSafeTuple[] longLsdRadixSort(RadixSortContext context, UnSafeTuple[] out, int maxPass,
-                                        int[] sortKeyIds, Type[] sortKeyTypes,
-                                        boolean[] asc, boolean[] nullFirst, int curSortKeyIdx) {
-    int[] positions = new int[65536];
-    for (int pass = 0; pass < maxPass - 1; pass += 2) {
-      // Make histogram
-      int [] keys = new int[context.in.length];
-      build16Histogram(context, 0, context.in.length,
-          positions, pass, keys, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-
-      if (positions[0] != context.in.length) {
-        for (int i = context.in.length - 1; i >= 0; i--) {
-//          int key = get16RadixKey(context.in[i], sortKeyIds[curSortKeyIdx], pass);
-          out[positions[keys[i]] - 1] = context.in[i];
-          positions[keys[i]] -= 1;
-        }
-      }
-      Arrays.fill(positions, 0);
-      UnSafeTuple[] tmp = context.in;
-      context.in = out;
-      out = tmp;
-    }
-    return out;
-  }
-
-  private final static int BIN_NUM = 65536; // 65536
-  private final static int MAX_BIN_IDX = 65535; //65535
-  private final static int TIM_SORT_THRESHOLD = 64;
-
-  /**
-   * Split into sub-buckets to fit in cpu cache
-   * @return
-   */
-  static void splitIntoBinsAndMsdRadixSort(RadixSortContext context, int[] sortKeyIds, Type[] sortKeyTypes,
-                                           boolean[] asc, boolean[] nullFirst, int curSortKeyIdx, Comparator<UnSafeTuple> comp) {
-    int subBucketNum = (int) Math.ceil((double)8 * context.in.length / (double)context.cacheSize);
-    int[] binEndIdx = new int[subBucketNum];
-    int[] binNextElemIdx = new int[subBucketNum];
-    int[] keys = new int[context.in.length];
-    int maxSubbucketIdx = subBucketNum - 1;
-
-    buildNHistogram(context, binEndIdx, keys, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, subBucketNum);
-    if (binEndIdx.length > 1) {
-      System.arraycopy(binEndIdx, 0, binNextElemIdx, 1, maxSubbucketIdx);
+      this.keys = new int[in.length];
+      this.sortKeyIds = sortKeyIds;
+      this.sortKeyTypes = sortKeyTypes;
+      this.asc = asc;
+      this.nullFirst = nullFirst;
+      this.comparator = comparator;
     }
 
-    for (int i = 0; i < subBucketNum; i++) {
-      while (binNextElemIdx[i] < binEndIdx[i]) {
-        for (int key = keys[binNextElemIdx[i]]; key != i; key = keys[binNextElemIdx[i]]) {
-          UnSafeTuple tmp = context.in[binNextElemIdx[i]];
-          context.in[binNextElemIdx[i]] = context.in[binNextElemIdx[key]];
-          context.in[binNextElemIdx[key]] = tmp;
-          int tmpKey = keys[binNextElemIdx[i]];
-          keys[binNextElemIdx[i]] = keys[binNextElemIdx[key]];
-          keys[binNextElemIdx[key]] = tmpKey;
-          binNextElemIdx[key]++;
-        }
-
-        binNextElemIdx[i]++;
-      }
-    }
-
-    longMsdRadixSort(context, 0, binEndIdx[0], 6, sortKeyIds, sortKeyTypes, asc, nullFirst, 0, comp);
-    for (int i = 0; i < maxSubbucketIdx; i++) {
-      longMsdRadixSort(context, binEndIdx[i], binEndIdx[i + 1], 6,
-          sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, comp);
-    }
-  }
-
-  static void longMsdRadixSort(RadixSortContext context, int start, int exclusiveEnd, int pass,
-                               int[] sortKeyIds, Type[] sortKeyTypes,
-                               boolean[] asc, boolean[] nullFirst, int curSortKeyIdx,
-                               Comparator<UnSafeTuple> comp) {
-    // TODO: the total size of arrays is 1 MB. Consider 65536 -> 256
-    // TODO: should they be created for each call longMsdRadixSort()?
-    int[] binEndIdx = context.binEndIdx;
-    int[] binNextElemIdx = context.binNextElemIdx;
-    Arrays.fill(binEndIdx, 0);
-
-    // Make histogram
-    int[] keys = new int[context.in.length];
-    build16Histogram(context, start, exclusiveEnd,
-        binEndIdx, pass, keys, sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx);
-
-    // Initialize bins
-//    binNextElemIdx[0] = start;
-//    System.arraycopy(binEndIdx, 0, binNextElemIdx, 1, MAX_BIN_IDX);
-    System.arraycopy(binEndIdx, 0, binNextElemIdx, 0, BIN_NUM);
-
-    // Swap tuples
-//    for (int i = 0; binNextElemIdx[i] < exclusiveEnd && i < MAX_BIN_IDX; i++) {
-//      while (binNextElemIdx[i] < binEndIdx[i]) {
-//        for (int key = keys[binNextElemIdx[i]]; key != i; key = keys[binNextElemIdx[i]]) {
-//          UnSafeTuple tmp = context.in[binNextElemIdx[i]];
-//          context.in[binNextElemIdx[i]] = context.in[binNextElemIdx[key]];
-//          context.in[binNextElemIdx[key]] = tmp;
-//          int tmpKey = keys[binNextElemIdx[i]];
-//          keys[binNextElemIdx[i]] = keys[binNextElemIdx[key]];
-//          keys[binNextElemIdx[key]] = tmpKey;
-//          binNextElemIdx[key]++;
-//        }
+//    public boolean remainNextKey() {
+//      return curSortKeyIdx < sortKeyIds.length - 1;
+//    }
 //
-//        binNextElemIdx[i]++;
+//    public int nextPass(int curPass) {
+//      if (curPass > 0) {
+//        return curPass - 2;
+////        return curPass - 1;
+//      } else {
+//        curSortKeyIdx++;
+//        return calculateInitialPass(sortKeyTypes[curSortKeyIdx]);
 //      }
 //    }
+  }
+
+  private final static int BIN_NUM = 65536;
+  private final static int MAX_BIN_IDX = 65535;
+
+//  private final static int BIN_NUM = 256;
+//  private final static int MAX_BIN_IDX = 255;
+  private final static int TIM_SORT_THRESHOLD = 0;
+
+  static void msdRadixSort(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass) {
+    int[] binEndIdx = new int[BIN_NUM];
+    int[] binNextElemIdx = new int[BIN_NUM];
+    int[] keys = context.keys;
+
+    // Make histogram
+    build16AscNullLastHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+//    build8Histogram(context, start, exclusiveEnd, pass, binEndIdx, keys);
+
+    // Initialize bins
+    System.arraycopy(binEndIdx, 0, binNextElemIdx, 0, BIN_NUM);
 
     if (binEndIdx[0] < exclusiveEnd) {
       for (int i = start; i < exclusiveEnd; i++) {
-        int targetIdx = binNextElemIdx[keys[i]] - 1;
-        context.out[targetIdx] = context.in[i];
-        binNextElemIdx[keys[i]]--;
+        context.out[--binNextElemIdx[keys[i]]] = context.in[i];
       }
 
-      for (int i = start; i < exclusiveEnd; i++) {
-        context.in[i] = context.out[i];
-      }
+      System.arraycopy(context.out, start, context.in, start, exclusiveEnd - start);
     }
 
-    // Since every other bin is already fixed, the last bin should also be. So, skip it.
+//    LOG.info("pass: " + pass + ", curKey: " + curSortKeyIdx + ", start: " + start + ", end: " + exclusiveEnd);
+//    for (int i = start; i < exclusiveEnd; i++) {
+//      LOG.info(context.in[i]);
+//    }
 
-    if (pass > 0) {
-      int nextPass = pass - 2;
+    if (pass > 0 || curSortKeyIdx < context.sortKeyIds.length - 1) {
+      int nextPass;
+      if (pass > 0) {
+        nextPass = pass - 2;
+      } else {
+        curSortKeyIdx++;
+        nextPass = calculateInitialPass(context.sortKeyTypes[curSortKeyIdx]);
+      }
+
       int len = binEndIdx[0] - start;
 
       if (len > 1) {
         if (len < TIM_SORT_THRESHOLD) {
-          Arrays.sort(context.in, start, binEndIdx[0], comp);
+          Arrays.sort(context.in, start, binEndIdx[0], context.comparator);
         } else {
-          longMsdRadixSort(context, start, binEndIdx[0], nextPass,
-              sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, comp);
+          msdRadixSort(context, start, binEndIdx[0], curSortKeyIdx, nextPass);
         }
       }
       for (int i = 0; i < MAX_BIN_IDX && binEndIdx[i] < exclusiveEnd; i++) {
         len = binEndIdx[i + 1] - binEndIdx[i];
         if (len > 1) {
           if (len < TIM_SORT_THRESHOLD) {
-            Arrays.sort(context.in, binEndIdx[i], binEndIdx[i + 1], comp);
+            Arrays.sort(context.in, binEndIdx[i], binEndIdx[i + 1], context.comparator);
           } else {
-            longMsdRadixSort(context, binEndIdx[i], binEndIdx[i + 1], nextPass,
-                sortKeyIds, sortKeyTypes, asc, nullFirst, curSortKeyIdx, comp);
+            msdRadixSort(context, binEndIdx[i], binEndIdx[i + 1], curSortKeyIdx, nextPass);
           }
         }
       }
@@ -353,18 +270,16 @@ public class OffHeapRowBlockUtils {
   }
 
   public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator, int[] sortKeyIds, Type[] sortKeyTypes,
-                                       boolean[] asc, boolean[] nullFirst, SortAlgorithm algorithm, int cacheSize) {
+                                       boolean[] asc, boolean[] nullFirst, SortAlgorithm algorithm) {
     LOG.info(algorithm.name() + " is used for sort");
     switch (algorithm) {
       case TIM_SORT:
         Collections.sort(list, comparator);
         return list;
-      case LSD_RADIX_SORT:
-        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, cacheSize);
       case MSD_RADIX_SORT:
-        return msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator, cacheSize);
+        return msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
       default:
-        throw new TajoRuntimeException(new NotImplementedException(algorithm.name()));
+        throw new TajoRuntimeException(new UnsupportedException(algorithm.name()));
     }
   }
 
@@ -528,5 +443,62 @@ public class OffHeapRowBlockUtils {
 
   public static void convert(Tuple tuple, RowWriter writer) {
     tupleConverter.convert(tuple, writer);
+  }
+
+  static int calculateTotalPass(Type[] types) {
+    int pass = 0;
+    for (Type eachType: types) {
+      pass += calculateInitialPass(eachType);
+    }
+    return pass;
+  }
+
+  static int calculateInitialPass(Type type) {
+    int initialPass = typeByteSize(type) - 2;
+//    int initialPass = typeByteSize(type) - 1;
+    return initialPass < 0 ? 0 : initialPass;
+  }
+
+  static int typesByteSize(Type[] types) {
+    int totalSize = 0;
+    for (Type eachType : types) {
+      totalSize += typeByteSize(eachType);
+    }
+    return totalSize;
+  }
+
+  static int typeByteSize(Type type) {
+    switch (type) {
+      case BOOLEAN:
+        return 1;
+      case CHAR:
+        return 1;
+      case BIT:
+        return 1;
+      case INT2:
+        return 2;
+      case INT4:
+        return 4;
+      case INT8:
+        return 8;
+      case FLOAT4:
+        return 4;
+      case FLOAT8:
+        return 8;
+      case INET4:
+        return 4;
+      case INET6:
+        return 32;
+      case DATE:
+        return 4;
+      case TIME:
+        return 8;
+      case TIMESTAMP:
+        return 8;
+      case TEXT:
+      case BLOB:
+      default:
+        return -1;
+    }
   }
 }

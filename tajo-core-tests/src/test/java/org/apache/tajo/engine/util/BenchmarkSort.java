@@ -77,7 +77,7 @@ public class BenchmarkSort {
   private TableDesc employee;
 
   String[] QUERIES = {
-      "select managerId, empId from employee order by managerId, empId"
+      "select managerId, col1, col11, col12 from employee order by managerId, col1, col11, col12"
   };
 
   @State(Scope.Thread)
@@ -161,23 +161,6 @@ public class BenchmarkSort {
       appender.addTuple(tuple);
     }
 
-//    int cnt = 0;
-//    while (cnt < numTuple) {
-//      int n = 100_000 + rnd.nextInt(50);
-//      for (int i = 0; i < 1000 && cnt < numTuple; i++, cnt++) {
-//        tuple.put(new Datum[] {
-//            DatumFactory.createInt8(n),
-//            DatumFactory.createInt4(rnd.nextInt(100)),
-//            DatumFactory.createText("dept_" + i),
-//        });
-//        appender.addTuple(tuple);
-//      }
-//    }
-//    tuple.put(new Datum[] {
-//        NullDatum.get(),
-//        NullDatum.get(),
-//        NullDatum.get(),
-//    });
     appender.flush();
     appender.close();
 
@@ -201,30 +184,6 @@ public class BenchmarkSort {
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, context.sortBufferSize);
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
     queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "TIM");
-
-    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
-        new Path(employee.getUri()), Integer.MAX_VALUE);
-    Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
-    TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
-        LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
-    ctx.setEnforcer(new Enforcer());
-    Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
-    LogicalNode rootNode = optimizer.optimize(plan);
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
-    while (exec.next() != null) {}
-    exec.close();
-  }
-
-  @Benchmark
-  @BenchmarkMode(Mode.All)
-  public void lsdRadixSort(BenchContext context) throws InterruptedException, IOException, TajoException {
-    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
-    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);

@@ -125,7 +125,6 @@ public class ExternalSortExec extends SortExec {
   private final boolean[] asc;
   private final boolean[] nullFirst;
   private final SortAlgorithm sortAlgorithm;
-  private final int cacheSize;
 
   private ExternalSortExec(final TaskAttemptContext context, final SortNode plan)
       throws PhysicalPlanningException {
@@ -159,7 +158,6 @@ public class ExternalSortExec extends SortExec {
       this.sortKeyTypes[i] = sortSpecs[i].getSortKey().getDataType().getType();
     }
     this.sortAlgorithm = getSortAlgorithm(context.getQueryContext());
-    this.cacheSize = context.getQueryContext().getInt(SessionVars.CPU_CACHE_SIZE) * StorageUnit.MB;
   }
 
   private static SortAlgorithm getSortAlgorithm(QueryContext context) {
@@ -169,7 +167,7 @@ public class ExternalSortExec extends SortExec {
     } else if (sortAlgorithm.equalsIgnoreCase("MSD_RADIX")) {
       return SortAlgorithm.MSD_RADIX_SORT;
     } else {
-      return SortAlgorithm.LSD_RADIX_SORT;
+      throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm));
     }
   }
 
@@ -218,7 +216,7 @@ public class ExternalSortExec extends SortExec {
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
-    OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, sortAlgorithm, cacheSize);
+    OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, sortAlgorithm);
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -565,7 +563,7 @@ public class ExternalSortExec extends SortExec {
     if (chunk.isMemory()) {
       long sortStart = System.currentTimeMillis();
 
-      OffHeapRowBlockUtils.sort(inMemoryTable, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, sortAlgorithm, cacheSize);
+      OffHeapRowBlockUtils.sort(inMemoryTable, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, sortAlgorithm);
       Scanner scanner = new MemTableScanner<>(inMemoryTable, inMemoryTable.size(), inMemoryTable.usedMem());
       if(LOG.isDebugEnabled()) {
         debug(LOG, "Memory Chunk sort (" + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false)

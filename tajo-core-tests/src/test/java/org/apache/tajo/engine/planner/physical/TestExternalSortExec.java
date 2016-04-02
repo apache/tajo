@@ -31,12 +31,13 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
+import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -62,7 +63,9 @@ public class TestExternalSortExec {
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
+  private LogicalOptimizer optimizer;
   private Path testDir;
+  private Schema tableSchema;
 
   private final int numTuple = 1_000_000;
   private Random rnd = new Random(System.currentTimeMillis());
@@ -80,30 +83,30 @@ public class TestExternalSortExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    Schema schema = new Schema();
-    schema.addColumn("managerid", Type.INT8);
-    schema.addColumn("empid", Type.INT4);
-    schema.addColumn("deptname", Type.TEXT);
-    schema.addColumn("col1", Type.INT8);
-    schema.addColumn("col2", Type.INT8);
-    schema.addColumn("col3", Type.INT8);
-    schema.addColumn("col4", Type.INT8);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.INT8);
-    schema.addColumn("col8", Type.INT8);
-    schema.addColumn("col9", Type.INT8);
-    schema.addColumn("col10", Type.INT8);
-    schema.addColumn("col11", Type.INT8);
-    schema.addColumn("col12", Type.INT8);
+    tableSchema = new Schema();
+    tableSchema.addColumn("managerid", Type.INT8);
+    tableSchema.addColumn("empid", Type.INT4);
+    tableSchema.addColumn("deptname", Type.TEXT);
+    tableSchema.addColumn("col1", Type.INT8);
+    tableSchema.addColumn("col2", Type.INT8);
+    tableSchema.addColumn("col3", Type.INT8);
+    tableSchema.addColumn("col4", Type.INT8);
+    tableSchema.addColumn("col5", Type.INT8);
+    tableSchema.addColumn("col6", Type.INT8);
+    tableSchema.addColumn("col7", Type.INT8);
+    tableSchema.addColumn("col8", Type.INT8);
+    tableSchema.addColumn("col9", Type.INT8);
+    tableSchema.addColumn("col10", Type.INT8);
+    tableSchema.addColumn("col11", Type.INT8);
+    tableSchema.addColumn("col12", Type.INT8);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
-        .getAppender(employeeMeta, schema, employeePath);
+        .getAppender(employeeMeta, tableSchema, employeePath);
     appender.enableStats();
     appender.init();
-    VTuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(tableSchema.size());
     for (int i = 0; i < numTuple; i++) {
       if (rnd.nextInt(1000) == 0) {
         tuple.put(new Datum[] {
@@ -145,26 +148,32 @@ public class TestExternalSortExec {
       appender.addTuple(tuple);
     }
 
-//    int cnt = 0;
-//    while (cnt < numTuple) {
-//      int n = 100_000 + rnd.nextInt(50);
-//      for (int i = 0; i < 1000 && cnt < numTuple; i++, cnt++) {
-//        tuple.put(new Datum[] {
-//            DatumFactory.createInt8(n),
-//            DatumFactory.createInt4(rnd.nextInt(100)),
-//            DatumFactory.createText("dept_" + i),
-//        });
-//        appender.addTuple(tuple);
-//      }
-//    }
-
+//    tuple.put(new Datum[] {
+//        DatumFactory.createInt8(-1),
+//        DatumFactory.createInt4(-1),
+//        DatumFactory.createText("dept_" + 0),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+//    });
+//    appender.addTuple(tuple);
     appender.flush();
     appender.close();
 
-    employee = new TableDesc("default.employee", schema, employeeMeta, employeePath.toUri());
+    employee = new TableDesc("default.employee", tableSchema, employeeMeta, employeePath.toUri());
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
+    optimizer = new LogicalOptimizer(conf, catalog, TablespaceManager.getInstance());
   }
 
   @After
@@ -174,7 +183,9 @@ public class TestExternalSortExec {
   }
 
   String[] QUERIES = {
-      "select managerId, empId from employee order by managerId, empId"
+//      "select managerId, empId from employee order by managerId, empId"
+//      "select managerId from employee order by managerId"
+      "select managerId, col1, col11, col12 from employee order by managerId, col1, col11, col12"
   };
 
   @Test
@@ -182,6 +193,7 @@ public class TestExternalSortExec {
 //    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
+//    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "TIM");
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
@@ -192,24 +204,34 @@ public class TestExternalSortExec {
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
-    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    LogicalNode rootNode = optimizer.optimize(plan);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     
-    ProjectionExec proj = (ProjectionExec) exec;
+//    ProjectionExec proj = (ProjectionExec) exec;
     Tuple tuple;
     Tuple preVal = null;
     Tuple curVal;
     int cnt = 0;
     exec.init();
-    long start = System.currentTimeMillis();
-    BaseTupleComparator comparator = new BaseTupleComparator(proj.getSchema(),
+    Schema sortSchema = new Schema(new Column[] {
+        new Column("managerid", Type.INT8),
+        new Column("col1", Type.INT8),
+        new Column("col11", Type.INT8),
+        new Column("col12", Type.INT8),
+    });
+
+    BaseTupleComparator comparator = new BaseTupleComparator(sortSchema,
         new SortSpec[]{
             new SortSpec(new Column("managerid", Type.INT8)),
-//            new SortSpec(new Column("empid", Type.INT4))
+//            new SortSpec(new Column("empid", Type.INT4)),
+            new SortSpec(new Column("col1", Type.INT8)),
+            new SortSpec(new Column("col11", Type.INT8)),
+            new SortSpec(new Column("col12", Type.INT8)),
         });
 
+    long start = System.currentTimeMillis();
     while ((tuple = exec.next()) != null) {
       curVal = tuple;
       if (preVal != null) {
