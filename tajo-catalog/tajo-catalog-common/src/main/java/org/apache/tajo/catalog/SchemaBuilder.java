@@ -46,6 +46,13 @@ public class SchemaBuilder {
     return this;
   }
 
+  public SchemaBuilder addAll(Iterable<Column> columns) {
+    for (Column c :columns) {
+      add(c);
+    }
+    return this;
+  }
+
   public SchemaBuilder add(NamedType namedType) {
     fields.add(namedType);
     return this;
@@ -54,7 +61,7 @@ public class SchemaBuilder {
   public SchemaLegacy buildV1() {
     ImmutableList.Builder<Column> columns = new ImmutableList.Builder();
     for (NamedType namedType : fields.build()) {
-      columns.add(new Column(namedType.name().displayString(DefaultPolicy()), FieldConverter.convert(namedType)));
+      columns.add(new Column(namedType.name().raw(DefaultPolicy()), FieldConverter.convert(namedType)));
     }
 
     return new SchemaLegacy(columns.build());

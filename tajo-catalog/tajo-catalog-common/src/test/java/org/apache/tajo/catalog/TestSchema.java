@@ -40,18 +40,18 @@ public class TestSchema {
 
   static {
     // simple nested schema
-    nestedSchema1 = SchemaFactory.newV1();
-    nestedSchema1.addColumn("s1", Type.INT8);
+    SchemaBuilder builder1 = new SchemaBuilder();
+    builder1.add(new Column("s1", Type.INT8));
 
     Schema nestedRecordSchema = SchemaFactory.newV1();
     nestedRecordSchema.addColumn("s2", Type.FLOAT4);
     nestedRecordSchema.addColumn("s3", Type.TEXT);
 
     Column nestedField = new Column("s4", new TypeDesc(nestedRecordSchema));
-    nestedSchema1.addColumn(nestedField);
+    builder1.add(nestedField);
 
-    nestedSchema1.addColumn("s5", Type.FLOAT8);
-
+    builder1.add(new Column("s5", Type.FLOAT8));
+    nestedSchema1 = builder1.buildV1();
     // two level nested schema
     //
     // s1
@@ -63,25 +63,26 @@ public class TestSchema {
     //  |- s8
     //     |- s6
     //     |- s7
-    nestedSchema2 = SchemaFactory.newV1();
-    nestedSchema2.addColumn("s1", Type.INT8);
+    SchemaBuilder builder2 = new SchemaBuilder();
+    //nestedSchema2 = SchemaFactory.newV1();
+    builder2.add(new Column("s1", Type.INT8));
 
     Schema nestedRecordSchema1 = SchemaFactory.newV1();
     nestedRecordSchema1.addColumn("s2", Type.FLOAT4);
     nestedRecordSchema1.addColumn("s3", Type.TEXT);
 
     Column nestedField1 = new Column("s4", new TypeDesc(nestedRecordSchema1));
-    nestedSchema2.addColumn(nestedField1);
+    builder2.add(nestedField1);
 
-    nestedSchema2.addColumn("s5", Type.FLOAT8);
+    builder2.add(new Column("s5", Type.FLOAT8));
 
     Schema nestedRecordSchema2 = SchemaFactory.newV1();
     nestedRecordSchema2.addColumn("s6", Type.FLOAT4);
     nestedRecordSchema2.addColumn("s7", Type.TEXT);
 
     Column nestedField2 = new Column("s8", new TypeDesc(nestedRecordSchema2));
-    nestedSchema2.addColumn(nestedField2);
-
+    builder2.add(nestedField2);
+    nestedSchema2 = builder2.buildV1();
 
     // three level nested schema
     //
@@ -95,10 +96,10 @@ public class TestSchema {
     //      |- s8
     //  |- s9
 
-    nestedSchema3 = SchemaFactory.newV1();
-    nestedSchema3.addColumn("s1", Type.INT8);
+    SchemaBuilder builder3 = new SchemaBuilder();
 
-    nestedSchema3.addColumn("s2", Type.INT8);
+    builder3.add(new Column("s1", Type.INT8));
+    builder3.add(new Column("s2", Type.INT8));
 
     Schema s5 = SchemaFactory.newV1();
     s5.addColumn("s6", Type.INT8);
@@ -111,8 +112,9 @@ public class TestSchema {
     s3.addColumn("s7", new TypeDesc(s7));
     s3.addColumn("s8", Type.INT8);
 
-    nestedSchema3.addColumn("s3", new TypeDesc(s3));
-    nestedSchema3.addColumn("s9", Type.INT8);
+    builder3.add(new Column("s3", new TypeDesc(s3)));
+    builder3.add(new Column("s9", Type.INT8));
+    nestedSchema3 = builder3.buildV1();
   }
 
 	@Before

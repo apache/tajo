@@ -39,7 +39,7 @@ public class FieldConverter {
 
       ImmutableList.Builder<Column> fields = ImmutableList.builder();
       for (Schema.NamedType t: structType.fields()) {
-        fields.add(new Column(t.name().displayString(IdentifierPolicy.DefaultPolicy()), convert(t)));
+        fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
       }
 
       return new TypeDesc(SchemaFactory.newV1(new SchemaLegacy(fields.build())));
@@ -67,12 +67,14 @@ public class FieldConverter {
 
   public static Schema.NamedType convert(Column column) {
     if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
+
       ImmutableList.Builder<Schema.NamedType> fields = ImmutableList.builder();
       TypeDesc typeDesc = column.getTypeDesc();
       for (Column c :typeDesc.getNestedSchema().getRootColumns()) {
         fields.add(convert(c));
       }
       return new Schema.NamedStructType(transformIdentifier(column.getQualifiedName()), fields.build());
+
     } else {
       return new Schema.NamedPrimitiveType(
           transformIdentifier(column.getQualifiedName()),

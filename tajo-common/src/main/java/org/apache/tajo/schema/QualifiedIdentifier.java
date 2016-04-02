@@ -44,6 +44,20 @@ public class QualifiedIdentifier {
     });
   }
 
+  /**
+   * Raw string of qualified identifier
+   * @param policy Identifier Policy
+   * @return raw string
+   */
+  public String raw(final IdentifierPolicy policy) {
+    return StringUtils.join(names, policy.getIdentifierSeperator(), new Function<Identifier, String>() {
+      @Override
+      public String apply(@Nullable Identifier identifier) {
+        return identifier.raw(policy);
+      }
+    });
+  }
+
   @Override
   public String toString() {
     return displayString(DefaultPolicy());

@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,37 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog;
+package org.apache.tajo.type;
 
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.common.TajoDataTypes;
 
-public class SchemaFactory {
-
-  public static SchemaBuilder builder() {
-    return new SchemaBuilder();
-  }
-
-  public static Schema newV1() {
-    return new SchemaLegacy();
-  }
-
-  public static Schema newV1(CatalogProtos.SchemaProto proto) {
-    return new SchemaLegacy(proto);
-  }
-
-  public static Schema newV1(Schema schema) {
-    return builder().addAll(schema.getRootColumns()).buildV1();
-  }
-
-  public static Schema newV1(Column [] columns) {
-    SchemaBuilder builder = builder();
-    for (Column c :columns) {
-      builder.add(c);
-    }
-    return builder.buildV1();
-  }
-
-  public static Schema newV1(Iterable<Column> columns) {
-    return builder().addAll(columns).buildV1();
+public class Protobuf extends Type {
+  @Override
+  public TajoDataTypes.Type baseType() {
+    return TajoDataTypes.Type.PROTOBUF;
   }
 }

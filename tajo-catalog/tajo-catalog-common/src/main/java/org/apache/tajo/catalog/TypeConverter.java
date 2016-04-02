@@ -44,11 +44,19 @@ public class TypeConverter {
     case TIME:
       return new Time();
     case TIMESTAMP:
-      return new Date();
+      return new Timestamp();
+    case CHAR:
+      return new Char(legacyType.getLength());
     case TEXT:
       return new Text();
     case BLOB:
       return new Blob();
+    case INET4:
+      return new Inet4();
+    case PROTOBUF:
+      return new Protobuf();
+    case NULL_TYPE:
+      return new Null();
     default:
       throw new TajoRuntimeException(new UnsupportedException(legacyType.getType().name()));
     }

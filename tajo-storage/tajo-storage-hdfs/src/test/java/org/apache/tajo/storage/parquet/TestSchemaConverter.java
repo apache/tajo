@@ -50,7 +50,6 @@ public class TestSchemaConverter {
   private static final String CONVERTED_ALL_PARQUET_SCHEMA =
       "message table_schema {\n" +
       "  optional boolean myboolean;\n" +
-      "  optional int32 mybit;\n" +
       "  optional binary mychar (UTF8);\n" +
       "  optional int32 myint2;\n" +
       "  optional int32 myint4;\n" +
@@ -67,7 +66,6 @@ public class TestSchemaConverter {
   private Schema createAllTypesSchema() {
     List<Column> columns = new ArrayList<>();
     columns.add(new Column("myboolean", Type.BOOLEAN));
-    columns.add(new Column("mybit", Type.BIT));
     columns.add(new Column("mychar", Type.CHAR));
     columns.add(new Column("myint2", Type.INT2));
     columns.add(new Column("myint4", Type.INT4));
