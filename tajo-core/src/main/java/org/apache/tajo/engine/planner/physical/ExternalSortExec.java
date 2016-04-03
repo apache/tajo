@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
@@ -43,11 +44,13 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils;
 import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.SortAlgorithm;
+import org.apache.tajo.tuple.memory.RadixSort;
 import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.unit.StorageUnit;
@@ -56,10 +59,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -157,19 +157,21 @@ public class ExternalSortExec extends SortExec {
       this.nullFirst[i] = sortSpecs[i].isNullsFirst();
       this.sortKeyTypes[i] = sortSpecs[i].getSortKey().getDataType().getType();
     }
-    this.sortAlgorithm = getSortAlgorithm(context.getQueryContext());
+    this.sortAlgorithm = getSortAlgorithm(context.getQueryContext(), sortSpecs);
   }
 
-  private static SortAlgorithm getSortAlgorithm(QueryContext context) {
+  private static SortAlgorithm getSortAlgorithm(QueryContext context, SortSpec[] sortSpecs) {
+    if (Arrays.stream(sortSpecs)
+        .filter(sortSpec -> !RadixSort.isApplicableType(sortSpec.getSortKey().getDataType().getType())).count() > 0) {
+      return SortAlgorithm.TIM_SORT;
+    }
     String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, "TIM");
     if (sortAlgorithm.equalsIgnoreCase("TIM")) {
       return SortAlgorithm.TIM_SORT;
     } else if (sortAlgorithm.equalsIgnoreCase("MSD_RADIX")) {
       return SortAlgorithm.MSD_RADIX_SORT;
-    } else if (sortAlgorithm.equalsIgnoreCase("LSD_RADIX")) {
-      return SortAlgorithm.LSD_RADIX_SORT;
-    } else if (sortAlgorithm.equalsIgnoreCase("HYBRID_RADIX")) {
-      return SortAlgorithm.HYBRID_RADIX_SORT;
+//    } else if (sortAlgorithm.equalsIgnoreCase("LSD_RADIX")) {
+//      return SortAlgorithm.LSD_RADIX_SORT;
     } else {
       throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm));
     }

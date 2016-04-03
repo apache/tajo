@@ -64,7 +64,7 @@ import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 public class BenchmarkSort {
   private TajoConf conf;
   private TajoTestingCluster util;
-  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestExternalSortExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/BenchmarkSort";
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
