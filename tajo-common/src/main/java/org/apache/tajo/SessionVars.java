@@ -166,7 +166,6 @@ public enum SessionVars implements ConfigKey {
       CLI_SIDE_VAR, Boolean.class, Validators.bool()),
 
   SORT_ALGORITHM(ConfVars.$SORT_ALGORITHM, "sort algorithm", DEFAULT),
-  CPU_CACHE_SIZE(ConfVars.$CPU_CACHE_SIZE, "cpu cache size (mb)", DEFAULT),
 
   //-------------------------------------------------------------------------------
   // Only for Unit Testing

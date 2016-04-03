@@ -77,7 +77,7 @@ public class BenchmarkSort {
   private TableDesc employee;
 
   String[] QUERIES = {
-      "select managerId, col1 from employee order by managerId, col1"
+      "select managerId, col1, col2 from employee order by managerId, col1, col2"
   };
 
   @State(Scope.Thread)
@@ -182,7 +182,6 @@ public class BenchmarkSort {
   @BenchmarkMode(Mode.All)
   public void timSort(BenchContext context) throws InterruptedException, IOException, TajoException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-//    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, context.sortBufferSize);
     queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
     queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "TIM");
 
@@ -226,30 +225,6 @@ public class BenchmarkSort {
     while (exec.next() != null) {}
     exec.close();
   }
-
-//  @Benchmark
-//  @BenchmarkMode(Mode.All)
-//  public void lsdRadixSort(BenchContext context) throws InterruptedException, IOException, TajoException {
-//    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-//    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 200);
-//    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
-//
-//    FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
-//        new Path(employee.getUri()), Integer.MAX_VALUE);
-//    Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
-//    TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
-//        LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
-//    ctx.setEnforcer(new Enforcer());
-//    Expr expr = analyzer.parse(QUERIES[0]);
-//    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
-//    LogicalNode rootNode = optimizer.optimize(plan);
-//
-//    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
-//    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-//    exec.init();
-//    while (exec.next() != null) {}
-//    exec.close();
-//  }
 
   public static void main(String[] args) throws RunnerException {
     Options opt = new OptionsBuilder()

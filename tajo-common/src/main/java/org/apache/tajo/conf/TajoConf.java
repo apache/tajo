@@ -413,7 +413,6 @@ public class TajoConf extends Configuration {
     $COMPRESSED_RESULT_TRANSFER("tajo.resultset.compression", false),
 
     $SORT_ALGORITHM("tajo.sort.algorithm", "TIM"),
-    $CPU_CACHE_SIZE("tajo.cpu.cache-mb", 6),
     ;
 
     public final String varname;

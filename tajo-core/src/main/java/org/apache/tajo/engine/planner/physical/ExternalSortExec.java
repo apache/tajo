@@ -153,8 +153,6 @@ public class ExternalSortExec extends SortExec {
       return SortAlgorithm.TIM_SORT;
     } else if (sortAlgorithm.equalsIgnoreCase("MSD_RADIX")) {
       return SortAlgorithm.MSD_RADIX_SORT;
-//    } else if (sortAlgorithm.equalsIgnoreCase("LSD_RADIX")) {
-//      return SortAlgorithm.LSD_RADIX_SORT;
     } else {
       throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm));
     }
@@ -204,8 +202,6 @@ public class ExternalSortExec extends SortExec {
         return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
       case MSD_RADIX_SORT:
         return RadixSort.msdRadixSort(tupleBlock, inSchema, sortSpecs, unSafeComparator);
-//      case LSD_RADIX_SORT:
-//        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
       default:
         throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));
     }
