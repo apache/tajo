@@ -102,7 +102,7 @@ public class TestExternalSortExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    tableSchema = new Schema();
+    tableSchema = SchemaFactory.newV1();
     tableSchema.addColumn("managerid", Type.INT8);
     tableSchema.addColumn("empid", Type.INT4);
     tableSchema.addColumn("deptname", Type.TEXT);
@@ -213,7 +213,7 @@ public class TestExternalSortExec {
     Tuple curVal;
     int cnt = 0;
     exec.init();
-    Schema sortSchema = new Schema(new Column[] {
+    Schema sortSchema = SchemaFactory.newV1(new Column[] {
         new Column("managerid", Type.INT8),
         new Column("empid", Type.INT4),
     });

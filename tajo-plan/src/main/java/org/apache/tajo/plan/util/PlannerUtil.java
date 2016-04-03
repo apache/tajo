@@ -565,7 +565,7 @@ public class PlannerUtil {
   }
 
   public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     for (SortSpec spec : sortSpecs) {
       schema.addColumn(spec.getSortKey());
     }
@@ -656,7 +656,7 @@ public class PlannerUtil {
   }
 
   public static Schema targetToSchema(List<Target> targets) {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     for (Target t : targets) {
       DataType type = t.getEvalTree().getValueType();
       String name;

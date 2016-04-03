@@ -197,7 +197,7 @@ public class CatalogTestingUtil {
   }
 
   public static TableDesc buildTableDesc(String databaseName, String tableName, String testDir) throws IOException {
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn(CatalogUtil.buildFQName(tableName, "Column"), Type.BLOB);
     schema.addColumn(CatalogUtil.buildFQName(tableName, "column"), Type.INT4);
     schema.addColumn(CatalogUtil.buildFQName(tableName, "cOlumn"), Type.INT8);
@@ -213,7 +213,7 @@ public class CatalogTestingUtil {
   }
 
   public static TableDesc buildPartitionTableDesc(String databaseName, String tableName, String testDir) throws Exception {
-    Schema partSchema = new Schema();
+    Schema partSchema = SchemaFactory.newV1();
     partSchema.addColumn(CatalogUtil.buildFQName(tableName, "DaTe"), Type.TEXT);
     partSchema.addColumn(CatalogUtil.buildFQName(tableName, "dAtE"), Type.TEXT);
     PartitionMethodDesc partitionMethodDesc =

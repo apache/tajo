@@ -51,26 +51,26 @@ public class Schema {
     return StringUtils.join(namedTypes, ",");
   }
 
-  public static NamedStructType Struct(String name, NamedType... namedTypes) {
-    return new NamedStructType(name, Arrays.asList(namedTypes));
+  public static NamedStructType Struct(QualifiedIdentifier name, NamedType... namedTypes) {
+    return Struct(name, Arrays.asList(namedTypes));
   }
 
-  public static NamedStructType Struct(String name, Collection<NamedType> namedTypes) {
+  public static NamedStructType Struct(QualifiedIdentifier name, Collection<NamedType> namedTypes) {
     return new NamedStructType(name, namedTypes);
   }
 
-  public static NamedPrimitiveType Field(String name, Type type) {
+  public static NamedPrimitiveType Field(QualifiedIdentifier name, Type type) {
     return new NamedPrimitiveType(name, type);
   }
 
   public static abstract class NamedType {
-    protected final String name;
+    protected final QualifiedIdentifier name;
 
-    public NamedType(String name) {
+    public NamedType(QualifiedIdentifier name) {
       this.name = name;
     }
 
-    public String name() {
+    public QualifiedIdentifier name() {
       return this.name;
     }
   }
@@ -78,7 +78,7 @@ public class Schema {
   public static class NamedPrimitiveType extends NamedType {
     private final Type type;
 
-    NamedPrimitiveType(String name, Type type) {
+    NamedPrimitiveType(QualifiedIdentifier name, Type type) {
       super(name);
       Preconditions.checkArgument(type.baseType() != RECORD);
       this.type = type;
@@ -93,7 +93,7 @@ public class Schema {
   public static class NamedStructType extends NamedType {
     private final ImmutableList<NamedType> namedTypes;
 
-    public NamedStructType(String name, Collection<NamedType> namedTypes) {
+    public NamedStructType(QualifiedIdentifier name, Collection<NamedType> namedTypes) {
       super(name);
       this.namedTypes = ImmutableList.copyOf(namedTypes);
     }

@@ -25,6 +25,7 @@ import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 
 import java.util.ArrayList;
@@ -64,7 +65,7 @@ public class TajoSchemaConverter {
     }
     Column[] columnsArray = new Column[columns.size()];
     columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaFactory.newV1(columnsArray);
   }
 
   private Column convertField(final Type fieldType) {

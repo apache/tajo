@@ -37,7 +37,7 @@ public class TestDDLBuilder {
   private static final PartitionMethodDesc partitionMethod1;
 
   static {
-    schema1 = new Schema();
+    schema1 = SchemaFactory.newV1();
     schema1.addColumn("name", TajoDataTypes.Type.BLOB);
     schema1.addColumn("addr", TajoDataTypes.Type.TEXT);
 
@@ -45,7 +45,7 @@ public class TestDDLBuilder {
     meta1.putProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     meta1.putProperty(StorageConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
 
-    Schema expressionSchema = new Schema();
+    Schema expressionSchema = SchemaFactory.newV1();
     expressionSchema.addColumn("key", TajoDataTypes.Type.INT4);
     expressionSchema.addColumn("key2", TajoDataTypes.Type.TEXT);
     partitionMethod1 = new PartitionMethodDesc(
@@ -67,14 +67,14 @@ public class TestDDLBuilder {
 
   @Test
   public void testBuildDDLQuotedTableName() throws Exception {
-    Schema schema2 = new Schema();
+    Schema schema2 = SchemaFactory.newV1();
     schema2.addColumn("name", TajoDataTypes.Type.BLOB);
     schema2.addColumn("addr", TajoDataTypes.Type.TEXT);
     schema2.addColumn("FirstName", TajoDataTypes.Type.TEXT);
     schema2.addColumn("LastName", TajoDataTypes.Type.TEXT);
     schema2.addColumn("with", TajoDataTypes.Type.TEXT);
 
-    Schema expressionSchema2 = new Schema();
+    Schema expressionSchema2 = SchemaFactory.newV1();
     expressionSchema2.addColumn("BirthYear", TajoDataTypes.Type.INT4);
 
     PartitionMethodDesc partitionMethod2 = new PartitionMethodDesc(

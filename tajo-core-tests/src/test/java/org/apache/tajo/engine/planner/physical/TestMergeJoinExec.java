@@ -78,7 +78,7 @@ public class TestMergeJoinExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
 
-    Schema employeeSchema = new Schema();
+    Schema employeeSchema = SchemaFactory.newV1();
     employeeSchema.addColumn("managerid", Type.INT4);
     employeeSchema.addColumn("empid", Type.INT4);
     employeeSchema.addColumn("memid", Type.INT4);
@@ -108,7 +108,7 @@ public class TestMergeJoinExec {
     employee = CatalogUtil.newTableDesc("default.employee", employeeSchema, employeeMeta, employeePath);
     catalog.createTable(employee);
 
-    Schema peopleSchema = new Schema();
+    Schema peopleSchema = SchemaFactory.newV1();
     peopleSchema.addColumn("empid", Type.INT4);
     peopleSchema.addColumn("fk_memid", Type.INT4);
     peopleSchema.addColumn("name", Type.TEXT);

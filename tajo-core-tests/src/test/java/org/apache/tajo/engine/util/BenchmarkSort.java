@@ -96,7 +96,7 @@ public class BenchmarkSort {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    Schema schema = new Schema();
+    Schema schema = SchemaFactory.newV1();
     schema.addColumn("managerid", Type.INT8);
     schema.addColumn("empid", Type.INT4);
     schema.addColumn("deptname", Type.TEXT);
