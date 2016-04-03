@@ -292,7 +292,7 @@
     <dependency>
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-catalog-common</artifactId>
-      <scope>test</scope>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <groupId>org.apache.tajo</groupId>
@@ -353,11 +353,10 @@
       </exclusions>
     </dependency>
 
-
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-hdfs</artifactId>
-      <scope>test</scope>
+      <scope>provided</scope>
       <exclusions>
         <exclusion>
           <groupId>org.apache.hadoop</groupId>
@@ -465,7 +464,7 @@
     <dependency>
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-plan</artifactId>
-      <scope>test</scope>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>

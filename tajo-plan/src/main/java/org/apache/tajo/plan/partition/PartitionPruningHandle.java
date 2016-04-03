@@ -19,6 +19,9 @@
 package org.apache.tajo.plan.partition;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.plan.expr.EvalNode;
+
+import java.util.Map;
 
 /**
  * This includes result informs of partition pruning.
@@ -28,11 +31,15 @@ public class PartitionPruningHandle {
   private Path[] partitionPaths;
   private String[] partitionKeys;
   private long totalVolume;
+  private Map<Path, String> partitionMap;
+  private EvalNode[] conjunctiveForms;
 
-  public PartitionPruningHandle(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
+  public PartitionPruningHandle(Path[] partitionPaths, String[] partitionKeys, long totalVolume,
+                                Map<Path, String> partitionMap) {
     this.partitionPaths = partitionPaths;
     this.partitionKeys = partitionKeys;
     this.totalVolume = totalVolume;
+    this.partitionMap = partitionMap;
   }
 
   public Path[] getPartitionPaths() {
@@ -45,5 +52,17 @@ public class PartitionPruningHandle {
 
   public long getTotalVolume() {
     return totalVolume;
+  }
+
+  public Map<Path, String> getPartitionMap() {
+    return partitionMap;
+  }
+
+  public boolean hasConjunctiveForms() {
+    return this.conjunctiveForms != null;
+  }
+
+  public void setConjunctiveForms(EvalNode[] conjunctiveForms) {
+    this.conjunctiveForms = conjunctiveForms;
   }
 }

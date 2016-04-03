@@ -56,6 +56,7 @@ import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.s3.S3TableSpace;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -475,10 +476,15 @@ public class Repartitioner {
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
     rewriter.setCatalog(catalog);
     PartitionPruningHandle pruningHandle = rewriter.getPartitionPruningHandle(conf, partitionsScan);
-
-    FileTablespace tablespace = (FileTablespace) tsHandler;
-    fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
-      , pruningHandle.getPartitionKeys(), pruningHandle.getPartitionPaths()));
+    if (tsHandler instanceof S3TableSpace) {
+      S3TableSpace tablespace = (S3TableSpace) tsHandler;
+      fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
+        , pruningHandle));
+    } else {
+      FileTablespace tablespace = (FileTablespace) tsHandler;
+      fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
+        , pruningHandle));
+    }
 
     return fragments;
   }

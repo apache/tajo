@@ -45,6 +45,7 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.s3.S3TableSpace;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
@@ -105,9 +106,15 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
 
     List<Fragment> fragments = Lists.newArrayList();
     if (tableDesc.hasPartition()) {
-      FileTablespace fileTablespace = TUtil.checkTypeAndGet(tablespace, FileTablespace.class);
-      fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(fileTablespace, scanNode, tableDesc
-        , catalog, tajoConf));
+      if (tablespace instanceof S3TableSpace) {
+        S3TableSpace s3TableSpace = TUtil.checkTypeAndGet(tablespace, S3TableSpace.class);
+        fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(s3TableSpace, scanNode, tableDesc
+          , catalog, tajoConf));
+      } else {
+        FileTablespace fileTablespace = TUtil.checkTypeAndGet(tablespace, FileTablespace.class);
+        fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(fileTablespace, scanNode, tableDesc
+          , catalog, tajoConf));
+      }
     } else {
       fragments.addAll(tablespace.getSplits(tableDesc.getName(), tableDesc, scanNode.getQual()));
     }
