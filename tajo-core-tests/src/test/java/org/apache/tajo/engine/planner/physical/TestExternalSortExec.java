@@ -127,8 +127,9 @@ public class TestExternalSortExec {
             NullDatum.get(),
         });
       } else {
+        boolean positive = rnd.nextInt(2) == 0;
         tuple.put(new Datum[]{
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(positive ? 100_000 + rnd.nextInt(100_000) : (100_000 + rnd.nextInt(100_000)) * -1),
             DatumFactory.createInt4(rnd.nextInt(100)),
             DatumFactory.createText("dept_" + i),
             DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
@@ -192,8 +193,8 @@ public class TestExternalSortExec {
   public final void testNext() throws IOException, TajoException {
 //    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-//    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
-    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
+//    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
 //    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "TIM");
 //    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
 

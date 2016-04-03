@@ -89,7 +89,7 @@ public class RadixSort {
 
   private final static int _16B_BIN_NUM = 65536;
   private final static int _16B_MAX_BIN_IDX = 65535;
-  private final static int TIM_SORT_THRESHOLD = 65536;
+  private final static int TIM_SORT_THRESHOLD = 65535;
 
   public static List<UnSafeTuple> msdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
                                                boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
@@ -97,7 +97,7 @@ public class RadixSort {
     RadixSortContext context = new RadixSortContext(in, sortKeyIds, sortKeyTypes, asc, nullFirst, comp);
 
     long before = System.currentTimeMillis();
-    msdRadixSort(context, 0, in.length, 0, calculateInitialPass(sortKeyTypes[0]));
+    msdRadixSort(context, 0, in.length, 0, calculateInitialPass(sortKeyTypes[0]), true);
     context.msdRadixSortTime += System.currentTimeMillis() - before;
     context.printMsdStat();
     ListIterator<UnSafeTuple> it = list.listIterator();
@@ -108,22 +108,22 @@ public class RadixSort {
     return list;
   }
 
-  public static List<UnSafeTuple> lsdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-                                               boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
-    UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
-
-    RadixSortContext context = new RadixSortContext(in, sortKeyIds, sortKeyTypes, asc, nullFirst, comp);
-    long before = System.currentTimeMillis();
-    lsdRadixSort(context);
-    context.lsdRadixSortTime += System.currentTimeMillis() - before;
-    context.printLsdStat();
-    ListIterator<UnSafeTuple> it = list.listIterator();
-    for (UnSafeTuple t : context.in) {
-      it.next();
-      it.set(t);
-    }
-    return list;
-  }
+//  public static List<UnSafeTuple> lsdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
+//                                               boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
+//    UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
+//
+//    RadixSortContext context = new RadixSortContext(in, sortKeyIds, sortKeyTypes, asc, nullFirst, comp);
+//    long before = System.currentTimeMillis();
+//    lsdRadixSort(context);
+//    context.lsdRadixSortTime += System.currentTimeMillis() - before;
+//    context.printLsdStat();
+//    ListIterator<UnSafeTuple> it = list.listIterator();
+//    for (UnSafeTuple t : context.positiveIn) {
+//      it.next();
+//      it.set(t);
+//    }
+//    return list;
+//  }
 
   private static int getFieldOffset(long address, int fieldId) {
     return PlatformDependent.getInt(address + (long)(SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT)));
@@ -133,47 +133,141 @@ public class RadixSort {
     return address + getFieldOffset(address, fieldId);
   }
 
-  static int integer16AscNullLastRadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+  static int ascNullLastSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
     int key = _16B_MAX_BIN_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // TODO: consider sign
+      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) + 32768;
+    }
+    return key;
+  }
+  static int ascNullFirstSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+    int key = 0; // for null
+    if (!tuple.isBlankOrNull(sortKeyId)) {
+      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) + 32768;
+    }
+    return key;
+  }
+
+  static int descNullLastSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+    int key = _16B_MAX_BIN_IDX; // for null
+    if (!tuple.isBlankOrNull(sortKeyId)) {
+      key = 32767 - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass));
+    }
+    return key;
+  }
+  static int descNullFirstSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+    int key = 0; // for null
+    if (!tuple.isBlankOrNull(sortKeyId)) {
+      key = 32767 - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass));
+    }
+    return key;
+  }
+
+  static int ascNullLast16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+    int key = _16B_MAX_BIN_IDX; // for null
+    if (!tuple.isBlankOrNull(sortKeyId)) {
       key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
     }
     return key;
   }
 
-  static int integer16AscNullFirstRadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+  static int ascNullFirst16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
     int key = 0; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // TODO: consider sign
       key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
     }
     return key;
   }
 
-  static int integer16DescNullLastRadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+  static int descNullLast16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
     int key = _16B_MAX_BIN_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // TODO: consider sign
       key = _16B_MAX_BIN_IDX - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
     }
     return key;
   }
 
-  static int integer16DescNullFirstRadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
+  static int descNullFirst16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
     int key = 0; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // TODO: consider sign
       key = _16B_MAX_BIN_IDX - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
     }
     return key;
+  }
+
+  static void build16AscNullLastSignConsideredHistogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
+                                                        int[] positions, int[] keys) {
+    long before = System.currentTimeMillis();
+    for (int i = start; i < exclusiveEnd; i++) {
+      keys[i] = ascNullLastSignConsidered16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      positions[keys[i]] += 1;
+    }
+    context.getKeyTime += System.currentTimeMillis() - before;
+
+    before = System.currentTimeMillis();
+    positions[0] += start;
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+    }
+    context.addPosTime += System.currentTimeMillis() - before;
+  }
+
+  static void build16AscNullFirstSignConsideredHistogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
+                                                        int[] positions, int[] keys) {
+    long before = System.currentTimeMillis();
+    for (int i = start; i < exclusiveEnd; i++) {
+      keys[i] = ascNullFirstSignConsidered16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      positions[keys[i]] += 1;
+    }
+    context.getKeyTime += System.currentTimeMillis() - before;
+
+    before = System.currentTimeMillis();
+    positions[0] += start;
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+    }
+    context.addPosTime += System.currentTimeMillis() - before;
+  }
+
+  static void build16DescNullLastSignConsideredHistogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
+                                                        int[] positions, int[] keys) {
+    long before = System.currentTimeMillis();
+    for (int i = start; i < exclusiveEnd; i++) {
+      keys[i] = descNullLastSignConsidered16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      positions[keys[i]] += 1;
+    }
+    context.getKeyTime += System.currentTimeMillis() - before;
+
+    before = System.currentTimeMillis();
+    positions[0] += start;
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+    }
+    context.addPosTime += System.currentTimeMillis() - before;
+  }
+
+  static void build16DescNullFirstSignConsideredHistogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
+                                                         int[] positions, int[] keys) {
+    long before = System.currentTimeMillis();
+    for (int i = start; i < exclusiveEnd; i++) {
+      keys[i] = descNullFirstSignConsidered16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      positions[keys[i]] += 1;
+    }
+    context.getKeyTime += System.currentTimeMillis() - before;
+
+    before = System.currentTimeMillis();
+    positions[0] += start;
+    for (int i = 0; i < positions.length - 1; i++) {
+      positions[i + 1] += positions[i];
+    }
+    context.addPosTime += System.currentTimeMillis() - before;
   }
 
   static void build16AscNullLastHistogram(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass,
                                           int[] positions, int[] keys) {
     long before = System.currentTimeMillis();
     for (int i = start; i < exclusiveEnd; i++) {
-      keys[i] = integer16AscNullLastRadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      keys[i] = ascNullLast16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
       positions[keys[i]] += 1;
     }
     context.getKeyTime += System.currentTimeMillis() - before;
@@ -190,7 +284,7 @@ public class RadixSort {
                                           int[] positions, int[] keys) {
     long before = System.currentTimeMillis();
     for (int i = start; i < exclusiveEnd; i++) {
-      keys[i] = integer16AscNullFirstRadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      keys[i] = ascNullFirst16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
       positions[keys[i]] += 1;
     }
     context.getKeyTime += System.currentTimeMillis() - before;
@@ -207,7 +301,7 @@ public class RadixSort {
                                           int[] positions, int[] keys) {
     long before = System.currentTimeMillis();
     for (int i = start; i < exclusiveEnd; i++) {
-      keys[i] = integer16DescNullLastRadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      keys[i] = descNullLast16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
       positions[keys[i]] += 1;
     }
     context.getKeyTime += System.currentTimeMillis() - before;
@@ -224,7 +318,7 @@ public class RadixSort {
                                            int[] positions, int[] keys) {
     long before = System.currentTimeMillis();
     for (int i = start; i < exclusiveEnd; i++) {
-      keys[i] = integer16DescNullFirstRadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
+      keys[i] = descNullFirst16RadixKey(context.in[i], context.sortKeyIds[curSortKeyIdx], pass);
       positions[keys[i]] += 1;
     }
     context.getKeyTime += System.currentTimeMillis() - before;
@@ -269,37 +363,52 @@ public class RadixSort {
     }
   }
 
-  static void msdRadixSort(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass) {
+  static void msdRadixSort(RadixSortContext context, int start, int exclusiveEnd, int curSortKeyIdx, int pass, boolean considerSign) {
     context.msdRadixSortCall++;
     final int[] binEndIdx = new int[_16B_BIN_NUM];
     final int[] keys = context.keys;
 
     // Make histogram
     long before = System.currentTimeMillis();
-    if (context.asc[curSortKeyIdx]) {
-      if (context.nullFirst[curSortKeyIdx]) {
-        build16AscNullFirstHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+    if (considerSign) {
+      if (context.asc[curSortKeyIdx]) {
+        if (context.nullFirst[curSortKeyIdx]) {
+          build16AscNullFirstSignConsideredHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        } else {
+          build16AscNullLastSignConsideredHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        }
       } else {
-        build16AscNullLastHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        if (context.nullFirst[curSortKeyIdx]) {
+          build16DescNullFirstSignConsideredHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        } else {
+          build16DescNullLastSignConsideredHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        }
       }
     } else {
-      if (context.nullFirst[curSortKeyIdx]) {
-        build16DescNullFirstHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+      if (context.asc[curSortKeyIdx]) {
+        if (context.nullFirst[curSortKeyIdx]) {
+          build16AscNullFirstHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        } else {
+          build16AscNullLastHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        }
       } else {
-        build16DescNullLastHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        if (context.nullFirst[curSortKeyIdx]) {
+          build16DescNullFirstHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        } else {
+          build16DescNullLastHistogram(context, start, exclusiveEnd, curSortKeyIdx, pass, binEndIdx, keys);
+        }
       }
     }
     context.histogramBuildTime += System.currentTimeMillis() - before;
 
-
-    if (binEndIdx[0] < exclusiveEnd) {
+    if (binEndIdx[0] != exclusiveEnd &&
+        (binEndIdx[32767] != 0 || binEndIdx[32768] != exclusiveEnd)) { // TODO: consider positive and negative
       before = System.currentTimeMillis();
       final int[] binNextElemIdx = new int[_16B_BIN_NUM];
       System.arraycopy(binEndIdx, 0, binNextElemIdx, 0, _16B_BIN_NUM);
       for (int i = start; i < exclusiveEnd; i++) {
         context.out[--binNextElemIdx[keys[i]]] = context.in[i];
       }
-
       System.arraycopy(context.out, start, context.in, start, exclusiveEnd - start);
       context.swapTime += System.currentTimeMillis() - before;
     }
@@ -311,10 +420,12 @@ public class RadixSort {
 
     if (pass > 0 || curSortKeyIdx < context.maxSortKeyId) {
       int nextPass;
+      boolean nextConsiderSign = false;
       if (pass > 0) {
         nextPass = pass - 2;
       } else {
         nextPass = typeByteSize(context.sortKeyTypes[++curSortKeyIdx]) - 2;
+        nextConsiderSign = true;
       }
 
       int len = binEndIdx[0] - start;
@@ -323,16 +434,17 @@ public class RadixSort {
         if (len < TIM_SORT_THRESHOLD) {
           Arrays.sort(context.in, start, binEndIdx[0], context.comparator);
         } else {
-          msdRadixSort(context, start, binEndIdx[0], curSortKeyIdx, nextPass);
+          msdRadixSort(context, start, binEndIdx[0], curSortKeyIdx, nextPass, nextConsiderSign);
         }
       }
+
       for (int i = 0; i < _16B_MAX_BIN_IDX && binEndIdx[i] < exclusiveEnd; i++) {
         len = binEndIdx[i + 1] - binEndIdx[i];
         if (len > 1) {
           if (len < TIM_SORT_THRESHOLD) {
             Arrays.sort(context.in, binEndIdx[i], binEndIdx[i + 1], context.comparator);
           } else {
-            msdRadixSort(context, binEndIdx[i], binEndIdx[i + 1], curSortKeyIdx, nextPass);
+            msdRadixSort(context, binEndIdx[i], binEndIdx[i + 1], curSortKeyIdx, nextPass, nextConsiderSign);
           }
         }
       }
