@@ -184,7 +184,7 @@ public class TestExternalSortExec {
 
   String[] QUERIES = {
 //      "select managerId, empId from employee order by managerId, empId"
-      "select managerId from employee order by managerId"
+      "select managerId, col1 from employee order by managerId, col1"
 //      "select managerId, col1, col11, col12 from employee order by managerId, col1, col11, col12"
   };
 
@@ -218,7 +218,7 @@ public class TestExternalSortExec {
     exec.init();
     Schema sortSchema = new Schema(new Column[] {
         new Column("managerid", Type.INT8),
-//        new Column("col1", Type.INT8),
+        new Column("col1", Type.INT8),
 //        new Column("col11", Type.INT8),
 //        new Column("col12", Type.INT8),
     });
@@ -227,7 +227,7 @@ public class TestExternalSortExec {
         new SortSpec[]{
             new SortSpec(new Column("managerid", Type.INT8)),
 //            new SortSpec(new Column("empid", Type.INT4)),
-//            new SortSpec(new Column("col1", Type.INT8)),
+            new SortSpec(new Column("col1", Type.INT8)),
 //            new SortSpec(new Column("col11", Type.INT8)),
 //            new SortSpec(new Column("col12", Type.INT8)),
         });
