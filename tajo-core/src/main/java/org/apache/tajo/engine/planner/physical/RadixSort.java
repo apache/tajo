@@ -63,13 +63,11 @@ public class RadixSort {
     final Comparator<UnSafeTuple> comparator;
 
     long msdRadixSortTime = 0;
-    long lsdRadixSortTime = 0;
     long histogramBuildTime = 0;
     long swapTime = 0;
     long getKeyTime = 0;
     long addPosTime = 0;
     int msdRadixSortCall = 0;
-    int lsdRadixSortLoop = 0;
 
     public RadixSortContext(UnSafeTuple[] in, Schema schema, SortSpec[] sortSpecs, Comparator<UnSafeTuple> comparator) {
       this.in = in;
@@ -100,15 +98,6 @@ public class RadixSort {
       LOG.info("\t\t|- addPosTime: " + addPosTime + " ms");
       LOG.info("\t|- swapTime: " + swapTime + " ms");
       LOG.info("- msdRadixSortCall: " + msdRadixSortCall + " times");
-    }
-
-    public void printLsdStat() {
-      LOG.info("- lsdRadixSortTime: " + lsdRadixSortTime + " ms");
-      LOG.info("\t|- histogramBuildTime: " + histogramBuildTime + " ms");
-      LOG.info("\t\t|- getKeyTime: " + getKeyTime + " ms");
-      LOG.info("\t\t|- addPosTime: " + addPosTime + " ms");
-      LOG.info("\t|- swapTime: " + swapTime + " ms");
-      LOG.info("- lsdRadixSortLoop: " + lsdRadixSortLoop + " times");
     }
   }
 
@@ -141,23 +130,6 @@ public class RadixSort {
     }
     return list;
   }
-
-//  public static List<UnSafeTuple> lsdRadixSort(UnSafeTupleList list, int[] sortKeyIds, Type[] sortKeyTypes,
-//                                               boolean[] asc, boolean[] nullFirst, Comparator<UnSafeTuple> comp) {
-//    UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
-//
-//    RadixSortContext context = new RadixSortContext(in, sortKeyIds, sortKeyTypes, asc, nullFirst, comp);
-//    long before = System.currentTimeMillis();
-//    lsdRadixSort(context);
-//    context.lsdRadixSortTime += System.currentTimeMillis() - before;
-//    context.printLsdStat();
-//    ListIterator<UnSafeTuple> it = list.listIterator();
-//    for (UnSafeTuple t : context.positiveIn) {
-//      it.next();
-//      it.set(t);
-//    }
-//    return list;
-//  }
 
   private static int getFieldOffset(long address, int fieldId) {
     return PlatformDependent.getInt(address + (long)(SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT)));
@@ -531,38 +503,6 @@ public class RadixSort {
     context.addPosTime += System.currentTimeMillis() - before;
   }
 
-  static void lsdRadixSort(RadixSortContext context) {
-    int[] positions = new int[_16B_BIN_NUM];
-    int[] keys = context.keys;
-
-    for (int curSortKeyIdx = context.sortKeyIds.length - 1; curSortKeyIdx >= 0; curSortKeyIdx--) {
-      int maxPass = typeByteSize(context.sortKeyTypes[curSortKeyIdx]);
-
-      for (int pass = 0; pass < maxPass; pass += 2) {
-        context.lsdRadixSortLoop++;
-        long before = System.currentTimeMillis();
-        build16AscNullLastHistogram(context, 0, context.in.length, curSortKeyIdx, pass, positions, keys);
-        context.histogramBuildTime += System.currentTimeMillis() - before;
-
-        if (positions[0] < context.in.length) {
-          before = System.currentTimeMillis();
-          for (int i = context.in.length - 1; i >= 0; i--) {
-            context.out[--positions[keys[i]]] = context.in[i];
-          }
-          UnSafeTuple[] tmp = context.in;
-          context.in = context.out;
-          context.out = tmp;
-          context.swapTime += System.currentTimeMillis() - before;
-        }
-//        LOG.info("pass: " + pass);
-//        for (int i = 0; i < context.in.length; i++) {
-//          LOG.info(context.out[i]);
-//        }
-        Arrays.fill(positions, 0);
-      }
-    }
-  }
-
   /**
    * Sort a specified part of the input tuples. If the length of the part is sufficiently large, recursively call
    * msdRadixSort(). Otherwise, call Arrays.sort().
@@ -659,11 +599,6 @@ public class RadixSort {
       System.arraycopy(context.out, start, context.in, start, exclusiveEnd - start);
       context.swapTime += System.currentTimeMillis() - before;
     }
-
-//    LOG.info("pass: " + pass + ", curKey: " + curSortKeyIdx + ", start: " + start + ", end: " + exclusiveEnd);
-//    for (int i = start; i < exclusiveEnd; i++) {
-//      LOG.info(context.in[i]);
-//    }
 
     // Recursive call radix sort if necessary.
     if (pass > 0 || curSortKeyIdx < context.maxSortKeyId) {

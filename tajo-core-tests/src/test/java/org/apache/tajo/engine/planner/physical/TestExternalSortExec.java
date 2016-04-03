@@ -48,14 +48,20 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Random;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(Parameterized.class)
 public class TestExternalSortExec {
   private TajoConf conf;
   private TajoTestingCluster util;
@@ -67,10 +73,23 @@ public class TestExternalSortExec {
   private Path testDir;
   private Schema tableSchema;
 
-  private final int numTuple = 1_000_000;
+  private final int numTuple = 1000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
+  private String sortAlgorithmString;
+
+  public TestExternalSortExec(String sortAlgorithm) {
+    this.sortAlgorithmString = sortAlgorithm;
+  }
+
+  @Parameters
+  public static Collection<Object[]> generateParameters() {
+    return Arrays.asList(new Object[][]{
+        {"TIM"},
+        {"MSD_RADIX"},
+    });
+  }
 
   @Before
   public void setUp() throws Exception {
@@ -149,24 +168,6 @@ public class TestExternalSortExec {
       appender.addTuple(tuple);
     }
 
-//    tuple.put(new Datum[] {
-//        DatumFactory.createInt8(-1),
-//        DatumFactory.createInt4(-1),
-//        DatumFactory.createText("dept_" + 0),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//        DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-//    });
-//    appender.addTuple(tuple);
     appender.flush();
     appender.close();
 
@@ -184,19 +185,15 @@ public class TestExternalSortExec {
   }
 
   String[] QUERIES = {
-//      "select managerId, empId from employee order by managerId, empId"
-      "select managerId, col1 from employee order by managerId, col1"
-//      "select managerId, col1, col11, col12 from employee order by managerId, col1, col11, col12"
+      "select managerId, empId from employee order by managerId, empId"
   };
 
   @Test
   public final void testNext() throws IOException, TajoException {
-//    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
+    conf.setIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, 2);
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "MSD_RADIX");
-//    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "LSD_RADIX");
-//    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), "TIM");
-//    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
+    queryContext.set(SessionVars.SORT_ALGORITHM.keyname(), sortAlgorithmString);
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 4);
 
     FileFragment[] frags = FileTablespace.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getUri()), Integer.MAX_VALUE);
@@ -211,7 +208,6 @@ public class TestExternalSortExec {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     
-//    ProjectionExec proj = (ProjectionExec) exec;
     Tuple tuple;
     Tuple preVal = null;
     Tuple curVal;
@@ -219,18 +215,13 @@ public class TestExternalSortExec {
     exec.init();
     Schema sortSchema = new Schema(new Column[] {
         new Column("managerid", Type.INT8),
-        new Column("col1", Type.INT8),
-//        new Column("col11", Type.INT8),
-//        new Column("col12", Type.INT8),
+        new Column("empid", Type.INT4),
     });
 
     BaseTupleComparator comparator = new BaseTupleComparator(sortSchema,
         new SortSpec[]{
             new SortSpec(new Column("managerid", Type.INT8)),
-//            new SortSpec(new Column("empid", Type.INT4)),
-            new SortSpec(new Column("col1", Type.INT8)),
-//            new SortSpec(new Column("col11", Type.INT8)),
-//            new SortSpec(new Column("col12", Type.INT8)),
+            new SortSpec(new Column("empid", Type.INT4)),
         });
 
     long start = System.currentTimeMillis();

@@ -190,6 +190,8 @@ public class TestSortQuery extends QueryTestCaseBase {
       ResultSet res = executeQuery();
       assertResultSet(res);
       cleanupQuery(res);
+
+      executeString("drop table testSortWithDate");
     }
   }
 
@@ -208,6 +210,8 @@ public class TestSortQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+
+    executeString("drop table table2");
   }
 
   @Test
@@ -466,6 +470,7 @@ public class TestSortQuery extends QueryTestCaseBase {
       cleanupQuery(res);
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
+      executeString("drop table testOutOfScope");
     }
   }
 }
