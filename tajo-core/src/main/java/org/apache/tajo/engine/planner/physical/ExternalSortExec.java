@@ -33,8 +33,6 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
@@ -49,8 +47,6 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils;
-import org.apache.tajo.tuple.memory.OffHeapRowBlockUtils.SortAlgorithm;
-import org.apache.tajo.tuple.memory.RadixSort;
 import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.unit.StorageUnit;
@@ -77,6 +73,12 @@ import java.util.concurrent.Future;
  * </ul>
  */
 public class ExternalSortExec extends SortExec {
+
+  enum SortAlgorithm{
+    TIM_SORT,
+    MSD_RADIX_SORT,
+  }
+
   /** Class logger */
   private static final Log LOG = LogFactory.getLog(ExternalSortExec.class);
   /** The prefix of fragment name for intermediate */
@@ -120,10 +122,6 @@ public class ExternalSortExec extends SortExec {
   /** total bytes of input data */
   private long inputBytes;
 
-  private final int[] sortKeyIds;
-  private final Type[] sortKeyTypes;
-  private final boolean[] asc;
-  private final boolean[] nullFirst;
   private final SortAlgorithm sortAlgorithm;
 
   private ExternalSortExec(final TaskAttemptContext context, final SortNode plan)
@@ -142,21 +140,6 @@ public class ExternalSortExec extends SortExec {
     this.localFS = new RawLocalFileSystem();
     this.intermediateMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
     this.inputStats = new TableStats();
-    sortKeyIds = new int[sortSpecs.length];
-    sortKeyTypes = new Type[sortSpecs.length];
-    asc = new boolean[sortSpecs.length];
-    nullFirst = new boolean[sortSpecs.length];
-    for (int i = 0; i < sortSpecs.length; i++) {
-      if (sortSpecs[i].getSortKey().hasQualifier()) {
-        this.sortKeyIds[i] = inSchema.getColumnId(sortSpecs[i].getSortKey().getQualifiedName());
-      } else {
-        this.sortKeyIds[i] = inSchema.getColumnIdByName(sortSpecs[i].getSortKey().getSimpleName());
-      }
-
-      this.asc[i] = sortSpecs[i].isAscending();
-      this.nullFirst[i] = sortSpecs[i].isNullsFirst();
-      this.sortKeyTypes[i] = sortSpecs[i].getSortKey().getDataType().getType();
-    }
     this.sortAlgorithm = getSortAlgorithm(context.getQueryContext(), sortSpecs);
   }
 
@@ -214,6 +197,20 @@ public class ExternalSortExec extends SortExec {
     return this.plan;
   }
 
+  private List<UnSafeTuple> sort(UnSafeTupleList tupleBlock) {
+    LOG.info(sortAlgorithm.name() + " is used for sort");
+    switch (sortAlgorithm) {
+      case TIM_SORT:
+        return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
+      case MSD_RADIX_SORT:
+        return RadixSort.msdRadixSort(tupleBlock, inSchema, sortSpecs, unSafeComparator);
+//      case LSD_RADIX_SORT:
+//        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
+      default:
+        throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));
+    }
+  }
+
   /**
    * Sort a tuple block and store them into a chunk file
    */
@@ -222,7 +219,7 @@ public class ExternalSortExec extends SortExec {
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
-    OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, sortAlgorithm);
+    this.sort(tupleBlock);
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -569,7 +566,7 @@ public class ExternalSortExec extends SortExec {
     if (chunk.isMemory()) {
       long sortStart = System.currentTimeMillis();
 
-      OffHeapRowBlockUtils.sort(inMemoryTable, unSafeComparator, sortKeyIds, sortKeyTypes, asc, nullFirst, sortAlgorithm);
+      this.sort(inMemoryTable);
       Scanner scanner = new MemTableScanner<>(inMemoryTable, inMemoryTable.size(), inMemoryTable.usedMem());
       if(LOG.isDebugEnabled()) {
         debug(LOG, "Memory Chunk sort (" + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false)

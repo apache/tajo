@@ -20,10 +20,7 @@ package org.apache.tajo.tuple.memory;
 
 import com.google.common.collect.Lists;
 import com.google.common.primitives.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -38,17 +35,10 @@ import java.util.Comparator;
 import java.util.List;
 
 public class OffHeapRowBlockUtils {
-
-  private final static Log LOG = LogFactory.getLog(OffHeapRowBlockUtils.class);
   private static TupleConverter tupleConverter;
 
   static {
     tupleConverter = new TupleConverter();
-  }
-
-  public enum SortAlgorithm{
-    TIM_SORT,
-    MSD_RADIX_SORT,
   }
 
   public static List<Tuple> sort(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {
@@ -75,20 +65,9 @@ public class OffHeapRowBlockUtils {
     return tupleList;
   }
 
-  public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator, int[] sortKeyIds, Type[] sortKeyTypes,
-                                       boolean[] asc, boolean[] nullFirst, SortAlgorithm algorithm) {
-    LOG.info(algorithm.name() + " is used for sort");
-    switch (algorithm) {
-      case TIM_SORT:
-        Collections.sort(list, comparator);
-        return list;
-      case MSD_RADIX_SORT:
-        return RadixSort.msdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
-//      case LSD_RADIX_SORT:
-//        return lsdRadixSort(list, sortKeyIds, sortKeyTypes, asc, nullFirst, comparator);
-      default:
-        throw new TajoRuntimeException(new UnsupportedException(algorithm.name()));
-    }
+  public static List<UnSafeTuple> sort(UnSafeTupleList list, Comparator<UnSafeTuple> comparator) {
+    Collections.sort(list, comparator);
+    return list;
   }
 
   public static Tuple[] sortToArray(MemoryRowBlock rowBlock, Comparator<Tuple> comparator) {
