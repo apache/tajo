@@ -598,9 +598,10 @@ public class RadixSort {
     final int[] keys = context.keys;
 
     long before = System.currentTimeMillis();
-    // Build the histogram
+    // Build a histogram.
     // Call different methods depending on the sort spec of the current key. This is to avoid frequent branch misses.
-    // TODO: code generation using asm can simplify the below codes.
+    // This is effective because the below code block is the most expensive part of this implementation.
+    // TODO: code generation can simplify the below codes.
     if (considerSign) {
       if (context.asc[curSortKeyIdx]) {
         if (context.nullFirst[curSortKeyIdx]) {
