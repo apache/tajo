@@ -361,26 +361,22 @@ public class TestCatalog {
     //      |- s8
     //  |- s9
 
-    Schema nestedSchema = SchemaFactory.newV1();
-    nestedSchema.addColumn("s1", Type.INT8);
+    SchemaBuilder nestedSchema = SchemaFactory.builder();
+    nestedSchema.add("s1", Type.INT8);
+    nestedSchema.add("s2", Type.INT8);
 
-    nestedSchema.addColumn("s2", Type.INT8);
+    Schema s5 = SchemaFactory.builder().add("s6", Type.INT8).buildV1();
+    Schema s7 = SchemaFactory.builder().add("s5", new TypeDesc(s5)).buildV1();
 
-    Schema s5 = SchemaFactory.newV1();
-    s5.addColumn("s6", Type.INT8);
+    Schema s3 = SchemaFactory.builder()
+        .add("s4", Type.INT8)
+        .add("s7", new TypeDesc(s7))
+        .add("s8", Type.INT8).buildV1();
 
-    Schema s7 = SchemaFactory.newV1();
-    s7.addColumn("s5", new TypeDesc(s5));
+    nestedSchema.add("s3", new TypeDesc(s3));
+    nestedSchema.add("s9", Type.INT8);
 
-    Schema s3 = SchemaFactory.newV1();
-    s3.addColumn("s4", Type.INT8);
-    s3.addColumn("s7", new TypeDesc(s7));
-    s3.addColumn("s8", Type.INT8);
-
-    nestedSchema.addColumn("s3", new TypeDesc(s3));
-    nestedSchema.addColumn("s9", Type.INT8);
-
-    assertSchemaEquality("nested_schema1", nestedSchema);
+    assertSchemaEquality("nested_schema1", nestedSchema.buildV1());
   }
 
   @Test
@@ -398,26 +394,25 @@ public class TestCatalog {
     //      |- s3
     //  |- s4
 
-    Schema nestedSchema = SchemaFactory.newV1();
-    nestedSchema.addColumn("s1", Type.INT8);
-
-    nestedSchema.addColumn("s2", Type.INT8);
+    SchemaBuilder nestedSchema = SchemaFactory.builder();
+    nestedSchema.add("s1", Type.INT8);
+    nestedSchema.add("s2", Type.INT8);
 
     Schema s5 = SchemaFactory.newV1();
     s5.addColumn("s6", Type.INT8);
 
-    Schema s7 = SchemaFactory.newV1();
-    s7.addColumn("s5", new TypeDesc(s5));
+    SchemaBuilder s7 = SchemaFactory.builder();
+    s7.add("s5", new TypeDesc(s5));
 
-    Schema s3 = SchemaFactory.newV1();
-    s3.addColumn("s4", Type.INT8);
-    s3.addColumn("s7", new TypeDesc(s7));
-    s3.addColumn("s8", Type.INT8);
+    SchemaBuilder s3 = SchemaFactory.builder();
+    s3.add("s4", Type.INT8);
+    s3.add("s7", new TypeDesc(s7.buildV1()));
+    s3.add("s8", Type.INT8);
 
-    nestedSchema.addColumn("s3", new TypeDesc(s3));
-    nestedSchema.addColumn("s9", Type.INT8);
+    nestedSchema.add("s3", new TypeDesc(s3.buildV1()));
+    nestedSchema.add("s9", Type.INT8);
 
-    assertSchemaEquality("nested_schema2", nestedSchema);
+    assertSchemaEquality("nested_schema2", nestedSchema.buildV1());
   }
 
   static IndexDesc desc1;

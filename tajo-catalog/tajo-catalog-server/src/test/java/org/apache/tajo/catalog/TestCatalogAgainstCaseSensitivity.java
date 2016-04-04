@@ -334,24 +334,20 @@ public class TestCatalogAgainstCaseSensitivity {
     String databaseName = "TestDatabase1";
     String tableName = "nested_Table";
 
-    Schema schema = SchemaFactory.newV1(
-        new Column[]{
-            new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4)),
-            new Column("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4)),
-            new Column("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT)),
-    });
+    Schema schema = SchemaFactory.builder()
+        .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4))
+        .add("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT)).buildV1();
 
-    Schema tableSchema = SchemaFactory.newV1();
-    tableSchema.addColumn("RecoRd1", new TypeDesc(schema));
-    tableSchema.addColumn("CoL1", CatalogUtil.newSimpleDataType(Type.INT4));
-    tableSchema.addColumn("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT));
-    tableSchema.addColumn("RecoRd2", new TypeDesc(schema));
-    tableSchema.addColumn("RecoRd3", new TypeDesc(
-        SchemaFactory.newV1(new Column[]{
-            new Column("CoL1", CatalogUtil.newSimpleDataType(Type.INT4)),
-            new Column("RecoRd1", new TypeDesc(schema)),
-        })
-    ));
+    Schema tableSchema = SchemaFactory.builder()
+    .add("RecoRd1", new TypeDesc(schema))
+    .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
+    .add("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT))
+    .add("RecoRd2", new TypeDesc(schema))
+    .add("RecoRd3", new TypeDesc(
+        SchemaFactory.builder()
+            .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
+            .add("RecoRd1", new TypeDesc(schema)).buildV1())).buildV1();
 
     TableDesc tableDesc = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),

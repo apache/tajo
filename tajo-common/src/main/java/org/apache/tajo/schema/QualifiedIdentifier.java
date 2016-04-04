@@ -20,6 +20,7 @@ package org.apache.tajo.schema;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.util.StringUtils;
 

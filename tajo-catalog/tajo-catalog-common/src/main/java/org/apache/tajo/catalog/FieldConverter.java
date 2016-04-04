@@ -26,36 +26,19 @@ import org.apache.tajo.schema.Identifier;
 import org.apache.tajo.schema.IdentifierPolicy;
 import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.schema.Schema;
-import org.apache.tajo.type.Type;
+import org.apache.tajo.schema.Schema.NamedPrimitiveType;
+import org.apache.tajo.schema.Schema.NamedStructType;
+import org.apache.tajo.type.Char;
+import org.apache.tajo.type.Varchar;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
 
 public class FieldConverter {
 
-  public static TypeDesc convert(Schema.NamedType src) {
-    if (src instanceof Schema.NamedStructType) {
-      Schema.NamedStructType structType = (Schema.NamedStructType) src;
-
-      ImmutableList.Builder<Column> fields = ImmutableList.builder();
-      for (Schema.NamedType t: structType.fields()) {
-        fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
-      }
-
-      return new TypeDesc(SchemaFactory.newV1(new SchemaLegacy(fields.build())));
-    } else {
-      Schema.NamedPrimitiveType namedType = (Schema.NamedPrimitiveType) src;
-      return new TypeDesc(convert(namedType.type()));
-    }
-  }
-
-  public static TajoDataTypes.DataType convert(Type type) {
-    return CatalogUtil.newSimpleDataType(type.baseType());
-  }
-
-  public static QualifiedIdentifier transformIdentifier(String name) {
-    Collection<String> elems = ImmutableList.copyOf(name.split("\\."));
-    Collection<Identifier> identifiers = Collections2.transform(elems, new Function<String, Identifier>() {
+  public static QualifiedIdentifier toQualifiedIdentifier(String name) {
+    final Collection<String> elems = ImmutableList.copyOf(name.split("\\."));
+    final Collection<Identifier> identifiers = Collections2.transform(elems, new Function<String, Identifier>() {
       @Override
       public Identifier apply(@Nullable String input) {
         boolean needQuote = CatalogUtil.isShouldBeQuoted(input);
@@ -65,19 +48,39 @@ public class FieldConverter {
     return QualifiedIdentifier.$(identifiers);
   }
 
+  public static TypeDesc convert(Schema.NamedType src) {
+    if (src instanceof NamedStructType) {
+      NamedStructType structType = (NamedStructType) src;
+
+      ImmutableList.Builder<Column> fields = ImmutableList.builder();
+      for (Schema.NamedType t: structType.fields()) {
+        fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
+      }
+
+      return new TypeDesc(SchemaFactory.newV1(new SchemaLegacy(fields.build())));
+    } else {
+      NamedPrimitiveType namedType = (NamedPrimitiveType) src;
+
+      if (namedType.type() instanceof Char) {
+        Char charType = (Char) namedType.type();
+        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length()));
+      } else if (namedType.type() instanceof Varchar) {
+        Varchar varcharType = (Varchar) namedType.type();
+        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length()));
+      } else {
+        return new TypeDesc(TypeConverter.convert(namedType.type()));
+      }
+    }
+  }
+
   public static Schema.NamedType convert(Column column) {
     if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
 
-      ImmutableList.Builder<Schema.NamedType> fields = ImmutableList.builder();
-      TypeDesc typeDesc = column.getTypeDesc();
-      for (Column c :typeDesc.getNestedSchema().getRootColumns()) {
-        fields.add(convert(c));
-      }
-      return new Schema.NamedStructType(transformIdentifier(column.getQualifiedName()), fields.build());
+      return new NamedStructType(toQualifiedIdentifier(column.getQualifiedName()),
+          TypeConverter.convert(column.getTypeDesc()));
 
     } else {
-      return new Schema.NamedPrimitiveType(
-          transformIdentifier(column.getQualifiedName()),
+      return new NamedPrimitiveType(toQualifiedIdentifier(column.getQualifiedName()),
           TypeConverter.convert(column.getDataType())
       );
     }

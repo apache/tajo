@@ -18,47 +18,82 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.type.*;
+import org.apache.tajo.schema.Schema;
+import org.apache.tajo.type.Protobuf;
+import org.apache.tajo.type.Type;
+
+import java.util.Collection;
+
+import static org.apache.tajo.type.Type.*;
 
 public class TypeConverter {
-  public static Type convert(TajoDataTypes.DataType legacyType) {
-    switch (legacyType.getType()) {
+
+  public static Collection<Schema.NamedType> convert(TypeDesc type) {
+    ImmutableList.Builder<Schema.NamedType> fields = ImmutableList.builder();
+    for (Column c : type.getNestedSchema().getRootColumns()) {
+      fields.add(FieldConverter.convert(c));
+    }
+    return fields.build();
+  }
+
+  public static Type convert(TajoDataTypes.Type legacyBaseType) {
+    switch (legacyBaseType) {
     case BOOLEAN:
-      return new Bool();
+      return Bool();
     case INT1:
     case INT2:
-      return new Int2();
+      return Int2();
     case INT4:
-      return new Int4();
+      return Int4();
     case INT8:
-      return new Int8();
+      return Int8();
     case FLOAT4:
-      return new Float4();
+      return Float4();
     case FLOAT8:
-      return new Float8();
+      return Float8();
     case DATE:
-      return new Date();
+      return Date();
     case TIME:
-      return new Time();
+      return Time();
     case TIMESTAMP:
-      return new Timestamp();
+      return Timestamp();
+    case INTERVAL:
+      return Interval();
     case CHAR:
-      return new Char(legacyType.getLength());
+      return Char(1);
+    case VARCHAR:
+      return Varchar(1);
     case TEXT:
-      return new Text();
+      return Text();
     case BLOB:
-      return new Blob();
+      return Blob();
     case INET4:
-      return new Inet4();
+      return Inet4();
     case PROTOBUF:
       return new Protobuf();
     case NULL_TYPE:
-      return new Null();
+      return Null();
     default:
-      throw new TajoRuntimeException(new UnsupportedException(legacyType.getType().name()));
+      throw new TajoRuntimeException(new UnsupportedException(legacyBaseType.name()));
     }
+  }
+
+  public static Type convert(TajoDataTypes.DataType legacyType) {
+    switch (legacyType.getType()) {
+    case CHAR:
+      return Char(legacyType.getLength());
+    case VARCHAR:
+      return Varchar(legacyType.getLength());
+    default:
+      return convert(legacyType.getType());
+    }
+  }
+
+  public static TajoDataTypes.DataType convert(Type type) {
+    return CatalogUtil.newSimpleDataType(type.baseType());
   }
 }

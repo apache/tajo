@@ -98,21 +98,21 @@ public class TestSchema {
 
     SchemaBuilder builder3 = new SchemaBuilder();
 
-    builder3.add(new Column("s1", Type.INT8));
-    builder3.add(new Column("s2", Type.INT8));
+    builder3.add("s1", Type.INT8);
+    builder3.add("s2", Type.INT8);
 
-    Schema s5 = SchemaFactory.newV1();
-    s5.addColumn("s6", Type.INT8);
+    SchemaBuilder s5 = SchemaFactory.builder();
+    s5.add("s6", Type.INT8);
 
-    Schema s7 = SchemaFactory.newV1();
-    s7.addColumn("s5", new TypeDesc(s5));
+    SchemaBuilder s7 = SchemaFactory.builder();
+    s7.add("s5", new TypeDesc(s5.buildV1()));
 
-    Schema s3 = SchemaFactory.newV1();
-    s3.addColumn("s4", Type.INT8);
-    s3.addColumn("s7", new TypeDesc(s7));
-    s3.addColumn("s8", Type.INT8);
+    SchemaBuilder s3 = SchemaFactory.builder();
+    s3.add("s4", Type.INT8);
+    s3.add("s7", new TypeDesc(s7.buildV1()));
+    s3.add("s8", Type.INT8);
 
-    builder3.add(new Column("s3", new TypeDesc(s3)));
+    builder3.add(new Column("s3", new TypeDesc(s3.buildV1())));
     builder3.add(new Column("s9", Type.INT8));
     nestedSchema3 = builder3.buildV1();
   }
@@ -269,7 +269,6 @@ public class TestSchema {
 
   @Test
   public void testNestedRecord4() {
-    Schema root = SchemaFactory.newV1();
 
     Schema nf2DotNf1 = SchemaFactory.newV1();
     nf2DotNf1.addColumn("f1", Type.INT8);
@@ -279,16 +278,17 @@ public class TestSchema {
     nf2DotNf2.addColumn("f1", Type.INT8);
     nf2DotNf2.addColumn("f2", Type.INT8);
 
-    Schema nf2 = SchemaFactory.newV1();
-    nf2.addColumn("f1", Type.INT8);
-    nf2.addColumn("nf1", new TypeDesc(nf2DotNf1));
-    nf2.addColumn("nf2", new TypeDesc(nf2DotNf2));
-    nf2.addColumn("f2", Type.INT8);
+    Schema nf2 = SchemaFactory.builder()
+        .add("f1", Type.INT8)
+        .add("nf1", new TypeDesc(nf2DotNf1))
+        .add("nf2", new TypeDesc(nf2DotNf2))
+        .add("f2", Type.INT8).buildV1();
 
-    root.addColumn("f1", Type.INT8);
-    root.addColumn("nf1", Type.INT8);
-    root.addColumn("nf2", new TypeDesc(nf2));
-    root.addColumn("f2", Type.INT8);
+    Schema root = SchemaFactory.builder()
+        .add("f1", Type.INT8)
+        .add("nf1", Type.INT8)
+        .add("nf2", new TypeDesc(nf2))
+        .add("f2", Type.INT8).buildV1();
 
     verifySchema(root);
   }
