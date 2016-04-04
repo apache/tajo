@@ -20,8 +20,6 @@ package org.apache.tajo.storage.s3;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -43,7 +41,6 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import io.airlift.units.DataSize;
 import io.airlift.units.Duration;
