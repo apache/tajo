@@ -55,6 +55,7 @@ import org.apache.tajo.storage.FileTablespace;
 
 import net.minidev.json.JSONObject;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.util.FileUtil;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.nullToEmpty;
@@ -171,6 +172,7 @@ public class S3TableSpace extends FileTablespace {
 
     // Generate the list of FileStatuses and partition keys
     Path[] paths = pruningHandle.getPartitionPaths();
+
     if (pruningHandle.hasConjunctiveForms()) {
       for(Path path : paths) {
         listS3ObjectsOfPartitionTable(path, files, partitionKeys, pruningHandle);
@@ -218,26 +220,26 @@ public class S3TableSpace extends FileTablespace {
 
     objectStream
       .filter(summary -> summary.getSize() > 0 && !summary.getKey().endsWith("/"))
-      .forEach(summary -> {
-          String bucketName = summary.getBucketName();
-          String pathString = uri.getScheme() + "://" + bucketName + "/" + summary.getKey();
-          Path path = new Path(pathString);
-          String fileName = path.getName();
+        .forEach(summary -> {
+            String bucketName = summary.getBucketName();
+            String pathString = uri.getScheme() + "://" + bucketName + "/" + summary.getKey();
+            Path path = new Path(pathString);
+            String fileName = path.getName();
 
-          if (!fileName.startsWith("_") && !fileName.startsWith(".")) {
-            int lastIndex = pathString.lastIndexOf("/");
-            String partitionPathString = pathString.substring(0, lastIndex);
-            Path partitionPath = new Path(partitionPathString);
+            if (!fileName.startsWith("_") && !fileName.startsWith(".")) {
+              int lastIndex = pathString.lastIndexOf("/");
+              String partitionPathString = pathString.substring(0, lastIndex);
+              Path partitionPath = new Path(partitionPathString);
 
-            if (pruningHandle.getPartitionMap().containsKey(partitionPath)) {
-              String partitionKey = pruningHandle.getPartitionMap().get(partitionPath);
-              files.add(new FileStatus(summary.getSize(), false, 1, BLOCK_SIZE.toBytes(),
-                summary.getLastModified().getTime(), path));
-              partitionKeys.add(partitionKey);
+              if (pruningHandle.getPartitionMap().containsKey(partitionPath)) {
+                String partitionKey = pruningHandle.getPartitionMap().get(partitionPath);
+                files.add(new FileStatus(summary.getSize(), false, 1, BLOCK_SIZE.toBytes(),
+                  summary.getLastModified().getTime(), path));
+                partitionKeys.add(partitionKey);
+              }
             }
           }
-        }
-      );
+        );
   }
 
   private Stream<S3ObjectSummary> getS3ObjectSummaryStream(Path path) throws IOException {
@@ -251,6 +253,7 @@ public class S3TableSpace extends FileTablespace {
 
     return objectStream;
   }
+
 
   /**
    * Find parent paths of the specified paths.
@@ -275,8 +278,8 @@ public class S3TableSpace extends FileTablespace {
    *      s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=1992-02-02
    *      s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=1992-10-02
    *
-   * @param paths the collection of parent paths
-   * @return
+   * @param paths
+   * @return the collection of parent paths
    */
   private HashSet<Path> getParentPaths(Path[] paths) {
     HashSet<Path> hashSet = Sets.newHashSet();
@@ -287,6 +290,39 @@ public class S3TableSpace extends FileTablespace {
 
     return hashSet;
   }
+
+
+
+  /**
+   * Find prefix paths of the specified paths.
+   *
+   * example
+   *  s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=1992-01-02
+   *  s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=1993-02-01
+   *  s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=1995-02-02
+   *  s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=2015-02-01
+   *  s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=2016-02-02
+   *  --> s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=1
+   *      s3://tajo-data-us-east-1/tpch-1g-partition/lineitem/l_shipdate=2
+   *
+   * @param paths
+   * @return the collection of prefix paths
+   */
+  private HashSet<Path> getFilteredPrefixList(Path[] paths) {
+    HashSet<Path> hashSet = Sets.newHashSet();
+
+    for(Path path : paths) {
+      String[] partitionKeyValue = path.getName().split("=");
+      if (partitionKeyValue != null && partitionKeyValue.length == 2) {
+        String name = partitionKeyValue[0] + "=" + partitionKeyValue[1].substring(0, 1);
+        Path prefix = new Path(path.getParent(), name);
+        hashSet.add(prefix);
+      }
+    }
+
+    return hashSet;
+  }
+
 
   @VisibleForTesting
   public AmazonS3 getAmazonS3Client() {
