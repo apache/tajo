@@ -368,7 +368,7 @@ public class FileTablespace extends Tablespace {
     return split;
   }
 
-  protected static final double SPLIT_SLOP = 1.1;   // 10% slop
+  private static final double SPLIT_SLOP = 1.1;   // 10% slop
 
   protected int getBlockIndex(BlockLocation[] blkLocations,
                               long offset) {
@@ -562,7 +562,7 @@ public class FileTablespace extends Tablespace {
 
 
   /**
-   * Is the given filename splittable? Usually, true, but if the file is
+   * Is the given filename splitable? Usually, true, but if the file is
    * stream compressed, it will not be.
    * <p/>
    * <code>FileInputFormat</code> implementations can override this and return
@@ -686,7 +686,7 @@ public class FileTablespace extends Tablespace {
   }
 
   protected void computePartitionSplits(FileStatus file, TableMeta meta, Schema schema, String tableName,
-         String partitionKey, List<Fragment> splits, List<Fragment> volumeSplits, List<BlockLocation> blockLocations)
+    String partitionKey, List<Fragment> splits, List<Fragment> volumeSplits, List<BlockLocation> blockLocations)
     throws IOException {
 
     Path path = file.getPath();
