@@ -30,18 +30,20 @@ import org.junit.Test;
 
 public class TestEvalCodeGenerator extends ExprTestBase {
   private static Schema schema;
+
   static {
-    schema = SchemaFactory.newV1();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("nullable", TajoDataTypes.Type.NULL_TYPE);
+    schema = SchemaFactory.builder()
+        .add("col0", TajoDataTypes.Type.INT1)
+        .add("col1", TajoDataTypes.Type.INT2)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT8)
+        .add("col4", TajoDataTypes.Type.FLOAT4)
+        .add("col5", TajoDataTypes.Type.FLOAT8)
+        .add("col6", TajoDataTypes.Type.TEXT)
+        .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .add("col8", TajoDataTypes.Type.BOOLEAN)
+        .add("nullable", TajoDataTypes.Type.NULL_TYPE)
+        .build();
   }
 
   @Test
@@ -66,18 +68,19 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testNullHandling() throws TajoException {
-    schema = SchemaFactory.newV1();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 1));
-    schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col9", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("nullable", TajoDataTypes.Type.NULL_TYPE);
+    schema = SchemaFactory.builder()
+        .add("col0", TajoDataTypes.Type.INT1)
+        .add("col1", TajoDataTypes.Type.INT2)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT8)
+        .add("col4", TajoDataTypes.Type.FLOAT4)
+        .add("col5", TajoDataTypes.Type.FLOAT8)
+        .add("col6", TajoDataTypes.Type.TEXT)
+        .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 1))
+        .add("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .add("col9", TajoDataTypes.Type.BOOLEAN)
+        .add("nullable", TajoDataTypes.Type.NULL_TYPE)
+        .build();
 
     testEval(schema, "table1", ",1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is null from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is null from table1;", new String [] {"t"});
@@ -231,16 +234,16 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testUnary() throws TajoException {
-    schema = SchemaFactory.newV1();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
+    schema = SchemaFactory.builder()
+    .add("col0", TajoDataTypes.Type.INT1)
+    .add("col1", TajoDataTypes.Type.INT2)
+    .add("col2", TajoDataTypes.Type.INT4)
+    .add("col3", TajoDataTypes.Type.INT8)
+    .add("col4", TajoDataTypes.Type.FLOAT4)
+    .add("col5", TajoDataTypes.Type.FLOAT8)
+    .add("col6", TajoDataTypes.Type.TEXT)
+    .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+    .add("col8", TajoDataTypes.Type.BOOLEAN).build();
 
 
     // sign test

@@ -33,16 +33,17 @@ import static org.junit.Assert.fail;
 public class TestConditionalExpressions extends ExprTestBase {
   @Test
   public void testCaseWhens1() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.INT1);
-    schema.addColumn("col2", TajoDataTypes.Type.INT2);
-    schema.addColumn("col3", TajoDataTypes.Type.INT4);
-    schema.addColumn("col4", TajoDataTypes.Type.INT8);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col6", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col7", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col9", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaFactory.builder()
+        .add("col1", TajoDataTypes.Type.INT1)
+        .add("col2", TajoDataTypes.Type.INT2)
+        .add("col3", TajoDataTypes.Type.INT4)
+        .add("col4", TajoDataTypes.Type.INT8)
+        .add("col5", TajoDataTypes.Type.FLOAT4)
+        .add("col6", TajoDataTypes.Type.FLOAT8)
+        .add("col7", TajoDataTypes.Type.TEXT)
+        .add("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .add("col9", TajoDataTypes.Type.INT4)
+        .build();
 
     testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
         "select case when col1 between 1 and 3 then 10 else 100 end from table1;",

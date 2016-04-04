@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.schema.Schema;
@@ -63,18 +64,12 @@ public class TypeConverter {
       return Timestamp();
     case INTERVAL:
       return Interval();
-    case CHAR:
-      return Char(1);
-    case VARCHAR:
-      return Varchar(1);
     case TEXT:
       return Text();
     case BLOB:
       return Blob();
     case INET4:
       return Inet4();
-    case PROTOBUF:
-      return new Protobuf();
     case NULL_TYPE:
       return Null();
     default:
@@ -88,6 +83,8 @@ public class TypeConverter {
       return Char(legacyType.getLength());
     case VARCHAR:
       return Varchar(legacyType.getLength());
+    case PROTOBUF:
+      return new Protobuf(legacyType.getCode());
     default:
       return convert(legacyType.getType());
     }

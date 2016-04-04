@@ -29,10 +29,7 @@ import org.apache.hadoop.io.Writable;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -401,20 +398,22 @@ public class TestStorages {
 
   @Test
   public void testVariousTypes() throws IOException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
+    SchemaBuilder schemaBld = SchemaFactory.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4);
     if (protoTypeSupport()) {
-      schema.addColumn("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
+
+    Schema schema = schemaBld.build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -470,21 +469,23 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
+    SchemaBuilder schemaBld = SchemaFactory.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4);
 
     if (protoTypeSupport()) {
-      schema.addColumn("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
+
+    Schema schema = schemaBld.build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -565,21 +566,23 @@ public class TestStorages {
   public void testNullHandlingTypesWithProjection() throws IOException {
     if (internalType) return;
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
+    SchemaBuilder schemaBld = SchemaFactory.builder()
+    .add("col1", Type.BOOLEAN)
+    .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+    .add("col3", Type.INT2)
+    .add("col4", Type.INT4)
+    .add("col5", Type.INT8)
+    .add("col6", Type.FLOAT4)
+    .add("col7", Type.FLOAT8)
+    .add("col8", Type.TEXT)
+    .add("col9", Type.BLOB)
+    .add("col10", Type.INET4);
 
     if (protoTypeSupport()) {
-      schema.addColumn("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
+
+    Schema schema = schemaBld.build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -671,19 +674,19 @@ public class TestStorages {
   public void testRCFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaFactory.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -700,7 +703,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -738,19 +740,19 @@ public class TestStorages {
   public void testRCFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaFactory.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -767,7 +769,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -805,19 +806,18 @@ public class TestStorages {
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaFactory.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName())).build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -833,7 +833,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -875,19 +874,19 @@ public class TestStorages {
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaFactory.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -903,7 +902,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),

@@ -72,18 +72,18 @@ public class TestPlannerUtil {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("name", Type.TEXT);
-    schema.addColumn("empid", CatalogUtil.newSimpleDataType(Type.INT4));
-    schema.addColumn("deptname", Type.TEXT);
+    Schema schema = SchemaFactory.builder()
+        .add("name", Type.TEXT)
+        .add("empid", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("deptname", Type.TEXT).build();
 
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("deptname", Type.TEXT);
-    schema2.addColumn("manager", Type.TEXT);
+    Schema schema2 = SchemaFactory.builder()
+        .add("deptname", Type.TEXT)
+        .add("manager", Type.TEXT).build();
 
-    Schema schema3 = SchemaFactory.newV1();
-    schema3.addColumn("deptname", Type.TEXT);
-    schema3.addColumn("score", CatalogUtil.newSimpleDataType(Type.INT4));
+    Schema schema3 = SchemaFactory.builder()
+        .add("deptname", Type.TEXT)
+        .add("score", CatalogUtil.newSimpleDataType(Type.INT4)).build();
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc people = new TableDesc(
@@ -189,11 +189,11 @@ public class TestPlannerUtil {
   @Test
   public final void testGetJoinKeyPairs() {
     Schema outerSchema = SchemaFactory.builder()
-    .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
-    .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4)).build();
-    Schema innerSchema = SchemaFactory.newV1();
-    innerSchema.addColumn("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
-    innerSchema.addColumn("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
+        .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4)).build();
+    Schema innerSchema = SchemaFactory.builder()
+        .add("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4)).build();
 
     FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
     FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
@@ -250,12 +250,14 @@ public class TestPlannerUtil {
 
   @Test
   public final void testGetSortKeysFromJoinQual() {
-    Schema outerSchema = SchemaFactory.newV1();
-    outerSchema.addColumn("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
-    outerSchema.addColumn("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
-    Schema innerSchema = SchemaFactory.newV1();
-    innerSchema.addColumn("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
-    innerSchema.addColumn("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
+    Schema outerSchema = SchemaFactory.builder()
+        .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4))
+        .build();
+    Schema innerSchema = SchemaFactory.builder()
+        .add("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4))
+        .build();
 
     FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
     FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
@@ -286,12 +288,14 @@ public class TestPlannerUtil {
 
   @Test
   public final void testComparatorsFromJoinQual() {
-    Schema outerSchema = SchemaFactory.newV1();
-    outerSchema.addColumn("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
-    outerSchema.addColumn("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
-    Schema innerSchema = SchemaFactory.newV1();
-    innerSchema.addColumn("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
-    innerSchema.addColumn("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
+    Schema outerSchema = SchemaFactory.builder()
+        .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4))
+        .build();
+    Schema innerSchema = SchemaFactory.builder()
+        .add("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4))
+        .add("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4))
+        .build();
 
     FieldEval f1 = new FieldEval("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
     FieldEval f2 = new FieldEval("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));

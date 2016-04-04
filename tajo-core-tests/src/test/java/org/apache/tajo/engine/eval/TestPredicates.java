@@ -31,6 +31,17 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 public class TestPredicates extends ExprTestBase {
 
+  public static final Schema FourIntSchema;
+
+  static {
+    FourIntSchema = SchemaFactory.builder()
+        .add("col1", INT4)
+        .add("col2", INT4)
+        .add("col3", INT4)
+        .add("col4", INT4)
+        .build();
+  }
+
   //////////////////////////////////////////////////////////////////
   // Logical Operator
   //////////////////////////////////////////////////////////////////
@@ -111,26 +122,22 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonEqual() throws TajoException {
-
-
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("nullable", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaFactory.builder()
+        .add("col0", TajoDataTypes.Type.INT1)
+        .add("col1", TajoDataTypes.Type.INT2)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT8)
+        .add("col4", TajoDataTypes.Type.FLOAT4)
+        .add("col5", TajoDataTypes.Type.FLOAT8)
+        .add("col6", TajoDataTypes.Type.TEXT)
+        .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .add("nullable", TajoDataTypes.Type.INT4)
+        .build();
 
     testEval(schema, "t1", "0,1,2,3,4.1,5.1,cmp,asm,", "SELECT col6 = 'cmp' from t1", new String [] {"t"});
 
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
-    schema1.addColumn("col3", INT4);
-    schema1.addColumn("col4", INT4);
+    Schema schema1 = FourIntSchema;
+
     testEval(schema1,
         "table1", "123,123,456,-123",
         "select col1 = col2, col1 = col3, col1 = col4 from table1",
@@ -143,11 +150,8 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonNotEqual() throws TajoException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
-    schema1.addColumn("col3", INT4);
-    schema1.addColumn("col4", INT4);
+    Schema schema1 = FourIntSchema;
+
     testEval(schema1,
         "table1", "123,123,456,-123",
         "select col1 <> col2, col1 <> col3, col1 <> col4 from table1",
@@ -160,11 +164,8 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonLessThan() throws TajoException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
-    schema1.addColumn("col3", INT4);
-    schema1.addColumn("col4", INT4);
+    Schema schema1 = FourIntSchema;
+
     testEval(schema1,
         "table1", "123,123,456,-123",
         "select col1 < col2, col1 < col3, col1 < col4 from table1",
@@ -177,11 +178,8 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonLessThanEqual() throws TajoException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
-    schema1.addColumn("col3", INT4);
-    schema1.addColumn("col4", INT4);
+    Schema schema1 = FourIntSchema;
+
     testEval(schema1,
         "table1", "123,123,456,-123",
         "select col1 <= col2, col1 <= col3, col1 <= col4 from table1",
@@ -194,11 +192,8 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonGreaterThan() throws TajoException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
-    schema1.addColumn("col3", INT4);
-    schema1.addColumn("col4", INT4);
+    Schema schema1 = FourIntSchema;
+
     testEval(schema1,
         "table1", "123,123,456,-123",
         "select col1 > col2, col3 > col2, col1 > col4 from table1",
@@ -211,11 +206,8 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonGreaterThanEqual() throws TajoException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
-    schema1.addColumn("col3", INT4);
-    schema1.addColumn("col4", INT4);
+    Schema schema1 = FourIntSchema;
+
     testEval(schema1,
         "table1", "123,123,456,-123",
         "select col1 >= col2, col3 >= col2, col1 >= col4 from table1",

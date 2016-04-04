@@ -22,6 +22,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.schema.Identifier;
 import org.apache.tajo.schema.IdentifierPolicy;
 import org.apache.tajo.schema.QualifiedIdentifier;
@@ -29,6 +31,7 @@ import org.apache.tajo.schema.Schema;
 import org.apache.tajo.schema.Schema.NamedPrimitiveType;
 import org.apache.tajo.schema.Schema.NamedStructType;
 import org.apache.tajo.type.Char;
+import org.apache.tajo.type.Protobuf;
 import org.apache.tajo.type.Varchar;
 
 import javax.annotation.Nullable;
@@ -67,6 +70,9 @@ public class FieldConverter {
       } else if (namedType.type() instanceof Varchar) {
         Varchar varcharType = (Varchar) namedType.type();
         return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length()));
+      } else if (namedType.type() instanceof Protobuf) {
+        Protobuf protobuf = (Protobuf) namedType.type();
+        return new TypeDesc(CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName()));
       } else {
         return new TypeDesc(TypeConverter.convert(namedType.type()));
       }
@@ -75,6 +81,10 @@ public class FieldConverter {
 
   public static Schema.NamedType convert(Column column) {
     if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
+
+      if (column.getTypeDesc().getNestedSchema() == null) {
+        throw new TajoRuntimeException(new NotImplementedException("record type projection"));
+      }
 
       return new NamedStructType(toQualifiedIdentifier(column.getQualifiedName()),
           TypeConverter.convert(column.getTypeDesc()));

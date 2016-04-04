@@ -21,8 +21,22 @@ package org.apache.tajo.type;
 import org.apache.tajo.common.TajoDataTypes;
 
 public class Protobuf extends Type {
+  private String msgName;
+
+  public Protobuf(String msgName) {
+    this.msgName = msgName;
+  }
+
+  public String getMessageName() {
+    return this.msgName;
+  }
+
   @Override
   public TajoDataTypes.Type baseType() {
     return TajoDataTypes.Type.PROTOBUF;
+  }
+
+  public boolean hasParam() {
+    return true;
   }
 }

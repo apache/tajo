@@ -24,10 +24,9 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
@@ -656,21 +655,29 @@ public class PlannerUtil {
   }
 
   public static Schema targetToSchema(List<Target> targets) {
-    Schema schema = SchemaFactory.newV1();
+    SchemaBuilder schema = SchemaFactory.builder();
+    Set<String> nameset = new HashSet<>();
     for (Target t : targets) {
       DataType type = t.getEvalTree().getValueType();
+
+      // hack to avoid projecting record type.
+      if (type.getType() == TajoDataTypes.Type.RECORD) {
+        throw new TajoRuntimeException(new NotImplementedException("record projection"));
+      }
+
       String name;
       if (t.hasAlias()) {
         name = t.getAlias();
       } else {
         name = t.getEvalTree().getName();
       }
-      if (!schema.containsByQualifiedName(name)) {
-        schema.addColumn(name, type);
+      if (!nameset.contains(name)) {
+        schema.add(name, type);
+        nameset.add(name);
       }
     }
 
-    return schema;
+    return schema.build();
   }
 
   /**
