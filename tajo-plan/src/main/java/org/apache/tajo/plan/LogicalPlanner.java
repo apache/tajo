@@ -1242,7 +1242,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         joinSchema.add(c);
       }
     }
-    return joinSchema.buildV1();
+    return joinSchema.build();
   }
 
   private static EvalNode getNaturalJoinCondition(JoinNode joinNode) {

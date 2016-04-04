@@ -51,7 +51,7 @@ public class TestSchema {
     builder1.add(nestedField);
 
     builder1.add(new Column("s5", Type.FLOAT8));
-    nestedSchema1 = builder1.buildV1();
+    nestedSchema1 = builder1.build();
     // two level nested schema
     //
     // s1
@@ -82,7 +82,7 @@ public class TestSchema {
 
     Column nestedField2 = new Column("s8", new TypeDesc(nestedRecordSchema2));
     builder2.add(nestedField2);
-    nestedSchema2 = builder2.buildV1();
+    nestedSchema2 = builder2.build();
 
     // three level nested schema
     //
@@ -105,16 +105,16 @@ public class TestSchema {
     s5.add("s6", Type.INT8);
 
     SchemaBuilder s7 = SchemaFactory.builder();
-    s7.add("s5", new TypeDesc(s5.buildV1()));
+    s7.add("s5", new TypeDesc(s5.build()));
 
     SchemaBuilder s3 = SchemaFactory.builder();
     s3.add("s4", Type.INT8);
-    s3.add("s7", new TypeDesc(s7.buildV1()));
+    s3.add("s7", new TypeDesc(s7.build()));
     s3.add("s8", Type.INT8);
 
-    builder3.add(new Column("s3", new TypeDesc(s3.buildV1())));
+    builder3.add(new Column("s3", new TypeDesc(s3.build())));
     builder3.add(new Column("s9", Type.INT8));
-    nestedSchema3 = builder3.buildV1();
+    nestedSchema3 = builder3.build();
   }
 
 	@Before
@@ -282,13 +282,13 @@ public class TestSchema {
         .add("f1", Type.INT8)
         .add("nf1", new TypeDesc(nf2DotNf1))
         .add("nf2", new TypeDesc(nf2DotNf2))
-        .add("f2", Type.INT8).buildV1();
+        .add("f2", Type.INT8).build();
 
     Schema root = SchemaFactory.builder()
         .add("f1", Type.INT8)
         .add("nf1", Type.INT8)
         .add("nf2", new TypeDesc(nf2))
-        .add("f2", Type.INT8).buildV1();
+        .add("f2", Type.INT8).build();
 
     verifySchema(root);
   }

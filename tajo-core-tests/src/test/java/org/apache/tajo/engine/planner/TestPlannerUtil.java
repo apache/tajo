@@ -188,9 +188,9 @@ public class TestPlannerUtil {
 
   @Test
   public final void testGetJoinKeyPairs() {
-    Schema outerSchema = SchemaFactory.newV1();
-    outerSchema.addColumn("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4));
-    outerSchema.addColumn("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4));
+    Schema outerSchema = SchemaFactory.builder()
+    .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
+    .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4)).build();
     Schema innerSchema = SchemaFactory.newV1();
     innerSchema.addColumn("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4));
     innerSchema.addColumn("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));

@@ -337,7 +337,7 @@ public class TestCatalogAgainstCaseSensitivity {
     Schema schema = SchemaFactory.builder()
         .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4))
-        .add("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT)).buildV1();
+        .add("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT)).build();
 
     Schema tableSchema = SchemaFactory.builder()
     .add("RecoRd1", new TypeDesc(schema))
@@ -347,7 +347,7 @@ public class TestCatalogAgainstCaseSensitivity {
     .add("RecoRd3", new TypeDesc(
         SchemaFactory.builder()
             .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
-            .add("RecoRd1", new TypeDesc(schema)).buildV1())).buildV1();
+            .add("RecoRd1", new TypeDesc(schema)).build())).build();
 
     TableDesc tableDesc = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),

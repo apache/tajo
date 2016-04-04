@@ -100,7 +100,7 @@ public class SchemaBuilder {
   }
 
   @Deprecated
-  public SchemaLegacy buildV1() {
+  public SchemaLegacy build() {
     ImmutableList.Builder<Column> columns = new ImmutableList.Builder();
     for (NamedType namedType : fields.build()) {
       columns.add(new Column(namedType.name().raw(DefaultPolicy()), FieldConverter.convert(namedType)));

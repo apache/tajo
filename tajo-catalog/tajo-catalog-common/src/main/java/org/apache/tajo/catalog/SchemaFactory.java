@@ -35,7 +35,7 @@ public class SchemaFactory {
   }
 
   public static Schema newV1(Schema schema) {
-    return builder().addAll(schema.getRootColumns()).buildV1();
+    return builder().addAll(schema.getRootColumns()).build();
   }
 
   public static Schema newV1(Column [] columns) {
@@ -43,10 +43,10 @@ public class SchemaFactory {
     for (Column c :columns) {
       builder.add(c);
     }
-    return builder.buildV1();
+    return builder.build();
   }
 
   public static Schema newV1(Iterable<Column> columns) {
-    return builder().addAll(columns).buildV1();
+    return builder().addAll(columns).build();
   }
 }
