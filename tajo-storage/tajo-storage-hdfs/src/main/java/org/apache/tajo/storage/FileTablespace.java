@@ -576,7 +576,7 @@ public class FileTablespace extends Tablespace {
    * @return is this file isSplittable?
    * @throws IOException
    */
-  protected boolean isPartitionSplittable(TableMeta meta, Schema schema, Path path, String partitionKeys,
+  protected boolean isSplittablePartitionFragment(TableMeta meta, Schema schema, Path path, String partitionKeys,
                                           FileStatus status) throws IOException {
     Fragment fragment = new PartitionFileFragment(path.getName(), path, 0, status.getLen(), partitionKeys);
     Scanner scanner = getScanner(meta, schema, fragment, null);
@@ -596,7 +596,7 @@ public class FileTablespace extends Tablespace {
    * @param partitionKeys partition keys
    * @return PartitionFileFragment
    */
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, long start, long length,
+  protected PartitionFileFragment getSplittablePartitionFragment(String fragmentId, Path file, long start, long length,
                                                      String[] hosts, String partitionKeys) {
     return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
   }
@@ -611,7 +611,7 @@ public class FileTablespace extends Tablespace {
    * @return PartitionFileFragment
    * @throws IOException
    */
-  protected PartitionFileFragment makePartitionSplit(String fragmentId, Path file, BlockLocation blockLocation
+  protected PartitionFileFragment getSplittablePartitionFragment(String fragmentId, Path file, BlockLocation blockLocation
     , String partitionKeys) throws IOException {
     return new PartitionFileFragment(fragmentId, file, blockLocation, partitionKeys);
   }
@@ -628,7 +628,7 @@ public class FileTablespace extends Tablespace {
    * @return PartitionFileFragment
    * @throws IOException
    */
-  protected Fragment makeNonPartitionSplit(String fragmentId, Path file, long start, long length,
+  protected Fragment getNonSplittablePartitionFragment(String fragmentId, Path file, long start, long length,
                                            BlockLocation[] blkLocations, String partitionKeys) throws IOException {
     String[] hosts = getHosts(blkLocations);
     return new PartitionFileFragment(fragmentId, file, start, length, hosts, partitionKeys);
@@ -640,8 +640,6 @@ public class FileTablespace extends Tablespace {
    * @param tableName table name
    * @param meta all meta information for scanning a fragmented table
    * @param schema table schema
-   * @param partitionKeys the list of partition keys
-   * @param inputs the list of paths
    * @return the list of PartitionFileFragment
    * @throws IOException
    */
@@ -664,58 +662,7 @@ public class FileTablespace extends Tablespace {
       }
 
       for (FileStatus file : files) {
-        Path path = file.getPath();
-        long length = file.getLen();
-        if (length > 0) {
-          // Get locations of blocks of file
-          BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
-          boolean splittable = isPartitionSplittable(meta, schema, path, partitionKeys[i], file);
-          if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
-
-            if (splittable) {
-              for (BlockLocation blockLocation : blkLocations) {
-                volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitionKeys[i]));
-              }
-              blockLocations.addAll(Arrays.asList(blkLocations));
-
-            } else { // Non splittable
-              long blockSize = blkLocations[0].getLength();
-              if (blockSize >= length) {
-                blockLocations.addAll(Arrays.asList(blkLocations));
-                for (BlockLocation blockLocation : blkLocations) {
-                  volumeSplits.add(makePartitionSplit(tableName, path, blockLocation, partitionKeys[i]));
-                }
-              } else {
-                splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitionKeys[i]));
-              }
-            }
-
-          } else {
-            if (splittable) {
-
-              long minSize = Math.max(getMinSplitSize(), 1);
-
-              long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
-              long splitSize = Math.max(minSize, blockSize);
-              long bytesRemaining = length;
-
-              // for s3
-              while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
-                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-                splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, splitSize,
-                  blkLocations[blkIndex].getHosts(), partitionKeys[i]));
-                bytesRemaining -= splitSize;
-              }
-              if (bytesRemaining > 0) {
-                int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
-                splits.add(makePartitionSplit(tableName, path, length - bytesRemaining, bytesRemaining,
-                  blkLocations[blkIndex].getHosts(), partitionKeys[i]));
-              }
-            } else { // Non splittable
-              splits.add(makeNonPartitionSplit(tableName, path, 0, length, blkLocations, partitionKeys[i]));
-            }
-          }
-        }
+        computePartitionSplits(file, meta, schema, tableName, partitionKeys[i], splits, volumeSplits, blockLocations);
       }
       if (LOG.isDebugEnabled()){
         LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
@@ -732,6 +679,64 @@ public class FileTablespace extends Tablespace {
     long elapsedMills = finishTime - startTime;
     LOG.info(String.format("Split for partition table :%d ms elapsed.", elapsedMills));
     return splits;
+  }
+
+  protected void computePartitionSplits(FileStatus file, TableMeta meta, Schema schema, String tableName,
+    String partitionKey, List<Fragment> splits, List<Fragment> volumeSplits, List<BlockLocation> blockLocations)
+    throws IOException {
+
+    Path path = file.getPath();
+    long length = file.getLen();
+    if (length > 0) {
+      // Get locations of blocks of file
+      BlockLocation[] blkLocations = fs.getFileBlockLocations(file, 0, length);
+      boolean splittable = isSplittablePartitionFragment(meta, schema, path, partitionKey, file);
+      if (blocksMetadataEnabled && fs instanceof DistributedFileSystem) {
+
+        if (splittable) {
+          for (BlockLocation blockLocation : blkLocations) {
+            volumeSplits.add(getSplittablePartitionFragment(tableName, path, blockLocation, partitionKey));
+          }
+          blockLocations.addAll(Arrays.asList(blkLocations));
+
+        } else { // Non splittable
+          long blockSize = blkLocations[0].getLength();
+          if (blockSize >= length) {
+            blockLocations.addAll(Arrays.asList(blkLocations));
+            for (BlockLocation blockLocation : blkLocations) {
+              volumeSplits.add(getSplittablePartitionFragment(tableName, path, blockLocation, partitionKey));
+            }
+          } else {
+            splits.add(getNonSplittablePartitionFragment(tableName, path, 0, length, blkLocations, partitionKey));
+          }
+        }
+
+      } else {
+        if (splittable) {
+
+          long minSize = Math.max(getMinSplitSize(), 1);
+
+          long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
+          long splitSize = Math.max(minSize, blockSize);
+          long bytesRemaining = length;
+
+          // for s3
+          while (((double) bytesRemaining) / splitSize > SPLIT_SLOP) {
+            int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+            splits.add(getSplittablePartitionFragment(tableName, path, length - bytesRemaining, splitSize,
+              blkLocations[blkIndex].getHosts(), partitionKey));
+            bytesRemaining -= splitSize;
+          }
+          if (bytesRemaining > 0) {
+            int blkIndex = getBlockIndex(blkLocations, length - bytesRemaining);
+            splits.add(getSplittablePartitionFragment(tableName, path, length - bytesRemaining, bytesRemaining,
+              blkLocations[blkIndex].getHosts(), partitionKey));
+          }
+        } else { // Non splittable
+          splits.add(getNonSplittablePartitionFragment(tableName, path, 0, length, blkLocations, partitionKey));
+        }
+      }
+    }
   }
 
   private void setVolumeMeta(List<Fragment> splits, final List<BlockLocation> blockLocations)
