@@ -182,7 +182,7 @@ public class S3TableSpace extends FileTablespace {
 
     // List buckets to generate FileStatuses and partition keys
     if (pruningHandle.hasConjunctiveForms()) {
-      listS3ObjectsByMarker(commonPrefix, pruningHandle, files, partitionKeys);
+      listS3ObjectsByMarker(new Path(commonPrefix), files, partitionKeys, pruningHandle);
     } else {
       listAllS3Objects(new Path(commonPrefix), files, partitionKeys, pruningHandle);
     }
@@ -213,15 +213,17 @@ public class S3TableSpace extends FileTablespace {
     return splits;
   }
 
-  private Path getPathFromBucket(S3ObjectSummary summary) {
-    String bucketName = summary.getBucketName();
-    String pathString = uri.getScheme() + "://" + bucketName + "/" + summary.getKey();
-    Path path = new Path(pathString);
-    return path;
-  }
-  
-  private void listS3ObjectsByMarker(String commonPrefix, PartitionPruningHandle pruningHandle
-    , List<FileStatus> files, List<String> partitions) throws IOException {
+  /**
+   * Generate the list of FileStatus and partition key using marker parameter in prefix listing API
+   *
+   * @param path path to be listed
+   * @param files the list of FileStatus to be generated
+   * @param partitionKeys the list of partition key to be generated
+   * @param pruningHandle informs of partition pruning results
+   * @throws IOException
+   */
+  private void listS3ObjectsByMarker(Path path, List<FileStatus> files, List<String> partitionKeys,
+    PartitionPruningHandle pruningHandle) throws IOException {
     long startTime = System.currentTimeMillis();
 
     ObjectListing objectListing;
@@ -229,7 +231,7 @@ public class S3TableSpace extends FileTablespace {
     int callCount = 0;
     boolean finished = false, enabled = false;
 
-    String prefix = keyFromPath(new Path(commonPrefix));
+    String prefix = keyFromPath(path);
     if (!prefix.isEmpty()) {
       prefix += "/";
     }
@@ -238,7 +240,6 @@ public class S3TableSpace extends FileTablespace {
       .withBucketName(uri.getHost())
       .withPrefix(prefix);
 
-
     Map<Integer, String> partitionMap = Maps.newHashMap();
     for (int i = 0; i < pruningHandle.getPartitionKeys().length; i++) {
       partitionMap.put(i, pruningHandle.getPartitionKeys()[i]);
@@ -246,6 +247,8 @@ public class S3TableSpace extends FileTablespace {
 
     do {
       enabled = true;
+
+      // Get first chunk of 1000 objects
       objectListing = s3.listObjects(request);
 
       int objectsCount = objectListing.getObjectSummaries().size();
@@ -269,17 +272,16 @@ public class S3TableSpace extends FileTablespace {
       if (enabled) {
         for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
           if (summary.getSize() > 0 && !summary.getKey().endsWith("/")) {
-            Path path = getPathFromBucket(summary);
+            Path bucketPath = getPathFromBucket(summary);
 
-            if (!path.getName().startsWith("_") && !path.getName().startsWith(".")) {
-              Path partitionPath = path.getParent();
+            if (!bucketPath.getName().startsWith("_") && !bucketPath.getName().startsWith(".")) {
+              Path partitionPath = bucketPath.getParent();
 
               // If Tajo can matched partition from partition map, add it to final list.
               if (pruningHandle.getPartitionMap().containsKey(partitionPath)) {
+                files.add(getFileStatusFromBucket(summary, bucketPath));
                 String partitionKey = pruningHandle.getPartitionMap().get(partitionPath);
-                files.add(new FileStatus(summary.getSize(), false, 1, BLOCK_SIZE.toBytes(),
-                  summary.getLastModified().getTime(), path));
-                partitions.add(partitionKey);
+                partitionKeys.add(partitionKey);
                 previousPartition = partitionKey;
               } else {
                 // If Tajo can't matched partition, consider to move next marker.
@@ -325,33 +327,31 @@ public class S3TableSpace extends FileTablespace {
   }
 
   /**
-   * Generate the list of FileStatus and partition keys using AWS S3 SDK.
+   * Generate the list of FileStatus and partition key
    *
+   * @param path path to be listed
+   * @param files the list of FileStatus to be generated
+   * @param partitionKeys the list of partition key to be generated
+   * @param pruningHandle informs of partition pruning results
+   * @throws IOException
    */
-  private void listAllS3Objects(Path prefixPath, List<FileStatus> files,
-                                                List<String> partitionKeys, PartitionPruningHandle pruningHandle) throws IOException {
+  private void listAllS3Objects(Path path, List<FileStatus> files, List<String> partitionKeys, PartitionPruningHandle
+    pruningHandle) throws IOException {
     long startTime = System.currentTimeMillis();
 
-    Stream<S3ObjectSummary> objectStream = getS3ObjectSummaryStream(prefixPath);
+    Stream<S3ObjectSummary> objectStream = getS3ObjectSummaryStream(path);
 
     objectStream
       .filter(summary -> summary.getSize() > 0 && !summary.getKey().endsWith("/"))
       .forEach(summary -> {
-          String bucketName = summary.getBucketName();
-          String pathString = uri.getScheme() + "://" + bucketName + "/" + summary.getKey();
-          Path path = new Path(pathString);
-          String fileName = path.getName();
+          Path bucketPath = getPathFromBucket(summary);
+          String fileName = bucketPath.getName();
 
           if (!fileName.startsWith("_") && !fileName.startsWith(".")) {
-            int lastIndex = pathString.lastIndexOf("/");
-            String partitionPathString = pathString.substring(0, lastIndex);
-            Path partitionPath = new Path(partitionPathString);
-
+            Path partitionPath = bucketPath.getParent();
             if (pruningHandle.getPartitionMap().containsKey(partitionPath)) {
-              String partitionKey = pruningHandle.getPartitionMap().get(partitionPath);
-              files.add(new FileStatus(summary.getSize(), false, 1, BLOCK_SIZE.toBytes(),
-                summary.getLastModified().getTime(), path));
-              partitionKeys.add(partitionKey);
+              files.add(getFileStatusFromBucket(summary, bucketPath));
+              partitionKeys.add(pruningHandle.getPartitionMap().get(partitionPath));
             }
           }
         }
@@ -360,6 +360,18 @@ public class S3TableSpace extends FileTablespace {
     long finishTime = System.currentTimeMillis();
     long elapsedMills = finishTime - startTime;
     LOG.info(String.format("List S3Objects: %d ms elapsed", elapsedMills));
+  }
+
+  private FileStatus getFileStatusFromBucket(S3ObjectSummary summary, Path path) {
+    return new FileStatus(summary.getSize(), false, 1, BLOCK_SIZE.toBytes(),
+      summary.getLastModified().getTime(), path);
+  }
+
+  private Path getPathFromBucket(S3ObjectSummary summary) {
+    String bucketName = summary.getBucketName();
+    String pathString = uri.getScheme() + "://" + bucketName + "/" + summary.getKey();
+    Path path = new Path(pathString);
+    return path;
   }
 
   private Stream<S3ObjectSummary> getS3ObjectSummaryStream(Path path) throws IOException {
