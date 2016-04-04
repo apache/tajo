@@ -464,13 +464,6 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
 	}
 
   @Override
-	public synchronized void addColumns(Schema schema) {
-    for(Column column : schema.getRootColumns()) {
-      addColumn(column);
-    }
-  }
-
-  @Override
   public int hashCode() {
     return Objects.hashCode(fields, fieldsByQualifiedName, fieldsByName);
   }

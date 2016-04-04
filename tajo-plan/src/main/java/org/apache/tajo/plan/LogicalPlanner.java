@@ -1228,21 +1228,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static Schema getNaturalJoinSchema(LogicalNode left, LogicalNode right) {
-    Schema joinSchema = SchemaFactory.newV1();
-    Schema commons = SchemaUtil.getNaturalJoinColumns(left.getOutSchema(), right.getOutSchema());
-    joinSchema.addColumns(commons);
-    for (Column c : left.getOutSchema().getRootColumns()) {
-      if (!joinSchema.contains(c.getQualifiedName())) {
-        joinSchema.addColumn(c);
-      }
-    }
+    SchemaBuilder joinSchema = SchemaFactory.builder();
 
+    Set<Column> columnSet = Sets.newHashSet(left.getOutSchema().getRootColumns());
+    columnSet.addAll(right.getOutSchema().getRootColumns());
+    Schema commonColumns = SchemaUtil.getNaturalJoinColumns(left.getOutSchema(), right.getOutSchema());
+
+    for (Column c : left.getOutSchema().getRootColumns()) {
+      joinSchema.add(c);
+    }
     for (Column c : right.getOutSchema().getRootColumns()) {
-      if (!joinSchema.contains(c.getQualifiedName())) {
-        joinSchema.addColumn(c);
+      if (!commonColumns.contains(c)) {
+        joinSchema.add(c);
       }
     }
-    return joinSchema;
+    return joinSchema.buildV1();
   }
 
   private static EvalNode getNaturalJoinCondition(JoinNode joinNode) {
