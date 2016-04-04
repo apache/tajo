@@ -176,7 +176,7 @@ public class TimestampDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIME) {
+    if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       return timestamp == datum.asInt8() ? BooleanDatum.TRUE : BooleanDatum.FALSE;
     } else if (datum.isNull()) {
       return datum;
