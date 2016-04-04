@@ -72,7 +72,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindValueInSingleCSV", "table.csv");
     fs.mkdirs(tablePath.getParent());
@@ -163,7 +163,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindNextKeyValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindNextKeyValueInSingleCSV",
         "table1.csv");

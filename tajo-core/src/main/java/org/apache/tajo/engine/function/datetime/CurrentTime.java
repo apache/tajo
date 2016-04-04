@@ -18,16 +18,22 @@
 
 package org.apache.tajo.engine.function.datetime;
 
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimeDatum;
-import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.plan.expr.FunctionEval;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
+
+import java.util.TimeZone;
 
 @Description(
     functionName = "current_time",
@@ -37,10 +43,18 @@ import org.apache.tajo.util.datetime.TimeMeta;
     paramTypes = {@ParamTypes(paramTypes = {})}
 )
 public class CurrentTime extends GeneralFunction {
+  @Expose
+  private TimeZone timezone;
   TimeDatum datum;
 
   public CurrentTime() {
     super(NoArgs);
+  }
+
+  @Override
+  public void init(OverridableConf context, FunctionEval.ParamType [] types) {
+    String timezoneId = context.get(SessionVars.TIMEZONE);
+    timezone = TimeZone.getTimeZone(timezoneId);
   }
 
   @Override
@@ -49,6 +63,7 @@ public class CurrentTime extends GeneralFunction {
       long julianTimestamp = DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis());
       TimeMeta tm = new TimeMeta();
       DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
+      DateTimeUtil.toUserTimezone(tm, timezone);
       datum = DatumFactory.createTime(DateTimeUtil.toTime(tm));
     }
     return datum;

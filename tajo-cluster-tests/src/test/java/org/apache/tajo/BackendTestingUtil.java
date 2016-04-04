@@ -39,7 +39,7 @@ public class BackendTestingUtil {
     mockupSchema = SchemaFactory.newV1();
     mockupSchema.addColumn("deptname", Type.TEXT);
     mockupSchema.addColumn("score", Type.INT4);
-    mockupMeta = CatalogUtil.newTableMeta("TEXT");
+    mockupMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, new TajoConf());
   }
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)

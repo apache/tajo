@@ -190,11 +190,6 @@ public class TimestampDatum extends Datum {
     if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       TimestampDatum another = (TimestampDatum) datum;
       return Longs.compare(timestamp, another.timestamp);
-    } else if (datum.type() == TajoDataTypes.Type.DATE) {
-      TimeMeta myMeta, otherMeta;
-      myMeta = asTimeMeta();
-      otherMeta = datum.asTimeMeta();
-      return myMeta.compareTo(otherMeta);
     } else if (datum.isNull()) {
       return -1;
     } else {
@@ -214,28 +209,39 @@ public class TimestampDatum extends Datum {
 
   @Override
   public Datum plus(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.INTERVAL) {
-      IntervalDatum interval = (IntervalDatum)datum;
+    switch (datum.type()) {
+    case INTERVAL:
+      IntervalDatum interval = (IntervalDatum) datum;
       TimeMeta tm = asTimeMeta();
       tm.plusInterval(interval.months, interval.milliseconds);
       return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-    } else {
+    case TIME:
+      TimeMeta tm1 = asTimeMeta();
+      TimeMeta tm2 = datum.asTimeMeta();
+      tm1.plusTime(DateTimeUtil.toTime(tm2));
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
+    default:
       throw new InvalidOperationException(datum.type());
     }
   }
 
   @Override
   public Datum minus(Datum datum) {
-    switch(datum.type()) {
-      case INTERVAL:
-        IntervalDatum interval = (IntervalDatum)datum;
-        TimeMeta tm = asTimeMeta();
-        tm.plusInterval(-interval.months, -interval.milliseconds);
-        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-      case TIMESTAMP:
-        return new IntervalDatum((timestamp - ((TimestampDatum)datum).timestamp) / 1000);
-      default:
-        throw new InvalidOperationException(datum.type());
+    switch (datum.type()) {
+    case INTERVAL:
+      IntervalDatum interval = (IntervalDatum) datum;
+      TimeMeta tm = asTimeMeta();
+      tm.plusInterval(-interval.months, -interval.milliseconds);
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+    case TIMESTAMP:
+      return new IntervalDatum((timestamp - ((TimestampDatum) datum).timestamp) / 1000);
+    case TIME:
+      TimeMeta tm1 = asTimeMeta();
+      TimeMeta tm2 = datum.asTimeMeta();
+      tm1.plusTime(0 - DateTimeUtil.toTime(tm2));
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
+    default:
+      throw new InvalidOperationException(datum.type());
     }
   }
 

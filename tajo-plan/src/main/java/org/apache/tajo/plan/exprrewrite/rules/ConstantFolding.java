@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.exprrewrite.rules;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.annotator.Prioritized;
@@ -27,10 +28,7 @@ import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Stack;
+import java.util.*;
 
 @Prioritized(priority = 10)
 public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanContext>
@@ -71,7 +69,12 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
 
     unaryEval.setChild(child);
     if (child.getType() == EvalType.CONST) {
-      unaryEval.bind(null, null);
+
+      // session's time zone
+      String timezoneId = context.getQueryContext().get(SessionVars.TIMEZONE);
+      EvalContext evalContext = new EvalContext();
+      evalContext.setTimeZone(TimeZone.getTimeZone(timezoneId));
+      unaryEval.bind(evalContext, null);
       return new ConstEval(unaryEval.eval(null));
     }
 

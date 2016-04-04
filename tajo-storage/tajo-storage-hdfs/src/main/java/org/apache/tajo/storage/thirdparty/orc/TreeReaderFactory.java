@@ -37,7 +37,6 @@ import org.apache.tajo.util.datetime.DateTimeUtil;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -753,7 +752,6 @@ public class TreeReaderFactory {
     private final TimeZone readerTimeZone;
     private TimeZone writerTimeZone;
     private boolean hasSameTZRules;
-    private final TimeZone timeZone;
 
     TimestampTreeReader(TimeZone timeZone, int columnId, boolean skipCorrupt) throws IOException {
       this(timeZone, columnId, null, null, null, null, skipCorrupt);
@@ -765,7 +763,7 @@ public class TreeReaderFactory {
       super(columnId, presentStream);
       this.skipCorrupt = skipCorrupt;
       this.baseTimestampMap = new HashMap<>();
-      this.readerTimeZone = TimeZone.getDefault();
+      this.readerTimeZone = timeZone;
       this.writerTimeZone = readerTimeZone;
       this.hasSameTZRules = writerTimeZone.hasSameRules(readerTimeZone);
       this.base_timestamp = getBaseTimestamp(readerTimeZone.getID());
@@ -780,7 +778,6 @@ public class TreeReaderFactory {
           this.nanos = createIntegerReader(encoding.getKind(), nanosStream, false, skipCorrupt);
         }
       }
-      this.timeZone = timeZone;
     }
 
     @Override

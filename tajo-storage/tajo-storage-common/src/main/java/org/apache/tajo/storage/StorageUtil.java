@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.conf.TajoConf;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.DataInput;
@@ -31,6 +32,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 public class StorageUtil extends StorageConstants {
+
+  public static final TajoConf TAJO_CONF = new TajoConf();
 
   public static int getColByteSize(Column col) {
     switch (col.getDataType().getType()) {

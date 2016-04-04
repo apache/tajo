@@ -112,7 +112,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public byte[] asTextBytes() {
-    return asChars().getBytes();
+    return asChars().getBytes(TextDatum.DEFAULT_CHARSET);
   }
 
   public TimeMeta asTimeMeta() {

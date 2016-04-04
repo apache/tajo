@@ -23,6 +23,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
@@ -31,7 +32,6 @@ import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.TimeZone;
 
 // Compatibility with Apache Hive
 @Deprecated
@@ -39,6 +39,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
   public static final byte[] trueBytes = "true".getBytes();
   public static final byte[] falseBytes = "false".getBytes();
   private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
+  private static TajoConf TAJO_CONF = new TajoConf();
 
   public TextSerializerDeserializer() {}
 
@@ -101,12 +102,12 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         out.write(bytes);
         break;
       case TIME:
-        bytes = TimeDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
+        bytes = tuple.getTextBytes(index);
         length = bytes.length;
         out.write(bytes);
         break;
       case TIMESTAMP:
-        bytes = TimestampDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
+        bytes = TimestampDatum.asChars(tuple.getTimeDate(index), TAJO_CONF.getSystemTimezone(), true).getBytes();
         length = bytes.length;
         out.write(bytes);
         break;
@@ -187,7 +188,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         break;
       case TIMESTAMP:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createTimestamp(new String(bytes, offset, length));
+            : DatumFactory.createTimestamp(new String(bytes, offset, length), TAJO_CONF.getSystemTimezone());
         break;
       case INTERVAL:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()

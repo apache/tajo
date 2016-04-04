@@ -216,12 +216,6 @@ public class DateDatum extends Datum {
     if (datum.type() == TajoDataTypes.Type.DATE) {
       DateDatum another = (DateDatum) datum;
       return Ints.compare(jdate, another.jdate);
-    } else if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
-      TimestampDatum another = (TimestampDatum) datum;
-      TimeMeta myMeta, otherMeta;
-      myMeta = asTimeMeta();
-      otherMeta = another.asTimeMeta();
-      return myMeta.compareTo(otherMeta);
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {

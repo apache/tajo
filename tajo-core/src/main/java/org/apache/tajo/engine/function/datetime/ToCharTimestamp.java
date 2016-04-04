@@ -21,7 +21,6 @@ package org.apache.tajo.engine.function.datetime;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -61,7 +60,7 @@ public class ToCharTimestamp extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] paramTypes) {
-    String timezoneId = context.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+    String timezoneId = context.get(SessionVars.TIMEZONE);
     timezone = TimeZone.getTimeZone(timezoneId);
   }
 

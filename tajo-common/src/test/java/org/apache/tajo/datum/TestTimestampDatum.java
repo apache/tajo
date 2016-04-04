@@ -195,10 +195,6 @@ public class TestTimestampDatum {
     
     assertThat(theday.compareTo(thedaybefore) > 0, is(true));
     assertThat(thedaybefore.compareTo(theday) > 0, is(false));
-    
-    DateDatum date = DatumFactory.createDate("2014-11-12");
-    
-    assertThat(theday.compareTo(date) > 0, is(true));
   }
 
   @Test

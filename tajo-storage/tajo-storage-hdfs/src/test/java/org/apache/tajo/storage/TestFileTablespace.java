@@ -87,7 +87,7 @@ public class TestFileTablespace {
 		schema.addColumn("age",Type.INT4);
 		schema.addColumn("name",Type.TEXT);
 
-		TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+		TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 		
 		VTuple[] tuples = new VTuple[4];
 		for(int i=0; i < tuples.length; i++) {
@@ -149,7 +149,7 @@ public class TestFileTablespace {
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age",Type.INT4);
       schema.addColumn("name",Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
@@ -203,7 +203,7 @@ public class TestFileTablespace {
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age",Type.INT4);
       schema.addColumn("name",Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
@@ -246,7 +246,7 @@ public class TestFileTablespace {
       schema.addColumn("id", Type.INT4);
       schema.addColumn("age", Type.INT4);
       schema.addColumn("name", Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       List<Fragment> splits = Lists.newArrayList();
       splits.addAll(sm.getSplits("data", meta, schema, tablePath));

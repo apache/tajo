@@ -142,9 +142,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
         new String[]{"ab--ab"});
 
     // null test from a table
-    testEval(schema, "table1", ",(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
+    testEval(schema, "table1", "\\NULL,(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{NullDatum.get().toString()});
-    testEval(schema, "table1", "------,(^--|--$),", "select regexp_replace(col1, col2, col3) as str from table1",
+    testEval(schema, "table1", "------,(^--|--$),\\NULL", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{NullDatum.get().toString()});
   }
 
@@ -171,7 +171,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col3", TEXT);
 
     // for null tests
-    testEval(schema, "table1", ",1,ghi", "select left(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,1,ghi", "select left(col1,1) is null from table1", new String[]{"t"});
     testEval(schema, "table1", "abc,,ghi", "select left(col1,col2) is null from table1", new String[]{"t"});
 
     testEval(schema, "table1", "abc,1,ghi", "select left(col1,1) || left(col3,3) from table1", new String[]{"aghi"});
@@ -200,8 +200,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     schema.addColumn("col3", TEXT);
 
     // for null tests
-    testEval(schema, "table1", ",1,ghi", "select right(col1,1) is null from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc,,ghi", "select right(col1,col2) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,1,ghi", "select right(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "abc,\\NULL,ghi", "select right(col1,col2) is null from table1", new String[]{"t"});
 
     testEval(schema, "table1", "abc,1,ghi", "select right(col1,1) || right(col3,3) from table1", new String[]{"cghi"});
   }
@@ -368,7 +368,7 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "t1", ",.,1", "select split_part(col1, col2, col3::int) is null from t1", new String[]{"t"});
     testEval(schema, "t1", "1386577650.123,,1", "select split_part(col1, col2, col3::int) from t1",
         new String[]{"1386577650.123"});
-    testEval(schema, "t1", "1386577650.123,.,", "select split_part(col1, col2, col3::int) is null from t1",
+    testEval(schema, "t1", "1386577650.123,.,\\NULL", "select split_part(col1, col2, col3::int) is null from t1",
         new String[]{"t"});
   }
 
@@ -442,9 +442,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 4) from table1", new String[]{"0"});
     testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'xy') from table1", new String[]{"0"});
     // null string
-    testEval(schema, "table1", ",abcdef,3.14", "select locate(col1, 'cd') is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,abcdef,3.14", "select locate(col1, 'cd') is null from table1", new String[]{"t"});
     // nul substring
-    testEval(schema, "table1", ",abcdef,3.14", "select locate('cd', col1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,abcdef,3.14", "select locate('cd', col1) is null from table1", new String[]{"t"});
   }
 
   @Test
@@ -591,9 +591,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TEXT);
     schema.addColumn("col2", TEXT);
-    testEval(schema, "table1", "|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from table1",
+    testEval(schema, "table1", "\\NULL|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from table1",
         new String[]{"t"}, '|', true);
-    testEval(schema, "table1", "cr|", "select find_in_set(col1, col2) is null from table1",
+    testEval(schema, "table1", "cr|\\NULL", "select find_in_set(col1, col2) is null from table1",
         new String[]{"t"}, '|', true);
   }
 

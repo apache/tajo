@@ -22,6 +22,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaFactory;
@@ -30,8 +31,8 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.storage.StorageConstants;
 
 import java.io.IOException;
 import java.util.Map;
@@ -203,8 +204,7 @@ public class TPCH extends BenchmarkSet {
   }
 
   public void loadTable(String tableName) throws TajoException {
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
-    meta.putProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, new TajoConf());
 
     PartitionMethodDesc partitionMethodDesc = null;
     if (tableName.equals(CUSTOMER_PARTS)) {

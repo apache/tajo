@@ -20,14 +20,15 @@ package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.*;
-import org.apache.tajo.plan.expr.FunctionEval;
-import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.plan.expr.FunctionEval;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -54,7 +55,7 @@ public class ToTimestampText extends GeneralFunction {
   }
 
   public void init(OverridableConf queryContext, FunctionEval.ParamType [] paramTypes) {
-    String timezoneId = queryContext.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+    String timezoneId = queryContext.get(SessionVars.TIMEZONE);
     timezone = TimeZone.getTimeZone(timezoneId);
   }
 

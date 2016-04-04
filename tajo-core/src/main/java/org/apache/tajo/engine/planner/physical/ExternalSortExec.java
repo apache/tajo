@@ -131,7 +131,7 @@ public class ExternalSortExec extends SortExec {
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
     this.localFS = new RawLocalFileSystem();
-    this.intermediateMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    this.intermediateMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, context.getConf());
     this.inputStats = new TableStats();
   }
 

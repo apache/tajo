@@ -22,13 +22,12 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.junit.Test;
 
 import java.util.TimeZone;
@@ -868,8 +867,6 @@ public class TestSQLExpression extends ExprTestBase {
   @Test
   public void testCastFromTable() throws TajoException {
     QueryContext queryContext = new QueryContext(getConf());
-    queryContext.put(SessionVars.TIMEZONE, "GMT-6");
-    TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
     Schema schema = SchemaFactory.newV1();
     schema.addColumn("col1", TEXT);
@@ -883,16 +880,12 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(queryContext, schema, "table1", "123,234", "select col1::float, col2::float from table1",
         new String[]{"123.0", "234.0"});
 
-    TimestampDatum timestamp = DatumFactory.createTimestamp("1980-04-01 01:50:01" +
-        DateTimeUtil.getTimeZoneDisplayTime(tz));
-
     testEval(queryContext, schema, "table1", "1980-04-01 01:50:01,234",
         "select col1::timestamp as t1, col2::float from table1 where t1 = '1980-04-01 01:50:01'::timestamp",
-        new String[]{TimestampDatum.asChars(timestamp.asTimeMeta(), tz, false), "234.0"}
+        new String[]{"1980-04-01 01:50:01", "234.0"}
     );
 
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{
-        TimestampDatum.asChars(timestamp.asTimeMeta(), tz, false)});
+    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{"1980-04-01 01:50:01"});
     testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String[]{"1980-04-01 01:50:01"});
 
     testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String[]{"100000"});

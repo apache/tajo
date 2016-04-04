@@ -20,13 +20,17 @@ package org.apache.tajo.cli.tools;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.junit.Test;
+
+import java.util.TimeZone;
 
 import static org.junit.Assert.*;
 
@@ -35,14 +39,16 @@ public class TestDDLBuilder {
   private static final Schema schema1;
   private static final TableMeta meta1;
   private static final PartitionMethodDesc partitionMethod1;
+  private static final TajoConf conf;
 
   static {
     schema1 = SchemaFactory.newV1();
     schema1.addColumn("name", TajoDataTypes.Type.BLOB);
     schema1.addColumn("addr", TajoDataTypes.Type.TEXT);
 
-    meta1 = CatalogUtil.newTableMeta("TEXT");
-    meta1.putProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    conf = new TajoConf();
+    conf.setSystemTimezone(TimeZone.getTimeZone("Asia/Seoul"));
+    meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     meta1.putProperty(StorageConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
 
     Schema expressionSchema = SchemaFactory.newV1();

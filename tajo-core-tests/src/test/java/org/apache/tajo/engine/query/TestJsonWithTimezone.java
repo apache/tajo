@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.query;
 
-import com.google.common.collect.Lists;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.SessionVars;
 import org.junit.Test;
@@ -74,8 +73,6 @@ public class TestJsonWithTimezone extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE IF EXISTS timezoned3");
     }
-
-    getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
   }
 
   @Test

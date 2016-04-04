@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
@@ -356,7 +357,7 @@ public class TestCatalogAgainstCaseSensitivity {
     TableDesc tableDesc = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
         tableSchema,
-        CatalogUtil.newTableMeta("JSON"),
+        CatalogUtil.newTableMeta(BuiltinStorages.JSON, server.getConf()),
         URI.create("hdfs://xxx.com/json_Table")
     );
 
