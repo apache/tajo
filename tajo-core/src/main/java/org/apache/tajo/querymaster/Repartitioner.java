@@ -56,7 +56,6 @@ import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.s3.S3TableSpace;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;

@@ -45,7 +45,6 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.storage.s3.S3TableSpace;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
