@@ -106,15 +106,9 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
 
     List<Fragment> fragments = Lists.newArrayList();
     if (tableDesc.hasPartition()) {
-      if (tablespace instanceof S3TableSpace) {
-        S3TableSpace s3TableSpace = TUtil.checkTypeAndGet(tablespace, S3TableSpace.class);
-        fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(s3TableSpace, scanNode, tableDesc
-          , catalog, tajoConf));
-      } else {
-        FileTablespace fileTablespace = TUtil.checkTypeAndGet(tablespace, FileTablespace.class);
-        fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(fileTablespace, scanNode, tableDesc
-          , catalog, tajoConf));
-      }
+      FileTablespace fileTablespace = TUtil.checkTypeAndGet(tablespace, FileTablespace.class);
+      fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(fileTablespace, scanNode, tableDesc
+        , catalog, tajoConf));
     } else {
       fragments.addAll(tablespace.getSplits(tableDesc.getName(), tableDesc, scanNode.getQual()));
     }

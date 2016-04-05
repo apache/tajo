@@ -476,16 +476,9 @@ public class Repartitioner {
     PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
     rewriter.setCatalog(catalog);
     PartitionPruningHandle pruningHandle = rewriter.getPartitionPruningHandle(conf, partitionsScan);
-    if (tsHandler instanceof S3TableSpace) {
-      S3TableSpace tablespace = (S3TableSpace) tsHandler;
-      fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
-        , pruningHandle));
-    } else {
-      FileTablespace tablespace = (FileTablespace) tsHandler;
-      fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
-        , pruningHandle));
-    }
-
+    FileTablespace tablespace = (FileTablespace) tsHandler;
+    fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
+      , pruningHandle));
     return fragments;
   }
 
