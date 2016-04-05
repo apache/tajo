@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -198,5 +199,20 @@ public class TestTimestampDatum {
     DateDatum date = DatumFactory.createDate("2014-11-12");
     
     assertThat(theday.compareTo(date) > 0, is(true));
+  }
+
+  @Test
+  public void testEqualsTo() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+
+    assertTrue(theday.equalsTo(theday).asBool());
+    assertEquals(NullDatum.get(), theday.equalsTo(NullDatum.get()));
+  }
+
+  @Test(expected = InvalidOperationException.class)
+  public void testEqualsToInvalidCase() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+
+    theday.equalsTo(new Int4Datum(123));
   }
 }
