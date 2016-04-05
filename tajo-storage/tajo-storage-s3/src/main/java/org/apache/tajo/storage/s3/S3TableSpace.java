@@ -177,9 +177,12 @@ public class S3TableSpace extends FileTablespace {
     // Generate the list of FileStatuses and partition keys
     Path[] paths = pruningHandle.getPartitionPaths();
 
+    if (paths.length == 0) {
+      return splits;
+    }
+
     // Get common prefix of partition paths
     String commonPrefix = FileUtil.getCommonPrefix(paths);
-
     // Generate splits
     if (pruningHandle.hasConjunctiveForms()) {
       splits.addAll(getFragmentsByMarker(meta, schema, tableName, new Path(commonPrefix), pruningHandle));
@@ -208,7 +211,7 @@ public class S3TableSpace extends FileTablespace {
     List<Fragment> splits = Lists.newArrayList();
     long startTime = System.currentTimeMillis();
     ObjectListing objectListing;
-    String previousPartition = null, nextPartition = null;
+    Path previousPartition = null, nextPartition = null;
     int callCount = 0, i = 0;
     boolean finished = false, enabled = false;
 
@@ -221,9 +224,9 @@ public class S3TableSpace extends FileTablespace {
       .withBucketName(uri.getHost())
       .withPrefix(prefix);
 
-    Map<Integer, String> partitionMap = Maps.newHashMap();
+    Map<Integer, Path> partitionMap = Maps.newHashMap();
     for (i = 0; i < pruningHandle.getPartitionKeys().length; i++) {
-      partitionMap.put(i, pruningHandle.getPartitionKeys()[i]);
+      partitionMap.put(i, pruningHandle.getPartitionPaths()[i]);
     }
 
     i = 0;
@@ -237,7 +240,7 @@ public class S3TableSpace extends FileTablespace {
 
       // Get partition of last bucket from current objects
       Path lastPath = getPathFromBucket(objectListing.getObjectSummaries().get(objectsCount - 1));
-      String lastPartition = lastPath.getParent().getName();
+      Path lastPartition = lastPath.getParent();
 
       // Check target partition compare with last partition of current objects
       if (previousPartition == null) {
@@ -264,7 +267,7 @@ public class S3TableSpace extends FileTablespace {
                 FileStatus file = getFileStatusFromBucket(summary, bucketPath);
                 String partitionKey = pruningHandle.getPartitionMap().get(partitionPath);
                 computePartitionSplits(file, meta, schema, tableName, partitionKey, splits);
-                previousPartition = partitionKey;
+                previousPartition = partitionPath;
 
                 if (LOG.isDebugEnabled()){
                   LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
@@ -278,7 +281,7 @@ public class S3TableSpace extends FileTablespace {
                   nextPartition = partitionMap.get(0);
                 } else {
                   // Find index of previous partition
-                  for(Map.Entry<Integer, String> entry : partitionMap.entrySet()) {
+                  for(Map.Entry<Integer, Path> entry : partitionMap.entrySet()) {
                     if (entry.getValue().equals(previousPartition)) {
                       index = entry.getKey();
                       break;
