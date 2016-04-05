@@ -50,6 +50,8 @@ import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -1459,10 +1461,17 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       this.nanos = createIntegerWriter(writer.createStream(id,
           OrcProto.Stream.Kind.SECONDARY), false, isDirectV2, writer);
       recordPosition(rowIndexPosition);
-      // for unit tests to set different time zones
-      this.base_timestamp = Timestamp.valueOf(BASE_TIMESTAMP_STRING).getTime() / DateTimeConstants.MSECS_PER_SEC;
       writer.useWriterTimeZone(true);
       timeZone = writer.getTimeZone();
+
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+      sdf.setTimeZone(timeZone);
+
+      try {
+        this.base_timestamp = sdf.parse(BASE_TIMESTAMP_STRING).getTime() / DateTimeConstants.MSECS_PER_SEC;
+      } catch (ParseException e) {
+        throw new IOException("Unable to create base timestamp", e);
+      }
     }
 
     @Override
@@ -1480,11 +1489,8 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
         long javaTimestamp = DateTimeUtil.julianTimeToJavaTime(datum.asInt8());
-
-        // revise timestamp value depends on timezone
-        javaTimestamp += timeZone.getRawOffset();
-
         Timestamp val = new Timestamp(javaTimestamp);
+
         indexStatistics.updateTimestamp(val);
         seconds.write((val.getTime() / DateTimeConstants.MSECS_PER_SEC) - base_timestamp);
         nanos.write(formatNanos(val.getNanos()));
