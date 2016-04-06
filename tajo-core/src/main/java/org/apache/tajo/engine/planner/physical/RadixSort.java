@@ -21,9 +21,11 @@ package org.apache.tajo.engine.planner.physical;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -102,7 +104,7 @@ public class RadixSort {
 
   private final static int _16B_BIN_NUM = 65536;
   private final static int _16B_MAX_BIN_IDX = 65535;
-  private final static int TIM_SORT_THRESHOLD = 65536;
+  private static int TIM_SORT_THRESHOLD = -1;
 
   /**
    * Entry method.
@@ -113,8 +115,9 @@ public class RadixSort {
    * @param comp comparator for Tim sort
    * @return a sorted list of tuples
    */
-  public static List<UnSafeTuple> sort(UnSafeTupleList list, Schema schema, SortSpec[] sortSpecs,
+  public static List<UnSafeTuple> sort(QueryContext queryContext, UnSafeTupleList list, Schema schema, SortSpec[] sortSpecs,
                                        Comparator<UnSafeTuple> comp) {
+    TIM_SORT_THRESHOLD = queryContext.getInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT);
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
     RadixSortContext context = new RadixSortContext(in, schema, sortSpecs, comp);
 
@@ -546,9 +549,8 @@ public class RadixSort {
 //    if (binEndIdx[0] != exclusiveEnd &&
 //        (binEndIdx[32767] != 0 || binEndIdx[32768] != exclusiveEnd)) {
 
+    buildHistogram(context, start, binEndIdx);
     if (Arrays.stream(binEndIdx).filter(eachCount -> eachCount > 0).count() > 1) {
-      buildHistogram(context, start, binEndIdx);
-
       before = System.currentTimeMillis();
       final int[] binNextElemIdx = new int[_16B_BIN_NUM];
       System.arraycopy(binEndIdx, 0, binNextElemIdx, 0, _16B_BIN_NUM);
@@ -558,6 +560,10 @@ public class RadixSort {
       System.arraycopy(context.out, start, context.in, start, exclusiveEnd - start);
       context.swapTime += System.currentTimeMillis() - before;
     }
+
+//    LOG.info("start: " + start + " end: " + exclusiveEnd + " pass: " + pass);
+//    final int sortKeyId = context.sortKeyIds[curSortKeyIdx];
+//    Arrays.stream(context.in).forEach(t -> LOG.info(t));
 
     // Recursive call radix sort if necessary.
     if (pass > 0 || curSortKeyIdx < context.maxSortKeyId) {

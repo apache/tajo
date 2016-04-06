@@ -176,6 +176,7 @@ public enum SessionVars implements ConfigKey {
   TEST_FILTER_PUSHDOWN_ENABLED(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED, "filter push down enabled", TEST_VAR),
   TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", TEST_VAR),
   TEST_PLAN_SHAPE_FIX_ENABLED(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED, "(test only) plan shape fix enabled", TEST_VAR),
+  TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT(ConfVars.$TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT, "(test only) Tim sort threshold for radix sort", TEST_VAR)
   ;
 
   public static final Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();

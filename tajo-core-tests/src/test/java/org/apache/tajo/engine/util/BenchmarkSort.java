@@ -77,7 +77,7 @@ public class BenchmarkSort {
   private TableDesc employee;
 
   String[] QUERIES = {
-      "select managerId, col1, col2 from employee order by managerId, col1, col2"
+      "select managerId, col1 from employee order by managerId, col1"
   };
 
   @State(Scope.Thread)

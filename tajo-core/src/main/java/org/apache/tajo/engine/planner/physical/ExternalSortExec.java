@@ -201,7 +201,7 @@ public class ExternalSortExec extends SortExec {
       case TIM_SORT:
         return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
       case MSD_RADIX_SORT:
-        return RadixSort.sort(tupleBlock, inSchema, sortSpecs, unSafeComparator);
+        return RadixSort.sort(context.getQueryContext(), tupleBlock, inSchema, sortSpecs, unSafeComparator);
       default:
         throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));
     }

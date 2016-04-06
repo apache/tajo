@@ -1,14 +1,17 @@
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.planner.physical.ExternalSortExec.UnSafeComparator;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.tuple.memory.UnSafeTuple;
@@ -29,14 +32,18 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestRadixSort {
+  private final static QueryContext queryContext;
   private static UnSafeTupleList tuples;
   private static Schema schema;
-  private static final int tupleNum = 1_000_000;
+  private static final int tupleNum = 1000;
   private static final Random random = new Random(System.currentTimeMillis());
   private SortSpec[] sortSpecs;
   private final static Datum MINUS_ONE = DatumFactory.createInt4(-1);
 
   static {
+    queryContext = new QueryContext(new TajoConf());
+    queryContext.setInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT, 0);
+
     schema = SchemaFactory.newV1();
     schema.addColumn("col0", Type.INT8);
     schema.addColumn("col1", Type.INT4);
@@ -67,9 +74,10 @@ public class TestRadixSort {
   @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     List<Object[]> params = new ArrayList<>();
+
 //    params.add(new Object[] {
 //        new Param(new SortSpec[] {
-//            new SortSpec(schema.getColumn(7), true, false)
+//            new SortSpec(schema.getColumn(4), true, false)
 //        })
 //    });
 
@@ -85,7 +93,7 @@ public class TestRadixSort {
 
     // Randomly choose columns
 //    for (int colNum = 2; colNum < 6; colNum++) {
-//      for (int i = 0; i < 5; i++) {
+//      for (int i =0; i < 5; i++) {
 //        SortSpec[] sortSpecs = new SortSpec[colNum];
 //        for (int j = 0; j <colNum; j++) {
 //          sortSpecs[j] = new SortSpec(schema.getColumn(random.nextInt(schema.size())),
@@ -140,7 +148,7 @@ public class TestRadixSort {
         DatumFactory.createInt4(random.nextInt()),
         DatumFactory.createInt2((short) random.nextInt(Short.MAX_VALUE)),
         DatumFactory.createDate(random.nextInt(2147483647)),
-        DatumFactory.createTimestamp(random.nextInt(3000), random.nextInt(12) + 1, random.nextInt(30),
+        DatumFactory.createTimestamp(random.nextInt(9999), random.nextInt(12) + 1, random.nextInt(30),
             random.nextInt(24) + 1, random.nextInt(60), random.nextInt(60), 0),
         DatumFactory.createTime(random.nextInt(24) + 1, random.nextInt(60), random.nextInt(60), 0),
         DatumFactory.createInet4(random.nextInt()),
@@ -159,7 +167,7 @@ public class TestRadixSort {
   public void testSort() {
     Comparator<UnSafeTuple> comparator = new UnSafeComparator(schema, sortSpecs);
 
-    RadixSort.sort(tuples, schema, sortSpecs, comparator);
+    RadixSort.sort(queryContext, tuples, schema, sortSpecs, comparator);
 
     IntStream.range(0, tuples.size() - 1)
         .forEach(i -> {
