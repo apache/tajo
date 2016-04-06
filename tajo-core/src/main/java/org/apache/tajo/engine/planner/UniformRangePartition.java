@@ -657,13 +657,13 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           break;
         case TIMESTAMP:
           if (overflowFlag[i]) {
-            end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(
+            end.put(i, DatumFactory.createTimestampDatumWithJavaMillis(
                 mergedRange.getStart().getInt8(i) + incs[i].longValue()));
           } else {
             if (sortSpecs[i].isAscending()) {
-              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.getInt8(i) + incs[i].longValue()));
+              end.put(i, DatumFactory.createTimestampDatumWithJavaMillis(last.getInt8(i) + incs[i].longValue()));
             } else {
-              end.put(i, DatumFactory.createTimestmpDatumWithJavaMillis(last.getInt8(i) - incs[i].longValue()));
+              end.put(i, DatumFactory.createTimestampDatumWithJavaMillis(last.getInt8(i) - incs[i].longValue()));
             }
           }
           break;

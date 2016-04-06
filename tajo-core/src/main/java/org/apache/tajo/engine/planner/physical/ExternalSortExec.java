@@ -145,7 +145,7 @@ public class ExternalSortExec extends SortExec {
 
   private static SortAlgorithm getSortAlgorithm(QueryContext context, SortSpec[] sortSpecs) {
     if (Arrays.stream(sortSpecs)
-        .filter(sortSpec -> !RadixSort.isApplicableType(sortSpec.getSortKey().getDataType().getType())).count() > 0) {
+        .filter(sortSpec -> !RadixSort.isApplicableType(sortSpec)).count() > 0) {
       return SortAlgorithm.TIM_SORT;
     }
     String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, "TIM");
@@ -201,7 +201,7 @@ public class ExternalSortExec extends SortExec {
       case TIM_SORT:
         return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
       case MSD_RADIX_SORT:
-        return RadixSort.msdRadixSort(tupleBlock, inSchema, sortSpecs, unSafeComparator);
+        return RadixSort.sort(tupleBlock, inSchema, sortSpecs, unSafeComparator);
       default:
         throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));
     }

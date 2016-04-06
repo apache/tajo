@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -289,12 +290,17 @@ public class DatumFactory {
     return new TimeDatum(DateTimeUtil.toTime(tm));
   }
 
-  public static TimestampDatum createTimestmpDatumWithJavaMillis(long millis) {
+  @VisibleForTesting
+  public static TimeDatum createTime(int hours, int minutes, int secs, int fsecs) {
+    return new TimeDatum(DateTimeUtil.toTime(hours, minutes, secs, fsecs));
+  }
+
+  public static TimestampDatum createTimestampDatumWithJavaMillis(long millis) {
     return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));
   }
 
-  public static TimestampDatum createTimestmpDatumWithUnixTime(int unixTime) {
-    return createTimestmpDatumWithJavaMillis(unixTime * 1000L);
+  public static TimestampDatum createTimestampDatumWithUnixTime(int unixTime) {
+    return createTimestampDatumWithJavaMillis(unixTime * 1000L);
   }
 
   public static TimestampDatum createTimestamp(String datetimeStr) {
@@ -305,6 +311,12 @@ public class DatumFactory {
     TimeMeta tm = DateTimeUtil.decodeDateTime(datetimeStr);
     DateTimeUtil.toUTCTimezone(tm, tz);
     return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+  }
+
+  @VisibleForTesting
+  public static TimestampDatum createTimestamp(int years, int months, int days, int hours, int minutes, int secs,
+                                               int fsecs) {
+    return new TimestampDatum(DateTimeUtil.toJulianTimestamp(years, months, days, hours, minutes, secs, fsecs));
   }
 
   public static IntervalDatum createInterval(String intervalStr) {
