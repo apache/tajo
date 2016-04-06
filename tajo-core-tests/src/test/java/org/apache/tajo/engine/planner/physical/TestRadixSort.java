@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 public class TestRadixSort {
   private static UnSafeTupleList tuples;
   private static Schema schema;
-  private static final int tupleNum = 10;
+  private static final int tupleNum = 1_000_000;
   private static final Random random = new Random(System.currentTimeMillis());
   private SortSpec[] sortSpecs;
   private final static Datum MINUS_ONE = DatumFactory.createInt4(-1);
@@ -41,12 +41,10 @@ public class TestRadixSort {
     schema.addColumn("col0", Type.INT8);
     schema.addColumn("col1", Type.INT4);
     schema.addColumn("col2", Type.INT2);
-    schema.addColumn("col3", Type.FLOAT4);
-    schema.addColumn("col4", Type.FLOAT8);
-    schema.addColumn("col5", Type.DATE);
-    schema.addColumn("col6", Type.TIMESTAMP);
-    schema.addColumn("col7", Type.TIME);
-    schema.addColumn("col8", Type.INET4);
+    schema.addColumn("col3", Type.DATE);
+    schema.addColumn("col4", Type.TIMESTAMP);
+    schema.addColumn("col5", Type.TIME);
+    schema.addColumn("col6", Type.INET4);
   }
 
   private static class Param {
@@ -76,7 +74,7 @@ public class TestRadixSort {
 //    });
 
     // Test every single column sort
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < schema.size(); i++) {
       params.add(new Object[] {
           new Param(
               new SortSpec[] {
@@ -85,12 +83,13 @@ public class TestRadixSort {
       });
     }
 
-//    // Randomly choose columns
+    // Randomly choose columns
 //    for (int colNum = 2; colNum < 6; colNum++) {
 //      for (int i = 0; i < 5; i++) {
 //        SortSpec[] sortSpecs = new SortSpec[colNum];
 //        for (int j = 0; j <colNum; j++) {
-//          sortSpecs[j] = new SortSpec(schema.getColumn(random.nextInt(9)), random.nextBoolean(), random.nextBoolean());
+//          sortSpecs[j] = new SortSpec(schema.getColumn(random.nextInt(schema.size())),
+//              random.nextBoolean(), random.nextBoolean());
 //        }
 //        params.add(new Object[] {new Param(sortSpecs)});
 //      }
@@ -119,7 +118,7 @@ public class TestRadixSort {
 
   @AfterClass
   public static void teardown() {
-
+    tuples.release();
   }
 
   private static Tuple makeNullTuple(Tuple tuple) {
@@ -130,9 +129,7 @@ public class TestRadixSort {
         NullDatum.get(),
         NullDatum.get(),
         NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
-        NullDatum.get(),
+        NullDatum.get()
     });
     return tuple;
   }
@@ -142,8 +139,6 @@ public class TestRadixSort {
         DatumFactory.createInt8(random.nextLong()),
         DatumFactory.createInt4(random.nextInt()),
         DatumFactory.createInt2((short) random.nextInt(Short.MAX_VALUE)),
-        DatumFactory.createFloat4(random.nextFloat()),
-        DatumFactory.createFloat8(random.nextDouble()),
         DatumFactory.createDate(random.nextInt(2147483647)),
         DatumFactory.createTimestamp(random.nextInt(3000), random.nextInt(12) + 1, random.nextInt(30),
             random.nextInt(24) + 1, random.nextInt(60), random.nextInt(60), 0),
@@ -151,7 +146,7 @@ public class TestRadixSort {
         DatumFactory.createInet4(random.nextInt()),
     });
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 3; i++) {
       if (random.nextBoolean()) {
         tuple.put(i, tuple.asDatum(i).multiply(MINUS_ONE));
       }
@@ -165,7 +160,6 @@ public class TestRadixSort {
     Comparator<UnSafeTuple> comparator = new UnSafeComparator(schema, sortSpecs);
 
     RadixSort.sort(tuples, schema, sortSpecs, comparator);
-//    Collections.sort(tuples, comparator);
 
     IntStream.range(0, tuples.size() - 1)
         .forEach(i -> {

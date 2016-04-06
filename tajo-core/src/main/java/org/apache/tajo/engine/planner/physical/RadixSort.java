@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -103,7 +102,7 @@ public class RadixSort {
 
   private final static int _16B_BIN_NUM = 65536;
   private final static int _16B_MAX_BIN_IDX = 65535;
-  private final static int TIM_SORT_THRESHOLD = 65535;
+  private final static int TIM_SORT_THRESHOLD = 65536;
 
   /**
    * Entry method.
@@ -133,12 +132,8 @@ public class RadixSort {
 
   static void recursiveCallForNextKey(RadixSortContext context, int start, int exlusiveEnd, int curSortKeyIdx) {
     if (needConsiderSign(context.sortKeyTypes[curSortKeyIdx])) {
-      if (TajoTypeUtil.isReal(context.sortKeyTypes[curSortKeyIdx])) {
-
-      } else {
-        signedIntegerMsdRadixSort(context, start, exlusiveEnd, curSortKeyIdx,
-            calculateInitialPass(context.sortKeyTypes[curSortKeyIdx]), true);
-      }
+      signedIntegerMsdRadixSort(context, start, exlusiveEnd, curSortKeyIdx,
+          calculateInitialPass(context.sortKeyTypes[curSortKeyIdx]), true);
     } else {
       signedIntegerMsdRadixSort(context, start, exlusiveEnd, curSortKeyIdx,
           calculateInitialPass(context.sortKeyTypes[curSortKeyIdx]), false);
@@ -150,8 +145,6 @@ public class RadixSort {
       case INT2:
       case INT4:
       case INT8:
-      case FLOAT4:
-      case FLOAT8:
       case TIME:
       case TIMESTAMP:
         return true;
@@ -615,10 +608,6 @@ public class RadixSort {
         return 4;
       case INT8:
         return 8;
-      case FLOAT4:
-        return 4;
-      case FLOAT8:
-        return 8;
       case INET4:
         return 4;
       case INET6:
@@ -647,9 +636,14 @@ public class RadixSort {
       case TEXT:
       case BLOB:
         return false;
-      // 1 byte values are not supported.
+      // 1 byte types are not supported.
       case BOOLEAN:
       case BIT:
+        return false;
+      // float types are not supported because the implementation can cause too many branch misses,
+      // so it is difficult to expect a better performance than Tim sort.
+      case FLOAT4:
+      case FLOAT8:
         return false;
       default:
         return true;
