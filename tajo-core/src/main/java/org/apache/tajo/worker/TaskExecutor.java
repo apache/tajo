@@ -175,7 +175,6 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
         event.getTaskAttemptId().getTaskId().getExecutionBlockId());
 
     try {
-      runningTasks.incrementAndGet();
       Task task = createTask(context, event.getTaskRequest());
       if (task != null) {
         if (LOG.isDebugEnabled()) {
@@ -183,6 +182,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
               ", allocated resource: " + event.getAllocatedResource());
         }
         taskQueue.put(task);
+        runningTasks.incrementAndGet();
       } else {
         LOG.warn("Release duplicate task resource: " + event.getAllocatedResource());
         stopTask(event.getTaskAttemptId());
