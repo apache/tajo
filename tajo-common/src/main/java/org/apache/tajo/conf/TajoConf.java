@@ -186,14 +186,10 @@ public class TajoConf extends Configuration {
         Runtime.getRuntime().availableProcessors(), Validators.min("2")), // 1qm + 1task
     WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1500, Validators.min("64")),
 
-    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 2, Validators.min("1")),
-
     WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM("tajo.worker.resource.disk.parallel-execution.num", 2,
         Validators.min("1")),
 
-    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false, Validators.bool()),
-
-    WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE("tajo.worker.heartbeat.queue.threshold-rate", 0.3f, Validators.min("0")),//30%
+    WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE("tajo.worker.heartbeat.queue.threshold-rate", 0.1f, Validators.min("0")),//10%
     WORKER_HEARTBEAT_IDLE_INTERVAL("tajo.worker.heartbeat.idle.interval", 10 * 1000),  // 10 sec
     WORKER_HEARTBEAT_ACTIVE_INTERVAL("tajo.worker.heartbeat.active.interval", 1000),  // 1 sec
 

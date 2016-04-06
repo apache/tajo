@@ -32,11 +32,11 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.TaskStartEvent;
+import org.apache.tajo.worker.NodeResourceManager.Allocation;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,7 +54,7 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
   private static final Log LOG = LogFactory.getLog(TaskExecutor.class);
 
   private final TajoWorker.WorkerContext workerContext;
-  private final Map<TaskAttemptId, NodeResource> allocatedResourceMap;
+  private final Map<TaskAttemptId, Allocation> allocatedResourceMap;
   private final BlockingQueue<Task> taskQueue;
   private final AtomicInteger runningTasks;
   private List<ExecutorService> fetcherThreadPoolList;
@@ -136,19 +136,19 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
 
   @SuppressWarnings("unchecked")
   protected void releaseResource(TaskAttemptId taskId) {
-    NodeResource resource =  allocatedResourceMap.remove(taskId);
+    Allocation allocation =  allocatedResourceMap.remove(taskId);
 
-    if(resource != null) {
-      releaseResource(resource);
+    if(allocation != null) {
+      releaseResource(allocation);
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Task resource " + taskId + " is released. (" + resource + ")");
+        LOG.debug("Task resource " + taskId + " is released. (" + allocation + ")");
       }
     }
   }
 
-  protected void releaseResource(NodeResource resource) {
+  protected void releaseResource(Allocation allocation) {
     workerContext.getNodeResourceManager().getDispatcher().getEventHandler().handle(
-        new NodeResourceDeallocateEvent(resource, NodeResourceEvent.ResourceType.TASK));
+        new NodeResourceDeallocateEvent(allocation, NodeResourceEvent.ResourceType.TASK));
   }
 
   protected Task createTask(ExecutionBlockContext executionBlockContext,
@@ -169,22 +169,22 @@ public class TaskExecutor extends AbstractService implements EventHandler<TaskSt
   @Override
   public void handle(TaskStartEvent event) {
 
-    allocatedResourceMap.put(event.getTaskAttemptId(), event.getAllocatedResource());
+    allocatedResourceMap.put(event.getTaskAttemptId(), event.getAllocation());
 
     ExecutionBlockContext context = workerContext.getTaskManager().getExecutionBlockContext(
         event.getTaskAttemptId().getTaskId().getExecutionBlockId());
 
     try {
+      runningTasks.incrementAndGet();
       Task task = createTask(context, event.getTaskRequest());
       if (task != null) {
         if (LOG.isDebugEnabled()) {
           LOG.debug("Arrival task: " + task.getTaskContext().getTaskId() +
-              ", allocated resource: " + event.getAllocatedResource());
+              ", allocated resource: " + event.getAllocation());
         }
         taskQueue.put(task);
-        runningTasks.incrementAndGet();
       } else {
-        LOG.warn("Release duplicate task resource: " + event.getAllocatedResource());
+        LOG.warn("Release duplicate task resource: " + event.getAllocation());
         stopTask(event.getTaskAttemptId());
       }
     } catch (InterruptedException e) {

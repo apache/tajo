@@ -28,12 +28,10 @@ import static org.junit.Assert.*;
 public class TestResources {
   @Test
   public void testFitsIn() {
-    assertTrue(fitsIn(createResource(512, 1, 1), createResource(1024, 2, 1)));
-    assertTrue(fitsIn(createResource(1024, 2, 1), createResource(1024, 2, 1)));
-    assertFalse(fitsIn(createResource(1024, 2, 1), createResource(512, 1, 1)));
-    assertFalse(fitsIn(createResource(512, 2, 1), createResource(1024, 1, 1)));
-    assertFalse(fitsIn(createResource(1024, 1, 1), createResource(512, 2, 1)));
-    assertFalse(fitsIn(createResource(512, 1, 2), createResource(512, 1, 1)));
+    assertTrue(fitsIn(createResource(512), createResource(1024)));
+    assertTrue(fitsIn(createResource(1024), createResource(1024)));
+    assertFalse(fitsIn(createResource(1024), createResource(512)));
+    assertFalse(fitsIn(createResource(512, 2), createResource(512)));
   }
 
   @Test
