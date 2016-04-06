@@ -220,7 +220,7 @@ public class S3TableSpace extends FileTablespace {
     List<Fragment> splits = Lists.newArrayList();
     long startTime = System.currentTimeMillis();
     ObjectListing objectListing;
-    Path previousPartition = null;
+    Path previousPartition = null, nextPartition = null;
     int callCount = 0, i = 0;
     boolean finished = false, enabled = false;
 
@@ -280,7 +280,7 @@ public class S3TableSpace extends FileTablespace {
                 }
                 i++;
               } else {
-                Path nextPartition = null;
+                nextPartition = null;
 
                 // Get next target partition
                 if (previousPartition == null) {
