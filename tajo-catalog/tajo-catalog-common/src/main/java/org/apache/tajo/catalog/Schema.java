@@ -94,8 +94,6 @@ public interface Schema extends ProtoObject<SchemaProto>, Cloneable, GsonObject 
 
   Schema addColumn(String name, Type type);
 
-  Schema addColumn(String name, Type type, int length);
-
   Schema addColumn(String name, DataType dataType);
 	
 	void addColumn(Column column);

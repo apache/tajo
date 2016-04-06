@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.util;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
@@ -39,8 +40,7 @@ import static org.junit.Assert.*;
 public class TestTupleUtil {
   @Test
   public final void testFixedSizeChar() {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.CHAR, 5);
+    Schema schema = SchemaFactory.builder().add("col1", CatalogUtil.newDataTypeWithLen(Type.CHAR, 5)).build();
 
     Tuple tuple = new VTuple(1);
     tuple.put(new Datum[] {
@@ -57,18 +57,19 @@ public class TestTupleUtil {
 
   @Test
   public final void testToBytesAndToTuple() {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
+    Schema schema = SchemaFactory.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", Type.BIT)
+        .add("col3", Type.CHAR)
+        .add("col4", Type.INT2)
+        .add("col5", Type.INT4)
+        .add("col6", Type.INT8)
+        .add("col7", Type.FLOAT4)
+        .add("col8", Type.FLOAT8)
+        .add("col9", Type.TEXT)
+        .add("col10", Type.BLOB)
+        .add("col11", Type.INET4)
+        .build();
     //schema.addColumn("col11", DataType.IPv6);
     
     Tuple tuple = new VTuple(new Datum[] {
@@ -98,15 +99,15 @@ public class TestTupleUtil {
     VTuple sTuple = new VTuple(7);
     VTuple eTuple = new VTuple(7);
 
-    Schema schema = SchemaFactory.newV1();
-
-    schema.addColumn("numByte", Type.BIT);
-    schema.addColumn("numChar", Type.CHAR);
-    schema.addColumn("numShort", Type.INT2);
-    schema.addColumn("numInt", Type.INT4);
-    schema.addColumn("numLong", Type.INT8);
-    schema.addColumn("numFloat", Type.FLOAT4);
-    schema.addColumn("numDouble", Type.FLOAT4);
+    Schema schema = SchemaFactory.builder()
+        .add("numByte", Type.BIT)
+        .add("numChar", Type.CHAR)
+        .add("numShort", Type.INT2)
+        .add("numInt", Type.INT4)
+        .add("numLong", Type.INT8)
+        .add("numFloat", Type.FLOAT4)
+        .add("numDouble", Type.FLOAT4)
+        .build();
 
     SortSpec[] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -142,9 +143,10 @@ public class TestTupleUtil {
   @Test
   public void testBuildTupleFromPartitionPath() {
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("key1", Type.INT8);
-    schema.addColumn("key2", Type.TEXT);
+    Schema schema = SchemaFactory.builder()
+        .add("key1", Type.INT8)
+        .add("key2", Type.TEXT)
+        .build();
 
     Path path = new Path("hdfs://tajo/warehouse/partition_test/");
     Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);

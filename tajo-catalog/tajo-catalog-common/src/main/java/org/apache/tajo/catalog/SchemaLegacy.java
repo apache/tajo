@@ -447,11 +447,6 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
   }
 
   @Override
-  public synchronized SchemaLegacy addColumn(String name, Type type, int length) {
-    return addColumn(name, CatalogUtil.newDataTypeWithLen(type, length));
-  }
-
-  @Override
   public synchronized SchemaLegacy addColumn(String name, DataType dataType) {
 		addColumn(name, new TypeDesc(dataType));
 

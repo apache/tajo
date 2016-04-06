@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
@@ -41,20 +42,21 @@ public class TestLazyTuple {
   public void setUp() {
     nullbytes = "\\N".getBytes();
 
-    schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("col2", TajoDataTypes.Type.BIT);
-    schema.addColumn("col3", TajoDataTypes.Type.CHAR, 7);
-    schema.addColumn("col4", TajoDataTypes.Type.INT2);
-    schema.addColumn("col5", TajoDataTypes.Type.INT4);
-    schema.addColumn("col6", TajoDataTypes.Type.INT8);
-    schema.addColumn("col7", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col8", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col9", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col10", TajoDataTypes.Type.BLOB);
-    schema.addColumn("col11", TajoDataTypes.Type.INET4);
-    schema.addColumn("col12", TajoDataTypes.Type.INT4);
-    schema.addColumn("col13", TajoDataTypes.Type.NULL_TYPE);
+    schema = SchemaFactory.builder()
+        .add("col1", TajoDataTypes.Type.BOOLEAN)
+        .add("col2", TajoDataTypes.Type.BIT)
+        .add("col3", CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, 7))
+        .add("col4", TajoDataTypes.Type.INT2)
+        .add("col5", TajoDataTypes.Type.INT4)
+        .add("col6", TajoDataTypes.Type.INT8)
+        .add("col7", TajoDataTypes.Type.FLOAT4)
+        .add("col8", TajoDataTypes.Type.FLOAT8)
+        .add("col9", TajoDataTypes.Type.TEXT)
+        .add("col10", TajoDataTypes.Type.BLOB)
+        .add("col11", TajoDataTypes.Type.INET4)
+        .add("col12", TajoDataTypes.Type.INT4)
+        .add("col13", TajoDataTypes.Type.NULL_TYPE)
+        .build();
 
     StringBuilder sb = new StringBuilder();
     sb.append(DatumFactory.createBool(true)).append('|');

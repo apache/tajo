@@ -23,9 +23,7 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -42,17 +40,19 @@ public class SchemaUtil {
   // The essential solution would be https://issues.apache.org/jira/browse/TAJO-895.
   static int tmpColumnSeq = 0;
   public static Schema merge(Schema left, Schema right) {
-    Schema merged = SchemaFactory.newV1();
+    SchemaBuilder merged = SchemaFactory.builder();
+    Set<String> nameSet = new HashSet<>();
+
     for(Column col : left.getRootColumns()) {
-      if (!merged.containsByQualifiedName(col.getQualifiedName())) {
-        merged.addColumn(col);
-      }
+      merged.add(col);
+      nameSet.add(col.getQualifiedName());
     }
     for(Column col : right.getRootColumns()) {
-      if (merged.containsByQualifiedName(col.getQualifiedName())) {
-        merged.addColumn("?fake" + (tmpColumnSeq++), col.getDataType());
+      if (nameSet.contains(col.getQualifiedName())) {
+        merged.add("?fake" + (tmpColumnSeq++), col.getDataType());
       } else {
-        merged.addColumn(col);
+        merged.add(col);
+        nameSet.add(col.getQualifiedName());
       }
     }
 
@@ -60,7 +60,7 @@ public class SchemaUtil {
     if (tmpColumnSeq < 0) {
       tmpColumnSeq = 0;
     }
-    return merged;
+    return merged.build();
   }
 
   /**
