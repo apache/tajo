@@ -220,7 +220,7 @@ public class S3TableSpace extends FileTablespace {
     List<Fragment> splits = Lists.newArrayList();
     long startTime = System.currentTimeMillis();
     ObjectListing objectListing;
-    Path previousPartition = null, nextPartition = null;
+    Path previousPartition = null;
     int callCount = 0, i = 0;
     boolean finished = false, enabled = false;
 
@@ -280,7 +280,9 @@ public class S3TableSpace extends FileTablespace {
                 }
                 i++;
               } else {
-                // If there is no matched partition, consider to move next marker. Otherwise get next object.
+                Path nextPartition = null;
+
+                // Get next target partition
                 if (previousPartition == null) {
                   nextPartition = pruningHandle.getPartitionPaths()[0];
                 } else {
@@ -296,6 +298,7 @@ public class S3TableSpace extends FileTablespace {
                   }
                 }
 
+                // If there is no matched partition, consider to move next marker. Otherwise access next object.
                 if (nextPartition != null  && nextPartition.compareTo(lastPartition) <= 0) {
                   continue;
                 } else {
