@@ -31,15 +31,12 @@ public class PartitionPruningHandle {
   private Path[] partitionPaths;
   private String[] partitionKeys;
   private long totalVolume;
-  private Map<Path, String> partitionMap;
   private EvalNode[] conjunctiveForms;
 
-  public PartitionPruningHandle(Path[] partitionPaths, String[] partitionKeys, long totalVolume,
-                                Map<Path, String> partitionMap) {
+  public PartitionPruningHandle(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
     this.partitionPaths = partitionPaths;
     this.partitionKeys = partitionKeys;
     this.totalVolume = totalVolume;
-    this.partitionMap = partitionMap;
   }
 
   public Path[] getPartitionPaths() {
@@ -52,10 +49,6 @@ public class PartitionPruningHandle {
 
   public long getTotalVolume() {
     return totalVolume;
-  }
-
-  public Map<Path, String> getPartitionMap() {
-    return partitionMap;
   }
 
   public boolean hasConjunctiveForms() {

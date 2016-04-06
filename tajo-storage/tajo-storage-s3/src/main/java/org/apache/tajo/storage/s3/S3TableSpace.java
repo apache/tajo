@@ -67,9 +67,9 @@ public class S3TableSpace extends FileTablespace {
 
   private AmazonS3 s3;
   private boolean useInstanceCredentials;
-  //use a custom endpoint?
   public static final String ENDPOINT = "fs.s3a.endpoint";
   private static final DataSize BLOCK_SIZE = new DataSize(32, MEGABYTE);
+  protected static final double SPLIT_SLOP = 1.1;   // 10% slop
 
   public S3TableSpace(String spaceName, URI uri, JSONObject config) {
     super(spaceName, uri, config);
@@ -102,6 +102,7 @@ public class S3TableSpace extends FileTablespace {
     if (s3 != null) {
       String endPoint = conf.getTrimmed(ENDPOINT,"");
       try {
+        // Check where use a custom endpoint
         if (!endPoint.isEmpty()) {
           s3.setEndpoint(endPoint);
         }
@@ -176,18 +177,26 @@ public class S3TableSpace extends FileTablespace {
 
     // Generate the list of FileStatuses and partition keys
     Path[] paths = pruningHandle.getPartitionPaths();
-
     if (paths.length == 0) {
       return splits;
     }
 
+    // Prepare partition map which includes index for each partition path
+    Map<Path, Integer> partitionPathMap = Maps.newHashMap();
+    for (int i = 0; i < pruningHandle.getPartitionKeys().length; i++) {
+      partitionPathMap.put(pruningHandle.getPartitionPaths()[i], i);
+    }
+
     // Get common prefix of partition paths
     String commonPrefix = FileUtil.getCommonPrefix(paths);
+
     // Generate splits
     if (pruningHandle.hasConjunctiveForms()) {
-      splits.addAll(getFragmentsByMarker(meta, schema, tableName, new Path(commonPrefix), pruningHandle));
+      splits.addAll(getFragmentsByMarker(meta, schema, tableName, new Path(commonPrefix), pruningHandle,
+        partitionPathMap));
     } else {
-      splits.addAll(getFragmentsByListingAllObjects(meta, schema, tableName, new Path(commonPrefix), pruningHandle));
+      splits.addAll(getFragmentsByListingAllObjects(meta, schema, tableName, new Path(commonPrefix), pruningHandle,
+        partitionPathMap));
     }
 
     LOG.info("Total # of splits: " + splits.size());
@@ -207,7 +216,7 @@ public class S3TableSpace extends FileTablespace {
    * @throws IOException
    */
   private List<Fragment> getFragmentsByMarker(TableMeta meta, Schema schema, String tableName, Path path,
-                                     PartitionPruningHandle pruningHandle) throws IOException {
+             PartitionPruningHandle pruningHandle, Map<Path, Integer> partitionPathMap) throws IOException {
     List<Fragment> splits = Lists.newArrayList();
     long startTime = System.currentTimeMillis();
     ObjectListing objectListing;
@@ -215,6 +224,9 @@ public class S3TableSpace extends FileTablespace {
     int callCount = 0, i = 0;
     boolean finished = false, enabled = false;
 
+    int partitionCount = pruningHandle.getPartitionPaths().length;
+
+    // Listing S3 Objects using AWS API
     String prefix = keyFromPath(path);
     if (!prefix.isEmpty()) {
       prefix += "/";
@@ -224,12 +236,6 @@ public class S3TableSpace extends FileTablespace {
       .withBucketName(uri.getHost())
       .withPrefix(prefix);
 
-    Map<Integer, Path> partitionMap = Maps.newHashMap();
-    for (i = 0; i < pruningHandle.getPartitionKeys().length; i++) {
-      partitionMap.put(i, pruningHandle.getPartitionPaths()[i]);
-    }
-
-    i = 0;
     do {
       enabled = true;
 
@@ -244,7 +250,7 @@ public class S3TableSpace extends FileTablespace {
 
       // Check target partition compare with last partition of current objects
       if (previousPartition == null) {
-        if (partitionMap.get(0).compareTo(lastPartition) > 0) {
+        if (pruningHandle.getPartitionPaths()[0].compareTo(lastPartition) > 0) {
           enabled = false;
         }
       } else {
@@ -263,9 +269,9 @@ public class S3TableSpace extends FileTablespace {
               Path partitionPath = bucketPath.getParent();
 
               // If Tajo can matched partition from partition map, add it to final list.
-              if (pruningHandle.getPartitionMap().containsKey(partitionPath)) {
+              if (partitionPathMap.containsKey(partitionPath)) {
                 FileStatus file = getFileStatusFromBucket(summary, bucketPath);
-                String partitionKey = pruningHandle.getPartitionMap().get(partitionPath);
+                String partitionKey = getPartitionKey(pruningHandle, partitionPathMap, partitionPath);
                 computePartitionSplits(file, meta, schema, tableName, partitionKey, splits);
                 previousPartition = partitionPath;
 
@@ -274,24 +280,17 @@ public class S3TableSpace extends FileTablespace {
                 }
                 i++;
               } else {
-                // If Tajo can't matched partition, consider to move next marker.
-               int index = -1;
-                // If any partition not yet added
+                // If there is no matched partition, consider to move next marker. Otherwise get next object.
                 if (previousPartition == null) {
-                  nextPartition = partitionMap.get(0);
+                  nextPartition = pruningHandle.getPartitionPaths()[0];
                 } else {
                   // Find index of previous partition
-                  for(Map.Entry<Integer, Path> entry : partitionMap.entrySet()) {
-                    if (entry.getValue().equals(previousPartition)) {
-                      index = entry.getKey();
-                      break;
-                    }
-                  }
+                  int index = partitionPathMap.get(previousPartition);
 
                   // Find next target partition with the index of previous partition
-                  if ((index + 1) < partitionMap.size()) {
-                    nextPartition = partitionMap.get(index+1);
-                  } else if ((index + 1) == partitionMap.size()) {
+                  if ((index + 1) < partitionCount) {
+                    nextPartition = pruningHandle.getPartitionPaths()[index+1];
+                  } else if ((index + 1) == partitionCount) {
                     finished = true;
                     break;
                   }
@@ -326,7 +325,7 @@ public class S3TableSpace extends FileTablespace {
    * @throws IOException
    */
   private List<Fragment> getFragmentsByListingAllObjects(TableMeta meta, Schema schema, String tableName, Path path,
-                                PartitionPruningHandle pruningHandle) throws IOException {
+                        PartitionPruningHandle pruningHandle, Map<Path, Integer> partitionPathMap) throws IOException {
     List<Fragment> splits = Lists.newArrayList();
     long startTime = System.currentTimeMillis();
 
@@ -344,15 +343,16 @@ public class S3TableSpace extends FileTablespace {
 
         if (!fileName.startsWith("_") && !fileName.startsWith(".")) {
           Path partitionPath = bucketPath.getParent();
-          if (pruningHandle.getPartitionMap().containsKey(partitionPath)) {
+          if (partitionPathMap.containsKey(partitionPath)) {
             FileStatus file = getFileStatusFromBucket(summary, bucketPath);
-            String partitionKey = pruningHandle.getPartitionMap().get(partitionPath);
-            computePartitionSplits(file, meta, schema, tableName, partitionKey, splits);            }
+            String partitionKey = getPartitionKey(pruningHandle, partitionPathMap, partitionPath);
+            computePartitionSplits(file, meta, schema, tableName, partitionKey, splits);
 
             if (LOG.isDebugEnabled()){
               LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
             }
             i++;
+          }
         }
       }
     }
@@ -362,6 +362,12 @@ public class S3TableSpace extends FileTablespace {
     LOG.info(String.format("List S3Objects: %d ms elapsed", elapsedMills));
 
     return splits;
+  }
+
+  private String getPartitionKey(PartitionPruningHandle pruningHandle, Map<Path, Integer> partitionPathMap, Path
+    partitionPath) {
+    int index = partitionPathMap.get(partitionPath);
+    return pruningHandle.getPartitionKeys()[index];
   }
 
   private void computePartitionSplits(FileStatus file, TableMeta meta, Schema schema, String tableName,

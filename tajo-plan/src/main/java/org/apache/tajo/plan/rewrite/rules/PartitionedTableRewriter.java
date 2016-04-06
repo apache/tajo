@@ -20,7 +20,6 @@ package org.apache.tajo.plan.rewrite.rules;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -200,15 +199,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     long totalVolume = 0L;
     Path[] filteredPaths = new Path[partitions.size()];
     String[] partitionKeys = new String[partitions.size()];
-    Map<Path, String> partitionMap = Maps.newHashMap();
     for (int i = 0; i < partitions.size(); i++) {
       CatalogProtos.PartitionDescProto partition = partitions.get(i);
       filteredPaths[i] = new Path(partition.getPath());
       partitionKeys[i] = partition.getPartitionName();
       totalVolume += partition.getNumBytes();
-      partitionMap.put(filteredPaths[i], partitionKeys[i]);
     }
-    return new PartitionPruningHandle(filteredPaths, partitionKeys, totalVolume, partitionMap);
+    return new PartitionPruningHandle(filteredPaths, partitionKeys, totalVolume);
   }
 
   /**
@@ -247,17 +244,15 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     // Get partition keys and volume from the list of partition directories
     partitionKeys = new String[filteredPaths.length];
-    Map<Path, String> partitionMap = Maps.newHashMap();
     for (int i = 0; i < partitionKeys.length; i++) {
       Path path = filteredPaths[i];
       startIdx = path.toString().indexOf(getColumnPartitionPathPrefix(partitionColumns));
       partitionKeys[i] = path.toString().substring(startIdx);
       summary = fs.getContentSummary(path);
       totalVolume += summary.getLength();
-      partitionMap.put(path, partitionKeys[i]);
     }
 
-    return new PartitionPruningHandle(filteredPaths, partitionKeys, totalVolume, partitionMap);
+    return new PartitionPruningHandle(filteredPaths, partitionKeys, totalVolume);
   }
 
   /**

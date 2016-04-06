@@ -368,7 +368,7 @@ public class FileTablespace extends Tablespace {
     return split;
   }
 
-  protected static final double SPLIT_SLOP = 1.1;   // 10% slop
+  private static final double SPLIT_SLOP = 1.1;   // 10% slop
 
   protected int getBlockIndex(BlockLocation[] blkLocations,
                               long offset) {
