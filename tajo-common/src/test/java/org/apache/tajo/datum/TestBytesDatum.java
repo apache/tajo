@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.primitives.UnsignedBytes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.Bytes;
@@ -84,5 +85,21 @@ public class TestBytesDatum {
     System.arraycopy(bytes, 0, bytes1, 0, bytes.length);
     d = new BlobDatum(bytes1, 0, bytes.length);
     assertArrayEquals(bytes, d.asByteArray());
+  }
+
+  @Test
+  public final void testTest() {
+    int a = (byte)0xFF & 0xFF;
+    a >>= 7;
+    System.out.println(a);
+    a = 0xAF;
+    a >>= 7;
+    System.out.println(a);
+    a = 0x7F;
+    a >>= 7;
+    System.out.println(a);
+    a = 0x0F;
+    a >>= 7;
+    System.out.println(a);
   }
 }

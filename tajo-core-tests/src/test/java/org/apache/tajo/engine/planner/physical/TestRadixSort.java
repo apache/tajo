@@ -35,7 +35,7 @@ public class TestRadixSort {
   private final static QueryContext queryContext;
   private static UnSafeTupleList tuples;
   private static Schema schema;
-  private static final int tupleNum = 10;
+  private static final int tupleNum = 10_000;
   private static final Random random = new Random(System.currentTimeMillis());
   private SortSpec[] sortSpecs;
   private final static Datum MINUS_ONE = DatumFactory.createInt4(-1);
@@ -77,21 +77,21 @@ public class TestRadixSort {
   public static Collection<Object[]> generateParameters() {
     List<Object[]> params = new ArrayList<>();
 
-    params.add(new Object[] {
-        new Param(new SortSpec[] {
-            new SortSpec(schema.getColumn(7), true, false)
-        })
-    });
+//    params.add(new Object[] {
+//        new Param(new SortSpec[] {
+//            new SortSpec(schema.getColumn(7), true, false)
+//        })
+//    });
 
     // Test every single column sort
-//    for (int i = 0; i < schema.size(); i++) {
-//      params.add(new Object[] {
-//          new Param(
-//              new SortSpec[] {
-//                  new SortSpec(schema.getColumn(i), random.nextBoolean(), random.nextBoolean())
-//              })
-//      });
-//    }
+    for (int i = 0; i < schema.size(); i++) {
+      params.add(new Object[] {
+          new Param(
+              new SortSpec[] {
+                  new SortSpec(schema.getColumn(i), random.nextBoolean(), random.nextBoolean())
+              })
+      });
+    }
 
     // Randomly choose columns
 //    for (int colNum = 2; colNum < 6; colNum++) {
