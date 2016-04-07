@@ -185,6 +185,7 @@ public class S3TableSpace extends FileTablespace {
     Map<Path, Integer> partitionPathMap = Maps.newHashMap();
     for (int i = 0; i < pruningHandle.getPartitionKeys().length; i++) {
       partitionPathMap.put(pruningHandle.getPartitionPaths()[i], i);
+      LOG.info("### init partition - i:" + i + ", partition:" + pruningHandle.getPartitionPaths()[i]);
     }
 
     // Get common prefix of partition paths
@@ -225,12 +226,13 @@ public class S3TableSpace extends FileTablespace {
     boolean finished = false, enabled = false;
 
     int partitionCount = pruningHandle.getPartitionPaths().length;
-
+    LOG.info("### 100 ### partitionCount:" + partitionCount);
     // Listing S3 Objects using AWS API
     String prefix = keyFromPath(path);
     if (!prefix.isEmpty()) {
       prefix += "/";
     }
+    LOG.info("### 110 ### prefix:" + prefix);
 
     ListObjectsRequest request = new ListObjectsRequest()
       .withBucketName(uri.getHost())
@@ -243,30 +245,38 @@ public class S3TableSpace extends FileTablespace {
       objectListing = s3.listObjects(request);
 
       int objectsCount = objectListing.getObjectSummaries().size();
+      LOG.info("### 200 ### objectsCount:" + objectsCount);
 
       // Get partition of last bucket from current objects
       Path lastPath = getPathFromBucket(objectListing.getObjectSummaries().get(objectsCount - 1));
       Path lastPartition = lastPath.getParent();
+      LOG.info("### 210 ### lastPath:" + lastPath);
 
       // Check target partition compare with last partition of current objects
       if (previousPartition == null) {
         if (pruningHandle.getPartitionPaths()[0].compareTo(lastPartition) > 0) {
           enabled = false;
+          LOG.info("### 220 ###");
         }
       } else {
         if (previousPartition.compareTo(lastPartition) > 0) {
           enabled = false;
+          LOG.info("### 230 ###");
         }
       }
+      LOG.info("### 300 ### callCount:" + callCount + ", nextMarker:" + objectListing.getNextMarker());
 
       // Generate FileStatus and partition key
       if (enabled) {
         for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
+          LOG.info("### 310 ### key:" + summary.getKey());
           if (summary.getSize() > 0 && !summary.getKey().endsWith("/")) {
             Path bucketPath = getPathFromBucket(summary);
+            LOG.info("### 310 ### bucketPath:" + bucketPath);
 
             if (!bucketPath.getName().startsWith("_") && !bucketPath.getName().startsWith(".")) {
               Path partitionPath = bucketPath.getParent();
+              LOG.info("### 320 ### partitionPath:" + partitionPath );
 
               // If Tajo can matched partition from partition map, add it to final list.
               if (partitionPathMap.containsKey(partitionPath)) {
@@ -274,6 +284,7 @@ public class S3TableSpace extends FileTablespace {
                 String partitionKey = getPartitionKey(pruningHandle, partitionPathMap, partitionPath);
                 computePartitionSplits(file, meta, schema, tableName, partitionKey, splits);
                 previousPartition = partitionPath;
+                LOG.info("### 330 ### previousPartition:" + previousPartition );
 
                 if (LOG.isDebugEnabled()){
                   LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
@@ -285,6 +296,7 @@ public class S3TableSpace extends FileTablespace {
                 // Get next target partition
                 if (previousPartition == null) {
                   nextPartition = pruningHandle.getPartitionPaths()[0];
+                  LOG.info("### 400 ### nextPartition:" + nextPartition);
                 } else {
                   // Find index of previous partition
                   int index = partitionPathMap.get(previousPartition);
@@ -292,16 +304,21 @@ public class S3TableSpace extends FileTablespace {
                   // Find next target partition with the index of previous partition
                   if ((index + 1) < partitionCount) {
                     nextPartition = pruningHandle.getPartitionPaths()[index+1];
+                    LOG.info("### 410 ### nextPartition:" + nextPartition + ", index:" + index);
                   } else if ((index + 1) == partitionCount) {
                     finished = true;
+                    LOG.info("### 420 ### finished");
                     break;
                   }
                 }
 
+                LOG.info("### 430 ###");
                 // If there is no matched partition, consider to move next marker. Otherwise access next object.
                 if (nextPartition != null  && nextPartition.compareTo(lastPartition) <= 0) {
+                  LOG.info("### 440 ###");
                   continue;
                 } else {
+                  LOG.info("### 450 ###");
                   break;
                 }
               }
@@ -309,6 +326,7 @@ public class S3TableSpace extends FileTablespace {
           }
         }
       }
+      LOG.info("### 500 ### ");
 
       request.setMarker(objectListing.getNextMarker());
       callCount++;
