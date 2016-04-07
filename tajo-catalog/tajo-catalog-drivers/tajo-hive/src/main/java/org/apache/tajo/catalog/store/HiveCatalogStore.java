@@ -238,7 +238,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<FieldSchema> partitionKeys = table.getPartitionKeys();
 
       if (null != partitionKeys) {
-        org.apache.tajo.catalog.Schema expressionSchema = SchemaFactory.newV1();
+        SchemaBuilder expressionSchema = SchemaFactory.builder();
         StringBuilder sb = new StringBuilder();
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
@@ -246,7 +246,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
             TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType());
             String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
                 CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
-            expressionSchema.addColumn(new Column(fieldName, dataType));
+            expressionSchema.add(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
             }
@@ -257,7 +257,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               tableName,
               PartitionType.COLUMN,
               sb.toString(),
-              expressionSchema);
+              expressionSchema.build());
         }
       }
     } catch (Throwable t) {

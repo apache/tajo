@@ -564,12 +564,12 @@ public class PlannerUtil {
   }
 
   public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {
-    Schema schema = SchemaFactory.newV1();
+    SchemaBuilder schema = SchemaFactory.builder();
     for (SortSpec spec : sortSpecs) {
-      schema.addColumn(spec.getSortKey());
+      schema.add(spec.getSortKey());
     }
 
-    return schema;
+    return schema.build();
   }
 
   public static SortSpec[][] getSortKeysFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {

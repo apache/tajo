@@ -19,10 +19,7 @@
 package org.apache.tajo.plan.rewrite.rules;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.IndexDesc;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
@@ -93,11 +90,12 @@ public class IndexScanInfo extends AccessPathInfo {
   public IndexScanInfo(TableStats tableStats, IndexDesc indexDesc, SimplePredicate[] predicates) {
     super(ScanTypeControl.INDEX_SCAN, tableStats);
     this.indexPath = indexDesc.getIndexPath();
-    keySchema = SchemaFactory.newV1();
+    SchemaBuilder bld = SchemaFactory.builder();
     this.predicates = predicates;
     for (SimplePredicate predicate : predicates) {
-      keySchema.addColumn(predicate.getKeySortSpec().getSortKey());
+      bld.add(predicate.getKeySortSpec().getSortKey());
     }
+    keySchema = bld.build();
   }
 
   public URI getIndexPath() {

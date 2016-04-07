@@ -57,6 +57,10 @@ public abstract class Type {
     return this.baseType() == TajoDataTypes.Type.RECORD;
   }
 
+  public static Any Any() {
+    return Any.INSTANCE;
+  }
+
   public static Bool Bool() {
     return new Bool();
   }

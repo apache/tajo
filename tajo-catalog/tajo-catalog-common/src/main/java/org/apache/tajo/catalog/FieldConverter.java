@@ -30,9 +30,7 @@ import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.schema.Schema;
 import org.apache.tajo.schema.Schema.NamedPrimitiveType;
 import org.apache.tajo.schema.Schema.NamedStructType;
-import org.apache.tajo.type.Char;
-import org.apache.tajo.type.Protobuf;
-import org.apache.tajo.type.Varchar;
+import org.apache.tajo.type.*;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -62,16 +60,19 @@ public class FieldConverter {
 
       return new TypeDesc(SchemaFactory.newV1(new SchemaLegacy(fields.build())));
     } else {
-      NamedPrimitiveType namedType = (NamedPrimitiveType) src;
-
-      if (namedType.type() instanceof Char) {
-        Char charType = (Char) namedType.type();
+      final NamedPrimitiveType namedType = (NamedPrimitiveType) src;
+      final Type type = namedType.type();
+      if (type instanceof Char) {
+        Char charType = (Char) type;
         return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length()));
-      } else if (namedType.type() instanceof Varchar) {
-        Varchar varcharType = (Varchar) namedType.type();
+      } else if (type instanceof Varchar) {
+        Varchar varcharType = (Varchar) type;
         return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length()));
-      } else if (namedType.type() instanceof Protobuf) {
-        Protobuf protobuf = (Protobuf) namedType.type();
+      } else if (type instanceof Numeric) {
+        Numeric numericType = (Numeric) type;
+        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.NUMERIC, numericType.precision()));
+      } else if (type instanceof Protobuf) {
+        Protobuf protobuf = (Protobuf) type;
         return new TypeDesc(CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName()));
       } else {
         return new TypeDesc(TypeConverter.convert(namedType.type()));

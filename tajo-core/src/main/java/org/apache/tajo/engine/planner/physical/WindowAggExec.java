@@ -19,10 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
@@ -161,11 +158,13 @@ public class WindowAggExec extends UnaryPhysicalExec {
       }
 
       sortKeyColumns = new int[additionalSortKeyColumns.size()];
-      schemaForOrderBy = SchemaFactory.newV1(outSchema);
+      SchemaBuilder schemaForOrderByBld = SchemaFactory.builder();
+      schemaForOrderByBld.addAll(outSchema.getRootColumns());
       for (int i = 0; i < additionalSortKeyColumns.size(); i++) {
         sortKeyColumns[i] = i;
-        schemaForOrderBy.addColumn(additionalSortKeyColumns.get(i));
+        schemaForOrderByBld.add(additionalSortKeyColumns.get(i));
       }
+      schemaForOrderBy = schemaForOrderByBld.build();
     } else {
       functions = new WindowFunctionEval[0];
       functionNum = 0;

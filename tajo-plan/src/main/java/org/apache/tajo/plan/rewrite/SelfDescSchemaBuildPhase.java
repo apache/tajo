@@ -523,11 +523,11 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         if (graph.isLeaf(schemaVertex)) {
           schemaVertex.column = new Column(schemaVertex.name, schemaVertex.type);
         } else {
-          Schema schema = SchemaFactory.newV1();
+          SchemaBuilder schema = SchemaFactory.builder();
           for (ColumnVertex eachChild : graph.getChilds(schemaVertex)) {
-            schema.addColumn(eachChild.column);
+            schema.add(eachChild.column);
           }
-          schemaVertex.column = new Column(schemaVertex.name, new TypeDesc(schema));
+          schemaVertex.column = new Column(schemaVertex.name, new TypeDesc(schema.build()));
         }
       }
     }

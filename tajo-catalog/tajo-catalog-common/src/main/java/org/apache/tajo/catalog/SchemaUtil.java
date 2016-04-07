@@ -20,10 +20,12 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -67,14 +69,17 @@ public class SchemaUtil {
    * Get common columns to be used as join keys of natural joins.
    */
   public static Schema getNaturalJoinColumns(Schema left, Schema right) {
-    Schema common = SchemaFactory.newV1();
+
+    SchemaBuilder common = SchemaFactory.builder();
+    Set<String> commonNames = new HashSet<>();
     for (Column outer : left.getRootColumns()) {
-      if (!common.containsByName(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {
-        common.addColumn(new Column(outer.getSimpleName(), outer.getDataType()));
+      if (!commonNames.contains(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {
+        common.add(new Column(outer.getSimpleName(), outer.getDataType()));
+        commonNames.add(outer.getSimpleName());
       }
     }
     
-    return common;
+    return common.build();
   }
 
   public static Schema getQualifiedLogicalSchema(TableDesc tableDesc, String tableName) {

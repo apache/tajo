@@ -161,9 +161,10 @@ public class TestMergeScanner {
     fragment[0] = new FileFragment("tablet1", table1Path, 0, status1.getLen());
     fragment[1] = new FileFragment("tablet1", table2Path, 0, status2.getLen());
 
-    Schema targetSchema = SchemaFactory.newV1();
-    targetSchema.addColumn(schema.getColumn(0));
-    targetSchema.addColumn(schema.getColumn(2));
+    Schema targetSchema = SchemaFactory.builder()
+        .add(schema.getColumn(0))
+        .add(schema.getColumn(2))
+        .build();
 
     Scanner scanner = new MergeScanner(conf, schema, meta, Arrays.asList(fragment), targetSchema);
     assertEquals(isProjectableStorage(meta.getDataFormat()), scanner.isProjectable());

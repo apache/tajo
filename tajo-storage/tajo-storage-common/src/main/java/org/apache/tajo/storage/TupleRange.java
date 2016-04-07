@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.base.Objects;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 
@@ -39,12 +40,12 @@ public class TupleRange implements Comparable<TupleRange>, Cloneable {
   }
 
   public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {
-    Schema schema = SchemaFactory.newV1();
+    SchemaBuilder schema = SchemaFactory.builder();
     for (SortSpec spec : sortSpecs) {
-      schema.addColumn(spec.getSortKey());
+      schema.add(spec.getSortKey());
     }
 
-    return schema;
+    return schema.build();
   }
 
   public void setStart(Tuple tuple) {

@@ -639,14 +639,15 @@ public class TestStorages {
 
 
     // Making projection schema with different column positions
-    Schema target = SchemaFactory.newV1();
+    SchemaBuilder targetBld = SchemaFactory.builder();
     Random random = new Random();
     for (int i = 1; i < schema.size(); i++) {
       int num = random.nextInt(schema.size() - 1) + 1;
       if (i % num == 0) {
-        target.addColumn(schema.getColumn(i));
+        targetBld.add(schema.getColumn(i));
       }
     }
+    Schema target = targetBld.build();
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());

@@ -119,13 +119,14 @@ public class TestSchema {
 
 	@Before
 	public void setUp() throws Exception {
-		schema = SchemaFactory.newV1();
+    SchemaBuilder schemaBld = SchemaFactory.builder();
 		col1 = new Column("name", Type.TEXT);
-		schema.addColumn(col1);
+		schemaBld.add(col1);
 		col2 = new Column("age", Type.INT4);
-		schema.addColumn(col2);
+		schemaBld.add(col2);
 		col3 = new Column("addr", Type.TEXT);
-		schema.addColumn(col3);
+		schemaBld.add(col3);
+    schema = schemaBld.build();
 	}
 
 	@Test

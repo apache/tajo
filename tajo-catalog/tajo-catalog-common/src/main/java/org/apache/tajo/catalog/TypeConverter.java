@@ -20,7 +20,6 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.schema.Schema;
@@ -72,6 +71,8 @@ public class TypeConverter {
       return Inet4();
     case NULL_TYPE:
       return Null();
+    case ANY:
+      return Any();
     default:
       throw new TajoRuntimeException(new UnsupportedException(legacyBaseType.name()));
     }
@@ -79,10 +80,14 @@ public class TypeConverter {
 
   public static Type convert(TajoDataTypes.DataType legacyType) {
     switch (legacyType.getType()) {
+    case NCHAR:
     case CHAR:
       return Char(legacyType.getLength());
+    case NVARCHAR:
     case VARCHAR:
       return Varchar(legacyType.getLength());
+    case NUMERIC:
+      return Numeric(legacyType.getLength());
     case PROTOBUF:
       return new Protobuf(legacyType.getCode());
     default:
