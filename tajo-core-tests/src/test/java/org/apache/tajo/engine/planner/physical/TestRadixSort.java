@@ -35,7 +35,7 @@ public class TestRadixSort {
   private final static QueryContext queryContext;
   private static UnSafeTupleList tuples;
   private static Schema schema;
-  private static final int tupleNum = 10_000;
+  private static final int tupleNum = 1000;
   private static final Random random = new Random(System.currentTimeMillis());
   private SortSpec[] sortSpecs;
   private final static Datum MINUS_ONE = DatumFactory.createInt4(-1);
@@ -94,16 +94,16 @@ public class TestRadixSort {
     }
 
     // Randomly choose columns
-//    for (int colNum = 2; colNum < 6; colNum++) {
-//      for (int i =0; i < 5; i++) {
-//        SortSpec[] sortSpecs = new SortSpec[colNum];
-//        for (int j = 0; j <colNum; j++) {
-//          sortSpecs[j] = new SortSpec(schema.getColumn(random.nextInt(schema.size())),
-//              random.nextBoolean(), random.nextBoolean());
-//        }
-//        params.add(new Object[] {new Param(sortSpecs)});
-//      }
-//    }
+    for (int colNum = 2; colNum < 6; colNum++) {
+      for (int i =0; i < 5; i++) {
+        SortSpec[] sortSpecs = new SortSpec[colNum];
+        for (int j = 0; j <colNum; j++) {
+          sortSpecs[j] = new SortSpec(schema.getColumn(random.nextInt(schema.size())),
+              random.nextBoolean(), random.nextBoolean());
+        }
+        params.add(new Object[] {new Param(sortSpecs)});
+      }
+    }
 
     return params;
   }
@@ -179,12 +179,14 @@ public class TestRadixSort {
   public void testSort() {
     Comparator<UnSafeTuple> comparator = new UnSafeComparator(schema, sortSpecs);
 
-    RadixSort.sort(queryContext, tuples, schema, sortSpecs, comparator);
+    UnSafeTupleList clone = (UnSafeTupleList) tuples.clone();
+    RadixSort.sort(queryContext, clone, schema, sortSpecs, comparator);
 
-    IntStream.range(0, tuples.size() - 1)
+    IntStream.range(0, clone.size() - 1)
         .forEach(i -> {
-          assertTrue(tuples.get(i) + " precedes " + tuples.get(i + 1) + " at " + i,
-              comparator.compare(tuples.get(i), tuples.get(i + 1)) <= 0);
+          assertTrue(clone.get(i) + " precedes " + clone.get(i + 1) + " at " + i,
+              comparator.compare(clone.get(i), clone.get(i + 1)) <= 0);
         });
+    clone.release();
   }
 }

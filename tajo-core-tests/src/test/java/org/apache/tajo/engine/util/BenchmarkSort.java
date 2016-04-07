@@ -77,7 +77,7 @@ public class BenchmarkSort {
   private TableDesc employee;
 
   String[] QUERIES = {
-      "select managerId, col1 from employee order by managerId, col1"
+      "select col0 from employee order by col0"
   };
 
   @State(Scope.Thread)
@@ -97,21 +97,21 @@ public class BenchmarkSort {
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
     Schema schema = SchemaFactory.newV1();
-    schema.addColumn("managerid", Type.INT8);
-    schema.addColumn("empid", Type.INT4);
-    schema.addColumn("deptname", Type.TEXT);
-    schema.addColumn("col1", Type.INT8);
-    schema.addColumn("col2", Type.INT8);
-    schema.addColumn("col3", Type.INT8);
-    schema.addColumn("col4", Type.INT8);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.INT8);
-    schema.addColumn("col8", Type.INT8);
+    schema.addColumn("col0", Type.INT8);
+    schema.addColumn("col1", Type.INT4);
+    schema.addColumn("col2", Type.INT2);
+    schema.addColumn("col3", Type.DATE);
+    schema.addColumn("col4", Type.TIMESTAMP);
+    schema.addColumn("col5", Type.TIME);
+    schema.addColumn("col6", Type.INET4);
+    schema.addColumn("col7", Type.FLOAT4);
+    schema.addColumn("col8", Type.FLOAT8);
     schema.addColumn("col9", Type.INT8);
     schema.addColumn("col10", Type.INT8);
     schema.addColumn("col11", Type.INT8);
     schema.addColumn("col12", Type.INT8);
+    schema.addColumn("col13", Type.INT8);
+    schema.addColumn("col14", Type.INT8);
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
@@ -137,26 +137,26 @@ public class BenchmarkSort {
             NullDatum.get(),
             NullDatum.get(),
             NullDatum.get(),
-            NullDatum.get(),
+            NullDatum.get()
         });
       } else {
-        boolean positive = rnd.nextInt(2) == 0;
         tuple.put(new Datum[]{
-            DatumFactory.createInt8(positive ? 100_000 + rnd.nextInt(100_000) : (100_000 + rnd.nextInt(100_000)) * -1),
-            DatumFactory.createInt4(rnd.nextInt(100)),
-            DatumFactory.createText("dept_" + i),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
-            DatumFactory.createInt8(100_000 + rnd.nextInt(50)),
+            DatumFactory.createInt8(rnd.nextLong()),
+            DatumFactory.createInt4(rnd.nextInt()),
+            DatumFactory.createInt2((short) rnd.nextInt(Short.MAX_VALUE)),
+            DatumFactory.createDate(rnd.nextInt(2147483647)),
+            DatumFactory.createTimestamp(rnd.nextInt(9999), rnd.nextInt(12) + 1, rnd.nextInt(30),
+                rnd.nextInt(24) + 1, rnd.nextInt(60), rnd.nextInt(60), 0),
+            DatumFactory.createTime(rnd.nextInt(24) + 1, rnd.nextInt(60), rnd.nextInt(60), 0),
+            DatumFactory.createInet4(rnd.nextInt()),
+            DatumFactory.createFloat4(rnd.nextFloat()),
+            DatumFactory.createFloat8(rnd.nextDouble()),
+            DatumFactory.createInt8(rnd.nextLong()),
+            DatumFactory.createInt8(rnd.nextLong()),
+            DatumFactory.createInt8(rnd.nextLong()),
+            DatumFactory.createInt8(rnd.nextLong()),
+            DatumFactory.createInt8(rnd.nextLong()),
+            DatumFactory.createInt8(rnd.nextLong())
         });
       }
       appender.addTuple(tuple);
