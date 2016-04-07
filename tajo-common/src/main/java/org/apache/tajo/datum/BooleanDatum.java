@@ -147,6 +147,9 @@ public class BooleanDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof BooleanDatum) {
       BooleanDatum other = (BooleanDatum) obj;
       return val == other.val;

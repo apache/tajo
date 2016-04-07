@@ -99,6 +99,9 @@ public class Inet4Datum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof Inet4Datum) {
       Inet4Datum other = (Inet4Datum) obj;
       return this.address == other.address;

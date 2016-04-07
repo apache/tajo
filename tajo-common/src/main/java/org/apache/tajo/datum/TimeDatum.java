@@ -179,6 +179,9 @@ public class TimeDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof TimeDatum) {
       TimeDatum another = (TimeDatum) obj;
       return time == another.time;

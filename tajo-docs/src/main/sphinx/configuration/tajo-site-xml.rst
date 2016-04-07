@@ -7,8 +7,34 @@ If you are looking for the configurations for the master and the worker, please 
 Also, catalog configurations are found here :doc:`catalog_configuration`.
 
 =========================
+Common Query Settings
+=========================
+
+.. _tajo.executor.memory.direct:
+
+""""""""""""""""""""""""""""""""""""""
+`tajo.executor.memory.direct`
+""""""""""""""""""""""""""""""""""""""
+
+A flag to enable or disable the use of direct memory.
+
+  * Property value type: Boolean
+  * Default value: true
+  * Example
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.executor.memory.direct</name>
+    <value>true</value>
+  </property>
+
+
+=========================
 Join Query Settings
 =========================
+
+.. _tajo.dist-query.join.auto-broadcast:
 
 """"""""""""""""""""""""""""""""""""""
 `tajo.dist-query.join.auto-broadcast`

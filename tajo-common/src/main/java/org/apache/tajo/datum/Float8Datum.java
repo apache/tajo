@@ -22,7 +22,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.MurmurHash;
+import org.apache.tajo.util.MurmurHash3_32;
 import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -96,10 +96,13 @@ public class Float8Datum extends NumericDatum {
 
   @Override
   public int hashCode() {
-    return MurmurHash.hash(val);
+    return MurmurHash3_32.hash(val);
   }
 
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof Float8Datum) {
       Float8Datum other = (Float8Datum) obj;
       return val == other.val;

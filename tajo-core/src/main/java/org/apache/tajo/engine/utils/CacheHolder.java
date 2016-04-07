@@ -21,8 +21,9 @@ package org.apache.tajo.engine.utils;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.physical.ScanExec;
-import org.apache.tajo.engine.planner.physical.TupleList;
 import org.apache.tajo.engine.planner.physical.TupleMap;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.memory.TupleList;
 import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -50,19 +51,19 @@ public interface CacheHolder<T> {
    * This is a cache-holder for a join table
    * It will release when execution block is finished
    */
-  class BroadcastCacheHolder implements CacheHolder<TupleMap<TupleList>> {
-    private TupleMap<TupleList> data;
+  class BroadcastCacheHolder implements CacheHolder<TupleMap<TupleList<Tuple>>> {
+    private TupleMap<TupleList<Tuple>> data;
     private Deallocatable rowBlock;
     private TableStats tableStats;
 
-    public BroadcastCacheHolder(TupleMap<TupleList> data, TableStats tableStats, Deallocatable rowBlock){
+    public BroadcastCacheHolder(TupleMap<TupleList<Tuple>> data, TableStats tableStats, Deallocatable rowBlock){
       this.data = data;
       this.tableStats = tableStats;
       this.rowBlock = rowBlock;
     }
 
     @Override
-    public TupleMap<TupleList> getData() {
+    public TupleMap<TupleList<Tuple>> getData() {
       return data;
     }
 

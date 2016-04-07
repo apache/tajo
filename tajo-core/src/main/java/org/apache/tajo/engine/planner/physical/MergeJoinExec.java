@@ -20,11 +20,14 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.memory.TupleList;
+import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -39,10 +42,10 @@ public class MergeJoinExec extends CommonJoinExec {
   private final Tuple prevOuterTuple;
   private final Tuple prevInnerTuple;
 
-  private TupleList outerTupleSlots;
-  private TupleList innerTupleSlots;
-  private Iterator<Tuple> outerIterator;
-  private Iterator<Tuple> innerIterator;
+  private TupleList<? extends Tuple> outerTupleSlots;
+  private TupleList<? extends Tuple> innerTupleSlots;
+  private Iterator<? extends Tuple> outerIterator;
+  private Iterator<? extends Tuple> innerIterator;
 
   private JoinTupleComparator joincomparator = null;
   private TupleComparator [] tupleComparator = null;
@@ -57,8 +60,14 @@ public class MergeJoinExec extends CommonJoinExec {
 
     final int INITIAL_TUPLE_SLOT = context.getQueryContext().getInt(SessionVars.JOIN_HASH_TABLE_SIZE);
 
-    this.outerTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
-    this.innerTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
+    if (directMemory) {
+      this.outerTupleSlots = new UnSafeTupleList(SchemaUtil.toDataTypes(outer.getSchema()), INITIAL_TUPLE_SLOT);
+      this.innerTupleSlots = new UnSafeTupleList(SchemaUtil.toDataTypes(inner.getSchema()), INITIAL_TUPLE_SLOT);
+    } else {
+      this.outerTupleSlots = new HeapTupleList(INITIAL_TUPLE_SLOT);
+      this.innerTupleSlots = new HeapTupleList(INITIAL_TUPLE_SLOT);
+    }
+
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = outerSortKey;
     sortSpecs[1] = innerSortKey;
@@ -110,7 +119,7 @@ public class MergeJoinExec extends CommonJoinExec {
 
         prevOuterTuple.put(outerTuple.getValues());
         do {
-          outerTupleSlots.add(outerTuple);
+          outerTupleSlots.addTuple(outerTuple);
           outerTuple = leftChild.next();
           if (outerTuple == null) {
             end = true;
@@ -122,7 +131,7 @@ public class MergeJoinExec extends CommonJoinExec {
 
         prevInnerTuple.put(innerTuple.getValues());
         do {
-          innerTupleSlots.add(innerTuple);
+          innerTupleSlots.addTuple(innerTuple);
           innerTuple = rightChild.next();
           if (innerTuple == null) {
             end = true;
@@ -159,8 +168,8 @@ public class MergeJoinExec extends CommonJoinExec {
   public void close() throws IOException {
     super.close();
 
-    outerTupleSlots.clear();
-    innerTupleSlots.clear();
+    outerTupleSlots.release();
+    innerTupleSlots.release();
     outerTupleSlots = null;
     innerTupleSlots = null;
     outerIterator = null;

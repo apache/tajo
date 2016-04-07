@@ -20,12 +20,13 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.memory.TupleList;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.Iterator;
 
-public class HashJoinExec extends CommonHashJoinExec<TupleList> {
+public class HashJoinExec extends CommonHashJoinExec<TupleList<Tuple>> {
 
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
       PhysicalExec rightExec) {
@@ -33,7 +34,7 @@ public class HashJoinExec extends CommonHashJoinExec<TupleList> {
   }
 
   @Override
-  protected TupleMap<TupleList> convert(TupleMap<TupleList> hashed, boolean fromCache)
+  protected TupleMap<TupleList<Tuple>> convert(TupleMap<TupleList<Tuple>> hashed, boolean fromCache)
       throws IOException {
     return fromCache ? new TupleMap<>(hashed) : hashed;
   }

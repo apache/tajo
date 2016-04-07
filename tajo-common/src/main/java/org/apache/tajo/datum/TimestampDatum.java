@@ -32,7 +32,7 @@ import java.util.TimeZone;
 public class TimestampDatum extends Datum {
   public static final int SIZE = 8;
 
-  private long timestamp;
+  private final long timestamp;
 
   /**
    *
@@ -204,6 +204,9 @@ public class TimestampDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+
     if (obj instanceof TimestampDatum) {
       TimestampDatum another = (TimestampDatum) obj;
       return timestamp == another.timestamp;

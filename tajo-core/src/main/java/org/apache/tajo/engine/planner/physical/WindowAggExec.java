@@ -33,6 +33,7 @@ import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.memory.TupleList;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -81,9 +82,9 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
   // Transient state
   boolean firstTime = true;
-  TupleList evaluatedTuples = null;
-  TupleList accumulatedInTuples = null;
-  TupleList nextAccumulatedInTuples = null;
+  TupleList<Tuple> evaluatedTuples = null;
+  TupleList<Tuple> accumulatedInTuples = null;
+  TupleList<Tuple> nextAccumulatedInTuples = null;
   WindowState state = WindowState.NEW_WINDOW;
   Iterator<Tuple> tupleInFrameIterator = null;
 
@@ -245,7 +246,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
   private void initWindow() {
     if (firstTime) {
-      accumulatedInTuples = new TupleList();
+      accumulatedInTuples = new HeapTupleList();
 
       contexts = new FunctionContext[functionNum];
       for(int evalIdx = 0; evalIdx < functionNum; evalIdx++) {
@@ -274,14 +275,14 @@ public class WindowAggExec extends UnaryPhysicalExec {
   }
 
   private void preAccumulatingNextWindow(Tuple inTuple) {
-    nextAccumulatedInTuples = new TupleList();
+    nextAccumulatedInTuples = new HeapTupleList();
     nextAccumulatedInTuples.add(inTuple);
   }
 
   private void evaluationWindowFrame() {
     TupleComparator comp;
 
-    evaluatedTuples = new TupleList();
+    evaluatedTuples = new HeapTupleList();
 
     for (Tuple inTuple : accumulatedInTuples) {
       for (int c = 0; c < nonFunctionColumnNum; c++) {

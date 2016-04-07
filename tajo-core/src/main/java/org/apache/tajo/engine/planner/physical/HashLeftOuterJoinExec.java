@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.memory.TupleList;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;

@@ -28,6 +28,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.MurmurHash3_32;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.UnsafeUtil;
@@ -340,17 +341,59 @@ public class UnSafeTuple extends ZeroCopyTuple {
 
   @Override
   public int hashCode() {
-    return Arrays.hashCode(getValues());
+    int[] hashCodes = new int[size()];
+
+    for (int i = 0; i < size(); i++) {
+      if (contains(i)) {
+        switch (types[i].getType()) {
+        case INT1:
+        case INT2:
+        case INT4:
+        case FLOAT4:
+          hashCodes[i] = MurmurHash3_32.hashUnsafeInt(getFieldAddr(i));
+          break;
+        case INT8:
+        case FLOAT8:
+          hashCodes[i] = MurmurHash3_32.hashUnsafeLong(getFieldAddr(i));
+          break;
+        case TEXT:
+          long pos = getFieldAddr(i);
+          int len = PlatformDependent.getInt(pos);
+          pos += SizeOf.SIZE_OF_INT;
+          hashCodes[i] = MurmurHash3_32.hashUnsafeVariant(pos, len);
+          break;
+        default:
+          hashCodes[i] = asDatum(i).hashCode();
+          break;
+        }
+      } else {
+        hashCodes[i] = NullDatum.get().hashCode();
+      }
+    }
+    return Arrays.hashCode(hashCodes);
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof Tuple) {
+    if (this == obj)
+      return true;
+
+    if (obj instanceof UnSafeTuple) {
+
+      UnSafeTuple other = (UnSafeTuple) obj;
+      int headerSize1 = SizeOf.SIZE_OF_INT + (size() * SizeOf.SIZE_OF_INT);
+      int headerSize2 = SizeOf.SIZE_OF_INT + (other.size() * SizeOf.SIZE_OF_INT);
+
+      return size() == other.size() && OffHeapRowBlockUtils.equals(address() + headerSize1, getLength() - headerSize1,
+          other.address() + headerSize2, other.getLength() - headerSize2);
+
+    } else if (obj instanceof Tuple) {
       Tuple other = (Tuple) obj;
       return Arrays.equals(getValues(), other.getValues());
     }
     return false;
   }
+
   @Override
   public String toString() {
     return VTuple.toDisplayString(getValues());

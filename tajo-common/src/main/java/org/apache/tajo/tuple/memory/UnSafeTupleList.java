@@ -31,7 +31,7 @@ import java.util.List;
  * The memory pages are automatically added, if memory of a page are exceeded.
  * This instance must be released
  */
-public class UnSafeTupleList extends ArrayList<UnSafeTuple> {
+public class UnSafeTupleList extends ArrayList<UnSafeTuple> implements TupleList<UnSafeTuple> {
 
   private final DataType[] dataTypes;
   private List<MemoryRowBlock> rowBlocks;
@@ -59,6 +59,7 @@ public class UnSafeTupleList extends ArrayList<UnSafeTuple> {
     return addTuple(tuple);
   }
 
+  @Override
   public boolean addTuple(Tuple tuple) {
 
     int prevPos = currentRowBlock.getMemory().writerPosition();

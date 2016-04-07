@@ -25,6 +25,7 @@ import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.MurmurHash3_32;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -34,7 +35,7 @@ public class DateDatum extends Datum {
   public static final int SIZE = 4;
 
   // Dates are stored in UTC.
-  private int jdate;
+  private final int jdate;
 
   public DateDatum(int value) {
     super(TajoDataTypes.Type.DATE);
@@ -231,10 +232,12 @@ public class DateDatum extends Datum {
 
   @Override
   public boolean equals(Object obj) {
-    TimeMeta tm = asTimeMeta();
+    if (this == obj)
+      return true;
+
     if (obj instanceof DateDatum) {
-      TimeMeta another = ((DateDatum) obj).asTimeMeta();
-      return tm.years == another.years && tm.monthOfYear == another.monthOfYear && tm.dayOfMonth == another.dayOfMonth;
+      DateDatum other = (DateDatum) obj;
+      return jdate == other.jdate;
     } else {
       return false;
     }
@@ -242,12 +245,6 @@ public class DateDatum extends Datum {
 
   @Override
   public int hashCode() {
-    TimeMeta tm = asTimeMeta();
-    int total = 157;
-    total = 23 * total + tm.years;
-    total = 23 * total + tm.monthOfYear;
-    total = 23 * total + tm.dayOfMonth;
-
-    return total;
+    return MurmurHash3_32.hash(jdate);
   }
 }

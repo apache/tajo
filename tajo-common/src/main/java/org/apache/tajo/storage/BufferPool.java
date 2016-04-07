@@ -24,6 +24,7 @@ import io.netty.util.internal.PlatformDependent;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.util.FileUtil;
 
 import java.lang.management.BufferPoolMXBean;
 import java.lang.management.ManagementFactory;
@@ -187,5 +188,19 @@ public class BufferPool {
 
   private static List<BufferPoolMXBean> getBufferPools() {
     return ManagementFactory.getPlatformMXBeans(BufferPoolMXBean.class);
+  }
+
+  public static String printDirectMemoryUsage() {
+    BufferPoolMXBean direct = BufferPool.getDirectBufferPool();
+    return String.format("%s (USED)/%s (TOTAL)",
+        FileUtil.humanReadableByteCount(direct.getMemoryUsed(), false),
+        FileUtil.humanReadableByteCount(direct.getTotalCapacity(), false));
+  }
+
+  public static String printHeapMemoryUsage() {
+    return String.format("%s (FREE)/%s (TOTAL)/%s (MAX)",
+        FileUtil.humanReadableByteCount(Runtime.getRuntime().freeMemory(), false),
+        FileUtil.humanReadableByteCount(Runtime.getRuntime().totalMemory(), false),
+        FileUtil.humanReadableByteCount(Runtime.getRuntime().maxMemory(), false));
   }
 }

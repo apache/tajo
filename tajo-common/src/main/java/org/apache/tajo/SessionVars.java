@@ -142,6 +142,8 @@ public enum SessionVars implements ConfigKey {
   SORT_LIST_SIZE(ConfVars.$SORT_LIST_SIZE, "The initial size of list for in-memory sort", DEFAULT),
   JOIN_HASH_TABLE_SIZE(ConfVars.$JOIN_HASH_TABLE_SIZE, "The initial size of hash table for in-memory hash join",
       DEFAULT),
+  EXECUTOR_DIRECT_MEMORY_ENABLE(ConfVars.$EXECUTOR_MEMORY_DIRECT,
+      "If true, the executor data will be kept in direct memory", DEFAULT),
 
   // for index
   INDEX_ENABLED(ConfVars.$INDEX_ENABLED, "index scan enabled", DEFAULT),
