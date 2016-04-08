@@ -49,6 +49,7 @@ import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
@@ -387,14 +388,13 @@ public class TajoTestingCluster {
 
     InetSocketAddress tajoMasterAddress = tajoMaster.getContext().getTajoMasterService().getBindAddress();
 
-    this.conf.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-        tajoMasterAddress.getHostName() + ":" + tajoMasterAddress.getPort());
+    this.conf.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS, NetUtils.getHostPortString(tajoMasterAddress));
     this.conf.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, c.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
     
     InetSocketAddress tajoRestAddress = tajoMaster.getContext().getRestServer().getBindAddress();
 
-    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, tajoRestAddress.getHostName() + ":" + tajoRestAddress.getPort());
+    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, NetUtils.getHostPortString(tajoRestAddress));
 
     startTajoWorkers(numSlaves);
 

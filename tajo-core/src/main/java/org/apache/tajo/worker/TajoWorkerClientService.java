@@ -18,7 +18,6 @@
 
 package org.apache.tajo.worker;
 
-import com.google.common.base.Preconditions;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -32,75 +31,63 @@ import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.rpc.BlockingRpcServer;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 
 import java.net.InetSocketAddress;
 
+@Deprecated
 public class TajoWorkerClientService extends AbstractService {
   private static final Log LOG = LogFactory.getLog(TajoWorkerClientService.class);
-  private final PrimitiveProtos.BoolProto BOOL_TRUE =
-          PrimitiveProtos.BoolProto.newBuilder().setValue(true).build();
-  private final PrimitiveProtos.BoolProto BOOL_FALSE =
-          PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
 
   private BlockingRpcServer rpcServer;
   private InetSocketAddress bindAddr;
 
-  private int port;
-  private TajoConf conf;
   private TajoWorker.WorkerContext workerContext;
   private TajoWorkerClientProtocolServiceHandler serviceHandler;
 
-  public TajoWorkerClientService(TajoWorker.WorkerContext workerContext, int port) {
+  public TajoWorkerClientService(TajoWorker.WorkerContext workerContext) {
     super(TajoWorkerClientService.class.getName());
 
-    this.port = port;
     this.workerContext = workerContext;
   }
 
   @Override
-  public void init(Configuration conf) {
-    Preconditions.checkArgument(conf instanceof TajoConf);
-    this.conf = (TajoConf) conf;
+  public void serviceInit(Configuration conf) throws Exception {
+    TajoConf tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+
     this.serviceHandler = new TajoWorkerClientProtocolServiceHandler();
 
     // init RPC Server in constructor cause Heartbeat Thread use bindAddr
     try {
-      InetSocketAddress initIsa = new InetSocketAddress("0.0.0.0", port);
+      InetSocketAddress initIsa = tajoConf.getSocketAddrVar(TajoConf.ConfVars.WORKER_CLIENT_RPC_ADDRESS);
       if (initIsa.getAddress() == null) {
         throw new IllegalArgumentException("Failed resolve of " + initIsa);
       }
 
-      int workerNum = this.conf.getIntVar(TajoConf.ConfVars.WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
+      int workerNum = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
       this.rpcServer = new BlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa, workerNum);
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
-      this.port = bindAddr.getPort();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
     // Get the master address
     LOG.info(TajoWorkerClientService.class.getSimpleName() + " is bind to " + bindAddr);
-
-    super.init(conf);
+    tajoConf.setVar(TajoConf.ConfVars.WORKER_CLIENT_RPC_ADDRESS, NetUtils.getHostPortString(bindAddr));
+    super.serviceInit(tajoConf);
   }
 
   @Override
-  public void start() {
-    super.start();
-  }
-
-  @Override
-  public void stop() {
+  public void serviceStop() throws Exception {
     LOG.info("TajoWorkerClientService stopping");
     if(rpcServer != null) {
       rpcServer.shutdown();
     }
     LOG.info("TajoWorkerClientService stopped");
-    super.stop();
+    super.serviceStop();
   }
 
   public InetSocketAddress getBindAddr() {

@@ -45,13 +45,11 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.parser.sql.SQLLexer;
 import org.apache.tajo.service.ServiceTrackerFactory;
-import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.ShutdownHookManager;
-import org.apache.tajo.util.VersionInfo;
+import org.apache.tajo.util.*;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
+import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -239,19 +237,15 @@ public class TajoCli implements Closeable {
     this.reconnect = cmd.hasOption("reconnect");
 
     // if there is no "-h" option,
+    InetSocketAddress address = conf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
+        TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+
     if(hostName == null) {
-      if (conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        // it checks if the client service address is given in configuration and distributed mode.
-        // if so, it sets entryAddr.
-        hostName = conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[0];
-      }
+      hostName = address.getHostName();
     }
+
     if (port == null) {
-      if (conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        // it checks if the client service address is given in configuration and distributed mode.
-        // if so, it sets entryAddr.
-        port = Integer.parseInt(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
-      }
+      port = address.getPort();
     }
 
     // Get connection parameters
@@ -262,7 +256,7 @@ public class TajoCli implements Closeable {
       System.err.println(ERROR_PREFIX + "cannot find valid Tajo server address");
       throw new RuntimeException("cannot find valid Tajo server address");
     } else if (hostName != null && port != null) {
-      conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
+      conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.getHostPortString(hostName, port));
       client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, actualConnParams);
     } else if (hostName == null && port == null) {
       client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase, actualConnParams);
