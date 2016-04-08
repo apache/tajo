@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.schema.QualifiedIdentifier;
@@ -28,6 +29,7 @@ import org.apache.tajo.type.Type;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 
 import static org.apache.tajo.catalog.FieldConverter.toQualifiedIdentifier;
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
@@ -36,16 +38,25 @@ import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
  * Builder for Schema
  */
 public class SchemaBuilder {
-  private final ImmutableList.Builder<NamedType> fields = new ImmutableList.Builder();
+  private final SchemaCollector fields;
 
-  public SchemaBuilder() {}
-
-  public SchemaBuilder(Iterator<NamedType> fields) {
-    this.fields.addAll(fields);
+  public interface SchemaCollector {
+    void add(NamedType field);
+    void addAll(Iterator<NamedType> fields);
+    void addAll(Iterable<NamedType> fields);
+    ImmutableCollection<NamedType> build();
   }
 
-  public SchemaBuilder(Iterable<NamedType> fields) {
-    this.fields.addAll(fields);
+  public static SchemaBuilder builder() {
+    return new SchemaBuilder(new ListSchemaBuilder());
+  }
+
+  public static SchemaBuilder setBuilder() {
+    return new SchemaBuilder(new SetSchemaBuilder());
+  }
+
+  SchemaBuilder(SchemaCollector collector) {
+    this.fields = collector;
   }
 
   public SchemaBuilder add(NamedType namedType) {

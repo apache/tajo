@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -18,35 +18,32 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableList;
+import org.apache.tajo.schema.Schema.NamedType;
 
-public class SchemaFactory {
+import java.util.Iterator;
 
-  public static SchemaBuilder builder() {
-    return SchemaBuilder.builder();
+public class ListSchemaBuilder implements SchemaBuilder.SchemaCollector {
+  private final ImmutableList.Builder<NamedType> fields = new ImmutableList.Builder();
+
+  @Override
+  public void add(NamedType namedType) {
+    fields.add(namedType);
   }
 
-  public static Schema newV1() {
-    return new SchemaLegacy();
+  @Override
+  public void addAll(Iterator<NamedType> fields) {
+    this.fields.addAll(fields);
   }
 
-  public static Schema newV1(CatalogProtos.SchemaProto proto) {
-    return new SchemaLegacy(proto);
+  @Override
+  public void addAll(Iterable<NamedType> fields) {
+    this.fields.addAll(fields);
   }
 
-  public static Schema newV1(Schema schema) {
-    return builder().addAll(schema.getRootColumns()).build();
-  }
-
-  public static Schema newV1(Column [] columns) {
-    SchemaBuilder builder = builder();
-    for (Column c :columns) {
-      builder.add(c);
-    }
-    return builder.build();
-  }
-
-  public static Schema newV1(Iterable<Column> columns) {
-    return builder().addAll(columns).build();
+  @Override
+  public ImmutableCollection<NamedType> build() {
+    return fields.build();
   }
 }

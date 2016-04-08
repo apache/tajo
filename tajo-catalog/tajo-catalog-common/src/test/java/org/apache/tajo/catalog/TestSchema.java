@@ -40,7 +40,7 @@ public class TestSchema {
 
   static {
     // simple nested schema
-    SchemaBuilder builder1 = new SchemaBuilder();
+    SchemaBuilder builder1 = SchemaBuilder.builder();
     builder1.add(new Column("s1", Type.INT8));
 
     Schema nestedRecordSchema = SchemaFactory.newV1();
@@ -63,7 +63,7 @@ public class TestSchema {
     //  |- s8
     //     |- s6
     //     |- s7
-    SchemaBuilder builder2 = new SchemaBuilder();
+    SchemaBuilder builder2 = SchemaBuilder.builder();
     //nestedSchema2 = SchemaFactory.newV1();
     builder2.add(new Column("s1", Type.INT8));
 
@@ -96,7 +96,7 @@ public class TestSchema {
     //      |- s8
     //  |- s9
 
-    SchemaBuilder builder3 = new SchemaBuilder();
+    SchemaBuilder builder3 = SchemaBuilder.builder();
 
     builder3.add("s1", Type.INT8);
     builder3.add("s2", Type.INT8);
