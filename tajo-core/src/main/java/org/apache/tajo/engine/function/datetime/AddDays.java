@@ -20,17 +20,17 @@ package org.apache.tajo.engine.function.datetime;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.plan.expr.FunctionEval;
-import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.plan.expr.FunctionEval;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.TimeZone;
@@ -63,7 +63,7 @@ public class AddDays extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] types) {
-    String timezoneId = context.get(SessionVars.TIMEZONE);
+    String timezoneId = context.getConf().getVar(TajoConf.ConfVars.$TIMEZONE);
     timezone = TimeZone.getTimeZone(timezoneId);
   }
 
