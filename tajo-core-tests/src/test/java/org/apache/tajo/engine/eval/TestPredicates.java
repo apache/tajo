@@ -20,21 +20,20 @@ package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
-import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
-import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestPredicates extends ExprTestBase {
 
   public static final Schema FourIntSchema;
 
   static {
-    FourIntSchema = SchemaFactory.builder()
+    FourIntSchema = SchemaBuilder.builder()
         .add("col1", INT4)
         .add("col2", INT4)
         .add("col3", INT4)
@@ -122,7 +121,7 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testComparisonEqual() throws TajoException {
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("col0", TajoDataTypes.Type.INT1)
         .add("col1", TajoDataTypes.Type.INT2)
         .add("col2", TajoDataTypes.Type.INT4)

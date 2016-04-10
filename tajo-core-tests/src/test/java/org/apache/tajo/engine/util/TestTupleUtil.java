@@ -21,15 +21,15 @@ package org.apache.tajo.engine.util;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 public class TestTupleUtil {
   @Test
   public final void testFixedSizeChar() {
-    Schema schema = SchemaFactory.builder().add("col1", CatalogUtil.newDataTypeWithLen(Type.CHAR, 5)).build();
+    Schema schema = SchemaBuilder.builder().add("col1", CatalogUtil.newDataTypeWithLen(Type.CHAR, 5)).build();
 
     Tuple tuple = new VTuple(1);
     tuple.put(new Datum[] {
@@ -57,7 +57,7 @@ public class TestTupleUtil {
 
   @Test
   public final void testToBytesAndToTuple() {
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", Type.CHAR)
         .add("col3", Type.INT2)
@@ -97,7 +97,7 @@ public class TestTupleUtil {
     VTuple sTuple = new VTuple(6);
     VTuple eTuple = new VTuple(6);
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("numChar", Type.CHAR)
         .add("numShort", Type.INT2)
         .add("numInt", Type.INT4)
@@ -138,7 +138,7 @@ public class TestTupleUtil {
   @Test
   public void testBuildTupleFromPartitionPath() {
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("key1", Type.INT8)
         .add("key2", Type.TEXT)
         .build();

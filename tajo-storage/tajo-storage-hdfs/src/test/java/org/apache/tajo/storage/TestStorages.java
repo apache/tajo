@@ -398,7 +398,7 @@ public class TestStorages {
 
   @Test
   public void testVariousTypes() throws IOException {
-    SchemaBuilder schemaBld = SchemaFactory.builder()
+    SchemaBuilder schemaBld = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
         .add("col3", Type.INT2)
@@ -469,7 +469,7 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    SchemaBuilder schemaBld = SchemaFactory.builder()
+    SchemaBuilder schemaBld = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
         .add("col3", Type.INT2)
@@ -566,7 +566,7 @@ public class TestStorages {
   public void testNullHandlingTypesWithProjection() throws IOException {
     if (internalType) return;
 
-    SchemaBuilder schemaBld = SchemaFactory.builder()
+    SchemaBuilder schemaBld = SchemaBuilder.builder()
     .add("col1", Type.BOOLEAN)
     .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
     .add("col3", Type.INT2)
@@ -639,7 +639,7 @@ public class TestStorages {
 
 
     // Making projection schema with different column positions
-    SchemaBuilder targetBld = SchemaFactory.builder();
+    SchemaBuilder targetBld = SchemaBuilder.builder();
     Random random = new Random();
     for (int i = 1; i < schema.size(); i++) {
       int num = random.nextInt(schema.size() - 1) + 1;
@@ -675,7 +675,7 @@ public class TestStorages {
   public void testRCFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
         .add("col3", Type.INT2)
@@ -741,7 +741,7 @@ public class TestStorages {
   public void testRCFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
         .add("col3", Type.INT2)
@@ -807,7 +807,7 @@ public class TestStorages {
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
         .add("col3", Type.INT2)
@@ -875,7 +875,7 @@ public class TestStorages {
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
         .add("col3", Type.INT2)

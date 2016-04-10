@@ -142,7 +142,7 @@ public class EvalTreeUtil {
   }
   
   public static Schema getSchemaByTargets(Schema inputSchema, List<Target> targets) {
-    SchemaBuilder schema = SchemaFactory.builder();
+    SchemaBuilder schema = SchemaBuilder.builder();
     for (Target target : targets) {
       schema.add(
           target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),

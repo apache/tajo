@@ -388,7 +388,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private void setSchema() {
     if (invocationDesc.isScalarFunction()) {
       TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-      SchemaBuilder inSchemaBuilder = SchemaFactory.builder();
+      SchemaBuilder inSchemaBuilder = SchemaBuilder.builder();
       for (int i = 0; i < paramTypes.length; i++) {
         inSchemaBuilder.add(new Column("in_" + i, paramTypes[i]));
       }
@@ -399,18 +399,18 @@ public class PythonScriptEngine extends TajoScriptEngine {
       if (firstPhase) {
         // first phase
         TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-        SchemaBuilder inSchemaBuilder = SchemaFactory.builder();
+        SchemaBuilder inSchemaBuilder = SchemaBuilder.builder();
         for (int i = 0; i < paramTypes.length; i++) {
           inSchemaBuilder.add(new Column("in_" + i, paramTypes[i]));
         }
         inSchema = inSchemaBuilder.build();
-        outSchema = SchemaFactory.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
+        outSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
       } else if (lastPhase) {
-        inSchema = SchemaFactory.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
-        outSchema = SchemaFactory.builder().add(new Column("out", functionSignature.getReturnType())).build();
+        inSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
+        outSchema = SchemaBuilder.builder().add(new Column("out", functionSignature.getReturnType())).build();
       } else {
         // intermediate phase
-        inSchema = outSchema = SchemaFactory.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
+        inSchema = outSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
       }
     }
     projectionCols = new int[outSchema.size()];

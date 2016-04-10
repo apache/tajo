@@ -90,7 +90,7 @@ public class IndexScanInfo extends AccessPathInfo {
   public IndexScanInfo(TableStats tableStats, IndexDesc indexDesc, SimplePredicate[] predicates) {
     super(ScanTypeControl.INDEX_SCAN, tableStats);
     this.indexPath = indexDesc.getIndexPath();
-    SchemaBuilder bld = SchemaFactory.builder();
+    SchemaBuilder bld = SchemaBuilder.builder();
     this.predicates = predicates;
     for (SimplePredicate predicate : predicates) {
       bld.add(predicate.getKeySortSpec().getSortKey());

@@ -21,10 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -161,7 +158,7 @@ public class TestMergeScanner {
     fragment[0] = new FileFragment("tablet1", table1Path, 0, status1.getLen());
     fragment[1] = new FileFragment("tablet1", table2Path, 0, status2.getLen());
 
-    Schema targetSchema = SchemaFactory.builder()
+    Schema targetSchema = SchemaBuilder.builder()
         .add(schema.getColumn(0))
         .add(schema.getColumn(2))
         .build();

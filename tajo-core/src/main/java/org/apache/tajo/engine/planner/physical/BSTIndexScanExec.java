@@ -98,7 +98,7 @@ public class BSTIndexScanExec extends ScanExec {
       qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree()));
     }
 
-    SchemaBuilder mergedSchema = SchemaFactory.builder();
+    SchemaBuilder mergedSchema = SchemaBuilder.builder();
     for (Column column : originalSchema.getRootColumns()) {
       if (subSchema.contains(column) || qualAndTargets.contains(column)) {
         mergedSchema.add(column);

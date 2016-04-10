@@ -101,13 +101,13 @@ public class TestSchema {
     builder3.add("s1", Type.INT8);
     builder3.add("s2", Type.INT8);
 
-    SchemaBuilder s5 = SchemaFactory.builder();
+    SchemaBuilder s5 = SchemaBuilder.builder();
     s5.add("s6", Type.INT8);
 
-    SchemaBuilder s7 = SchemaFactory.builder();
+    SchemaBuilder s7 = SchemaBuilder.builder();
     s7.add("s5", new TypeDesc(s5.build()));
 
-    SchemaBuilder s3 = SchemaFactory.builder();
+    SchemaBuilder s3 = SchemaBuilder.builder();
     s3.add("s4", Type.INT8);
     s3.add("s7", new TypeDesc(s7.build()));
     s3.add("s8", Type.INT8);
@@ -119,7 +119,7 @@ public class TestSchema {
 
 	@Before
 	public void setUp() throws Exception {
-    SchemaBuilder schemaBld = SchemaFactory.builder();
+    SchemaBuilder schemaBld = SchemaBuilder.builder();
 		col1 = new Column("name", Type.TEXT);
 		schemaBld.add(col1);
 		col2 = new Column("age", Type.INT4);
@@ -279,13 +279,13 @@ public class TestSchema {
     nf2DotNf2.addColumn("f1", Type.INT8);
     nf2DotNf2.addColumn("f2", Type.INT8);
 
-    Schema nf2 = SchemaFactory.builder()
+    Schema nf2 = SchemaBuilder.builder()
         .add("f1", Type.INT8)
         .add("nf1", new TypeDesc(nf2DotNf1))
         .add("nf2", new TypeDesc(nf2DotNf2))
         .add("f2", Type.INT8).build();
 
-    Schema root = SchemaFactory.builder()
+    Schema root = SchemaBuilder.builder()
         .add("f1", Type.INT8)
         .add("nf1", Type.INT8)
         .add("nf2", new TypeDesc(nf2))

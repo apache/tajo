@@ -21,6 +21,7 @@ package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
@@ -32,7 +33,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
   private static Schema schema;
 
   static {
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
         .add("col0", TajoDataTypes.Type.INT1)
         .add("col1", TajoDataTypes.Type.INT2)
         .add("col2", TajoDataTypes.Type.INT4)
@@ -68,7 +69,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testNullHandling() throws TajoException {
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
         .add("col0", TajoDataTypes.Type.INT1)
         .add("col1", TajoDataTypes.Type.INT2)
         .add("col2", TajoDataTypes.Type.INT4)
@@ -234,7 +235,7 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testUnary() throws TajoException {
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
     .add("col0", TajoDataTypes.Type.INT1)
     .add("col1", TajoDataTypes.Type.INT2)
     .add("col2", TajoDataTypes.Type.INT4)

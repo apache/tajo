@@ -22,7 +22,7 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.Test;
 
@@ -61,7 +61,7 @@ public class TestSchemaConverter {
       "}\n";
 
   private Schema createAllTypesSchema() {
-    return SchemaFactory.builder()
+    return SchemaBuilder.builder()
         .add(new Column("myboolean", Type.BOOLEAN))
         .add(new Column("mychar", Type.CHAR))
         .add(new Column("myint2", Type.INT2))
@@ -78,7 +78,7 @@ public class TestSchemaConverter {
   }
 
   private Schema createAllTypesConvertedSchema() {
-    return SchemaFactory.builder()
+    return SchemaBuilder.builder()
         .add(new Column("myboolean", Type.BOOLEAN))
         .add(new Column("myint", Type.INT4))
         .add(new Column("mylong", Type.INT8))

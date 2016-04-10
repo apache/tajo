@@ -646,7 +646,7 @@ public class DistinctGroupbyBuilder {
     //Set SecondStage ColumnId and Input schema
     secondStageDistinctNode.setResultColumnIds(secondStageColumnIds);
 
-    SchemaBuilder secondStageInSchema = SchemaFactory.builder();
+    SchemaBuilder secondStageInSchema = SchemaBuilder.builder();
     Set<String> nameSet = new HashSet<>();
     //TODO merged tuple schema
     int index = 0;

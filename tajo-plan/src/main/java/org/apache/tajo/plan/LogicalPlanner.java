@@ -1228,7 +1228,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static Schema getNaturalJoinSchema(LogicalNode left, LogicalNode right) {
-    SchemaBuilder joinSchema = SchemaFactory.builder();
+    SchemaBuilder joinSchema = SchemaBuilder.builder();
 
     Set<Column> columnSet = Sets.newHashSet(left.getOutSchema().getRootColumns());
     columnSet.addAll(right.getOutSchema().getRootColumns());
@@ -1677,7 +1677,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
       ColumnReferenceExpr [] targets = expr.getTargetColumns();
-      final SchemaBuilder targetColumnsBld = SchemaFactory.builder();
+      final SchemaBuilder targetColumnsBld = SchemaBuilder.builder();
       for (ColumnReferenceExpr target : targets) {
         Column targetColumn = desc.getLogicalSchema().getColumn(target.getCanonicalName().replace(".", "/"));
 
@@ -1957,7 +1957,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
               queryOutputSchema.size() < partitionExpressionSchema.size()) {
             throw makeSyntaxError("Partition columns cannot be more than table columns.");
           }
-          SchemaBuilder tableSchemaBld = SchemaFactory.builder();
+          SchemaBuilder tableSchemaBld = SchemaBuilder.builder();
           for (int i = 0; i < queryOutputSchema.size() - partitionExpressionSchema.size(); i++) {
             tableSchemaBld.add(queryOutputSchema.getColumn(i));
           }
@@ -2042,7 +2042,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private Schema convertColumnsToSchema(ColumnDefinition[] elements) {
-    SchemaBuilder schema = SchemaFactory.builder();
+    SchemaBuilder schema = SchemaBuilder.builder();
     for (ColumnDefinition columnDefinition: elements) {
       schema.add(convertColumn(columnDefinition));
     }
@@ -2056,7 +2056,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private static Schema convertTableElementsSchema(ColumnDefinition[] elements) {
-    SchemaBuilder schema = SchemaFactory.builder();
+    SchemaBuilder schema = SchemaBuilder.builder();
 
     for (ColumnDefinition columnDefinition: elements) {
       schema.add(convertColumn(columnDefinition));

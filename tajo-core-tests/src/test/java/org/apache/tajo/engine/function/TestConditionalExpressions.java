@@ -20,12 +20,13 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.junit.Test;
 
 import static org.junit.Assert.fail;
@@ -33,7 +34,7 @@ import static org.junit.Assert.fail;
 public class TestConditionalExpressions extends ExprTestBase {
   @Test
   public void testCaseWhens1() throws TajoException {
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("col1", TajoDataTypes.Type.INT1)
         .add("col2", TajoDataTypes.Type.INT2)
         .add("col3", TajoDataTypes.Type.INT4)

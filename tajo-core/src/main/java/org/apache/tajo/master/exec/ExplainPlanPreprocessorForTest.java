@@ -156,7 +156,7 @@ public class ExplainPlanPreprocessorForTest {
       Column[] columns = schema.toArray();
       Arrays.sort(columns, columnComparator);
 
-      SchemaBuilder sorted = SchemaFactory.builder();
+      SchemaBuilder sorted = SchemaBuilder.builder();
       for (Column col : columns) {
         sorted.add(col);
       }

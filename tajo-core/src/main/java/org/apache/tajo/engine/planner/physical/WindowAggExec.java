@@ -158,7 +158,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
       }
 
       sortKeyColumns = new int[additionalSortKeyColumns.size()];
-      SchemaBuilder schemaForOrderByBld = SchemaFactory.builder();
+      SchemaBuilder schemaForOrderByBld = SchemaBuilder.builder();
       schemaForOrderByBld.addAll(outSchema.getRootColumns());
       for (int i = 0; i < additionalSortKeyColumns.size(); i++) {
         sortKeyColumns[i] = i;

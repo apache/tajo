@@ -60,7 +60,7 @@ public class TestBSTIndex {
     this.dataFormat = type;
     conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.ROOT_DIR, TEST_PATH);
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
@@ -112,7 +112,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
         .build();
@@ -189,7 +189,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
         .build();
@@ -283,7 +283,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
         .build();
@@ -357,7 +357,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .build();
@@ -451,7 +451,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .build();
@@ -535,7 +535,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
         .build();
@@ -621,7 +621,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .build();
@@ -729,7 +729,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .build();
@@ -812,7 +812,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), false, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
         .build();
@@ -906,7 +906,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), false, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), false, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .build();
@@ -1007,7 +1007,7 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
         .build();

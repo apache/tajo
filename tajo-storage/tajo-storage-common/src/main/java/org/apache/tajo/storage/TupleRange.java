@@ -40,7 +40,7 @@ public class TupleRange implements Comparable<TupleRange>, Cloneable {
   }
 
   public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {
-    SchemaBuilder schema = SchemaFactory.builder();
+    SchemaBuilder schema = SchemaBuilder.builder();
     for (SortSpec spec : sortSpecs) {
       schema.add(spec.getSortKey());
     }

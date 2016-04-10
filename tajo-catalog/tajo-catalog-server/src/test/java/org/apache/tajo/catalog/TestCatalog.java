@@ -361,14 +361,14 @@ public class TestCatalog {
     //      |- s8
     //  |- s9
 
-    SchemaBuilder nestedSchema = SchemaFactory.builder();
+    SchemaBuilder nestedSchema = SchemaBuilder.builder();
     nestedSchema.add("s1", Type.INT8);
     nestedSchema.add("s2", Type.INT8);
 
-    Schema s5 = SchemaFactory.builder().add("s6", Type.INT8).build();
-    Schema s7 = SchemaFactory.builder().add("s5", new TypeDesc(s5)).build();
+    Schema s5 = SchemaBuilder.builder().add("s6", Type.INT8).build();
+    Schema s7 = SchemaBuilder.builder().add("s5", new TypeDesc(s5)).build();
 
-    Schema s3 = SchemaFactory.builder()
+    Schema s3 = SchemaBuilder.builder()
         .add("s4", Type.INT8)
         .add("s7", new TypeDesc(s7))
         .add("s8", Type.INT8).build();
@@ -394,17 +394,17 @@ public class TestCatalog {
     //      |- s3
     //  |- s4
 
-    SchemaBuilder nestedSchema = SchemaFactory.builder();
+    SchemaBuilder nestedSchema = SchemaBuilder.builder();
     nestedSchema.add("s1", Type.INT8);
     nestedSchema.add("s2", Type.INT8);
 
     Schema s5 = SchemaFactory.newV1();
     s5.addColumn("s6", Type.INT8);
 
-    SchemaBuilder s7 = SchemaFactory.builder();
+    SchemaBuilder s7 = SchemaBuilder.builder();
     s7.add("s5", new TypeDesc(s5));
 
-    SchemaBuilder s3 = SchemaFactory.builder();
+    SchemaBuilder s3 = SchemaBuilder.builder();
     s3.add("s4", Type.INT8);
     s3.add("s7", new TypeDesc(s7.build()));
     s3.add("s8", Type.INT8);

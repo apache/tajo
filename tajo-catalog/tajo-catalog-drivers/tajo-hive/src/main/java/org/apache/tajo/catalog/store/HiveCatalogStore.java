@@ -238,7 +238,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<FieldSchema> partitionKeys = table.getPartitionKeys();
 
       if (null != partitionKeys) {
-        SchemaBuilder expressionSchema = SchemaFactory.builder();
+        SchemaBuilder expressionSchema = SchemaBuilder.builder();
         StringBuilder sb = new StringBuilder();
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {

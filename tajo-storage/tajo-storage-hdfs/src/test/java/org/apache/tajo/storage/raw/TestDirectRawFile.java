@@ -127,7 +127,7 @@ public class TestDirectRawFile {
   }
 
   static {
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
         .add("col0", TajoDataTypes.Type.BOOLEAN)
         .add("col1", TajoDataTypes.Type.INT2)
         .add("col2", TajoDataTypes.Type.INT4)

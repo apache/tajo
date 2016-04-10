@@ -21,13 +21,14 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.Test;
 
@@ -95,7 +96,7 @@ public class TestSQLExpression extends ExprTestBase {
   private static final Schema TestSchema1;
 
   static {
-    TestSchema1 = SchemaFactory.builder()
+    TestSchema1 = SchemaBuilder.builder()
         .add("col0", INT1)
         .add("col1", INT2)
         .add("col2", INT4)

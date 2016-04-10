@@ -56,7 +56,7 @@ public class TestSingleCSVFileBSTIndex {
   public TestSingleCSVFileBSTIndex() {
     conf = new TajoConf();
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
@@ -100,7 +100,7 @@ public class TestSingleCSVFileBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("long", Type.INT8))
         .add(new Column("double", Type.FLOAT8))
         .build();
@@ -192,7 +192,7 @@ public class TestSingleCSVFileBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = SchemaFactory.builder()
+    Schema keySchema = SchemaBuilder.builder()
         .add(new Column("int", Type.INT4))
         .add(new Column("long", Type.INT8))
         .build();

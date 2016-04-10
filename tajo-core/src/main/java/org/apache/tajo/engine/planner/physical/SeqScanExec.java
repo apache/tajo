@@ -138,7 +138,7 @@ public class SeqScanExec extends ScanExec {
   public static Schema getProjectSchema(Schema inSchema, Schema outSchema,
                                         Optional<Collection<Target>> targets,
                                         Optional<EvalNode> qual) {
-    SchemaBuilder projected = SchemaFactory.builder();
+    SchemaBuilder projected = SchemaBuilder.builder();
 
     // in the case where projected column or expression are given
     // the target can be an empty list.

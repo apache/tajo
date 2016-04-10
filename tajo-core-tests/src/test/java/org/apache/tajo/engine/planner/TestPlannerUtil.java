@@ -72,16 +72,16 @@ public class TestPlannerUtil {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("name", Type.TEXT)
         .add("empid", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("deptname", Type.TEXT).build();
 
-    Schema schema2 = SchemaFactory.builder()
+    Schema schema2 = SchemaBuilder.builder()
         .add("deptname", Type.TEXT)
         .add("manager", Type.TEXT).build();
 
-    Schema schema3 = SchemaFactory.builder()
+    Schema schema3 = SchemaBuilder.builder()
         .add("deptname", Type.TEXT)
         .add("score", CatalogUtil.newSimpleDataType(Type.INT4)).build();
 
@@ -188,10 +188,10 @@ public class TestPlannerUtil {
 
   @Test
   public final void testGetJoinKeyPairs() {
-    Schema outerSchema = SchemaFactory.builder()
+    Schema outerSchema = SchemaBuilder.builder()
         .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4)).build();
-    Schema innerSchema = SchemaFactory.builder()
+    Schema innerSchema = SchemaBuilder.builder()
         .add("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4)).build();
 
@@ -250,11 +250,11 @@ public class TestPlannerUtil {
 
   @Test
   public final void testGetSortKeysFromJoinQual() {
-    Schema outerSchema = SchemaFactory.builder()
+    Schema outerSchema = SchemaBuilder.builder()
         .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4))
         .build();
-    Schema innerSchema = SchemaFactory.builder()
+    Schema innerSchema = SchemaBuilder.builder()
         .add("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4))
         .build();
@@ -288,11 +288,11 @@ public class TestPlannerUtil {
 
   @Test
   public final void testComparatorsFromJoinQual() {
-    Schema outerSchema = SchemaFactory.builder()
+    Schema outerSchema = SchemaBuilder.builder()
         .add("employee.id1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("employee.id2", CatalogUtil.newSimpleDataType(Type.INT4))
         .build();
-    Schema innerSchema = SchemaFactory.builder()
+    Schema innerSchema = SchemaBuilder.builder()
         .add("people.fid1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4))
         .build();

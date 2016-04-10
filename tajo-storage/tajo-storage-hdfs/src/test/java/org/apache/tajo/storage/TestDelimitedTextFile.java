@@ -25,7 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -47,7 +47,7 @@ public class TestDelimitedTextFile {
   private static Tuple baseTuple;
 
   static {
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
         .add("col1", Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
         .add("col3", Type.INT2)

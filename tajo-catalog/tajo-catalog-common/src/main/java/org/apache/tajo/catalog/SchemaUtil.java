@@ -42,7 +42,7 @@ public class SchemaUtil {
   // The essential solution would be https://issues.apache.org/jira/browse/TAJO-895.
   static int tmpColumnSeq = 0;
   public static Schema merge(Schema left, Schema right) {
-    SchemaBuilder merged = SchemaFactory.builder();
+    SchemaBuilder merged = SchemaBuilder.builder();
     Set<String> nameSet = new HashSet<>();
 
     for(Column col : left.getRootColumns()) {
@@ -70,7 +70,7 @@ public class SchemaUtil {
    */
   public static Schema getNaturalJoinColumns(Schema left, Schema right) {
 
-    SchemaBuilder common = SchemaFactory.builder();
+    SchemaBuilder common = SchemaBuilder.builder();
     Set<String> commonNames = new HashSet<>();
     for (Column outer : left.getRootColumns()) {
       if (!commonNames.contains(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {

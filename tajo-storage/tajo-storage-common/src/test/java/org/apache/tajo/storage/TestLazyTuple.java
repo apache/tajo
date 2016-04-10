@@ -21,6 +21,7 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
@@ -42,7 +43,7 @@ public class TestLazyTuple {
   public void setUp() {
     nullbytes = "\\N".getBytes();
 
-    schema = SchemaFactory.builder()
+    schema = SchemaBuilder.builder()
         .add("col1", TajoDataTypes.Type.BOOLEAN)
         .add("col2", CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, 7))
         .add("col3", TajoDataTypes.Type.INT2)

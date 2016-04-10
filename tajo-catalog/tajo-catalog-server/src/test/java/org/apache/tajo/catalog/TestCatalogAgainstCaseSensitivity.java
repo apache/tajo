@@ -334,18 +334,18 @@ public class TestCatalogAgainstCaseSensitivity {
     String databaseName = "TestDatabase1";
     String tableName = "nested_Table";
 
-    Schema schema = SchemaFactory.builder()
+    Schema schema = SchemaBuilder.builder()
         .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
         .add("CoL2", CatalogUtil.newSimpleDataType(Type.FLOAT4))
         .add("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT)).build();
 
-    Schema tableSchema = SchemaFactory.builder()
+    Schema tableSchema = SchemaBuilder.builder()
     .add("RecoRd1", new TypeDesc(schema))
     .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
     .add("CoL3", CatalogUtil.newSimpleDataType(Type.TEXT))
     .add("RecoRd2", new TypeDesc(schema))
     .add("RecoRd3", new TypeDesc(
-        SchemaFactory.builder()
+        SchemaBuilder.builder()
             .add("CoL1", CatalogUtil.newSimpleDataType(Type.INT4))
             .add("RecoRd1", new TypeDesc(schema)).build())).build();
 
