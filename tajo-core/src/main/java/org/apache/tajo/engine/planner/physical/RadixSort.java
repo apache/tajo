@@ -66,13 +66,18 @@ public class RadixSort {
     final boolean[] nullFirst;
     final Comparator<UnSafeTuple> comparator;
 
+    // If the number of tuples to be sorted does not exceed this value, Tim sort is used.
+    // The default value is 65536 which is got from some experiments.
+    final int timSortThreshold;
+
     long msdRadixSortTime = 0;
     long histogramPrepareTime = 0;
     long swapTime = 0;
     long histogramBuildTime = 0;
     int msdRadixSortCall = 0;
 
-    public RadixSortContext(UnSafeTuple[] in, Schema schema, SortSpec[] sortSpecs, Comparator<UnSafeTuple> comparator) {
+    public RadixSortContext(UnSafeTuple[] in, Schema schema, SortSpec[] sortSpecs, Comparator<UnSafeTuple> comparator,
+                            int timSortThreshold) {
       this.in = in;
       this.out = new UnSafeTuple[in.length];
       this.keys = new int[in.length];
@@ -92,6 +97,7 @@ public class RadixSort {
         this.sortKeyTypes[i] = sortSpecs[i].getSortKey().getDataType().getType();
       }
       this.comparator = comparator;
+      this.timSortThreshold = timSortThreshold;
     }
 
     public void printStat() {
@@ -105,7 +111,6 @@ public class RadixSort {
 
   private final static int _16BIT_BIN_NUM = 65536;
   private final static int _16BIT_MAX_BIN_IDX = 65535;
-  private static int TIM_SORT_THRESHOLD = -1;
 
   /**
    * Entry method.
@@ -118,9 +123,9 @@ public class RadixSort {
    */
   public static List<UnSafeTuple> sort(QueryContext queryContext, UnSafeTupleList list, Schema schema, SortSpec[] sortSpecs,
                                        Comparator<UnSafeTuple> comp) {
-    TIM_SORT_THRESHOLD = queryContext.getInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT);
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
-    RadixSortContext context = new RadixSortContext(in, schema, sortSpecs, comp);
+    RadixSortContext context = new RadixSortContext(in, schema, sortSpecs, comp,
+        queryContext.getInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT));
 
     long before = System.currentTimeMillis();
     recursiveCallForNextKey(context, 0, context.in.length, 0);
@@ -555,9 +560,6 @@ public class RadixSort {
     // Swap tuples if necessary.
     // If every tuple has the same radix key, tuples don't have to be swapped.
 
-//    if (binEndIdx[0] != exclusiveEnd &&
-//        (binEndIdx[32767] != 0 || binEndIdx[32768] != exclusiveEnd)) {
-
     boolean needSwap = Arrays.stream(binEndIdx).filter(eachCount -> eachCount > 0).count() > 1;
     buildHistogram(context, start, binEndIdx);
     if (needSwap) {
@@ -578,7 +580,7 @@ public class RadixSort {
 
       if (len > 1) {
         // Use the tim sort when the array length is sufficiently small.
-        if (len < TIM_SORT_THRESHOLD) {
+        if (len < context.timSortThreshold) {
           Arrays.sort(context.in, start, binEndIdx[0], context.comparator);
         } else {
           if (nextKey) {
@@ -593,7 +595,7 @@ public class RadixSort {
         len = binEndIdx[i + 1] - binEndIdx[i];
         if (len > 1) {
           // Use the tim sort when the array length is sufficiently small.
-          if (len < TIM_SORT_THRESHOLD) {
+          if (len < context.timSortThreshold) {
             Arrays.sort(context.in, binEndIdx[i], binEndIdx[i + 1], context.comparator);
           } else {
             if (nextKey) {
@@ -840,7 +842,7 @@ public class RadixSort {
 
     if (len > 1) {
       // Use the tim sort when the array length is sufficiently small.
-      if (len < TIM_SORT_THRESHOLD) {
+      if (len < context.timSortThreshold) {
         Arrays.sort(context.in, binEndIdx[0], binEndIdx[1], context.comparator);
       } else {
         msdRadixSort(context, binEndIdx[0], binEndIdx[1], curSortKeyIdx, false, pass, false);
@@ -851,7 +853,7 @@ public class RadixSort {
 
     if (len > 1) {
       // Use the tim sort when the array length is sufficiently small.
-      if (len < TIM_SORT_THRESHOLD) {
+      if (len < context.timSortThreshold) {
         Arrays.sort(context.in, binEndIdx[1], binEndIdx[2], context.comparator);
       } else {
         msdRadixSort(context, binEndIdx[1], binEndIdx[2], curSortKeyIdx, true, pass, false);

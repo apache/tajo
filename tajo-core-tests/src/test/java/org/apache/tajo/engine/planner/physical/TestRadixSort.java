@@ -95,12 +95,6 @@ public class TestRadixSort {
   public static Collection<Object[]> generateParameters() {
     List<Object[]> params = new ArrayList<>();
 
-//    params.add(new Object[] {
-//        new Param(new SortSpec[] {
-//            new SortSpec(schema.getColumn(7), true, false)
-//        })
-//    });
-
     // Test every single column sort
     for (int i = 0; i < schema.size(); i++) {
       params.add(new Object[] {
