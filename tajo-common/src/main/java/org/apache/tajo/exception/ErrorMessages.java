@@ -74,6 +74,7 @@ public class ErrorMessages {
     ADD_MESSAGE(UNDEFINED_INDEX_FOR_COLUMNS, "index does not exist for '%s' columns of '%s' table", 2);
     ADD_MESSAGE(UNDEFINED_INDEX_NAME, "index name '%s' does not exist", 1);
     ADD_MESSAGE(UNDEFINED_TABLESPACE_HANDLER, "No tablespace handler for URI scheme '%s'", 1);
+    ADD_MESSAGE(UNDEFINED_QUERY_ID, "queryId '%s' does not exist", 1);
 
     ADD_MESSAGE(DUPLICATE_TABLESPACE, "tablespace '%s' already exists", 1);
     ADD_MESSAGE(DUPLICATE_DATABASE, "database '%s' already exists", 1);
@@ -83,6 +84,7 @@ public class ErrorMessages {
     ADD_MESSAGE(DUPLICATE_ALIAS, "table name '%s' specified more than once", 1);
     ADD_MESSAGE(DUPLICATE_INDEX, "index '%s' already exists", 1);
     ADD_MESSAGE(DUPLICATE_PARTITION, "partition for '%s' already exists", 1);
+    ADD_MESSAGE(DUPLICATE_QUERY_ID, "queryId '%s' already exists", 1);
 
     ADD_MESSAGE(AMBIGUOUS_TABLE, "table name '%s' is ambiguous", 1);
     ADD_MESSAGE(AMBIGUOUS_COLUMN, "column name '%s' is ambiguous", 1);

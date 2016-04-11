@@ -73,6 +73,7 @@ public class ExceptionUtil {
     ADD_EXCEPTION(UNDEFINED_OPERATOR, UndefinedOperatorException.class);
     ADD_EXCEPTION(UNDEFINED_INDEX_NAME, UndefinedIndexException.class);
     ADD_EXCEPTION(UNDEFINED_TABLESPACE_HANDLER, UndefinedTablespaceHandlerException.class);
+    ADD_EXCEPTION(UNDEFINED_QUERY_ID, UndefinedQueryIdException.class);
 
     ADD_EXCEPTION(DUPLICATE_TABLESPACE, DuplicateTablespaceException.class);
     ADD_EXCEPTION(DUPLICATE_DATABASE, DuplicateDatabaseException.class);
@@ -82,6 +83,7 @@ public class ExceptionUtil {
     // ADD_EXCEPTION(DUPLICATE_ALIAS, );
     ADD_EXCEPTION(DUPLICATE_INDEX, DuplicateIndexException.class);
     ADD_EXCEPTION(DUPLICATE_PARTITION, DuplicatePartitionException.class);
+    ADD_EXCEPTION(DUPLICATE_QUERY_ID, DuplicateQueryIdException.class);
 
     ADD_EXCEPTION(AMBIGUOUS_TABLE, AmbiguousTableException.class);
     ADD_EXCEPTION(AMBIGUOUS_COLUMN, AmbiguousColumnException.class);

@@ -198,19 +198,19 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
       <tns:Object name="PARTITION_KEYS_IDX" type="index" order="18" dependsOn="PARTITION_KEYS">
         <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (TID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
       </tns:Object>
-			<tns:Object name="DIRECT_OUTPUT_COMMIT_LOGS" type="table" order="19">
+			<tns:Object name="DIRECT_OUTPUT_COMMIT_HISTORIES" type="table" order="19">
 				<tns:sql><![CDATA[
-          CREATE TABLE DIRECT_OUTPUT_COMMIT_LOGS (
-						QUERY_ID VARCHAR(128) NOT NULL,
+          CREATE TABLE DIRECT_OUTPUT_COMMIT_HISTORIES (
+						QUERY_ID VARCHAR(128) NOT NULL PRIMARY KEY,
 						PATH VARCHAR(4096) NOT NULL,
-						START_TIME TIMESTAMP NOT NULL,
-						END_TIME TIMESTAMP,
+						START_TIME BIGINT NOT NULL,
+						END_TIME BIGINT,
 						QUERY_STATE VARCHAR(50) NOT NULL
 				)]]>
 				</tns:sql>
 			</tns:Object>
-			<tns:Object name="DIRECT_OUTPUT_COMMIT_LOGS_IDX" type="index" order="20" dependsOn="DIRECT_OUTPUT_COMMIT_LOGS">
-				<tns:sql><![CDATA[CREATE INDEX DIRECT_OUTPUT_COMMIT_LOGS_IDX on DIRECT_OUTPUT_COMMIT_LOGS (END_DATE, QUERY_STATE)]]></tns:sql>
+			<tns:Object name="DIRECT_OUTPUT_COMMIT_HISTORIES_IDX" type="index" order="20" dependsOn="DIRECT_OUTPUT_COMMIT_HISTORIES">
+				<tns:sql><![CDATA[CREATE INDEX DIRECT_OUTPUT_COMMIT_HISTORIES_IDX on DIRECT_OUTPUT_COMMIT_HISTORIES (END_TIME, QUERY_STATE)]]></tns:sql>
 			</tns:Object>
 		</tns:objects>
 	</tns:base>

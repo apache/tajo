@@ -148,4 +148,10 @@ service CatalogProtocolService {
   rpc getFunctions(NullProto) returns (GetFunctionsResponse);
   rpc getFunctionMeta(GetFunctionMetaRequest) returns (FunctionResponse);
   rpc containFunction(ContainFunctionRequest) returns (ReturnState);
+
+  rpc addDirectOutputCommitHistory(DirectOutputCommitHistoryProto) returns (ReturnState);
+  rpc updateDirectOutputCommitHistory(UpdateDirectOutputCommitHistoryProto) returns (ReturnState);
+  rpc getAllDirectOutputCommitHistories(NullProto) returns (DirectOutputCommitHistoryListResponse);
+  rpc getIncompleteDirectOutputCommitHistories(NullProto) returns (DirectOutputCommitHistoryListResponse);
+
 }
