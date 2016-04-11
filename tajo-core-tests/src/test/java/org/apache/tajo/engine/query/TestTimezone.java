@@ -29,6 +29,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -44,12 +45,18 @@ public class TestTimezone extends QueryTestCaseBase {
 
   @Test
   public void testToTimestamp() throws TajoException, SQLException, IOException {
+
+    TimeZone tz = conf.getSystemTimezone();
+    conf.setSystemTimezone(TimeZone.getTimeZone(timezone));
+
     executeString(String.format("SET TIME ZONE TO '%s'", timezone)).close();
 
     try (ResultSet res =
              executeString("select to_timestamp('2015/08/12 14:00:00', 'FMYYYY/FMMM/FMDD HH24:FMMI:FMSS');")) {
       assertTrue(res.next());
       assertEquals("2015-08-12 14:00:00", res.getString(1));
+    } finally {
+      conf.setSystemTimezone(tz);
     }
   }
 
@@ -75,11 +82,16 @@ public class TestTimezone extends QueryTestCaseBase {
 
   @Test
   public void testToChar() throws TajoException, SQLException, IOException {
+    TimeZone tz = conf.getSystemTimezone();
+    conf.setSystemTimezone(TimeZone.getTimeZone(timezone));
+
     executeString(String.format("SET TIME ZONE TO '%s'", timezone)).close();
 
     try (ResultSet res = executeString("select to_char('2015-08-12 14:00:00'::TIMESTAMP, 'yyyy-mm-dd hh24:mi:ss')")) {
       assertTrue(res.next());
       assertEquals("2015-08-12 14:00:00", res.getString(1));
+    } finally {
+      conf.setSystemTimezone(tz);
     }
   }
 

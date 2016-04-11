@@ -1018,7 +1018,7 @@ public class CatalogUtil {
   public static KeyValueSet newDefaultProperty(String dataFormat, TajoConf conf) {
     KeyValueSet options = new KeyValueSet();
     // set default timezone to the system timezone
-    options.set(StorageConstants.TIMEZONE, conf.getVar(TajoConf.ConfVars.$TIMEZONE));
+    options.set(StorageConstants.TIMEZONE, conf.getSystemTimezone().getID());
 
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
