@@ -18,11 +18,12 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.*;
+import org.apache.tajo.BuiltinStorages;
+import org.apache.tajo.DataTypeUtil;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -48,9 +49,6 @@ import java.util.*;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
-
-  @VisibleForTesting
-  private static TajoConf TAJO_CONF = new TajoConf();
 
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
@@ -318,12 +316,6 @@ public class CatalogUtil {
     } else {
       return null;
     }
-  }
-
-  @VisibleForTesting
-  public static TableMeta newTableMeta(String dataFormat) {
-    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(dataFormat, TAJO_CONF);
-    return new TableMeta(dataFormat, defaultProperties);
   }
 
   public static TableMeta newTableMeta(String dataFormat, TajoConf conf) {

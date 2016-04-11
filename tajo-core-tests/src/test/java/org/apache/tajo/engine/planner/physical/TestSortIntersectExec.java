@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -27,12 +28,12 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -90,7 +91,7 @@ public class TestSortIntersectExec {
     employeeSchema1.addColumn("memid", TajoDataTypes.Type.INT4);
     employeeSchema1.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
-    TableMeta employeeMeta1 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath1 = new Path(testDir, "employee1.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).
         getAppender(employeeMeta1, employeeSchema1, employeePath1);
@@ -117,7 +118,7 @@ public class TestSortIntersectExec {
     employeeSchema2.addColumn("memid", TajoDataTypes.Type.INT4);
     employeeSchema2.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
-    TableMeta employeeMeta2 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta2 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath2 = new Path(testDir, "employee2.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs()).
         getAppender(employeeMeta2, employeeSchema2, employeePath2);

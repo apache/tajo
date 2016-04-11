@@ -68,7 +68,7 @@ public class TestRowFile {
     schema.addColumn("age", Type.INT8);
     schema.addColumn("description", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta("ROWFILE");
+    TableMeta meta = CatalogUtil.newTableMeta("ROWFILE", conf);
 
     FileTablespace sm = (FileTablespace) TablespaceManager.get(cluster.getDefaultFileSystem().getUri());
 

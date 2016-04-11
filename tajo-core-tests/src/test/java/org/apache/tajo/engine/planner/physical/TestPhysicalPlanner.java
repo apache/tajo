@@ -530,7 +530,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta("RCFILE");
+    TableMeta outputMeta = CatalogUtil.newTableMeta(BuiltinStorages.RCFILE, conf);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -646,7 +646,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat());
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat(), conf);
 
     FileSystem fs = sm.getFileSystem();
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();
@@ -780,7 +780,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat());
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat(), conf);
 
     FileSystem fs = sm.getFileSystem();
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();

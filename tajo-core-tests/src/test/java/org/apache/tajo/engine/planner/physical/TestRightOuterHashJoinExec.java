@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -27,12 +28,12 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.*;
@@ -99,7 +100,7 @@ public class TestRightOuterHashJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(dep3Meta, dep3Schema, dep3Path);
@@ -129,7 +130,7 @@ public class TestRightOuterHashJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta job3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(job3Meta, job3Schema, job3Path);
@@ -169,7 +170,7 @@ public class TestRightOuterHashJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(emp3Meta, emp3Schema, emp3Path);
