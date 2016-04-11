@@ -121,7 +121,7 @@ public class TaskAttemptContext {
 
     this.partitions = new ArrayList<>();
 
-    // set to system timezone for casting
+    // set to system timezone for forwarded query
     this.evalContext.setTimeZone(queryContext.getConf().getSystemTimezone());
   }
 

@@ -226,7 +226,7 @@ public class ExprTestBase {
     if (context == null) {
       queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     } else {
-      queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+      queryContext = LocalTajoTestingUtility.createDummyContext(context.getConf());
       queryContext.putAll(context);
     }
 
@@ -237,7 +237,7 @@ public class ExprTestBase {
     Schema inputSchema = null;
 
 
-    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, queryContext.getConf());
     meta.putProperty(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava(delimiter+""));
     meta.putProperty(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\\NULL"));
 

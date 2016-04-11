@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -54,7 +55,7 @@ public class ToTimestampText extends GeneralFunction {
   }
 
   public void init(OverridableConf queryContext, FunctionEval.ParamType [] paramTypes) {
-    timezone = queryContext.getConf().getSystemTimezone();
+    timezone = TimeZone.getTimeZone(queryContext.get(SessionVars.TIMEZONE));
   }
 
   @Override

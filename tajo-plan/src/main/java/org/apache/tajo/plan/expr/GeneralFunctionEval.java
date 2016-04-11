@@ -20,6 +20,7 @@ package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -44,8 +45,14 @@ public class GeneralFunctionEval extends FunctionEval {
     super.bind(evalContext, schema);
     try {
       this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
-      if (evalContext != null && evalContext.hasScriptEngine(this)) {
-        this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+      if (evalContext != null) {
+        if (evalContext.hasScriptEngine(this)) {
+          this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+        }
+
+        if (evalContext.hasTimeZone()) {
+          invokeContext.getQueryContext().put(SessionVars.TIMEZONE, evalContext.getTimeZone().getID());
+        }
       }
       this.funcInvoke.init(invokeContext);
     } catch (IOException e) {

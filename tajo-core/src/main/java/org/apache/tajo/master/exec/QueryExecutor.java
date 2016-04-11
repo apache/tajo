@@ -329,7 +329,7 @@ public class QueryExecutor {
 
     EvalContext evalContext = new EvalContext();
 
-    // session's time zone
+    //Non From query should be session's time zone. e,g, select to_char(now(), 'yyyy-MM-dd')
     String timezoneId = queryContext.get(SessionVars.TIMEZONE);
     evalContext.setTimeZone(TimeZone.getTimeZone(timezoneId));
 

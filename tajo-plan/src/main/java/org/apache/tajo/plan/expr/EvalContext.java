@@ -53,4 +53,8 @@ public class EvalContext {
   public void setTimeZone(TimeZone timeZone) {
     this.timeZone = timeZone;
   }
+
+  public boolean hasTimeZone() {
+    return timeZone != null;
+  }
 }

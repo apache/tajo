@@ -52,8 +52,7 @@ public class CurrentDate extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] types) {
-    String timezoneId = context.get(SessionVars.TIMEZONE);
-    timezone = TimeZone.getTimeZone(timezoneId);
+    timezone = TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE));
   }
 
   @Override
