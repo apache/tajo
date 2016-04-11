@@ -176,6 +176,18 @@
         )]]>
         </tns:sql>
       </tns:Object>
+      <tns:Object order="12" type="table" name="DIRECT_OUTPUT_COMMIT_LOGS">
+        <tns:sql><![CDATA[
+        CREATE TABLE DIRECT_OUTPUT_COMMIT_LOGS (
+  				QUERY_ID VARCHAR(128) NOT NULL,
+  				PATH VARCHAR(4096) NOT NULL,
+  				START_DATE DATE NOT NULL,
+  				END_DATE DATE,
+  				QUERY_STATE VARCHAR(50) NOT NULL,
+          INDEX DIRECT_OUTPUT_COMMIT_LOGS_IDX (END_DATE, QUERY_STATE)
+        )]]>
+        </tns:sql>
+      </tns:Object>
     </tns:objects>
   </tns:base>
 

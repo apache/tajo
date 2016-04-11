@@ -199,7 +199,21 @@
       <tns:Object name="PARTITION_KEYS_IDX" type="index" dependsOn="PARTITION_KEYS" order="21">
         <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX ON PARTITION_KEYS(TID , COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
       </tns:Object>
-    </tns:objects>
+			<tns:Object name="DIRECT_OUTPUT_COMMIT_LOGS" type="table" order="22">
+				<tns:sql><![CDATA[
+				CREATE TABLE DIRECT_OUTPUT_COMMIT_LOGS (
+  				QUERY_ID VARCHAR(128) NOT NULL,
+  				PATH VARCHAR(4096) NOT NULL,
+  				START_DATE DATE NOT NULL,
+  				END_DATE DATE,
+  				QUERY_STATE VARCHAR(50) NOT NULL
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="DIRECT_OUTPUT_COMMIT_LOGS_IDX" type="index" dependsOn="DIRECT_OUTPUT_COMMIT_LOGS" order="23">
+				<tns:sql><![CDATA[CREATE INDEX DIRECT_OUTPUT_COMMIT_LOGS_IDX ON DIRECT_OUTPUT_COMMIT_LOGS(END_DATE , QUERY_STATE)]]></tns:sql>
+			</tns:Object>
+		</tns:objects>
 	</tns:base>
 	<tns:existQueries>
 	  <tns:existQuery type="trigger">
