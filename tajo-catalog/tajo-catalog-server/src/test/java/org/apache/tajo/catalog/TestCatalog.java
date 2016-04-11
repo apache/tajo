@@ -1080,7 +1080,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getFunctionName(), "testint");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.INT4));
-    assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
+    assertEquals(retrieved.getParamTypes()[1], CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
   @Test(expected=UndefinedFunctionException.class)
@@ -1165,6 +1165,22 @@ public class TestCatalog {
 
     assertNotNull(incompleteHistories);
     assertEquals(1, incompleteHistories.size());
+
+    catalog.updateDirectOutputCommitHistoryProto(getUpdateDirectOutputCommitHistoryProto(2));
+
+    incompleteHistories = catalog.getIncompleteDirectOutputCommitHistories();
+
+    assertNotNull(incompleteHistories);
+    assertEquals(0, incompleteHistories.size());
+
+    allHistories = catalog.getAllDirectOutputCommitHistories();
+    assertNotNull(allHistories);
+    assertEquals(2, allHistories.size());
+
+    for (CatalogProtos.DirectOutputCommitHistoryProto history : allHistories) {
+      assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED.name(), history.getQueryState());
+      assertNotNull(history.getEndTime());
+    }
   }
 
   private CatalogProtos.DirectOutputCommitHistoryProto getDirectOutputCommitHistoryProto(int index) {
