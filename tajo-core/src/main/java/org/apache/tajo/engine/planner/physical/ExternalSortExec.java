@@ -196,14 +196,17 @@ public class ExternalSortExec extends SortExec {
   }
 
   private List<UnSafeTuple> sort(UnSafeTupleList tupleBlock) {
-    LOG.info(sortAlgorithm.name() + " is used for sort");
     switch (sortAlgorithm) {
       case TIM:
+        LOG.info(sortAlgorithm.name() + " sort is used");
         return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
       case MSD_RADIX:
+        LOG.info(sortAlgorithm.name() + " sort is used");
         return RadixSort.sort(context.getQueryContext(), tupleBlock, inSchema, sortSpecs, unSafeComparator);
       default:
-        throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));
+        LOG.warn("Unknown sort type: " + sortAlgorithm.name());
+        LOG.warn("TIM sort is used");
+        return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
     }
   }
 
