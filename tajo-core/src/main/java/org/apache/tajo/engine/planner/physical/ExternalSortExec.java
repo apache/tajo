@@ -75,8 +75,8 @@ import java.util.concurrent.Future;
 public class ExternalSortExec extends SortExec {
 
   enum SortAlgorithm{
-    TIM_SORT,
-    MSD_RADIX_SORT,
+    TIM,
+    MSD_RADIX,
   }
 
   /** Class logger */
@@ -146,13 +146,13 @@ public class ExternalSortExec extends SortExec {
   private static SortAlgorithm getSortAlgorithm(QueryContext context, SortSpec[] sortSpecs) {
     if (Arrays.stream(sortSpecs)
         .filter(sortSpec -> !RadixSort.isApplicableType(sortSpec)).count() > 0) {
-      return SortAlgorithm.TIM_SORT;
+      return SortAlgorithm.TIM;
     }
-    String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, "TIM");
-    if (sortAlgorithm.equalsIgnoreCase("TIM")) {
-      return SortAlgorithm.TIM_SORT;
-    } else if (sortAlgorithm.equalsIgnoreCase("MSD_RADIX")) {
-      return SortAlgorithm.MSD_RADIX_SORT;
+    String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, SortAlgorithm.TIM.name());
+    if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.TIM.name())) {
+      return SortAlgorithm.TIM;
+    } else if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.MSD_RADIX.name())) {
+      return SortAlgorithm.MSD_RADIX;
     } else {
       throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm));
     }
@@ -198,9 +198,9 @@ public class ExternalSortExec extends SortExec {
   private List<UnSafeTuple> sort(UnSafeTupleList tupleBlock) {
     LOG.info(sortAlgorithm.name() + " is used for sort");
     switch (sortAlgorithm) {
-      case TIM_SORT:
+      case TIM:
         return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
-      case MSD_RADIX_SORT:
+      case MSD_RADIX:
         return RadixSort.sort(context.getQueryContext(), tupleBlock, inSchema, sortSpecs, unSafeComparator);
       default:
         throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));

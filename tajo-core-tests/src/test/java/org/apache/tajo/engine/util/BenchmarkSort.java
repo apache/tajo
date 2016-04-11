@@ -71,7 +71,7 @@ public class BenchmarkSort {
   private LogicalOptimizer optimizer;
   private Path testDir;
 
-  private final int numTuple = 1_000_000;
+  private final int numTuple = 10000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -96,22 +96,23 @@ public class BenchmarkSort {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col0", Type.INT8);
-    schema.addColumn("col1", Type.INT4);
-    schema.addColumn("col2", Type.INT2);
-    schema.addColumn("col3", Type.DATE);
-    schema.addColumn("col4", Type.TIMESTAMP);
-    schema.addColumn("col5", Type.TIME);
-    schema.addColumn("col6", Type.INET4);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.INT8);
-    schema.addColumn("col10", Type.INT8);
-    schema.addColumn("col11", Type.INT8);
-    schema.addColumn("col12", Type.INT8);
-    schema.addColumn("col13", Type.INT8);
-    schema.addColumn("col14", Type.INT8);
+    Schema schema = SchemaFactory.newV1(new Column[] {
+        new Column("col0", Type.INT8),
+        new Column("col1", Type.INT4),
+        new Column("col2", Type.INT2),
+        new Column("col3", Type.DATE),
+        new Column("col4", Type.TIMESTAMP),
+        new Column("col5", Type.TIME),
+        new Column("col6", Type.INET4),
+        new Column("col7", Type.FLOAT4),
+        new Column("col8", Type.FLOAT8),
+        new Column("col9", Type.INT8),
+        new Column("col10", Type.INT8),
+        new Column("col11", Type.INT8),
+        new Column("col12", Type.INT8),
+        new Column("col13", Type.INT8),
+        new Column("col14", Type.INT8),
+    });
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
@@ -144,10 +145,9 @@ public class BenchmarkSort {
             DatumFactory.createInt8(rnd.nextLong()),
             DatumFactory.createInt4(rnd.nextInt()),
             DatumFactory.createInt2((short) rnd.nextInt(Short.MAX_VALUE)),
-            DatumFactory.createDate(rnd.nextInt(2147483647)),
-            DatumFactory.createTimestamp(rnd.nextInt(9999), rnd.nextInt(12) + 1, rnd.nextInt(30),
-                rnd.nextInt(24) + 1, rnd.nextInt(60), rnd.nextInt(60), 0),
-            DatumFactory.createTime(rnd.nextInt(24) + 1, rnd.nextInt(60), rnd.nextInt(60), 0),
+            DatumFactory.createDate(Math.abs(rnd.nextInt())),
+            DatumFactory.createTimestamp(Math.abs(rnd.nextLong())),
+            DatumFactory.createTime(Math.abs(rnd.nextLong())),
             DatumFactory.createInet4(rnd.nextInt()),
             DatumFactory.createFloat4(rnd.nextFloat()),
             DatumFactory.createFloat8(rnd.nextDouble()),

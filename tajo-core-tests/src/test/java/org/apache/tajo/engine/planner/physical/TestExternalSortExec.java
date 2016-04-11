@@ -34,6 +34,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
+import org.apache.tajo.engine.planner.physical.ExternalSortExec.SortAlgorithm;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
@@ -86,8 +87,8 @@ public class TestExternalSortExec {
   @Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"TIM"},
-        {"MSD_RADIX"},
+        {SortAlgorithm.TIM.name()},
+        {SortAlgorithm.MSD_RADIX.name()},
     });
   }
 
@@ -102,22 +103,23 @@ public class TestExternalSortExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    tableSchema = SchemaFactory.newV1();
-    tableSchema.addColumn("managerid", Type.INT8);
-    tableSchema.addColumn("empid", Type.INT4);
-    tableSchema.addColumn("deptname", Type.TEXT);
-    tableSchema.addColumn("col1", Type.INT8);
-    tableSchema.addColumn("col2", Type.INT8);
-    tableSchema.addColumn("col3", Type.INT8);
-    tableSchema.addColumn("col4", Type.INT8);
-    tableSchema.addColumn("col5", Type.INT8);
-    tableSchema.addColumn("col6", Type.INT8);
-    tableSchema.addColumn("col7", Type.INT8);
-    tableSchema.addColumn("col8", Type.INT8);
-    tableSchema.addColumn("col9", Type.INT8);
-    tableSchema.addColumn("col10", Type.INT8);
-    tableSchema.addColumn("col11", Type.INT8);
-    tableSchema.addColumn("col12", Type.INT8);
+    tableSchema = SchemaFactory.newV1(new Column[] {
+        new Column("managerid", Type.INT8),
+        new Column("empid", Type.INT4),
+        new Column("deptname", Type.TEXT),
+        new Column("col1", Type.INT8),
+        new Column("col2", Type.INT8),
+        new Column("col3", Type.INT8),
+        new Column("col4", Type.INT8),
+        new Column("col5", Type.INT8),
+        new Column("col6", Type.INT8),
+        new Column("col7", Type.INT8),
+        new Column("col8", Type.INT8),
+        new Column("col9", Type.INT8),
+        new Column("col10", Type.INT8),
+        new Column("col11", Type.INT8),
+        new Column("col12", Type.INT8)
+    });
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");

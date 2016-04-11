@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
@@ -62,16 +63,17 @@ public class TestRadixSort {
     queryContext = new QueryContext(new TajoConf());
     queryContext.setInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT, 0);
 
-    schema = SchemaFactory.newV1();
-    schema.addColumn("col0", Type.INT8);
-    schema.addColumn("col1", Type.INT4);
-    schema.addColumn("col2", Type.INT2);
-    schema.addColumn("col3", Type.DATE);
-    schema.addColumn("col4", Type.TIMESTAMP);
-    schema.addColumn("col5", Type.TIME);
-    schema.addColumn("col6", Type.INET4);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
+    schema = SchemaFactory.newV1(new Column[]{
+        new Column("col0", Type.INT8),
+        new Column("col1", Type.INT4),
+        new Column("col2", Type.INT2),
+        new Column("col3", Type.DATE),
+        new Column("col4", Type.TIMESTAMP),
+        new Column("col5", Type.TIME),
+        new Column("col6", Type.INET4),
+        new Column("col7", Type.FLOAT4),
+        new Column("col8", Type.FLOAT8)
+    });
   }
 
   private static class Param {
@@ -163,10 +165,9 @@ public class TestRadixSort {
         DatumFactory.createInt8(random.nextLong()),
         DatumFactory.createInt4(random.nextInt()),
         DatumFactory.createInt2((short) random.nextInt(Short.MAX_VALUE)),
-        DatumFactory.createDate(random.nextInt(2147483647)),
-        DatumFactory.createTimestamp(random.nextInt(9999), random.nextInt(12) + 1, random.nextInt(30),
-            random.nextInt(24) + 1, random.nextInt(60), random.nextInt(60), 0),
-        DatumFactory.createTime(random.nextInt(24) + 1, random.nextInt(60), random.nextInt(60), 0),
+        DatumFactory.createDate(Math.abs(random.nextInt())),
+        DatumFactory.createTimestamp(Math.abs(random.nextLong())),
+        DatumFactory.createTime(Math.abs(random.nextLong())),
         DatumFactory.createInet4(random.nextInt()),
         DatumFactory.createFloat4(random.nextFloat()),
         DatumFactory.createFloat8(random.nextDouble())
