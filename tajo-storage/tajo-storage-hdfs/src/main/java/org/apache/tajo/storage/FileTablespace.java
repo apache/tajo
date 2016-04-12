@@ -819,7 +819,7 @@ public class FileTablespace extends Tablespace {
   }
 
   private Path directOutputCommitData(OverridableConf queryContext, QueryId queryId,
-                                      List<PartitionDescProto> partitions) throws IOException {
+                                    List<PartitionDescProto> partitions) throws IOException {
 
     Path finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
 
@@ -866,16 +866,30 @@ public class FileTablespace extends Tablespace {
       // Delete backup files
       fs.delete(backupDir, true);
     } catch (Exception e) {
-      PathFilter outputPathFilter = committerFilter.getOutputPathFilter();
-      // Delete added files
-      deleteOutputFiles(finalOutputDir, outputPathFilter);
-      // Recover backup files to output directory
-      for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
-        renameDirectory(status.getPath(), finalOutputDir);
-      }
+      clearDirectOutputCommit(queryContext, queryId);
       throw new IOException(e);
     }
     return finalOutputDir;
+  }
+
+  @Override
+  public void clearDirectOutputCommit(OverridableConf queryContext, QueryId queryId) throws IOException {
+    Path finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+
+    Path backupDir = new Path(finalOutputDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.toString().substring(2).replaceAll("_", "-");
+
+    directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
+    PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
+    PathFilter outputPathFilter = committerFilter.getOutputPathFilter();
+
+    // Delete added files
+    deleteOutputFiles(finalOutputDir, outputPathFilter);
+
+    // Recover backup files to output directory
+    for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
+      renameDirectory(status.getPath(), finalOutputDir);
+    }
   }
 
   private class directOutputCommitterFileFilter {

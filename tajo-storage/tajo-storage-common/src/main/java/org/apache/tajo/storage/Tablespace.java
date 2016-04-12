@@ -22,6 +22,7 @@ import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
@@ -147,6 +148,12 @@ public abstract class Tablespace {
    * Release storage manager resource
    */
   public abstract void close();
+
+  /**
+   * Clear output files of direct output commit
+   */
+  public abstract void clearDirectOutputCommit(OverridableConf queryContext, QueryId queryId)
+    throws IOException, UnsupportedException;
 
 
   /**

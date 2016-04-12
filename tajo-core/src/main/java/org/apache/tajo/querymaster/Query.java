@@ -35,6 +35,7 @@ import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -47,9 +48,11 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.error.Errors.SerializedException;
 import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
@@ -477,10 +480,13 @@ public class Query implements EventHandler<QueryEvent> {
         finalState = finalizeQuery(query, stageEvent);
       } else if (stageEvent.getState() == StageState.FAILED) {
         finalState = QueryState.QUERY_FAILED;
+        clearDirectOutputCommit(query, finalState, stageEvent);
       } else if (stageEvent.getState() == StageState.KILLED) {
         finalState = QueryState.QUERY_KILLED;
+        clearDirectOutputCommit(query, finalState, stageEvent);
       } else {
         finalState = QueryState.QUERY_ERROR;
+        clearDirectOutputCommit(query, finalState, stageEvent);
       }
 
       // When a query is failed
@@ -507,6 +513,34 @@ public class Query implements EventHandler<QueryEvent> {
         } catch (Throwable e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
+      }
+    }
+
+    private void clearDirectOutputCommit(Query query, QueryState queryState, QueryCompletedEvent event) {
+      try {
+        QueryContext queryContext = query.context.getQueryContext();
+        Stage lastStage = query.getStage(event.getExecutionBlockId());
+        NodeType type = lastStage.getBlock().getPlan().getType();
+
+        if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
+          && (type == NodeType.CREATE_TABLE || type == NodeType.INSERT)) {
+          Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
+          space.clearDirectOutputCommit(queryContext, query.getId());
+
+          CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+
+          CatalogProtos.UpdateDirectOutputCommitHistoryProto.Builder builder = CatalogProtos
+            .UpdateDirectOutputCommitHistoryProto.newBuilder();
+
+          builder.setQueryState(queryState.name());
+          builder.setQueryId(query.getId().toString());
+
+          catalog.updateDirectOutputCommitHistoryProto(builder.build());
+        }
+      } catch (UnsupportedException ue) {
+        // HBaseTableSpace and JDBCTableSpace don't support directOutputCommitter
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
 
@@ -563,7 +597,17 @@ public class Query implements EventHandler<QueryEvent> {
 
           query.clearPartitions();
         }
-      } catch (Throwable e) {
+
+        // Update the status of direct output commit history
+        if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+          CatalogProtos.UpdateDirectOutputCommitHistoryProto.Builder builder = CatalogProtos
+            .UpdateDirectOutputCommitHistoryProto.newBuilder();
+          builder.setQueryState(QueryState.QUERY_SUCCEEDED.name());
+          builder.setQueryId(query.getId().toString());
+          catalog.updateDirectOutputCommitHistoryProto(builder.build());
+        }
+
+        } catch (Throwable e) {
         LOG.fatal(e.getMessage(), e);
         query.failureReason = ErrorUtil.convertException(e);
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
