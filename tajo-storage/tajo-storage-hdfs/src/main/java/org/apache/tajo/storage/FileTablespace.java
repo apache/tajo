@@ -799,15 +799,11 @@ public class FileTablespace extends Tablespace {
   public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
                           Schema schema, TableDesc tableDesc, List<PartitionDescProto> partitions) throws IOException {
 
-    if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()) {
-      if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+    if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()
+      && queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
         return directCommitOutputData(queryContext, finalEbId.getQueryId(), partitions);
-      } else {
-        return commitOutputData(queryContext, true);
-      }
     } else {
-      Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
-      return new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
+      return commitOutputData(queryContext, true);
     }
   }
 
