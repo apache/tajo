@@ -818,165 +818,6 @@ public class FileTablespace extends Tablespace {
     return null;
   }
 
-  private Path directCommitOutputData(OverridableConf queryContext, QueryId queryId,
-                                    List<PartitionDescProto> partitions) throws IOException {
-
-    Path finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
-
-    Path backupDir = new Path(finalOutputDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-    if (!fs.exists(backupDir)) {
-      fs.mkdirs(backupDir);
-    }
-
-    String queryType = queryContext.get(QueryVars.COMMAND_TYPE);
-
-    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.toString().substring(2).replaceAll("_", "-");
-    directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
-    PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
-
-    try {
-      if (queryType.equals(NodeType.INSERT.name()) && queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) {
-        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
-          // Backup existing files
-          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
-            fs.rename(status.getPath(), backupDir);
-          }
-        } else {
-          // Backup existing files on added partition directory.
-          if (partitions != null) {
-            for(PartitionDescProto partition : partitions) {
-              Path partitionPath = new Path(partition.getPath());
-              for(FileStatus status : fs.listStatus(partitionPath, backupPathFilter)) {
-                renameDirectory(status.getPath(), backupDir);
-              }
-            }
-          }
-        }
-      } else if (queryType.equals(NodeType.CREATE_TABLE.name())) {
-        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
-          // Backup existing files
-          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
-            fs.rename(status.getPath(), backupDir);
-          }
-        } else {
-          // Backup existing files on existing partition directory.
-          renameRecursiveDirectory(finalOutputDir, backupDir, backupPathFilter);
-        }
-      }
-      // Delete backup files
-      fs.delete(backupDir, true);
-    } catch (Exception e) {
-      clearDirectOutputCommit(queryId.getId(), finalOutputDir);
-      throw new IOException(e);
-    }
-    return finalOutputDir;
-  }
-
-  @Override
-  public void clearDirectOutputCommit(String queryId, Path path) throws IOException {
-    Path backupDir = new Path(path, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.substring(2).replaceAll("_", "-");
-
-    directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
-    PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
-    PathFilter outputPathFilter = committerFilter.getOutputPathFilter();
-
-    // Delete added files
-    deleteOutputFiles(path, outputPathFilter);
-
-    // Recover backup files to output directory
-    if (fs.exists(backupDir)) {
-      for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
-        renameDirectory(status.getPath(), path);
-      }
-    }
-  }
-
-  private class directOutputCommitterFileFilter {
-    String prefix;
-
-    directOutputCommitterFileFilter(String prefix) {
-      this.prefix = prefix;
-    }
-
-    private  PathFilter getBackupPathFilter() {
-      PathFilter pathFilter = (Path p) -> {
-        String name = p.getName();
-        return !name.startsWith("_") && !name.startsWith(".")
-          && !name.startsWith(TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME)
-          && !name.startsWith(prefix);
-      };
-      return pathFilter;
-    }
-
-    private PathFilter getOutputPathFilter() {
-      PathFilter pathFilter = (Path p) -> {
-        String name = p.getName();
-        return !name.startsWith("_") && !name.startsWith(".")
-          && !name.startsWith(TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME)
-          && name.startsWith(prefix);
-      };
-      return pathFilter;
-    }
-  }
-
-  private void deleteOutputFiles(Path path, PathFilter filter) throws IOException {
-    if (fs.isFile(path)) {
-      fs.delete(path, false);
-    } else {
-      FileStatus[] statuses = fs.listStatus(path, filter);
-      for (FileStatus status : statuses) {
-        deleteOutputFiles(status.getPath(), filter);
-      }
-    }
-  }
-
-  protected void renameRecursiveDirectory(Path sourcePath, Path targetPath, PathFilter filter) throws IOException {
-    int fileCount = 0;
-    FileStatus[] statuses = fs.listStatus(sourcePath, filter);
-
-    for(FileStatus status : statuses) {
-      if(fs.isFile(status.getPath())) {
-        fileCount++;
-      } else {
-        renameRecursiveDirectory(status.getPath(), targetPath, filter);
-      }
-    }
-
-    // Check the number of files to avoid added directory
-    if (fileCount > 0) {
-      renameDirectory(sourcePath, targetPath);
-    }
-  }
-
-  protected void renameDirectory(Path sourcePath, Path targetPath) throws IOException {
-    try {
-      if (!fs.exists(targetPath.getParent())) {
-        createDirectory(targetPath.getParent());
-      }
-      if (!rename(sourcePath, targetPath)) {
-        throw new IOException(format("Failed to rename %s to %s: rename returned false", sourcePath, targetPath));
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
-      throw new IOException(format("Failed to rename %s to %s", sourcePath, targetPath), e);
-    }
-  }
-
-  protected void createDirectory(Path path) throws IOException {
-    try {
-      if (!fs.mkdirs(path)) {
-        throw new IOException(format("mkdirs %s returned false", path));
-      }
-    } catch (IOException e) {
-      throw new IOException("Failed to create directory:" + path, e);
-    }
-  }
-
-  protected boolean rename(Path sourcePath, Path targetPath) throws IOException {
-    return fs.rename(sourcePath, targetPath);
-  }
-
   /**
    * Finalizes result data. Tajo stores result data in the staging directory.
    * If the query fails, clean up the staging directory.
@@ -1158,6 +999,166 @@ public class FileTablespace extends Tablespace {
     }
 
     return finalOutputDir;
+  }
+
+
+  private Path directCommitOutputData(OverridableConf queryContext, QueryId queryId,
+                                      List<PartitionDescProto> partitions) throws IOException {
+
+    Path finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+
+    Path backupDir = new Path(finalOutputDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+    if (!fs.exists(backupDir)) {
+      fs.mkdirs(backupDir);
+    }
+
+    String queryType = queryContext.get(QueryVars.COMMAND_TYPE);
+
+    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.toString().substring(2).replaceAll("_", "-");
+    directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
+    PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
+
+    try {
+      if (queryType.equals(NodeType.INSERT.name()) && queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) {
+        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
+          // Backup existing files
+          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
+            fs.rename(status.getPath(), backupDir);
+          }
+        } else {
+          // Backup existing files on added partition directory.
+          if (partitions != null) {
+            for(PartitionDescProto partition : partitions) {
+              Path partitionPath = new Path(partition.getPath());
+              for(FileStatus status : fs.listStatus(partitionPath, backupPathFilter)) {
+                renameDirectory(status.getPath(), backupDir);
+              }
+            }
+          }
+        }
+      } else if (queryType.equals(NodeType.CREATE_TABLE.name())) {
+        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
+          // Backup existing files
+          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
+            fs.rename(status.getPath(), backupDir);
+          }
+        } else {
+          // Backup existing files on existing partition directory.
+          renameRecursiveDirectory(finalOutputDir, backupDir, backupPathFilter);
+        }
+      }
+      // Delete backup files
+      fs.delete(backupDir, true);
+    } catch (Exception e) {
+      clearDirectOutputCommit(queryId.getId(), finalOutputDir);
+      throw new IOException(e);
+    }
+    return finalOutputDir;
+  }
+
+  @Override
+  public void clearDirectOutputCommit(String queryId, Path path) throws IOException {
+    Path backupDir = new Path(path, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.substring(2).replaceAll("_", "-");
+
+    directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
+    PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
+    PathFilter outputPathFilter = committerFilter.getOutputPathFilter();
+
+    // Delete added files
+    deleteOutputFiles(path, outputPathFilter);
+
+    // Recover backup files to output directory
+    if (fs.exists(backupDir)) {
+      for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
+        renameDirectory(status.getPath(), path);
+      }
+    }
+  }
+
+  private class directOutputCommitterFileFilter {
+    String prefix;
+
+    directOutputCommitterFileFilter(String prefix) {
+      this.prefix = prefix;
+    }
+
+    private  PathFilter getBackupPathFilter() {
+      PathFilter pathFilter = (Path p) -> {
+        String name = p.getName();
+        return !name.startsWith("_") && !name.startsWith(".")
+          && !name.startsWith(TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME)
+          && !name.startsWith(prefix);
+      };
+      return pathFilter;
+    }
+
+    private PathFilter getOutputPathFilter() {
+      PathFilter pathFilter = (Path p) -> {
+        String name = p.getName();
+        return !name.startsWith("_") && !name.startsWith(".")
+          && !name.startsWith(TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME)
+          && name.startsWith(prefix);
+      };
+      return pathFilter;
+    }
+  }
+
+  private void deleteOutputFiles(Path path, PathFilter filter) throws IOException {
+    if (fs.isFile(path)) {
+      fs.delete(path, false);
+    } else {
+      FileStatus[] statuses = fs.listStatus(path, filter);
+      for (FileStatus status : statuses) {
+        deleteOutputFiles(status.getPath(), filter);
+      }
+    }
+  }
+
+  protected void renameRecursiveDirectory(Path sourcePath, Path targetPath, PathFilter filter) throws IOException {
+    int fileCount = 0;
+    FileStatus[] statuses = fs.listStatus(sourcePath, filter);
+
+    for(FileStatus status : statuses) {
+      if(fs.isFile(status.getPath())) {
+        fileCount++;
+      } else {
+        renameRecursiveDirectory(status.getPath(), targetPath, filter);
+      }
+    }
+
+    // Check the number of files to avoid added directory
+    if (fileCount > 0) {
+      renameDirectory(sourcePath, targetPath);
+    }
+  }
+
+  protected void renameDirectory(Path sourcePath, Path targetPath) throws IOException {
+    try {
+      if (!fs.exists(targetPath.getParent())) {
+        createDirectory(targetPath.getParent());
+      }
+      if (!rename(sourcePath, targetPath)) {
+        throw new IOException(format("Failed to rename %s to %s: rename returned false", sourcePath, targetPath));
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new IOException(format("Failed to rename %s to %s", sourcePath, targetPath), e);
+    }
+  }
+
+  protected void createDirectory(Path path) throws IOException {
+    try {
+      if (!fs.mkdirs(path)) {
+        throw new IOException(format("mkdirs %s returned false", path));
+      }
+    } catch (IOException e) {
+      throw new IOException("Failed to create directory:" + path, e);
+    }
+  }
+
+  protected boolean rename(Path sourcePath, Path targetPath) throws IOException {
+    return fs.rename(sourcePath, targetPath);
   }
 
   /**
