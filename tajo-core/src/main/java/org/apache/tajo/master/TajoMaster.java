@@ -33,6 +33,7 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
@@ -415,12 +416,19 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  private void checkDirectOutputCommitHistory() throws IOException, UnsupportedException {
+  private void checkDirectOutputCommitHistory() throws IOException, UnsupportedException
+    , UndefinedQueryIdException, InsufficientPrivilegeException{
     List<DirectOutputCommitHistoryProto> list = catalog.getIncompleteDirectOutputCommitHistories();
     for (DirectOutputCommitHistoryProto history : list) {
       Path path = new Path(history.getPath());
       Tablespace tablespace = TablespaceManager.get(path.toUri());
       tablespace.clearDirectOutputCommit(history.getQueryId(), path);
+
+      UpdateDirectOutputCommitHistoryProto.Builder builder = UpdateDirectOutputCommitHistoryProto.newBuilder();
+      builder.setQueryId(history.getQueryId());
+      builder.setQueryState(TajoProtos.QueryState.QUERY_SUCCEEDED.name());
+
+      catalog.updateDirectOutputCommitHistoryProto(builder.build());
     }
   }
 
