@@ -39,6 +39,8 @@ import org.apache.tajo.catalog.LocalCatalogWrapper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
+import org.apache.tajo.catalog.proto.CatalogProtos.DirectOutputCommitHistoryProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.UpdateDirectOutputCommitHistoryProto;
 import org.apache.tajo.catalog.store.AbstractDBStore;
 import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.conf.TajoConf;
@@ -58,6 +60,7 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
+import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -74,6 +77,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
+import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -335,6 +339,9 @@ public class TajoMaster extends CompositeService {
     historyWriter.start();
 
     historyReader = new HistoryReader(getMasterName(), context.getConf());
+
+    // Check remaining files of direct output commit
+    checkDirectOutputCommitHistory();
   }
 
   private void writeSystemConf() throws IOException {
@@ -405,6 +412,15 @@ public class TajoMaster extends CompositeService {
       globalEngine.getDDLExecutor().createDatabase(null, DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME, false);
     } else {
       LOG.info(String.format("Default database (%s) is already prepared.", DEFAULT_DATABASE_NAME));
+    }
+  }
+
+  private void checkDirectOutputCommitHistory() throws IOException, UnsupportedException {
+    List<DirectOutputCommitHistoryProto> list = catalog.getIncompleteDirectOutputCommitHistories();
+    for (DirectOutputCommitHistoryProto history : list) {
+      Path path = new Path(history.getPath());
+      Tablespace tablespace = TablespaceManager.get(path.toUri());
+      tablespace.clearDirectOutputCommit(history.getQueryId(), path);
     }
   }
 
