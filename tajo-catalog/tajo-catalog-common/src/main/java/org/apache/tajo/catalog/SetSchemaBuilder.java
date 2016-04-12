@@ -28,37 +28,39 @@ import org.apache.tajo.schema.Schema.NamedStructType;
 import org.apache.tajo.schema.Schema.NamedType;
 import org.apache.tajo.type.Type;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
+import java.util.*;
 
 import static org.apache.tajo.catalog.FieldConverter.toQualifiedIdentifier;
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 
 public class SetSchemaBuilder implements SchemaBuilder.SchemaCollector {
-  private final LinkedHashSet<NamedType> fields = new LinkedHashSet<>();
+  private final Set<QualifiedIdentifier> nameSet = new HashSet<>();
+  private final ImmutableList.Builder<NamedType> fields = new ImmutableList.Builder();
 
   @Override
   public void add(NamedType namedType) {
-    fields.add(namedType);
+    if (!nameSet.contains(namedType.name())) {
+      fields.add(namedType);
+      nameSet.add(namedType.name());
+    }
   }
 
   @Override
   public void addAll(Iterator<NamedType> fields) {
     while (fields.hasNext()) {
-      this.fields.add(fields.next());
+      add(fields.next());
     }
   }
 
   @Override
   public void addAll(Iterable<NamedType> fields) {
     for (NamedType n : fields) {
-      this.fields.add(n);
+      add(n);
     }
   }
 
   @Override
   public ImmutableCollection<NamedType> build() {
-    return ImmutableList.copyOf(fields);
+    return fields.build();
   }
 }

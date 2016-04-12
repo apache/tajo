@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -283,8 +284,7 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForFloat8Asc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder().add("col1", Type.FLOAT8).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 

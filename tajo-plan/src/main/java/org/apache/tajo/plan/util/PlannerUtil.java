@@ -655,8 +655,7 @@ public class PlannerUtil {
   }
 
   public static Schema targetToSchema(List<Target> targets) {
-    SchemaBuilder schema = SchemaBuilder.builder();
-    Set<String> nameset = new HashSet<>();
+    SchemaBuilder schema = SchemaBuilder.uniqueNameBuilder();
     for (Target t : targets) {
       DataType type = t.getEvalTree().getValueType();
 
@@ -671,10 +670,8 @@ public class PlannerUtil {
       } else {
         name = t.getEvalTree().getName();
       }
-      if (!nameset.contains(name)) {
-        schema.add(name, type);
-        nameset.add(name);
-      }
+
+      schema.add(name, type);
     }
 
     return schema.build();

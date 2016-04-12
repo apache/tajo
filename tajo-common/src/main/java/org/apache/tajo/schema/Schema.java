@@ -25,6 +25,7 @@ import org.apache.tajo.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 
@@ -73,6 +74,26 @@ public class Schema {
     public QualifiedIdentifier name() {
       return this.name;
     }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+
+      if (this == obj) {
+        return true;
+      }
+
+      if (obj instanceof NamedType) {
+        NamedType other = (NamedType) obj;
+        return this.name.equals(other.name);
+      }
+
+      return false;
+    }
   }
 
   public static class NamedPrimitiveType extends NamedType {
@@ -92,6 +113,25 @@ public class Schema {
     public String toString() {
       return name + " " + type;
     }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, type);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == this) {
+        return true;
+      }
+
+      if (obj instanceof NamedPrimitiveType) {
+        NamedPrimitiveType other = (NamedPrimitiveType) obj;
+        return super.equals(other) && this.type.equals(type);
+      }
+
+      return false;
+    }
   }
 
   public static class NamedStructType extends NamedType {
@@ -109,6 +149,25 @@ public class Schema {
     @Override
     public String toString() {
       return name + " record (" + StringUtils.join(fields, ",") + ")";
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, fields);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == this) {
+        return true;
+      }
+
+      if (obj instanceof NamedStructType) {
+        NamedStructType other = (NamedStructType) obj;
+        return super.equals(other) && fields.equals(other.fields);
+      }
+
+      return false;
     }
   }
 }

@@ -21,6 +21,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
@@ -104,9 +105,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
   public void testTrim() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
 
     testSimpleEval("select trim(' trim ') ", new String[]{"trim"});
     testSimpleEval("select btrim('xxtrimxx', 'xx') ", new String[]{"trim"});

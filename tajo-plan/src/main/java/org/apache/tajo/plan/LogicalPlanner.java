@@ -32,13 +32,13 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -1228,20 +1228,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static Schema getNaturalJoinSchema(LogicalNode left, LogicalNode right) {
-    SchemaBuilder joinSchema = SchemaBuilder.builder();
-
-    Set<Column> columnSet = Sets.newHashSet(left.getOutSchema().getRootColumns());
-    columnSet.addAll(right.getOutSchema().getRootColumns());
-    Schema commonColumns = SchemaUtil.getNaturalJoinColumns(left.getOutSchema(), right.getOutSchema());
-
-    for (Column c : left.getOutSchema().getRootColumns()) {
-      joinSchema.add(c);
-    }
-    for (Column c : right.getOutSchema().getRootColumns()) {
-      if (!commonColumns.contains(c)) {
-        joinSchema.add(c);
-      }
-    }
+    SchemaBuilder joinSchema = SchemaBuilder.uniqueNameBuilder();
+    joinSchema.addAll(left.getOutSchema().getRootColumns());
+    joinSchema.addAll(right.getOutSchema().getRootColumns());
     return joinSchema.build();
   }
 
@@ -1698,11 +1687,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       Schema tableSchema = desc.getLogicalSchema();
       Schema projectedSchema = insertNode.getChild().getOutSchema();
 
-      Schema targetColumns = SchemaFactory.newV1();
+      SchemaBuilder targetColumns = SchemaBuilder.builder();
       for (int i = 0; i < projectedSchema.size(); i++) {
-        targetColumns.addColumn(tableSchema.getColumn(i));
+        targetColumns.add(tableSchema.getColumn(i));
       }
-      insertNode.setTargetSchema(targetColumns);
+      insertNode.setTargetSchema(targetColumns.build());
       buildProjectedInsert(context, insertNode);
     }
 

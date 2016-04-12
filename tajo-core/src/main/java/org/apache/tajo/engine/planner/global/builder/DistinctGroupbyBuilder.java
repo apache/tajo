@@ -646,17 +646,14 @@ public class DistinctGroupbyBuilder {
     //Set SecondStage ColumnId and Input schema
     secondStageDistinctNode.setResultColumnIds(secondStageColumnIds);
 
-    SchemaBuilder secondStageInSchema = SchemaBuilder.builder();
-    Set<String> nameSet = new HashSet<>();
+    SchemaBuilder secondStageInSchema = SchemaBuilder.uniqueNameBuilder();
+
     //TODO merged tuple schema
     int index = 0;
     for(GroupbyNode eachNode: secondStageDistinctNode.getSubPlans()) {
       eachNode.setInSchema(firstStageDistinctNode.getOutSchema());
       for (Column column: eachNode.getOutSchema().getRootColumns()) {
-        if (!nameSet.contains(column.getQualifiedName())) {
-          secondStageInSchema.add(column);
-          nameSet.add(column.getQualifiedName());
-        }
+        secondStageInSchema.add(column);
       }
     }
     secondStageDistinctNode.setInSchema(secondStageInSchema.build());
