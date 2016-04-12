@@ -156,11 +156,7 @@ public class ExplainPlanPreprocessorForTest {
       Column[] columns = schema.toArray();
       Arrays.sort(columns, columnComparator);
 
-      SchemaBuilder sorted = SchemaBuilder.builder();
-      for (Column col : columns) {
-        sorted.add(col);
-      }
-      return sorted.build();
+      return SchemaBuilder.builder().addAll(columns).build();
     }
 
     private EvalNode sortQual(EvalNode qual) {

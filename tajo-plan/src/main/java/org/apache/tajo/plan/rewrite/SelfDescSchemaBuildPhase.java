@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.rewrite;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
@@ -43,6 +44,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -521,10 +523,14 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         if (graph.isLeaf(schemaVertex)) {
           schemaVertex.column = new Column(schemaVertex.name, schemaVertex.type);
         } else {
-          SchemaBuilder schema = SchemaBuilder.builder();
-          for (ColumnVertex eachChild : graph.getChilds(schemaVertex)) {
-            schema.add(eachChild.column);
-          }
+          SchemaBuilder schema = SchemaBuilder.builder()
+              .addAll(graph.getChilds(schemaVertex), new Function<ColumnVertex, Column>() {
+                @Override
+                public Column apply(@Nullable ColumnVertex input) {
+                  return input.column;
+                }
+              });
+
           schemaVertex.column = new Column(schemaVertex.name, new TypeDesc(schema.build()));
         }
       }

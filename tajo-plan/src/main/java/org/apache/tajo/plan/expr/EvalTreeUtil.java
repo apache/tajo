@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.expr;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
@@ -140,16 +141,15 @@ public class EvalTreeUtil {
     node.postOrder(finder);
     return finder.getColumnRefs();
   }
-  
+
   public static Schema getSchemaByTargets(Schema inputSchema, List<Target> targets) {
-    SchemaBuilder schema = SchemaBuilder.builder();
-    for (Target target : targets) {
-      schema.add(
-          target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
-          getDomainByExpr(inputSchema, target.getEvalTree()));
-    }
-    
-    return schema.build();
+    return SchemaBuilder.builder().addAll(targets, new Function<Target, Column>() {
+      @Override
+      public Column apply(@javax.annotation.Nullable Target target) {
+        return new Column(target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
+            getDomainByExpr(inputSchema, target.getEvalTree()));
+      }
+    }).build();
   }
 
   public static String columnsToStr(Collection<Column> columns) {

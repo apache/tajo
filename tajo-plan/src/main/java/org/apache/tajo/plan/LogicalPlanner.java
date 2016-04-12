@@ -19,6 +19,7 @@
 package org.apache.tajo.plan;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -52,6 +53,7 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
 
@@ -2031,11 +2033,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private Schema convertColumnsToSchema(ColumnDefinition[] elements) {
-    SchemaBuilder schema = SchemaBuilder.builder();
-    for (ColumnDefinition columnDefinition: elements) {
-      schema.add(convertColumn(columnDefinition));
-    }
-    return schema.build();
+    return SchemaBuilder.builder().addAll(elements, new Function<ColumnDefinition, Column>() {
+      @Override
+      public Column apply(@Nullable ColumnDefinition input) {
+        return convertColumn(input);
+      }
+    }).build();
   }
 
   /**
@@ -2045,13 +2048,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private static Schema convertTableElementsSchema(ColumnDefinition[] elements) {
-    SchemaBuilder schema = SchemaBuilder.builder();
-
-    for (ColumnDefinition columnDefinition: elements) {
-      schema.add(convertColumn(columnDefinition));
-    }
-
-    return schema.build();
+    return SchemaBuilder.builder().addAll(elements, new Function<ColumnDefinition, Column>() {
+      @Override
+      public Column apply(@Nullable ColumnDefinition input) {
+        return convertColumn(input);
+      }
+    }).build();
   }
 
   /**

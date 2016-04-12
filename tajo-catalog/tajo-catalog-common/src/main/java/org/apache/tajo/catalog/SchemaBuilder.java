@@ -31,7 +31,6 @@ import org.apache.tajo.type.Type;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 
 import static org.apache.tajo.catalog.FieldConverter.toQualifiedIdentifier;
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
@@ -106,7 +105,7 @@ public class SchemaBuilder {
 
   @Deprecated
   public SchemaBuilder addAll(Iterable<Column> columns) {
-    return addAll(columns, new Function<Column, NamedType>() {
+    return addAll2(columns, new Function<Column, NamedType>() {
       @Override
       public NamedType apply(@Nullable Column input) {
         return FieldConverter.convert(input);
@@ -114,14 +113,56 @@ public class SchemaBuilder {
     });
   }
 
-  public <T> SchemaBuilder addAll(Iterable<T> fields, Function<T, NamedType> fn) {
+  @Deprecated
+  public SchemaBuilder addAll(Column [] columns) {
+    return addAll2(columns, new Function<Column, NamedType>() {
+      @Override
+      public NamedType apply(@Nullable Column input) {
+        return FieldConverter.convert(input);
+      }
+    });
+  }
+
+  @Deprecated
+  public <T> SchemaBuilder addAll(T [] fields, Function<T, Column> fn) {
     for (T t : fields) {
       add(fn.apply(t));
     }
     return this;
   }
 
-  public <T> SchemaBuilder addAll(Iterator<T> fields, Function<T, NamedType> fn) {
+  @Deprecated
+  public <T> SchemaBuilder addAll(Iterable<T> fields, Function<T, Column> fn) {
+    for (T t : fields) {
+      add(fn.apply(t));
+    }
+    return this;
+  }
+
+  @Deprecated
+  public <T> SchemaBuilder addAll(Iterator<T> fields, Function<T, Column> fn) {
+    while(fields.hasNext()) {
+      T t = fields.next();
+      add(fn.apply(t));
+    }
+    return this;
+  }
+
+  public <T> SchemaBuilder addAll2(T [] fields, Function<T, NamedType> fn) {
+    for (T t : fields) {
+      add(fn.apply(t));
+    }
+    return this;
+  }
+
+  public <T> SchemaBuilder addAll2(Iterable<T> fields, Function<T, NamedType> fn) {
+    for (T t : fields) {
+      add(fn.apply(t));
+    }
+    return this;
+  }
+
+  public <T> SchemaBuilder addAll2(Iterator<T> fields, Function<T, NamedType> fn) {
     while(fields.hasNext()) {
       T t = fields.next();
       add(fn.apply(t));
