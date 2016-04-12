@@ -866,29 +866,29 @@ public class FileTablespace extends Tablespace {
       // Delete backup files
       fs.delete(backupDir, true);
     } catch (Exception e) {
-      clearDirectOutputCommit(queryContext, queryId);
+      clearDirectOutputCommit(queryId.getId(), finalOutputDir);
       throw new IOException(e);
     }
     return finalOutputDir;
   }
 
   @Override
-  public void clearDirectOutputCommit(OverridableConf queryContext, QueryId queryId) throws IOException {
-    Path finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
-
-    Path backupDir = new Path(finalOutputDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.toString().substring(2).replaceAll("_", "-");
+  public void clearDirectOutputCommit(String queryId, Path path) throws IOException {
+    Path backupDir = new Path(path, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.substring(2).replaceAll("_", "-");
 
     directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
     PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
     PathFilter outputPathFilter = committerFilter.getOutputPathFilter();
 
     // Delete added files
-    deleteOutputFiles(finalOutputDir, outputPathFilter);
+    deleteOutputFiles(path, outputPathFilter);
 
     // Recover backup files to output directory
-    for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
-      renameDirectory(status.getPath(), finalOutputDir);
+    if (fs.exists(backupDir)) {
+      for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
+        renameDirectory(status.getPath(), path);
+      }
     }
   }
 

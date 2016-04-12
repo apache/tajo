@@ -1121,8 +1121,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public void clearDirectOutputCommit(OverridableConf queryContext, QueryId queryId) throws IOException,
-    UnsupportedException {
+  public void clearDirectOutputCommit(String queryId, Path path) throws IOException, UnsupportedException {
     throw new UnsupportedException();
   }
 }

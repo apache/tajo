@@ -35,9 +35,10 @@ import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.DirectOutputCommitHistoryProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.UpdateDirectOutputCommitHistoryProto;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
@@ -52,7 +53,6 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
@@ -454,15 +454,49 @@ public class Query implements EventHandler<QueryEvent> {
     public void transition(Query query, QueryEvent queryEvent) {
 
       query.setStartTime();
+
+      Stage lastStage = null;
       ExecutionQueue executionQueue = query.newExecutionQueue();
       for (ExecutionBlock executionBlock : executionQueue.first()) {
         Stage stage = new Stage(query.context, query.getPlan(), executionBlock);
         stage.setPriority(query.priority--);
         query.addStage(stage);
 
+        if (stage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE
+          || stage.getBlock().getPlan().getType() == NodeType.INSERT) {
+          lastStage = stage;
+        }
+
         stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_INIT));
         LOG.debug("Schedule unit plan: \n" + stage.getBlock().getPlan());
       }
+
+      // Add direct output commit history to catalog
+      if (lastStage != null) {
+        addDirectOutputCommitHistory(query, lastStage);
+      }
+    }
+  }
+
+  public static void addDirectOutputCommitHistory(Query query, Stage stage) {
+    try {
+      QueryContext queryContext = query.context.getQueryContext();
+
+      if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+        CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+
+        DirectOutputCommitHistoryProto.Builder builder = DirectOutputCommitHistoryProto.newBuilder();
+        builder.setQueryId(query.getId().toString());
+        builder.setQueryState(query.getState().name());
+        builder.setStartTime(System.currentTimeMillis());
+        Path path = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+        builder.setPath(path.toString());
+
+        catalog.addDirectOutputCommitHistory(builder.build());
+      }
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
+      query.eventHandler.handle(new QueryEvent(query.getId(), QueryEventType.INTERNAL_ERROR));
     }
   }
 
@@ -525,13 +559,12 @@ public class Query implements EventHandler<QueryEvent> {
         if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
           && (type == NodeType.CREATE_TABLE || type == NodeType.INSERT)) {
           Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
-          space.clearDirectOutputCommit(queryContext, query.getId());
+          Path path = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+          space.clearDirectOutputCommit(query.getId().toString(), path);
 
           CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
 
-          CatalogProtos.UpdateDirectOutputCommitHistoryProto.Builder builder = CatalogProtos
-            .UpdateDirectOutputCommitHistoryProto.newBuilder();
-
+          UpdateDirectOutputCommitHistoryProto.Builder builder = UpdateDirectOutputCommitHistoryProto.newBuilder();
           builder.setQueryState(queryState.name());
           builder.setQueryId(query.getId().toString());
 
@@ -599,15 +632,18 @@ public class Query implements EventHandler<QueryEvent> {
         }
 
         // Update the status of direct output commit history
-        if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
-          CatalogProtos.UpdateDirectOutputCommitHistoryProto.Builder builder = CatalogProtos
-            .UpdateDirectOutputCommitHistoryProto.newBuilder();
+        if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
+          && (lastStage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE
+          || lastStage.getBlock().getPlan().getType() == NodeType.INSERT)) {
+          UpdateDirectOutputCommitHistoryProto.Builder builder = UpdateDirectOutputCommitHistoryProto.newBuilder();
           builder.setQueryState(QueryState.QUERY_SUCCEEDED.name());
           builder.setQueryId(query.getId().toString());
+
           catalog.updateDirectOutputCommitHistoryProto(builder.build());
         }
 
-        } catch (Throwable e) {
+      } catch (Throwable e) {
+        clearDirectOutputCommit(query, QueryState.QUERY_ERROR, event);
         LOG.fatal(e.getMessage(), e);
         query.failureReason = ErrorUtil.convertException(e);
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
@@ -862,6 +898,12 @@ public class Query implements EventHandler<QueryEvent> {
         query.addStage(nextStage);
         nextStage.getEventHandler().handle(new StageEvent(nextStage.getId(), StageEventType.SQ_INIT));
 
+        // Add direct output commit history to catalog
+        if (nextStage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE
+          || nextStage.getBlock().getPlan().getType() == NodeType.INSERT) {
+          addDirectOutputCommitHistory(query, nextStage);
+        }
+
         LOG.info("Scheduling Stage:" + nextStage.getId());
         if (LOG.isDebugEnabled()) {
           LOG.debug("Scheduling Stage's Priority: " + nextStage.getPriority());
@@ -910,9 +952,9 @@ public class Query implements EventHandler<QueryEvent> {
           query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
         }
         LOG.info(String.format("Complete Stage[%s], State: %s, %d/%d. ",
-            castEvent.getExecutionBlockId().toString(),
-            castEvent.getState().toString(),
-            query.completedStagesCount,
+          castEvent.getExecutionBlockId().toString(),
+          castEvent.getState().toString(),
+          query.completedStagesCount,
             query.stages.size()));
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);

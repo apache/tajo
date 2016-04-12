@@ -26,7 +26,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.exception.NotImplementedException;
@@ -203,8 +202,7 @@ public abstract class JdbcTablespace extends Tablespace {
                             @Nullable Schema target) throws IOException;
 
   @Override
-  public void clearDirectOutputCommit(OverridableConf queryContext, QueryId queryId) throws IOException,
-    UnsupportedException {
+  public void clearDirectOutputCommit(String queryId, Path path) throws IOException, UnsupportedException {
     throw new UnsupportedException();
   }
 
