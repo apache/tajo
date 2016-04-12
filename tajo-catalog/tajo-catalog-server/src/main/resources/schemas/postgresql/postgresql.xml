@@ -200,12 +200,12 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
       </tns:Object>
 			<tns:Object name="DIRECT_OUTPUT_COMMIT_HISTORIES" type="table" order="19">
 				<tns:sql><![CDATA[
-          CREATE TABLE DIRECT_OUTPUT_COMMIT_HISTORIES (
-						QUERY_ID VARCHAR(128) NOT NULL PRIMARY KEY,
-						PATH VARCHAR(4096) NOT NULL,
-						START_TIME BIGINT NOT NULL,
-						END_TIME BIGINT,
-						QUERY_STATE VARCHAR(50) NOT NULL
+				CREATE TABLE DIRECT_OUTPUT_COMMIT_HISTORIES (
+					QUERY_ID VARCHAR(128) NOT NULL PRIMARY KEY,
+					PATH VARCHAR(4096) NOT NULL,
+					START_TIME BIGINT NOT NULL,
+					END_TIME BIGINT,
+					QUERY_STATE VARCHAR(50) NOT NULL
 				)]]>
 				</tns:sql>
 			</tns:Object>
