@@ -36,9 +36,13 @@ import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.TimeZone;
 
 public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(ColPartitionStoreExec.class);
@@ -181,12 +185,46 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       // In CTAS, the uri would be null. So, it get the uri from staging directory.
       int endIndex = storeTablePath.toString().indexOf(FileTablespace.TMP_STAGING_DIR_PREFIX);
       String outputPath = storeTablePath.toString().substring(0, endIndex);
-      builder.setPath(outputPath +  partition);
+      builder.setPath(outputPath + partition);
     } else {
       builder.setPath(this.plan.getUri().toString() + "/" + partition);
     }
 
     context.addPartition(builder.build());
+  }
+
+  /**
+   * Convert TimestampDatum to formatted string for Hive compatibility with users timezone.
+   *
+   * @param tm TimeMeta
+   * @return
+   */
+  protected String encodeTimestamp(TimeMeta tm) {
+    StringBuilder sb = new StringBuilder();
+
+    TimeZone tz = null;
+    if (context.getQueryContext().containsKey(SessionVars.TIMEZONE)) {
+      tz = TimeZone.getTimeZone(context.getQueryContext().get(SessionVars.TIMEZONE));
+    } else {
+      tz = TimeZone.getDefault();
+    }
+    DateTimeUtil.toUserTimezone(tm, tz);
+
+    sb.append(StringUtils.escapePathName(DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS")));
+
+    sb.append(".");
+    if (tm.fsecs == 0) {
+      sb.append("0");
+    } else {
+      int secondsFraction = tm.fsecs / 1000;
+
+      if (secondsFraction < 10) {
+        sb.append(secondsFraction);
+      } else {
+       sb.append(org.apache.commons.lang.StringUtils.leftPad("" + secondsFraction, 3, '0'));
+      }
+    }
+    return sb.toString();
   }
 
   public void openAppender(int suffixId) throws IOException {

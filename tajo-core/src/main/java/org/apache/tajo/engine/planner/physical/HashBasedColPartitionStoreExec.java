@@ -18,21 +18,25 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.datetime.DateTimeFormat;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.util.*;
 
 /**
  * This class is a physical operator to store at column partitioned table.
@@ -62,7 +66,12 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
       }
       sb.append(keyNames[i]).append('=');
       Datum datum = tuple.asDatum(keyIds[i]);
-      sb.append(StringUtils.escapePathName(datum.asChars()));
+
+      if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+        sb.append(encodeTimestamp(tuple.getTimeDate(keyIds[i])));
+      } else {
+        sb.append(StringUtils.escapePathName(datum.asChars()));
+      }
     }
     appender = getNextPartitionAppender(sb.toString());
 

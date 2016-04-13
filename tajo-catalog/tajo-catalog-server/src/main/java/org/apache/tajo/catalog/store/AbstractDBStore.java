@@ -25,6 +25,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.annotation.Nullable;
@@ -2181,9 +2182,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
             case DATE:
               pstmt.setDate(currentIndex, (Date) parameter.getSecond());
               break;
-            case TIMESTAMP:
-              pstmt.setTimestamp(currentIndex, (Timestamp) parameter.getSecond());
-              break;
             case TIME:
               pstmt.setTime(currentIndex, (Time) parameter.getSecond());
               break;
@@ -2261,6 +2259,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       PartitionFilterAlgebraVisitor visitor = new PartitionFilterAlgebraVisitor();
       visitor.setIsHiveCatalog(false);
+
+      if (conf.get(SessionVars.TIMEZONE.getConfVars().keyname()) != null) {
+        visitor.setTimezoneId(conf.get(SessionVars.TIMEZONE.getConfVars().keyname()));
+      } else {
+        visitor.setTimezoneId(TimeZone.getDefault().getID());
+      }
 
       Expr[] filters = AlgebraicUtil.getRearrangedCNFExpressions(tableName, partitionColumns, exprs);
 

@@ -24,13 +24,20 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.algebra.DateValue;
+import org.apache.tajo.algebra.TimeValue;
+import org.apache.tajo.algebra.TimestampLiteral;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -42,8 +49,11 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.*;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
@@ -88,15 +98,17 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     private Schema schema;
     private EvalNode partitionFilter;
-    public PartitionPathFilter(Schema schema, EvalNode partitionFilter) {
+    private String timezoneId;
+    public PartitionPathFilter(Schema schema, EvalNode partitionFilter, String timezoneId) {
       this.schema = schema;
       this.partitionFilter = partitionFilter;
+      this.timezoneId = timezoneId;
       partitionFilter.bind(null, schema);
     }
 
     @Override
     public boolean accept(Path path) {
-      Tuple tuple = buildTupleFromPartitionPath(schema, path, true);
+      Tuple tuple = buildTupleFromPartitionPath(schema, path, true, timezoneId);
       if (tuple == null) { // if it is a file or not acceptable file
         return false;
       }
@@ -136,12 +148,20 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
     String [] splits = CatalogUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
+    String timezoneId = null;
 
     try {
+      if (queryContext.containsKey(SessionVars.TIMEZONE)) {
+        timezoneId = queryContext.get(SessionVars.TIMEZONE);
+      } else {
+        timezoneId = TimeZone.getDefault().getID();
+      }
+
       if (conjunctiveForms == null) {
         partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
         if (partitions.isEmpty()) {
-          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath,
+            timezoneId);
         } else {
           filteredPaths = findFilteredPathsByPartitionDesc(partitions);
         }
@@ -151,7 +171,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           partitions = catalog.getPartitionsByAlgebra(request);
           filteredPaths = findFilteredPathsByPartitionDesc(partitions);
         } else {
-          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+          filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath,
+            timezoneId);
         }
       }
     } catch (UnsupportedException ue) {
@@ -160,7 +181,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       LOG.warn(ue.getMessage());
       partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
       if (partitions.isEmpty()) {
-        filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath);
+        filteredPaths = findFilteredPathsFromFileSystem(partitionColumns, conjunctiveForms, fs, tablePath, timezoneId);
       } else {
         filteredPaths = findFilteredPathsByPartitionDesc(partitions);
       }
@@ -199,14 +220,14 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @throws IOException
    */
   private Path [] findFilteredPathsFromFileSystem(Schema partitionColumns, EvalNode [] conjunctiveForms,
-                                                  FileSystem fs, Path tablePath) throws IOException{
+                                                  FileSystem fs, Path tablePath, String timezoneId) throws IOException{
     Path [] filteredPaths = null;
     PathFilter [] filters;
 
     if (conjunctiveForms == null) {
-      filters = buildAllAcceptingPathFilters(partitionColumns);
+      filters = buildAllAcceptingPathFilters(partitionColumns, timezoneId);
     } else {
-      filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms);
+      filters = buildPathFiltersForAllLevels(partitionColumns, conjunctiveForms, timezoneId);
     }
 
     // loop from one to the number of partition columns
@@ -271,7 +292,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    */
   private static PathFilter [] buildPathFiltersForAllLevels(Schema partitionColumns,
-                                                     EvalNode [] conjunctiveForms) {
+                                                     EvalNode [] conjunctiveForms, String timezoneId) {
     // Building partition path filters for all levels
     Column target;
     PathFilter [] filters = new PathFilter[partitionColumns.size()];
@@ -292,7 +313,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
       EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
           accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
-      filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel);
+      filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel, timezoneId);
     }
 
     return filters;
@@ -303,7 +324,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @param partitionColumns The partition columns schema
    * @return The array of path filter, accpeting all partition paths.
    */
-  public static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
+  public static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns, String timezoneId) {
     Column target;
     PathFilter [] filters = new PathFilter[partitionColumns.size()];
     List<EvalNode> accumulatedFilters = Lists.newArrayList();
@@ -313,7 +334,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
       EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
           accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
-      filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel);
+      filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel, timezoneId);
     }
     return filters;
   }
@@ -440,7 +461,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return The tuple transformed from a column values part.
    */
   public static Tuple buildTupleFromPartitionPath(Schema partitionColumnSchema, Path partitionPath,
-                                                  boolean beNullIfFile) {
+                                                  boolean beNullIfFile, String timezoneId)  {
     int startIdx = partitionPath.toString().indexOf(getColumnPartitionPathPrefix(partitionColumnSchema));
 
     if (startIdx == -1) { // if there is no partition column in the patch
@@ -464,13 +485,81 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
       int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
-      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
+
+      if (keyColumn.getDataType().getType() == TajoDataTypes.Type.TIMESTAMP) {
+        String timestampStr = StringUtils.unescapePathName(parts[1]);
+
+        String[] timestampParts = timestampStr.split(" ");
+        String datePart = timestampParts[0];
+        String timePart = timestampParts[1];
+
+        DateValue dateValue = parseDate(datePart);
+        TimeValue timeValue = parseTime(timePart);
+
+        try {
+          int [] dates = ExprAnnotator.dateToIntArray(dateValue.getYears(),
+            dateValue.getMonths(),
+            dateValue.getDays());
+          int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
+            timeValue.getMinutes(),
+            timeValue.getSeconds(),
+            timeValue.getSecondsFraction());
+
+          long timestamp;
+          if (timeValue.hasSecondsFraction()) {
+            timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
+              times[3] * 1000);
+          } else {
+            timestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
+          }
+
+          TimeMeta tm = new TimeMeta();
+          DateTimeUtil.toJulianTimeMeta(timestamp, tm);
+
+          TimeZone tz = TimeZone.getTimeZone(timezoneId);
+          DateTimeUtil.toUTCTimezone(tm, tz);
+
+          TimestampDatum timestampDatum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+          tuple.put(columnId, timestampDatum);
+        } catch (TajoException e) {
+          throw new TajoInternalError("TimestampDatum build Failed: \n" + e.getMessage());
+        }
+      } else {
+        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(),
+          StringUtils.unescapePathName(parts[1])));
+      }
     }
     for (; i < partitionColumnSchema.size(); i++) {
       tuple.put(i, NullDatum.get());
     }
     return tuple;
   }
+
+
+  private static DateValue parseDate(String datePart) {
+    String[] parts = datePart.split("-");
+    return new DateValue(parts[0], parts[1], parts[2]);
+  }
+
+  private static TimeValue parseTime(String timePart) {
+    String[] parts = timePart.split(":");
+
+    TimeValue time;
+    boolean hasFractionOfSeconds = (parts.length > 2 && parts[2].indexOf('.') > 0);
+    if (hasFractionOfSeconds) {
+      String[] secondsParts = parts[2].split("\\.");
+      time = new TimeValue(parts[0], parts[1], secondsParts[0]);
+      if (secondsParts.length == 2) {
+        time.setSecondsFraction(secondsParts[1]);
+      }
+    } else {
+      time = new TimeValue(parts[0],
+        (parts.length > 1 ? parts[1] : "0"),
+        (parts.length > 2 ? parts[2] : "0"));
+    }
+    return time;
+  }
+
 
   /**
    * Get a prefix of column partition path. For example, consider a column partition (col1, col2).

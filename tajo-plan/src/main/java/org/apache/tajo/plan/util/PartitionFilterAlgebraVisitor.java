@@ -29,6 +29,8 @@ import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.ExprAnnotator;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -49,6 +51,7 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   private String tableAlias;
   private Column column;
   private boolean isHiveCatalog = false;
+  private String timezoneId;
 
   private Stack<String> queries = new Stack();
   private List<Pair<Type, Object>> parameters = new ArrayList<>();
@@ -67,6 +70,14 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
 
   public void setColumn(Column column) {
     this.column = column;
+  }
+
+  public String getTimezoneId() {
+    return timezoneId;
+  }
+
+  public void setTimezoneId(String timezoneId) {
+    this.timezoneId = timezoneId;
   }
 
   public boolean isHiveCatalog() {
@@ -122,38 +133,47 @@ public class PartitionFilterAlgebraVisitor extends SimpleAlgebraVisitor<Object, 
   @Override
   public Expr visitTimestampLiteral(Object ctx, Stack<Expr> stack, TimestampLiteral expr) throws TajoException {
     StringBuilder sb = new StringBuilder();
+    DateValue dateValue = expr.getDate();
+    TimeValue timeValue = expr.getTime();
+
+    int [] dates = ExprAnnotator.dateToIntArray(dateValue.getYears(),
+      dateValue.getMonths(),
+      dateValue.getDays());
+    int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
+      timeValue.getMinutes(),
+      timeValue.getSeconds(),
+      timeValue.getSecondsFraction());
+
+    long julianTimestamp;
+    if (timeValue.hasSecondsFraction()) {
+      julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
+        times[3] * 1000);
+    } else {
+      julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
+    }
+
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
+
+    TimeZone tz = TimeZone.getTimeZone(getTimezoneId());
+    DateTimeUtil.toUserTimezone(tm, tz);
+
+    String dateTime = null;
+    if (tm.fsecs == 0) {
+      dateTime = DateTimeFormat.to_char(tm, "yyyy-MM-dd HH24:MI:SS") + ".0";
+    } else {
+      dateTime = DateTimeUtil.encodeDateTime(tm, DateTimeConstants.DateStyle.ISO_DATES);
+    }
 
     if (!isHiveCatalog) {
-      DateValue dateValue = expr.getDate();
-      TimeValue timeValue = expr.getTime();
-
-      int [] dates = ExprAnnotator.dateToIntArray(dateValue.getYears(),
-        dateValue.getMonths(),
-        dateValue.getDays());
-      int [] times = ExprAnnotator.timeToIntArray(timeValue.getHours(),
-        timeValue.getMinutes(),
-        timeValue.getSeconds(),
-        timeValue.getSecondsFraction());
-
-      long julianTimestamp;
-      if (timeValue.hasSecondsFraction()) {
-        julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2],
-          times[3] * 1000);
-      } else {
-        julianTimestamp = DateTimeUtil.toJulianTimestamp(dates[0], dates[1], dates[2], times[0], times[1], times[2], 0);
-      }
-
-      TimeMeta tm = new TimeMeta();
-      DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
-
-      TimeZone tz = TimeZone.getDefault();
-      DateTimeUtil.toUTCTimezone(tm, tz);
-
       sb.append("?").append(" )");
-      Timestamp timestamp = new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
-      parameters.add(new Pair(Type.TIMESTAMP, timestamp));
+      parameters.add(new Pair(Type.TEXT, dateTime));
     } else {
-      sb.append("\"").append(expr.toString()).append("\"");
+      // Currently, Hive doesn't support to use Timestamp type using partition api. As a result, if Tajo uses Timestamp
+      // type, Hive will throws MetaException. Also Hive doesn't allow cast operator using partition api. So if there
+      // is any Timestamp type on filter conditions, Tajo must get all list of partitions of the table and build
+      // correct query result with the list.
+      throw new UnsupportedException("Timestamp type");
     }
     queries.push(sb.toString());
 

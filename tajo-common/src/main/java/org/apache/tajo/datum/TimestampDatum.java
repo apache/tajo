@@ -178,6 +178,9 @@ public class TimestampDatum extends Datum {
   public Datum equalsTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       return timestamp == datum.asInt8() ? BooleanDatum.TRUE : BooleanDatum.FALSE;
+    } else if(datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+      TimestampDatum another = (TimestampDatum) datum;
+      return timestamp == another.timestamp ? BooleanDatum.TRUE : BooleanDatum.FALSE;
     } else if (datum.isNull()) {
       return datum;
     } else {
