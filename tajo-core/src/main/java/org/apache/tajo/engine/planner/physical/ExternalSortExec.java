@@ -141,20 +141,26 @@ public class ExternalSortExec extends SortExec {
     this.intermediateMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
     this.inputStats = new TableStats();
     this.sortAlgorithm = getSortAlgorithm(context.getQueryContext(), sortSpecs);
+    LOG.info(sortAlgorithm.name() + " sort is selected");
   }
 
   private static SortAlgorithm getSortAlgorithm(QueryContext context, SortSpec[] sortSpecs) {
+    String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, SortAlgorithm.TIM.name());
     if (Arrays.stream(sortSpecs)
         .filter(sortSpec -> !RadixSort.isApplicableType(sortSpec)).count() > 0) {
+      if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.MSD_RADIX.name())) {
+        LOG.warn("Non-applicable types exist. Falling back to " + SortAlgorithm.TIM.name() + " sort");
+      }
       return SortAlgorithm.TIM;
     }
-    String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, SortAlgorithm.TIM.name());
     if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.TIM.name())) {
       return SortAlgorithm.TIM;
     } else if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.MSD_RADIX.name())) {
       return SortAlgorithm.MSD_RADIX;
     } else {
-      throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm));
+      LOG.warn("Unknown sort type: " + sortAlgorithm);
+      LOG.warn("Falling back to " + SortAlgorithm.TIM.name() + " sort");
+      return SortAlgorithm.TIM;
     }
   }
 
@@ -198,15 +204,12 @@ public class ExternalSortExec extends SortExec {
   private List<UnSafeTuple> sort(UnSafeTupleList tupleBlock) {
     switch (sortAlgorithm) {
       case TIM:
-        LOG.info(sortAlgorithm.name() + " sort is used");
         return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
       case MSD_RADIX:
-        LOG.info(sortAlgorithm.name() + " sort is used");
         return RadixSort.sort(context.getQueryContext(), tupleBlock, inSchema, sortSpecs, unSafeComparator);
       default:
-        LOG.warn("Unknown sort type: " + sortAlgorithm.name());
-        LOG.warn("TIM sort is used");
-        return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
+        // The below line is not reachable. So, an exception should be thrown if it is executed.
+        throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));
     }
   }
 
