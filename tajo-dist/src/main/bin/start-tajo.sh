@@ -54,6 +54,7 @@ fi
 # Display WEB UI URL and TajoMaster RPC address.
 # Getting configuration value of http address and rpc address.
 HTTP_ADDRESS=$("$bin"/tajo getconf tajo.master.info-http.address)
+HTTP_ADDRESS_CONTEXT_PATH=$("$bin"/tajo getconf tajo.master.info-http.address.context.path)
 RPC_ADDRESS=$("$bin"/tajo getconf tajo.master.client-rpc.address)
 HTTP_ADDRESS=(${HTTP_ADDRESS//:/ })
 RPC_ADDRESS=(${RPC_ADDRESS//:/ })
@@ -70,5 +71,5 @@ if [ ${RPC_ADDRESS[0]} = "0.0.0.0" ] ||
   RPC_ADDRESS[0]=`hostname`
 fi
 
-echo "Tajo master web UI: http://${HTTP_ADDRESS[0]}:${HTTP_ADDRESS[1]}"
+echo "Tajo master web UI: http://${HTTP_ADDRESS[0]}:${HTTP_ADDRESS[1]}${HTTP_ADDRESS_CONTEXT_PATH}"
 echo "Tajo Client Service: ${RPC_ADDRESS[0]}:${RPC_ADDRESS[1]}"

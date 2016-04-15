@@ -31,6 +31,18 @@
 </property>
 
 <property>
+    <name>tajo.master.info-http.address</name>
+    <value>hostname:26080</value>
+    <description>TajoMaster info-http binding address.</description>
+</property>
+
+<property>
+    <name>tajo.master.info-http.address.context.path</name>
+    <value>/</value>
+    <description>TajoMaster info-http context-path.</description>
+</property>
+
+<property>
   <name>tajo.master.umbilical-rpc.address</name>
   <value>hostname:26001</value>
   <description>TajoMaster binding address between master and workers.</description>

@@ -137,7 +137,8 @@ public class TajoConf extends Configuration {
         Validators.networkAddr()),
     TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002",
         Validators.networkAddr()),
-    TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
+    TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26088", Validators.networkAddr()),
+    TAJO_MASTER_INFO_ADDRESS_CONTEXT_PATH("tajo.master.info-http.address.context.path", "/tajo", Validators.javaString()),
 
     // Tajo Rest Service
     REST_SERVICE_ADDRESS("tajo.rest.service.address", "0.0.0.0:26880", Validators.networkAddr()),
