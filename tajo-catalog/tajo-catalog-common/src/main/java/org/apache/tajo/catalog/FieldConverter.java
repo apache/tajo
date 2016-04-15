@@ -58,7 +58,7 @@ public class FieldConverter {
         fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
       }
 
-      return new TypeDesc(SchemaFactory.newV1(new SchemaLegacy(fields.build())));
+      return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());
     } else {
       final NamedPrimitiveType namedType = (NamedPrimitiveType) src;
       final Type type = namedType.type();

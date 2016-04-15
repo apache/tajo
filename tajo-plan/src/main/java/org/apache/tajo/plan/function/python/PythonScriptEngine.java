@@ -393,7 +393,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
         inSchemaBuilder.add(new Column("in_" + i, paramTypes[i]));
       }
       inSchema = inSchemaBuilder.build();
-      outSchema = SchemaFactory.newV1(new Column[]{new Column("out", functionSignature.getReturnType())});
+      outSchema = SchemaBuilder.builder()
+          .addAll(new Column[]{new Column("out", functionSignature.getReturnType())})
+          .build();
     } else {
       // UDAF
       if (firstPhase) {

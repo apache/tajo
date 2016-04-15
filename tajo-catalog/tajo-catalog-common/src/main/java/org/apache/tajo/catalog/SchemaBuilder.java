@@ -22,7 +22,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.schema.*;
+import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.schema.Schema.NamedPrimitiveType;
 import org.apache.tajo.schema.Schema.NamedStructType;
 import org.apache.tajo.schema.Schema.NamedType;
@@ -46,6 +46,10 @@ public class SchemaBuilder {
     void addAll(Iterator<NamedType> fields);
     void addAll(Iterable<NamedType> fields);
     ImmutableCollection<NamedType> build();
+  }
+
+  public static SchemaLegacy empty() {
+    return builder().build();
   }
 
   public static SchemaBuilder builder() {

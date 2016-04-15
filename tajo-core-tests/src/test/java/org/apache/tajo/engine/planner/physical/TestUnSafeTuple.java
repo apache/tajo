@@ -20,7 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
@@ -49,7 +49,7 @@ public class TestUnSafeTuple {
     Column col3 = new Column("col3", Type.FLOAT4);
     Column col4 = new Column("col4", Type.FLOAT8);
 
-    schema = SchemaFactory.newV1(new Column[]{col0, col1, col2, col3, col4});
+    schema = SchemaBuilder.builder().addAll(new Column[]{col0, col1, col2, col3, col4}).build();
   }
 
   @Test

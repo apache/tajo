@@ -634,7 +634,7 @@ public class Repartitioner {
     ExecutionBlock sampleChildBlock = masterPlan.getChild(stage.getId(), 0);
     SortNode sortNode = PlannerUtil.findTopNode(sampleChildBlock.getPlan(), NodeType.SORT);
     SortSpec [] sortSpecs = sortNode.getSortKeys();
-    Schema sortSchema = SchemaFactory.newV1(channel.getShuffleKeys());
+    Schema sortSchema = SchemaBuilder.builder().addAll(channel.getShuffleKeys()).build();
 
     TupleRange[] ranges;
     int determinedTaskNum;

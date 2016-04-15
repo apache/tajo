@@ -20,12 +20,10 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -83,7 +81,7 @@ public class SchemaUtil {
   }
 
   public static Schema getQualifiedLogicalSchema(TableDesc tableDesc, String tableName) {
-    Schema logicalSchema = SchemaFactory.newV1(tableDesc.getLogicalSchema());
+    Schema logicalSchema = SchemaBuilder.builder().addAll(tableDesc.getLogicalSchema().getRootColumns()).build();
     if (tableName != null) {
       logicalSchema.setQualifier(tableName);
     }

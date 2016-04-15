@@ -21,32 +21,7 @@ package org.apache.tajo.catalog;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 
 public class SchemaFactory {
-
-  public static SchemaBuilder builder() {
-    return SchemaBuilder.builder();
-  }
-
-  public static Schema newV1() {
-    return new SchemaLegacy();
-  }
-
   public static Schema newV1(CatalogProtos.SchemaProto proto) {
     return new SchemaLegacy(proto);
-  }
-
-  public static Schema newV1(Schema schema) {
-    return builder().addAll(schema.getRootColumns()).build();
-  }
-
-  public static Schema newV1(Column [] columns) {
-    SchemaBuilder builder = builder();
-    for (Column c :columns) {
-      builder.add(c);
-    }
-    return builder.build();
-  }
-
-  public static Schema newV1(Iterable<Column> columns) {
-    return builder().addAll(columns).build();
   }
 }

@@ -1957,7 +1957,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           createTableNode.setTableSchema(tableSchema);
         } else {
           // Convert the schema of subquery into the target table's one.
-          Schema schema = SchemaFactory.newV1(subQuery.getOutSchema());
+          Schema schema = SchemaBuilder.builder().addAll(subQuery.getOutSchema().getRootColumns()).build();
           schema.setQualifier(createTableNode.getTableName());
           createTableNode.setOutSchema(schema);
           createTableNode.setTableSchema(schema);

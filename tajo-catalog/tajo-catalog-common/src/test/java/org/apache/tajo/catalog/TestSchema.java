@@ -133,8 +133,7 @@ public class TestSchema {
 
 	@Test
 	public final void testSchemaSchema() {
-		Schema schema2 = SchemaFactory.newV1(schema);
-		
+		Schema schema2 = SchemaBuilder.builder().addAll(schema.getRootColumns()).build();
 		assertEquals(schema, schema2);
 	}
 

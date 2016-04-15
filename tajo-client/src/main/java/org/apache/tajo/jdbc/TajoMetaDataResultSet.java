@@ -20,7 +20,6 @@ package org.apache.tajo.jdbc;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
-import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.Tuple;
 
@@ -37,7 +36,7 @@ public class TajoMetaDataResultSet extends TajoResultSetBase {
   }
 
   public TajoMetaDataResultSet(List<String> columns, List<Type> types, List<MetaDataTuple> values) {
-    super(null, SchemaFactory.newV1(), null);
+    super(null, SchemaBuilder.empty(), null);
 
     SchemaBuilder builder = SchemaBuilder.builder();
     int index = 0;
