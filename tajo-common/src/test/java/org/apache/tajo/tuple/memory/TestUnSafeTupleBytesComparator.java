@@ -23,7 +23,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.tuple.RowBlockReader;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestUnSafeTupleBytesComparator {
 
@@ -49,8 +49,9 @@ public class TestUnSafeTupleBytesComparator {
       reader.next(t1);
       reader.next(t2);
 
+      // 'CÔTE D'IVOIRE' should occur later than 'CANADA' in ascending order.
       int compare = UnSafeTupleBytesComparator.compare(t1.getFieldAddr(0), t2.getFieldAddr(0));
-      assertEquals(130, compare);
+      assertTrue(compare > 0);
     } finally {
       if (rowBlock != null) {
         rowBlock.release();
