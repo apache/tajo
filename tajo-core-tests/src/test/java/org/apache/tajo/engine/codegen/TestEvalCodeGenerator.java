@@ -22,7 +22,6 @@ package org.apache.tajo.engine.codegen;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
-import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
@@ -110,9 +109,10 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testComparison() throws TajoException {
-    Schema inetSchema = SchemaFactory.newV1();
-    inetSchema.addColumn("addr1", TajoDataTypes.Type.INET4);
-    inetSchema.addColumn("addr2", TajoDataTypes.Type.INET4);
+    Schema inetSchema = SchemaBuilder.builder()
+        .add("addr1", TajoDataTypes.Type.INET4)
+        .add("addr2", TajoDataTypes.Type.INET4)
+        .build();
 
     testSimpleEval("select (1 > null AND false)", new String[] {"f"}); // unknown - false -> false
     testSimpleEval("select (1::int8 > null) is null", new String[] {"t"});
@@ -166,9 +166,10 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testBetweenAsymmetric() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .build();
     testEval(schema, "table1", "0,", "select col1 between 1 and 3 from table1", new String[]{"f"});
     testEval(schema, "table1", "1,", "select col1 between 1 and 3 from table1", new String[]{"t"});
     testEval(schema, "table1", "2,", "select col1 between 1 and 3 from table1", new String[]{"t"});
@@ -200,9 +201,10 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testBetweenSymmetric() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .build();
     testEval(schema, "table1", "0,", "select col1 between symmetric 1 and 3 from table1", new String[]{"f"});
     testEval(schema, "table1", "1,", "select col1 between symmetric 1 and 3 from table1", new String[]{"t"});
     testEval(schema, "table1", "2,", "select col1 between symmetric 1 and 3 from table1", new String[]{"t"});
@@ -307,9 +309,10 @@ public class TestEvalCodeGenerator extends ExprTestBase {
     testSimpleEval("select length('123456') as col1 ", new String[]{"6"});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 'abc' || 'bbc'", new String [] {"abcbbc"});
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.TEXT)
+        .add("col2", TajoDataTypes.Type.TEXT)
+        .build();
     testEval(schema, "table1", " trim, abc", "select ltrim(col1) || ltrim(col2) from table1",
         new String[]{"trimabc"});
   }

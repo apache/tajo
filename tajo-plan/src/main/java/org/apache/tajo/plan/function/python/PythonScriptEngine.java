@@ -290,7 +290,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private final TableMeta pipeMeta = CatalogUtil.newTableMeta("TEXT");
 
   private final Tuple EMPTY_INPUT = new VTuple(0);
-  private final Schema EMPTY_SCHEMA = SchemaFactory.newV1();
+  private final Schema EMPTY_SCHEMA = SchemaBuilder.builder().build();
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {

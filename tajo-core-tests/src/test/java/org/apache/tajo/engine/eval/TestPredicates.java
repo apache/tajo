@@ -21,7 +21,6 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
-import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
@@ -97,10 +96,11 @@ public class TestPredicates extends ExprTestBase {
 
     testSimpleEval("select (not (1 > null)) is null;", new String[] {"t"});
 
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
-    schema1.addColumn("col3", INT4);
+    Schema schema1 = SchemaBuilder.builder()
+        .add("col1", INT4)
+        .add("col2", INT4)
+        .add("col3", INT4)
+        .build();
 
     testEval(schema1,
         "table1", "123,123,456,-123",
@@ -223,10 +223,11 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testBetween() throws TajoException {
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("col1", TEXT);
-    schema2.addColumn("col2", TEXT);
-    schema2.addColumn("col3", TEXT);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
 
     // constant checker
     testEval(schema2, "table1", "b,a,c", "select col1 between 'a' and 'c' from table1", new String[]{"t"});
@@ -247,11 +248,12 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testBetween2() throws TajoException { // for TAJO-249
-    Schema schema3 = SchemaFactory.newV1();
-    schema3.addColumn("date_a", INT4);
-    schema3.addColumn("date_b", INT4);
-    schema3.addColumn("date_c", INT4);
-    schema3.addColumn("date_d", INT4);
+    Schema schema3 = SchemaBuilder.builder()
+        .add("date_a", INT4)
+        .add("date_b", INT4)
+        .add("date_c", INT4)
+        .add("date_d", INT4)
+        .build();
 
     String query = "select " +
         "case " +
@@ -286,10 +288,11 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testInPredicateWithConstant() throws TajoException {
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("col1", TEXT);
-    schema2.addColumn("col2", TEXT);
-    schema2.addColumn("col3", TEXT);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
 
     testEval(schema2, "table1", "a,b,c", "select col1 in ('a'), col2 in ('a', 'c') from table1", new String[]{"t","f"});
     testEval(schema2, "table1", "a,,c", "select col1 in ('a','b','c'), (col2 in ('a', 'c')) is null from table1",
@@ -311,10 +314,11 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testInPredicateWithSimpleExprs() throws TajoException {
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("col1", TEXT);
-    schema2.addColumn("col2", INT4);
-    schema2.addColumn("col3", TEXT);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", INT4)
+        .add("col3", TEXT)
+        .build();
 
     testEval(schema2, "table1", "abc,2,3", "select col1 in ('a'||'b'||'c'), col2 in (1 + 1, 2 * 10, 2003) from table1",
         new String[]{"t","t"});
@@ -335,9 +339,10 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testIsNullPredicate() throws TajoException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("col1", INT4);
-    schema1.addColumn("col2", INT4);
+    Schema schema1 = SchemaBuilder.builder()
+        .add("col1", INT4)
+        .add("col2", INT4)
+        .build();
     testEval(schema1, "table1", "123,", "select col1 is null, col2 is null as a from table1",
         new String[]{"f", "t"});
     testEval(schema1, "table1", "123,", "select col1 is not null, col2 is not null as a from table1",
@@ -346,9 +351,10 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testIsNullPredicateWithFunction() throws TajoException {
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("col1", TEXT);
-    schema2.addColumn("col2", TEXT);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
     testEval(schema2, "table1", "_123,", "select ltrim(col1, '_') is null, upper(col2) is null as a from table1",
         new String[]{"f", "t"});
 
@@ -385,9 +391,10 @@ public class TestPredicates extends ExprTestBase {
 
   @Test
   public void testBooleanTestOnTable() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", BOOLEAN);
-    schema.addColumn("col2", BOOLEAN);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", BOOLEAN)
+        .add("col2", BOOLEAN)
+        .build();
     testEval(schema, "table1", "t,f", "select col1 is true, col2 is false from table1", new String [] {"t", "t"});
     testEval(schema, "table1", "t,f", "select col1 is not true, col2 is not false from table1",
         new String [] {"f", "f"});

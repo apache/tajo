@@ -424,8 +424,7 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
     return false;
   }
 
-  @Override
-  public synchronized SchemaLegacy addColumn(String name, TypeDesc typeDesc) {
+  private SchemaLegacy addColumn(String name, TypeDesc typeDesc) {
     String normalized = name;
     if(fieldsByQualifiedName.containsKey(normalized)) {
       throw new TajoRuntimeException(new DuplicateColumnException(normalized));
@@ -441,20 +440,7 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
     return this;
   }
 
-  @Override
-  public synchronized SchemaLegacy addColumn(String name, Type type) {
-    return addColumn(name, CatalogUtil.newSimpleDataType(type));
-  }
-
-  @Override
-  public synchronized SchemaLegacy addColumn(String name, DataType dataType) {
-		addColumn(name, new TypeDesc(dataType));
-
-		return this;
-	}
-
-  @Override
-	public synchronized void addColumn(Column column) {
+	private synchronized void addColumn(Column column) {
 		addColumn(column.getQualifiedName(), column.typeDesc);
 	}
 

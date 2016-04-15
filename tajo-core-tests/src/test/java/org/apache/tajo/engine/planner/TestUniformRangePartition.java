@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
-import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
@@ -40,8 +39,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForINT2Asc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.INT2);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT2)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -70,8 +70,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForINT2Desc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.INT2);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT2)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -101,8 +102,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForINT4Asc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT4)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -131,8 +133,7 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForINT4Desc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.INT4);
+    Schema schema = SchemaBuilder.builder().add("col1", Type.INT4).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -162,8 +163,8 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForINT8Asc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT8).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -192,8 +193,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForInt8Desc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT8)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -223,8 +225,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForFloat4Asc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.FLOAT4)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -253,8 +256,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForFloat4Desc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.FLOAT4)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -313,8 +317,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForFloat8Desc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.FLOAT8)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -347,9 +352,10 @@ public class TestUniformRangePartition {
    */
   @Test
   public void testIncrementOfText() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_returnflag", Type.TEXT)
-        .addColumn("l_linestatus", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .build();
 
     SortSpec[] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -394,9 +400,10 @@ public class TestUniformRangePartition {
    */
   @Test
   public void testIncrementOfText2() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_returnflag", Type.TEXT)
-        .addColumn("l_linestatus", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -439,10 +446,11 @@ public class TestUniformRangePartition {
    */
   @Test
   public void testIncrementOfText3() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_returnflag", Type.TEXT)
-        .addColumn("l_linestatus", Type.TEXT)
-        .addColumn("final", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .add("final", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -472,8 +480,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testIncrementOfUnicode() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -500,8 +509,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testIncrementOfUnicodeOneCharSinglePartition() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -530,8 +540,8 @@ public class TestUniformRangePartition {
 
   @Test
   public void testIncrementOfUnicodeOneCharMultiPartition() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -560,8 +570,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForUnicodeTextAsc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -590,9 +601,7 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForUnicodeDiffLenBeginTextAsc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
-
+    Schema schema = SchemaBuilder.builder().add("col1", Type.TEXT).build();
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
     VTuple s = new VTuple(1);
@@ -620,8 +629,7 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForUnicodeDiffLenEndTextAsc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder().add("col1", Type.TEXT).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -650,8 +658,7 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForUnicodeTextDesc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder().add("col1", Type.TEXT).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -681,8 +688,7 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForUnicodeDiffLenBeginTextDesc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder().add("col1", Type.TEXT).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -712,8 +718,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForUnicodeDiffLenEndTextDesc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -743,9 +750,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testIncrementOfInt8() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_orderkey", Type.INT8)
-        .addColumn("l_linenumber", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_orderkey", Type.INT8)
+        .add("l_linenumber", Type.INT8)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -770,10 +778,11 @@ public class TestUniformRangePartition {
   }
 
   @Test public void testIncrementOfInt8AndFinal() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_orderkey", Type.INT8)
-        .addColumn("l_linenumber", Type.INT8)
-        .addColumn("final", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_orderkey", Type.INT8)
+        .add("l_linenumber", Type.INT8)
+        .add("final", Type.INT8)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -803,10 +812,11 @@ public class TestUniformRangePartition {
 
   @Test
   public void testIncrementOfFloat8() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_orderkey", Type.FLOAT8)
-        .addColumn("l_linenumber", Type.FLOAT8)
-        .addColumn("final", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_orderkey", Type.FLOAT8)
+        .add("l_linenumber", Type.FLOAT8)
+        .add("final", Type.FLOAT8)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -836,10 +846,11 @@ public class TestUniformRangePartition {
 
   @Test
   public void testIncrementOfInet4() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_orderkey", Type.INET4)
-        .addColumn("l_linenumber", Type.INET4)
-        .addColumn("final", Type.INET4);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_orderkey", Type.INET4)
+        .add("l_linenumber", Type.INET4)
+        .add("final", Type.INET4)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -869,9 +880,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartition() {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("l_returnflag", Type.TEXT);
-    schema.addColumn("l_linestatus", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -898,9 +910,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForOnePartNum() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_returnflag", Type.TEXT)
-        .addColumn("l_linestatus", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -920,9 +933,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForOnePartNumWithOneOfTheValueNull() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_returnflag", Type.TEXT)
-        .addColumn("l_linestatus", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -942,8 +956,8 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForMultipleChars() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("KEY1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("KEY1", Type.TEXT).build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -971,8 +985,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForMultipleChars2() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("KEY1", Type.TEXT);
+    Schema schema = SchemaBuilder
+        .builder()
+        .add("KEY1", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -1002,8 +1018,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForMultipleChars2Desc() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("KEY1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("KEY1", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
     sortSpecs[0].setDescOrder();
@@ -1034,8 +1051,9 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForMultipleCharsWithSameFirstChar() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("KEY1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("KEY1", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -1065,9 +1083,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionForOnePartNumWithBothValueNull() {
-    Schema schema = SchemaFactory.newV1()
-        .addColumn("l_returnflag", Type.TEXT)
-        .addColumn("l_linestatus", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -1087,9 +1106,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionWithNull() {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("l_returnflag", Type.TEXT);
-    schema.addColumn("l_linestatus", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.TEXT)
+        .add("l_linestatus", Type.TEXT)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
@@ -1116,9 +1136,10 @@ public class TestUniformRangePartition {
 
   @Test
   public void testPartitionWithINET4() {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("l_returnflag", Type.INET4);
-    schema.addColumn("l_linestatus", Type.INET4);
+    Schema schema = SchemaBuilder.builder()
+        .add("l_returnflag", Type.INET4)
+        .add("l_linestatus", Type.INET4)
+        .build();
 
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 

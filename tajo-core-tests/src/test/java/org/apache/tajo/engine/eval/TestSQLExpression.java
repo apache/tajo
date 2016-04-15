@@ -22,7 +22,6 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
-import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
@@ -41,9 +40,9 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testQuotedIdentifiers() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("컬럼1", TEXT);
-    schema.addColumn("컬럼2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("컬럼1", TEXT)
+        .add("컬럼2", TEXT).build();
     testEval(schema, "테이블1", "123,234", "select \"컬럼1\"::float, cast (\"컬럼2\" as float4) as a from \"테이블1\"",
         new String[]{"123.0", "234.0"});
     testEval(schema,
@@ -821,9 +820,10 @@ public class TestSQLExpression extends ExprTestBase {
     queryContext.put(SessionVars.TIMEZONE, "GMT-6");
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
 
     testEval(queryContext, schema,
         "table1",
@@ -853,9 +853,10 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select true", new String[] {"t"});
     testSimpleEval("select false", new String[]{"f"});
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
     testEval(schema, "table1", "123,234", "select col1, col2 from table1 where true", new String[]{"123", "234"});
   }
 

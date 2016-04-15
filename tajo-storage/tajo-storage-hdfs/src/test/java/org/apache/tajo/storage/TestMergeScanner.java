@@ -21,7 +21,10 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -96,11 +99,12 @@ public class TestMergeScanner {
 
   @Test
   public void testMultipleFiles() throws IOException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("file", Type.TEXT);
-    schema.addColumn("name", Type.TEXT);
-    schema.addColumn("age", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("file", Type.TEXT)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT8)
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);

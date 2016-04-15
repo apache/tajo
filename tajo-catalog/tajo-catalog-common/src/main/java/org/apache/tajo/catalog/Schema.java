@@ -20,8 +20,6 @@ package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.GsonObject;
 
 import java.util.Collection;
@@ -89,14 +87,6 @@ public interface Schema extends ProtoObject<SchemaProto>, Cloneable, GsonObject 
    *         Otherwise, false.
    */
   boolean containsAny(Collection<Column> columns);
-
-  Schema addColumn(String name, TypeDesc typeDesc);
-
-  Schema addColumn(String name, Type type);
-
-  Schema addColumn(String name, DataType dataType);
-	
-	void addColumn(Column column);
 
 
   @Override

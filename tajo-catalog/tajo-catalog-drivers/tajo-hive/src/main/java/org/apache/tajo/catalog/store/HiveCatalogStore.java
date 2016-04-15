@@ -46,6 +46,7 @@ import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.IsNullPredicate;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -134,7 +135,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     org.apache.hadoop.hive.ql.metadata.Table table = null;
     Path path = null;
     String dataFormat = null;
-    org.apache.tajo.catalog.Schema schema = null;
+    Schema schema = null;
     KeyValueSet options = null;
     TableStats stats = null;
     PartitionMethodDesc partitions = null;
@@ -148,7 +149,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       path = table.getPath();
 
       // convert HiveCatalogStore field schema into tajo field schema.
-      schema = SchemaFactory.newV1();
+      SchemaBuilder schemaBuilder = SchemaBuilder.builder();
 
       List<FieldSchema> fieldSchemaList = table.getCols();
       boolean isPartitionKey;
@@ -167,9 +168,10 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
               CatalogConstants.IDENTIFIER_DELIMITER + eachField.getName();
           TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(eachField.getType());
-          schema.addColumn(fieldName, dataType);
+          schemaBuilder.add(fieldName, dataType);
         }
       }
+      schema = schemaBuilder.build();
 
       // validate field schema.
       HiveCatalogUtil.validateSchema(table);
@@ -276,16 +278,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       tableDesc.setPartitionMethod(partitions);
     }
     return tableDesc.getProto();
-  }
-
-
-  private TajoDataTypes.Type getDataType(final String typeStr) {
-    try {
-      return Enum.valueOf(TajoDataTypes.Type.class, typeStr);
-    } catch (IllegalArgumentException iae) {
-      LOG.error("Cannot find a matched type against from '" + typeStr + "'");
-      return null;
-    }
   }
 
   @Override

@@ -21,7 +21,6 @@ package org.apache.tajo.engine.function;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
-import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
@@ -62,9 +61,10 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithNullReturn() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.TEXT)
+        .add("col2", TajoDataTypes.Type.TEXT)
+        .build();
 
     testEval(schema, "table1", "str1,str2",
         "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
@@ -76,10 +76,11 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithCommonExpression() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT4)
+        .build();
 
     testEval(schema, "table1", "1,2,3",
         "SELECT CASE WHEN col1 = 1 THEN 1 WHEN col1 = 2 THEN 2 ELSE 3 END FROM table1",
@@ -114,10 +115,11 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithCommonExpressionAndNull() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT4)
+        .build();
 
     testEval(schema, "table1", "1,2,3",
         "SELECT CASE col1 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",

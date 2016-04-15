@@ -43,9 +43,10 @@ public class TestSchema {
     SchemaBuilder builder1 = SchemaBuilder.builder();
     builder1.add(new Column("s1", Type.INT8));
 
-    Schema nestedRecordSchema = SchemaFactory.newV1();
-    nestedRecordSchema.addColumn("s2", Type.FLOAT4);
-    nestedRecordSchema.addColumn("s3", Type.TEXT);
+    Schema nestedRecordSchema = SchemaBuilder.builder()
+        .add("s2", Type.FLOAT4)
+        .add("s3", Type.TEXT)
+        .build();
 
     Column nestedField = new Column("s4", new TypeDesc(nestedRecordSchema));
     builder1.add(nestedField);
@@ -64,21 +65,22 @@ public class TestSchema {
     //     |- s6
     //     |- s7
     SchemaBuilder builder2 = SchemaBuilder.builder();
-    //nestedSchema2 = SchemaFactory.newV1();
     builder2.add(new Column("s1", Type.INT8));
 
-    Schema nestedRecordSchema1 = SchemaFactory.newV1();
-    nestedRecordSchema1.addColumn("s2", Type.FLOAT4);
-    nestedRecordSchema1.addColumn("s3", Type.TEXT);
+    Schema nestedRecordSchema1 = SchemaBuilder.builder()
+        .add("s2", Type.FLOAT4)
+        .add("s3", Type.TEXT)
+        .build();
 
     Column nestedField1 = new Column("s4", new TypeDesc(nestedRecordSchema1));
     builder2.add(nestedField1);
 
     builder2.add(new Column("s5", Type.FLOAT8));
 
-    Schema nestedRecordSchema2 = SchemaFactory.newV1();
-    nestedRecordSchema2.addColumn("s6", Type.FLOAT4);
-    nestedRecordSchema2.addColumn("s7", Type.TEXT);
+    Schema nestedRecordSchema2 = SchemaBuilder.builder()
+        .add("s6", Type.FLOAT4)
+        .add("s7", Type.TEXT)
+        .build();
 
     Column nestedField2 = new Column("s8", new TypeDesc(nestedRecordSchema2));
     builder2.add(nestedField2);
@@ -152,20 +154,21 @@ public class TestSchema {
 
 	@Test
 	public final void testAddField() {
-		Schema schema = SchemaFactory.newV1();
+		Schema schema = SchemaBuilder.builder().build();
 		assertFalse(schema.containsByQualifiedName("studentId"));
-		schema.addColumn("studentId", Type.INT4);
-		assertTrue(schema.containsByQualifiedName("studentId"));
+    Schema schema2 = SchemaBuilder.builder().addAll(schema.getRootColumns()).add("studentId", Type.INT4).build();
+		assertTrue(schema2.containsByQualifiedName("studentId"));
 	}
 
 	@Test
 	public final void testEqualsObject() {
-		Schema schema2 = SchemaFactory.newV1();
-		schema2.addColumn("name", Type.TEXT);
-		schema2.addColumn("age", Type.INT4);
-		schema2.addColumn("addr", Type.TEXT);
-		
-		assertEquals(schema, schema2);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .add("addr", Type.TEXT)
+        .build();
+
+    assertEquals(schema, schema2);
 	}
 
 	@Test
@@ -179,11 +182,12 @@ public class TestSchema {
 	
 	@Test
 	public final void testClone() throws CloneNotSupportedException {
-	  Schema schema = SchemaFactory.newV1();
-	  schema.addColumn("abc", Type.FLOAT8);
-	  schema.addColumn("bbc", Type.FLOAT8);
-	  
-	  Schema schema2 = SchemaFactory.newV1(schema.getProto());
+    Schema schema = SchemaBuilder.builder()
+        .add("abc", Type.FLOAT8)
+        .add("bbc", Type.FLOAT8)
+        .build();
+
+    Schema schema2 = SchemaFactory.newV1(schema.getProto());
 	  assertEquals(schema.getProto(), schema2.getProto());
 	  assertEquals(schema.getColumn(0), schema2.getColumn(0));
 	  assertEquals(schema.size(), schema2.size());
@@ -196,11 +200,12 @@ public class TestSchema {
 	
 	@Test(expected = TajoRuntimeException.class)
 	public final void testAddExistColumn() {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("abc", Type.FLOAT8);
-    schema.addColumn("bbc", Type.FLOAT8);
-    schema.addColumn("abc", Type.INT4);
-	}
+    SchemaBuilder.builder()
+        .add("abc", Type.FLOAT8)
+        .add("bbc", Type.FLOAT8)
+        .add("abc", Type.INT4)
+        .build();
+  }
 
 	@Test
 	public final void testJson() {
@@ -228,9 +233,10 @@ public class TestSchema {
     assertEquals(column, schema2.getColumn("age"));
     assertEquals(column, schema2.getColumn("test1.age"));
 
-    Schema schema3 = SchemaFactory.newV1();
-    schema3.addColumn("tb1.col1", Type.INT4);
-    schema3.addColumn("col2", Type.INT4);
+    Schema schema3 = SchemaBuilder.builder()
+        .add("tb1.col1", Type.INT4)
+        .add("col2", Type.INT4)
+        .build();
     assertEquals("tb1", schema3.getColumn(0).getQualifier());
     assertEquals("tb1.col1", schema3.getColumn(0).getQualifiedName());
     assertEquals("col1", schema3.getColumn(0).getSimpleName());
@@ -271,13 +277,15 @@ public class TestSchema {
   @Test
   public void testNestedRecord4() {
 
-    Schema nf2DotNf1 = SchemaFactory.newV1();
-    nf2DotNf1.addColumn("f1", Type.INT8);
-    nf2DotNf1.addColumn("f2", Type.INT8);
+    Schema nf2DotNf1 = SchemaBuilder.builder()
+        .add("f1", Type.INT8)
+        .add("f2", Type.INT8)
+        .build();
 
-    Schema nf2DotNf2 = SchemaFactory.newV1();
-    nf2DotNf2.addColumn("f1", Type.INT8);
-    nf2DotNf2.addColumn("f2", Type.INT8);
+    Schema nf2DotNf2 = SchemaBuilder.builder()
+        .add("f1", Type.INT8)
+        .add("f2", Type.INT8)
+        .build();
 
     Schema nf2 = SchemaBuilder.builder()
         .add("f1", Type.INT8)

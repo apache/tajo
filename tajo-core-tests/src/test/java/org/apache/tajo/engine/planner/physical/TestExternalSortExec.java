@@ -30,12 +30,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -79,10 +79,11 @@ public class TestExternalSortExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("managerid", Type.INT4);
-    schema.addColumn("empid", Type.INT4);
-    schema.addColumn("deptname", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("managerid", Type.INT4)
+        .add("empid", Type.INT4)
+        .add("deptname", Type.TEXT)
+        .build();
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");

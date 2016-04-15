@@ -21,13 +21,19 @@ package org.apache.tajo.storage.json;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.junit.Test;
 
@@ -104,10 +110,11 @@ public class TestJsonSerDe {
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
 
-    Schema  schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col3", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.TEXT)
+        .add("col2", TajoDataTypes.Type.TEXT)
+        .add("col3", TajoDataTypes.Type.TEXT)
+        .build();
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 
