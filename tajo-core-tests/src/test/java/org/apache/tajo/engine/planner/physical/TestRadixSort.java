@@ -36,8 +36,8 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.util.StringUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -122,26 +122,51 @@ public class TestRadixSort {
     return params;
   }
 
-  @BeforeClass
-  public static void setup() {
+  @Before
+  public void setup() {
     List<DataType> dataTypeList = schema.getRootColumns().stream().map(c -> c.getDataType()).collect(Collectors.toList());
     tuples = new UnSafeTupleList(dataTypeList.toArray(new DataType[dataTypeList.size()]), tupleNum);
 
     // add null and negative numbers
     VTuple tuple = new VTuple(schema.size());
-    IntStream.range(0, tupleNum).forEach(i -> {
-      // Null tuple ratio: 10%
-      if (random.nextInt(10) == 0) {
-        makeNullTuple(tuple);
-      } else {
-        makeRandomTuple(tuple);
+    IntStream.range(0, tupleNum - 6).forEach(i -> {
+      // Each of null tuples, max tuples, and min tuples occupies 10 % of the total tuples.
+      int r = random.nextInt(10);
+      switch (r) {
+        case 0:
+          makeNullTuple(tuple);
+          break;
+        case 1:
+          makeMaxTuple(tuple);
+          break;
+        case 2:
+          makeMinTuple(tuple);
+          break;
+        default:
+          makeRandomTuple(tuple);
+          break;
       }
+
       tuples.addTuple(tuple);
     });
+
+    // Add at least 2 null, max, min tuples.
+    makeMaxTuple(tuple);
+    tuples.addTuple(tuple);
+    makeMinTuple(tuple);
+    tuples.addTuple(tuple);
+    makeNullTuple(tuple);
+    tuples.addTuple(tuple);
+    makeMaxTuple(tuple);
+    tuples.addTuple(tuple);
+    makeMinTuple(tuple);
+    tuples.addTuple(tuple);
+    makeNullTuple(tuple);
+    tuples.addTuple(tuple);
   }
 
-  @AfterClass
-  public static void teardown() {
+  @After
+  public void teardown() {
     tuples.release();
   }
 
@@ -188,18 +213,48 @@ public class TestRadixSort {
     return tuple;
   }
 
+  private static Tuple makeMaxTuple(Tuple tuple) {
+    tuple.put(new Datum[]{
+        DatumFactory.createInt8(Long.MAX_VALUE),
+        DatumFactory.createInt4(Integer.MAX_VALUE),
+        DatumFactory.createInt2(Short.MAX_VALUE),
+        DatumFactory.createDate(Integer.MAX_VALUE),
+        DatumFactory.createTimestamp(Long.MAX_VALUE),
+        DatumFactory.createTime(Long.MAX_VALUE),
+        DatumFactory.createInet4(Integer.MAX_VALUE),
+        DatumFactory.createFloat4(Float.MAX_VALUE),
+        DatumFactory.createFloat8(Double.MAX_VALUE)
+    });
+
+    return tuple;
+  }
+
+  private static Tuple makeMinTuple(Tuple tuple) {
+    tuple.put(new Datum[]{
+        DatumFactory.createInt8(Long.MIN_VALUE),
+        DatumFactory.createInt4(Integer.MIN_VALUE),
+        DatumFactory.createInt2(Short.MIN_VALUE),
+        DatumFactory.createDate(0),
+        DatumFactory.createTimestamp(0),
+        DatumFactory.createTime(0),
+        DatumFactory.createInet4(Integer.MIN_VALUE),
+        DatumFactory.createFloat4(Float.MIN_VALUE),
+        DatumFactory.createFloat8(Double.MIN_VALUE)
+    });
+
+    return tuple;
+  }
+
   @Test
   public void testSort() {
     Comparator<UnSafeTuple> comparator = new UnSafeComparator(schema, sortSpecs);
 
-    UnSafeTupleList clone = (UnSafeTupleList) tuples.clone();
-    RadixSort.sort(queryContext, clone, schema, sortSpecs, comparator);
+    RadixSort.sort(queryContext, tuples, schema, sortSpecs, comparator);
 
-    IntStream.range(0, clone.size() - 1)
+    IntStream.range(0, tuples.size() - 1)
         .forEach(i -> {
-          assertTrue(clone.get(i) + " precedes " + clone.get(i + 1) + " at " + i,
-              comparator.compare(clone.get(i), clone.get(i + 1)) <= 0);
+          assertTrue(tuples.get(i) + " precedes " + tuples.get(i + 1) + " at " + i,
+              comparator.compare(tuples.get(i), tuples.get(i + 1)) <= 0);
         });
-    clone.release();
   }
 }

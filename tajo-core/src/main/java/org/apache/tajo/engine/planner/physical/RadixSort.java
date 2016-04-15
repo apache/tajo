@@ -109,9 +109,6 @@ public class RadixSort {
     }
   }
 
-  private final static int _16BIT_BIN_NUM = 65536;
-  private final static int _16BIT_MAX_BIN_IDX = 65535;
-
   /**
    * Entry method.
    *
@@ -190,10 +187,10 @@ public class RadixSort {
    * @return
    */
   static int ascNullLastSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = _16BIT_MAX_BIN_IDX; // for null
+    int key = _16BIT_NULL_LAST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // For negative values, the key should be 0 ~ 32767. For positive values, the key should be 32768 ~ 65535.
-      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) + 32768;
+      // For negative values, the key should be 1 ~ 32768. For positive values, the key should be 32769 ~ 65536.
+      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) + _16BIT_SECOND_HALF_START_IDX;
     }
     return key;
   }
@@ -208,10 +205,10 @@ public class RadixSort {
    * @return
    */
   static int ascNullFirstSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = 0; // for null
+    int key = _16BIT_NULL_FIRST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // For negative values, the key should be 0 ~ 32767. For positive values, the key should be 32768 ~ 65535.
-      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) + 32768;
+      // For negative values, the key should be 1 ~ 32768. For positive values, the key should be 32769 ~ 65536.
+      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) + _16BIT_SECOND_HALF_START_IDX;
     }
     return key;
   }
@@ -226,10 +223,10 @@ public class RadixSort {
    * @return
    */
   static int descNullLastSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = _16BIT_MAX_BIN_IDX; // for null
+    int key = _16BIT_NULL_LAST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // For positive values, the key should be 0 ~ 32767. For negative values, the key should be 32768 ~ 65535.
-      key = 32767 - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass));
+      // For positive values, the key should be 1 ~ 32768. For negative values, the key should be 32769 ~ 65536.
+      key = _16BIT_FIRST_HALF_END_IDX - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass));
     }
     return key;
   }
@@ -244,10 +241,10 @@ public class RadixSort {
    * @return
    */
   static int descNullFirstSignConsidered16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = 0; // for null
+    int key = _16BIT_NULL_FIRST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      // For positive values, the key should be 0 ~ 32767. For negative values, the key should be 32768 ~ 65535.
-      key = 32767 - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass));
+      // For positive values, the key should be 1 ~ 32768. For negative values, the key should be 32769 ~ 65536.
+      key = _16BIT_FIRST_HALF_END_IDX - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass));
     }
     return key;
   }
@@ -262,9 +259,9 @@ public class RadixSort {
    * @return
    */
   static int ascNullLast16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = _16BIT_MAX_BIN_IDX; // for null
+    int key = _16BIT_NULL_LAST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
+      key = 1 + (PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & SHORT_UNSIGNED_MASK);
     }
     return key;
   }
@@ -279,9 +276,9 @@ public class RadixSort {
    * @return
    */
   static int ascNullFirst16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = 0; // for null
+    int key = _16BIT_NULL_FIRST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      key = PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
+      key = 1 + (PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & SHORT_UNSIGNED_MASK);
     }
     return key;
   }
@@ -296,9 +293,9 @@ public class RadixSort {
    * @return
    */
   static int descNullLast16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = _16BIT_MAX_BIN_IDX; // for null
+    int key = _16BIT_NULL_LAST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      key = _16BIT_MAX_BIN_IDX - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
+      key = _16BIT_MAX_BIN_IDX - (PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & SHORT_UNSIGNED_MASK);
     }
     return key;
   }
@@ -313,9 +310,9 @@ public class RadixSort {
    * @return
    */
   static int descNullFirst16RadixKey(UnSafeTuple tuple, int sortKeyId, int pass) {
-    int key = 0; // for null
+    int key = _16BIT_NULL_FIRST_IDX; // for null
     if (!tuple.isBlankOrNull(sortKeyId)) {
-      key = _16BIT_MAX_BIN_IDX - PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & 0xFFFF;
+      key = _16BIT_MAX_BIN_IDX - (PlatformDependent.getShort(getFieldAddr(tuple.address(), sortKeyId) + (pass)) & SHORT_UNSIGNED_MASK);
     }
     return key;
   }
@@ -481,6 +478,14 @@ public class RadixSort {
     context.histogramBuildTime += System.currentTimeMillis() - before;
   }
 
+  private final static int _16BIT_BIN_NUM = 65538;
+  private final static int _16BIT_NULL_FIRST_IDX = 0;
+  private final static int _16BIT_NULL_LAST_IDX = 65537;
+  private final static int _16BIT_MAX_BIN_IDX = 65536;
+  private final static int _16BIT_FIRST_HALF_END_IDX = 32768;
+  private final static int _16BIT_SECOND_HALF_START_IDX = 32769;
+  private final static int SHORT_UNSIGNED_MASK = 0xFFFF;
+
   /**
    * Sort the specified part of the input tuples.
    * If the length of the part is sufficiently large, recursively call msdRadixSort(). Otherwise, call Arrays.sort().
@@ -497,11 +502,14 @@ public class RadixSort {
                            int pass, boolean considerSign) {
     context.msdRadixSortCall++;
 
-    // This array contains the end positions of bins. For example, if an array of the length of 100 is organized into
-    // 10 bins which have the equal length of 10, this array will contain the below value.
+    // This array contains the end positions of bins. For example, suppose an input which consists of nulls and numbers
+    // of 1 ~ 9. The number of each numbers and null is 10. If this input is organized into 12 bins which have the equal
+    // length of 10, this array will contain the below values.
     //
-    // [0]  [1]  [2]  [3]  [4]  [5]  [6]  [7]  [8]  [9]
-    //  10   20   30   40   50   60   70   80   90  100
+    // Ex) asc, null first
+    //
+    //   [0]  [1]  [2]  [3]  [4]  [5]  [6]  [7]  [8]  [9]  [10]  [11] // 0th and 11th bins are reserved for null values
+    //   10   20   30   40   50   60   70   80   90   100   100   100
     //
     // If the considerSign flag is set, this array is used for both negative and positive values.
     // The positions of both values are determined by the asc flag.
@@ -878,8 +886,6 @@ public class RadixSort {
         return 8;
       case INET4:
         return 4;
-      case INET6:
-        return 32;
       case DATE:
         return 4;
       case TIME:
