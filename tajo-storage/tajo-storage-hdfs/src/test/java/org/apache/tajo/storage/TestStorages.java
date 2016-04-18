@@ -972,7 +972,7 @@ public class TestStorages {
 
       VTuple tuple = new VTuple(index - 1);
       index = 0;
-      tuple.put(index++, DatumFactory.createTimestmpDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
+      tuple.put(index++, DatumFactory.createTimestampDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
       if (dateTypeSupport()) {
         tuple.put(index++, DatumFactory.createDate("1980-04-01"));
       }

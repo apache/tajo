@@ -25,6 +25,7 @@ import org.apache.tajo.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Objects;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
@@ -32,7 +33,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 /**
  * A field is a pair of a name and a type. Schema is an ordered list of fields.
  */
-public class Schema {
+public class Schema implements Iterable<Schema.NamedType> {
   private final ImmutableList<NamedType> namedTypes;
 
   public Schema(Collection<NamedType> namedTypes) {
@@ -62,6 +63,11 @@ public class Schema {
 
   public static NamedPrimitiveType Field(QualifiedIdentifier name, Type type) {
     return new NamedPrimitiveType(name, type);
+  }
+
+  @Override
+  public Iterator<NamedType> iterator() {
+    return namedTypes.iterator();
   }
 
   public static abstract class NamedType {

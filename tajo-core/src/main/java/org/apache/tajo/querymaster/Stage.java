@@ -875,8 +875,8 @@ public class Stage implements EventHandler<StageEvent> {
                                   new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
                             } else {
                               if(stage.getSynchronizedState() == StageState.INITED) {
-                                stage.taskScheduler.start();
                                 stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_START));
+                                stage.taskScheduler.start();
                               } else {
                                 /* all tasks are killed before stage are inited */
                                 if (stage.getTotalScheduledObjectsCount() == stage.getCompletedTaskCount()) {
