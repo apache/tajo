@@ -20,10 +20,11 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
@@ -120,20 +121,15 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public boolean isNumeric() {
-    return isNumber() || isReal();
+    return TajoTypeUtil.isNumeric(type);
   }
 
   public boolean isNumber() {
-    return
-        this.type == Type.INT2 ||
-            this.type == Type.INT4 ||
-            this.type == Type.INT8;
+    return TajoTypeUtil.isNumber(type);
   }
 
   public boolean isReal() {
-    return
-        this.type == Type.FLOAT4||
-            this.type == Type.FLOAT8;
+    return TajoTypeUtil.isReal(type);
   }
 
   protected static void initAbortWhenDivideByZero(TajoConf tajoConf) {
