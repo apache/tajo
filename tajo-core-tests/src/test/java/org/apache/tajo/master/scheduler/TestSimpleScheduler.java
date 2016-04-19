@@ -75,7 +75,7 @@ public class TestSimpleScheduler {
   @Before
   public void setup() {
     conf = new TajoConf();
-    nodeResource = NodeResource.createResource(2000, 2, 3);
+    nodeResource = NodeResource.createResource(2000, 3);
     service = new CompositeService(TestSimpleScheduler.class.getSimpleName()) {
 
       @Override
@@ -206,7 +206,7 @@ public class TestSimpleScheduler {
     targetWorkers.add(workerEntry.getKey());
 
     NodeResource expectResource = NodeResources.multiply(scheduler.getMinimumResourceCapability(), requestNum);
-    assertTrue(NodeResources.fitsIn(expectResource, workerEntry.getValue().getAvailableResource()));
+    assertTrue(NodeResources.fitsIn(expectResource, workerEntry.getValue().getReservedResource()));
 
     QueryId queryId = QueryIdFactory.newQueryId(System.nanoTime(), 0);
     NodeResourceRequest requestProto = createResourceRequest(queryId, requestNum, targetWorkers);
@@ -293,7 +293,7 @@ public class TestSimpleScheduler {
     public void stopQuery(QueryId queryId) {
       queryInfoMap.remove(queryId);
       AllocationResourceProto allocationResourceProto = qmAllocationMap.remove(queryId);
-      NodeResources.addTo(rmContext.getNodes().get(allocationResourceProto.getWorkerId()).getAvailableResource(),
+      NodeResources.addTo(rmContext.getNodes().get(allocationResourceProto.getWorkerId()).getReservedResource(),
           new NodeResource(allocationResourceProto.getResource()));
       super.stopQuery(queryId);
     }

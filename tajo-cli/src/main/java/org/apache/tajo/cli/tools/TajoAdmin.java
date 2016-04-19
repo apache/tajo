@@ -344,16 +344,13 @@ public class TajoAdmin {
 
   private void writeWorkerInfo(Writer writer, List<WorkerResourceInfo> workers) throws ParseException,
       IOException, ServiceException, SQLException {
-    String fmtWorkerLine = "%1$-25s %2$-5s %3$-5s %4$-10s %5$-10s %6$-12s %7$-10s%n";
+    String fmtWorkerLine = "%1$-25s %2$-5s %3$-5s %4$-10s %5$-12s %6$-10s%n";
     String line = String.format(fmtWorkerLine,
-        "Worker", "Port", "Tasks",
-        "Mem", "Disk",
-        "Cpu", "Status");
+        "Worker", "Port", "Tasks", "Mem", "Cpu", "Status");
     writer.write(line);
     line = String.format(fmtWorkerLine,
         DASHLINE_LEN25, DASHLINE_LEN5, DASHLINE_LEN5,
-        DASHLINE_LEN10, DASHLINE_LEN10,
-        DASHLINE_LEN12, DASHLINE_LEN10);
+        DASHLINE_LEN10, DASHLINE_LEN12, DASHLINE_LEN10);
     writer.write(line);
 
     for (WorkerResourceInfo worker : workers) {
@@ -361,14 +358,12 @@ public class TajoAdmin {
       String workerHost = String.format("%s:%d", connInfo.getHost(), connInfo.getPeerRpcPort());
       String mem = String.format("%d/%d", worker.getAvailableResource().getMemory(),
           worker.getTotalResource().getMemory());
-      String disk = String.format("%d/%d", worker.getAvailableResource().getDisks(),
-          worker.getTotalResource().getDisks());
       String cpu = String.format("%d/%d", worker.getAvailableResource().getVirtualCores(),
           worker.getTotalResource().getVirtualCores());
       line = String.format(fmtWorkerLine, workerHost,
           connInfo.getPullServerPort(),
           worker.getNumRunningTasks(),
-          mem, disk, cpu, worker.getWorkerStatus());
+          mem, cpu, worker.getWorkerStatus());
       writer.write(line);
     }
     writer.write("\n\n");

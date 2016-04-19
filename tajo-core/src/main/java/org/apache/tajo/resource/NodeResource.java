@@ -29,9 +29,9 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * <p><code>NodeResource</code> models a set of computer resources in the
  * cluster.</p>
  * <p/>
- * <p>Currently it models  <em>memory</em> and <em>disk</em> and <em>CPU</em>.</p>
+ * <p>Currently it models  <em>memory</em> and <em>CPU</em>.</p>
  * <p/>
- * <p>The unit for memory is megabytes. The unit for disks is the number of disk.
+ * <p>The unit for memory is megabytes.
  * CPU is modeled with virtual cores (vcores), a unit for expressing parallelism.
  * A node's capacity should be configured with virtual cores equal to its number of physical cores.
  * A task should be requested with the number of cores it can saturate.</p>
@@ -41,28 +41,23 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, Comparable<NodeResource> {
 
   private volatile int memory;
-  private volatile int disks;
   private volatile int vCores;
 
   private static AtomicIntegerFieldUpdater MEMORY_UPDATER;
-  private static AtomicIntegerFieldUpdater DISKS_UPDATER;
   private static AtomicIntegerFieldUpdater VCORES_UPDATER;
 
   static {
     MEMORY_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "memory");
     if (MEMORY_UPDATER == null) {
       MEMORY_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "memory");
-      DISKS_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "disks");
       VCORES_UPDATER = AtomicIntegerFieldUpdater.newUpdater(NodeResource.class, "vCores");
     } else {
-      DISKS_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "disks");
       VCORES_UPDATER = PlatformDependent.newAtomicIntegerFieldUpdater(NodeResource.class, "vCores");
     }
   }
 
   public NodeResource(TajoProtos.NodeResourceProto proto) {
     setMemory(proto.getMemory());
-    setDisks(proto.getDisks());
     setVirtualCores(proto.getVirtualCores());
   }
 
@@ -70,8 +65,8 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
 
   }
 
-  public static NodeResource createResource(int memory,  int disks, int vCores) {
-    return new NodeResource().setMemory(memory).setDisks(disks).setVirtualCores(vCores);
+  public static NodeResource createResource(int memory,  int vCores) {
+    return new NodeResource().setMemory(memory).setVirtualCores(vCores);
   }
 
   /**
@@ -91,27 +86,6 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
   @SuppressWarnings("unchecked")
   public NodeResource setMemory(int memory) {
     MEMORY_UPDATER.lazySet(this, memory);
-    return this;
-  }
-
-
-  /**
-   * Get <em>number of disks</em> of the resource.
-   *
-   * @return <em>number of disks</em> of the resource
-   */
-  public int getDisks() {
-    return disks;
-  }
-
-  /**
-   * Set <em>number of disks </em> of the resource.
-   *
-   * @param disks <em>number of disks</em> of the resource
-   */
-  @SuppressWarnings("unchecked")
-  public NodeResource setDisks(int disks) {
-    DISKS_UPDATER.lazySet(this, disks);
     return this;
   }
 
@@ -141,15 +115,12 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
   @Override
   public TajoProtos.NodeResourceProto getProto() {
     TajoProtos.NodeResourceProto.Builder builder = TajoProtos.NodeResourceProto.newBuilder();
-    builder.setMemory(memory)
-        .setDisks(disks)
-        .setVirtualCores(vCores);
-    return builder.build();
+    return builder.setMemory(memory).setVirtualCores(vCores).build();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(getMemory(), getDisks(), getVirtualCores());
+    return Objects.hashCode(getMemory(), getVirtualCores());
   }
 
   @Override
@@ -161,20 +132,17 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
     if (!(obj instanceof NodeResource))
       return false;
     NodeResource other = (NodeResource) obj;
-    if (getMemory() != other.getMemory() ||
-        getDisks() != other.getDisks() ||
-        getVirtualCores() != other.getVirtualCores()) {
-      return false;
+    if (getMemory() == other.getMemory() &&
+        getVirtualCores() == other.getVirtualCores()) {
+      return true;
     }
-    return true;
+    return false;
   }
 
   @Override
   public int compareTo(NodeResource other) {
     int diff = this.getMemory() - other.getMemory();
-    if (diff == 0) {
-      diff = this.getDisks() - other.getDisks();
-    }
+
     if (diff == 0) {
       diff = this.getVirtualCores() - other.getVirtualCores();
     }
@@ -183,6 +151,6 @@ public class NodeResource implements ProtoObject<TajoProtos.NodeResourceProto>, 
 
   @Override
   public String toString() {
-    return "(Memory:" + getMemory() + ", Disks:" + getDisks() + ", vCores:" + getVirtualCores() + ")";
+    return "(Memory:" + getMemory() + ", vCores:" + getVirtualCores() + ")";
   }
 }

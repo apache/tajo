@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -28,11 +29,12 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
-import org.apache.tajo.storage.DiskUtil;
+import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.event.*;
 
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ResourceProtos.*;
@@ -43,10 +45,12 @@ public class NodeResourceManager extends AbstractService implements EventHandler
   private final Dispatcher dispatcher;
   private final TajoWorker.WorkerContext workerContext;
   private final AtomicInteger runningQueryMasters = new AtomicInteger(0);
+  private final HashMap<Integer, AtomicInteger> volumeMap = Maps.newHashMap();
   private NodeResource totalResource;
   private NodeResource availableResource;
   private TajoConf tajoConf;
   private boolean enableTest;
+  private int diskParallels;
 
   public NodeResourceManager(Dispatcher dispatcher, TajoWorker.WorkerContext workerContext) {
     super(NodeResourceManager.class.getName());
@@ -63,6 +67,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     validateConf(tajoConf);
     this.enableTest = conf.get(TajoConstants.TEST_KEY, Boolean.FALSE.toString())
         .equalsIgnoreCase(Boolean.TRUE.toString());
+    this.diskParallels = tajoConf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM);
     super.serviceInit(conf);
     LOG.info("Initialized NodeResourceManager for " + totalResource);
   }
@@ -77,10 +82,11 @@ public class NodeResourceManager extends AbstractService implements EventHandler
           NodeResourceAllocateEvent allocateEvent = TUtil.checkTypeAndGet(event, NodeResourceAllocateEvent.class);
           BatchAllocationResponse.Builder response = BatchAllocationResponse.newBuilder();
           for (TaskAllocationProto request : allocateEvent.getRequest().getTaskRequestList()) {
-            NodeResource resource = new NodeResource(request.getResource());
-            if (allocate(resource)) {
+            Allocation allocation = new Allocation(request);
+
+            if (allocate(allocation)) {
               //send task start event to TaskExecutor
-              startTask(request.getTaskRequest(), resource);
+              startTask(request.getTaskRequest(), allocation);
             } else {
               // reject the exceeded requests
               response.addCancellationTask(request);
@@ -92,8 +98,8 @@ public class NodeResourceManager extends AbstractService implements EventHandler
           QMResourceAllocateEvent allocateEvent = TUtil.checkTypeAndGet(event, QMResourceAllocateEvent.class);
           // allocate query master resource
 
-          NodeResource resource = new NodeResource(allocateEvent.getRequest().getResource());
-          if (allocate(resource)) {
+          Allocation allocation = new Allocation(new NodeResource(allocateEvent.getRequest().getResource()));
+          if (allocate(allocation)) {
             allocateEvent.getCallback().run(TajoWorker.TRUE_PROTO);
             runningQueryMasters.incrementAndGet();
           } else {
@@ -104,7 +110,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
       }
       case DEALLOCATE: {
         NodeResourceDeallocateEvent deallocateEvent = TUtil.checkTypeAndGet(event, NodeResourceDeallocateEvent.class);
-        release(deallocateEvent.getResource());
+        release(deallocateEvent.getAllocation());
 
         if (deallocateEvent.getResourceType() == NodeResourceEvent.ResourceType.QUERY_MASTER) {
           runningQueryMasters.decrementAndGet();
@@ -133,8 +139,29 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     return runningQueryMasters.get();
   }
 
-  private boolean allocate(NodeResource resource) {
+  private boolean allocate(Allocation allocation) {
 
+    if (allocation.hasVolumeId() && allocation.getVolumeId() > DataLocation.UNKNOWN_VOLUME_ID) {
+      int volumeId = allocation.getVolumeId();
+
+      if (!volumeMap.containsKey(volumeId)) {
+        AtomicInteger load = new AtomicInteger();
+        volumeMap.put(volumeId, load);
+      }
+
+      //This load is measured by counting how many number of tasks are running.
+      if (volumeMap.get(volumeId).get() < diskParallels && allocateResource(allocation.getResource())) {
+        volumeMap.get(volumeId).incrementAndGet();
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return allocateResource(allocation.getResource());
+    }
+  }
+
+  private boolean allocateResource(NodeResource resource) {
     if (NodeResources.fitsIn(resource, availableResource) && checkFreeHeapMemory(resource)) {
       NodeResources.subtractFrom(availableResource, resource);
       return true;
@@ -147,12 +174,17 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     return true;
   }
 
-  protected void startTask(TaskRequestProto request, NodeResource resource) {
-    workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new TaskStartEvent(request, resource));
+  @SuppressWarnings("unchecked")
+  protected void startTask(TaskRequestProto request, Allocation allocation) {
+    workerContext.getTaskManager().getDispatcher().getEventHandler().handle(new TaskStartEvent(request, allocation));
   }
 
-  private void release(NodeResource resource) {
-    NodeResources.addTo(availableResource, resource);
+  private void release(Allocation allocation) {
+    NodeResources.addTo(availableResource, allocation.getResource());
+
+    if (allocation.hasVolumeId() && allocation.getVolumeId() > DataLocation.UNKNOWN_VOLUME_ID) {
+      volumeMap.get(allocation.getVolumeId()).decrementAndGet();
+    }
   }
 
   private NodeResource createWorkerResource(TajoConf conf) {
@@ -168,15 +200,7 @@ public class NodeResourceManager extends AbstractService implements EventHandler
     }
 
     int vCores = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES);
-    int disks = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS);
-
-    int dataNodeStorageSize = DiskUtil.getDataNodeStorageSize();
-    if (conf.getBoolVar(TajoConf.ConfVars.WORKER_RESOURCE_DFS_DIR_AWARE) && dataNodeStorageSize > 0) {
-      disks = dataNodeStorageSize;
-    }
-
-    int diskParallels = conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM);
-    return NodeResource.createResource(memoryMb, disks * diskParallels, vCores);
+    return NodeResource.createResource(memoryMb, vCores);
   }
 
   private void validateConf(TajoConf conf) {
@@ -195,6 +219,42 @@ public class NodeResourceManager extends AbstractService implements EventHandler
           + ", " + TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB.varname
           + "=" + maxMem + ", min and max should be greater than 0"
           + ", max should be no smaller than min.");
+    }
+  }
+
+  public static class Allocation {
+    private NodeResource resource;
+    private int volumeId;
+
+    public Allocation(NodeResource resource) {
+      this(resource, DataLocation.UNSET_VOLUME_ID);
+    }
+
+    public Allocation(TaskAllocationProto taskAllocation) {
+      this(new NodeResource(taskAllocation.getResource()),
+          taskAllocation.hasVolumeId() ? taskAllocation.getVolumeId() : DataLocation.UNSET_VOLUME_ID);
+    }
+
+    public Allocation(NodeResource resource, int volumeId) {
+      this.volumeId = volumeId;
+      this.resource = resource;
+    }
+
+    public NodeResource getResource() {
+      return resource;
+    }
+
+    public int getVolumeId() {
+      return volumeId;
+    }
+
+    public boolean hasVolumeId() {
+      return volumeId != DataLocation.UNSET_VOLUME_ID;
+    }
+
+    @Override
+    public String toString() {
+      return "Resource: " + resource + (hasVolumeId() ? "VolumeId: " + volumeId : "");
     }
   }
 }
