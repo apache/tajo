@@ -859,7 +859,7 @@ public class TestSQLExpression extends ExprTestBase {
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
     int unixtime = 1389071574; // (int) (System.currentTimeMillis() / 1000);
-    TimestampDatum expected = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+    TimestampDatum expected = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
     testSimpleEval(context, String.format("select to_timestamp(CAST(split_part('%d.999', '.', 1) as INT8));", unixtime),
         new String[] {TimestampDatum.asChars(expected.asTimeMeta(), tz, false)});
   }

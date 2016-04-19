@@ -36,11 +36,13 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
@@ -53,10 +55,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -74,6 +73,12 @@ import java.util.concurrent.Future;
  * </ul>
  */
 public class ExternalSortExec extends SortExec {
+
+  enum SortAlgorithm{
+    TIM,
+    MSD_RADIX,
+  }
+
   /** Class logger */
   private static final Log LOG = LogFactory.getLog(ExternalSortExec.class);
   /** The prefix of fragment name for intermediate */
@@ -117,6 +122,8 @@ public class ExternalSortExec extends SortExec {
   /** total bytes of input data */
   private long inputBytes;
 
+  private final SortAlgorithm sortAlgorithm;
+
   private ExternalSortExec(final TaskAttemptContext context, final SortNode plan)
       throws PhysicalPlanningException {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
@@ -133,6 +140,28 @@ public class ExternalSortExec extends SortExec {
     this.localFS = new RawLocalFileSystem();
     this.intermediateMeta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, context.getConf());
     this.inputStats = new TableStats();
+    this.sortAlgorithm = getSortAlgorithm(context.getQueryContext(), sortSpecs);
+    LOG.info(sortAlgorithm.name() + " sort is selected");
+  }
+
+  private static SortAlgorithm getSortAlgorithm(QueryContext context, SortSpec[] sortSpecs) {
+    String sortAlgorithm = context.get(SessionVars.SORT_ALGORITHM, SortAlgorithm.TIM.name());
+    if (Arrays.stream(sortSpecs)
+        .filter(sortSpec -> !RadixSort.isApplicableType(sortSpec)).count() > 0) {
+      if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.MSD_RADIX.name())) {
+        LOG.warn("Non-applicable types exist. Falling back to " + SortAlgorithm.TIM.name() + " sort");
+      }
+      return SortAlgorithm.TIM;
+    }
+    if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.TIM.name())) {
+      return SortAlgorithm.TIM;
+    } else if (sortAlgorithm.equalsIgnoreCase(SortAlgorithm.MSD_RADIX.name())) {
+      return SortAlgorithm.MSD_RADIX;
+    } else {
+      LOG.warn("Unknown sort type: " + sortAlgorithm);
+      LOG.warn("Falling back to " + SortAlgorithm.TIM.name() + " sort");
+      return SortAlgorithm.TIM;
+    }
   }
 
   public ExternalSortExec(final TaskAttemptContext context,final SortNode plan, final ScanNode scanNode,
@@ -172,6 +201,18 @@ public class ExternalSortExec extends SortExec {
     return this.plan;
   }
 
+  private List<UnSafeTuple> sort(UnSafeTupleList tupleBlock) {
+    switch (sortAlgorithm) {
+      case TIM:
+        return OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
+      case MSD_RADIX:
+        return RadixSort.sort(context.getQueryContext(), tupleBlock, inSchema, sortSpecs, unSafeComparator);
+      default:
+        // The below line is not reachable. So, an exception should be thrown if it is executed.
+        throw new TajoRuntimeException(new UnsupportedException(sortAlgorithm.name()));
+    }
+  }
+
   /**
    * Sort a tuple block and store them into a chunk file
    */
@@ -180,7 +221,7 @@ public class ExternalSortExec extends SortExec {
     int rowNum = tupleBlock.size();
 
     long sortStart = System.currentTimeMillis();
-    OffHeapRowBlockUtils.sort(tupleBlock, unSafeComparator);
+    this.sort(tupleBlock);
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -527,7 +568,7 @@ public class ExternalSortExec extends SortExec {
     if (chunk.isMemory()) {
       long sortStart = System.currentTimeMillis();
 
-      OffHeapRowBlockUtils.sort(inMemoryTable, unSafeComparator);
+      this.sort(inMemoryTable);
       Scanner scanner = new MemTableScanner<>(inMemoryTable, inMemoryTable.size(), inMemoryTable.usedMem());
       if(LOG.isDebugEnabled()) {
         debug(LOG, "Memory Chunk sort (" + FileUtil.humanReadableByteCount(inMemoryTable.usedMem(), false)

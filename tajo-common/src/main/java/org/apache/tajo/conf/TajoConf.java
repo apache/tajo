@@ -184,14 +184,10 @@ public class TajoConf extends Configuration {
         Runtime.getRuntime().availableProcessors(), Validators.min("2")), // 1qm + 1task
     WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1500, Validators.min("64")),
 
-    WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 2, Validators.min("1")),
-
     WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM("tajo.worker.resource.disk.parallel-execution.num", 2,
         Validators.min("1")),
 
-    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false, Validators.bool()),
-
-    WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE("tajo.worker.heartbeat.queue.threshold-rate", 0.3f, Validators.min("0")),//30%
+    WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE("tajo.worker.heartbeat.queue.threshold-rate", 0.1f, Validators.min("0")),//10%
     WORKER_HEARTBEAT_IDLE_INTERVAL("tajo.worker.heartbeat.idle.interval", 10 * 1000),  // 10 sec
     WORKER_HEARTBEAT_ACTIVE_INTERVAL("tajo.worker.heartbeat.active.interval", 1000),  // 1 sec
 
@@ -365,6 +361,7 @@ public class TajoConf extends Configuration {
     $AGG_HASH_TABLE_SIZE("tajo.executor.aggregate.hash-table.size", 10000),
     $SORT_LIST_SIZE("tajo.executor.sort.list.size", 100000),
     $JOIN_HASH_TABLE_SIZE("tajo.executor.join.hash-table.size", 100000),
+    $SORT_ALGORITHM("tajo.executor.sort.algorithm", "TIM"),
 
     // for index
     $INDEX_ENABLED("tajo.query.index.enabled", false),
@@ -397,6 +394,7 @@ public class TajoConf extends Configuration {
     $TEST_FILTER_PUSHDOWN_ENABLED("tajo.test.plan.filter-pushdown.enabled", true),
     $TEST_MIN_TASK_NUM("tajo.test.min-task-num", -1),
     $TEST_PLAN_SHAPE_FIX_ENABLED("tajo.test.plan.shape.fix.enabled", false),  // used for explain statement test
+    $TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT("tajo.test.executor.radix-sort.tim-sort-threshold", 65536),
 
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
