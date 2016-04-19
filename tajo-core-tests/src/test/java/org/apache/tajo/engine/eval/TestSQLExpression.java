@@ -999,7 +999,10 @@ public class TestSQLExpression extends ExprTestBase {
   public void testInvalidOperation() throws TajoException {
     testEvalException("select '1980-09-04'::date + '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
     testEvalException("select '1980-09-04 00:10:10'::timestamp + '1980-09-04'::date", InvalidOperationException.class);
+
     testEvalException("select time '00:00' + time '02:00'", InvalidOperationException.class);
+    testEvalException("select time '00:00' - '1980-09-04'::date", InvalidOperationException.class);
+    testEvalException("select time '00:00' - '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
     testEvalException("select interval '1 day' - '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
 
     //TODO this operation should be allowed after timestamptz added
@@ -1017,6 +1020,10 @@ public class TestSQLExpression extends ExprTestBase {
     schema.addColumn("col1", TajoDataTypes.Type.DATE);
     schema.addColumn("col2", TajoDataTypes.Type.TIMESTAMP);
 
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 + col1 from table1;", new String[]{"1980-09-04 01:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 + col2 from table1;", new String[]{"1980-09-04 02:00:00"});
     testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
         "select col0 + interval '1 hour' from table1;", new String[]{"02:00:00"});
     testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
@@ -1048,7 +1055,11 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
         "select col1 - interval '1 day' from table1;", new String[]{"1980-09-03 00:00:00"});
     testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 - col0 from table1;", new String[]{"1980-09-03 23:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
         "select col2 - (interval '1 day' + interval '1 hour') from table1;", new String[]{"1980-09-03 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 - col0 from table1;", new String[]{"1980-09-04 00:00:00"});
   }
 
   private <T extends Throwable> void testEvalException(String query, Class<T> clazz) {
