@@ -20,7 +20,6 @@ package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -51,7 +50,7 @@ public class GeneralFunctionEval extends FunctionEval {
         }
 
         if (evalContext.hasTimeZone()) {
-          invokeContext.getQueryContext().put(SessionVars.TIMEZONE, evalContext.getTimeZone().getID());
+          this.invokeContext.setTimeZone(evalContext.getTimeZone());
         }
       }
       this.funcInvoke.init(invokeContext);

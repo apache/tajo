@@ -98,11 +98,15 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
+      EvalContext evalContext = new EvalContext();
+      // session's time zone
+      String timezoneId = context.getQueryContext().get(SessionVars.TIMEZONE);
+      evalContext.setTimeZone(TimeZone.getTimeZone(timezoneId));
+
       if (evalNode.getFuncDesc().getInvocation().hasPython()) {
         TajoScriptEngine executor = new PythonScriptEngine(evalNode.getFuncDesc());
         try {
           executor.start(context.getQueryContext().getConf());
-          EvalContext evalContext = new EvalContext();
           evalContext.addScriptEngine(evalNode, executor);
           evalNode.bind(evalContext, null);
           Datum funcRes = evalNode.eval(null);
@@ -112,7 +116,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
           throw new RuntimeException(e);
         }
       } else {
-        evalNode.bind(null, null);
+        evalNode.bind(evalContext, null);
         return new ConstEval(evalNode.eval(null));
       }
 

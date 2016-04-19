@@ -26,6 +26,7 @@ import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
+import java.util.TimeZone;
 
 /**
  * This class contains some metadata need to execute functions.
@@ -34,6 +35,7 @@ public class FunctionInvokeContext implements Cloneable {
   private OverridableConf queryContext;
   private FunctionEval.ParamType[] paramTypes;
   private TajoScriptEngine scriptEngine;
+  private TimeZone timeZone;
 
   public FunctionInvokeContext(@Nullable OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
     this.queryContext = queryContext;
@@ -58,6 +60,14 @@ public class FunctionInvokeContext implements Cloneable {
 
   public TajoScriptEngine getScriptEngine() {
     return scriptEngine;
+  }
+
+  public TimeZone getTimeZone() {
+    return timeZone;
+  }
+
+  public void setTimeZone(TimeZone timeZone) {
+    this.timeZone = timeZone;
   }
 
   @Override

@@ -47,6 +47,7 @@ public class ClassBasedScalarFunctionInvoke extends FunctionInvoke implements Cl
 
   @Override
   public void init(FunctionInvokeContext context) {
+    function.setTimeZone(context.getTimeZone());
     function.init(context.getQueryContext(), context.getParamTypes());
   }
 

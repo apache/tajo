@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.function.datetime;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.common.TajoDataTypes;
@@ -43,8 +42,6 @@ import java.util.TimeZone;
     paramTypes = {@ParamTypes(paramTypes = {})}
 )
 public class CurrentTime extends GeneralFunction {
-  @Expose
-  private TimeZone timezone;
   TimeDatum datum;
 
   public CurrentTime() {
@@ -53,7 +50,9 @@ public class CurrentTime extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType [] types) {
-    timezone = TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE));
+    if (!hasTimeZone()) {
+      setTimeZone(TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE)));
+    }
   }
 
   @Override
@@ -62,7 +61,7 @@ public class CurrentTime extends GeneralFunction {
       long julianTimestamp = DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis());
       TimeMeta tm = new TimeMeta();
       DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
-      DateTimeUtil.toUserTimezone(tm, timezone);
+      DateTimeUtil.toUserTimezone(tm, getTimeZone());
       datum = DatumFactory.createTime(DateTimeUtil.toTime(tm));
     }
     return datum;

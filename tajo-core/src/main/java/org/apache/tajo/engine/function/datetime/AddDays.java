@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.function.datetime;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -32,8 +30,6 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.plan.expr.FunctionEval;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
-
-import java.util.TimeZone;
 
 @Description(
     functionName = "add_days",
@@ -51,8 +47,6 @@ import java.util.TimeZone;
     }
 )
 public class AddDays extends GeneralFunction {
-  @Expose
-  private TimeZone timezone;
 
   public AddDays() {
     super(new Column[]{
@@ -63,13 +57,15 @@ public class AddDays extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] types) {
-    timezone = TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE));
+    if (!hasTimeZone()) {
+      setTimeZone(context.getConf().getSystemTimezone());
+    }
   }
 
   @Override
   public Datum eval(Tuple params) {
     // cast to UTC timestamp
-    Datum dateDatum = DatumFactory.createTimestamp(params.asDatum(0), timezone);
+    Datum dateDatum = DatumFactory.createTimestamp(params.asDatum(0), getTimeZone());
     long val = params.getInt8(1);
     if (val >= 0) {
       return dateDatum.plus(new IntervalDatum(val * IntervalDatum.DAY_MILLIS));

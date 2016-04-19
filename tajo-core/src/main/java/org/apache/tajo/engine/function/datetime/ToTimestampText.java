@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -34,8 +33,6 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.util.TimeZone;
-
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 @Description(
@@ -48,14 +45,15 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
 )
 public class ToTimestampText extends GeneralFunction {
-  private TimeZone timezone;
 
   public ToTimestampText() {
     super(new Column[]{new Column("DateTimeText", TEXT), new Column("Pattern", TEXT)});
   }
 
-  public void init(OverridableConf queryContext, FunctionEval.ParamType [] paramTypes) {
-    timezone = TimeZone.getTimeZone(queryContext.get(SessionVars.TIMEZONE));
+  public void init(OverridableConf context, FunctionEval.ParamType [] paramTypes) {
+    if (!hasTimeZone()) {
+      setTimeZone(context.getConf().getSystemTimezone());
+    }
   }
 
   @Override
@@ -65,7 +63,7 @@ public class ToTimestampText extends GeneralFunction {
     }
 
     TimeMeta tm = DateTimeFormat.parseDateTime(params.getText(0), params.getText(1));
-    DateTimeUtil.toUTCTimezone(tm, timezone);
+    DateTimeUtil.toUTCTimezone(tm, getTimeZone());
 
     return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
   }

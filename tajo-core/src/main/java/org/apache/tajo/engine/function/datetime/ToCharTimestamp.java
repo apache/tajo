@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.function.datetime;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -35,8 +33,6 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.util.TimeZone;
-
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 import static org.apache.tajo.common.TajoDataTypes.Type.TIMESTAMP;
 
@@ -49,7 +45,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TIMESTAMP;
   paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TIMESTAMP, TajoDataTypes.Type.TEXT})}
 )
 public class ToCharTimestamp extends GeneralFunction {
-  @Expose private TimeZone timezone;
 
   public ToCharTimestamp() {
     super(new Column[] {
@@ -60,7 +55,9 @@ public class ToCharTimestamp extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] paramTypes) {
-    timezone = TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE));
+    if (!hasTimeZone()) {
+      setTimeZone(context.getConf().getSystemTimezone());
+    }
   }
 
   @Override
@@ -72,7 +69,7 @@ public class ToCharTimestamp extends GeneralFunction {
     TimeMeta tm = params.getTimeDate(0);
     String pattern = params.getText(1);
 
-    DateTimeUtil.toUserTimezone(tm, timezone);
+    DateTimeUtil.toUserTimezone(tm, getTimeZone());
 
     return DatumFactory.createText(DateTimeFormat.to_char(tm, pattern));
   }
