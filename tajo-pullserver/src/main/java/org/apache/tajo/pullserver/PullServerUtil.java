@@ -161,6 +161,10 @@ public class PullServerUtil {
 
   public static class PullServerParams extends HashMap<String, List<String>> {
 
+    public PullServerParams(URI uri) {
+      this(uri.toString());
+    }
+
     public PullServerParams(String uri) {
       super(new QueryStringDecoder(uri).parameters());
     }
