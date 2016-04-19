@@ -90,7 +90,7 @@ public class TajoPullServerService extends AuxiliaryService {
 
   private static final Log LOG = LogFactory.getLog(TajoPullServerService.class);
 
-  private final TajoConf tajoConf;
+  private TajoConf tajoConf;
 
   private int port;
   private ChannelFactory selector;
@@ -144,7 +144,6 @@ public class TajoPullServerService extends AuxiliaryService {
   TajoPullServerService(MetricsSystem ms) {
     super(PullServerConstants.PULLSERVER_SERVICE_NAME);
     metrics = ms.register(new ShuffleMetrics());
-    tajoConf = new TajoConf();
   }
 
   @SuppressWarnings("UnusedDeclaration")
@@ -170,7 +169,7 @@ public class TajoPullServerService extends AuxiliaryService {
   // TODO change AbstractService to throw InterruptedException
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-    tajoConf.addResource(conf);
+    tajoConf = new TajoConf(conf);
 
     manageOsCache = tajoConf.getBoolean(PullServerConstants.SHUFFLE_MANAGE_OS_CACHE,
         PullServerConstants.DEFAULT_SHUFFLE_MANAGE_OS_CACHE);
