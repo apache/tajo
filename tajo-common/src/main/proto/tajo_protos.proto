@@ -49,9 +49,11 @@ enum TaskAttemptState {
 
 enum FetcherState {
   FETCH_INIT = 0;
-  FETCH_FETCHING = 1;
-  FETCH_FINISHED = 2;
-  FETCH_FAILED = 3;
+  FETCH_META_FETCHING = 1;
+  FETCH_META_FINISHED = 2;
+  FETCH_DATA_FETCHING = 3;
+  FETCH_DATA_FINISHED = 4;
+  FETCH_FAILED = 5;
 }
 
 message WorkerConnectionInfoProto {
