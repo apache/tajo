@@ -376,6 +376,7 @@ public class TajoConf extends Configuration {
     $AGG_HASH_TABLE_SIZE("tajo.executor.aggregate.hash-table.size", 10000),
     $SORT_LIST_SIZE("tajo.executor.sort.list.size", 100000),
     $JOIN_HASH_TABLE_SIZE("tajo.executor.join.hash-table.size", 100000),
+    $SORT_ALGORITHM("tajo.executor.sort.algorithm", "TIM"),
 
     // for index
     $INDEX_ENABLED("tajo.query.index.enabled", false),
@@ -408,6 +409,7 @@ public class TajoConf extends Configuration {
     $TEST_FILTER_PUSHDOWN_ENABLED("tajo.test.plan.filter-pushdown.enabled", true),
     $TEST_MIN_TASK_NUM("tajo.test.min-task-num", -1),
     $TEST_PLAN_SHAPE_FIX_ENABLED("tajo.test.plan.shape.fix.enabled", false),  // used for explain statement test
+    $TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT("tajo.test.executor.radix-sort.tim-sort-threshold", 65536),
 
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
