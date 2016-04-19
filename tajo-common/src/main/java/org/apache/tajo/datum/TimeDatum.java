@@ -128,7 +128,7 @@ public class TimeDatum extends Datum {
       return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
     }
     default:
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException("operator does not exist: " + type() + " + " + datum.type());
     }
   }
 
@@ -143,7 +143,7 @@ public class TimeDatum extends Datum {
       case TIME:
         return new IntervalDatum((time - ((TimeDatum)datum).time)/1000);
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " - " + datum.type());
     }
   }
 

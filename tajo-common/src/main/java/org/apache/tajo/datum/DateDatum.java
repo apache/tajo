@@ -122,7 +122,7 @@ public class DateDatum extends Datum {
       return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
     }
     default:
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException("operator does not exist: " + type() + " + " + datum.type());
     }
   }
 
@@ -153,7 +153,7 @@ public class DateDatum extends Datum {
         return new Int4Datum(jdate - d.jdate);
       }
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " - " + datum.type());
     }
   }
 
@@ -203,7 +203,7 @@ public class DateDatum extends Datum {
     } else if (datum.isNull()) {
       return datum;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

@@ -26,6 +26,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.junit.Test;
@@ -33,6 +34,7 @@ import org.junit.Test;
 import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class TestSQLExpression extends ExprTestBase {
@@ -991,5 +993,70 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select (false OR true)", new String[] {"t"}); // false - true -> true
     testSimpleEval("select (false OR 1 > null) is null", new String[] {"t"}); // false - unknown -> unknown
     testSimpleEval("select (false OR false)", new String[] {"f"}); // false - false -> false
+  }
+
+  @Test
+  public void testInvalidOperation() throws TajoException {
+    testEvalException("select '1980-09-04'::date + '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
+    testEvalException("select '1980-09-04 00:10:10'::timestamp + '1980-09-04'::date", InvalidOperationException.class);
+    testEvalException("select time '00:00' + time '02:00'", InvalidOperationException.class);
+    testEvalException("select interval '1 day' - '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
+
+    //TODO this operation should be allowed after timestamptz added
+    testEvalException("select date '1980-09-04' < timestamp '1980-09-04 00:00:01'", InvalidOperationException.class);
+    testEvalException("select date '1980-09-04' > timestamp '1980-09-04 00:00:01'", InvalidOperationException.class);
+    testEvalException("select date '1980-09-04' = timestamp '1980-09-04 00:00:01'", InvalidOperationException.class);
+    testEvalException("select '1980-09-04 00:10:10'::timestamp - '1980-09-04'::date", InvalidOperationException.class);
+    testEvalException("select '1980-09-04'::date - '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
+  }
+
+  @Test
+  public void testArithmeticOperandForDateTime() throws TajoException {
+    Schema schema = SchemaFactory.newV1();
+    schema.addColumn("col0", TajoDataTypes.Type.TIME);
+    schema.addColumn("col1", TajoDataTypes.Type.DATE);
+    schema.addColumn("col2", TajoDataTypes.Type.TIMESTAMP);
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 + interval '1 hour' from table1;", new String[]{"02:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select interval '1 hour' + col0 from table1;", new String[]{"02:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 + interval '1 day' from table1;", new String[]{"1980-09-05 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select interval '1 day' + col1 from table1;", new String[]{"1980-09-05 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 + col0 from table1;", new String[]{"1980-09-04 01:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 + (interval '1 day' + interval '1 hour') from table1;", new String[]{"1980-09-05 02:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select (interval '1 day' + interval '1 hour') + col2 from table1;", new String[]{"1980-09-05 02:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 + col0 from table1;", new String[]{"1980-09-04 02:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 - col0 from table1;", new String[]{"00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 - col1 from table1;", new String[]{"0"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 - col2 from table1;", new String[]{"00:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 - interval '1 hour' from table1;", new String[]{"00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 - interval '1 day' from table1;", new String[]{"1980-09-03 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 - (interval '1 day' + interval '1 hour') from table1;", new String[]{"1980-09-03 00:00:00"});
+  }
+
+  private <T extends Throwable> void testEvalException(String query, Class<T> clazz) {
+    try {
+      testSimpleEval(query, new String[]{""});
+      fail(query);
+    } catch (Throwable e) {
+      assertEquals(e.getMessage(), clazz, e.getClass());
+    }
   }
 }

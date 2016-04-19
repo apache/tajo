@@ -214,7 +214,7 @@ public class TimestampDatum extends Datum {
       tm1.plusTime(DateTimeUtil.toTime(tm2));
       return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
     default:
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException("operator does not exist: " + type() + " + " + datum.type());
     }
   }
 
@@ -234,7 +234,7 @@ public class TimestampDatum extends Datum {
       tm1.plusTime(0 - DateTimeUtil.toTime(tm2));
       return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
     default:
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException("operator does not exist: " + type() + " - " + datum.type());
     }
   }
 
