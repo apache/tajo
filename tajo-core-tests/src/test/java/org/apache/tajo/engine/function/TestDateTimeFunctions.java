@@ -41,7 +41,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
   @Test
   public void testToTimestamp() throws TajoException {
     long expectedTimestamp = System.currentTimeMillis();
-    TimestampDatum expected = DatumFactory.createTimestmpDatumWithUnixTime((int)(expectedTimestamp/ 1000));
+    TimestampDatum expected = DatumFactory.createTimestampDatumWithUnixTime((int)(expectedTimestamp/ 1000));
 
     // (expectedTimestamp / 1000) means the translation from millis seconds to unix timestamp
     String q1 = String.format("select to_timestamp(%d);", (expectedTimestamp / 1000));

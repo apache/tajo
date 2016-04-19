@@ -48,4 +48,5 @@ Available Session Variables:
 \set FETCH_ROWNUM [int value] - The number of rows to be fetched from Master at a time
 \set BLOCK_ON_RESULT [true or false] - Whether to block result set on query execution
 \set COMPRESSED_RESULT_TRANSFER [true or false] - Use compression to optimize result transmission.
+\set SORT_ALGORITHM [text value] - sort algorithm
 \set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled
