@@ -1,1 +1,1 @@
-select l_linenumber, l_orderkey as sortkey from lineitem order by l_orderkey;
+select l_linenumber, l_orderkey as sortkey from lineitem order by l_orderkey, l_linenumber;

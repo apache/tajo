@@ -289,12 +289,12 @@ public class DatumFactory {
     return new TimeDatum(DateTimeUtil.toTime(tm));
   }
 
-  public static TimestampDatum createTimestmpDatumWithJavaMillis(long millis) {
+  public static TimestampDatum createTimestampDatumWithJavaMillis(long millis) {
     return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));
   }
 
-  public static TimestampDatum createTimestmpDatumWithUnixTime(int unixTime) {
-    return createTimestmpDatumWithJavaMillis(unixTime * 1000L);
+  public static TimestampDatum createTimestampDatumWithUnixTime(int unixTime) {
+    return createTimestampDatumWithJavaMillis(unixTime * 1000L);
   }
 
   public static TimestampDatum createTimestamp(String datetimeStr) {
