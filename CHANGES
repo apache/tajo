@@ -5,6 +5,8 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-2109: Implement Radix sort. (jihoon)
+
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
 
   IMPROVEMENT
@@ -122,6 +124,9 @@ Release 0.12.0 - unreleased
     TAJO-1768: Move Tajo into Java 8. (hyunsik)
 
   BUG FIXES
+
+    TAJO-2119: Invalid sort result when sort key columns contain non-ascii values. 
+    (jihoon)
 
     TAJO-2100: Add missing cancellation in defaultTaskScheduler when a worker is 
     no respond. (jinho)
