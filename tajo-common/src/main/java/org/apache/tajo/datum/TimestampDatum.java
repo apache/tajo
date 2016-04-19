@@ -23,7 +23,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
-import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -150,13 +149,7 @@ public class TimestampDatum extends Datum {
   @Override
   public String asChars() {
     TimeMeta tm = asTimeMeta();
-    return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
-  }
-
-  public String toChars(String format) {
-    TimeMeta tm = asTimeMeta();
-
-    return DateTimeFormat.to_char(tm, format);
+    return asChars(tm, TimeZone.getDefault(), true);
   }
 
   @Override

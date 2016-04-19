@@ -34,8 +34,6 @@ import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TimeZone;
@@ -302,10 +300,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Date toDate(TimeMeta tm, TimeZone tz) {
-    if (tz != null) {
-      DateTimeUtil.toUserTimezone(tm, tz);
-    }
-    return new Date(tm.years - 1900, tm.monthOfYear - 1 , tm.dayOfMonth);
+    return DateTimeUtil.toJavaDate(tm, tz);
   }
 
   @Override
@@ -333,10 +328,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Time toTime(TimeMeta tm, TimeZone tz) {
-    if (tz != null) {
-      DateTimeUtil.toUserTimezone(tm, tz);
-    }
-    return new Time(tm.hours, tm.minutes, tm.secs);
+    return DateTimeUtil.toJavaTime(tm, tz);
   }
 
   @Override
@@ -364,16 +356,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Timestamp toTimestamp(TimeMeta tm, TimeZone tz) {
-
-    long javaTime = DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm));
-    Instant instant = Instant.ofEpochMilli(javaTime);
-
-    if (tz != null) {
-      ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, tz.toZoneId());
-      return Timestamp.valueOf(zonedDateTime.toLocalDateTime());
-    } else {
-      return Timestamp.from(instant);
-    }
+    return DateTimeUtil.toJavaTimestamp(tm, tz);
   }
 
   @Override

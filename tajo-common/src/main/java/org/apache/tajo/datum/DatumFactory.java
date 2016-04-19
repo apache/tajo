@@ -283,11 +283,6 @@ public class DatumFactory {
     return new TimeDatum(DateTimeUtil.toJulianTime(timeStr));
   }
 
-  public static TimeDatum createTime(String timeStr, TimeZone tz) {
-    TimeMeta tm = DateTimeUtil.decodeDateTime(timeStr);
-    return new TimeDatum(DateTimeUtil.toTime(tm));
-  }
-
   public static TimestampDatum createTimestampDatumWithJavaMillis(long millis) {
     return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));
   }
@@ -334,7 +329,7 @@ public class DatumFactory {
     }
   }
 
-  public static TimeDatum createTime(Datum datum, @Nullable TimeZone tz) {
+  public static TimeDatum createTime(Datum datum) {
     switch (datum.type()) {
     case INT8:
       return new TimeDatum(datum.asInt8());
@@ -445,7 +440,7 @@ public class DatumFactory {
     case DATE:
       return DatumFactory.createDate(operandDatum);
     case TIME:
-      return DatumFactory.createTime(operandDatum, tz);
+      return DatumFactory.createTime(operandDatum);
     case TIMESTAMP:
       return DatumFactory.createTimestamp(operandDatum, tz);
     case BLOB:

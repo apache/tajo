@@ -163,7 +163,7 @@ public class TimeDatum extends Datum {
     if (datum.type() == TajoDataTypes.Type.TIME) {
       TimeDatum another = (TimeDatum)datum;
       return Longs.compare(time, another.time);
-    } else if (datum instanceof NullDatum || datum.isNull()) {
+    } else if (datum.isNull()) {
       return -1;
     } else {
       throw new InvalidOperationException(datum.type());
