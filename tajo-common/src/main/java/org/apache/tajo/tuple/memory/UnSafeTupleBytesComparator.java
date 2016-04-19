@@ -19,6 +19,7 @@
 package org.apache.tajo.tuple.memory;
 
 import com.google.common.primitives.Longs;
+import com.google.common.primitives.UnsignedBytes;
 import com.google.common.primitives.UnsignedLongs;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.UnsafeUtil;
@@ -31,10 +32,10 @@ import java.nio.ByteOrder;
  */
 public class UnSafeTupleBytesComparator {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
+  private static final int UNSIGNED_MASK = 0xFF;
+  private static final boolean littleEndian = ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
 
-  static final boolean littleEndian =
-      ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
-
+  // This code is borrowed from Guava's UnsignedBytes:::compare()
   public static int compare(long ptr1, long ptr2) {
     int lstrLen = UNSAFE.getInt(ptr1);
     int rstrLen = UNSAFE.getInt(ptr2);
@@ -45,42 +46,29 @@ public class UnSafeTupleBytesComparator {
     int minLength = Math.min(lstrLen, rstrLen);
     int minWords = minLength / Longs.BYTES;
 
-        /*
-         * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
-         * time is no slower than comparing 4 bytes at a time even on 32-bit.
-         * On the other hand, it is substantially faster on 64-bit.
-         */
+    /*
+     * Compare 8 bytes at a time. Benchmarking shows comparing 8 bytes at a
+     * time is no slower than comparing 4 bytes at a time even on 32-bit.
+     * On the other hand, it is substantially faster on 64-bit.
+    */
     for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
       long lw = UNSAFE.getLong(ptr1);
       long rw = UNSAFE.getLong(ptr2);
-      long diff = lw ^ rw;
 
-      if (diff != 0) {
+      if (lw != rw) {
         if (!littleEndian) {
           return UnsignedLongs.compare(lw, rw);
         }
 
-        // Use binary search
-        int n = 0;
-        int y;
-        int x = (int) diff;
-        if (x == 0) {
-          x = (int) (diff >>> 32);
-          n = 32;
-        }
-
-        y = x << 16;
-        if (y == 0) {
-          n += 16;
-        } else {
-          x = y;
-        }
-
-        y = x << 8;
-        if (y == 0) {
-          n += 8;
-        }
-        return (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL));
+        /*
+         * We want to compare only the first index where left[index] != right[index].
+         * This corresponds to the least significant nonzero byte in lw ^ rw, since lw
+         * and rw are little-endian.  Long.numberOfTrailingZeros(diff) tells us the least
+         * significant nonzero bit, and zeroing out the first three bits of L.nTZ gives us the
+         * shift to get that least significant nonzero byte.
+        */
+        int n = Long.numberOfTrailingZeros(lw ^ rw) & ~0x7;
+        return (int) (((lw >>> n) & UNSIGNED_MASK) - ((rw >>> n) & UNSIGNED_MASK));
       }
 
       ptr1 += SizeOf.SIZE_OF_LONG;
@@ -89,7 +77,7 @@ public class UnSafeTupleBytesComparator {
 
     // The epilogue to cover the last (minLength % 8) elements.
     for (int i = minWords * Longs.BYTES; i < minLength; i++) {
-      int result = UNSAFE.getByte(ptr1++) - UNSAFE.getByte(ptr2++);
+      int result = UnsignedBytes.compare(UNSAFE.getByte(ptr1++), UNSAFE.getByte(ptr2++));
       if (result != 0) {
         return result;
       }
