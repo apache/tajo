@@ -71,9 +71,9 @@
 </property>
 
 <property>
-  <name>tajo.worker.resource.disks</name>
+  <name>tajo.worker.resource.disk.parallel-execution.num</name>
   <value>2</value>
-  <description>Available disk capacity (usually number of disks)</description>
+  <description>Number of scan concurrency per disk</description>
 </property>
 
 <property>

@@ -175,9 +175,28 @@ public class TajoTypeUtil {
       case DATE:
       case TIME:
       case TIMESTAMP:
+      case INET4:
       case VARCHAR:
+      case CHAR:
       case TEXT: return false;
       default: return true;
     }
+  }
+
+  public static boolean isNumeric(Type type) {
+    return isNumber(type) || isReal(type);
+  }
+
+  public static boolean isNumber(Type type) {
+    return
+        type == Type.INT2 ||
+            type == Type.INT4 ||
+            type == Type.INT8;
+  }
+
+  public static boolean isReal(Type type) {
+    return
+        type == Type.FLOAT4||
+            type == Type.FLOAT8;
   }
 }

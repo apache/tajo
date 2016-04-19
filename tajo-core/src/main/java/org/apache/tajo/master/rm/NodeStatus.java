@@ -67,6 +67,9 @@ public class NodeStatus implements EventHandler<NodeEvent>, Comparable<NodeStatu
     }
   }
 
+  /** Reserved resources for scheduler calculation. */
+  private final NodeResource reservedResource;
+
   /** Available resources on the node. */
   private final NodeResource availableResource;
 
@@ -125,6 +128,7 @@ public class NodeStatus implements EventHandler<NodeEvent>, Comparable<NodeStatu
     this.lastHeartbeatTime = System.currentTimeMillis();
     this.totalResourceCapability = totalResourceCapability;
     this.availableResource = NodeResources.clone(totalResourceCapability);
+    this.reservedResource = NodeResources.clone(availableResource);
   }
 
   public int getWorkerId() {
@@ -174,6 +178,15 @@ public class NodeStatus implements EventHandler<NodeEvent>, Comparable<NodeStatu
    */
   public NodeResource getAvailableResource() {
     return this.availableResource;
+  }
+
+  /**
+   * Get current reserved resources on the node.
+   *
+   * @return current reserved resources on the node.
+   */
+  public NodeResource getReservedResource() {
+    return this.reservedResource;
   }
 
   /**
@@ -239,6 +252,7 @@ public class NodeStatus implements EventHandler<NodeEvent>, Comparable<NodeStatu
     setNumRunningTasks(statusEvent.getRunningTaskNum());
     setNumRunningQueryMaster(statusEvent.getRunningQMNum());
     NodeResources.update(availableResource, statusEvent.getAvailableResource());
+    NodeResources.update(reservedResource, availableResource);
 
     if(statusEvent.getTotalResource() != null) {
       NodeResources.update(totalResourceCapability, statusEvent.getTotalResource());
