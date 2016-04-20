@@ -61,7 +61,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     client.unsetSessionVariables(Arrays.asList(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname()));
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"MultiLevel"},

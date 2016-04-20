@@ -73,7 +73,7 @@ public class TestMergeScanner {
     this.dataFormat = dataFormat;
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
         {"TEXT"},
