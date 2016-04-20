@@ -19,6 +19,7 @@
 package org.apache.tajo.plan;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -32,13 +33,13 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
@@ -52,6 +53,7 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
 
@@ -1228,21 +1230,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static Schema getNaturalJoinSchema(LogicalNode left, LogicalNode right) {
-    Schema joinSchema = SchemaFactory.newV1();
-    Schema commons = SchemaUtil.getNaturalJoinColumns(left.getOutSchema(), right.getOutSchema());
-    joinSchema.addColumns(commons);
-    for (Column c : left.getOutSchema().getRootColumns()) {
-      if (!joinSchema.contains(c.getQualifiedName())) {
-        joinSchema.addColumn(c);
-      }
-    }
-
-    for (Column c : right.getOutSchema().getRootColumns()) {
-      if (!joinSchema.contains(c.getQualifiedName())) {
-        joinSchema.addColumn(c);
-      }
-    }
-    return joinSchema;
+    SchemaBuilder joinSchema = SchemaBuilder.uniqueNameBuilder();
+    joinSchema.addAll(left.getOutSchema().getRootColumns());
+    joinSchema.addAll(right.getOutSchema().getRootColumns());
+    return joinSchema.build();
   }
 
   private static EvalNode getNaturalJoinCondition(JoinNode joinNode) {
@@ -1677,7 +1668,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // See PreLogicalPlanVerifier.visitInsert.
       // It guarantees that the equivalence between the numbers of target and projected columns.
       ColumnReferenceExpr [] targets = expr.getTargetColumns();
-      Schema targetColumns = SchemaFactory.newV1();
+      final SchemaBuilder targetColumnsBld = SchemaBuilder.builder();
       for (ColumnReferenceExpr target : targets) {
         Column targetColumn = desc.getLogicalSchema().getColumn(target.getCanonicalName().replace(".", "/"));
 
@@ -1685,8 +1676,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           throw makeSyntaxError("column '" + target + "' of relation '" + desc.getName() + "' does not exist");
         }
 
-        targetColumns.addColumn(targetColumn);
+        targetColumnsBld.add(targetColumn);
       }
+      final Schema targetColumns = targetColumnsBld.build();
       insertNode.setTargetSchema(targetColumns);
       insertNode.setOutSchema(targetColumns);
       buildProjectedInsert(context, insertNode);
@@ -1697,11 +1689,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       Schema tableSchema = desc.getLogicalSchema();
       Schema projectedSchema = insertNode.getChild().getOutSchema();
 
-      Schema targetColumns = SchemaFactory.newV1();
+      SchemaBuilder targetColumns = SchemaBuilder.builder();
       for (int i = 0; i < projectedSchema.size(); i++) {
-        targetColumns.addColumn(tableSchema.getColumn(i));
+        targetColumns.add(tableSchema.getColumn(i));
       }
-      insertNode.setTargetSchema(targetColumns);
+      insertNode.setTargetSchema(targetColumns.build());
       buildProjectedInsert(context, insertNode);
     }
 
@@ -1956,15 +1948,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
               queryOutputSchema.size() < partitionExpressionSchema.size()) {
             throw makeSyntaxError("Partition columns cannot be more than table columns.");
           }
-          Schema tableSchema = SchemaFactory.newV1();
+          SchemaBuilder tableSchemaBld = SchemaBuilder.builder();
           for (int i = 0; i < queryOutputSchema.size() - partitionExpressionSchema.size(); i++) {
-            tableSchema.addColumn(queryOutputSchema.getColumn(i));
+            tableSchemaBld.add(queryOutputSchema.getColumn(i));
           }
+          Schema tableSchema = tableSchemaBld.build();
           createTableNode.setOutSchema(tableSchema);
           createTableNode.setTableSchema(tableSchema);
         } else {
           // Convert the schema of subquery into the target table's one.
-          Schema schema = SchemaFactory.newV1(subQuery.getOutSchema());
+          Schema schema = SchemaBuilder.builder().addAll(subQuery.getOutSchema().getRootColumns()).build();
           schema.setQualifier(createTableNode.getTableName());
           createTableNode.setOutSchema(schema);
           createTableNode.setTableSchema(schema);
@@ -2040,13 +2033,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private Schema convertColumnsToSchema(ColumnDefinition[] elements) {
-    Schema schema = SchemaFactory.newV1();
-
-    for (ColumnDefinition columnDefinition: elements) {
-      schema.addColumn(convertColumn(columnDefinition));
-    }
-
-    return schema;
+    return SchemaBuilder.builder().addAll(elements, new Function<ColumnDefinition, Column>() {
+      @Override
+      public Column apply(@Nullable ColumnDefinition input) {
+        return convertColumn(input);
+      }
+    }).build();
   }
 
   /**
@@ -2056,13 +2048,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @return schema transformed from table definition elements
    */
   private static Schema convertTableElementsSchema(ColumnDefinition[] elements) {
-    Schema schema = SchemaFactory.newV1();
-
-    for (ColumnDefinition columnDefinition: elements) {
-      schema.addColumn(convertColumn(columnDefinition));
-    }
-
-    return schema;
+    return SchemaBuilder.builder().addAll(elements, new Function<ColumnDefinition, Column>() {
+      @Override
+      public Column apply(@Nullable ColumnDefinition input) {
+        return convertColumn(input);
+      }
+    }).build();
   }
 
   /**

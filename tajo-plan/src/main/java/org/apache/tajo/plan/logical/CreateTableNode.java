@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
@@ -42,8 +43,8 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
 
   public Schema getLogicalSchema() {
     if (hasPartition()) {
-      Schema logicalSchema = SchemaFactory.newV1(tableSchema);
-      logicalSchema.addColumns(getPartitionMethod().getExpressionSchema());
+      Schema logicalSchema = SchemaUtil.merge(tableSchema, getPartitionMethod().getExpressionSchema());
+      logicalSchema.setQualifier(tableName);
       return logicalSchema;
     } else {
       return tableSchema;

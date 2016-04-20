@@ -20,6 +20,7 @@ package org.apache.tajo.schema;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.util.StringUtils;
 
@@ -40,6 +41,20 @@ public class QualifiedIdentifier {
       @Override
       public String apply(@Nullable Identifier identifier) {
         return identifier.displayString(policy);
+      }
+    });
+  }
+
+  /**
+   * Raw string of qualified identifier
+   * @param policy Identifier Policy
+   * @return raw string
+   */
+  public String raw(final IdentifierPolicy policy) {
+    return StringUtils.join(names, policy.getIdentifierSeperator(), new Function<Identifier, String>() {
+      @Override
+      public String apply(@Nullable Identifier identifier) {
+        return identifier.raw(policy);
       }
     });
   }

@@ -122,8 +122,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 
   public Schema getLogicalSchema() {
     if (hasPartition()) {
-      Schema logicalSchema = SchemaFactory.newV1(schema);
-      logicalSchema.addColumns(getPartitionMethod().getExpressionSchema());
+      Schema logicalSchema = SchemaUtil.merge(schema, getPartitionMethod().getExpressionSchema());
       logicalSchema.setQualifier(tableName);
       return logicalSchema;
     } else {

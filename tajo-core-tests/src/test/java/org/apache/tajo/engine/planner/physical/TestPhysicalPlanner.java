@@ -104,16 +104,18 @@ public class TestPhysicalPlanner {
       catalog.createFunction(funcDesc);
     }
 
-    Schema employeeSchema = SchemaFactory.newV1();
-    employeeSchema.addColumn("name", Type.TEXT);
-    employeeSchema.addColumn("empid", Type.INT4);
-    employeeSchema.addColumn("deptname", Type.TEXT);
+    Schema employeeSchema = SchemaBuilder.builder()
+        .add("name", Type.TEXT)
+        .add("empid", Type.INT4)
+        .add("deptname", Type.TEXT)
+        .build();
 
-    Schema scoreSchema = SchemaFactory.newV1();
-    scoreSchema.addColumn("deptname", Type.TEXT);
-    scoreSchema.addColumn("class", Type.TEXT);
-    scoreSchema.addColumn("score", Type.INT4);
-    scoreSchema.addColumn("nullable", Type.TEXT);
+    Schema scoreSchema = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("class", Type.TEXT)
+        .add("score", Type.INT4)
+        .add("nullable", Type.TEXT)
+        .build();
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
 
