@@ -11,3 +11,4 @@ In Tajo, a table is a logical view of one data sources. Logically, one table con
     table_management/tablespaces
     table_management/data_formats
     table_management/compression
+    table_management/directoutputcommitter
