@@ -264,7 +264,7 @@ public class QueryTestCaseBase {
 
   @After
   public void clear() {
-    getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
+    getClient().unsetSessionVariables(Lists.newArrayList(SessionVars.TIMEZONE.name()));
   }
 
   public QueryTestCaseBase() {

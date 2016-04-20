@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -32,6 +33,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
+
+import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
@@ -55,9 +58,7 @@ public class DatePartFromTimestamp extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType [] types) {
-    if (!hasTimeZone()) {
-      setTimeZone(context.getConf().getSystemTimezone());
-    }
+    setTimeZone(TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE)));
   }
 
   @Override

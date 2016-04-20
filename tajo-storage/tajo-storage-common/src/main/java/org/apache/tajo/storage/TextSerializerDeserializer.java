@@ -23,7 +23,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
@@ -39,7 +38,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
   public static final byte[] trueBytes = "true".getBytes();
   public static final byte[] falseBytes = "false".getBytes();
   private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
-  private static TajoConf TAJO_CONF = new TajoConf();
 
   public TextSerializerDeserializer() {}
 
@@ -103,11 +101,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         break;
       case TIME:
         bytes = tuple.getTextBytes(index);
-        length = bytes.length;
-        out.write(bytes);
-        break;
-      case TIMESTAMP:
-        bytes = TimestampDatum.asChars(tuple.getTimeDate(index), TAJO_CONF.getSystemTimezone(), true).getBytes();
         length = bytes.length;
         out.write(bytes);
         break;
@@ -185,10 +178,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case TIME:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createTime(new String(bytes, offset, length));
-        break;
-      case TIMESTAMP:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createTimestamp(new String(bytes, offset, length), TAJO_CONF.getSystemTimezone());
         break;
       case INTERVAL:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()

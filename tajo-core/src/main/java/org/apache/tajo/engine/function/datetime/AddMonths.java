@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function.datetime;
 
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -30,6 +31,8 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.plan.expr.FunctionEval;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
+
+import java.util.TimeZone;
 
 @Description(
     functionName = "add_months",
@@ -57,9 +60,7 @@ public class AddMonths extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] types) {
-    if (!hasTimeZone()) {
-      setTimeZone(context.getConf().getSystemTimezone());
-    }
+    setTimeZone(TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE)));
   }
 
   @Override
