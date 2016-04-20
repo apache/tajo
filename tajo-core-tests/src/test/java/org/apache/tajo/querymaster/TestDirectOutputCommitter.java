@@ -128,6 +128,7 @@ public class TestDirectOutputCommitter {
     FileStatus[] files = fs.listStatus(new Path(desc.getUri()));
     assertEquals(2, files.length);
 
+    // Make sure whether previous data file and new data file exist or not.
     int existingFileCount = 0;
     int addedFileCount = 0;
     for(FileStatus file : files) {
@@ -139,6 +140,16 @@ public class TestDirectOutputCommitter {
     }
     assertEquals(1, existingFileCount);
     assertEquals(1, addedFileCount);
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
 
     res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
     res.close();
@@ -208,14 +219,24 @@ public class TestDirectOutputCommitter {
         }
       }
     }
-
     waitUntilQueryFinish(queryMasterTask.getQuery(), 50, 200, queryMasterTask);
 
+    // Make sure whether previous partitions exists or not.
     files = fs.listStatus(new Path(desc.getUri()));
     assertEquals(1, files.length);
     for(FileStatus file : files) {
       assertTrue(file.getPath().getName().toString().startsWith(prefix));
     }
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
 
     res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
     res.close();
@@ -292,9 +313,9 @@ public class TestDirectOutputCommitter {
         }
       }
     }
-
     waitUntilQueryFinish(queryMasterTask.getQuery(), 50, 200, queryMasterTask);
 
+    // Make sure whether previous partitions exists or not.
     for (CatalogProtos.PartitionDescProto partition : partitions) {
       Path path = new Path(partition.getPath());
       FileStatus[] statuses = fs.listStatus(path);
@@ -302,6 +323,16 @@ public class TestDirectOutputCommitter {
       assertEquals(1, statuses.length);
       assertTrue(statuses[0].getPath().getName().toString().startsWith(prefix));
     }
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
 
     res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
     res.close();
@@ -378,9 +409,9 @@ public class TestDirectOutputCommitter {
         }
       }
     }
-
     waitUntilQueryFinish(queryMasterTask.getQuery(), 50, 200, queryMasterTask);
 
+    // Make sure whether previous partitions exists or not.
     for (CatalogProtos.PartitionDescProto partition : partitions) {
       Path path = new Path(partition.getPath());
       FileStatus[] statuses = fs.listStatus(path);
@@ -388,6 +419,16 @@ public class TestDirectOutputCommitter {
       assertEquals(1, statuses.length);
       assertTrue(statuses[0].getPath().getName().toString().startsWith(prefix));
     }
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
 
     res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
     res.close();
@@ -438,14 +479,23 @@ public class TestDirectOutputCommitter {
         }
       }
     }
-
     waitUntilQueryFinish(queryMasterTask.getQuery(), 50, 200, queryMasterTask);
 
+    // Check the number and file count of partitions
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
     assertEquals(0, partitions.size());
-
     ContentSummary summary = fs.getContentSummary(new Path(desc.getUri()));
     assertEquals(0, summary.getFileCount());
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
 
     res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
     res.close();
@@ -497,20 +547,29 @@ public class TestDirectOutputCommitter {
         }
       }
     }
-
     waitUntilQueryFinish(queryMasterTask.getQuery(), 50, 200, queryMasterTask);
 
+    // Check the number and file count of partitions
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
     assertEquals(0, partitions.size());
-
     ContentSummary summary = fs.getContentSummary(new Path(desc.getUri()));
     assertEquals(0, summary.getFileCount());
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
 
     res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
     res.close();
   }
 
-  public void waitUntilQueryFinish(Query query, int delay, int maxRetry, QueryMasterTask queryMasterTask)
+  private void waitUntilQueryFinish(Query query, int delay, int maxRetry, QueryMasterTask queryMasterTask)
     throws Exception {
     int i = 0;
 
