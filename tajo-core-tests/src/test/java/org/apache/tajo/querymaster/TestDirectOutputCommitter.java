@@ -18,6 +18,7 @@
 
 package org.apache.tajo.querymaster;
 
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -387,6 +388,123 @@ public class TestDirectOutputCommitter {
       assertEquals(1, statuses.length);
       assertTrue(statuses[0].getPath().getName().toString().startsWith(prefix));
     }
+
+    res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
+    res.close();
+  }
+
+  @Test(timeout = 10000)
+  public final void testRemoveAllFilesAfterKillQueryWithPartitionedTableByOneColumn() throws Exception {
+    ResultSet res = null;
+    ClientProtos.SubmitQueryResponse response = null;
+    ClientProtos.QueryInfoProto queryInfo = null;
+    QueryMasterTask queryMasterTask = null;
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    FileSystem fs = cluster.getDefaultFileSystem();
+
+    setSessionVariable(true);
+    assertEquals("true", client.getSessionVariable(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname()));
+
+    // Create partition table
+    String tableName = CatalogUtil.normalizeIdentifier(name.getMethodName());
+
+    res = client.executeQueryAndGetResult("create table " + tableName
+      + " (col1 int4, col2 int4) partition by column(key float8) ");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    assertNotNull(desc);
+
+    // Kill query when executing inserting data.
+    response = client.executeQuery("insert into " + tableName
+      + " select l_orderkey, l_partkey, l_quantity from lineitem");
+    QueryId queryId = new QueryId(response.getQueryId());
+
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+      if (queryInfo != null && queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+
+      queryMasterTask = cluster.getQueryMasterTask(queryId);
+      if (queryMasterTask != null) {
+        Query query = queryMasterTask.getQuery();
+        if (query != null && query.getPartitions() != null) {
+          if (query.getPartitions().size() > 2) {
+            queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
+            Thread.sleep(100);
+            break;
+          }
+        }
+      }
+    }
+
+    waitUntilQueryFinish(queryMasterTask.getQuery(), 50, 200, queryMasterTask);
+
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
+    assertEquals(0, partitions.size());
+
+    ContentSummary summary = fs.getContentSummary(new Path(desc.getUri()));
+    assertEquals(0, summary.getFileCount());
+
+    res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
+    res.close();
+  }
+
+
+  @Test(timeout = 10000)
+  public final void testRemoveAllFilesAfterKillQueryWithPartitionedTableByThreeColumns() throws Exception {
+    ResultSet res = null;
+    ClientProtos.SubmitQueryResponse response = null;
+    ClientProtos.QueryInfoProto queryInfo = null;
+    QueryMasterTask queryMasterTask = null;
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    FileSystem fs = cluster.getDefaultFileSystem();
+
+    setSessionVariable(true);
+    assertEquals("true", client.getSessionVariable(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname()));
+
+    // Create partition table
+    String tableName = CatalogUtil.normalizeIdentifier(name.getMethodName());
+
+    res = client.executeQueryAndGetResult("create table " + tableName
+      + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
+    res.close();
+
+    TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    assertNotNull(desc);
+
+    // Kill query when executing inserting data.
+    response = client.executeQuery("insert into " + tableName
+      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+    QueryId queryId = new QueryId(response.getQueryId());
+
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+      if (queryInfo != null && queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+
+      queryMasterTask = cluster.getQueryMasterTask(queryId);
+      if (queryMasterTask != null) {
+        Query query = queryMasterTask.getQuery();
+        if (query != null && query.getPartitions() != null) {
+          if (query.getPartitions().size() > 2) {
+            queryMasterTask.getEventHandler().handle(new QueryEvent(queryId, QueryEventType.KILL));
+            Thread.sleep(100);
+            break;
+          }
+        }
+      }
+    }
+
+    waitUntilQueryFinish(queryMasterTask.getQuery(), 50, 200, queryMasterTask);
+
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
+    assertEquals(0, partitions.size());
+
+    ContentSummary summary = fs.getContentSummary(new Path(desc.getUri()));
+    assertEquals(0, summary.getFileCount());
 
     res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
     res.close();
