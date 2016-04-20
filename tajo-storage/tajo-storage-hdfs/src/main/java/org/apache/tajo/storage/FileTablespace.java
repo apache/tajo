@@ -1059,10 +1059,9 @@ public class FileTablespace extends Tablespace {
 
     directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
     PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
-    PathFilter outputPathFilter = committerFilter.getOutputPathFilter();
 
     // Delete added files
-    deleteOutputFiles(path, outputPathFilter);
+    deleteOutputFiles(path, prefix);
 
     // Recover backup files to output directory
     if (fs.exists(backupDir)) {
@@ -1088,25 +1087,15 @@ public class FileTablespace extends Tablespace {
       };
       return pathFilter;
     }
-
-    private PathFilter getOutputPathFilter() {
-      PathFilter pathFilter = (Path p) -> {
-        String name = p.getName();
-        return !name.startsWith("_") && !name.startsWith(".")
-          && !name.startsWith(TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME)
-          && name.startsWith(prefix);
-      };
-      return pathFilter;
-    }
   }
 
-  private void deleteOutputFiles(Path path, PathFilter filter) throws IOException {
-    if (fs.isFile(path)) {
-      fs.delete(path, false);
-    } else {
-      FileStatus[] statuses = fs.listStatus(path, filter);
-      for (FileStatus status : statuses) {
-        deleteOutputFiles(status.getPath(), filter);
+  private void deleteOutputFiles(Path path, String prefix) throws IOException {
+    FileStatus[] statuses = fs.listStatus(path);
+    for (FileStatus status : statuses) {
+      if (status.isDirectory()) {
+        deleteOutputFiles(status.getPath(), prefix);
+      } else if (status.isFile() && status.getPath().getName().startsWith(prefix)) {
+        fs.delete(status.getPath(), false);
       }
     }
   }
