@@ -60,10 +60,7 @@ public abstract class Type {
 
   @Override
   public boolean equals(Object t) {
-    if (t instanceof Type) {
-      return ((Type)t).baseType() == baseType();
-    }
-    return false;
+    return t instanceof Type && ((Type)t).baseType() == baseType();
   }
 
   @Override
@@ -76,38 +73,6 @@ public abstract class Type {
   }
 
   public boolean isNull() { return this.baseType() == TajoDataTypes.Type.NULL_TYPE; }
-
-  public static Any Any() {
-    return Any.INSTANCE;
-  }
-
-  public static Bool Bool() {
-    return new Bool();
-  }
-
-  public static Int1 Int1() {
-    return new Int1();
-  }
-
-  public static Int2 Int2() {
-    return new Int2();
-  }
-
-  public static Int4 Int4() {
-    return Type.Int4;
-  }
-
-  public static Int8 Int8() {
-    return new Int8();
-  }
-
-  public static Float4 Float4() {
-    return new Float4();
-  }
-
-  public static Float8 Float8() {
-    return new Float8();
-  }
 
   public static int DEFAULT_SCALE = 0;
 
