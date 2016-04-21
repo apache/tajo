@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
@@ -36,8 +36,9 @@ public class TestUserDefinedFunctions extends ExprTestBase {
 
   @Test
   public void testNullHandling2() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", BOOLEAN);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", BOOLEAN)
+        .build();
 
     testEval(schema, "table1", "", "select null_test() from table1", new String[]{NullDatum.get().toString()});
   }

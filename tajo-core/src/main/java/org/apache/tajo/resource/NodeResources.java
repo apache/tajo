@@ -22,29 +22,24 @@ package org.apache.tajo.resource;
 public class NodeResources {
 
   public static NodeResource createResource(int memory) {
-    return createResource(memory, 0);
+    return NodeResource.createResource(memory, (memory > 0) ? 1 : 0);
   }
 
-  public static NodeResource createResource(int memory, int disks) {
-    return NodeResource.createResource(memory, disks, (memory > 0) ? 1 : 0);
-  }
-
-  public static NodeResource createResource(int memory, int disks, int vCores) {
-    return NodeResource.createResource(memory, disks, vCores);
+  public static NodeResource createResource(int memory, int vCores) {
+    return NodeResource.createResource(memory, vCores);
   }
 
   public static NodeResource clone(NodeResource res) {
-    return NodeResource.createResource(res.getMemory(), res.getDisks(), res.getVirtualCores());
+    return NodeResource.createResource(res.getMemory(), res.getVirtualCores());
   }
 
   public static NodeResource update(NodeResource lhs, NodeResource rhs) {
-    return lhs.setMemory(rhs.getMemory()).setDisks(rhs.getDisks()).setVirtualCores(rhs.getVirtualCores());
+    return lhs.setMemory(rhs.getMemory()).setVirtualCores(rhs.getVirtualCores());
   }
 
   public static NodeResource addTo(NodeResource lhs, NodeResource rhs) {
     lhs.setMemory(lhs.getMemory() + rhs.getMemory())
-        .setVirtualCores(lhs.getVirtualCores() + rhs.getVirtualCores())
-        .setDisks(lhs.getDisks() + rhs.getDisks());
+        .setVirtualCores(lhs.getVirtualCores() + rhs.getVirtualCores());
     return lhs;
   }
 
@@ -54,8 +49,7 @@ public class NodeResources {
 
   public static NodeResource subtractFrom(NodeResource lhs, NodeResource rhs) {
     lhs.setMemory(lhs.getMemory() - rhs.getMemory())
-        .setVirtualCores(lhs.getVirtualCores() - rhs.getVirtualCores())
-        .setDisks(lhs.getDisks() - rhs.getDisks());
+        .setVirtualCores(lhs.getVirtualCores() - rhs.getVirtualCores());
     return lhs;
   }
 
@@ -65,8 +59,7 @@ public class NodeResources {
 
   public static NodeResource multiplyTo(NodeResource lhs, double by) {
     lhs.setMemory((int) (lhs.getMemory() * by))
-        .setVirtualCores((int) (lhs.getVirtualCores() * by))
-        .setDisks((int) (lhs.getDisks() * by));
+        .setVirtualCores((int) (lhs.getVirtualCores() * by));
     return lhs;
   }
 
@@ -87,7 +80,6 @@ public class NodeResources {
   public static NodeResource multiplyAndRoundDown(NodeResource lhs, double by) {
     NodeResource out = clone(lhs);
     out.setMemory((int)(lhs.getMemory() * by));
-    out.setDisks((int)(lhs.getDisks() * by));
     out.setVirtualCores((int)(lhs.getVirtualCores() * by));
     return out;
   }
@@ -177,19 +169,16 @@ public class NodeResources {
 
   public static boolean fitsIn(NodeResource smaller, NodeResource bigger) {
     return smaller.getMemory() <= bigger.getMemory() &&
-        smaller.getDisks() <= bigger.getDisks() &&
         smaller.getVirtualCores() <= bigger.getVirtualCores();
   }
 
   public static NodeResource componentwiseMin(NodeResource lhs, NodeResource rhs) {
     return createResource(Math.min(lhs.getMemory(), rhs.getMemory()),
-        Math.min(lhs.getDisks(), rhs.getDisks()),
         Math.min(lhs.getVirtualCores(), rhs.getVirtualCores()));
   }
 
   public static NodeResource componentwiseMax(NodeResource lhs, NodeResource rhs) {
     return createResource(Math.max(lhs.getMemory(), rhs.getMemory()),
-        Math.max(lhs.getDisks(), rhs.getDisks()),
         Math.max(lhs.getVirtualCores(), rhs.getVirtualCores()));
   }
 }

@@ -184,7 +184,7 @@ public class TaskManager extends AbstractService implements EventHandler<TaskMan
           }
         } catch (Throwable e) {
           LOG.fatal(e.getMessage(), e);
-          getTaskExecutor().releaseResource(taskStartEvent.getAllocatedResource());
+          getTaskExecutor().releaseResource(taskStartEvent.getAllocation());
           getWorkerContext().getTaskManager().getDispatcher().getEventHandler()
               .handle(new ExecutionBlockErrorEvent(taskStartEvent.getExecutionBlockId(), e));
           break;

@@ -86,18 +86,21 @@ public class TestLogicalPlanner {
       catalog.createFunction(funcDesc);
     }
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("name", Type.TEXT);
-    schema.addColumn("empid", Type.INT4);
-    schema.addColumn("deptname", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("name", Type.TEXT)
+        .add("empid", Type.INT4)
+        .add("deptname", Type.TEXT)
+        .build();
 
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("deptname", Type.TEXT);
-    schema2.addColumn("manager", Type.TEXT);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("manager", Type.TEXT)
+        .build();
 
-    Schema schema3 = SchemaFactory.newV1();
-    schema3.addColumn("deptname", Type.TEXT);
-    schema3.addColumn("score", Type.INT4);
+    Schema schema3 = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("score", Type.INT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc people = new TableDesc(
@@ -222,11 +225,12 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(root);
     testCloneLogicalNode(root);
 
-    Schema expectedSchema = SchemaFactory.newV1();
-    expectedSchema.addColumn("name", Type.TEXT);
-    expectedSchema.addColumn("empid", Type.INT4);
-    expectedSchema.addColumn("deptname", Type.TEXT);
-    expectedSchema.addColumn("manager", Type.TEXT);
+    Schema expectedSchema = SchemaBuilder.builder()
+        .add("name", Type.TEXT)
+        .add("empid", Type.INT4)
+        .add("deptname", Type.TEXT)
+        .add("manager", Type.TEXT)
+        .build();
     for (int i = 0; i < expectedSchema.size(); i++) {
       Column found = root.getOutSchema().getColumn(expectedSchema.getColumn(i).getSimpleName());
       assertEquals(expectedSchema.getColumn(i).getDataType(), found.getDataType());
@@ -251,7 +255,9 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(plan);
     testCloneLogicalNode(plan);
 
-    expectedSchema.addColumn("score", Type.INT4);
+    expectedSchema = SchemaBuilder.builder().addAll(expectedSchema.getRootColumns())
+        .add("score", Type.INT4)
+        .build();
     assertSchema(expectedSchema, plan.getOutSchema());
 
     assertEquals(NodeType.ROOT, plan.getType());
@@ -291,10 +297,11 @@ public class TestLogicalPlanner {
 
   static Schema expectedJoinSchema;
   static {
-    expectedJoinSchema = SchemaFactory.newV1();
-    expectedJoinSchema.addColumn("name", Type.TEXT);
-    expectedJoinSchema.addColumn("deptname", Type.TEXT);
-    expectedJoinSchema.addColumn("score", Type.INT4);
+    expectedJoinSchema = SchemaBuilder.builder()
+        .add("name", Type.TEXT)
+        .add("deptname", Type.TEXT)
+        .add("score", Type.INT4)
+        .build();
   }
 
   @Test
@@ -1290,18 +1297,20 @@ public class TestLogicalPlanner {
     String tableName = CatalogUtil.normalizeIdentifier("partitioned_table");
     String qualifiedTableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4)
-      .addColumn("name", Type.TEXT)
-      .addColumn("age", Type.INT4)
-      .addColumn("score", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .add("score", Type.FLOAT8)
+        .build();
 
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
 
-    Schema partSchema = SchemaFactory.newV1();
-    partSchema.addColumn("id", Type.INT4);
-    partSchema.addColumn("name", Type.TEXT);
+    Schema partSchema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
 
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,

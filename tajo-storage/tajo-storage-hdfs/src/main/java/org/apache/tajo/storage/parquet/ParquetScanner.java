@@ -20,7 +20,7 @@ package org.apache.tajo.storage.parquet;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -64,7 +64,8 @@ public class ParquetScanner extends FileScanner {
     if (targets == null) {
       targets = schema.toArray();
     }
-    reader = new TajoParquetReader(conf, fragment.getPath(), schema, SchemaFactory.newV1(targets));
+    reader = new TajoParquetReader(conf, fragment.getPath(), schema,
+        SchemaBuilder.builder().addAll(targets).build());
     totalRowCount = reader.getTotalRowCount();
     currentRowCount = 0;
     closed = false;

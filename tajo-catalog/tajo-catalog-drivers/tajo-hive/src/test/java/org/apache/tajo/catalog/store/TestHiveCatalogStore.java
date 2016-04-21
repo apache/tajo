@@ -95,15 +95,16 @@ public class TestHiveCatalogStore {
   public void testTableUsingTextFile() throws Exception {
     TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("c_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_address", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("c_phone", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_acctbal", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("c_mktsegment", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("c_custkey", TajoDataTypes.Type.INT4)
+        .add("c_name", TajoDataTypes.Type.TEXT)
+        .add("c_address", TajoDataTypes.Type.TEXT)
+        .add("c_nationkey", TajoDataTypes.Type.INT4)
+        .add("c_phone", TajoDataTypes.Type.TEXT)
+        .add("c_acctbal", TajoDataTypes.Type.FLOAT8)
+        .add("c_mktsegment", TajoDataTypes.Type.TEXT)
+        .add("c_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
@@ -135,10 +136,11 @@ public class TestHiveCatalogStore {
     options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     TableMeta meta = new TableMeta(BuiltinStorages.RCFILE, options);
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("r_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("r_regionkey", TajoDataTypes.Type.INT4)
+        .add("r_name", TajoDataTypes.Type.TEXT)
+        .add("r_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
@@ -169,10 +171,11 @@ public class TestHiveCatalogStore {
     options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
     TableMeta meta = new TableMeta(BuiltinStorages.RCFILE, options);
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("r_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("r_regionkey", TajoDataTypes.Type.INT4)
+        .add("r_name", TajoDataTypes.Type.TEXT)
+        .add("r_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
@@ -203,14 +206,15 @@ public class TestHiveCatalogStore {
     options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\u0003"));
     TableMeta meta = new TableMeta(BuiltinStorages.TEXT, options);
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("s_suppkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("s_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("s_address", TajoDataTypes.Type.TEXT);
-    schema.addColumn("s_nationkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("s_phone", TajoDataTypes.Type.TEXT);
-    schema.addColumn("s_acctbal", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("s_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("s_suppkey", TajoDataTypes.Type.INT4)
+        .add("s_name", TajoDataTypes.Type.TEXT)
+        .add("s_address", TajoDataTypes.Type.TEXT)
+        .add("s_nationkey", TajoDataTypes.Type.INT4)
+        .add("s_phone", TajoDataTypes.Type.TEXT)
+        .add("s_acctbal", TajoDataTypes.Type.FLOAT8)
+        .add("s_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, SUPPLIER)).toUri());
@@ -252,18 +256,20 @@ public class TestHiveCatalogStore {
   public void testAddTableByPartition() throws Exception {
     TableMeta meta = new TableMeta("TEXT", new KeyValueSet());
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("n_name", TajoDataTypes.Type.TEXT)
+        .add("n_regionkey", TajoDataTypes.Type.INT4)
+        .add("n_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, NATION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, NATION)).toUri());
 
-    org.apache.tajo.catalog.Schema expressionSchema = SchemaFactory.newV1();
-    expressionSchema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
-    expressionSchema.addColumn("n_date", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema expressionSchema = SchemaBuilder.builder()
+        .add("n_nationkey", TajoDataTypes.Type.INT4)
+        .add("n_date", TajoDataTypes.Type.TEXT)
+        .build();
 
     PartitionMethodDesc partitions = new PartitionMethodDesc(
         DB_NAME,
@@ -500,10 +506,11 @@ public class TestHiveCatalogStore {
   @Test
   public void testGetAllTableNames() throws Exception{
     TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("n_name", TajoDataTypes.Type.TEXT)
+        .add("n_regionkey", TajoDataTypes.Type.INT4)
+        .add("n_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     String[] tableNames = new String[]{"table1", "table2", "table3"};
 
@@ -528,10 +535,11 @@ public class TestHiveCatalogStore {
   @Test
   public void testDeleteTable() throws Exception {
     TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("n_name", TajoDataTypes.Type.TEXT)
+        .add("n_regionkey", TajoDataTypes.Type.INT4)
+        .add("n_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     String tableName = "table1";
     TableDesc table = new TableDesc(DB_NAME + "." + tableName, schema, meta, warehousePath.toUri());
@@ -553,10 +561,11 @@ public class TestHiveCatalogStore {
     options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     TableMeta meta = new TableMeta(BuiltinStorages.SEQUENCE_FILE, options);
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("r_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("r_regionkey", TajoDataTypes.Type.INT4)
+        .add("r_name", TajoDataTypes.Type.TEXT)
+        .add("r_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
@@ -587,10 +596,11 @@ public class TestHiveCatalogStore {
     options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
     TableMeta meta = new TableMeta(BuiltinStorages.SEQUENCE_FILE, options);
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("r_regionkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("r_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("r_regionkey", TajoDataTypes.Type.INT4)
+        .add("r_name", TajoDataTypes.Type.TEXT)
+        .add("r_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
@@ -619,15 +629,16 @@ public class TestHiveCatalogStore {
   public void testTableUsingParquet() throws Exception {
     TableMeta meta = new TableMeta("PARQUET", new KeyValueSet());
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("c_custkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("c_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_address", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
-    schema.addColumn("c_phone", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_acctbal", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("c_mktsegment", TajoDataTypes.Type.TEXT);
-    schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("c_custkey", TajoDataTypes.Type.INT4)
+        .add("c_name", TajoDataTypes.Type.TEXT)
+        .add("c_address", TajoDataTypes.Type.TEXT)
+        .add("c_nationkey", TajoDataTypes.Type.INT4)
+        .add("c_phone", TajoDataTypes.Type.TEXT)
+        .add("c_acctbal", TajoDataTypes.Type.FLOAT8)
+        .add("c_mktsegment", TajoDataTypes.Type.TEXT)
+        .add("c_comment", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
@@ -656,18 +667,19 @@ public class TestHiveCatalogStore {
 
     TableMeta meta = new TableMeta(BuiltinStorages.TEXT, new KeyValueSet());
 
-    org.apache.tajo.catalog.Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT1);
-    schema.addColumn("col3", TajoDataTypes.Type.INT2);
-    schema.addColumn("col4", TajoDataTypes.Type.INT8);
-    schema.addColumn("col5", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("col6", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col7", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col8", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col9", TajoDataTypes.Type.BLOB);
-    schema.addColumn("col10", TajoDataTypes.Type.TIMESTAMP);
-    schema.addColumn("col11", TajoDataTypes.Type.DATE);
+    org.apache.tajo.catalog.Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT1)
+        .add("col3", TajoDataTypes.Type.INT2)
+        .add("col4", TajoDataTypes.Type.INT8)
+        .add("col5", TajoDataTypes.Type.BOOLEAN)
+        .add("col6", TajoDataTypes.Type.FLOAT4)
+        .add("col7", TajoDataTypes.Type.FLOAT8)
+        .add("col8", TajoDataTypes.Type.TEXT)
+        .add("col9", TajoDataTypes.Type.BLOB)
+        .add("col10", TajoDataTypes.Type.TIMESTAMP)
+        .add("col11", TajoDataTypes.Type.DATE)
+        .build();
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, tableName), schema, meta,
       new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
