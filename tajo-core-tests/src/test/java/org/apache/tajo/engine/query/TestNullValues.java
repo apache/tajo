@@ -22,7 +22,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.StorageConstants;
@@ -59,10 +59,11 @@ public class TestNullValues {
   @Test
   public final void testIsNull() throws Exception {
     String [] table = new String[] {"nulltable1"};
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.INT4);
-    schema.addColumn("col2", Type.TEXT);
-    schema.addColumn("col3", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT4)
+        .add("col2", Type.TEXT)
+        .add("col3", Type.FLOAT4)
+        .build();
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         "1|filled|0.1",
@@ -84,9 +85,10 @@ public class TestNullValues {
   @Test
   public final void testIsNotNull() throws Exception {
     String [] table = new String[] {"nulltable2"};
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.INT4);
-    schema.addColumn("col2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT4)
+        .add("col2", Type.TEXT)
+        .build();
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         "1|filled|",
@@ -109,17 +111,18 @@ public class TestNullValues {
   @Test
   public final void testIsNotNull2() throws Exception {
     String [] table = new String[] {"nulltable3"};
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.INT8);
-    schema.addColumn("col2", Type.INT8);
-    schema.addColumn("col3", Type.INT8);
-    schema.addColumn("col4", Type.INT8);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.INT8);
-    schema.addColumn("col8", Type.INT8);
-    schema.addColumn("col9", Type.INT8);
-    schema.addColumn("col10", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT8)
+        .add("col2", Type.INT8)
+        .add("col3", Type.INT8)
+        .add("col4", Type.INT8)
+        .add("col5", Type.INT8)
+        .add("col6", Type.INT8)
+        .add("col7", Type.INT8)
+        .add("col8", Type.INT8)
+        .add("col9", Type.INT8)
+        .add("col10", Type.INT8)
+        .build();
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         ",,,,672287821,1301460,1,313895860387,126288907,1024",
@@ -139,17 +142,18 @@ public class TestNullValues {
   @Test
   public final void testIsNotNull3() throws Exception {
     String [] table = new String[] {"nulltable4"};
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.INT8);
-    schema.addColumn("col2", Type.INT8);
-    schema.addColumn("col3", Type.INT8);
-    schema.addColumn("col4", Type.INT8);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.INT8);
-    schema.addColumn("col8", Type.INT8);
-    schema.addColumn("col9", Type.INT8);
-    schema.addColumn("col10", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT8)
+        .add("col2", Type.INT8)
+        .add("col3", Type.INT8)
+        .add("col4", Type.INT8)
+        .add("col5", Type.INT8)
+        .add("col6", Type.INT8)
+        .add("col7", Type.INT8)
+        .add("col8", Type.INT8)
+        .add("col9", Type.INT8)
+        .add("col10", Type.INT8)
+        .build();
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         "\\N,,,,672287821,",
@@ -252,11 +256,12 @@ public class TestNullValues {
 
   private ResultSet runNullTableQuery(String tableName, String query, TajoClient client) throws Exception {
     String [] table = new String[] {tableName};
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", Type.INT4);
-    schema.addColumn("col2", Type.TEXT);
-    schema.addColumn("col3", Type.FLOAT4);
-    schema.addColumn("col4", Type.BOOLEAN);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT4)
+        .add("col2", Type.TEXT)
+        .add("col3", Type.FLOAT4)
+        .add("col4", Type.BOOLEAN)
+        .build();
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
         "\\N|a|1.0|t",

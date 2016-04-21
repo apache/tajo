@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -645,18 +646,17 @@ public class DistinctGroupbyBuilder {
     //Set SecondStage ColumnId and Input schema
     secondStageDistinctNode.setResultColumnIds(secondStageColumnIds);
 
-    Schema secondStageInSchema = SchemaFactory.newV1();
+    SchemaBuilder secondStageInSchema = SchemaBuilder.uniqueNameBuilder();
+
     //TODO merged tuple schema
     int index = 0;
     for(GroupbyNode eachNode: secondStageDistinctNode.getSubPlans()) {
       eachNode.setInSchema(firstStageDistinctNode.getOutSchema());
       for (Column column: eachNode.getOutSchema().getRootColumns()) {
-        if (secondStageInSchema.getColumn(column) == null) {
-          secondStageInSchema.addColumn(column);
-        }
+        secondStageInSchema.add(column);
       }
     }
-    secondStageDistinctNode.setInSchema(secondStageInSchema);
+    secondStageDistinctNode.setInSchema(secondStageInSchema.build());
 
     return new DistinctGroupbyNode[]{firstStageDistinctNode, secondStageDistinctNode};
   }

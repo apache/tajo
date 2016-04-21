@@ -24,7 +24,12 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public abstract class Type {
+
   public abstract TajoDataTypes.Type baseType();
+
+  public boolean hasParam() {
+    return false;
+  }
 
   protected static String typeName(TajoDataTypes.Type type) {
     return type.name().toLowerCase();
@@ -46,6 +51,14 @@ public abstract class Type {
   @Override
   public String toString() {
     return typeName(baseType());
+  }
+
+  public boolean isStruct() {
+    return this.baseType() == TajoDataTypes.Type.RECORD;
+  }
+
+  public static Any Any() {
+    return Any.INSTANCE;
   }
 
   public static Bool Bool() {
@@ -94,6 +107,10 @@ public abstract class Type {
     return new Timestamp();
   }
 
+  public static Interval Interval() {
+    return new Interval();
+  }
+
   public static Char Char(int len) {
     return new Char(len);
   }
@@ -110,6 +127,10 @@ public abstract class Type {
     return new Blob();
   }
 
+  public static Inet4 Inet4() {
+    return new Inet4();
+  }
+
   public static Struct Struct(Collection<Type> types) {
     return new Struct(types);
   }
@@ -124,5 +145,9 @@ public abstract class Type {
 
   public static Map Map(Type keyType, Type valueType) {
     return new Map(keyType, valueType);
+  }
+
+  public static Null Null() {
+    return new Null();
   }
 }

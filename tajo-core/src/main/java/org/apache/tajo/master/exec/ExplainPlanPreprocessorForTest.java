@@ -21,6 +21,7 @@ package org.apache.tajo.master.exec;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.LogicalPlan;
@@ -152,11 +153,7 @@ public class ExplainPlanPreprocessorForTest {
       Column[] columns = schema.toArray();
       Arrays.sort(columns, columnComparator);
 
-      Schema sorted = SchemaFactory.newV1();
-      for (Column col : columns) {
-        sorted.addColumn(col);
-      }
-      return sorted;
+      return SchemaBuilder.builder().addAll(columns).build();
     }
 
     private EvalNode sortQual(EvalNode qual) {
