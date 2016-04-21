@@ -19,6 +19,10 @@
 package org.apache.tajo.storage;
 
 public class DataLocation {
+  public static final int UNSET_VOLUME_ID = Integer.MIN_VALUE;
+  public static final int UNKNOWN_VOLUME_ID = -1;
+  public static final int REMOTE_VOLUME_ID = -2;
+
   private String host;
   private int volumeId;
 
@@ -31,6 +35,15 @@ public class DataLocation {
     return host;
   }
 
+  /**
+   * <h3>Volume id</h3>
+   * Volume id is an integer. Each volume id identifies each disk volume.
+   *
+   * This volume id can be obtained from org.apache.hadoop.fs.BlockStorageLocation#getVolumeIds()}.
+   * HDFS cannot give any volume id due to unknown reason
+   * and disabled config 'dfs.client.file-block-locations.enabled'.
+   * In this case, the volume id will be -1 or other native integer.
+   */
   public int getVolumeId() {
     return volumeId;
   }

@@ -23,16 +23,19 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.client.TajoClientUtil;
-import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.querymaster.QueryMasterTask;
@@ -1103,9 +1106,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
       tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-      Schema schema = SchemaFactory.newV1();
-      schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-      schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", TajoDataTypes.Type.TEXT)
+          .add("col2", TajoDataTypes.Type.TEXT)
+          .build();
 
       List<String> data = new ArrayList<>();
       int totalBytes = 0;

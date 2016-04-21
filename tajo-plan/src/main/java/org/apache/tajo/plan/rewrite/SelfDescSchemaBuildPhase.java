@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.rewrite;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
@@ -43,6 +44,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -401,7 +403,6 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
     private Schema buildSchemaFromColumnSet(Set<Column> columns) throws TajoException {
       SchemaGraph schemaGraph = new SchemaGraph();
       Set<ColumnVertex> rootVertexes = new HashSet<>();
-      Schema schema = SchemaFactory.newV1();
 
       Set<Column> simpleColumns = new HashSet<>();
       List<Column> columnList = new ArrayList<>(columns);
@@ -446,21 +447,20 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         }
       }
 
+      SchemaBuilder schema = SchemaBuilder.uniqueNameBuilder();
       // Build record columns
       RecordColumnBuilder builder = new RecordColumnBuilder(schemaGraph);
       for (ColumnVertex eachRoot : rootVertexes) {
         schemaGraph.accept(null, eachRoot, builder);
-        schema.addColumn(eachRoot.column);
+        schema.add(eachRoot.column);
       }
 
       // Add simple columns
       for (Column eachColumn : simpleColumns) {
-        if (!schema.contains(eachColumn)) {
-          schema.addColumn(eachColumn);
-        }
+        schema.add(eachColumn);
       }
 
-      return schema;
+      return schema.build();
     }
 
     private static class ColumnVertex {
@@ -523,11 +523,15 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         if (graph.isLeaf(schemaVertex)) {
           schemaVertex.column = new Column(schemaVertex.name, schemaVertex.type);
         } else {
-          Schema schema = SchemaFactory.newV1();
-          for (ColumnVertex eachChild : graph.getChilds(schemaVertex)) {
-            schema.addColumn(eachChild.column);
-          }
-          schemaVertex.column = new Column(schemaVertex.name, new TypeDesc(schema));
+          SchemaBuilder schema = SchemaBuilder.builder()
+              .addAll(graph.getChilds(schemaVertex), new Function<ColumnVertex, Column>() {
+                @Override
+                public Column apply(@Nullable ColumnVertex input) {
+                  return input.column;
+                }
+              });
+
+          schemaVertex.column = new Column(schemaVertex.name, new TypeDesc(schema.build()));
         }
       }
     }

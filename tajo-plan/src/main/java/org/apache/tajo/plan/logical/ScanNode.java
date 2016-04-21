@@ -81,7 +81,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     String qualifiedAlias = CatalogUtil.buildFQName(databaseName, alias);
     this.setInSchema(tableDesc.getSchema());
     this.getInSchema().setQualifier(qualifiedAlias);
-    this.setOutSchema(SchemaFactory.newV1(getInSchema()));
+    this.setOutSchema(SchemaBuilder.builder().addAll(getInSchema().getRootColumns()).build());
     logicalSchema = SchemaUtil.getQualifiedLogicalSchema(tableDesc, qualifiedAlias);
 	}
 	

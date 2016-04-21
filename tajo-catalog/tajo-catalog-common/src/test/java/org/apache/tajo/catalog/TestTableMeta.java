@@ -21,7 +21,6 @@ package org.apache.tajo.catalog;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,10 +36,7 @@ public class TestTableMeta {
   }
   
   @Test
-  public void testTableMetaTableProto() {    
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("name", Type.BLOB);
-    schema1.addColumn("addr", Type.TEXT);
+  public void testTableMetaTableProto() {
     TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
     
     TableMeta meta2 = new TableMeta(meta1.getProto());
@@ -49,9 +45,6 @@ public class TestTableMeta {
   
   @Test
   public final void testClone() throws CloneNotSupportedException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("name", Type.BLOB);
-    schema1.addColumn("addr", Type.TEXT);
     TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
     
     TableMeta meta2 = (TableMeta) meta1.clone();
@@ -61,13 +54,8 @@ public class TestTableMeta {
   
   @Test
   public void testSchema() throws CloneNotSupportedException {
-    Schema schema1 = SchemaFactory.newV1();
-    schema1.addColumn("name", Type.BLOB);
-    schema1.addColumn("addr", Type.TEXT);
     TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
-    
     TableMeta meta2 = (TableMeta) meta1.clone();
-    
     assertEquals(meta1, meta2);
   }
   
@@ -77,13 +65,8 @@ public class TestTableMeta {
   }
   
   @Test
-  public void testEqualsObject() {   
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("name", Type.BLOB);
-    schema2.addColumn("addr", Type.TEXT);
+  public void testEqualsObject() {
     TableMeta meta2 = CatalogUtil.newTableMeta("TEXT");
-
-
     assertTrue(meta.equals(meta2));
     assertNotSame(meta, meta2);
   }

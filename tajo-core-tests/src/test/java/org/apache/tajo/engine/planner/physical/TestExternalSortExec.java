@@ -103,7 +103,7 @@ public class TestExternalSortExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    tableSchema = SchemaFactory.newV1(new Column[] {
+    tableSchema = SchemaBuilder.builder().addAll(new Column[] {
         new Column("managerid", Type.INT8),
         new Column("empid", Type.INT4),
         new Column("deptname", Type.TEXT),
@@ -119,7 +119,7 @@ public class TestExternalSortExec {
         new Column("col10", Type.INT8),
         new Column("col11", Type.INT8),
         new Column("col12", Type.INT8)
-    });
+    }).build();
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
@@ -215,10 +215,10 @@ public class TestExternalSortExec {
     Tuple curVal;
     int cnt = 0;
     exec.init();
-    Schema sortSchema = SchemaFactory.newV1(new Column[] {
+    Schema sortSchema = SchemaBuilder.builder().addAll(new Column[] {
         new Column("managerid", Type.INT8),
         new Column("empid", Type.INT4),
-    });
+    }).build();
 
     BaseTupleComparator comparator = new BaseTupleComparator(sortSchema,
         new SortSpec[]{
