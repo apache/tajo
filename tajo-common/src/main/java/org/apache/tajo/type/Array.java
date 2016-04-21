@@ -34,6 +34,11 @@ public class Array extends Type {
   }
 
   @Override
+  public boolean hasParam() {
+    return true;
+  }
+
+  @Override
   public TajoDataTypes.Type baseType() {
     return TajoDataTypes.Type.ARRAY;
   }

@@ -21,11 +21,15 @@ package org.apache.tajo.worker;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.tajo.*;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.worker.NodeResourceManager.Allocation;
 import org.apache.tajo.worker.event.ExecutionBlockStopEvent;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.apache.tajo.worker.event.TaskStartEvent;
@@ -64,7 +68,6 @@ public class TestTaskManager {
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES, 4);
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_MEMORY_MB,
         taskMemory * conf.getIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_CPU_CORES));
-    conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISKS, 4);
     conf.setIntVar(TajoConf.ConfVars.WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM, 1);
     conf.setIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM, 2);
 
@@ -166,7 +169,7 @@ public class TestTaskManager {
         MockNodeResourceManager.createTaskRequests(ebId, taskMemory, 1).poll();
 
     taskDispatcher.getEventHandler().handle(new TaskStartEvent(requestProto.getTaskRequest(),
-        new NodeResource(requestProto.getResource())));
+        new Allocation(new NodeResource(requestProto.getResource()))));
 
     assertTrue(barrier.tryAcquire(3, TimeUnit.SECONDS));
     assertNotNull(taskManager.getExecutionBlockContext(ebId));
