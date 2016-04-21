@@ -90,7 +90,7 @@ public class BenchmarkSort {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    Schema schema = SchemaFactory.newV1(new Column[] {
+    Schema schema = SchemaBuilder.builder().addAll(new Column[] {
         new Column("col0", Type.INT8),
         new Column("col1", Type.INT4),
         new Column("col2", Type.INT2),
@@ -106,7 +106,7 @@ public class BenchmarkSort {
         new Column("col12", Type.INT8),
         new Column("col13", Type.INT8),
         new Column("col14", Type.INT8),
-    });
+    }).build();
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     Path employeePath = new Path(testDir, "employee.csv");

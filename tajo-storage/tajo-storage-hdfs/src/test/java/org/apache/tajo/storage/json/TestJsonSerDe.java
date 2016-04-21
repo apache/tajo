@@ -24,14 +24,17 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.junit.Test;
 
@@ -41,20 +44,22 @@ import java.net.URL;
 import static org.junit.Assert.*;
 
 public class TestJsonSerDe {
-  private static Schema schema = SchemaFactory.newV1();
+  private static Schema schema;
 
   static {
-    schema.addColumn("col1", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("col2", TajoDataTypes.Type.CHAR, 7);
-    schema.addColumn("col3", TajoDataTypes.Type.INT2);
-    schema.addColumn("col4", TajoDataTypes.Type.INT4);
-    schema.addColumn("col5", TajoDataTypes.Type.INT8);
-    schema.addColumn("col6", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col7", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col8", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col9", TajoDataTypes.Type.BLOB);
-    schema.addColumn("col10", TajoDataTypes.Type.INET4);
-    schema.addColumn("col11", TajoDataTypes.Type.NULL_TYPE);
+    schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, 7))
+        .add("col3", TajoDataTypes.Type.INT2)
+        .add("col4", TajoDataTypes.Type.INT4)
+        .add("col5", TajoDataTypes.Type.INT8)
+        .add("col6", TajoDataTypes.Type.FLOAT4)
+        .add("col7", TajoDataTypes.Type.FLOAT8)
+        .add("col8", TajoDataTypes.Type.TEXT)
+        .add("col9", TajoDataTypes.Type.BLOB)
+        .add("col10", TajoDataTypes.Type.INET4)
+        .add("col11", TajoDataTypes.Type.NULL_TYPE)
+        .build();
   }
 
   public static Path getResourcePath(String path, String suffix) {
@@ -106,10 +111,11 @@ public class TestJsonSerDe {
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
 
-    Schema  schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col3", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.TEXT)
+        .add("col2", TajoDataTypes.Type.TEXT)
+        .add("col3", TajoDataTypes.Type.TEXT)
+        .build();
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
     scanner.init();
 

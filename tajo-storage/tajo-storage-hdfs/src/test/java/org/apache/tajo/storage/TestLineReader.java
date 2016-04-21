@@ -28,7 +28,7 @@ import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -60,11 +60,12 @@ public class TestLineReader {
     Path testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     FileSystem fs = testDir.getFileSystem(conf);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("comment", Type.TEXT);
-    schema.addColumn("comment2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("comment", Type.TEXT)
+        .add("comment2", Type.TEXT)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     Path tablePath = new Path(testDir, "line.data");
@@ -112,11 +113,12 @@ public class TestLineReader {
     Path testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     FileSystem fs = testDir.getFileSystem(conf);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("comment", Type.TEXT);
-    schema.addColumn("comment2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("comment", Type.TEXT)
+        .add("comment2", Type.TEXT)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     meta.putProperty("compression.codec", DeflateCodec.class.getCanonicalName());
@@ -171,11 +173,12 @@ public class TestLineReader {
     Path testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     FileSystem fs = testDir.getFileSystem(conf);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("comment", Type.TEXT);
-    schema.addColumn("comment2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("comment", Type.TEXT)
+        .add("comment2", Type.TEXT)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
@@ -277,11 +280,12 @@ public class TestLineReader {
     Path testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     FileSystem fs = testDir.getFileSystem(conf);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("comment", Type.TEXT);
-    schema.addColumn("comment2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("comment", Type.TEXT)
+        .add("comment2", Type.TEXT)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     Path tablePath = new Path(testDir, "testSeekableByteBufLineReader.data");

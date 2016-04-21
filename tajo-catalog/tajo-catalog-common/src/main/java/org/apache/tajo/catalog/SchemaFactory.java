@@ -19,30 +19,9 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.exception.TajoInternalError;
 
 public class SchemaFactory {
-  public static Schema newV1() {
-    return new SchemaLegacy();
-  }
-
   public static Schema newV1(CatalogProtos.SchemaProto proto) {
     return new SchemaLegacy(proto);
-  }
-
-  public static Schema newV1(Schema schema) {
-    try {
-      return (Schema) schema.clone();
-    } catch (CloneNotSupportedException e) {
-      throw new TajoInternalError(e);
-    }
-  }
-
-  public static Schema newV1(Column [] columns) {
-    return new SchemaLegacy(columns);
-  }
-
-  public static Schema newV1(Iterable<Column> columns) {
-    return new SchemaLegacy(columns);
   }
 }

@@ -23,7 +23,7 @@ import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.GroupbyNode;
@@ -39,10 +39,12 @@ public class TestLogicalNode {
   @Test
   public void testEquals() {
     TajoConf conf = new TajoConf();
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
-    schema.addColumn("age", Type.INT2);
+
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT2)
+        .build();
     GroupbyNode groupbyNode = new GroupbyNode(0);
     groupbyNode.setGroupingColumns(new Column[]{schema.getColumn(1), schema.getColumn(2)});
     ScanNode scanNode = new ScanNode(0);

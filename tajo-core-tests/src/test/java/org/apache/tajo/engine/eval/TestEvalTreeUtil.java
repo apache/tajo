@@ -98,10 +98,11 @@ public class TestEvalTreeUtil {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("score", TajoDataTypes.Type.INT4);
-    schema.addColumn("age", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("name", TajoDataTypes.Type.TEXT)
+        .add("score", TajoDataTypes.Type.INT4)
+        .add("age", TajoDataTypes.Type.INT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     TableDesc desc = new TableDesc(

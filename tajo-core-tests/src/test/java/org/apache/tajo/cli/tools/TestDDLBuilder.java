@@ -42,18 +42,20 @@ public class TestDDLBuilder {
   private static final TajoConf conf;
 
   static {
-    schema1 = SchemaFactory.newV1();
-    schema1.addColumn("name", TajoDataTypes.Type.BLOB);
-    schema1.addColumn("addr", TajoDataTypes.Type.TEXT);
+    schema1 = SchemaBuilder.builder()
+        .add("name", TajoDataTypes.Type.BLOB)
+        .add("addr", TajoDataTypes.Type.TEXT)
+        .build();
 
     conf = new TajoConf();
     conf.setSystemTimezone(TimeZone.getTimeZone("Asia/Seoul"));
     meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     meta1.putProperty(StorageConstants.COMPRESSION_CODEC, GzipCodec.class.getName());
 
-    Schema expressionSchema = SchemaFactory.newV1();
-    expressionSchema.addColumn("key", TajoDataTypes.Type.INT4);
-    expressionSchema.addColumn("key2", TajoDataTypes.Type.TEXT);
+    Schema expressionSchema = SchemaBuilder.builder()
+        .add("key", TajoDataTypes.Type.INT4)
+        .add("key2", TajoDataTypes.Type.TEXT)
+        .build();
     partitionMethod1 = new PartitionMethodDesc(
         "db1",
         "table1",
@@ -73,15 +75,17 @@ public class TestDDLBuilder {
 
   @Test
   public void testBuildDDLQuotedTableName() throws Exception {
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("name", TajoDataTypes.Type.BLOB);
-    schema2.addColumn("addr", TajoDataTypes.Type.TEXT);
-    schema2.addColumn("FirstName", TajoDataTypes.Type.TEXT);
-    schema2.addColumn("LastName", TajoDataTypes.Type.TEXT);
-    schema2.addColumn("with", TajoDataTypes.Type.TEXT);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("name", TajoDataTypes.Type.BLOB)
+        .add("addr", TajoDataTypes.Type.TEXT)
+        .add("FirstName", TajoDataTypes.Type.TEXT)
+        .add("LastName", TajoDataTypes.Type.TEXT)
+        .add("with", TajoDataTypes.Type.TEXT)
+        .build();
 
-    Schema expressionSchema2 = SchemaFactory.newV1();
-    expressionSchema2.addColumn("BirthYear", TajoDataTypes.Type.INT4);
+    Schema expressionSchema2 = SchemaBuilder.builder()
+        .add("BirthYear", TajoDataTypes.Type.INT4)
+        .build();
 
     PartitionMethodDesc partitionMethod2 = new PartitionMethodDesc(
         "db1",

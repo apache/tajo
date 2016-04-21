@@ -44,9 +44,10 @@ public class TestTableDesc {
 	
 	@Before
 	public void setup() throws IOException {
-	  schema = SchemaFactory.newV1();
-    schema.addColumn("name", Type.BLOB);
-    schema.addColumn("addr", Type.TEXT);
+    schema = SchemaBuilder.builder()
+        .add("name", Type.BLOB)
+        .add("addr", Type.TEXT)
+        .build();
     info = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     path = new Path(CommonTestingUtil.getTestDir(), "table1");
     desc = new TableDesc("table1", schema, info, path.toUri());
@@ -70,9 +71,10 @@ public class TestTableDesc {
 
   @Test
   public void test() throws CloneNotSupportedException, IOException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("name", Type.BLOB);
-    schema.addColumn("addr", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("name", Type.BLOB)
+        .add("addr", Type.TEXT)
+        .build();
     TableMeta info = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     testClone(info);
 

@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
@@ -31,8 +31,9 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
 
   @Test
   public void testLike() throws TajoException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("col1", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .build();
 
     // test for null values
     testEval(schema, "table1", "\\NULL,", "select col1 like 'a%' from table1", new String[]{NullDatum.get().toString()});

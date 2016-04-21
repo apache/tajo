@@ -85,11 +85,12 @@ public class TestSortIntersectExec {
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
 
-    Schema employeeSchema1 = SchemaFactory.newV1();
-    employeeSchema1.addColumn("managerid", TajoDataTypes.Type.INT4);
-    employeeSchema1.addColumn("empid", TajoDataTypes.Type.INT4);
-    employeeSchema1.addColumn("memid", TajoDataTypes.Type.INT4);
-    employeeSchema1.addColumn("deptname", TajoDataTypes.Type.TEXT);
+    Schema employeeSchema1 = SchemaBuilder.builder()
+        .add("managerid", TajoDataTypes.Type.INT4)
+        .add("empid", TajoDataTypes.Type.INT4)
+        .add("memid", TajoDataTypes.Type.INT4)
+        .add("deptname", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableMeta employeeMeta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath1 = new Path(testDir, "employee1.csv");
@@ -112,11 +113,12 @@ public class TestSortIntersectExec {
     employee1 = CatalogUtil.newTableDesc("default.employee1", employeeSchema1, employeeMeta1, employeePath1);
     catalog.createTable(employee1);
 
-    Schema employeeSchema2 = SchemaFactory.newV1();
-    employeeSchema2.addColumn("managerid", TajoDataTypes.Type.INT4);
-    employeeSchema2.addColumn("empid", TajoDataTypes.Type.INT4);
-    employeeSchema2.addColumn("memid", TajoDataTypes.Type.INT4);
-    employeeSchema2.addColumn("deptname", TajoDataTypes.Type.TEXT);
+    Schema employeeSchema2 = SchemaBuilder.builder()
+        .add("managerid", TajoDataTypes.Type.INT4)
+        .add("empid", TajoDataTypes.Type.INT4)
+        .add("memid", TajoDataTypes.Type.INT4)
+        .add("deptname", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableMeta employeeMeta2 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath2 = new Path(testDir, "employee2.csv");

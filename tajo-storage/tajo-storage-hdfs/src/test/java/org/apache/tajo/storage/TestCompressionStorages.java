@@ -31,7 +31,7 @@ import org.apache.orc.OrcConf;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -113,10 +113,11 @@ public class TestCompressionStorages {
   }
 
   private void storageCompressionTest(String dataFormat, Class<? extends CompressionCodec> codec) throws IOException {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.FLOAT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.FLOAT4)
+        .add("name", Type.TEXT)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty("compression.codec", codec.getCanonicalName());

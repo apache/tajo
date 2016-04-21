@@ -55,6 +55,22 @@ public class Identifier {
     return sb.toString();
   }
 
+  /**
+   * Raw string of an identifier
+   * @param policy Identifier Policy
+   * @return raw string
+   */
+  public String raw(IdentifierPolicy policy) {
+    StringBuilder sb = new StringBuilder();
+    if (quoted) {
+      appendByCase(sb, policy.storesQuotedIdentifierAs());
+    } else {
+      appendByCase(sb, policy.storesUnquotedIdentifierAs());
+    }
+
+    return sb.toString();
+  }
+
   private void appendByCase(StringBuilder sb, IdentifierCase c) {
     switch (c) {
     case LowerCase:

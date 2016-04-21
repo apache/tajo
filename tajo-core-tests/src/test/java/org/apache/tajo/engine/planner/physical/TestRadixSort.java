@@ -21,7 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -65,7 +65,7 @@ public class TestRadixSort {
     queryContext = new QueryContext(new TajoConf());
     queryContext.setInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT, 0);
 
-    schema = SchemaFactory.newV1(new Column[]{
+    schema = SchemaBuilder.builder().addAll(new Column[]{
         new Column("col0", Type.INT8),
         new Column("col1", Type.INT4),
         new Column("col2", Type.INT2),
@@ -75,7 +75,7 @@ public class TestRadixSort {
         new Column("col6", Type.INET4),
         new Column("col7", Type.FLOAT4),
         new Column("col8", Type.FLOAT8)
-    });
+    }).build();
   }
 
   private static class Param {

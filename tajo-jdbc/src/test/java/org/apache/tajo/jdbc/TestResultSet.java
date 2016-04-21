@@ -68,9 +68,11 @@ public class TestResultSet {
     conf = util.getConfiguration();
     sm = TablespaceManager.getDefault();
 
-    scoreSchema = SchemaFactory.newV1();
-    scoreSchema.addColumn("deptname", Type.TEXT);
-    scoreSchema.addColumn("score", Type.INT4);
+    scoreSchema = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("score", Type.INT4)
+        .build();
+
     scoreMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scoreSchema));
     TableStats stats = new TableStats();
@@ -196,10 +198,11 @@ public class TestResultSet {
       String query = "select col1, col2, col3 from " + tableName;
 
       String [] table = new String[] {tableName};
-      Schema schema = SchemaFactory.newV1();
-      schema.addColumn("col1", Type.DATE);
-      schema.addColumn("col2", Type.TIME);
-      schema.addColumn("col3", Type.TIMESTAMP);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", Type.DATE)
+          .add("col2", Type.TIME)
+          .add("col3", Type.TIMESTAMP)
+          .build();
       Schema [] schemas = new Schema[] {schema};
       String [] data = {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"
