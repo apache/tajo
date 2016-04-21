@@ -38,6 +38,8 @@
   InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
 
+  String tajoMasterInfoAddressContextPath = JSPUtil.getTajoMasterHttpAddrContextPath(master.getConfig());
+
   List<QueryInProgress> submittedQueries =
           new ArrayList<>(master.getContext().getQueryJobManager().getSubmittedQueries());
   JSPUtil.sortQueryInProgress(submittedQueries, true);
@@ -158,7 +160,7 @@
       for(QueryInProgress eachQuery: runningQueries) {
         long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
         String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + portMap.get(eachQuery.getQueryInfo().getQueryMasterHost()) +
-                "/querydetail.jsp?queryId=" + eachQuery.getQueryId() + "&startTime=" + eachQuery.getQueryInfo().getStartTime();
+                tajoMasterInfoAddressContextPath + "/querydetail.jsp?queryId=" + eachQuery.getQueryId() + "&startTime=" + eachQuery.getQueryInfo().getStartTime();
     %>
     <tr>
       <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>

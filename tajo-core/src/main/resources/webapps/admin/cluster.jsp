@@ -30,6 +30,7 @@
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.*" %>
 <%@ page import="java.net.InetSocketAddress" %>
+<%@ page import="org.apache.tajo.conf.TajoConf" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -37,6 +38,8 @@
   String[] masterName = master.getMasterName().split(":");
   InetSocketAddress socketAddress = new InetSocketAddress(masterName[0], Integer.parseInt(masterName[1]));
   String masterLabel = socketAddress.getAddress().getHostName()+ ":" + socketAddress.getPort();
+
+  String tajoMasterInfoAddressContextPath = JSPUtil.getTajoMasterHttpAddrContextPath(master.getConfig());
 
   Map<Integer, NodeStatus> nodes = master.getContext().getResourceManager().getNodes();
   List<Integer> wokerKeys = new ArrayList<>(nodes.keySet());
@@ -126,7 +129,7 @@
 
       for(TajoMasterInfo eachMaster : masters) {
       String tajoMasterHttp = "http://" + eachMaster.getWebServerAddress().getHostName() + ":" +
-          eachMaster.getWebServerAddress().getPort() + "/index.jsp";
+          eachMaster.getWebServerAddress().getPort() + tajoMasterInfoAddressContextPath +  "/index.jsp";
       String isActive = eachMaster.isActive() == true ? "ACTIVE" : "BACKUP";
       String isAvailable = eachMaster.isAvailable() == true ? "RUNNING" : "FAILED";
     %>
@@ -174,7 +177,7 @@
     for(NodeStatus queryMaster: liveQueryMasters) {
         WorkerConnectionInfo connectionInfo = queryMaster.getConnectionInfo();
         String queryMasterHttp = "http://" + connectionInfo.getHost()
-                + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
+                + ":" + connectionInfo.getHttpInfoPort() + tajoMasterInfoAddressContextPath + "/index.jsp";
 %>
     <tr>
         <td width='30' align='right'><%=no++%></td>
@@ -234,7 +237,7 @@
     int no = 1;
     for(NodeStatus node: liveNodes) {
         WorkerConnectionInfo connectionInfo = node.getConnectionInfo();
-        String nodeHttp = "http://" + connectionInfo.getHost() + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
+        String nodeHttp = "http://" + connectionInfo.getHost() + ":" + connectionInfo.getHttpInfoPort() + tajoMasterInfoAddressContextPath + "/index.jsp";
 %>
     <tr>
         <td width='30' align='right'><%=no++%></td>

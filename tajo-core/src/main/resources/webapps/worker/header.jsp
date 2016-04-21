@@ -20,10 +20,12 @@
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
+<%@ page import="org.apache.tajo.conf.TajoConf" %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%
   TajoWorker tmpTajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  String tajoMasterHttp = "http://" + JSPUtil.getTajoMasterHttpAddr(tmpTajoWorker.getConfig());
+  String tajoMasterInfoAddressContextPath = JSPUtil.getTajoMasterHttpAddrContextPath(tmpTajoWorker.getConfig());
+  String tajoMasterHttp = "http://" + JSPUtil.getTajoMasterHttpAddr(tmpTajoWorker.getConfig()) + tajoMasterInfoAddressContextPath;
 %>
 <div class="menu">
   <div style='float:left; margin-left:12px; margin-top:6px;'><a href='<%=tajoMasterHttp%>/index.jsp'><img src='/static/img/logo_tajo.gif' border='0'/></a></div>
