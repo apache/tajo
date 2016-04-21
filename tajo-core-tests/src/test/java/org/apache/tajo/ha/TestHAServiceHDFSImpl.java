@@ -62,10 +62,11 @@ public class TestHAServiceHDFSImpl  {
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("managerid", TajoDataTypes.Type.INT4);
-    schema.addColumn("empid", TajoDataTypes.Type.INT4);
-    schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+      .add("managerid", TajoDataTypes.Type.INT4)
+      .add("empid", TajoDataTypes.Type.INT4)
+      .add("deptname", TajoDataTypes.Type.TEXT)
+      .build();
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
     Path employeePath = new Path(testDir, "employee.csv");
