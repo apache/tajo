@@ -56,7 +56,7 @@ public class HiveFunctionLoader {
       FileSystem fs = udfPath.getFileSystem(conf);
 
       if (!fs.isDirectory(udfPath)) {
-        LOG.warn("Hive UDF directory doesn't exist");
+        LOG.warn("Hive UDF directory doesn't exist : "+udfdir);
         return Optional.empty();
       }
 
