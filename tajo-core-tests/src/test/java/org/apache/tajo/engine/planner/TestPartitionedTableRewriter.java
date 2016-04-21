@@ -58,10 +58,11 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     FileSystem fs = FileSystem.get(conf);
     Path rootDir = TajoConf.getWarehouseDir(testingCluster.getConfiguration());
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("n_nationkey", TajoDataTypes.Type.INT8);
-    schema.addColumn("n_name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("n_regionkey", TajoDataTypes.Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+      .add("n_nationkey", TajoDataTypes.Type.INT8)
+      .add("n_name", TajoDataTypes.Type.TEXT)
+      .add("n_regionkey", TajoDataTypes.Type.INT8)
+      .build();
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
 
@@ -72,8 +73,9 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   private static void createExternalTableIncludedOnePartitionKeyColumn(FileSystem fs, Path rootDir, Schema schema,
                                                                        TableMeta meta) throws Exception {
-    Schema partSchema = SchemaFactory.newV1();
-    partSchema.addColumn("key", TajoDataTypes.Type.TEXT);
+    Schema partSchema = SchemaBuilder.builder()
+      .add("key", TajoDataTypes.Type.TEXT)
+      .build();
 
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc("TestPartitionedTableRewriter", PARTITION_TABLE_NAME,
@@ -102,10 +104,12 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   private static void createExternalTableIncludedMultiplePartitionKeyColumns(FileSystem fs, Path rootDir,
     Schema schema, TableMeta meta) throws Exception {
-    Schema partSchema = SchemaFactory.newV1();
-    partSchema.addColumn("key1", TajoDataTypes.Type.TEXT);
-    partSchema.addColumn("key2", TajoDataTypes.Type.TEXT);
-    partSchema.addColumn("key3", TajoDataTypes.Type.INT8);
+    Schema partSchema = SchemaBuilder.builder()
+      .add("key1", TajoDataTypes.Type.TEXT)
+      .add("key2", TajoDataTypes.Type.TEXT)
+      .add("key3", TajoDataTypes.Type.INT8)
+      .build();
+
 
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc("TestPartitionedTableRewriter", MULTIPLE_PARTITION_TABLE_NAME,

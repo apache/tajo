@@ -186,9 +186,10 @@ public class TestTupleUtil {
 
   @Test
   public void testBuildTupleFromPartitionName() {
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("key1", Type.INT8);
-    schema.addColumn("key2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+      .add("key1", Type.INT8)
+      .add("key2", Type.TEXT)
+      .build();
 
     Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionKeys(schema, "key1=123");
     assertNotNull(tuple);
