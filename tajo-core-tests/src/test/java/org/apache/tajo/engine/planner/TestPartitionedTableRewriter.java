@@ -21,7 +21,6 @@ package org.apache.tajo.engine.planner;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
@@ -35,7 +34,6 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.partition.PartitionPruningHandle;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
@@ -110,7 +108,6 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
       .add("key3", TajoDataTypes.Type.INT8)
       .build();
 
-
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc("TestPartitionedTableRewriter", MULTIPLE_PARTITION_TABLE_NAME,
         PartitionType.COLUMN, "key1,key2,key3", partSchema);
@@ -147,10 +144,11 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   private static void createExternalTableIncludeArbitraryDirectories(FileSystem fs, Path rootDir,
                                                                              Schema schema, TableMeta meta) throws Exception {
-    Schema partSchema = SchemaFactory.newV1();
-    partSchema.addColumn("year", TajoDataTypes.Type.TEXT);
-    partSchema.addColumn("month", TajoDataTypes.Type.TEXT);
-    partSchema.addColumn("day", TajoDataTypes.Type.TEXT);
+    Schema partSchema = SchemaBuilder.builder()
+      .add("year", TajoDataTypes.Type.TEXT)
+      .add("month", TajoDataTypes.Type.TEXT)
+      .add("day", TajoDataTypes.Type.TEXT)
+      .build();
 
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc("TestPartitionedTableRewriter", ARBITRARY_PARTITION_TABLE_NAME,
