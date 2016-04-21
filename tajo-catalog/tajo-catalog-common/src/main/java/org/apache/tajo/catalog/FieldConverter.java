@@ -30,7 +30,6 @@ import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.schema.Schema;
 import org.apache.tajo.schema.Schema.NamedPrimitiveType;
 import org.apache.tajo.schema.Schema.NamedStructType;
-import org.apache.tajo.type.*;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
