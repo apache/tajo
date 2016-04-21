@@ -28,6 +28,7 @@ public class TestType {
   @Test
   public final void testPrimitiveTypes() {
     assertEquals(Bool().baseType(), BOOLEAN);
+    assertEquals(Int1().baseType(), INT1);
     assertEquals(Int2().baseType(), INT2);
     assertEquals(Int4().baseType(), INT4);
     assertEquals(Int8().baseType(), INT8);
@@ -70,6 +71,7 @@ public class TestType {
   @Test
   public final void testToString() {
     assertEquals("boolean", Bool().toString());
+    assertEquals("int1", Int1().toString());
     assertEquals("int2", Int2().toString());
     assertEquals("int4", Int4().toString());
     assertEquals("int8", Int8().toString());
