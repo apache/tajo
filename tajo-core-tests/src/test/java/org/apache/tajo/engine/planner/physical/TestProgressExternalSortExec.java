@@ -80,10 +80,11 @@ public class TestProgressExternalSortExec {
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    Schema schema = new Schema();
-    schema.addColumn("managerid", TajoDataTypes.Type.INT4);
-    schema.addColumn("empid", TajoDataTypes.Type.INT4);
-    schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("managerid", TajoDataTypes.Type.INT4)
+        .add("empid", TajoDataTypes.Type.INT4)
+        .add("deptname", TajoDataTypes.Type.TEXT)
+        .build();
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW);
     Path employeePath = new Path(testDir, "employee.raw");

@@ -30,6 +30,7 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
 import org.apache.tajo.TajoProtos.CodecType;
@@ -374,7 +375,7 @@ public class QueryClientImpl implements QueryClient {
     if(response.hasResultSet()) {
       SerializedResultSet resultSet = response.getResultSet();
       return new TajoMemoryResultSet(queryId,
-          new Schema(resultSet.getSchema()),
+          SchemaFactory.newV1(resultSet.getSchema()),
           resultSet, getClientSideSessionVars());
     } else {
       return TajoClientUtil.createNullResultSet(queryId);

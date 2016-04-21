@@ -351,7 +351,7 @@ public class CatalogUtil {
   * @return
   */
   public static SchemaProto getQualfiedSchema(String tableName, SchemaProto schema) {
-    Schema restored = new Schema(schema);
+    Schema restored = SchemaFactory.newV1(schema);
     restored.setQualifier(tableName);
     return restored.getProto();
   }

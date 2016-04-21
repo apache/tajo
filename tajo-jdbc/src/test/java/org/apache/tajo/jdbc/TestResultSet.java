@@ -25,12 +25,12 @@ import com.google.protobuf.ByteString;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -69,9 +69,10 @@ public class TestResultSet {
     conf = util.getConfiguration();
     sm = TablespaceManager.getDefault();
 
-    scoreSchema = new Schema();
-    scoreSchema.addColumn("deptname", Type.TEXT);
-    scoreSchema.addColumn("score", Type.INT4);
+    scoreSchema = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("score", Type.INT4)
+        .build();
     scoreMeta = CatalogUtil.newTableMeta("TEXT");
     rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scoreSchema));
     TableStats stats = new TableStats();
@@ -197,10 +198,11 @@ public class TestResultSet {
       String query = "select col1, col2, col3 from " + tableName;
 
       String [] table = new String[] {tableName};
-      Schema schema = new Schema();
-      schema.addColumn("col1", Type.DATE);
-      schema.addColumn("col2", Type.TIME);
-      schema.addColumn("col3", Type.TIMESTAMP);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", Type.DATE)
+          .add("col2", Type.TIME)
+          .add("col3", Type.TIMESTAMP)
+          .build();
       Schema [] schemas = new Schema[] {schema};
       String [] data = {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"

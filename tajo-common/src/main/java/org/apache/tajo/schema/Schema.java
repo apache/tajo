@@ -25,13 +25,15 @@ import org.apache.tajo.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.Objects;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 
 /**
  * A field is a pair of a name and a type. Schema is an ordered list of fields.
  */
-public class Schema {
+public class Schema implements Iterable<Schema.NamedType> {
   private final ImmutableList<NamedType> namedTypes;
 
   public Schema(Collection<NamedType> namedTypes) {
@@ -51,56 +53,127 @@ public class Schema {
     return StringUtils.join(namedTypes, ",");
   }
 
-  public static NamedStructType Struct(String name, NamedType... namedTypes) {
-    return new NamedStructType(name, Arrays.asList(namedTypes));
+  public static NamedStructType Struct(QualifiedIdentifier name, NamedType... namedTypes) {
+    return Struct(name, Arrays.asList(namedTypes));
   }
 
-  public static NamedStructType Struct(String name, Collection<NamedType> namedTypes) {
+  public static NamedStructType Struct(QualifiedIdentifier name, Collection<NamedType> namedTypes) {
     return new NamedStructType(name, namedTypes);
   }
 
-  public static NamedPrimitiveType Field(String name, Type type) {
+  public static NamedPrimitiveType Field(QualifiedIdentifier name, Type type) {
     return new NamedPrimitiveType(name, type);
   }
 
-  public static abstract class NamedType {
-    protected final String name;
+  @Override
+  public Iterator<NamedType> iterator() {
+    return namedTypes.iterator();
+  }
 
-    public NamedType(String name) {
+  public static abstract class NamedType {
+    protected final QualifiedIdentifier name;
+
+    public NamedType(QualifiedIdentifier name) {
       this.name = name;
     }
 
-    public String name() {
+    public QualifiedIdentifier name() {
       return this.name;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+
+      if (this == obj) {
+        return true;
+      }
+
+      if (obj instanceof NamedType) {
+        NamedType other = (NamedType) obj;
+        return this.name.equals(other.name);
+      }
+
+      return false;
     }
   }
 
   public static class NamedPrimitiveType extends NamedType {
     private final Type type;
 
-    NamedPrimitiveType(String name, Type type) {
+    public NamedPrimitiveType(QualifiedIdentifier name, Type type) {
       super(name);
       Preconditions.checkArgument(type.baseType() != RECORD);
       this.type = type;
+    }
+
+    public Type type() {
+      return type;
     }
 
     @Override
     public String toString() {
       return name + " " + type;
     }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, type);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == this) {
+        return true;
+      }
+
+      if (obj instanceof NamedPrimitiveType) {
+        NamedPrimitiveType other = (NamedPrimitiveType) obj;
+        return super.equals(other) && this.type.equals(type);
+      }
+
+      return false;
+    }
   }
 
   public static class NamedStructType extends NamedType {
-    private final ImmutableList<NamedType> namedTypes;
+    private final ImmutableList<NamedType> fields;
 
-    public NamedStructType(String name, Collection<NamedType> namedTypes) {
+    public NamedStructType(QualifiedIdentifier name, Collection<NamedType> fields) {
       super(name);
-      this.namedTypes = ImmutableList.copyOf(namedTypes);
+      this.fields = ImmutableList.copyOf(fields);
+    }
+
+    public Collection<NamedType> fields() {
+      return this.fields;
     }
 
     @Override
     public String toString() {
-      return name + " record (" + StringUtils.join(namedTypes, ",") + ")";
+      return name + " record (" + StringUtils.join(fields, ",") + ")";
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(name, fields);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj == this) {
+        return true;
+      }
+
+      if (obj instanceof NamedStructType) {
+        NamedStructType other = (NamedStructType) obj;
+        return super.equals(other) && fields.equals(other.fields);
+      }
+
+      return false;
     }
   }
 }

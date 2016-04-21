@@ -35,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -60,16 +61,17 @@ public class TestBSTIndex {
     this.dataFormat = type;
     conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.ROOT_DIR, TEST_PATH);
-    schema = new Schema();
-    schema.addColumn(new Column("int", Type.INT4));
-    schema.addColumn(new Column("long", Type.INT8));
-    schema.addColumn(new Column("double", Type.FLOAT8));
-    schema.addColumn(new Column("float", Type.FLOAT4));
-    schema.addColumn(new Column("string", Type.TEXT));
+    schema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .add(new Column("float", Type.FLOAT4))
+        .add(new Column("string", Type.TEXT))
+        .build();
   }
 
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"RAW"},
@@ -111,9 +113,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -187,9 +190,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -280,9 +284,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -353,9 +358,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -446,9 +452,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -529,9 +536,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
     BSTIndex bst = new BSTIndex(conf);
@@ -614,9 +622,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -721,9 +730,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -803,9 +813,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), false, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -896,9 +907,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), false, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), false, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -996,9 +1008,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 

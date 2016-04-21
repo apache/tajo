@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -119,7 +120,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
       endCurrentRowFlags = new boolean[functions.length];
 
       List<Column> additionalSortKeyColumns = Lists.newArrayList();
-      Schema rewrittenSchema = new Schema(outSchema);
+      Schema rewrittenSchema = SchemaBuilder.builder().addAll(outSchema.getRootColumns()).build();
       for (int i = 0; i < functions.length; i++) {
         WindowSpec.WindowEndBound endBound = functions[i].getWindowFrame().getEndBound();
         switch (endBound.getBoundType()) {
@@ -160,11 +161,13 @@ public class WindowAggExec extends UnaryPhysicalExec {
       }
 
       sortKeyColumns = new int[additionalSortKeyColumns.size()];
-      schemaForOrderBy = new Schema(outSchema);
+      SchemaBuilder schemaForOrderByBld = SchemaBuilder.builder();
+      schemaForOrderByBld.addAll(outSchema.getRootColumns());
       for (int i = 0; i < additionalSortKeyColumns.size(); i++) {
         sortKeyColumns[i] = i;
-        schemaForOrderBy.addColumn(additionalSortKeyColumns.get(i));
+        schemaForOrderByBld.add(additionalSortKeyColumns.get(i));
       }
+      schemaForOrderBy = schemaForOrderByBld.build();
     } else {
       functions = new WindowFunctionEval[0];
       functionNum = 0;

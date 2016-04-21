@@ -31,6 +31,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -52,6 +53,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -146,7 +148,7 @@ public class TestStorages {
     fs = testDir.getFileSystem(conf);
   }
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
         //type, splitable, statsable, seekable, internalType
@@ -185,9 +187,10 @@ public class TestStorages {
   @Test
   public void testSplitable() throws IOException {
     if (splitable) {
-      Schema schema = new Schema();
-      schema.addColumn("id", Type.INT4);
-      schema.addColumn("age", Type.INT8);
+      Schema schema = SchemaBuilder.builder()
+          .add("id", Type.INT4)
+          .add("age", Type.INT8)
+          .build();
 
       TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
       Path tablePath = new Path(testDir, "Splitable.data");
@@ -239,10 +242,11 @@ public class TestStorages {
 
   @Test
   public void testZeroRows() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("score", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("score", Type.FLOAT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
     meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
@@ -283,9 +287,10 @@ public class TestStorages {
   @Test
   public void testRCFileSplitable() throws IOException {
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
-      Schema schema = new Schema();
-      schema.addColumn("id", Type.INT4);
-      schema.addColumn("age", Type.INT8);
+      Schema schema = SchemaBuilder.builder()
+          .add("id", Type.INT4)
+          .add("age", Type.INT8)
+          .build();
 
       TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
       Path tablePath = new Path(testDir, "Splitable.data");
@@ -337,10 +342,11 @@ public class TestStorages {
 
   @Test
   public void testProjection() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("score", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("score", Type.FLOAT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
     meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
@@ -368,9 +374,10 @@ public class TestStorages {
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("testReadAndWrite", tablePath, 0, status.getLen());
 
-    Schema target = new Schema();
-    target.addColumn("age", Type.INT8);
-    target.addColumn("score", Type.FLOAT4);
+    Schema target = SchemaBuilder.builder()
+        .add("age", Type.INT8)
+        .add("score", Type.FLOAT4)
+        .build();
     Scanner scanner = sm.getScanner(meta, schema, fragment, target);
     scanner.init();
     int tupleCnt = 0;
@@ -400,20 +407,22 @@ public class TestStorages {
 
   @Test
   public void testVariousTypes() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
+    SchemaBuilder schemaBld = SchemaBuilder.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4);
     if (protoTypeSupport()) {
-      schema.addColumn("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
+
+    Schema schema = schemaBld.build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -469,21 +478,23 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
+    SchemaBuilder schemaBld = SchemaBuilder.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4);
 
     if (protoTypeSupport()) {
-      schema.addColumn("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
+
+    Schema schema = schemaBld.build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -564,21 +575,23 @@ public class TestStorages {
   public void testNullHandlingTypesWithProjection() throws IOException {
     if (internalType) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
+    SchemaBuilder schemaBld = SchemaBuilder.builder()
+    .add("col1", Type.BOOLEAN)
+    .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+    .add("col3", Type.INT2)
+    .add("col4", Type.INT4)
+    .add("col5", Type.INT8)
+    .add("col6", Type.FLOAT4)
+    .add("col7", Type.FLOAT8)
+    .add("col8", Type.TEXT)
+    .add("col9", Type.BLOB)
+    .add("col10", Type.INET4);
 
     if (protoTypeSupport()) {
-      schema.addColumn("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
+
+    Schema schema = schemaBld.build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -635,14 +648,15 @@ public class TestStorages {
 
 
     // Making projection schema with different column positions
-    Schema target = new Schema();
+    SchemaBuilder targetBld = SchemaBuilder.builder();
     Random random = new Random();
     for (int i = 1; i < schema.size(); i++) {
       int num = random.nextInt(schema.size() - 1) + 1;
       if (i % num == 0) {
-        target.addColumn(schema.getColumn(i));
+        targetBld.add(schema.getColumn(i));
       }
     }
+    Schema target = targetBld.build();
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
@@ -670,19 +684,19 @@ public class TestStorages {
   public void testRCFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -699,7 +713,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -737,19 +750,19 @@ public class TestStorages {
   public void testRCFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -766,7 +779,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -804,19 +816,18 @@ public class TestStorages {
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName())).build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -832,7 +843,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -874,19 +884,19 @@ public class TestStorages {
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7))
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .add("col10", Type.INET4)
+        .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -902,7 +912,6 @@ public class TestStorages {
 
     VTuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("jinho"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -945,13 +954,13 @@ public class TestStorages {
     if (dateTypeSupport() || timeTypeSupport()) {
 
       int index = 2;
-      Schema schema = new Schema();
-      schema.addColumn("col1", Type.TIMESTAMP);
+      SchemaBuilder schema = SchemaBuilder.builder()
+      .add("col1", Type.TIMESTAMP);
       if (dateTypeSupport()) {
-        schema.addColumn("col" + index++, Type.DATE);
+        schema.add("col" + index++, Type.DATE);
       }
       if (timeTypeSupport()) {
-        schema.addColumn("col" + index++, Type.TIME);
+        schema.add("col" + index++, Type.TIME);
       }
 
       KeyValueSet options = new KeyValueSet();
@@ -959,12 +968,12 @@ public class TestStorages {
 
       Path tablePath = new Path(testDir, "testTime.data");
       FileTablespace sm = TablespaceManager.getLocalFs();
-      Appender appender = sm.getAppender(meta, schema, tablePath);
+      Appender appender = sm.getAppender(meta, schema.build(), tablePath);
       appender.init();
 
       VTuple tuple = new VTuple(index - 1);
       index = 0;
-      tuple.put(index++, DatumFactory.createTimestmpDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
+      tuple.put(index++, DatumFactory.createTimestampDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
       if (dateTypeSupport()) {
         tuple.put(index++, DatumFactory.createDate("1980-04-01"));
       }
@@ -977,7 +986,7 @@ public class TestStorages {
 
       FileStatus status = fs.getFileStatus(tablePath);
       FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-      Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
+      Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema.build(), fragment, null);
       scanner.init();
 
       Tuple retrieved;
@@ -996,10 +1005,11 @@ public class TestStorages {
       return;
     }
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("comment", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("comment", Type.TEXT)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
     Path tablePath = new Path(testDir, "Seekable.data");
@@ -1071,12 +1081,13 @@ public class TestStorages {
   @Test
   public void testMaxValue() throws IOException {
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.FLOAT4);
-    schema.addColumn("col2", Type.FLOAT8);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.FLOAT4)
+        .add("col2", Type.FLOAT8)
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -1138,10 +1149,11 @@ public class TestStorages {
       return;
     }
 
-    Schema dataSchema = new Schema();
-    dataSchema.addColumn("col1", Type.FLOAT4);
-    dataSchema.addColumn("col2", Type.FLOAT8);
-    dataSchema.addColumn("col3", Type.INT2);
+    Schema dataSchema = SchemaBuilder.builder()
+        .add("col1", Type.FLOAT4)
+        .add("col2", Type.FLOAT8)
+        .add("col3", Type.INT2)
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -1166,20 +1178,21 @@ public class TestStorages {
 
     assertTrue(fs.exists(tablePath));
     FileStatus status = fs.getFileStatus(tablePath);
-    Schema inSchema = new Schema();
-    inSchema.addColumn("col1", Type.FLOAT4);
-    inSchema.addColumn("col2", Type.FLOAT8);
-    inSchema.addColumn("col3", Type.INT2);
-    inSchema.addColumn("col4", Type.INT4);
-    inSchema.addColumn("col5", Type.INT8);
+    Schema inSchema = SchemaBuilder.builder()
+        .add("col1", Type.FLOAT4)
+        .add("col2", Type.FLOAT8)
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .build();
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, inSchema, fragment, null);
 
-    Schema target = new Schema();
-
-    target.addColumn("col2", Type.FLOAT8);
-    target.addColumn("col5", Type.INT8);
+    Schema target = SchemaBuilder.builder()
+        .add("col2", Type.FLOAT8)
+        .add("col5", Type.INT8)
+        .build();
     scanner.setTarget(target.toArray());
     scanner.init();
 
@@ -1204,8 +1217,9 @@ public class TestStorages {
       return;
     }
 
-    Schema dataSchema = new Schema();
-    dataSchema.addColumn("col1", Type.CHAR);
+    Schema dataSchema = SchemaBuilder.builder()
+        .add("col1", Type.CHAR)
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -1247,8 +1261,7 @@ public class TestStorages {
       return;
     }
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.TEXT);
+    Schema schema = SchemaBuilder.builder().add("col1", Type.TEXT).build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -1288,10 +1301,11 @@ public class TestStorages {
 
     if (internalType) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("score", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("score", Type.FLOAT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
     meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
@@ -1323,12 +1337,13 @@ public class TestStorages {
   @Test
   public void testProgress() throws IOException {
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.FLOAT4);
-    schema.addColumn("col2", Type.FLOAT8);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.FLOAT4)
+        .add("col2", Type.FLOAT8)
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .build();
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
@@ -1371,10 +1386,11 @@ public class TestStorages {
   public void testEmptySchema() throws IOException {
     if (internalType) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-    schema.addColumn("score", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT8)
+        .add("score", Type.FLOAT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
     meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
@@ -1409,7 +1425,7 @@ public class TestStorages {
     }
 
     //e,g select count(*) from table
-    Schema target = new Schema();
+    Schema target = SchemaBuilder.builder().build();
     assertEquals(0, target.size());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());

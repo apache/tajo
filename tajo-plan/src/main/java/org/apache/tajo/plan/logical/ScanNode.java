@@ -22,10 +22,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -84,7 +81,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     String qualifiedAlias = CatalogUtil.buildFQName(databaseName, alias);
     this.setInSchema(tableDesc.getSchema());
     this.getInSchema().setQualifier(qualifiedAlias);
-    this.setOutSchema(new Schema(getInSchema()));
+    this.setOutSchema(SchemaBuilder.builder().addAll(getInSchema().getRootColumns()).build());
     logicalSchema = SchemaUtil.getQualifiedLogicalSchema(tableDesc, qualifiedAlias);
 	}
 	

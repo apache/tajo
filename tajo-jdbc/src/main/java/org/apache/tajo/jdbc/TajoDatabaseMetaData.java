@@ -605,21 +605,22 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         , new ArrayList<MetaDataTuple>());
   }
 
-  private final static Schema importedExportedSchema = new Schema()
-      .addColumn("PKTABLE_CAT", Type.VARCHAR)   // 0
-      .addColumn("PKTABLE_SCHEM", Type.VARCHAR) // 1
-      .addColumn("PKTABLE_NAME", Type.VARCHAR)  // 2
-      .addColumn("PKCOLUMN_NAME", Type.VARCHAR) // 3
-      .addColumn("FKTABLE_CAT", Type.VARCHAR)   // 4
-      .addColumn("FKTABLE_SCHEM", Type.VARCHAR) // 5
-      .addColumn("FKTABLE_NAME", Type.VARCHAR)  // 6
-      .addColumn("FKCOLUMN_NAME", Type.VARCHAR) // 7
-      .addColumn("KEY_SEQ", Type.INT2)          // 8
-      .addColumn("UPDATE_RULE", Type.INT2)      // 9
-      .addColumn("DELETE_RULE", Type.INT2)      // 10
-      .addColumn("FK_NAME", Type.VARCHAR)       // 11
-      .addColumn("PK_NAME", Type.VARCHAR)       // 12
-      .addColumn("DEFERRABILITY", Type.INT2);   // 13
+  private final static Schema importedExportedSchema = SchemaBuilder.builder()
+      .add("PKTABLE_CAT", Type.VARCHAR)   // 0
+      .add("PKTABLE_SCHEM", Type.VARCHAR) // 1
+      .add("PKTABLE_NAME", Type.VARCHAR)  // 2
+      .add("PKCOLUMN_NAME", Type.VARCHAR) // 3
+      .add("FKTABLE_CAT", Type.VARCHAR)   // 4
+      .add("FKTABLE_SCHEM", Type.VARCHAR) // 5
+      .add("FKTABLE_NAME", Type.VARCHAR)  // 6
+      .add("FKCOLUMN_NAME", Type.VARCHAR) // 7
+      .add("KEY_SEQ", Type.INT2)          // 8
+      .add("UPDATE_RULE", Type.INT2)      // 9
+      .add("DELETE_RULE", Type.INT2)      // 10
+      .add("FK_NAME", Type.VARCHAR)       // 11
+      .add("PK_NAME", Type.VARCHAR)       // 12
+      .add("DEFERRABILITY", Type.INT2)    // 13
+      .build();
 
   @Override
   public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {

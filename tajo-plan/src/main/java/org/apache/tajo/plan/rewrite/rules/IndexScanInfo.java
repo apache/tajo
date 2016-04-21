@@ -18,10 +18,9 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import com.google.common.base.Function;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.IndexDesc;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
@@ -29,6 +28,7 @@ import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto.SimplePredicateProto;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 
 public class IndexScanInfo extends AccessPathInfo {
@@ -92,11 +92,13 @@ public class IndexScanInfo extends AccessPathInfo {
   public IndexScanInfo(TableStats tableStats, IndexDesc indexDesc, SimplePredicate[] predicates) {
     super(ScanTypeControl.INDEX_SCAN, tableStats);
     this.indexPath = indexDesc.getIndexPath();
-    keySchema = new Schema();
     this.predicates = predicates;
-    for (SimplePredicate predicate : predicates) {
-      keySchema.addColumn(predicate.getKeySortSpec().getSortKey());
-    }
+    keySchema = SchemaBuilder.builder().addAll(predicates, new Function<SimplePredicate, Column>() {
+      @Override
+      public Column apply(@Nullable SimplePredicate p) {
+        return p.getKeySortSpec().getSortKey();
+      }
+    }).build();
   }
 
   public URI getIndexPath() {

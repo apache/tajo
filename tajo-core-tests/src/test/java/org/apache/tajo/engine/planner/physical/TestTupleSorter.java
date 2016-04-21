@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
@@ -69,7 +70,7 @@ public class TestTupleSorter {
     Column col4 = new Column("col4", Type.INT8);
     Column col5 = new Column("col5", Type.INTERVAL);
 
-    Schema schema = new Schema(new Column[] {col0, col1, col2, col3, col4, col5});
+    Schema schema = SchemaBuilder.builder().addAll(new Column[] {col0, col1, col2, col3, col4, col5}).build();
 
     long[] time1 = new long[ITERATION];
     long[] time2 = new long[ITERATION];

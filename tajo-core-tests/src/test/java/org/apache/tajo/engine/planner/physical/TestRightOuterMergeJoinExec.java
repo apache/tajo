@@ -27,12 +27,12 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -104,10 +104,11 @@ public class TestRightOuterMergeJoinExec {
     //  7     | dep_7     | 1007
     //  8     | dep_8     | 1008
     //  9     | dep_9     | 1009
-    Schema dep3Schema = new Schema();
-    dep3Schema.addColumn("dep_id", Type.INT4);
-    dep3Schema.addColumn("dep_name", Type.TEXT);
-    dep3Schema.addColumn("loc_id", Type.INT4);
+    Schema dep3Schema = SchemaBuilder.builder()
+        .add("dep_id", Type.INT4)
+        .add("dep_name", Type.TEXT)
+        .add("loc_id", Type.INT4)
+        .build();
 
 
     TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
@@ -143,10 +144,11 @@ public class TestRightOuterMergeJoinExec {
     //  8     | dep_8     | 1008
     //  9     | dep_9     | 1009
     // 10     | dep_10    | 1010
-    Schema dep4Schema = new Schema();
-    dep4Schema.addColumn("dep_id", Type.INT4);
-    dep4Schema.addColumn("dep_name", Type.TEXT);
-    dep4Schema.addColumn("loc_id", Type.INT4);
+    Schema dep4Schema = SchemaBuilder.builder()
+        .add("dep_id", Type.INT4)
+        .add("dep_name", Type.TEXT)
+        .add("loc_id", Type.INT4)
+        .build();
 
 
     TableMeta dep4Meta = CatalogUtil.newTableMeta("TEXT");
@@ -176,9 +178,10 @@ public class TestRightOuterMergeJoinExec {
     //   102    |  job_102
     //   103    |  job_103
 
-    Schema job3Schema = new Schema();
-    job3Schema.addColumn("job_id", Type.INT4);
-    job3Schema.addColumn("job_title", Type.TEXT);
+    Schema job3Schema = SchemaBuilder.builder()
+        .add("job_id", Type.INT4)
+        .add("job_title", Type.TEXT)
+        .build();
 
 
     TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
@@ -212,13 +215,14 @@ public class TestRightOuterMergeJoinExec {
     //  21     |  fn_21     |  ln_21    |  1     | 123    | 101
     //  23     |  fn_23     |  ln_23    |  3     | 369    | 103
 
-    Schema emp3Schema = new Schema();
-    emp3Schema.addColumn("emp_id", Type.INT4);
-    emp3Schema.addColumn("first_name", Type.TEXT);
-    emp3Schema.addColumn("last_name", Type.TEXT);
-    emp3Schema.addColumn("dep_id", Type.INT4);
-    emp3Schema.addColumn("salary", Type.FLOAT4);
-    emp3Schema.addColumn("job_id", Type.INT4);
+    Schema emp3Schema = SchemaBuilder.builder()
+        .add("emp_id", Type.INT4)
+        .add("first_name", Type.TEXT)
+        .add("last_name", Type.TEXT)
+        .add("dep_id", Type.INT4)
+        .add("salary", Type.FLOAT4)
+        .add("job_id", Type.INT4)
+        .build();
 
 
     TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
@@ -269,10 +273,10 @@ public class TestRightOuterMergeJoinExec {
     // -----------------------------------------------
     // this table is empty, no rows
 
-    Schema phone3Schema = new Schema();
-    phone3Schema.addColumn("emp_id", Type.INT4);
-    phone3Schema.addColumn("phone_number", Type.TEXT);
-
+    Schema phone3Schema = SchemaBuilder.builder()
+        .add("emp_id", Type.INT4)
+        .add("phone_number", Type.TEXT)
+        .build();
 
     TableMeta phone3Meta = CatalogUtil.newTableMeta("TEXT");
     Path phone3Path = new Path(testDir, "phone3.csv");

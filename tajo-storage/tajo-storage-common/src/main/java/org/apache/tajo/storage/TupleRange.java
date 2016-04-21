@@ -18,9 +18,11 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
+
+import javax.annotation.Nullable;
 
 /**
  * It represents a pair of start and end tuples.
@@ -38,12 +40,12 @@ public class TupleRange implements Comparable<TupleRange>, Cloneable {
   }
 
   public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {
-    Schema schema = new Schema();
-    for (SortSpec spec : sortSpecs) {
-      schema.addColumn(spec.getSortKey());
-    }
-
-    return schema;
+    return SchemaBuilder.builder().addAll(sortSpecs, new Function<SortSpec, Column>() {
+      @Override
+      public Column apply(@Nullable SortSpec input) {
+        return input.getSortKey();
+      }
+    }).build();
   }
 
   public void setStart(Tuple tuple) {

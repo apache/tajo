@@ -18,15 +18,14 @@
 
 package org.apache.tajo.plan.expr;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.algebra.NamedExpr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoInternalError;
@@ -142,16 +141,15 @@ public class EvalTreeUtil {
     node.postOrder(finder);
     return finder.getColumnRefs();
   }
-  
+
   public static Schema getSchemaByTargets(Schema inputSchema, List<Target> targets) {
-    Schema schema = new Schema();
-    for (Target target : targets) {
-      schema.addColumn(
-          target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
-          getDomainByExpr(inputSchema, target.getEvalTree()));
-    }
-    
-    return schema;
+    return SchemaBuilder.builder().addAll(targets, new Function<Target, Column>() {
+      @Override
+      public Column apply(@javax.annotation.Nullable Target target) {
+        return new Column(target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
+            getDomainByExpr(inputSchema, target.getEvalTree()));
+      }
+    }).build();
   }
 
   public static String columnsToStr(Collection<Column> columns) {

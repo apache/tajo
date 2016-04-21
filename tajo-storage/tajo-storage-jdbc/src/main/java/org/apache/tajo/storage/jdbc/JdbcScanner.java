@@ -235,7 +235,7 @@ public abstract class JdbcScanner implements Scanner {
           break;
         case TIMESTAMP:
           tuple.put(column_idx,
-              DatumFactory.createTimestmpDatumWithJavaMillis(resultSet.getTimestamp(resultIdx).getTime()));
+              DatumFactory.createTimestampDatumWithJavaMillis(resultSet.getTimestamp(resultIdx).getTime()));
           break;
         case BINARY:
         case VARBINARY:

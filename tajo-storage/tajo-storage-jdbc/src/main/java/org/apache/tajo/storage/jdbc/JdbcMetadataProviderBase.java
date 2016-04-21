@@ -26,7 +26,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 
@@ -208,12 +211,12 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       });
 
       // transform the pair list into collection for columns
-      final Schema schema = new Schema(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
+      final Schema schema = SchemaBuilder.builder().addAll(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
         @Override
         public Column apply(@Nullable Pair<Integer, Column> columnPair) {
           return columnPair.getSecond();
         }
-      }));
+      })).build();
 
 
       // fill the table stats

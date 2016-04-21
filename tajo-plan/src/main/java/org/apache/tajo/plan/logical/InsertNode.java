@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.plan.PlanString;
@@ -123,9 +122,9 @@ public class InsertNode extends StoreTableNode implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     InsertNode insertNode = (InsertNode) super.clone();
     insertNode.overwrite = overwrite;
-    insertNode.tableSchema = new Schema(tableSchema);
-    insertNode.targetSchema = targetSchema != null ? new Schema(targetSchema) : null;
-    insertNode.projectedSchema = projectedSchema != null ? new Schema(projectedSchema) : null;
+    insertNode.tableSchema = (Schema) tableSchema.clone();
+    insertNode.targetSchema = targetSchema != null ? (Schema) targetSchema.clone() : null;
+    insertNode.projectedSchema = projectedSchema != null ? (Schema) projectedSchema.clone() : null;
     insertNode.uri = uri != null ? uri : null;
     return insertNode;
   }

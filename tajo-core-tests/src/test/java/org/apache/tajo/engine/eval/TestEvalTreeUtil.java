@@ -31,9 +31,9 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.Target;
@@ -97,10 +97,11 @@ public class TestEvalTreeUtil {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
-    Schema schema = new Schema();
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("score", TajoDataTypes.Type.INT4);
-    schema.addColumn("age", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("name", TajoDataTypes.Type.TEXT)
+        .add("score", TajoDataTypes.Type.INT4)
+        .add("age", TajoDataTypes.Type.INT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc desc = new TableDesc(

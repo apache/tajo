@@ -197,10 +197,11 @@ public class CatalogTestingUtil {
   }
 
   public static TableDesc buildTableDesc(String databaseName, String tableName, String testDir) throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "Column"), Type.BLOB);
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "column"), Type.INT4);
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "cOlumn"), Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add(CatalogUtil.buildFQName(tableName, "Column"), Type.BLOB)
+        .add(CatalogUtil.buildFQName(tableName, "column"), Type.INT4)
+        .add(CatalogUtil.buildFQName(tableName, "cOlumn"), Type.INT8)
+        .build();
     Path path = new Path(testDir + "/" + UUID.randomUUID().toString(), tableName);
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(databaseName, tableName),
@@ -213,9 +214,10 @@ public class CatalogTestingUtil {
   }
 
   public static TableDesc buildPartitionTableDesc(String databaseName, String tableName, String testDir) throws Exception {
-    Schema partSchema = new Schema();
-    partSchema.addColumn(CatalogUtil.buildFQName(tableName, "DaTe"), Type.TEXT);
-    partSchema.addColumn(CatalogUtil.buildFQName(tableName, "dAtE"), Type.TEXT);
+    Schema partSchema = SchemaBuilder.builder()
+        .add(CatalogUtil.buildFQName(tableName, "DaTe"), Type.TEXT)
+        .add(CatalogUtil.buildFQName(tableName, "dAtE"), Type.TEXT)
+        .build();
     PartitionMethodDesc partitionMethodDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
             CatalogProtos.PartitionType.COLUMN, "id,name", partSchema);

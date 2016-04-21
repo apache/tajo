@@ -20,28 +20,50 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.sql.ResultSet;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
+@RunWith(Parameterized.class)
 public class TestSortQuery extends QueryTestCaseBase {
 
-  public TestSortQuery() {
+  public TestSortQuery(String sortAlgorithm) {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
 
     Map<String, String> variables = new HashMap<>();
     variables.put(SessionVars.SORT_LIST_SIZE.keyname(), "100");
+    variables.put(SessionVars.SORT_ALGORITHM.keyname(), sortAlgorithm);
     client.updateSessionVariables(variables);
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    client.unsetSessionVariables(Arrays.asList(SessionVars.SORT_ALGORITHM.keyname()));
+  }
+
+  @Parameters(name = "{index}: {0}")
+  public static Collection<Object[]> generateParameters() {
+    return Arrays.asList(new Object[][]{
+        {"TIM"},
+        {"MSD_RADIX"},
+    });
   }
 
   @Test
@@ -111,9 +133,10 @@ public class TestSortQuery extends QueryTestCaseBase {
       tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-      Schema schema = new Schema();
-      schema.addColumn("col1", Type.INT4);
-      schema.addColumn("col2", Type.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", Type.INT4)
+          .add("col2", Type.TEXT)
+          .build();
       String[] data = new String[]{
           "1|abc",
           "3|dfa",
@@ -169,6 +192,8 @@ public class TestSortQuery extends QueryTestCaseBase {
       ResultSet res = executeQuery();
       assertResultSet(res);
       cleanupQuery(res);
+
+      executeString("drop table testSortWithDate");
     }
   }
 
@@ -187,6 +212,8 @@ public class TestSortQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+
+    executeString("drop table table2");
   }
 
   @Test
@@ -213,9 +240,10 @@ public class TestSortQuery extends QueryTestCaseBase {
       tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-      Schema schema = new Schema();
-      schema.addColumn("id", Type.INT4);
-      schema.addColumn("name", Type.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("id", Type.INT4)
+          .add("name", Type.TEXT)
+          .build();
       String[] data = new String[]{
           "1|BRAZIL",
           "2|ALGERIA",
@@ -239,9 +267,10 @@ public class TestSortQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
     TajoTestingCluster.createTable("testSortOnNullColumn2".toLowerCase(), schema, tableOptions, data, 1);
 
@@ -276,9 +305,10 @@ public class TestSortQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
     TajoTestingCluster.createTable("testSortOnNullColumn3".toLowerCase(), schema, tableOptions, data, 1);
 
@@ -304,9 +334,10 @@ public class TestSortQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
     TajoTestingCluster.createTable("testSortOnNullColumn4".toLowerCase(), schema, tableOptions, data, 1);
 
@@ -332,9 +363,10 @@ public class TestSortQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
     TajoTestingCluster.createTable("testSortOnNullColumn5".toLowerCase(), schema, tableOptions, data, 1);
 
@@ -362,9 +394,10 @@ public class TestSortQuery extends QueryTestCaseBase {
       tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-      Schema schema = new Schema();
-      schema.addColumn("col1", Type.INT4);
-      schema.addColumn("col2", Type.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", Type.INT4)
+          .add("col2", Type.TEXT)
+          .build();
       String[] data = new String[]{
           "1|하하하",
           "2|캬캬캬",
@@ -390,9 +423,10 @@ public class TestSortQuery extends QueryTestCaseBase {
       tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-      Schema schema = new Schema();
-      schema.addColumn("col1", Type.INT4);
-      schema.addColumn("col2", Type.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", Type.INT4)
+          .add("col2", Type.TEXT)
+          .build();
       String[] data = new String[]{
           "1|하하하",
           "2|캬캬캬",
@@ -445,6 +479,7 @@ public class TestSortQuery extends QueryTestCaseBase {
       cleanupQuery(res);
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
+      executeString("drop table testOutOfScope");
     }
   }
 }

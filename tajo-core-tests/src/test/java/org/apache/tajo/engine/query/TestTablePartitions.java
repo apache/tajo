@@ -23,19 +23,19 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
-import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.TajoClientUtil;
-import org.apache.tajo.exception.ReturnStateUtil;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.querymaster.QueryMasterTask;
@@ -45,6 +45,7 @@ import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -64,7 +65,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     this.nodeType = nodeType;
   }
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
       //type
@@ -1094,9 +1095,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
       tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-      Schema schema = new Schema();
-      schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-      schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", TajoDataTypes.Type.TEXT)
+          .add("col2", TajoDataTypes.Type.TEXT)
+          .build();
 
       List<String> data = new ArrayList<>();
       int totalBytes = 0;

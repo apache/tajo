@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.StorageConstants;
@@ -60,7 +61,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     client.unsetSessionVariables(Arrays.asList(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname()));
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"MultiLevel"},
@@ -420,11 +421,12 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.TEXT);
-    schema.addColumn("code", Type.TEXT);
-    schema.addColumn("qty", Type.INT4);
-    schema.addColumn("qty2", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.TEXT)
+        .add("code", Type.TEXT)
+        .add("qty", Type.INT4)
+        .add("qty2", Type.FLOAT8)
+        .build();
     String[] data = new String[]{"1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0"};
     TajoTestingCluster.createTable("table10", schema, tableOptions, data);
 
@@ -474,10 +476,11 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.TEXT);
-    schema.addColumn("col2", Type.TEXT);
-    schema.addColumn("col3", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT)
+        .add("col2", Type.TEXT)
+        .add("col3", Type.TEXT)
+        .build();
 
     String[] data = new String[]{
         "a|b-1|\\N",
@@ -504,9 +507,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.TEXT);
-    schema.addColumn("col2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT)
+        .add("col2", Type.TEXT)
+        .build();
 
     String[] data = new String[]{
         "a|\\N",
@@ -691,9 +695,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.TEXT);
-    schema.addColumn("col2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.TEXT)
+        .add("col2", Type.TEXT)
+        .build();
 
     List<String> data = new ArrayList<>();
     int totalBytes = 0;

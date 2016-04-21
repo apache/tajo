@@ -32,12 +32,12 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.*;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
-import org.apache.tajo.util.JavaResourceUtil;
-import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
@@ -2717,7 +2717,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
-      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames);
+      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(SchemaFactory.newV1(tableDescProto.getSchema()), columnNames);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
       pstmt.setString(3, unifiedName);
@@ -2784,12 +2784,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
-      Schema relationSchema = new Schema(getTable(databaseName, tableName).getSchema());
+      Schema relationSchema = SchemaFactory.newV1(getTable(databaseName, tableName).getSchema());
 
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
-      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames);
+      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(
+          SchemaBuilder.builder().addAll(relationSchema.getRootColumns()).build(), columnNames);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
       pstmt.setString(3, unifiedName);
