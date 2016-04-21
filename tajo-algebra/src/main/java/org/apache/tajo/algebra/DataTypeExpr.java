@@ -19,6 +19,7 @@
 package org.apache.tajo.algebra;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -31,6 +32,8 @@ public class DataTypeExpr extends Expr {
   Integer lengthOrPrecision;
   @Expose @SerializedName("Scale")
   Integer scale;
+  @Expose @SerializedName("Array")
+  ArrayType arrayType; // not null if the type is RECORD
   @Expose @SerializedName("Record")
   RecordType recordType; // not null if the type is RECORD
   @Expose @SerializedName("Map")
@@ -39,6 +42,12 @@ public class DataTypeExpr extends Expr {
   public DataTypeExpr(String typeName) {
     super(OpType.DataType);
     this.typeName = typeName;
+  }
+
+  public DataTypeExpr(ArrayType array) {
+    super(OpType.DataType);
+    this.typeName = Type.ARRAY.name();
+    this.arrayType = array;
   }
 
   public DataTypeExpr(RecordType record) {
@@ -62,12 +71,21 @@ public class DataTypeExpr extends Expr {
     return !this.isRecordType() && !isMapType();
   }
 
+  public boolean isArrayType() {
+    return arrayType != null;
+  }
+
   public boolean isRecordType() {
-    return this.typeName.equals(Type.RECORD.name());
+    return recordType != null;
   }
 
   public boolean isMapType() {
-    return this.typeName.equals(Type.MAP.name());
+    return mapType != null;
+  }
+
+  public DataTypeExpr getElementType() {
+    Preconditions.checkState(isArrayType());
+    return arrayType.type;
   }
 
   public ColumnDefinition [] getNestedRecordTypes() {
@@ -123,6 +141,27 @@ public class DataTypeExpr extends Expr {
     dataType.recordType = recordType;
     dataType.mapType = mapType;
     return dataType;
+  }
+
+  public static class ArrayType implements JsonSerializable, Cloneable {
+    @Expose
+    @SerializedName("type")
+    DataTypeExpr type;
+
+    public ArrayType(DataTypeExpr elementType) {
+      this.type = elementType;
+    }
+
+    @Override
+    public String toJson() {
+      return JsonHelper.toJson(this);
+    }
+
+    public Object clone() throws CloneNotSupportedException {
+      ArrayType newMap = (ArrayType) super.clone();
+      newMap.type = type;
+      return newMap;
+    }
   }
 
   public static class RecordType implements JsonSerializable, Cloneable {
