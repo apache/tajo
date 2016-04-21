@@ -19,9 +19,12 @@
 package org.apache.tajo.type;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.schema.Schema;
 
 import java.util.Arrays;
 import java.util.Collection;
+
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public abstract class Type {
 
@@ -131,11 +134,11 @@ public abstract class Type {
     return new Inet4();
   }
 
-  public static Struct Struct(Collection<Type> types) {
+  public static Struct Struct(Collection<Schema.NamedType> types) {
     return new Struct(types);
   }
 
-  public static Struct Struct(Type ... types) {
+  public static Struct Struct(Schema.NamedType... types) {
     return new Struct(Arrays.asList(types));
   }
 

@@ -20,6 +20,8 @@ package org.apache.tajo.type;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.schema.Schema;
+import org.apache.tajo.schema.Schema.NamedType;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.Collection;
@@ -27,9 +29,9 @@ import java.util.List;
 import java.util.Objects;
 
 public class Struct extends Type {
-  private final ImmutableList<Type> memberTypes;
+  private final ImmutableList<NamedType> memberTypes;
 
-  public Struct(Collection<Type> memberTypes) {
+  public Struct(Collection<NamedType> memberTypes) {
     this.memberTypes = ImmutableList.copyOf(memberTypes);
   }
 
@@ -37,11 +39,11 @@ public class Struct extends Type {
     return memberTypes.size();
   }
 
-  public Type memberType(int idx) {
+  public NamedType memberType(int idx) {
     return memberTypes.get(idx);
   }
 
-  public List<Type> memberTypes() {
+  public List<NamedType> memberTypes() {
     return this.memberTypes;
   }
 
