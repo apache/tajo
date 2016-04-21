@@ -49,37 +49,6 @@ public class FieldConverter {
     return QualifiedIdentifier.$(identifiers);
   }
 
-  public static TypeDesc convert(Schema.NamedType src) {
-    if (src instanceof NamedStructType) {
-      NamedStructType structType = (NamedStructType) src;
-
-      ImmutableList.Builder<Column> fields = ImmutableList.builder();
-      for (Schema.NamedType t: structType.fields()) {
-        fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
-      }
-
-      return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());
-    } else {
-      final NamedPrimitiveType namedType = (NamedPrimitiveType) src;
-      final Type type = namedType.type();
-      if (type instanceof Char) {
-        Char charType = (Char) type;
-        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length()));
-      } else if (type instanceof Varchar) {
-        Varchar varcharType = (Varchar) type;
-        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length()));
-      } else if (type instanceof Numeric) {
-        Numeric numericType = (Numeric) type;
-        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.NUMERIC, numericType.precision()));
-      } else if (type instanceof Protobuf) {
-        Protobuf protobuf = (Protobuf) type;
-        return new TypeDesc(CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName()));
-      } else {
-        return new TypeDesc(TypeConverter.convert(namedType.type()));
-      }
-    }
-  }
-
   public static Schema.NamedType convert(Column column) {
     if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
 
@@ -94,6 +63,22 @@ public class FieldConverter {
       return new NamedPrimitiveType(toQualifiedIdentifier(column.getQualifiedName()),
           TypeConverter.convert(column.getDataType())
       );
+    }
+  }
+
+  public static Column convert(Schema.NamedType type) {
+    if (type instanceof NamedStructType) {
+      NamedStructType structType = (NamedStructType) type;
+      Collection<Column> converted = Collections2
+          .transform(structType.fields(), new Function<Schema.NamedType, Column>() {
+        @Override
+        public Column apply(@Nullable Schema.NamedType namedType) {
+          return FieldConverter.convert(namedType);
+        }
+      });
+      return new Column(type.name().raw(IdentifierPolicy.DefaultPolicy()), new TypeDesc(new SchemaLegacy(converted)));
+    } else {
+      return new Column(type.name().displayString(IdentifierPolicy.DefaultPolicy()), TypeConverter.convert(type));
     }
   }
 }

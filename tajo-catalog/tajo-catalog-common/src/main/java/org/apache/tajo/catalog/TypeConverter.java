@@ -22,9 +22,9 @@ import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.schema.IdentifierPolicy;
 import org.apache.tajo.schema.Schema;
-import org.apache.tajo.type.Protobuf;
-import org.apache.tajo.type.Type;
+import org.apache.tajo.type.*;
 
 import java.util.Collection;
 
@@ -40,6 +40,12 @@ public class TypeConverter {
     return fields.build();
   }
 
+  /**
+   * This is for base types.
+   *
+   * @param legacyBaseType legacy base type
+   * @return Type
+   */
   public static Type convert(TajoDataTypes.Type legacyBaseType) {
     switch (legacyBaseType) {
     case BOOLEAN:
@@ -97,5 +103,36 @@ public class TypeConverter {
 
   public static TajoDataTypes.DataType convert(Type type) {
     return CatalogUtil.newSimpleDataType(type.baseType());
+  }
+
+  public static TypeDesc convert(Schema.NamedType src) {
+    if (src instanceof Schema.NamedStructType) {
+      Schema.NamedStructType structType = (Schema.NamedStructType) src;
+
+      ImmutableList.Builder<Column> fields = ImmutableList.builder();
+      for (Schema.NamedType t: structType.fields()) {
+        fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
+      }
+
+      return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());
+    } else {
+      final Schema.NamedPrimitiveType namedType = (Schema.NamedPrimitiveType) src;
+      final Type type = namedType.type();
+      if (type instanceof Char) {
+        Char charType = (Char) type;
+        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length()));
+      } else if (type instanceof Varchar) {
+        Varchar varcharType = (Varchar) type;
+        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length()));
+      } else if (type instanceof Numeric) {
+        Numeric numericType = (Numeric) type;
+        return new TypeDesc(CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.NUMERIC, numericType.precision()));
+      } else if (type instanceof Protobuf) {
+        Protobuf protobuf = (Protobuf) type;
+        return new TypeDesc(CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName()));
+      } else {
+        return new TypeDesc(convert(namedType.type()));
+      }
+    }
   }
 }
