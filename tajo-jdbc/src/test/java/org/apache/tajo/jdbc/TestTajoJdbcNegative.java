@@ -169,7 +169,7 @@ public class TestTajoJdbcNegative extends QueryTestCaseBase {
 
     try (Statement stmt = conn.createStatement()) {
       stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS TestTajoJdbcNegative");
-      stmt.executeUpdate("CREATE TABLE TestTajoJdbcNegative.table123u8sd ( name RECORD(last TEXT, first TEXT) )");
+      stmt.executeUpdate("CREATE TABLE TestTajoJdbcNegative.table123u8sd ( name RECORD (last TEXT, first TEXT) )");
 
       try (ResultSet resultSet = stmt.executeQuery("select name FROM TestTajoJdbcNegative.table123u8sd")) {
         fail("Getting a record type field must be failed");
