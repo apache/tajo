@@ -495,10 +495,6 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           aTuple.put(fieldId, DatumFactory.createInt8(used.getMemory() * 1048576l));
         } else if ("total_mem".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt8(total.getMemory() * 1048576l));
-        } else if ("used_disk".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(used.getDisks()));
-        } else if ("total_disk".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(total.getDisks()));
         } else if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(aNodeStatus.getNumRunningTasks()));
         } else if ("last_heartbeat_ts".equalsIgnoreCase(column.getSimpleName())) {

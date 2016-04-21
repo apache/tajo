@@ -28,12 +28,15 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.unit.StorageUnit;
@@ -45,7 +48,8 @@ import org.junit.Test;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestJoinOrderAlgorithm {
 
@@ -67,19 +71,22 @@ public class TestJoinOrderAlgorithm {
       catalog.createFunction(funcDesc);
     }
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("name", Type.TEXT);
-    schema.addColumn("empid", Type.INT4);
-    schema.addColumn("deptname", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("name", Type.TEXT)
+        .add("empid", Type.INT4)
+        .add("deptname", Type.TEXT)
+        .build();
 
-    Schema schema2 = SchemaFactory.newV1();
-    schema2.addColumn("deptname", Type.TEXT);
-    schema2.addColumn("manager", Type.TEXT);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("manager", Type.TEXT)
+        .build();
 
-    Schema schema3 = SchemaFactory.newV1();
-    schema3.addColumn("deptname", Type.TEXT);
-    schema3.addColumn("score", Type.INT4);
-    schema3.addColumn("phone", Type.INT4);
+    Schema schema3 = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("score", Type.INT4)
+        .add("phone", Type.INT4)
+        .build();
 
     TableMeta meta = CatalogUtil.newTableMeta("TEXT");
     TableDesc people = new TableDesc(
@@ -101,9 +108,10 @@ public class TestJoinOrderAlgorithm {
 
     ///////////////////////////////////////////////////////////////////////////
     // creating table for overflow in JoinOrderOptimizer.
-    Schema schema4 = SchemaFactory.newV1();
-    schema4.addColumn("deptname", Type.TEXT);
-    schema4.addColumn("manager", Type.TEXT);
+    Schema schema4 = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("manager", Type.TEXT)
+        .build();
     // Set store type as FAKEFILE to prevent auto update of physical information in LogicalPlanner.updatePhysicalInfo()
     TableMeta largeTableMeta = CatalogUtil.newTableMeta("FAKEFILE");
     TableDesc largeDept;

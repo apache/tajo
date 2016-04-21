@@ -18,23 +18,24 @@
 
 package org.apache.tajo.worker.event;
 
-import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoProtos.NodeResourceProto;
 import org.apache.tajo.resource.NodeResource;
+import org.apache.tajo.worker.NodeResourceManager.Allocation;
 
 public class NodeResourceDeallocateEvent extends NodeResourceEvent {
 
-  private NodeResource resource;
+  private Allocation allocation;
 
-  public NodeResourceDeallocateEvent(TajoProtos.NodeResourceProto proto, ResourceType resourceType) {
-    this(new NodeResource(proto), resourceType);
+  public NodeResourceDeallocateEvent(NodeResourceProto proto, ResourceType resourceType) {
+    this(new Allocation(new NodeResource(proto)), resourceType);
   }
 
-  public NodeResourceDeallocateEvent(NodeResource resource, ResourceType resourceType) {
+  public NodeResourceDeallocateEvent(Allocation resource, ResourceType resourceType) {
     super(EventType.DEALLOCATE, resourceType);
-    this.resource = resource;
+    this.allocation = resource;
   }
 
-  public NodeResource getResource() {
-    return resource;
+  public Allocation getAllocation() {
+    return allocation;
   }
 }
