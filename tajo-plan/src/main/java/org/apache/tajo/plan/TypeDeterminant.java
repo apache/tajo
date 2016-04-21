@@ -21,10 +21,7 @@ package org.apache.tajo.plan;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.algebra.*;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -276,7 +273,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   @Override
   public DataType visitDataType(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DataTypeExpr expr)
       throws TajoException {
-    return LogicalPlanner.convertDataType(expr).getDataType();
+    return TypeConverter.convert(LogicalPlanner.convertDataType(expr));
   }
 
   @Override

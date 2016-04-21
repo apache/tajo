@@ -21,6 +21,7 @@ package org.apache.tajo.plan;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -49,6 +50,8 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.Schema.NamedType;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -58,9 +61,11 @@ import java.net.URI;
 import java.util.*;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
+import static org.apache.tajo.catalog.TypeConverter.convert;
 import static org.apache.tajo.plan.ExprNormalizer.ExprNormalizedResult;
 import static org.apache.tajo.plan.LogicalPlan.BlockType;
 import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
+import static org.apache.tajo.type.Type.*;
 
 /**
  * This class creates a logical plan from a nested tajo algebra expression ({@link org.apache.tajo.algebra})
@@ -2047,13 +2052,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param elements to be transformed
    * @return schema transformed from table definition elements
    */
-  private static Schema convertTableElementsSchema(ColumnDefinition[] elements) {
-    return SchemaBuilder.builder().addAll(elements, new Function<ColumnDefinition, Column>() {
-      @Override
-      public Column apply(@Nullable ColumnDefinition input) {
-        return convertColumn(input);
-      }
-    }).build();
+  private static Collection<NamedType> convertTableElementsSchema(ColumnDefinition[] elements) {
+    ImmutableList.Builder<NamedType> list = ImmutableList.builder();
+    for (ColumnDefinition colDef : elements) {
+      list.add(FieldConverter.convert(convertColumn(colDef)));
+    }
+    return list.build();
   }
 
   /**
@@ -2093,34 +2097,24 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static Column convertColumn(ColumnDefinition columnDefinition) {
-    return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
+    return new Column(columnDefinition.getColumnName(), convert(convertDataType(columnDefinition)));
   }
 
-  public static TypeDesc convertDataType(DataTypeExpr dataType) {
+  public static Type convertDataType(DataTypeExpr dataType) {
     TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(dataType.getTypeName());
 
-    TajoDataTypes.DataType.Builder builder = TajoDataTypes.DataType.newBuilder();
-    builder.setType(type);
-
-    if (dataType.hasLengthOrPrecision()) {
-      builder.setLength(dataType.getLengthOrPrecision());
+    if (type == TajoDataTypes.Type.CHAR) {
+      return Char(dataType.getLengthOrPrecision());
+    } else if (type == TajoDataTypes.Type.VARCHAR) {
+      return Varchar(dataType.getLengthOrPrecision());
+    } else if (type == TajoDataTypes.Type.ARRAY) {
+      return Array(convertDataType(dataType.getElementType()));
+    } else if (type == TajoDataTypes.Type.RECORD) {
+      return Struct(convertTableElementsSchema(dataType.getNestedRecordTypes()));
     } else {
-      if (type == TajoDataTypes.Type.CHAR) {
-        builder.setLength(1);
-      }
+      return convert(type);
     }
-
-    TypeDesc typeDesc;
-    if (type == TajoDataTypes.Type.RECORD) {
-      Schema nestedRecordSchema = convertTableElementsSchema(dataType.getNestedRecordTypes());
-      typeDesc = new TypeDesc(nestedRecordSchema);
-    } else {
-      typeDesc = new TypeDesc(builder.build());
-    }
-
-    return typeDesc;
   }
-
 
   @Override
   public LogicalNode visitDropTable(PlanContext context, Stack<Expr> stack, DropTable dropTable) {
