@@ -40,7 +40,7 @@ public class TestArithmeticOperator {
     this.option = option;
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"Zero_Null"},
