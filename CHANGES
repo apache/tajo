@@ -10,6 +10,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2125: Detect JAVA_HOME on OSX, if JAVA_HOME is not set. (jinho)
+
     TAJO-2108: Refactor Schema to be immutable. (hyunsik)
 
     TAJO-2112: Improve disk load, when queries run simultaneously. (jinho)
