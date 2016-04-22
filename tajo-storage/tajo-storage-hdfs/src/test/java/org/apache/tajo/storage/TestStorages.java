@@ -181,6 +181,7 @@ public class TestStorages {
   private boolean dateTypeSupport() {
     return internalType
         || dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)
+        || dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)
         || dataFormat.equalsIgnoreCase(BuiltinStorages.ORC);
   }
 
@@ -418,8 +419,11 @@ public class TestStorages {
         .add("col8", Type.TEXT)
         .add("col9", Type.BLOB)
         .add("col10", Type.INET4);
+    if (dateTypeSupport()) {
+      schemaBld.add("col11", Type.DATE);
+    }
     if (protoTypeSupport()) {
-      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
 
     Schema schema = schemaBld.build();
@@ -438,15 +442,14 @@ public class TestStorages {
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    VTuple tuple = new VTuple(10 + (protoTypeSupport() ? 1 : 0));
+    VTuple tuple = new VTuple(10 + (dateTypeSupport() ? 1 : 0) + (protoTypeSupport() ? 1 : 0));
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createChar("hyunsik"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
+        DatumFactory.createInt8(23L),
         DatumFactory.createFloat4(77.9f),
         DatumFactory.createFloat8(271.9f),
         DatumFactory.createText("hyunsik"),
@@ -454,8 +457,15 @@ public class TestStorages {
         DatumFactory.createInet4("192.168.0.1"),
     });
 
+    short currentIdx = 10;
+
+    if (dateTypeSupport()) {
+      tuple.put(currentIdx, DatumFactory.createDate(2016, 6, 28));
+      currentIdx++;
+    }
+
     if (protoTypeSupport()) {
-      tuple.put(10, factory.createDatum(queryid.getProto()));
+      tuple.put(currentIdx, ProtobufDatumFactory.createDatum(queryid.getProto()));
     }
 
     appender.addTuple(tuple);

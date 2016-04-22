@@ -117,6 +117,8 @@ public class TajoRecordConverter extends GroupConverter {
         return new FieldInet4Converter(parent);
       case INET6:
         throw new RuntimeException("No converter for INET6");
+      case DATE:
+        return new FieldDateConverter(parent);
       case TEXT:
         return new FieldTextConverter(parent);
       case PROTOBUF:
@@ -321,6 +323,19 @@ public class TajoRecordConverter extends GroupConverter {
     @Override
     final public void addBinary(Binary value) {
       parent.add(DatumFactory.createInet4(value.getBytes()));
+    }
+  }
+
+  static final class FieldDateConverter extends PrimitiveConverter {
+    private final ParentValueContainer parent;
+
+    public FieldDateConverter(ParentValueContainer parent) {
+      this.parent = parent;
+    }
+
+    @Override
+    final public void addInt(int value) {
+      parent.add(DatumFactory.createDate(Integer.valueOf(value)));
     }
   }
 

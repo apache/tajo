@@ -177,6 +177,11 @@ public class TajoSchemaConverter {
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY,
                          OriginalType.UTF8);
+
+      // OriginalType.DATE should be in recent Parquet version
+      case DATE:
+        return primitive(column.getSimpleName(),
+                        PrimitiveTypeName.INT32);
       case PROTOBUF:
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY);

@@ -140,6 +140,9 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
       case TEXT:
         recordConsumer.addBinary(Binary.fromByteArray(tuple.getTextBytes(index)));
         break;
+      case DATE:
+        recordConsumer.addInteger(tuple.getInt4(index));
+        break;
       case PROTOBUF:
       case BLOB:
       case INET4:
