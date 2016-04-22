@@ -92,13 +92,13 @@
     <module>tajo-sql-parser</module>
     <module>tajo-storage</module>
     <module>tajo-pullserver</module>
+    <module>tajo-yarn</module>
     <module>tajo-dist</module>
     <module>tajo-thirdparty/asm</module>
     <module>tajo-cli</module>
     <module>tajo-metrics</module>
     <module>tajo-core-tests</module>
     <module>tajo-cluster-tests</module>
-    <module>tajo-yarn</module>
   </modules>
 
   <build>
