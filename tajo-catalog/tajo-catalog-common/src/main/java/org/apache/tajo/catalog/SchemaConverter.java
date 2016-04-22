@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.apache.tajo.schema.Field;
 import org.apache.tajo.schema.Schema;
 
 import javax.annotation.Nullable;
@@ -28,9 +29,9 @@ import javax.annotation.Nullable;
 public class SchemaConverter {
   public static org.apache.tajo.catalog.Schema convert(Schema schema) {
     ImmutableList<Column> columns = ImmutableList.copyOf(
-        Iterables.transform(schema, new Function<Schema.Field, Column>() {
+        Iterables.transform(schema, new Function<Field, Column>() {
           @Override
-          public Column apply(@Nullable Schema.Field namedType) {
+          public Column apply(@Nullable Field namedType) {
             return FieldConverter.convert(namedType);
           }
         })

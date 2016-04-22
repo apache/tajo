@@ -16,56 +16,65 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.type;
+package org.apache.tajo.schema;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.schema.Field;
-import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.type.Type;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
-public class Struct extends Type {
-  private final ImmutableList<Field> memberTypes;
+/**
+ * Represent a field in a schema.
+ */
+public class Field {
+  protected final Type type;
+  protected final QualifiedIdentifier name;
 
-  public Struct(Collection<Field> memberTypes) {
-    this.memberTypes = ImmutableList.copyOf(memberTypes);
+  public Field(Type type, QualifiedIdentifier name) {
+    this.type = type;
+    this.name = name;
   }
 
-  public int size() {
-    return memberTypes.size();
+  public QualifiedIdentifier name() {
+    return this.name;
   }
 
-  public Field field(int idx) {
-    return memberTypes.get(idx);
-  }
-
-  public List<Field> fields() {
-    return this.memberTypes;
-  }
-
-  @Override
   public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.RECORD;
+    return this.type.baseType();
+  }
+
+  public <T extends Type> T type() {
+    return (T) type;
+  }
+
+  public boolean isStruct() {
+    return type.isStruct();
+  }
+
+  public boolean isNull() {
+    return type.isNull();
   }
 
   @Override
   public String toString() {
-    return "struct(" + StringUtils.join(memberTypes, ", ") + ")";
+    return name + " " + type;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(baseType(), Objects.hash(memberTypes));
+    return Objects.hash(type, name);
   }
 
   @Override
-  public boolean equals(Object object) {
-    if (object instanceof Struct) {
-      Struct other = (Struct) object;
-      return memberTypes.equals(other.memberTypes);
+  public boolean equals(Object obj) {
+
+    if (this == obj) {
+      return true;
+    }
+
+    if (obj instanceof Field) {
+      Field other = (Field) obj;
+      return this.type.equals(other) && this.name.equals(other.name);
     }
 
     return false;

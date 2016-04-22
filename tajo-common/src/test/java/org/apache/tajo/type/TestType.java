@@ -22,7 +22,7 @@ import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.apache.tajo.schema.QualifiedIdentifier.$;
-import static org.apache.tajo.schema.Schema.Field;
+
 import static org.apache.tajo.type.Type.Array;
 import static org.apache.tajo.type.Type.Blob;
 import static org.apache.tajo.type.Type.Bool;

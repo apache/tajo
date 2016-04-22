@@ -20,7 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.schema.Schema.Field;
+import org.apache.tajo.schema.Field;
 
 import java.util.Iterator;
 

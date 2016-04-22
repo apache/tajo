@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.schema.QualifiedIdentifier;
-import org.apache.tajo.schema.Schema.Field;
+import org.apache.tajo.schema.Field;
 import org.apache.tajo.type.Type;
 
 import javax.annotation.Nullable;

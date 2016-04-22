@@ -20,19 +20,17 @@ package org.apache.tajo.schema;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.type.Type;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.Objects;
 
 /**
  * A field is a pair of a name and a type. Schema is an ordered list of fields.
  */
-public class Schema implements Iterable<Schema.Field> {
+public class Schema implements Iterable<Field> {
   private final ImmutableList<Field> fields;
 
   public Schema(Collection<Field> fields) {
@@ -74,58 +72,4 @@ public class Schema implements Iterable<Schema.Field> {
     return fields.iterator();
   }
 
-  public static class Field {
-    protected final Type type;
-    protected final QualifiedIdentifier name;
-
-    public Field(Type type, QualifiedIdentifier name) {
-      this.type = type;
-      this.name = name;
-    }
-
-    public QualifiedIdentifier name() {
-      return this.name;
-    }
-
-    public TajoDataTypes.Type baseType() {
-      return this.type.baseType();
-    }
-
-    public <T extends Type> T type() {
-      return (T) type;
-    }
-
-    public boolean isStruct() {
-      return type.isStruct();
-    }
-
-    public boolean isNull() {
-      return type.isNull();
-    }
-
-    @Override
-    public String toString() {
-      return name + " " + type;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(type, name);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-
-      if (this == obj) {
-        return true;
-      }
-
-      if (obj instanceof Field) {
-        Field other = (Field) obj;
-        return this.type.equals(other) && this.name.equals(other.name);
-      }
-
-      return false;
-    }
-  }
 }

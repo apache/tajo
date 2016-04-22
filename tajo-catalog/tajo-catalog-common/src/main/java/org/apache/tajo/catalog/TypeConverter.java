@@ -23,8 +23,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.schema.Field;
 import org.apache.tajo.schema.IdentifierPolicy;
-import org.apache.tajo.schema.Schema;
 import org.apache.tajo.type.*;
 
 import static org.apache.tajo.catalog.CatalogUtil.newDataTypeWithLen;
@@ -34,7 +34,7 @@ public class TypeConverter {
 
   public static Type convert(TypeDesc type) {
     if (type.getDataType().getType() == TajoDataTypes.Type.RECORD) {
-      ImmutableList.Builder<Schema.Field> fields = ImmutableList.builder();
+      ImmutableList.Builder<Field> fields = ImmutableList.builder();
       for (Column c : type.getNestedSchema().getRootColumns()) {
         fields.add(FieldConverter.convert(c));
       }
@@ -111,7 +111,7 @@ public class TypeConverter {
     }
   }
 
-  public static TypeDesc convert(Schema.Field src) {
+  public static TypeDesc convert(Field src) {
     return convert(src.type());
   }
 
@@ -132,7 +132,7 @@ public class TypeConverter {
     case RECORD:
       Struct struct = (Struct) type;
       ImmutableList.Builder<Column> fields = ImmutableList.builder();
-      for (Schema.Field t: struct.fields()) {
+      for (Field t: struct.fields()) {
         fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
       }
       return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());

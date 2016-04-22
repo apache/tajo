@@ -19,7 +19,7 @@
 package org.apache.tajo.type;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.schema.Schema;
+import org.apache.tajo.schema.Field;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -98,7 +98,7 @@ public abstract class Type {
     return new Varchar(len);
   }
 
-  public static Struct Struct(Collection<Schema.Field> types) {
+  public static Struct Struct(Collection<Field> types) {
     return new Struct(types);
   }
 
@@ -106,7 +106,7 @@ public abstract class Type {
     return new Array(type);
   }
 
-  public static Struct Struct(Schema.Field... types) {
+  public static Struct Struct(Field... types) {
     return new Struct(Arrays.asList(types));
   }
 
