@@ -46,6 +46,7 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -74,7 +75,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     client.unsetSessionVariables(Arrays.asList(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname()));
   }
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
       //type
