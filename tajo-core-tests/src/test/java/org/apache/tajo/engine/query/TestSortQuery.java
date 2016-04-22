@@ -58,7 +58,7 @@ public class TestSortQuery extends QueryTestCaseBase {
     client.unsetSessionVariables(Arrays.asList(SessionVars.SORT_ALGORITHM.keyname()));
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"TIM"},
