@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,43 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.pullserver.retriever;
 
-import org.apache.tajo.ResourceProtos.TaskStatusProto;
+public class FileChunkMeta {
+  private final long startOffset;
+  private final long length;
+  private final String ebId;
+  private final String taskId;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
+  public FileChunkMeta(long startOffset, long length, String ebId, String taskId) {
+    this.startOffset = startOffset;
+    this.length = length;
+    this.ebId = ebId;
+    this.taskId = taskId;
+  }
 
-public interface Task {
+  public String getTaskId() {
+    return taskId;
+  }
 
-  void init() throws IOException;
+  public long getStartOffset() {
+    return startOffset;
+  }
 
-  void fetch(ExecutorService fetcherExecutor);
+  public long getLength() {
+    return length;
+  }
 
-  void run() throws Exception;
+  public String getEbId() {
+    return ebId;
+  }
 
-  void kill();
-
-  void abort();
-
-  void cleanup();
-
-  boolean hasFetchPhase();
-
-  boolean isProgressChanged();
-
-  boolean isStopped();
-
-  void updateProgress();
-
-  TaskAttemptContext getTaskContext();
-
-  ExecutionBlockContext getExecutionBlockContext();
-
-  TaskStatusProto getReport();
-
-  TaskHistory createTaskHistory();
-
-  List<AbstractFetcher> getFetchers();
+  public String toString() {
+    return "ebId: " + ebId + ", taskId: " + taskId + " (" + startOffset + ", " + length + ")";
+  }
 }

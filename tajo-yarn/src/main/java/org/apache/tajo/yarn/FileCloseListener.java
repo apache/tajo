@@ -16,27 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.yarn;
 
-import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
-import org.apache.tajo.TaskAttemptId;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 
-import java.io.IOException;
+public class FileCloseListener implements ChannelFutureListener {
 
-public class MockExecutionBlock extends ExecutionBlockContext {
+  private FadvisedFileRegion filePart;
 
-  public MockExecutionBlock(TajoWorker.WorkerContext workerContext,
-                            ExecutionBlockContextResponse request) throws IOException {
-    super(workerContext, request, null);
+  public FileCloseListener(FadvisedFileRegion filePart) {
+    this.filePart = filePart;
   }
 
+  // TODO error handling; distinguish IO/connection failures,
+  //      attribute to appropriate spill output
   @Override
-  public void init() throws Throwable {
-    //skip
-  }
-
-  @Override
-  public void fatalError(TaskAttemptId taskAttemptId, Throwable throwable) {
-
+  public void operationComplete(ChannelFuture future) {
+    if(future.isSuccess()){
+      filePart.transferSuccessful();
+    }
+    filePart.releaseExternalResources();
+//    if (pullServerService != null) {
+//      pullServerService.completeFileChunk(filePart, requestUri, startTime);
+//    }
   }
 }
