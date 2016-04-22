@@ -45,6 +45,10 @@ public class QualifiedIdentifier {
     });
   }
 
+  public String raw() {
+    return raw(DefaultPolicy());
+  }
+
   /**
    * Raw string of qualified identifier
    * @param policy Identifier Policy

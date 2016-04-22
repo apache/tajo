@@ -24,10 +24,9 @@ import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.schema.Identifier;
-import org.apache.tajo.schema.IdentifierPolicy;
-import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.schema.Field;
+import org.apache.tajo.schema.Identifier;
+import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.type.Struct;
 
 import javax.annotation.Nullable;
@@ -68,9 +67,9 @@ public class FieldConverter {
           return FieldConverter.convert(namedType);
         }
       });
-      return new Column(field.name().raw(IdentifierPolicy.DefaultPolicy()), new TypeDesc(new SchemaLegacy(converted)));
+      return new Column(field.name().raw(), new TypeDesc(new SchemaLegacy(converted)));
     } else {
-      return new Column(field.name().displayString(IdentifierPolicy.DefaultPolicy()), TypeConverter.convert(field));
+      return new Column(field.name().raw(), TypeConverter.convert(field));
     }
   }
 }

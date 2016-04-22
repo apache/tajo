@@ -171,7 +171,7 @@ public class SchemaBuilder {
   public SchemaLegacy build() {
     ImmutableList.Builder<Column> columns = new ImmutableList.Builder();
     for (Field field : fields.build()) {
-      columns.add(new Column(field.name().raw(DefaultPolicy()), TypeConverter.convert(field)));
+      columns.add(new Column(field.name().raw(), TypeConverter.convert(field)));
     }
 
     return new SchemaLegacy(columns.build());

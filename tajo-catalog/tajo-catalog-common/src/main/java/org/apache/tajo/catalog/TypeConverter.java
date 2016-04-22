@@ -133,7 +133,7 @@ public class TypeConverter {
       Struct struct = (Struct) type;
       ImmutableList.Builder<Column> fields = ImmutableList.builder();
       for (Field t: struct.fields()) {
-        fields.add(new Column(t.name().raw(IdentifierPolicy.DefaultPolicy()), convert(t)));
+        fields.add(new Column(t.name().raw(), convert(t)));
       }
       return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());
     default:
