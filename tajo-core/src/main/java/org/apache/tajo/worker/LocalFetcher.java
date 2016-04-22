@@ -62,11 +62,24 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * LocalFetcher retrieves locally stored data. Its behavior can be different according to the pull server is running
+ * externally or internally.
+ *
+ * <ul>
+ *   <li>When an internal pull server is running, local fetchers can retrieve data directly.</li>
+ *   <li>When an external pull server is running,</li>
+ *   <ul>
+ *     <li>If the shuffle type is hash, local fetchers can still retrieve data directly.</li>
+ *     <li>If the shuffle type is range, local fetchers need to get meta information of data via HTTP. Once the meta
+ *     information is retrieved, they can read data directly.</li>
+ *   </ul>
+ * </ul>
+ */
 public class LocalFetcher extends AbstractFetcher {
 
   private final static Log LOG = LogFactory.getLog(LocalFetcher.class);
 
-//  private final ExecutionBlockContext executionBlockContext;
   private final TajoPullServerService pullServerService;
 
   private final String host;
@@ -157,10 +170,10 @@ public class LocalFetcher extends AbstractFetcher {
 
   @Override
   public List<FileChunk> get() throws IOException {
-    return pullServerService != null ? getDirect() : getFromFetchURI();
+    return pullServerService != null ? getWithInternalPullServer() : getWithExternalPullServer();
   }
 
-  private List<FileChunk> getDirect() throws IOException {
+  private List<FileChunk> getWithInternalPullServer() throws IOException {
     final List<FileChunk> fileChunks = new ArrayList<>();
     startTime = System.currentTimeMillis();
     PullServerParams params = new PullServerParams(uri.toString());
@@ -176,7 +189,7 @@ public class LocalFetcher extends AbstractFetcher {
     return fileChunks;
   }
 
-  private List<FileChunk> getFromFetchURI() throws IOException {
+  private List<FileChunk> getWithExternalPullServer() throws IOException {
     final PullServerParams params = new PullServerParams(uri.toString());
     final Path queryBaseDir = PullServerUtil.getBaseOutputDir(params.queryId(), params.ebId());
 

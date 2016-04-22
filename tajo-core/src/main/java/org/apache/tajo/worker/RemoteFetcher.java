@@ -50,7 +50,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Fetcher fetches data from a given uri via HTTP protocol and stores them into
+ * RemoteFetcher fetches data from a given uri via HTTP protocol and stores them into
  * a specific file. It aims at asynchronous and efficient data transmit.
  */
 public class RemoteFetcher extends AbstractFetcher {

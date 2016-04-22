@@ -149,11 +149,6 @@ public class TajoWorker extends CompositeService {
       addIfService(pullService);
     }
 
-//    if(!TajoPullServerService.isStandalone()) {
-//      pullService = new TajoPullServerService();
-//      addIfService(pullService);
-//    }
-
     this.taskManager = new TaskManager(dispatcher, workerContext, pullService);
     addService(taskManager);
 

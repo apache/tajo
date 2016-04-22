@@ -171,8 +171,6 @@ public class TajoPullServerService extends AbstractService {
     localFS = new LocalFileSystem();
 
     maxUrlLength = tajoConf.getIntVar(ConfVars.PULLSERVER_FETCH_URL_MAX_LENGTH);
-//    conf.setInt(ConfVars.PULLSERVER_PORT.varname,
-//        conf.getInt(ConfVars.PULLSERVER_PORT.varname, ConfVars.PULLSERVER_PORT.defaultIntVal));
     LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
 
     ServerBootstrap bootstrap = selector.clone();
@@ -451,12 +449,6 @@ public class TajoPullServerService extends AbstractService {
       try {
         jsonMetas = PullServerUtil.getJsonMeta(conf, lDirAlloc, localFS, params, gson, indexReaderCache,
             lowCacheHitCheckThreshold);
-//      } catch (Throwable t) {
-//        // TODO: error handling
-//        LOG.error("Cannot find the file chunk meta for " + request.getUri(), t);
-//        sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
-//        return;
-//      }
       } catch (FileNotFoundException e) {
         sendError(ctx, e.getMessage(), HttpResponseStatus.NO_CONTENT);
         return;

@@ -698,46 +698,15 @@ public class TaskImpl implements Task {
           if (NetUtils.isLocalAddress(address) && conn.getPullServerPort() == uri.getPort()) {
             localStoreChunkCount++;
             runnerList.add(new LocalFetcher(systemConf, uri, executionBlockContext, f.getName()));
-
-//            List<FileChunk> localChunkCandidates = getLocalStoredFileChunk(uri, systemConf);
-//
-//            for (FileChunk localChunk : localChunkCandidates) {
-//              // When a range request is out of range, storeChunk will be NULL. This case is normal state.
-//              // So, we should skip and don't need to create storeChunk.
-//              if (localChunk == null || localChunk.length() == 0) {
-//                continue;
-//              }
-//
-//              if (localChunk.getFile() != null && localChunk.startOffset() > -1) {
-//                localChunk.setFromRemote(false);
-//                localStoreChunkCount++;
-//              } else {
-//                localChunk = new FileChunk(defaultStoreFile, 0, -1);
-//                localChunk.setFromRemote(true);
-//              }
-//              localChunk.setEbId(f.getName());
-//              storeChunkList.add(localChunk);
-//            }
-
           } else {
+            // If we decide that intermediate data should be really fetched from a remote host, storeChunk
+            // represents a complete file. Otherwise, storeChunk may represent a complete file or only a part of it
             FileChunk remoteChunk = new FileChunk(defaultStoreFile, 0, -1);
             remoteChunk.setFromRemote(true);
             remoteChunk.setEbId(f.getName());
-//            storeChunkList.add(remoteChunk);
             runnerList.add(new RemoteFetcher(systemConf, uri, remoteChunk));
             i++;
           }
-
-          // If we decide that intermediate data should be really fetched from a remote host, storeChunk
-          // represents a complete file. Otherwise, storeChunk may represent a complete file or only a part of it
-//          for (FileChunk eachChunk : storeChunkList) {
-//            RemoteFetcher fetcher = new RemoteFetcher(systemConf, uri, eachChunk);
-//            runnerList.add(fetcher);
-//            i++;
-//            if (LOG.isDebugEnabled()) {
-//              LOG.debug("Create a new Fetcher with storeChunk:" + eachChunk.toString());
-//            }
-//          }
         }
       }
       ctx.addFetchPhase(runnerList.size(), new File(inputDir.toString()));

@@ -37,8 +37,5 @@ public class FileCloseListener implements ChannelFutureListener {
       filePart.transferSuccessful();
     }
     filePart.releaseExternalResources();
-//    if (pullServerService != null) {
-//      pullServerService.completeFileChunk(filePart, requestUri, startTime);
-//    }
   }
 }

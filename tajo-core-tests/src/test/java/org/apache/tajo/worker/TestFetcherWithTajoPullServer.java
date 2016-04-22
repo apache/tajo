@@ -30,10 +30,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.FetcherState;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -213,7 +210,7 @@ public class TestFetcherWithTajoPullServer {
     }
     final FSDataOutputStream stream = fs.create(inputPath, true);
     BSTIndex index = new BSTIndex(conf);
-    Schema schema = SchemaFactory.newV1(new Column[] {new Column("rnd", Type.TEXT)});
+    Schema schema = SchemaBuilder.builder().addAll(new Column[] {new Column("rnd", Type.TEXT)}).build();
     SortSpec[] sortSpecs = new SortSpec[] {new SortSpec(schema.getColumn(0))};
     BSTIndexWriter writer = index.getIndexWriter(new Path(INPUT_DIR, indexPath), BSTIndex.TWO_LEVEL_INDEX, schema, new BaseTupleComparator(schema, sortSpecs), true);
     writer.init();
