@@ -33,6 +33,7 @@ import org.apache.parquet.io.api.GroupConverter;
 import org.apache.parquet.io.api.PrimitiveConverter;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.Type;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -335,7 +336,8 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addInt(int value) {
-      parent.add(DatumFactory.createDate(Integer.valueOf(value)));
+      // Parquet DATE type is based on Unix Epoch(Jan 1, 1970).
+      parent.add(DatumFactory.createDate(value + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH));
     }
   }
 
