@@ -101,7 +101,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     }
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"Hash_NoBroadcast"},
