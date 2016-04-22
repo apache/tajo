@@ -34,6 +34,8 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
+import static org.apache.tajo.catalog.TypeConverter.convert;
+
 /**
  * NamedExprsManager manages an expressions used in a query block. All expressions used in a query block must be
  * added to NamedExprsManager. When an expression is added to NamedExprsManager, NamedExprsManager gives a reference
@@ -313,14 +315,15 @@ public class NamedExprsManager {
       // But, if this reference name is not primary name, it cannot use the reference name.
       // It changes the given reference name to the primary name.
       if (evalNode.getType() != EvalType.CONST && isEvaluated(normalized) && !isPrimaryName(refId, referenceName)) {
-        return new Target(new FieldEval(getPrimaryName(refId),evalNode.getValueType()), referenceName);
+        return new Target(new FieldEval(getPrimaryName(refId), convert(evalNode.getValueType()).getDataType()),
+            referenceName);
       }
 
       EvalNode referredEval;
       if (evalNode.getType() == EvalType.CONST) {
         referredEval = evalNode;
       } else {
-        referredEval = new FieldEval(idToNamesMap.get(refId).get(0), evalNode.getValueType());
+        referredEval = new FieldEval(idToNamesMap.get(refId).get(0), convert(evalNode.getValueType()).getDataType());
       }
       return new Target(referredEval, referenceName);
 

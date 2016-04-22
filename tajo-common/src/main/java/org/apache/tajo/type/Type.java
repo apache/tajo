@@ -24,9 +24,25 @@ import org.apache.tajo.schema.Schema;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.*;
-
 public abstract class Type {
+
+  // No paramter types
+  public static final Any Any = new Any();
+  public static final Null Null = new Null();
+  public static final Bool Bool = new Bool();
+  public static final Int1 Int1 = new Int1();
+  public static final Int2 Int2 = new Int2();
+  public static final Int4 Int4 = new Int4();
+  public static final Int8 Int8 = new Int8();
+  public static final Float4 Float4 = new Float4();
+  public static final Float8 Float8 = new Float8();
+  public static final Date Date = new Date();
+  public static final Time Time = new Time();
+  public static final Timestamp Timestamp = new Timestamp();
+  public static final Interval Interval = new Interval();
+  public static final Text Text = new Text();
+  public static final Blob Blob = new Blob();
+  public static final Inet4 Inet4 = new Inet4();
 
   public abstract TajoDataTypes.Type baseType();
 
@@ -45,10 +61,7 @@ public abstract class Type {
 
   @Override
   public boolean equals(Object t) {
-    if (t instanceof Type) {
-      return ((Type)t).baseType() == baseType();
-    }
-    return false;
+    return t instanceof Type && ((Type)t).baseType() == baseType();
   }
 
   @Override
@@ -60,35 +73,14 @@ public abstract class Type {
     return this.baseType() == TajoDataTypes.Type.RECORD;
   }
 
-  public static Any Any() {
-    return Any.INSTANCE;
-  }
+  public boolean isNull() { return this.baseType() == TajoDataTypes.Type.NULL_TYPE; }
 
-  public static Bool Bool() {
-    return new Bool();
-  }
-
-  public static Int2 Int2() {
-    return new Int2();
-  }
-
-  public static Int4 Int4() {
-    return new Int4();
-  }
-
-  public static Int8 Int8() {
-    return new Int8();
-  }
-
-  public static Float4 Float4() {
-    return new Float4();
-  }
-
-  public static Float8 Float8() {
-    return new Float8();
-  }
-
+  public static int DEFAULT_PRECISION = 0;
   public static int DEFAULT_SCALE = 0;
+
+  public static Numeric Numeric() {
+    return new Numeric(DEFAULT_PRECISION, DEFAULT_SCALE);
+  }
 
   public static Numeric Numeric(int precision) {
     return new Numeric(precision, DEFAULT_SCALE);
@@ -96,22 +88,6 @@ public abstract class Type {
 
   public static Numeric Numeric(int precision, int scale) {
     return new Numeric(precision, scale);
-  }
-
-  public static Date Date() {
-    return new Date();
-  }
-
-  public static Time Time() {
-    return new Time();
-  }
-
-  public static Timestamp Timestamp() {
-    return new Timestamp();
-  }
-
-  public static Interval Interval() {
-    return new Interval();
   }
 
   public static Char Char(int len) {
@@ -122,28 +98,16 @@ public abstract class Type {
     return new Varchar(len);
   }
 
-  public static Text Text() {
-    return new Text();
-  }
-
-  public static Blob Blob() {
-    return new Blob();
-  }
-
-  public static Inet4 Inet4() {
-    return new Inet4();
-  }
-
-  public static Struct Struct(Collection<Schema.NamedType> types) {
+  public static Struct Struct(Collection<Schema.Field> types) {
     return new Struct(types);
-  }
-
-  public static Struct Struct(Schema.NamedType... types) {
-    return new Struct(Arrays.asList(types));
   }
 
   public static Array Array(Type type) {
     return new Array(type);
+  }
+
+  public static Struct Struct(Schema.Field... types) {
+    return new Struct(Arrays.asList(types));
   }
 
   public static Map Map(Type keyType, Type valueType) {

@@ -16,25 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog;
+package org.apache.tajo.type;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import org.apache.tajo.schema.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 
-import javax.annotation.Nullable;
-
-public class SchemaConverter {
-  public static org.apache.tajo.catalog.Schema convert(Schema schema) {
-    ImmutableList<Column> columns = ImmutableList.copyOf(
-        Iterables.transform(schema, new Function<Schema.Field, Column>() {
-          @Override
-          public Column apply(@Nullable Schema.Field namedType) {
-            return FieldConverter.convert(namedType);
-          }
-        })
-    );
-    return new SchemaLegacy(columns);
+public class Int1 extends Type {
+  @Override
+  public TajoDataTypes.Type baseType() {
+    return TajoDataTypes.Type.INT1;
   }
 }

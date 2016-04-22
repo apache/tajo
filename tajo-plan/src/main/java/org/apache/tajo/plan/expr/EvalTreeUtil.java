@@ -179,7 +179,7 @@ public class EvalTreeUtil {
     case DIVIDE:
     case CONST:
     case FUNCTION:
-        return expr.getValueType();
+        return TypeConverter.convert(expr.getValueType()).getDataType();
 
     case FIELD:
       FieldEval fieldEval = (FieldEval) expr;

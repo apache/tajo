@@ -23,13 +23,10 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.schema.QualifiedIdentifier;
-import org.apache.tajo.schema.Schema.NamedPrimitiveType;
-import org.apache.tajo.schema.Schema.NamedStructType;
-import org.apache.tajo.schema.Schema.NamedType;
+import org.apache.tajo.schema.Schema.Field;
 import org.apache.tajo.type.Type;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 import java.util.Iterator;
 
 import static org.apache.tajo.catalog.FieldConverter.toQualifiedIdentifier;
@@ -42,10 +39,10 @@ public class SchemaBuilder {
   private final SchemaCollector fields;
 
   public interface SchemaCollector {
-    void add(NamedType field);
-    void addAll(Iterator<NamedType> fields);
-    void addAll(Iterable<NamedType> fields);
-    ImmutableCollection<NamedType> build();
+    void add(Field field);
+    void addAll(Iterator<Field> fields);
+    void addAll(Iterable<Field> fields);
+    ImmutableCollection<Field> build();
   }
 
   public static SchemaLegacy empty() {
@@ -64,28 +61,19 @@ public class SchemaBuilder {
     this.fields = collector;
   }
 
-  public SchemaBuilder add(NamedType namedType) {
-    fields.add(namedType);
+  public SchemaBuilder add(Field field) {
+    fields.add(field);
     return this;
   }
 
   public SchemaBuilder add(QualifiedIdentifier id, Type type) {
-    add(new NamedPrimitiveType(id, type));
-    return this;
-  }
-
-  public SchemaBuilder addStruct(QualifiedIdentifier id, Collection<NamedType> fields) {
-    add(new NamedStructType(id, fields));
+    add(new Field(type, id));
     return this;
   }
 
   @Deprecated
   public SchemaBuilder add(String name, TypeDesc legacyType) {
-    if (legacyType.getDataType().getType() == TajoDataTypes.Type.RECORD) {
-      addStruct(toQualifiedIdentifier(name), TypeConverter.convert(legacyType));
-    } else {
-      add(toQualifiedIdentifier(name), TypeConverter.convert(legacyType.getDataType()));
-    }
+    add(toQualifiedIdentifier(name), TypeConverter.convert(legacyType));
     return this;
   }
 
@@ -109,9 +97,9 @@ public class SchemaBuilder {
 
   @Deprecated
   public SchemaBuilder addAll(Iterable<Column> columns) {
-    return addAll2(columns, new Function<Column, NamedType>() {
+    return addAll2(columns, new Function<Column, Field>() {
       @Override
-      public NamedType apply(@Nullable Column input) {
+      public Field apply(@Nullable Column input) {
         return FieldConverter.convert(input);
       }
     });
@@ -119,9 +107,9 @@ public class SchemaBuilder {
 
   @Deprecated
   public SchemaBuilder addAll(Column [] columns) {
-    return addAll2(columns, new Function<Column, NamedType>() {
+    return addAll2(columns, new Function<Column, Field>() {
       @Override
-      public NamedType apply(@Nullable Column input) {
+      public Field apply(@Nullable Column input) {
         return FieldConverter.convert(input);
       }
     });
@@ -152,21 +140,26 @@ public class SchemaBuilder {
     return this;
   }
 
-  public <T> SchemaBuilder addAll2(T [] fields, Function<T, NamedType> fn) {
+  public SchemaBuilder addAll2(Iterable<Field> fields) {
+    this.fields.addAll(fields);
+    return this;
+  }
+
+  public <T> SchemaBuilder addAll2(T [] fields, Function<T, Field> fn) {
     for (T t : fields) {
       add(fn.apply(t));
     }
     return this;
   }
 
-  public <T> SchemaBuilder addAll2(Iterable<T> fields, Function<T, NamedType> fn) {
+  public <T> SchemaBuilder addAll2(Iterable<T> fields, Function<T, Field> fn) {
     for (T t : fields) {
       add(fn.apply(t));
     }
     return this;
   }
 
-  public <T> SchemaBuilder addAll2(Iterator<T> fields, Function<T, NamedType> fn) {
+  public <T> SchemaBuilder addAll2(Iterator<T> fields, Function<T, Field> fn) {
     while(fields.hasNext()) {
       T t = fields.next();
       add(fn.apply(t));
@@ -177,8 +170,8 @@ public class SchemaBuilder {
   @Deprecated
   public SchemaLegacy build() {
     ImmutableList.Builder<Column> columns = new ImmutableList.Builder();
-    for (NamedType namedType : fields.build()) {
-      columns.add(new Column(namedType.name().raw(DefaultPolicy()), TypeConverter.convert(namedType)));
+    for (Field field : fields.build()) {
+      columns.add(new Column(field.name().raw(DefaultPolicy()), TypeConverter.convert(field)));
     }
 
     return new SchemaLegacy(columns.build());

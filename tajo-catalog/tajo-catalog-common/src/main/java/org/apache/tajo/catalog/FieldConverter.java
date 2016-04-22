@@ -27,9 +27,8 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.schema.Identifier;
 import org.apache.tajo.schema.IdentifierPolicy;
 import org.apache.tajo.schema.QualifiedIdentifier;
-import org.apache.tajo.schema.Schema;
-import org.apache.tajo.schema.Schema.NamedPrimitiveType;
-import org.apache.tajo.schema.Schema.NamedStructType;
+import org.apache.tajo.schema.Schema.Field;
+import org.apache.tajo.type.Struct;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -48,36 +47,30 @@ public class FieldConverter {
     return QualifiedIdentifier.$(identifiers);
   }
 
-  public static Schema.NamedType convert(Column column) {
+  public static Field convert(Column column) {
     if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
 
       if (column.getTypeDesc().getNestedSchema() == null) {
         throw new TajoRuntimeException(new NotImplementedException("record type projection"));
       }
-
-      return new NamedStructType(toQualifiedIdentifier(column.getQualifiedName()),
-          TypeConverter.convert(column.getTypeDesc()));
-
-    } else {
-      return new NamedPrimitiveType(toQualifiedIdentifier(column.getQualifiedName()),
-          TypeConverter.convert(column.getDataType())
-      );
     }
+
+    return new Field(TypeConverter.convert(column.getTypeDesc()), toQualifiedIdentifier(column.getQualifiedName()));
   }
 
-  public static Column convert(Schema.NamedType type) {
-    if (type instanceof NamedStructType) {
-      NamedStructType structType = (NamedStructType) type;
+  public static Column convert(Field field) {
+    if (field.isStruct()) {
+      Struct struct = field.type();
       Collection<Column> converted = Collections2
-          .transform(structType.fields(), new Function<Schema.NamedType, Column>() {
+          .transform(struct.fields(), new Function<Field, Column>() {
         @Override
-        public Column apply(@Nullable Schema.NamedType namedType) {
+        public Column apply(@Nullable Field namedType) {
           return FieldConverter.convert(namedType);
         }
       });
-      return new Column(type.name().raw(IdentifierPolicy.DefaultPolicy()), new TypeDesc(new SchemaLegacy(converted)));
+      return new Column(field.name().raw(IdentifierPolicy.DefaultPolicy()), new TypeDesc(new SchemaLegacy(converted)));
     } else {
-      return new Column(type.name().displayString(IdentifierPolicy.DefaultPolicy()), TypeConverter.convert(type));
+      return new Column(field.name().displayString(IdentifierPolicy.DefaultPolicy()), TypeConverter.convert(field));
     }
   }
 }

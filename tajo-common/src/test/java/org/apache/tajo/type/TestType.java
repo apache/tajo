@@ -21,28 +21,47 @@ package org.apache.tajo.type;
 import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
-import static org.apache.tajo.type.Type.*;
+import static org.apache.tajo.schema.QualifiedIdentifier.$;
+import static org.apache.tajo.schema.Schema.Field;
+import static org.apache.tajo.type.Type.Array;
+import static org.apache.tajo.type.Type.Blob;
+import static org.apache.tajo.type.Type.Bool;
+import static org.apache.tajo.type.Type.Char;
+import static org.apache.tajo.type.Type.Date;
+import static org.apache.tajo.type.Type.Float4;
+import static org.apache.tajo.type.Type.Float8;
+import static org.apache.tajo.type.Type.Int1;
+import static org.apache.tajo.type.Type.Int2;
+import static org.apache.tajo.type.Type.Int4;
+import static org.apache.tajo.type.Type.Int8;
+import static org.apache.tajo.type.Type.Map;
+import static org.apache.tajo.type.Type.Numeric;
+import static org.apache.tajo.type.Type.Struct;
+import static org.apache.tajo.type.Type.Time;
+import static org.apache.tajo.type.Type.Timestamp;
+import static org.apache.tajo.type.Type.Varchar;
 import static org.junit.Assert.assertEquals;
 
 public class TestType {
   @Test
   public final void testPrimitiveTypes() {
-    assertEquals(Bool().baseType(), BOOLEAN);
-    assertEquals(Int2().baseType(), INT2);
-    assertEquals(Int4().baseType(), INT4);
-    assertEquals(Int8().baseType(), INT8);
-    assertEquals(Float4().baseType(), FLOAT4);
-    assertEquals(Float8().baseType(), FLOAT8);
-    assertEquals(Date().baseType(), DATE);
-    assertEquals(Time().baseType(), TIME);
-    assertEquals(Timestamp().baseType(), TIMESTAMP);
+    assertEquals(Bool.baseType(), BOOLEAN);
+    assertEquals(Int1.baseType(), INT1);
+    assertEquals(Int2.baseType(), INT2);
+    assertEquals(Int4.baseType(), INT4);
+    assertEquals(Int8.baseType(), INT8);
+    assertEquals(Float4.baseType(), FLOAT4);
+    assertEquals(Float8.baseType(), FLOAT8);
+    assertEquals(Date.baseType(), DATE);
+    assertEquals(Time.baseType(), TIME);
+    assertEquals(Timestamp.baseType(), TIMESTAMP);
 
     Numeric n = Numeric(4, 2);
     assertEquals(n.baseType(), NUMERIC);
     assertEquals(n.precision(), 4);
     assertEquals(n.scale(), 2);
 
-    assertEquals(Blob().baseType(), BLOB);
+    assertEquals(Blob.baseType(), BLOB);
 
     Char c = Char(2);
     assertEquals(c.baseType(), CHAR);
@@ -52,37 +71,40 @@ public class TestType {
     assertEquals(varchar.baseType(), VARCHAR);
     assertEquals(varchar.length(), 2);
 
-    Struct struct = Struct(Int8(), Array(Float8()));
+    Struct struct = Struct(Field("x", Int8), Field("y", Array(Float8)));
     assertEquals(struct.baseType(), RECORD);
-    assertEquals(struct.memberType(0).baseType(), INT8);
-    assertEquals(struct.memberType(1).baseType(), ARRAY);
+    assertEquals(struct.field(0).baseType(), INT8);
+    assertEquals(struct.field(0).name(), $("x"));
+    assertEquals(struct.field(1).baseType(), ARRAY);
+    assertEquals(struct.field(1).name(), $("y"));
 
-    Map map = Map(Int8(), Array(Timestamp()));
+    Map map = Map(Int8, Array(Timestamp));
     assertEquals(map.baseType(), MAP);
     assertEquals(map.keyType().baseType(), INT8);
     assertEquals(map.valueType().baseType(), ARRAY);
 
-    Array array = Array(Int8());
+    Array array = Array(Int8);
     assertEquals(array.baseType(), ARRAY);
     assertEquals(array.elementType().baseType(), INT8);
   }
 
   @Test
   public final void testToString() {
-    assertEquals("boolean", Bool().toString());
-    assertEquals("int2", Int2().toString());
-    assertEquals("int4", Int4().toString());
-    assertEquals("int8", Int8().toString());
-    assertEquals("float4", Float4().toString());
-    assertEquals("float8", Float8().toString());
-    assertEquals("date", Date().toString());
-    assertEquals("time", Time().toString());
-    assertEquals("timestamp", Timestamp().toString());
+    assertEquals("boolean", Bool.toString());
+    assertEquals("int1", Int1.toString());
+    assertEquals("int2", Int2.toString());
+    assertEquals("int4", Int4.toString());
+    assertEquals("int8", Int8.toString());
+    assertEquals("float4", Float4.toString());
+    assertEquals("float8", Float8.toString());
+    assertEquals("date", Date.toString());
+    assertEquals("time", Time.toString());
+    assertEquals("timestamp", Timestamp.toString());
 
     Numeric n = Numeric(4, 2);
     assertEquals("numeric(4,2)", n.toString());
 
-    assertEquals("blob", Blob().toString());
+    assertEquals("blob", Blob.toString());
 
     Char c = Char(2);
     assertEquals("char(2)", c.toString());
@@ -90,13 +112,13 @@ public class TestType {
     Varchar varchar = Varchar(2);
     assertEquals("varchar(2)", varchar.toString());
 
-    Struct struct = Struct(Int8(), Array(Float8()));
-    assertEquals("struct(int8,array<float8>)", struct.toString());
+    Struct struct = Struct(Field("x", Int8), Field("y", Array(Float8)));
+    assertEquals("struct(x int8, y array<float8>)", struct.toString());
 
-    Map map = Map(Int8(), Array(Timestamp()));
+    Map map = Map(Int8, Array(Timestamp));
     assertEquals("map<int8,array<timestamp>>", map.toString());
 
-    Array array = Array(Int8());
+    Array array = Array(Int8);
     assertEquals("array<int8>", array.toString());
   }
 }

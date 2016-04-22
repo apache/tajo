@@ -38,7 +38,6 @@ import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
-import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
@@ -187,7 +186,6 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     testCloneLogicalNode(plan);
     LogicalRootNode root = (LogicalRootNode) plan;
-    testJsonSerDerObject(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
@@ -222,7 +220,6 @@ public class TestLogicalPlanner {
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    testJsonSerDerObject(root);
     testCloneLogicalNode(root);
 
     Schema expectedSchema = SchemaBuilder.builder()
@@ -252,7 +249,6 @@ public class TestLogicalPlanner {
     // three relations
     expr = sqlAnalyzer.parse(QUERIES[2]);
     plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     testCloneLogicalNode(plan);
 
     expectedSchema = SchemaBuilder.builder().addAll(expectedSchema.getRootColumns())
@@ -310,7 +306,6 @@ public class TestLogicalPlanner {
     // two relations
     Expr context = sqlAnalyzer.parse(JOINS[0]);
     LogicalNode plan = planner.createPlan(qc, context).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertSchema(expectedJoinSchema, plan.getOutSchema());
 
     assertEquals(NodeType.ROOT, plan.getType());
@@ -343,7 +338,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(JOINS[1]);
     LogicalPlan plan = planner.createPlan(qc, expr);
     LogicalNode root = plan.getRootBlock().getRoot();
-    testJsonSerDerObject(root);
     assertSchema(expectedJoinSchema, root.getOutSchema());
 
     assertEquals(NodeType.ROOT, root.getType());
@@ -376,7 +370,6 @@ public class TestLogicalPlanner {
     // two relations
     Expr expr = sqlAnalyzer.parse(JOINS[2]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertSchema(expectedJoinSchema, plan.getOutSchema());
 
     assertEquals(NodeType.ROOT, plan.getType());
@@ -414,7 +407,6 @@ public class TestLogicalPlanner {
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    testJsonSerDerObject(root);
     testQuery7(root.getChild());
 
     // with having clause
@@ -452,7 +444,6 @@ public class TestLogicalPlanner {
         FileUtil.readTextFile(new File("src/test/resources/queries/TestJoinQuery/testTPCHQ2Join.sql")));
     QueryContext qc = createQueryContext();
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     Schema expected = tpch.getOutSchema("q2");
     assertSchema(expected, plan.getOutSchema());
   }
@@ -513,7 +504,6 @@ public class TestLogicalPlanner {
 
     LogicalPlan plan = planner.createPlan(qc, expr);
     LogicalNode node = plan.getRootBlock().getRoot();
-    testJsonSerDerObject(node);
 
     Schema expected = tpch.getOutSchema("q2");
     assertSchema(expected, node.getOutSchema());
@@ -555,7 +545,6 @@ public class TestLogicalPlanner {
 
     LogicalPlan plan = planner.createPlan(qc,expr);
     LogicalNode node = plan.getRootBlock().getRoot();
-    testJsonSerDerObject(node);
 
     LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
@@ -596,7 +585,6 @@ public class TestLogicalPlanner {
 
     LogicalPlan plan = planner.createPlan(qc, expr);
     LogicalNode node = plan.getRootBlock().getRoot();
-    testJsonSerDerObject(node);
 
     LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
@@ -643,7 +631,6 @@ public class TestLogicalPlanner {
 
     LogicalPlan plan = planner.createPlan(qc, expr);
     LogicalNode node = plan.getRootBlock().getRoot();
-    testJsonSerDerObject(node);
 
     LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, TablespaceManager.getInstance());
     optimizer.optimize(plan);
@@ -736,7 +723,6 @@ public class TestLogicalPlanner {
 
     LogicalNode plan = planner.createPlan(qc, context).getRootBlock().getRoot();
     testCloneLogicalNode(plan);
-    testJsonSerDerObject(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -753,7 +739,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(QUERIES[4]);
 
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     testCloneLogicalNode(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
@@ -783,7 +768,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(QUERIES[12]);
 
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     testCloneLogicalNode(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
@@ -804,7 +788,6 @@ public class TestLogicalPlanner {
 
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     testCloneLogicalNode(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
@@ -826,30 +809,7 @@ public class TestLogicalPlanner {
 
     Expr expr = sqlAnalyzer.parse(QUERIES[6]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     testCloneLogicalNode(plan);
-  }
-
-  @Test
-  public final void testJson() throws TajoException {
-    QueryContext qc = createQueryContext();
-
-	  Expr expr = sqlAnalyzer.parse(QUERIES[9]);
-	  LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
-
-	  String json = plan.toJson();
-	  LogicalNode fromJson = CoreGsonHelper.fromJson(json, LogicalNode.class);
-	  assertEquals(NodeType.ROOT, fromJson.getType());
-	  LogicalNode project = ((LogicalRootNode)fromJson).getChild();
-	  assertEquals(NodeType.PROJECTION, project.getType());
-	  assertEquals(NodeType.HAVING, ((ProjectionNode) project).getChild().getType());
-    HavingNode havingNode = ((ProjectionNode) project).getChild();
-    assertEquals(NodeType.GROUP_BY, havingNode.getChild().getType());
-    GroupbyNode groupbyNode = havingNode.getChild();
-    assertEquals(NodeType.SCAN, groupbyNode.getChild().getType());
-	  LogicalNode scan = groupbyNode.getChild();
-	  assertEquals(NodeType.SCAN, scan.getType());
   }
 
   @Test
@@ -886,7 +846,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(QUERIES[10]);
     LogicalPlan rootNode = planner.createPlan(qc, expr);
     LogicalNode plan = rootNode.getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.EXPRS, root.getChild().getType());
@@ -907,7 +866,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(QUERIES[11]);
     LogicalPlan rootNode = planner.createPlan(qc, expr);
     LogicalNode plan = rootNode.getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
 
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.CREATE_INDEX, root.getChild().getType());
@@ -934,7 +892,6 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     testCloneLogicalNode(plan);
     LogicalRootNode root = (LogicalRootNode) plan;
-    testJsonSerDerObject(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
@@ -961,7 +918,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(ALIAS[0]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     LogicalRootNode root = (LogicalRootNode) plan;
-    testJsonSerDerObject(root);
 
     Schema finalSchema = root.getOutSchema();
     Iterator<Column> it = finalSchema.getRootColumns().iterator();
@@ -989,7 +945,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(ALIAS[1]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     LogicalRootNode root = (LogicalRootNode) plan;
-    testJsonSerDerObject(root);
 
     Schema finalSchema = root.getOutSchema();
     Iterator<Column> it = finalSchema.getRootColumns().iterator();
@@ -1010,7 +965,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(CREATE_TABLE[0]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     LogicalRootNode root = (LogicalRootNode) plan;
-    testJsonSerDerObject(root);
     assertEquals(NodeType.CREATE_TABLE, root.getChild().getType());
     CreateTableNode createTable = root.getChild();
 
@@ -1095,7 +1049,6 @@ public class TestLogicalPlanner {
 
     Expr expr = sqlAnalyzer.parse(setStatements[0]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.UNION, root.getChild().getType());
@@ -1116,7 +1069,6 @@ public class TestLogicalPlanner {
 
     Expr context = sqlAnalyzer.parse(setQualifiers[0]);
     LogicalNode plan = planner.createPlan(qc, context).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
@@ -1125,7 +1077,6 @@ public class TestLogicalPlanner {
 
     context = sqlAnalyzer.parse(setQualifiers[1]);
     plan = planner.createPlan(qc, context).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
@@ -1134,17 +1085,10 @@ public class TestLogicalPlanner {
 
     context = sqlAnalyzer.parse(setQualifiers[2]);
     plan = planner.createPlan(qc, context).getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     root = (LogicalRootNode) plan;
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     projectionNode = root.getChild();
     assertEquals(NodeType.SCAN, projectionNode.getChild().getType());
-  }
-
-  public void testJsonSerDerObject(LogicalNode rootNode) {
-    String json = rootNode.toJson();
-    LogicalNode fromJson = CoreGsonHelper.fromJson(json, LogicalNode.class);
-    assertTrue("JSON (de) serialization equivalence check", rootNode.deepEquals(fromJson));
   }
 
   // Table descriptions
@@ -1275,7 +1219,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(sql);
     LogicalPlan rootNode = planner.createPlan(qc, expr);
     LogicalNode plan = rootNode.getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
@@ -1341,7 +1284,6 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(ALTER_PARTITIONS[0]);
     LogicalPlan rootNode = planner.createPlan(qc, expr);
     LogicalNode plan = rootNode.getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
@@ -1365,7 +1307,6 @@ public class TestLogicalPlanner {
     expr = sqlAnalyzer.parse(ALTER_PARTITIONS[1]);
     rootNode = planner.createPlan(qc, expr);
     plan = rootNode.getRootBlock().getRoot();
-    testJsonSerDerObject(plan);
     assertEquals(NodeType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
     assertEquals(NodeType.ALTER_TABLE, root.getChild().getType());
@@ -1407,12 +1348,10 @@ public class TestLogicalPlanner {
     LogicalNode node = logicalPlan.getRootNode();
     assertEquals(NodeType.ROOT, node.getType());
     LogicalRootNode root = (LogicalRootNode) node;
-    testJsonSerDerObject(root);
     testCloneLogicalNode(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projectionNode = root.getChild();
-    testJsonSerDerObject(projectionNode);
     testCloneLogicalNode(projectionNode);
 
     // projection column test
@@ -1462,12 +1401,10 @@ public class TestLogicalPlanner {
     LogicalNode node = logicalPlan.getRootNode();
     assertEquals(NodeType.ROOT, node.getType());
     LogicalRootNode root = (LogicalRootNode) node;
-    testJsonSerDerObject(root);
     testCloneLogicalNode(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projectionNode = root.getChild();
-    testJsonSerDerObject(projectionNode);
     testCloneLogicalNode(projectionNode);
 
     // projection column test

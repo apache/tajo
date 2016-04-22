@@ -18,8 +18,9 @@
 
 package org.apache.tajo.schema;
 
-import com.google.common.base.Preconditions;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.type.Type;
 import org.apache.tajo.util.StringUtils;
 
@@ -28,52 +29,57 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
-
 /**
  * A field is a pair of a name and a type. Schema is an ordered list of fields.
  */
-public class Schema implements Iterable<Schema.NamedType> {
-  private final ImmutableList<NamedType> namedTypes;
+public class Schema implements Iterable<Schema.Field> {
+  private final ImmutableList<Field> fields;
 
-  public Schema(Collection<NamedType> namedTypes) {
-    this.namedTypes = ImmutableList.copyOf(namedTypes);
+  public Schema(Collection<Field> fields) {
+    this.fields = ImmutableList.copyOf(fields);
   }
 
-  public static Schema Schema(NamedType...fields) {
+  public static Schema Schema(Field...fields) {
     return new Schema(Arrays.asList(fields));
   }
 
-  public static Schema Schema(Collection<NamedType> fields) {
+  public static Schema Schema(Collection<Field> fields) {
     return new Schema(fields);
   }
 
   @Override
   public String toString() {
-    return StringUtils.join(namedTypes, ",");
+    return StringUtils.join(fields, ",");
   }
 
-  public static NamedStructType Struct(QualifiedIdentifier name, NamedType... namedTypes) {
-    return Struct(name, Arrays.asList(namedTypes));
+  public static Field StructField(QualifiedIdentifier name, Field ... fields) {
+    return StructField(name, Arrays.asList(fields));
   }
 
-  public static NamedStructType Struct(QualifiedIdentifier name, Collection<NamedType> namedTypes) {
-    return new NamedStructType(name, namedTypes);
+  public static Field StructField(QualifiedIdentifier name, Collection<Field> fields) {
+    return new Field(Type.Struct(fields), name);
   }
 
-  public static NamedPrimitiveType Field(QualifiedIdentifier name, Type type) {
-    return new NamedPrimitiveType(name, type);
+  @VisibleForTesting
+  public static Field Field(String name, Type type) {
+    return new Field(type, QualifiedIdentifier.$(name));
+  }
+
+  public static Field Field(QualifiedIdentifier name, Type type) {
+    return new Field(type, name);
   }
 
   @Override
-  public Iterator<NamedType> iterator() {
-    return namedTypes.iterator();
+  public Iterator<Field> iterator() {
+    return fields.iterator();
   }
 
-  public static abstract class NamedType {
+  public static class Field {
+    protected final Type type;
     protected final QualifiedIdentifier name;
 
-    public NamedType(QualifiedIdentifier name) {
+    public Field(Type type, QualifiedIdentifier name) {
+      this.type = type;
       this.name = name;
     }
 
@@ -81,38 +87,20 @@ public class Schema implements Iterable<Schema.NamedType> {
       return this.name;
     }
 
-    @Override
-    public int hashCode() {
-      return Objects.hash(name);
+    public TajoDataTypes.Type baseType() {
+      return this.type.baseType();
     }
 
-    @Override
-    public boolean equals(Object obj) {
-
-      if (this == obj) {
-        return true;
-      }
-
-      if (obj instanceof NamedType) {
-        NamedType other = (NamedType) obj;
-        return this.name.equals(other.name);
-      }
-
-      return false;
-    }
-  }
-
-  public static class NamedPrimitiveType extends NamedType {
-    private final Type type;
-
-    public NamedPrimitiveType(QualifiedIdentifier name, Type type) {
-      super(name);
-      Preconditions.checkArgument(type.baseType() != RECORD);
-      this.type = type;
+    public <T extends Type> T type() {
+      return (T) type;
     }
 
-    public Type type() {
-      return type;
+    public boolean isStruct() {
+      return type.isStruct();
+    }
+
+    public boolean isNull() {
+      return type.isNull();
     }
 
     @Override
@@ -122,55 +110,19 @@ public class Schema implements Iterable<Schema.NamedType> {
 
     @Override
     public int hashCode() {
-      return Objects.hash(name, type);
+      return Objects.hash(type, name);
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (obj == this) {
+
+      if (this == obj) {
         return true;
       }
 
-      if (obj instanceof NamedPrimitiveType) {
-        NamedPrimitiveType other = (NamedPrimitiveType) obj;
-        return super.equals(other) && this.type.equals(type);
-      }
-
-      return false;
-    }
-  }
-
-  public static class NamedStructType extends NamedType {
-    private final ImmutableList<NamedType> fields;
-
-    public NamedStructType(QualifiedIdentifier name, Collection<NamedType> fields) {
-      super(name);
-      this.fields = ImmutableList.copyOf(fields);
-    }
-
-    public Collection<NamedType> fields() {
-      return this.fields;
-    }
-
-    @Override
-    public String toString() {
-      return name + " record (" + StringUtils.join(fields, ",") + ")";
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(name, fields);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj == this) {
-        return true;
-      }
-
-      if (obj instanceof NamedStructType) {
-        NamedStructType other = (NamedStructType) obj;
-        return super.equals(other) && fields.equals(other.fields);
+      if (obj instanceof Field) {
+        Field other = (Field) obj;
+        return this.type.equals(other) && this.name.equals(other.name);
       }
 
       return false;

@@ -50,7 +50,8 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.schema.Schema.NamedType;
+import org.apache.tajo.schema.Schema.Field;
+import org.apache.tajo.type.Numeric;
 import org.apache.tajo.type.Type;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -582,7 +583,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public static void prohibitNestedRecordProjection(Projectable projectable)
       throws TajoException {
     for (Target t : projectable.getTargets()) {
-      if (t.getEvalTree().getValueType().getType() == TajoDataTypes.Type.RECORD) {
+      if (t.getEvalTree().getValueType().isStruct()) {
         throw new NotImplementedException("record field projection");
       }
     }
@@ -1938,8 +1939,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // If the table schema is defined
       // ex) CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
       if (expr.hasTableElements()) {
-        createTableNode.setOutSchema(convertTableElementsSchema(expr.getTableElements()));
-        createTableNode.setTableSchema(convertTableElementsSchema(expr.getTableElements()));
+        createTableNode.setOutSchema(SchemaBuilder.builder()
+            .addAll2(convertTableElementsSchema(expr.getTableElements()))
+            .build());
+
+        createTableNode.setTableSchema(SchemaBuilder.builder()
+            .addAll2(convertTableElementsSchema(expr.getTableElements()))
+            .build());
       } else {
         // if no table definition, the select clause's output schema will be used.
         // ex) CREATE TABLE tbl AS SELECT ...
@@ -2052,8 +2058,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param elements to be transformed
    * @return schema transformed from table definition elements
    */
-  private static Collection<NamedType> convertTableElementsSchema(ColumnDefinition[] elements) {
-    ImmutableList.Builder<NamedType> list = ImmutableList.builder();
+  private static Collection<Field> convertTableElementsSchema(ColumnDefinition[] elements) {
+    ImmutableList.Builder<Field> list = ImmutableList.builder();
     for (ColumnDefinition colDef : elements) {
       list.add(FieldConverter.convert(convertColumn(colDef)));
     }
@@ -2103,14 +2109,32 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public static Type convertDataType(DataTypeExpr dataType) {
     TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(dataType.getTypeName());
 
-    if (type == TajoDataTypes.Type.CHAR) {
-      return Char(dataType.getLengthOrPrecision());
-    } else if (type == TajoDataTypes.Type.VARCHAR) {
-      return Varchar(dataType.getLengthOrPrecision());
+    if (type == TajoDataTypes.Type.CHAR || type == TajoDataTypes.Type.NCHAR) {
+      if (dataType.hasLengthOrPrecision()) {
+        return Char(dataType.getLengthOrPrecision());
+      } else {
+        // Default length is 1. It's because of compatibility with the legacy code.
+        return Char(1);
+      }
+    } else if (type == TajoDataTypes.Type.VARCHAR || type == TajoDataTypes.Type.NVARCHAR) {
+      if (dataType.hasLengthOrPrecision()) {
+        return Char(dataType.getLengthOrPrecision());
+      } else {
+        // Default length is 1. It's because of compatibility with the legacy code.
+        return Varchar(1);
+      }
     } else if (type == TajoDataTypes.Type.ARRAY) {
       return Array(convertDataType(dataType.getElementType()));
     } else if (type == TajoDataTypes.Type.RECORD) {
       return Struct(convertTableElementsSchema(dataType.getNestedRecordTypes()));
+    } else if (type == TajoDataTypes.Type.NUMERIC) {
+      if (dataType.hasLengthOrPrecision() && dataType.hasScale()) {
+        return Numeric(dataType.getLengthOrPrecision(), dataType.getScale());
+      } else if (dataType.hasLengthOrPrecision()) {
+        return Numeric(dataType.getLengthOrPrecision());
+      } else {
+        return Numeric();
+      }
     } else {
       return convert(type);
     }
