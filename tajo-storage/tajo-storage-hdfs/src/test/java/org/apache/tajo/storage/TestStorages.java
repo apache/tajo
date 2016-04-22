@@ -963,13 +963,13 @@ public class TestStorages {
   public void testTime() throws IOException {
     if (dateTypeSupport() || timeTypeSupport()) {
 
-      int index = 2;
-      SchemaBuilder schema = SchemaBuilder.builder()
-      .add("col1", Type.TIMESTAMP);
+      int index = 1;
+      SchemaBuilder schema = SchemaBuilder.builder();
       if (dateTypeSupport()) {
         schema.add("col" + index++, Type.DATE);
       }
       if (timeTypeSupport()) {
+        schema.add("col" + index++, Type.TIMESTAMP);
         schema.add("col" + index++, Type.TIME);
       }
 
@@ -983,11 +983,11 @@ public class TestStorages {
 
       VTuple tuple = new VTuple(index - 1);
       index = 0;
-      tuple.put(index++, DatumFactory.createTimestampDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
       if (dateTypeSupport()) {
         tuple.put(index++, DatumFactory.createDate("1980-04-01"));
       }
       if (timeTypeSupport()) {
+        tuple.put(index++, DatumFactory.createTimestampDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
         tuple.put(index, DatumFactory.createTime("12:34:56"));
       }
       appender.addTuple(tuple);
