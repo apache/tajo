@@ -105,6 +105,13 @@ if [ "$COMMAND" == "datanode" ] && [ "$EUID" -eq 0 ] && [ -n "$TAJO_SECURE_DN_US
   starting_secure_dn="true"
 fi
 
+
+# This is borrowed from hadoop-config.sh in hadoop
+# Newer versions of glibc use an arena memory allocator that causes virtual
+# memory usage to explode. This interacts badly with the many threads that
+# we use in Hadoop. Tune the variable down to prevent vmem explosion.
+export MALLOC_ARENA_MAX=${MALLOC_ARENA_MAX:-4}
+
 # Attempt to set JAVA_HOME if it is not set
 if [[ -z $JAVA_HOME ]]; then
   # On OSX use java_home (or /Library for older versions)
@@ -115,18 +122,15 @@ if [[ -z $JAVA_HOME ]]; then
       export JAVA_HOME=(/Library/Java/Home)
     fi
   fi
-fi
 
-if [[ -z $JAVA_HOME ]]; then
-  if [ `command -v java` ]; then
-    JAVA="java"
-  else
+  # Bail if we did not detect it
+  if [[ -z $JAVA_HOME ]]; then
     echo "Error: JAVA_HOME is not set and could not be found." 1>&2
     exit 1
   fi
-else
-  JAVA=$JAVA_HOME/bin/java
 fi
+
+JAVA=$JAVA_HOME/bin/java
 
 JAVA_TAJO_MASTER_HEAP_MAX=-Xmx1000m 
 JAVA_WORKER_HEAP_MAX=-Xmx5000m
