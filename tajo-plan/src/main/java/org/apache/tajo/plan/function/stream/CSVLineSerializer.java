@@ -139,8 +139,6 @@ public class CSVLineSerializer extends TextLineSerializer {
       case TIMESTAMP:
         return "T";
       case BLOB:
-      case INET4:
-      case INET6:
         return "A";
       default:
         throw new TajoRuntimeException(new UnsupportedException("data type '" + val.type().name() + "'"));

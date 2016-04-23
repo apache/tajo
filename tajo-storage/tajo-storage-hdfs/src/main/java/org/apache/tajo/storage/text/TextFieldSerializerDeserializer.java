@@ -115,7 +115,6 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
       case INT8:
       case FLOAT4:
       case FLOAT8:
-      case INET4:
       case DATE:
       case INTERVAL:
         bytes = tuple.getTextBytes(columnIndex);
@@ -140,7 +139,6 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         length = bytes.length;
         out.write(bytes);
         break;
-      case INET6:
       case BLOB:
         bytes = Base64.encodeBase64(tuple.getBytes(columnIndex), false);
         length = bytes.length;
@@ -251,10 +249,6 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           }
           break;
         }
-        case INET4:
-          datum = DatumFactory.createInet4(
-              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
-          break;
         case BLOB: {
           byte[] bytes = new byte[buf.readableBytes()];
           buf.readBytes(bytes);

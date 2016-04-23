@@ -70,9 +70,8 @@ public class TestRadixSort {
         new Column("col3", Type.DATE),
         new Column("col4", Type.TIMESTAMP),
         new Column("col5", Type.TIME),
-        new Column("col6", Type.INET4),
-        new Column("col7", Type.FLOAT4),
-        new Column("col8", Type.FLOAT8)
+        new Column("col6", Type.FLOAT4),
+        new Column("col7", Type.FLOAT8)
     }).build();
   }
 
@@ -193,7 +192,6 @@ public class TestRadixSort {
         DatumFactory.createDate(Math.abs(random.nextInt())),
         DatumFactory.createTimestamp(Math.abs(random.nextLong())),
         DatumFactory.createTime(Math.abs(random.nextLong())),
-        DatumFactory.createInet4(random.nextInt()),
         DatumFactory.createFloat4(random.nextFloat()),
         DatumFactory.createFloat8(random.nextDouble())
     });
@@ -221,7 +219,6 @@ public class TestRadixSort {
         DatumFactory.createDate(Integer.MAX_VALUE),
         DatumFactory.createTimestamp(Long.MAX_VALUE),
         DatumFactory.createTime(Long.MAX_VALUE),
-        DatumFactory.createInet4(Integer.MAX_VALUE),
         DatumFactory.createFloat4(Float.MAX_VALUE),
         DatumFactory.createFloat8(Double.MAX_VALUE)
     });
@@ -237,7 +234,6 @@ public class TestRadixSort {
         DatumFactory.createDate(0),
         DatumFactory.createTimestamp(0),
         DatumFactory.createTime(0),
-        DatumFactory.createInet4(Integer.MIN_VALUE),
         DatumFactory.createFloat4(Float.MIN_VALUE),
         DatumFactory.createFloat8(Double.MIN_VALUE)
     });

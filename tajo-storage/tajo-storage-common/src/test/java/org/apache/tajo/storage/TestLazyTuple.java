@@ -52,9 +52,8 @@ public class TestLazyTuple {
         .add("col7", TajoDataTypes.Type.FLOAT8)
         .add("col8", TajoDataTypes.Type.TEXT)
         .add("col9", TajoDataTypes.Type.BLOB)
-        .add("col10", TajoDataTypes.Type.INET4)
-        .add("col11", TajoDataTypes.Type.INT4)
-        .add("col12", TajoDataTypes.Type.NULL_TYPE)
+        .add("col10", TajoDataTypes.Type.INT4)
+        .add("col11", TajoDataTypes.Type.NULL_TYPE)
         .build();
 
     StringBuilder sb = new StringBuilder();
@@ -67,7 +66,6 @@ public class TestLazyTuple {
     sb.append(DatumFactory.createFloat8(271.9f)).append('|');
     sb.append(DatumFactory.createText("str2")).append('|');
     sb.append(DatumFactory.createBlob("jinho")).append('|');
-    sb.append(DatumFactory.createInet4("192.168.0.1")).append('|');
     sb.append(new String(nullbytes)).append('|');
     sb.append(NullDatum.get());
     textRow = BytesUtils.splitPreserveAllTokens(sb.toString().getBytes(), '|', 13);
@@ -88,9 +86,8 @@ public class TestLazyTuple {
     assertEquals(DatumFactory.createFloat8(271.9f), t1.get(6));
     assertEquals(DatumFactory.createText("str2"), t1.get(7));
     assertEquals(DatumFactory.createBlob("jinho".getBytes()), t1.get(8));
-    assertEquals(DatumFactory.createInet4("192.168.0.1"), t1.get(9));
+    assertEquals(NullDatum.get(), t1.get(9));
     assertEquals(NullDatum.get(), t1.get(10));
-    assertEquals(NullDatum.get(), t1.get(11));
   }
 
   @Test

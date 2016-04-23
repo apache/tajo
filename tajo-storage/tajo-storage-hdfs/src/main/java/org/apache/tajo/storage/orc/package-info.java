@@ -67,10 +67,6 @@
  *     <td>BINARY</td>
  *   </tr>
  *   <tr>
- *     <td>INET4</td>
- *     <td>INTEGER</td>
- *   </tr>
- *   <tr>
  *     <td>TIMESTAMP</td>
  *     <td>TIMESTAMP</td>
  *   </tr>

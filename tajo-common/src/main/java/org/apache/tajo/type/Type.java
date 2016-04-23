@@ -127,10 +127,6 @@ public abstract class Type {
     return new Blob();
   }
 
-  public static Inet4 Inet4() {
-    return new Inet4();
-  }
-
   public static Struct Struct(Collection<Type> types) {
     return new Struct(types);
   }

@@ -140,8 +140,7 @@ public class TestDirectRawFile {
         .add("col8", TajoDataTypes.Type.DATE)
         .add("col9", TajoDataTypes.Type.TIME)
         .add("col10", TajoDataTypes.Type.INTERVAL)
-        .add("col11", TajoDataTypes.Type.INET4)
-        .add("col12",
+        .add("col11",
             CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PrimitiveProtos.StringProto.class.getName()))
         .build();
   }
@@ -293,8 +292,7 @@ public class TestDirectRawFile {
     builder.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
     builder.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
     builder.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
-    builder.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
-    builder.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
+    builder.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 11
     builder.endRow();
   }
 
@@ -310,8 +308,7 @@ public class TestDirectRawFile {
     assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, t.getInt4(8));
     assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, t.getInt8(9));
     assertEquals(DatumFactory.createInterval((j + 1) + " hours"), t.getInterval(10));
-    assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, t.getInt4(11));
-    assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), t.getProtobufDatum(12));
+    assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), t.getProtobufDatum(11));
   }
 
   public static void fillRowBlockWithNull(int i, RowWriter writer) {
@@ -383,12 +380,6 @@ public class TestDirectRawFile {
     }
 
     if (i % 11 == 0) {
-      writer.skipField();
-    } else {
-      writer.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
-    }
-
-    if (i % 12 == 0) {
       writer.skipField();
     } else {
       writer.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
@@ -465,12 +456,6 @@ public class TestDirectRawFile {
     }
 
     if (j % 11 == 0) {
-      tuple.isBlankOrNull(11);
-    } else {
-      assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
-    }
-
-    if (j % 12 == 0) {
       tuple.isBlankOrNull(12);
     } else {
       assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));

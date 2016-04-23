@@ -67,8 +67,6 @@ public class TypeConverter {
       return Text();
     case BLOB:
       return Blob();
-    case INET4:
-      return Inet4();
     case NULL_TYPE:
       return Null();
     case ANY:

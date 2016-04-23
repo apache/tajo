@@ -83,7 +83,6 @@ public class OrcUtils {
       case INT2:
         return TypeDescription.createShort();
       case INT4:
-      case INET4:
         return TypeDescription.createInt();
       case INT8:
         return TypeDescription.createLong();

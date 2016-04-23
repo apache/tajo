@@ -57,7 +57,6 @@ public class TestDelimitedTextFile {
         .add("col7", Type.FLOAT8)
         .add("col8", Type.TEXT)
         .add("col9", Type.BLOB)
-        .add("col10", Type.INET4)
         .build();
 
     baseTuple = new VTuple(new Datum[] {
@@ -70,7 +69,6 @@ public class TestDelimitedTextFile {
         DatumFactory.createFloat8(271.9d),            // 6
         DatumFactory.createText("hyunsik"),           // 7
         DatumFactory.createBlob("hyunsik".getBytes()),// 8
-        DatumFactory.createInet4("192.168.0.1"),      // 9
     });
   }
 

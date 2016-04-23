@@ -1617,16 +1617,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         typeDefinition = new DataTypeExpr(Type.BINARY.name());
       }
 
-
       if (checkIfExist(binaryType.type_length())) {
         typeDefinition.setLengthOrPrecision(Integer.parseInt(binaryType.type_length().NUMBER().getText()));
       }
-
-      // inet
-    } else if (checkIfExist(predefined_type.network_type())) {
-      typeDefinition = new DataTypeExpr(Type.INET4.name());
-
-
     } else if (checkIfExist(predefined_type.record_type())) {
       ColumnDefinition [] nestedRecordDefine = getDefinitions(predefined_type.record_type().table_elements());
       typeDefinition = new DataTypeExpr(new DataTypeExpr.RecordType(nestedRecordDefine));

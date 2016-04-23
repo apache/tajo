@@ -79,8 +79,6 @@ public interface RowWriter {
 
   void putInterval(IntervalDatum val);
 
-  void putInet4(int val);
-
   void putProtoDatum(ProtobufDatum datum);
 
   boolean addTuple(Tuple tuple);

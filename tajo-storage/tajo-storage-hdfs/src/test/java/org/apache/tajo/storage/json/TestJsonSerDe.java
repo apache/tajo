@@ -56,8 +56,7 @@ public class TestJsonSerDe {
         .add("col7", TajoDataTypes.Type.FLOAT8)
         .add("col8", TajoDataTypes.Type.TEXT)
         .add("col9", TajoDataTypes.Type.BLOB)
-        .add("col10", TajoDataTypes.Type.INET4)
-        .add("col11", TajoDataTypes.Type.NULL_TYPE)
+        .add("col10", TajoDataTypes.Type.NULL_TYPE)
         .build();
   }
 
@@ -93,8 +92,7 @@ public class TestJsonSerDe {
         DatumFactory.createFloat8(271.9d),              // 6
         DatumFactory.createText("hyunsik"),             // 7
         DatumFactory.createBlob("hyunsik".getBytes()),  // 8
-        DatumFactory.createInet4("192.168.0.1"),        // 9
-        NullDatum.get(),                                // 10
+        NullDatum.get(),                                // 9
     });
 
     assertEquals(baseTuple, tuple);
