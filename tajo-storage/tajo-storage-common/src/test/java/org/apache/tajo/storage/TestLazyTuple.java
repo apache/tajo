@@ -110,7 +110,6 @@ public class TestLazyTuple {
     assertFalse(t1.contains(8));
     assertFalse(t1.contains(9));
     assertFalse(t1.contains(10));
-    assertFalse(t1.contains(11));
   }
 
   @Test
@@ -119,14 +118,14 @@ public class TestLazyTuple {
     LazyTuple t1 = new LazyTuple(schema, new byte[colNum][], -1);
     t1.put(0, DatumFactory.createText("str"));
     t1.put(1, DatumFactory.createInt4(2));
-    t1.put(11, DatumFactory.createFloat4(0.76f));
+    t1.put(10, DatumFactory.createFloat4(0.76f));
 
     assertTrue(t1.contains(0));
     assertTrue(t1.contains(1));
 
     assertEquals(t1.getText(0), "str");
     assertEquals(t1.get(1).asInt4(), 2);
-    assertTrue(t1.get(11).asFloat4() == 0.76f);
+    assertTrue(t1.get(10).asFloat4() == 0.76f);
   }
 
   @Test

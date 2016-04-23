@@ -67,8 +67,8 @@ public class TestFrameTuple {
   @Test
   public final void testFrameTuple() {
     Tuple frame = new FrameTuple(tuple1, tuple2);
-    assertEquals(22, frame.size());
-    for (int i = 0; i < 22; i++) {
+    assertEquals(20, frame.size());
+    for (int i = 0; i < frame.size(); i++) {
       assertTrue(frame.contains(i));
     }
     

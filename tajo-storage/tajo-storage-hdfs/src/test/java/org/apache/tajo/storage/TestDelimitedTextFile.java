@@ -116,7 +116,7 @@ public class TestDelimitedTextFile {
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals("(f,hyunsik\",NULL,NULL,NULL,NULL,0.0,\"hyunsik,hyunsik,NULL)", tuple.toString());
+      assertEquals("(f,hyunsik\",NULL,NULL,NULL,NULL,0.0,\"hyunsik,hyunsik)", tuple.toString());
       i++;
     }
     assertEquals(1, i);
