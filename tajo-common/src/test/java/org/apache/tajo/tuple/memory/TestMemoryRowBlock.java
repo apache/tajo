@@ -605,9 +605,9 @@ public class TestMemoryRowBlock {
     }
 
     if (j % 11 == 0) {
-      tuple.isBlankOrNull(12);
+      tuple.isBlankOrNull(11);
     } else {
-      assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));
+      assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(11));
     }
   }
 }
