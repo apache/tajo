@@ -437,7 +437,6 @@ public class TestStorages {
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
     VTuple tuple = new VTuple(9 + (protoTypeSupport() ? 1 : 0));
     tuple.put(new Datum[] {
@@ -445,7 +444,7 @@ public class TestStorages {
         DatumFactory.createChar("hyunsik"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
+        DatumFactory.createInt8(23L),
         DatumFactory.createFloat4(77.9f),
         DatumFactory.createFloat8(271.9f),
         DatumFactory.createText("hyunsik"),
@@ -453,7 +452,7 @@ public class TestStorages {
     });
 
     if (protoTypeSupport()) {
-      tuple.put(9, factory.createDatum(queryid.getProto()));
+      tuple.put(9, ProtobufDatumFactory.createDatum(queryid.getProto()));
     }
 
     appender.addTuple(tuple);
