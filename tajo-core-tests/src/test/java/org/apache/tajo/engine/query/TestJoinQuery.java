@@ -31,6 +31,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Int4Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.*;
@@ -199,10 +200,10 @@ public class TestJoinQuery extends QueryTestCaseBase {
     createMultiFile("nation", 2, new TupleCreator() {
       public Tuple createTuple(String[] columnDatas) {
         return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new TextDatum(columnDatas[1]),
-            new Int4Datum(Integer.parseInt(columnDatas[2])),
-            new TextDatum(columnDatas[3])
+            columnDatas[0].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[0])),
+            columnDatas[1].equals("") ? NullDatum.get() : new TextDatum(columnDatas[1]),
+            columnDatas[2].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[2])),
+            columnDatas[3].equals("") ? NullDatum.get() : new TextDatum(columnDatas[3])
         });
       }
     });
