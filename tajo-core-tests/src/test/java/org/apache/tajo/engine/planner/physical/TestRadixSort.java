@@ -123,7 +123,7 @@ public class TestRadixSort {
 
   @Before
   public void setup() {
-    List<DataType> dataTypeList = schema.getRootColumns().stream().map(c -> c.getDataType()).collect(Collectors.toList());
+    List<DataType> dataTypeList = schema.getRootColumns().stream().map(Column::getDataType).collect(Collectors.toList());
     tuples = new UnSafeTupleList(dataTypeList.toArray(new DataType[dataTypeList.size()]), tupleNum);
 
     // add null and negative numbers
@@ -178,7 +178,6 @@ public class TestRadixSort {
         NullDatum.get(),
         NullDatum.get(),
         NullDatum.get(),
-        NullDatum.get(),
         NullDatum.get()
     });
     return tuple;
@@ -202,7 +201,7 @@ public class TestRadixSort {
       }
     }
 
-    for (int i = 7; i < 9; i++) {
+    for (int i = 6; i < 8; i++) {
       if (random.nextBoolean()) {
         tuple.put(i, tuple.asDatum(i).multiply(MINUS_ONE));
       }
