@@ -19,13 +19,12 @@
 package org.apache.tajo.storage.jdbc;
 
 import com.google.common.base.Function;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.Type;
 import org.apache.tajo.util.StringUtils;
 
@@ -145,13 +144,13 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
   protected EvalNode visitField(Context context, FieldEval field, Stack<EvalNode> stack) {
     // strip the database name
     String tableName;
-    if (CatalogUtil.isSimpleIdentifier(field.getQualifier())) {
+    if (IdentifierUtil.isSimpleIdentifier(field.getQualifier())) {
       tableName = field.getQualifier();
     } else {
-      tableName = CatalogUtil.extractSimpleName(field.getQualifier());
+      tableName = IdentifierUtil.extractSimpleName(field.getQualifier());
     }
 
-    context.append(CatalogUtil.buildFQName(tableName, field.getColumnName()));
+    context.append(IdentifierUtil.buildFQName(tableName, field.getColumnName()));
     return field;
   }
 

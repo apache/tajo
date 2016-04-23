@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.function.FunctionUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -51,7 +52,7 @@ public class TestCatalogUtil {
   @Test
   public final void testNormalizeIdentifier() {
     for (int i = 0; i < sources.length; i++) {
-      assertEquals(normalized[i], CatalogUtil.normalizeIdentifier(sources[i]));
+      assertEquals(normalized[i], IdentifierUtil.normalizeIdentifier(sources[i]));
     }
   }
 

@@ -18,21 +18,41 @@
 
 package org.apache.tajo.schema;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.type.Type;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
  * Represent a field in a schema.
  */
-public class Field {
+public class Field implements Cloneable {
   protected final Type type;
   protected final QualifiedIdentifier name;
 
   public Field(Type type, QualifiedIdentifier name) {
     this.type = type;
     this.name = name;
+  }
+
+  public static Field Record(QualifiedIdentifier name, Field ... fields) {
+    return Record(name, Arrays.asList(fields));
+  }
+
+  public static Field Record(QualifiedIdentifier name, Collection<Field> fields) {
+    return new Field(Type.Struct(fields), name);
+  }
+
+  @VisibleForTesting
+  public static Field Field(String name, Type type) {
+    return new Field(type, QualifiedIdentifier.$(name));
+  }
+
+  public static Field Field(QualifiedIdentifier name, Type type) {
+    return new Field(type, name);
   }
 
   public QualifiedIdentifier name() {
@@ -74,9 +94,16 @@ public class Field {
 
     if (obj instanceof Field) {
       Field other = (Field) obj;
-      return this.type.equals(other) && this.name.equals(other.name);
+      boolean eq = type.equals(other.type);
+      eq &=  name.equals(other.name);
+      return eq;
     }
 
     return false;
+  }
+
+  @Override
+  public Field clone() throws CloneNotSupportedException {
+    return this;
   }
 }

@@ -27,10 +27,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-public class Struct extends Type {
+public class Record extends Type {
   private final ImmutableList<Field> memberTypes;
 
-  public Struct(Collection<Field> memberTypes) {
+  public Record(Collection<Field> memberTypes) {
     this.memberTypes = ImmutableList.copyOf(memberTypes);
   }
 
@@ -53,7 +53,7 @@ public class Struct extends Type {
 
   @Override
   public String toString() {
-    return "struct(" + StringUtils.join(memberTypes, ", ") + ")";
+    return "record(" + StringUtils.join(memberTypes, ", ") + ")";
   }
 
   @Override
@@ -63,8 +63,8 @@ public class Struct extends Type {
 
   @Override
   public boolean equals(Object object) {
-    if (object instanceof Struct) {
-      Struct other = (Struct) object;
+    if (object instanceof Record) {
+      Record other = (Record) object;
       return memberTypes.equals(other.memberTypes);
     }
 

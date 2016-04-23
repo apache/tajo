@@ -27,6 +27,7 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
@@ -72,13 +73,13 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     this.tableDesc = desc;
     this.alias = alias;
 
-    if (!CatalogUtil.isFQTableName(this.tableDesc.getName())) {
+    if (!IdentifierUtil.isFQTableName(this.tableDesc.getName())) {
       throw new IllegalArgumentException("the name in TableDesc must be qualified, but it is \"" +
           desc.getName() + "\"");
     }
 
-    String databaseName = CatalogUtil.extractQualifier(this.tableDesc.getName());
-    String qualifiedAlias = CatalogUtil.buildFQName(databaseName, alias);
+    String databaseName = IdentifierUtil.extractQualifier(this.tableDesc.getName());
+    String qualifiedAlias = IdentifierUtil.buildFQName(databaseName, alias);
     this.setInSchema(tableDesc.getSchema());
     this.getInSchema().setQualifier(qualifiedAlias);
     this.setOutSchema(SchemaBuilder.builder().addAll(getInSchema().getRootColumns()).build());
@@ -108,9 +109,9 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
   }
 
   public String getCanonicalName() {
-    if (CatalogUtil.isFQTableName(this.tableDesc.getName())) {
-      String databaseName = CatalogUtil.extractQualifier(this.tableDesc.getName());
-      return hasAlias() ? CatalogUtil.buildFQName(databaseName, alias) : tableDesc.getName();
+    if (IdentifierUtil.isFQTableName(this.tableDesc.getName())) {
+      String databaseName = IdentifierUtil.extractQualifier(this.tableDesc.getName());
+      return hasAlias() ? IdentifierUtil.buildFQName(databaseName, alias) : tableDesc.getName();
     } else {
       return hasAlias() ? alias : tableDesc.getName();
     }

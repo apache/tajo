@@ -45,6 +45,7 @@ import org.apache.tajo.querymaster.Query;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
@@ -665,8 +666,8 @@ public class TajoTestingCluster {
         fs.mkdirs(rootDir);
       }
       Path tablePath;
-      if (CatalogUtil.isFQTableName(tableName)) {
-        Pair<String, String> name = CatalogUtil.separateQualifierAndName(tableName);
+      if (IdentifierUtil.isFQTableName(tableName)) {
+        Pair<String, String> name = IdentifierUtil.separateQualifierAndName(tableName);
         tablePath = new Path(rootDir, new Path(name.getFirst(), name.getSecond()));
       } else {
         tablePath = new Path(rootDir, tableName);

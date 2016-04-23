@@ -18,12 +18,10 @@
 
 package org.apache.tajo.catalog;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.DataTypeUtil;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -37,6 +35,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.UndefinedOperatorException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -52,233 +51,6 @@ import java.util.*;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
-
-  /**
-   * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
-   *
-   * Identifier can be composed of multiple parts as follows:
-   * <pre>
-   *   database_name.table_name.column_name
-   * </pre>
-   *
-   * Each regular identifier part can be composed alphabet ([a-z][A-Z]), number([0-9]), and underscore([_]).
-   * Also, the first letter must be an alphabet character.
-   *
-   * <code>normalizeIdentifier</code> normalizes each part of an identifier.
-   *
-   * In detail, for each part, it performs as follows:
-   * <ul>
-   *   <li>changing a part without double quotation to be lower case letters</li>
-   *   <li>eliminating double quotation marks from identifier</li>
-   * </ul>
-   *
-   * @param identifier The identifier to be normalized
-   * @return The normalized identifier
-   */
-  public static String normalizeIdentifier(String identifier) {
-    if (identifier == null || identifier.equals("")) {
-      return identifier;
-    }
-    String [] splitted = identifier.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
-
-    StringBuilder sb = new StringBuilder();
-    boolean first = true;
-    for (String part : splitted) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
-      }
-      sb.append(normalizeIdentifierPart(part));
-    }
-    return sb.toString();
-  }
-
-  public static String normalizeIdentifierPart(String part) {
-    return isDelimited(part) ? stripQuote(part) : part.toLowerCase();
-  }
-
-  /**
-   * Denormalize an identifier. Denormalize means a translation from a stored identifier
-   * to be a printable identifier name.
-   *
-   * In detail, for each part, it performs as follows:
-   * <ul>
-   *   <li>changing a part including upper case character or non-ascii character to be lower case letters</li>
-   *   <li>eliminating double quotation marks from identifier</li>
-   * </ul>
-   *
-   * @param identifier The identifier to be normalized
-   * @return The denormalized identifier
-   */
-  public static String denormalizeIdentifier(String identifier) {
-    String [] splitted = identifier.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
-
-    StringBuilder sb = new StringBuilder();
-    boolean first = true;
-    for (String part : splitted) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
-      }
-      sb.append(denormalizePart(part));
-    }
-    return sb.toString();
-  }
-
-  public static String denormalizePart(String identifier) {
-    if (isShouldBeQuoted(identifier)) {
-      return StringUtils.doubleQuote(identifier);
-    } else {
-      return identifier;
-    }
-  }
-
-  public static boolean isShouldBeQuoted(String columnName) {
-    for (char character : columnName.toCharArray()) {
-      if (Character.isUpperCase(character)) {
-        return true;
-      }
-
-      if (!StringUtils.isPartOfAnsiSQLIdentifier(character)) {
-        return true;
-      }
-
-      if (RESERVED_KEYWORDS_SET.contains(columnName.toUpperCase())) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  public static String stripQuote(String str) {
-    return str.substring(1, str.length() - 1);
-  }
-
-  public static boolean isDelimited(String identifier) {
-    boolean openQuote = identifier.charAt(0) == '"';
-    boolean closeQuote = identifier.charAt(identifier.length() - 1) == '"';
-
-    // if at least one quote mark exists, the identifier must be grater than equal to 2 characters,
-    if (openQuote ^ closeQuote && identifier.length() < 2) {
-      throw new IllegalArgumentException("Invalid Identifier: " + identifier);
-    }
-
-    // does not allow the empty identifier (''),
-    if (openQuote && closeQuote && identifier.length() == 2) {
-      throw new IllegalArgumentException("zero-length delimited identifier: " + identifier);
-    }
-
-    // Ensure the quote open and close
-    return openQuote && closeQuote;
-  }
-
-  /**
-   * True if a given name is a simple identifier, meaning is not a dot-chained name.
-   *
-   * @param columnOrTableName Column or Table name to be checked
-   * @return True if a given name is a simple identifier. Otherwise, it will return False.
-   */
-  public static boolean isSimpleIdentifier(String columnOrTableName) {
-    return columnOrTableName.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length == 1;
-  }
-
-  public static boolean isFQColumnName(String tableName) {
-    return tableName.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length == 3;
-  }
-
-  public static boolean isFQTableName(String tableName) {
-    int lastDelimiterIdx = tableName.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
-    return lastDelimiterIdx > -1;
-  }
-
-  public static String [] splitFQTableName(String qualifiedName) {
-    String [] splitted = CatalogUtil.splitTableName(qualifiedName);
-    if (splitted.length == 1) {
-      throw new IllegalArgumentException("Table name is expected to be qualified, but was \""
-          + qualifiedName + "\".");
-    }
-    return splitted;
-  }
-
-  public static String [] splitTableName(String tableName) {
-    int lastDelimiterIdx = tableName.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
-    if (lastDelimiterIdx > -1) {
-      return new String [] {
-          tableName.substring(0, lastDelimiterIdx),
-          tableName.substring(lastDelimiterIdx + 1, tableName.length())
-      };
-    } else {
-      return new String [] {tableName};
-    }
-  }
-
-  public static String buildFQName(String... identifiers) {
-    boolean first = true;
-    StringBuilder sb = new StringBuilder();
-    for(String id : identifiers) {
-      if (first) {
-        first = false;
-      } else {
-        sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
-      }
-
-      sb.append(id);
-    }
-
-    return sb.toString();
-  }
-
-  public static Pair<String, String> separateQualifierAndName(String name) {
-    Preconditions.checkArgument(isFQTableName(name), "Must be a qualified name.");
-    return new Pair<>(extractQualifier(name), extractSimpleName(name));
-  }
-
-  /**
-   * Extract a qualification name from an identifier.
-   *
-   * For example, consider a table identifier like 'database1.table1'.
-   * In this case, this method extracts 'database1'.
-   *
-   * @param name The identifier to be extracted
-   * @return The extracted qualifier
-   */
-  public static String extractQualifier(String name) {
-    int lastDelimiterIdx = name.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
-    if (lastDelimiterIdx > -1) {
-      return name.substring(0, lastDelimiterIdx);
-    } else {
-      return TajoConstants.EMPTY_STRING;
-    }
-  }
-
-  /**
-   * Extract a simple name from an identifier.
-   *
-   * For example, consider a table identifier like 'database1.table1'.
-   * In this case, this method extracts 'table1'.
-   *
-   * @param name The identifier to be extracted
-   * @return The extracted simple name
-   */
-  public static String extractSimpleName(String name) {
-    int lastDelimiterIdx = name.lastIndexOf(CatalogConstants.IDENTIFIER_DELIMITER);
-    if (lastDelimiterIdx > -1) {
-      // plus one means skipping a delimiter.
-      return name.substring(lastDelimiterIdx + 1, name.length());
-    } else {
-      return name;
-    }
-  }
-
-  public static String getCanonicalTableName(String databaseName, String tableName) {
-    StringBuilder sb = new StringBuilder(databaseName);
-    sb.append(CatalogConstants.IDENTIFIER_DELIMITER);
-    sb.append(tableName);
-    return sb.toString();
-  }
 
 
   public static String getBackwardCompitableDataFormat(String dataFormat) {
@@ -402,7 +174,7 @@ public class CatalogUtil {
   }
 
   public static String columnToDDLString(Column column) {
-    StringBuilder sb = new StringBuilder(denormalizeIdentifier(column.getSimpleName()));
+    StringBuilder sb = new StringBuilder(IdentifierUtil.denormalizeIdentifier(column.getSimpleName()));
     sb.append(" ").append(column.getDataType().getType());
     if (column.getDataType().hasLength()) {
       sb.append(" (").append(column.getDataType().getLength()).append(")");
@@ -740,32 +512,8 @@ public class CatalogUtil {
     }
   }
 
-  public static final Set<String> RESERVED_KEYWORDS_SET = new HashSet<>();
-
-  static final String [] RESERVED_KEYWORDS = {
-      "AS", "ALL", "AND", "ANY", "ASYMMETRIC", "ASC",
-      "BOTH",
-      "CASE", "CAST", "CREATE", "CROSS", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
-      "DESC", "DISTINCT",
-      "END", "ELSE", "EXCEPT",
-      "FALSE", "FULL", "FROM",
-      "GROUP",
-      "HAVING",
-      "ILIKE", "IN", "INNER", "INTERSECT", "INTO", "IS",
-      "JOIN",
-      "LEADING", "LEFT", "LIKE", "LIMIT",
-      "NATURAL", "NOT", "NULL",
-      "ON", "OUTER", "OR", "ORDER",
-      "RIGHT",
-      "SELECT", "SOME", "SYMMETRIC",
-      "TABLE", "THEN", "TRAILING", "TRUE",
-      "OVER",
-      "UNION", "UNIQUE", "USING",
-      "WHEN", "WHERE", "WINDOW", "WITH"
-  };
-
   static {
-    Collections.addAll(RESERVED_KEYWORDS_SET, RESERVED_KEYWORDS);
+    Collections.addAll(IdentifierUtil.RESERVED_KEYWORDS_SET, IdentifierUtil.RESERVED_KEYWORDS);
   }
 
   public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName,
@@ -1013,7 +761,7 @@ public class CatalogUtil {
   public static String getUnifiedSimpleColumnName(Schema originalSchema, String[] columnNames) {
     String[] simpleNames = new String[columnNames.length];
     for (int i = 0; i < simpleNames.length; i++) {
-      String[] identifiers = columnNames[i].split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
+      String[] identifiers = columnNames[i].split(IdentifierUtil.IDENTIFIER_DELIMITER_REGEXP);
       simpleNames[i] = identifiers[identifiers.length-1];
     }
     Arrays.sort(simpleNames, new ColumnPosComparator(originalSchema));

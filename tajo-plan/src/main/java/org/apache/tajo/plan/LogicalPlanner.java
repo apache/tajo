@@ -51,6 +51,7 @@ import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.schema.Field;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.Type;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -1478,7 +1479,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // make table subquery node which has set operation as its subquery
     TableSubQueryNode setOpTableSubQueryNode = context.plan.createNode(TableSubQueryNode.class);
-    setOpTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+    setOpTableSubQueryNode.init(IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
         context.generateUniqueSubQueryName()), setOperationNode);
     setTargetOfTableSubQuery(context, currentBlock, setOpTableSubQueryNode);
     currentBlock.registerNode(setOpTableSubQueryNode);
@@ -1629,9 +1630,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Get and set a target table
     String databaseName;
     String tableName;
-    if (CatalogUtil.isFQTableName(expr.getTableName())) {
-      databaseName = CatalogUtil.extractQualifier(expr.getTableName());
-      tableName = CatalogUtil.extractSimpleName(expr.getTableName());
+    if (IdentifierUtil.isFQTableName(expr.getTableName())) {
+      databaseName = IdentifierUtil.extractQualifier(expr.getTableName());
+      tableName = IdentifierUtil.extractSimpleName(expr.getTableName());
     } else {
       databaseName = context.queryContext.get(SessionVars.CURRENT_DATABASE);
       tableName = expr.getTableName();
@@ -1849,8 +1850,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     throws TajoException {
     String parentTableName = expr.getLikeParentTableName();
 
-    if (CatalogUtil.isFQTableName(parentTableName) == false) {
-      parentTableName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+    if (IdentifierUtil.isFQTableName(parentTableName) == false) {
+      parentTableName = IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
           parentTableName);
     }
     TableDesc baseTable = catalog.getTableDesc(parentTableName);
@@ -1880,11 +1881,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setIfNotExists(expr.isIfNotExists());
 
     // Set a table name to be created.
-    if (CatalogUtil.isFQTableName(expr.getTableName())) {
+    if (IdentifierUtil.isFQTableName(expr.getTableName())) {
       createTableNode.setTableName(expr.getTableName());
     } else {
       createTableNode.setTableName(
-          CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getTableName()));
+          IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getTableName()));
     }
     // This is CREATE TABLE <tablename> LIKE <parentTable>
     if(expr.getLikeParentTableName() != null) {
@@ -2011,11 +2012,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     } else {
 
       String tableName = createTable.getTableName();
-      String databaseName = CatalogUtil.isFQTableName(tableName) ?
-          CatalogUtil.extractQualifier(tableName) : context.queryContext.get(SessionVars.CURRENT_DATABASE);
+      String databaseName = IdentifierUtil.isFQTableName(tableName) ?
+          IdentifierUtil.extractQualifier(tableName) : context.queryContext.get(SessionVars.CURRENT_DATABASE);
 
       return storage.getTableURI(
-          createTable.getTableSpaceName(), databaseName, CatalogUtil.extractSimpleName(tableName));
+          createTable.getTableSpaceName(), databaseName, IdentifierUtil.extractSimpleName(tableName));
     }
   }
 
@@ -2143,10 +2144,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public LogicalNode visitDropTable(PlanContext context, Stack<Expr> stack, DropTable dropTable) {
     DropTableNode dropTableNode = context.queryBlock.getNodeFromExpr(dropTable);
     String qualified;
-    if (CatalogUtil.isFQTableName(dropTable.getTableName())) {
+    if (IdentifierUtil.isFQTableName(dropTable.getTableName())) {
       qualified = dropTable.getTableName();
     } else {
-      qualified = CatalogUtil.buildFQName(
+      qualified = IdentifierUtil.buildFQName(
           context.queryContext.get(SessionVars.CURRENT_DATABASE), dropTable.getTableName());
     }
     dropTableNode.init(qualified, dropTable.isIfExists(), dropTable.isPurge());
@@ -2206,11 +2207,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock block = context.queryBlock;
     CreateIndexNode createIndexNode = block.getNodeFromExpr(createIndex);
-    if (CatalogUtil.isFQTableName(createIndex.getIndexName())) {
+    if (IdentifierUtil.isFQTableName(createIndex.getIndexName())) {
       createIndexNode.setIndexName(createIndex.getIndexName());
     } else {
       createIndexNode.setIndexName(
-          CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
+          IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
     }
     createIndexNode.setUnique(createIndex.isUnique());
     Sort.SortSpec[] sortSpecs = createIndex.getSortSpecs();

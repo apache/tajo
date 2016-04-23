@@ -18,9 +18,7 @@
 
 package org.apache.tajo.schema;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.type.Type;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.Arrays;
@@ -47,24 +45,7 @@ public class Schema implements Iterable<Field> {
 
   @Override
   public String toString() {
-    return StringUtils.join(fields, ",");
-  }
-
-  public static Field StructField(QualifiedIdentifier name, Field ... fields) {
-    return StructField(name, Arrays.asList(fields));
-  }
-
-  public static Field StructField(QualifiedIdentifier name, Collection<Field> fields) {
-    return new Field(Type.Struct(fields), name);
-  }
-
-  @VisibleForTesting
-  public static Field Field(String name, Type type) {
-    return new Field(type, QualifiedIdentifier.$(name));
-  }
-
-  public static Field Field(QualifiedIdentifier name, Type type) {
-    return new Field(type, name);
+    return StringUtils.join(fields, ", ");
   }
 
   @Override

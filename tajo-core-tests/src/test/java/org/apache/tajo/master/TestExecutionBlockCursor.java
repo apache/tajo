@@ -34,6 +34,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
@@ -71,7 +72,7 @@ public class TestExecutionBlockCursor {
     for (String table : tpch.getTableNames()) {
       TableMeta m = CatalogUtil.newTableMeta("TEXT");
       TableDesc d = CatalogUtil.newTableDesc(
-          CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m, CommonTestingUtil.getTestDir());
+          IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m, CommonTestingUtil.getTestDir());
       TableStats stats = new TableStats();
       stats.setNumBytes(TPCH.tableVolumes.get(table));
       d.setStats(stats);

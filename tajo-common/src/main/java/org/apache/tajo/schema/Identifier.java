@@ -101,7 +101,7 @@ public class Identifier {
 
     if (obj instanceof Identifier) {
       Identifier other = (Identifier) obj;
-      return other.name == other.name && quoted == other.quoted;
+      return name.equals(other.name) && quoted == other.quoted;
     }
 
     return false;

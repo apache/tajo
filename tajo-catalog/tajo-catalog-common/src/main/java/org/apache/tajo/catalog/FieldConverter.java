@@ -26,8 +26,9 @@ import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.schema.Field;
 import org.apache.tajo.schema.Identifier;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.schema.QualifiedIdentifier;
-import org.apache.tajo.type.Struct;
+import org.apache.tajo.type.Record;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -39,8 +40,7 @@ public class FieldConverter {
     final Collection<Identifier> identifiers = Collections2.transform(elems, new Function<String, Identifier>() {
       @Override
       public Identifier apply(@Nullable String input) {
-        boolean needQuote = CatalogUtil.isShouldBeQuoted(input);
-        return Identifier._(input, needQuote);
+        return Identifier._(input, IdentifierUtil.isShouldBeQuoted(input));
       }
     });
     return QualifiedIdentifier.$(identifiers);
@@ -59,9 +59,9 @@ public class FieldConverter {
 
   public static Column convert(Field field) {
     if (field.isStruct()) {
-      Struct struct = field.type();
+      Record record = field.type();
       Collection<Column> converted = Collections2
-          .transform(struct.fields(), new Function<Field, Column>() {
+          .transform(record.fields(), new Function<Field, Column>() {
         @Override
         public Column apply(@Nullable Field namedType) {
           return FieldConverter.convert(namedType);

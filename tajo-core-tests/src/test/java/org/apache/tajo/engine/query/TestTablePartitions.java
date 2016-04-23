@@ -39,6 +39,7 @@ import org.apache.tajo.exception.ReturnStateUtil;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.querymaster.QueryMasterTask;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -77,7 +78,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testCreateColumnPartitionedTable() throws Exception {
     ResultSet res;
-    String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTable");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCreateColumnPartitionedTable");
     ClientProtos.SubmitQueryResponse response;
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -134,7 +135,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   public final void testCreateColumnPartitionedTableWithJoin() throws Exception {
     ResultSet res;
     ClientProtos.SubmitQueryResponse response;
-    String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithJoin");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithJoin");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -188,7 +189,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testCreateColumnPartitionedTableWithSelectedColumns() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithSelectedColumns");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCreateColumnPartitionedTableWithSelectedColumns");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -217,7 +218,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByOneColumn() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByOneColumn");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableByOneColumn");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -275,7 +276,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testQueryCasesOnColumnPartitionedTable() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testQueryCasesOnColumnPartitionedTable");
+    String tableName = IdentifierUtil.normalizeIdentifier("testQueryCasesOnColumnPartitionedTable");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -368,7 +369,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByThreeColumns() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByThreeColumns");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableByThreeColumns");
 
     if (nodeType == NodeType.INSERT) {
       res = testBase.execute(
@@ -455,7 +456,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testInsertIntoColumnPartitionedTableByThreeColumns() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testInsertIntoColumnPartitionedTableByThreeColumns");
+    String tableName = IdentifierUtil.normalizeIdentifier("testInsertIntoColumnPartitionedTableByThreeColumns");
 
     if (nodeType == NodeType.INSERT) {
       res = testBase.execute(
@@ -636,7 +637,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByOneColumnsWithCompression() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByOneColumnsWithCompression");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableByOneColumnsWithCompression");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -687,7 +688,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByTwoColumnsWithCompression() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByTwoColumnsWithCompression");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableByTwoColumnsWithCompression");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString("create table " + tableName + " (col3 float8, col4 text) USING text " +
@@ -746,7 +747,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableByThreeColumnsWithCompression() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableByThreeColumnsWithCompression");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableByThreeColumnsWithCompression");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -844,7 +845,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableNoMatchedPartition() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableNoMatchedPartition");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableNoMatchedPartition");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -915,7 +916,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableWithSmallerExpressions1() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions1");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions1");
     res = executeString(
         "create table " + tableName + " (col1 int4, col2 int4, null_col int4) partition by column(key float8) ");
     res.close();
@@ -943,7 +944,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   public final void testColumnPartitionedTableWithSmallerExpressions2() throws Exception {
     ResultSet res = null;
     ClientProtos.SubmitQueryResponse response = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions2");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions2");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -1028,7 +1029,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableWithSmallerExpressions5() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions5");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions5");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -1058,7 +1059,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testColumnPartitionedTableWithSmallerExpressions6() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions6");
+    String tableName = IdentifierUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions6");
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
@@ -1302,7 +1303,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   @Test
   public final void testDuplicatedPartitions() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testDuplicatedPartitions");
+    String tableName = IdentifierUtil.normalizeIdentifier("testDuplicatedPartitions");
 
     try {
       executeString("CREATE TABLE lineitem2 as select * from lineitem").close();
@@ -1344,7 +1345,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testPatternMatchingPredicatesAndStringFunctions() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testPatternMatchingPredicatesAndStringFunctions");
+    String tableName = IdentifierUtil.normalizeIdentifier("testPatternMatchingPredicatesAndStringFunctions");
     String expectedResult;
 
     if (nodeType == NodeType.INSERT) {
@@ -1442,7 +1443,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testDatePartitionColumn() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testDatePartitionColumn");
+    String tableName = IdentifierUtil.normalizeIdentifier("testDatePartitionColumn");
     String expectedResult;
 
     if (nodeType == NodeType.INSERT) {
@@ -1551,7 +1552,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testTimestampPartitionColumn() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testTimestampPartitionColumn");
+    String tableName = IdentifierUtil.normalizeIdentifier("testTimestampPartitionColumn");
     String expectedResult;
 
     if (nodeType == NodeType.INSERT) {
@@ -1620,7 +1621,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testTimePartitionColumn() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testTimePartitionColumn");
+    String tableName = IdentifierUtil.normalizeIdentifier("testTimePartitionColumn");
     String  expectedResult;
 
     if (nodeType == NodeType.INSERT) {
@@ -1700,7 +1701,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     executeString("create database test_partition").close();
 
     String databaseName = "test_partition";
-    String tableName = CatalogUtil.normalizeIdentifier("part");
+    String tableName = IdentifierUtil.normalizeIdentifier("part");
 
     if (nodeType == NodeType.INSERT) {
       executeString(
@@ -1746,7 +1747,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     FileSystem fs = FileSystem.get(conf);
     Path path = null;
 
-    String tableName = CatalogUtil.normalizeIdentifier("testAbnormalDirectories");
+    String tableName = IdentifierUtil.normalizeIdentifier("testAbnormalDirectories");
     if (nodeType == NodeType.INSERT) {
       executeString(
         "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ").close();
@@ -1843,7 +1844,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
   @Test
   public final void testPartitionWithInOperator() throws Exception {
     ResultSet res = null;
-    String tableName = CatalogUtil.normalizeIdentifier("testPartitionWithInOperator");
+    String tableName = IdentifierUtil.normalizeIdentifier("testPartitionWithInOperator");
     String result, expectedResult;
 
     if (nodeType == NodeType.INSERT) {

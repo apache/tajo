@@ -24,7 +24,7 @@ import org.apache.tajo.schema.Field;
 import java.util.Arrays;
 import java.util.Collection;
 
-public abstract class Type {
+public abstract class Type implements Cloneable {
 
   // No paramter types
   public static final Any Any = new Any();
@@ -98,16 +98,16 @@ public abstract class Type {
     return new Varchar(len);
   }
 
-  public static Struct Struct(Collection<Field> types) {
-    return new Struct(types);
+  public static Record Struct(Collection<Field> types) {
+    return new Record(types);
   }
 
   public static Array Array(Type type) {
     return new Array(type);
   }
 
-  public static Struct Struct(Field... types) {
-    return new Struct(Arrays.asList(types));
+  public static Record Struct(Field... types) {
+    return new Record(Arrays.asList(types));
   }
 
   public static Map Map(Type keyType, Type valueType) {

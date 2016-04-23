@@ -37,6 +37,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
 
@@ -756,7 +757,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    String[] splitted = CatalogUtil.splitTableName(table.getTableName());
+    String[] splitted = IdentifierUtil.splitTableName(table.getTableName());
     if (splitted.length == 1) {
       throw new TajoInternalError(
           "createTable() requires a qualified table name, but it is '" + table.getTableName() + "'");
@@ -825,7 +826,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         TajoDataTypes.DataType dataType = col.getDataType();
 
         pstmt.setInt(1, tableId);
-        pstmt.setString(2, CatalogUtil.extractSimpleName(col.getName()));
+        pstmt.setString(2, IdentifierUtil.extractSimpleName(col.getName()));
         pstmt.setInt(3, i);
         // the default number of nested fields is 0.
         pstmt.setInt(4, dataType.hasNumNestedFields() ? dataType.getNumNestedFields() : 0);
@@ -911,7 +912,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    String[] splitted = CatalogUtil.splitTableName(statsProto.getTableName());
+    String[] splitted = IdentifierUtil.splitTableName(statsProto.getTableName());
     if (splitted.length == 1) {
       throw new IllegalArgumentException("updateTableStats() requires a qualified table name, but it is \""
           + statsProto.getTableName() + "\".");
@@ -978,7 +979,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       DuplicatePartitionException, UndefinedPartitionException, UndefinedColumnException, UndefinedTableException,
       UndefinedPartitionMethodException, AmbiguousTableException {
 
-    String[] splitted = CatalogUtil.splitTableName(alterTableDescProto.getTableName());
+    String[] splitted = IdentifierUtil.splitTableName(alterTableDescProto.getTableName());
     if (splitted.length == 1) {
       throw new IllegalArgumentException("alterTable() requires a qualified table name, but it is \""
           + alterTableDescProto.getTableName() + "\".");
@@ -993,7 +994,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     switch (alterTableDescProto.getAlterTableType()) {
     case RENAME_TABLE:
-      String simpleNewTableName = CatalogUtil.extractSimpleName(alterTableDescProto.getNewTableName());
+      String simpleNewTableName = IdentifierUtil.extractSimpleName(alterTableDescProto.getNewTableName());
       if (existTable(databaseName, simpleNewTableName)) {
         throw new DuplicateTableException(alterTableDescProto.getNewTableName());
       }
@@ -1172,13 +1173,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       conn.setAutoCommit(false);
 
-      String tableName = CatalogUtil.extractQualifier(alterColumnProto.getOldColumnName());
-      String simpleOldColumnName = CatalogUtil.extractSimpleName(alterColumnProto.getOldColumnName());
-      String simpleNewColumnName = CatalogUtil.extractSimpleName(alterColumnProto.getNewColumnName());
+      String tableName = IdentifierUtil.extractQualifier(alterColumnProto.getOldColumnName());
+      String simpleOldColumnName = IdentifierUtil.extractSimpleName(alterColumnProto.getOldColumnName());
+      String simpleNewColumnName = IdentifierUtil.extractSimpleName(alterColumnProto.getNewColumnName());
 
-      if (!tableName.equals(CatalogUtil.extractQualifier(alterColumnProto.getNewColumnName()))) {
+      if (!tableName.equals(IdentifierUtil.extractQualifier(alterColumnProto.getNewColumnName()))) {
         throw new AmbiguousTableException(
-            tableName + ", " + CatalogUtil.extractQualifier(alterColumnProto.getNewColumnName()));
+            tableName + ", " + IdentifierUtil.extractQualifier(alterColumnProto.getNewColumnName()));
       }
 
       //SELECT COLUMN
@@ -1251,7 +1252,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       pstmt = conn.prepareStatement(existColumnSql);
       pstmt.setInt(1, tableId);
-      pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
+      pstmt.setString(2, IdentifierUtil.extractSimpleName(columnProto.getName()));
       resultSet =  pstmt.executeQuery();
 
       if (resultSet.next()) {
@@ -1275,7 +1276,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       pstmt = conn.prepareStatement(insertNewColumnSql);
       pstmt.setInt(1, tableId);
-      pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
+      pstmt.setString(2, IdentifierUtil.extractSimpleName(columnProto.getName()));
       pstmt.setInt(3, position + 1);
       pstmt.setInt(4, dataType.hasNumNestedFields() ? dataType.getNumNestedFields() : 0);
       pstmt.setString(5, dataType.getType().name());
@@ -1600,7 +1601,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       int tableId = res.getInt(1);
-      tableBuilder.setTableName(CatalogUtil.buildFQName(databaseName, res.getString(2).trim()));
+      tableBuilder.setTableName(IdentifierUtil.buildFQName(databaseName, res.getString(2).trim()));
       TableType tableType = TableType.valueOf(res.getString(3));
       if (tableType == TableType.EXTERNAL) {
         tableBuilder.setIsExternal(true);
@@ -1860,7 +1861,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         String databaseName = getDatabaseNameOfTable(conn, tid);
         String tableName = getTableName(conn, tid);
         builder.setTid(tid);
-        builder.setName(CatalogUtil.buildFQName(databaseName, tableName, resultSet.getString("COLUMN_NAME")));
+        builder.setName(IdentifierUtil.buildFQName(databaseName, tableName, resultSet.getString("COLUMN_NAME")));
 
         int nestedFieldNum = resultSet.getInt("NESTED_FIELD_NUM");
 
@@ -2484,7 +2485,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     final String databaseName = proto.getTableIdentifier().getDatabaseName();
-    final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
+    final String tableName = IdentifierUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
 
     try {
 
@@ -2576,7 +2577,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(2, indexName);
       ResultSet res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new UndefinedIndexException(CatalogUtil.buildFQName(databaseName, indexName));
+        throw new UndefinedIndexException(IdentifierUtil.buildFQName(databaseName, indexName));
       }
       pstmt.close();
       res.close();
@@ -2676,7 +2677,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       String tableName = getTableName(conn, res.getInt(COL_TABLES_PK));
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-      resultToIndexDescProtoBuilder(CatalogUtil.buildFQName(databaseName, tableName), builder, res);
+      resultToIndexDescProtoBuilder(IdentifierUtil.buildFQName(databaseName, tableName), builder, res);
 
       try {
         builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
@@ -2727,7 +2728,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-      resultToIndexDescProtoBuilder(CatalogUtil.buildFQName(databaseName, tableName), builder, res);
+      resultToIndexDescProtoBuilder(IdentifierUtil.buildFQName(databaseName, tableName), builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       builder.setTargetRelationSchema(tableDescProto.getSchema());
       proto = builder.build();
@@ -2903,7 +2904,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     int columnNum = columnNames.length;
     for (int i = 0; i < columnNum; i++) {
       SortSpecProto.Builder colSpecBuilder = SortSpecProto.newBuilder();
-      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(CatalogUtil.buildFQName(qualifier, columnNames[i]))
+      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(IdentifierUtil.buildFQName(qualifier, columnNames[i]))
           .setDataType(CatalogUtil.newSimpleDataType(getDataType(dataTypes[i]))).build());
       colSpecBuilder.setAscending(orders[i].equals("true"));
       colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));

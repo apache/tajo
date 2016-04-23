@@ -20,7 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -31,7 +31,7 @@ public class TestCreateDatabase extends QueryTestCaseBase {
 
   @Test
   public final void testCreateAndDropDatabase() throws Exception {
-    String databaseName = CatalogUtil.normalizeIdentifier("testCreateAndDropDatabase");
+    String databaseName = IdentifierUtil.normalizeIdentifier("testCreateAndDropDatabase");
 
     ResultSet res = null;
     try {
@@ -46,7 +46,7 @@ public class TestCreateDatabase extends QueryTestCaseBase {
 
   @Test
   public final void testCreateIfNotExists() throws Exception {
-    String databaseName = CatalogUtil.normalizeIdentifier("testCreateIfNotExists");
+    String databaseName = IdentifierUtil.normalizeIdentifier("testCreateIfNotExists");
 
     assertDatabaseNotExists(databaseName);
     executeString("CREATE DATABASE " + databaseName + ";").close();
@@ -61,7 +61,7 @@ public class TestCreateDatabase extends QueryTestCaseBase {
 
   @Test
   public final void testDropIfExists() throws Exception {
-    String databaseName = CatalogUtil.normalizeIdentifier("testDropIfExists");
+    String databaseName = IdentifierUtil.normalizeIdentifier("testDropIfExists");
     assertDatabaseNotExists(databaseName);
     executeString("CREATE DATABASE " + databaseName + ";").close();
     assertDatabaseExists(databaseName);

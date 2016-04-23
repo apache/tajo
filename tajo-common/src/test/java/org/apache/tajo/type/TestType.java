@@ -21,8 +21,8 @@ package org.apache.tajo.type;
 import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.apache.tajo.schema.Field.Field;
 import static org.apache.tajo.schema.QualifiedIdentifier.$;
-
 import static org.apache.tajo.type.Type.Array;
 import static org.apache.tajo.type.Type.Blob;
 import static org.apache.tajo.type.Type.Bool;
@@ -71,12 +71,12 @@ public class TestType {
     assertEquals(varchar.baseType(), VARCHAR);
     assertEquals(varchar.length(), 2);
 
-    Struct struct = Struct(Field("x", Int8), Field("y", Array(Float8)));
-    assertEquals(struct.baseType(), RECORD);
-    assertEquals(struct.field(0).baseType(), INT8);
-    assertEquals(struct.field(0).name(), $("x"));
-    assertEquals(struct.field(1).baseType(), ARRAY);
-    assertEquals(struct.field(1).name(), $("y"));
+    Record record = Struct(Field("x", Int8), Field("y", Array(Float8)));
+    assertEquals(record.baseType(), RECORD);
+    assertEquals(record.field(0).baseType(), INT8);
+    assertEquals(record.field(0).name(), $("x"));
+    assertEquals(record.field(1).baseType(), ARRAY);
+    assertEquals(record.field(1).name(), $("y"));
 
     Map map = Map(Int8, Array(Timestamp));
     assertEquals(map.baseType(), MAP);
@@ -112,8 +112,8 @@ public class TestType {
     Varchar varchar = Varchar(2);
     assertEquals("varchar(2)", varchar.toString());
 
-    Struct struct = Struct(Field("x", Int8), Field("y", Array(Float8)));
-    assertEquals("struct(x int8, y array<float8>)", struct.toString());
+    Record record = Struct(Field("x", Int8), Field("y", Array(Float8)));
+    assertEquals("record(x int8, y array<float8>)", record.toString());
 
     Map map = Map(Int8, Array(Timestamp));
     assertEquals("map<int8,array<timestamp>>", map.toString());

@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.UndefinedPartitionException;
 import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -111,7 +112,7 @@ public class TestCatalogAgainstCaseSensitivity {
       tableDescs.put(desc.getName(), desc);
     }
     for (TableDescriptorProto eachTableDescriptor : catalog.getAllTables()) {
-      String qualifiedTableName = CatalogUtil.buildFQName("TestDatabase1", eachTableDescriptor.getName());
+      String qualifiedTableName = IdentifierUtil.buildFQName("TestDatabase1", eachTableDescriptor.getName());
       assertTrue(tableDescs.containsKey(qualifiedTableName));
       TableDesc desc = tableDescs.get(qualifiedTableName);
       assertEquals(desc.getUri().toString(), eachTableDescriptor.getPath());
@@ -128,13 +129,13 @@ public class TestCatalogAgainstCaseSensitivity {
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setAlterTableType(AlterTableType.RENAME_TABLE);
-    alterTableDesc.setNewTableName(CatalogUtil.buildFQName("TestDatabase1", "renamed_table"));
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "newTable"));
+    alterTableDesc.setNewTableName(IdentifierUtil.buildFQName("TestDatabase1", "renamed_table"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "newTable"));
     catalog.alterTable(alterTableDesc);
 
     assertFalse(catalog.existsTable("TestDatabase1", "newTable"));
     assertTrue(catalog.existsTable("TestDatabase1", "renamed_table"));
-    catalog.dropTable(CatalogUtil.buildFQName("TestDatabase1", "renamed_table"));
+    catalog.dropTable(IdentifierUtil.buildFQName("TestDatabase1", "renamed_table"));
 
     //////////////////////////////////////////////////////////////////////////////
     // table stats
@@ -176,7 +177,7 @@ public class TestCatalogAgainstCaseSensitivity {
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
@@ -194,7 +195,7 @@ public class TestCatalogAgainstCaseSensitivity {
     partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
@@ -242,7 +243,7 @@ public class TestCatalogAgainstCaseSensitivity {
     partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
     catalog.alterTable(alterTableDesc);
@@ -258,7 +259,7 @@ public class TestCatalogAgainstCaseSensitivity {
     partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
     catalog.alterTable(alterTableDesc);
@@ -281,32 +282,32 @@ public class TestCatalogAgainstCaseSensitivity {
     //////////////////////////////////////////////////////////////////////////////
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setAddColumn(new Column(CatalogUtil.buildFQName(databaseName, tableName, "AddedCol1"),
+    alterTableDesc.setAddColumn(new Column(IdentifierUtil.buildFQName(databaseName, tableName, "AddedCol1"),
         CatalogUtil.newSimpleDataType(Type.BLOB)));
-    alterTableDesc.setTableName(CatalogUtil.buildFQName(databaseName, tableName));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName(databaseName, tableName));
     alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
     catalog.alterTable(alterTableDesc);
 
     TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
     assertTrue(
-        tableDesc.getSchema().containsByQualifiedName(CatalogUtil.buildFQName(databaseName, tableName, "AddedCol1")));
+        tableDesc.getSchema().containsByQualifiedName(IdentifierUtil.buildFQName(databaseName, tableName, "AddedCol1")));
 
     //////////////////////////////////////////////////////////////////////////////
     // Test rename column
     //////////////////////////////////////////////////////////////////////////////
 
     alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setColumnName(CatalogUtil.buildFQName(databaseName, tableName, "AddedCol1"));
-    alterTableDesc.setNewColumnName(CatalogUtil.buildFQName(databaseName, tableName, "addedcol1"));
-    alterTableDesc.setTableName(CatalogUtil.buildFQName(databaseName, tableName));
+    alterTableDesc.setColumnName(IdentifierUtil.buildFQName(databaseName, tableName, "AddedCol1"));
+    alterTableDesc.setNewColumnName(IdentifierUtil.buildFQName(databaseName, tableName, "addedcol1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName(databaseName, tableName));
     alterTableDesc.setAlterTableType(AlterTableType.RENAME_COLUMN);
     catalog.alterTable(alterTableDesc);
 
     tableDesc = catalog.getTableDesc(databaseName, tableName);
     assertFalse(
-        tableDesc.getSchema().containsByQualifiedName(CatalogUtil.buildFQName(databaseName, tableName, "AddedCol1")));
+        tableDesc.getSchema().containsByQualifiedName(IdentifierUtil.buildFQName(databaseName, tableName, "AddedCol1")));
     assertTrue(
-        tableDesc.getSchema().containsByQualifiedName(CatalogUtil.buildFQName(databaseName, tableName, "addedcol1")));
+        tableDesc.getSchema().containsByQualifiedName(IdentifierUtil.buildFQName(databaseName, tableName, "addedcol1")));
 
     //////////////////////////////////////////////////////////////////////////////
     // Test get all columns
@@ -350,7 +351,7 @@ public class TestCatalogAgainstCaseSensitivity {
             .add("RecoRd1", new TypeDesc(schema)).build())).build();
 
     TableDesc tableDesc = new TableDesc(
-        CatalogUtil.buildFQName(databaseName, tableName),
+        IdentifierUtil.buildFQName(databaseName, tableName),
         tableSchema,
         CatalogUtil.newTableMeta("JSON"),
         URI.create("hdfs://xxx.com/json_Table")

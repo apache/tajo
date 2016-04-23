@@ -53,6 +53,7 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
 import org.apache.tajo.exception.InvalidSessionException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
@@ -557,7 +558,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> fetchSystemTable(TableDesc tableDesc, Schema inSchema) {
     List<Tuple> tuples = null;
-    String tableName = CatalogUtil.extractSimpleName(tableDesc.getName());
+    String tableName = IdentifierUtil.extractSimpleName(tableDesc.getName());
 
     if ("tablespace".equalsIgnoreCase(tableName)) {
       tuples = getTablespaces(inSchema);

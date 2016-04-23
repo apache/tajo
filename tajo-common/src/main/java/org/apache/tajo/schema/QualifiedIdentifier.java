@@ -26,6 +26,7 @@ import org.apache.tajo.util.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 
@@ -65,12 +66,12 @@ public class QualifiedIdentifier {
 
   @Override
   public String toString() {
-    return displayString(DefaultPolicy());
+    return raw(DefaultPolicy());
   }
 
   @Override
   public int hashCode() {
-    return names.hashCode();
+    return Objects.hash(names);
   }
 
   public boolean equals(Object obj) {
@@ -96,8 +97,10 @@ public class QualifiedIdentifier {
   @VisibleForTesting
   public static QualifiedIdentifier $(String...names) {
     ImmutableList.Builder<Identifier> builder = new ImmutableList.Builder();
-    for (String n :names) {
-      builder.add(Identifier._(n));
+    for (String n : names) {
+      for (String split : n.split(StringUtils.escapeRegexp(DefaultPolicy().getIdentifierSeperator()))) {
+        builder.add(Identifier._(split, IdentifierUtil.isShouldBeQuoted(split)));
+      }
     }
     return new QualifiedIdentifier(builder.build());
   }

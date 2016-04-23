@@ -26,6 +26,7 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.Type;
 
 /**
@@ -93,7 +94,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return True if a column includes a table name. Otherwise, it returns False.
    */
   public boolean hasQualifier() {
-    return name.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length > 1;
+    return name.split(IdentifierUtil.IDENTIFIER_DELIMITER_REGEXP).length > 1;
   }
 
   /**
@@ -109,7 +110,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return The qualifier
    */
   public String getQualifier() {
-    return CatalogUtil.extractQualifier(name);
+    return IdentifierUtil.extractQualifier(name);
   }
 
   /**
@@ -117,7 +118,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return The simple name without qualifications
    */
   public String getSimpleName() {
-    return CatalogUtil.extractSimpleName(name);
+    return IdentifierUtil.extractSimpleName(name);
   }
 
   /**

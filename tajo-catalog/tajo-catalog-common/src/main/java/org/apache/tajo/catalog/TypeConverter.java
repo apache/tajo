@@ -24,7 +24,6 @@ import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.schema.Field;
-import org.apache.tajo.schema.IdentifierPolicy;
 import org.apache.tajo.type.*;
 
 import static org.apache.tajo.catalog.CatalogUtil.newDataTypeWithLen;
@@ -130,9 +129,9 @@ public class TypeConverter {
       Protobuf protobuf = (Protobuf) type;
       return new TypeDesc(CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName()));
     case RECORD:
-      Struct struct = (Struct) type;
+      Record record = (Record) type;
       ImmutableList.Builder<Column> fields = ImmutableList.builder();
-      for (Field t: struct.fields()) {
+      for (Field t: record.fields()) {
         fields.add(new Column(t.name().raw(), convert(t)));
       }
       return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());
