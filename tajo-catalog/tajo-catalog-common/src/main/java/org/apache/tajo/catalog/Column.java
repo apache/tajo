@@ -26,6 +26,7 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.type.Type;
 
 /**
  * Describes a column. It is an immutable object.
@@ -61,6 +62,15 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    */
   public Column(String name, TajoDataTypes.Type type) {
     this(name, CatalogUtil.newSimpleDataType(type));
+  }
+
+  /**
+   *
+   * @param name Column name
+   * @param type Type
+   */
+  public Column(String name, Type type) {
+    this(name, TypeConverter.convert(type));
   }
 
   /**

@@ -26,6 +26,7 @@ import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.StringUtils;
 
 import java.sql.DatabaseMetaData;
@@ -270,8 +271,8 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
    * @param dataType Tajo DataType
    * @return SQL DataType
    */
-  public String convertTajoTypeToSQLType(DataType dataType) {
-    switch (dataType.getType()) {
+  public String convertTajoTypeToSQLType(Type dataType) {
+    switch (dataType.baseType()) {
     case INT1:
       return "TINYINT";
     case INT2:
@@ -285,7 +286,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
     case FLOAT8:
       return "DOUBLE";
     default:
-      return dataType.getType().name();
+      return dataType.baseType().name();
     }
   }
 

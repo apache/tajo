@@ -29,6 +29,7 @@ import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 /**
  * An annotated expression which includes actual data domains.
@@ -50,7 +51,7 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
     return this.type;
   }
 
-  public abstract DataType getValueType();
+  public abstract Type getValueType();
 
   public abstract int childNum();
 

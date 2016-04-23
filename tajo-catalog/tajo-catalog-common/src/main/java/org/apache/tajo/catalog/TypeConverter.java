@@ -20,11 +20,11 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.schema.Schema;
-import org.apache.tajo.type.Protobuf;
-import org.apache.tajo.type.Type;
+import org.apache.tajo.type.*;
 
 import java.util.Collection;
 
@@ -43,34 +43,39 @@ public class TypeConverter {
   public static Type convert(TajoDataTypes.Type legacyBaseType) {
     switch (legacyBaseType) {
     case BOOLEAN:
-      return Bool();
+      return Bool;
     case INT1:
+      return Int1;
     case INT2:
-      return Int2();
+      return Int2;
     case INT4:
-      return Int4();
+      return Int4;
     case INT8:
-      return Int8();
+      return Int8;
     case FLOAT4:
-      return Float4();
+      return Float4;
     case FLOAT8:
-      return Float8();
+      return Float8;
     case DATE:
-      return Date();
+      return Date;
     case TIME:
-      return Time();
+      return Time;
     case TIMESTAMP:
-      return Timestamp();
+      return Timestamp;
     case INTERVAL:
-      return Interval();
+      return Interval;
+    case CHAR:
+      return Char(1); // default len = 1
     case TEXT:
-      return Text();
+      return Text;
     case BLOB:
-      return Blob();
+      return Blob;
+    case RECORD:
+      throw new TajoRuntimeException(new NotImplementedException("record projection"));
     case NULL_TYPE:
-      return Null();
+      return Null;
     case ANY:
-      return Any();
+      return Any;
     default:
       throw new TajoRuntimeException(new UnsupportedException(legacyBaseType.name()));
     }
@@ -94,6 +99,21 @@ public class TypeConverter {
   }
 
   public static TajoDataTypes.DataType convert(Type type) {
-    return CatalogUtil.newSimpleDataType(type.baseType());
+    switch (type.baseType()) {
+      case CHAR:
+        Char charType = (Char) type;
+        return CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length());
+      case VARCHAR:
+        Varchar varcharType = (Varchar) type;
+        return CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length());
+      case PROTOBUF:
+        Protobuf protobuf = (Protobuf) type;
+        return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName());
+      case NUMERIC:
+        Numeric numericType = (Numeric) type;
+        return CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.NUMERIC, numericType.precision());
+      default:
+        return CatalogUtil.newSimpleDataType(type.baseType());
+    }
   }
 }
