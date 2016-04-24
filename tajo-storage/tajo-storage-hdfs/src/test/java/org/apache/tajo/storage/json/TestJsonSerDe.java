@@ -87,7 +87,7 @@ public class TestJsonSerDe {
         DatumFactory.createChar("hyunsik"),             // 1
         DatumFactory.createInt2((short) 17),            // 2
         DatumFactory.createInt4(59),                    // 3
-        DatumFactory.createInt8(23l),                   // 4
+        DatumFactory.createInt8(23L),                   // 4
         DatumFactory.createFloat4(77.9f),               // 5
         DatumFactory.createFloat8(271.9d),              // 6
         DatumFactory.createText("hyunsik"),             // 7

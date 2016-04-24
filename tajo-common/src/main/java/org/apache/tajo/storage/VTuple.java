@@ -23,11 +23,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
-import org.apache.tajo.exception.NotImplementedException;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.net.InetAddress;
 import java.util.Arrays;
 
 public class VTuple implements Tuple, Cloneable {
