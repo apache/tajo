@@ -55,9 +55,9 @@ class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
   @Override
   public EvalNode visitConst(EvalCodeGenContext context, ConstEval constEval, Stack<EvalNode> stack) {
 
-    if (constEval.getValueType().getType() == TajoDataTypes.Type.INTERVAL) {
+    if (constEval.getValueType().baseType() == TajoDataTypes.Type.INTERVAL) {
       if (!context.symbols.containsKey(constEval)) {
-        String fieldName = constEval.getValueType().getType().name() + "_" + context.seqId++;
+        String fieldName = constEval.getValueType().baseType().name() + "_" + context.seqId++;
         context.symbols.put(constEval, fieldName);
 
         context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
