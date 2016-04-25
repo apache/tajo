@@ -52,8 +52,9 @@ public class HiveFunctionLoader {
     String udfdir = conf.getVar(TajoConf.ConfVars.HIVE_UDF_DIR);
 
     try {
+      // Currently Hive udf jar must be on local filesystem
+      FileSystem fs = FileSystem.getLocal(conf);
       Path udfPath = new Path(udfdir);
-      FileSystem fs = udfPath.getFileSystem(conf);
 
       if (!fs.isDirectory(udfPath)) {
         LOG.warn("Hive UDF directory doesn't exist : "+udfdir);
