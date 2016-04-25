@@ -18,10 +18,10 @@
 
 package org.apache.tajo.plan.expr;
 
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public class PartialBinaryExpr extends BinaryEval {
   
@@ -37,7 +37,7 @@ public class PartialBinaryExpr extends BinaryEval {
   }
 
   @Override
-  public DataType getValueType() {
+  public Type getValueType() {
     return null;
   }
 

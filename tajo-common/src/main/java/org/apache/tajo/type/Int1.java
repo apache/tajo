@@ -16,38 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.expr;
+package org.apache.tajo.type;
 
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.type.Type;
+import org.apache.tajo.common.TajoDataTypes;
 
-public class NotEval extends UnaryEval implements Cloneable {
-  public NotEval(EvalNode child) {
-    super(EvalType.NOT, child);
-  }
-
+public class Int1 extends Type {
   @Override
-  public Type getValueType() {
-    return Type.Bool;
-  }
-
-  @Override
-  public String getName() {
-    return "?";
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public Datum eval(Tuple tuple) {
-    super.eval(tuple);
-    Datum datum = child.eval(tuple);
-    return !datum.isNull() ? DatumFactory.createBool(!datum.asBool()) : datum;
-  }
-
-  @Override
-  public String toString() {
-    return "NOT " + child.toString();
+  public TajoDataTypes.Type baseType() {
+    return TajoDataTypes.Type.INT1;
   }
 }
