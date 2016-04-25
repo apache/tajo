@@ -240,7 +240,6 @@ public class RemoteFetcher extends AbstractFetcher {
               content.readBytes(fc, content.readableBytes());
             }
 
-            // TODO: check compatability with yarn pull server
             if (msg instanceof LastHttpContent) {
               if (raf != null) {
                 fileLen = file.length();

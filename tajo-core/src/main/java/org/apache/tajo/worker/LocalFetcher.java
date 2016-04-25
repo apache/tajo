@@ -276,18 +276,23 @@ public class LocalFetcher extends AbstractFetcher {
       // Wait for the server to close the connection. throw exception if failed
       channel.closeFuture().syncUninterruptibly();
 
-      state = FetcherState.FETCH_DATA_FETCHING;
-      for (FileChunkMeta eachMeta : chunkMetas) {
-        Path outputPath = StorageUtil.concatPath(queryBaseDir, eachMeta.getTaskId(), "output");
-        if (!localDirAllocator.ifExists(outputPath.toString(), conf)) {
-          LOG.warn("Range shuffle - file not exist. " + outputPath);
-          continue;
+      if (!state.equals(FetcherState.FETCH_META_FINISHED)) {
+        endFetch(FetcherState.FETCH_FAILED);
+      } else {
+        state = FetcherState.FETCH_DATA_FETCHING;
+        for (FileChunkMeta eachMeta : chunkMetas) {
+          Path outputPath = StorageUtil.concatPath(queryBaseDir, eachMeta.getTaskId(), "output");
+          if (!localDirAllocator.ifExists(outputPath.toString(), conf)) {
+            LOG.warn("Range shuffle - file not exist. " + outputPath);
+            continue;
+          }
+          Path path = localFileSystem.makeQualified(localDirAllocator.getLocalPathToRead(outputPath.toString(), conf));
+          FileChunk chunk = new FileChunk(new File(URI.create(path.toUri() + "/output")),
+              eachMeta.getStartOffset(), eachMeta.getLength());
+          chunk.setEbId(tableName);
+          fileChunks.add(chunk);
         }
-        Path path = localFileSystem.makeQualified(localDirAllocator.getLocalPathToRead(outputPath.toString(), conf));
-        FileChunk chunk = new FileChunk(new File(URI.create(path.toUri() + "/output")),
-            eachMeta.getStartOffset(), eachMeta.getLength());
-        chunk.setEbId(tableName);
-        fileChunks.add(chunk);
+        endFetch(FetcherState.FETCH_DATA_FINISHED);
       }
 
       return fileChunks;
@@ -296,8 +301,6 @@ public class LocalFetcher extends AbstractFetcher {
         // Close the channel to exit.
         future.channel().close().awaitUninterruptibly();
       }
-
-      endFetch(FetcherState.FETCH_DATA_FINISHED);
     }
   }
 
@@ -364,12 +367,14 @@ public class LocalFetcher extends AbstractFetcher {
           try {
             if (content.isReadable()) {
               int contentLength = content.readableBytes();
-              if ((totalReceivedContentLength + contentLength) == length) {
-                state = FetcherState.FETCH_META_FINISHED;
-              }
               content.readBytes(buf, totalReceivedContentLength, contentLength);
               totalReceivedContentLength += contentLength;
-              if (state.equals(FetcherState.FETCH_META_FINISHED)) {
+            }
+
+            if (msg instanceof LastHttpContent) {
+              if (totalReceivedContentLength == length) {
+                state = FetcherState.FETCH_META_FINISHED;
+
                 List<String> jsonMetas = gson.fromJson(new String(buf), List.class);
                 for (String eachJson : jsonMetas) {
                   FileChunkMeta meta = gson.fromJson(eachJson, FileChunkMeta.class);
@@ -377,9 +382,10 @@ public class LocalFetcher extends AbstractFetcher {
                 }
                 totalReceivedContentLength = 0;
                 length = -1;
-              } else if (totalReceivedContentLength > length) {
-                // TODO
-                throw new IOException("Illegal length: " + totalReceivedContentLength + ", expected length: " + length);
+              } else {
+                endFetch(FetcherState.FETCH_FAILED);
+                throw new IOException("Invalid fetch meta length: " + totalReceivedContentLength + ", expected length: "
+                    + length);
               }
             }
           } catch (Exception e) {
