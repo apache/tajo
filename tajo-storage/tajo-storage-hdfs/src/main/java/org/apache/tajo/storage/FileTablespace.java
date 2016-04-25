@@ -1045,6 +1045,10 @@ public class FileTablespace extends Tablespace {
       }
       // Delete backup files
       fs.delete(backupDir, true);
+
+      // Delete Staging directory
+      Path stagingDir = new Path(finalOutputDir, ".staging");
+      fs.delete(stagingDir, true);
     } catch (Exception e) {
       clearDirectOutputCommit(queryId.getId(), finalOutputDir);
       throw new IOException(e);
