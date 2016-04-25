@@ -46,7 +46,7 @@ public class Map extends Type {
 
   @Override
   public String toString() {
-    return "map<" + keyType + "," + valueType + ">";
+    return "MAP<" + keyType + "," + valueType + ">";
   }
 
   @Override

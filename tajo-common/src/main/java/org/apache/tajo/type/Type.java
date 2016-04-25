@@ -51,7 +51,7 @@ public abstract class Type implements Cloneable {
   }
 
   protected static String typeName(TajoDataTypes.Type type) {
-    return type.name().toLowerCase();
+    return type.name().toUpperCase();
   }
 
   @Override

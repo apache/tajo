@@ -77,7 +77,7 @@ public class Field implements Cloneable {
 
   @Override
   public String toString() {
-    return name + " " + type;
+    return name + " (" + type + ")";
   }
 
   @Override
@@ -87,16 +87,13 @@ public class Field implements Cloneable {
 
   @Override
   public boolean equals(Object obj) {
-
     if (this == obj) {
       return true;
     }
 
     if (obj instanceof Field) {
       Field other = (Field) obj;
-      boolean eq = type.equals(other.type);
-      eq &=  name.equals(other.name);
-      return eq;
+      return type.equals(other.type) && name.equals(other.name);
     }
 
     return false;

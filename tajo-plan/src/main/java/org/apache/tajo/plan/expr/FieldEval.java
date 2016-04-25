@@ -18,7 +18,10 @@
 
 package org.apache.tajo.plan.expr;
 
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.FieldConverter;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.schema.Field;
@@ -113,12 +116,11 @@ public class FieldEval extends EvalNode implements Cloneable {
 	}
 	
   public boolean equals(Object obj) {
-    if (obj instanceof FieldEval) {
-      FieldEval other = (FieldEval) obj;
-      
-      return field.equals(other.field);
+    if (this == obj) {
+      return true;
     }
-    return false;
+
+    return obj instanceof FieldEval && field.equals(((FieldEval) obj).field);
   }
   
   @Override

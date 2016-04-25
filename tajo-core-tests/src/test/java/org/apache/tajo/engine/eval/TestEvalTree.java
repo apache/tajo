@@ -18,10 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
@@ -32,6 +29,7 @@ import org.apache.tajo.type.Type;
 import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
+import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 import static org.junit.Assert.*;
 
 public class TestEvalTree extends ExprTestBase {
@@ -384,5 +382,35 @@ public class TestEvalTree extends ExprTestBase {
     EvalNode copy = (EvalNode) eval.clone();
     assertEquals(eval, copy);
     assertFalse(eval == copy);
+  }
+
+  @Test
+  public final void testHashAndEqual() {
+    EvalNode e1 = new BinaryEval(EvalType.EQUAL,
+        new FieldEval("default.n1.n_nationkey", TypeConverter.convert(INT4)),
+        new FieldEval("default.n2.n_nationkey", TypeConverter.convert(INT4))
+    );
+
+    EvalNode e2 = new BinaryEval(EvalType.EQUAL,
+        new FieldEval("default.n1.n_name", TypeConverter.convert(INT4)),
+        new FieldEval("default.n2.n_name", TypeConverter.convert(INT4))
+    );
+
+    EvalNode e3 = new BinaryEval(EvalType.EQUAL,
+        new FieldEval("default.n1.n_regionkey", TypeConverter.convert(INT4)),
+        new FieldEval("default.n2.n_regionkey", TypeConverter.convert(INT4))
+    );
+
+    EvalNode e4 = new BinaryEval(EvalType.EQUAL,
+        new FieldEval("default.n1.n_comment", TypeConverter.convert(TEXT)),
+        new FieldEval("default.n2.n_comment", TypeConverter.convert(TEXT))
+    );
+
+    FieldEval f1 = new FieldEval("default.n1.n_nationkey", TypeConverter.convert(INT4));
+    System.out.println(f1.hashCode());
+    System.out.println(e1.hashCode());
+
+    System.out.println(">>>>" + e1.hashCode() + " >>>>" + e2.hashCode() + " >>>>" + e3.hashCode() + " >>>> " + e4.hashCode());
+    System.out.println(">>>>" + e1.hashCode() + " >>>>" + e2.hashCode() + " >>>>" + e3.hashCode() + " >>>> " + e4.hashCode());
   }
 }

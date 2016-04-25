@@ -17,7 +17,7 @@ SORT(5)
            => out schema: {(2) default.c.id (INT4), default.c.name (TEXT)}
            => in schema: {(4) default.c.id (INT4), default.c.name (TEXT), default.c.score (FLOAT4), default.c.type (TEXT)}
          SCAN(1) on default.testouterjoinandcasewhen2 as b
-           => target list: default.b.id (INT4), default.b.id (INT4) as id2, default.b.name (TEXT), default.b.name (TEXT) as name2
+           => target list: default.b.id (INT4), default.b.name (TEXT), default.b.id (INT4) as id2, default.b.name (TEXT) as name2
            => out schema: {(4) default.b.id (INT4), default.b.name (TEXT), id2 (INT4), name2 (TEXT)}
            => in schema: {(4) default.b.id (INT4), default.b.name (TEXT), default.b.score (FLOAT4), default.b.type (TEXT)}
       SCAN(0) on default.testouterjoinandcasewhen1 as a
@@ -56,7 +56,7 @@ Block Id: eb_0000000000000_0000_000002 [LEAF]
 [q_0000000000000_0000] 2 => 4 (type=HASH_SHUFFLE, key=default.b.id (INT4), num=32)
 
 SCAN(1) on default.testouterjoinandcasewhen2 as b
-  => target list: default.b.id (INT4), default.b.id (INT4) as id2, default.b.name (TEXT), default.b.name (TEXT) as name2
+  => target list: default.b.id (INT4), default.b.name (TEXT), default.b.id (INT4) as id2, default.b.name (TEXT) as name2
   => out schema: {(4) default.b.id (INT4), default.b.name (TEXT), id2 (INT4), name2 (TEXT)}
   => in schema: {(4) default.b.id (INT4), default.b.name (TEXT), default.b.score (FLOAT4), default.b.type (TEXT)}
 

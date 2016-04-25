@@ -31,7 +31,7 @@ public class JoinSpec implements Cloneable {
 
     @Override
     public int compare(EvalNode e1, EvalNode e2) {
-      return e1.toJson().compareTo(e2.toJson());
+      return e1.toString().compareTo(e2.toString());
     }
   }
 
@@ -69,7 +69,7 @@ public class JoinSpec implements Cloneable {
     return predicates.size() > 0;
   }
 
-  public void setPredicates(Set<EvalNode> predicates) {
+  public void setPredicates(Collection<EvalNode> predicates) {
     this.predicates.clear();
     if (predicates == null || predicates.isEmpty()) {
       if (type == JoinType.INNER) {
@@ -81,7 +81,7 @@ public class JoinSpec implements Cloneable {
   }
 
   public void setSingletonPredicate(EvalNode predicates) {
-    this.setPredicates(new HashSet<>(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(predicates))));
+    this.setPredicates(Arrays.asList(AlgebraicUtil.toConjunctiveNormalFormArray(predicates)));
   }
 
   public EvalNode getSingletonPredicate() {

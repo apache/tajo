@@ -45,7 +45,7 @@ public class Array extends Type {
 
   @Override
   public String toString() {
-    return "array<" + elementType + ">";
+    return "ARRAY<" + elementType + ">";
   }
 
   @Override

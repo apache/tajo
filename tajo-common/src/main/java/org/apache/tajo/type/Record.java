@@ -53,7 +53,7 @@ public class Record extends Type {
 
   @Override
   public String toString() {
-    return "record(" + StringUtils.join(memberTypes, ", ") + ")";
+    return "RECORD(" + StringUtils.join(memberTypes, ", ") + ")";
   }
 
   @Override
