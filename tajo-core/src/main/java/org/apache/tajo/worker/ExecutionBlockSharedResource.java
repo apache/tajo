@@ -32,6 +32,7 @@ import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCache;
 import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.util.Pair;
@@ -58,7 +59,6 @@ public class ExecutionBlockSharedResource {
     if (!initializing.getAndSet(true)) {
       try {
         ExecutionBlockSharedResource.this.context = context;
-        initPlan(planJson);
         initCodeGeneration();
         resourceInitSuccess = true;
       } catch (Throwable t) {
@@ -70,10 +70,6 @@ public class ExecutionBlockSharedResource {
         throw new RuntimeException("Resource cannot be initialized");
       }
     }
-  }
-
-  private void initPlan(String planJson) {
-    plan = CoreGsonHelper.fromJson(planJson, LogicalNode.class);
   }
 
   private void initCodeGeneration() throws TajoException {

@@ -35,7 +35,6 @@ import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
-import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
@@ -129,12 +128,6 @@ public class ExprTestBase {
     cluster.shutdownCatalogCluster();
   }
 
-  private static void assertJsonSerDer(EvalNode expr) {
-    String json = CoreGsonHelper.toJson(expr, EvalNode.class);
-    EvalNode fromJson = CoreGsonHelper.fromJson(json, EvalNode.class);
-    assertEquals(expr, fromJson);
-  }
-
   public TajoConf getConf() {
     return new TajoConf(conf);
   }
@@ -187,9 +180,6 @@ public class ExprTestBase {
       } catch (CloneNotSupportedException e) {
         fail(e.getMessage());
       }
-    }
-    for (Target t : targets) {
-      assertJsonSerDer(t.getEvalTree());
     }
     for (Target t : targets) {
       assertEvalTreeProtoSerDer(context, t.getEvalTree());
