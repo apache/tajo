@@ -46,7 +46,7 @@ public class FadvisedFileRegion extends DefaultFileRegion {
   private final long position;
   private final int shuffleBufferSize;
   private final boolean shuffleTransferToAllowed;
-  private final FileChannel fileChannel;
+  private FileChannel fileChannel;
 
   private ReadaheadPool.ReadaheadRequest readaheadRequest;
   public static final int DEFAULT_SHUFFLE_BUFFER_SIZE = 128 * 1024;
@@ -150,7 +150,9 @@ public class FadvisedFileRegion extends DefaultFileRegion {
   public void releaseExternalResources() {
     if (readaheadRequest != null) {
       readaheadRequest.cancel();
+      readaheadRequest = null;
     }
+    fileChannel = null;
     super.releaseExternalResources();
   }
 
@@ -159,7 +161,7 @@ public class FadvisedFileRegion extends DefaultFileRegion {
    * we don't need the region to be cached anymore.
    */
   public void transferSuccessful() {
-    if (PullServerUtil.isNativeIOPossible() && manageOsCache && getCount() > 0) {
+    if (PullServerUtil.isNativeIOPossible() && manageOsCache && getCount() > 0 && fileChannel != null) {
       try {
         PullServerUtil.posixFadviseIfPossible(identifier, fd, getPosition(), getCount(),
             NativeIO.POSIX.POSIX_FADV_DONTNEED);

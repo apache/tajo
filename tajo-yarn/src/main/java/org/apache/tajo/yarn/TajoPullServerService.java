@@ -543,8 +543,10 @@ public class TajoPullServerService extends AuxiliaryService {
         LOG.fatal(file.getFile() + " not found");
         return null;
       } catch (Throwable e) {
+        LOG.fatal("error while sending a file: ", e);
         if (spill != null) {
           //should close a opening file
+          LOG.warn("Close the file " + file.getFile().getAbsolutePath());
           spill.close();
         }
         return null;
