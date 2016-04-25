@@ -45,7 +45,7 @@ public class Char extends Type {
 
   @Override
   public String toString() {
-    return "char(" + length + ")";
+    return "CHAR(" + length + ")";
   }
 
   @Override

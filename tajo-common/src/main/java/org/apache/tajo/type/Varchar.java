@@ -45,7 +45,7 @@ public class Varchar extends Type {
 
   @Override
   public String toString() {
-    return "varchar(" + length + ")";
+    return "VARCHAR(" + length + ")";
   }
 
   @Override

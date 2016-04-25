@@ -90,35 +90,35 @@ public class TestType {
 
   @Test
   public final void testToString() {
-    assertEquals("boolean", Bool.toString());
-    assertEquals("int1", Int1.toString());
-    assertEquals("int2", Int2.toString());
-    assertEquals("int4", Int4.toString());
-    assertEquals("int8", Int8.toString());
-    assertEquals("float4", Float4.toString());
-    assertEquals("float8", Float8.toString());
-    assertEquals("date", Date.toString());
-    assertEquals("time", Time.toString());
-    assertEquals("timestamp", Timestamp.toString());
+    assertEquals("BOOLEAN", Bool.toString());
+    assertEquals("INT1", Int1.toString());
+    assertEquals("INT2", Int2.toString());
+    assertEquals("INT4", Int4.toString());
+    assertEquals("INT8", Int8.toString());
+    assertEquals("FLOAT4", Float4.toString());
+    assertEquals("FLOAT8", Float8.toString());
+    assertEquals("DATE", Date.toString());
+    assertEquals("TIME", Time.toString());
+    assertEquals("TIMESTAMP", Timestamp.toString());
 
     Numeric n = Numeric(4, 2);
-    assertEquals("numeric(4,2)", n.toString());
+    assertEquals("NUMERIC(4,2)", n.toString());
 
-    assertEquals("blob", Blob.toString());
+    assertEquals("BLOB", Blob.toString());
 
     Char c = Char(2);
-    assertEquals("char(2)", c.toString());
+    assertEquals("CHAR(2)", c.toString());
 
     Varchar varchar = Varchar(2);
-    assertEquals("varchar(2)", varchar.toString());
+    assertEquals("VARCHAR(2)", varchar.toString());
 
     Record record = Struct(Field("x", Int8), Field("y", Array(Float8)));
-    assertEquals("record(x int8, y array<float8>)", record.toString());
+    assertEquals("RECORD(x (INT8), y (ARRAY<FLOAT8>))", record.toString());
 
     Map map = Map(Int8, Array(Timestamp));
-    assertEquals("map<int8,array<timestamp>>", map.toString());
+    assertEquals("MAP<INT8,ARRAY<TIMESTAMP>>", map.toString());
 
     Array array = Array(Int8);
-    assertEquals("array<int8>", array.toString());
+    assertEquals("ARRAY<INT8>", array.toString());
   }
 }

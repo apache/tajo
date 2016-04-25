@@ -36,7 +36,7 @@ public class TestSchema {
     Field struct2 = Record($("f34"), Field($("f3"), Int8), Field($("f4"), Int4));
     Schema schema = Schema(struct1, struct2);
 
-    assertEquals("f12 record(f1 int8, f2 int4), f34 record(f3 int8, f4 int4)", schema.toString());
+    assertEquals("f12 (RECORD(f1 (INT8), f2 (INT4))), f34 (RECORD(f3 (INT8), f4 (INT4)))", schema.toString());
   }
 
   @Test
@@ -46,7 +46,7 @@ public class TestSchema {
     Field f3 = Record($("z"), Field($("z-1"), Time), Field($("z-2"), Array(Int8)));
     Schema schema = Schema(f1, f2, f3);
 
-    assertEquals("x array<int8>, y int8, z record(z-1 time, z-2 array<int8>)", schema.toString());
+    assertEquals("x (ARRAY<INT8>), y (INT8), z (RECORD(z-1 (TIME), z-2 (ARRAY<INT8>)))", schema.toString());
   }
 
   @Test
@@ -56,6 +56,6 @@ public class TestSchema {
     Field f3 = Record($("z"), Field($("z-1"), Time), Field($("z-2"), Array(Int8)));
     Schema schema = Schema(f1, f2, f3);
 
-    assertEquals("x.y array<int8>, y.B int8, z record(z-1 time, z-2 array<int8>)", schema.toString());
+    assertEquals("x.y (ARRAY<INT8>), y.B (INT8), z (RECORD(z-1 (TIME), z-2 (ARRAY<INT8>)))", schema.toString());
   }
 }

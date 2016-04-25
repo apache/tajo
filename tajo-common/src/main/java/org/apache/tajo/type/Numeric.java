@@ -46,7 +46,7 @@ public class Numeric extends Type {
 
   @Override
   public String toString() {
-    return "numeric(" + precision + "," + scale + ")";
+    return "NUMERIC(" + precision + "," + scale + ")";
   }
 
   @Override
