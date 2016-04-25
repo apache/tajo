@@ -25,8 +25,6 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
@@ -36,6 +34,7 @@ import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 
@@ -658,10 +657,10 @@ public class PlannerUtil {
   public static Schema targetToSchema(List<Target> targets) {
     SchemaBuilder schema = SchemaBuilder.uniqueNameBuilder();
     for (Target t : targets) {
-      DataType type = t.getEvalTree().getValueType();
+      Type type = t.getEvalTree().getValueType();
 
       // hack to avoid projecting record type.
-      if (type.getType() == TajoDataTypes.Type.RECORD) {
+      if (type.isStruct()) {
         throw new TajoRuntimeException(new NotImplementedException("record projection"));
       }
 
@@ -672,7 +671,7 @@ public class PlannerUtil {
         name = t.getEvalTree().getName();
       }
 
-      schema.add(name, type);
+      schema.add(name, TypeConverter.convert(type));
     }
 
     return schema.build();

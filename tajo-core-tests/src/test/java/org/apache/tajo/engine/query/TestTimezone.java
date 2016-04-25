@@ -23,6 +23,7 @@ import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -105,7 +106,7 @@ public class TestTimezone extends QueryTestCaseBase {
     }
   }
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object []> getParameters() {
     return Arrays.asList(new Object[][]{
         {"GMT"},

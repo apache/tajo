@@ -682,7 +682,8 @@ public class QueryTestCaseBase {
     String methodName = name.getMethodName();
     // In the case of parameter execution name's pattern is methodName[0]
     if (methodName.endsWith("]")) {
-      methodName = methodName.substring(0, methodName.length() - 3);
+      int index = methodName.indexOf('[');
+      methodName = methodName.substring(0, index);
     }
     return methodName;
   }

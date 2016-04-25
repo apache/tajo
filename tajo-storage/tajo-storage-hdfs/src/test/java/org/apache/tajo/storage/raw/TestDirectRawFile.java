@@ -49,6 +49,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -75,7 +76,7 @@ public class TestDirectRawFile {
   @Rule
   public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: isLocal: {0}")
   public static Collection<Object[]> generateParameters() throws IOException {
     return Arrays.asList(new Object[][]{
         {false},

@@ -81,7 +81,7 @@ public class TestExternalSortExec {
     this.sortAlgorithmString = sortAlgorithm;
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {SortAlgorithm.TIM.name()},

@@ -575,7 +575,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   public static void prohibitNestedRecordProjection(Projectable projectable)
       throws TajoException {
     for (Target t : projectable.getTargets()) {
-      if (t.getEvalTree().getValueType().getType() == TajoDataTypes.Type.RECORD) {
+      if (t.getEvalTree().getValueType().isStruct()) {
         throw new NotImplementedException("record field projection");
       }
     }
