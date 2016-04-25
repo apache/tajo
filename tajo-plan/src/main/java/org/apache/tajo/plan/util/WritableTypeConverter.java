@@ -107,12 +107,18 @@ public class WritableTypeConverter {
       }
       case TEXT: return new Text(value.asChars());
       case VARBINARY: return new BytesWritable(value.asByteArray());
+
+      case NULL_TYPE: return null;
     }
 
     throw new TajoRuntimeException(new NotImplementedException(value.type().name()));
   }
 
   public static Datum convertWritable2Datum(Writable value) {
+    if (value == null) {
+      return NullDatum.get();
+    }
+
     DataType type = convertWritableToTajoType(value.getClass());
 
     switch(type.getType()) {

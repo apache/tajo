@@ -78,6 +78,7 @@ public class TestHiveFunctions extends ExprTestBase {
 
   @Test
   public void testRunFunctions() throws Exception {
+    testSimpleEval("select my_upper(null)", new String [] {"NULL"});
     testSimpleEval("select my_upper('abcd')", new String [] {"ABCD"});
     testSimpleEval("select my_divide(1,2)", new String [] {"0.5"});
   }
