@@ -170,12 +170,12 @@ public class LocalFetcher extends AbstractFetcher {
 
   @Override
   public List<FileChunk> get() throws IOException {
+    this.startTime = System.currentTimeMillis();
     return pullServerService != null ? getWithInternalPullServer() : getWithExternalPullServer();
   }
 
   private List<FileChunk> getWithInternalPullServer() throws IOException {
     final List<FileChunk> fileChunks = new ArrayList<>();
-    startTime = System.currentTimeMillis();
     PullServerParams params = new PullServerParams(uri.toString());
     try {
       fileChunks.addAll(pullServerService.getFileChunks(conf, localDirAllocator, params));
@@ -253,7 +253,6 @@ public class LocalFetcher extends AbstractFetcher {
       bootstrap.handler(initializer);
     }
 
-    this.startTime = System.currentTimeMillis();
     this.state = FetcherState.FETCH_META_FETCHING;
     ChannelFuture future = null;
     try {
