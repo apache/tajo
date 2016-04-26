@@ -1065,7 +1065,9 @@ public class FileTablespace extends Tablespace {
     PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
 
     // Delete added files
-    deleteOutputFiles(path, prefix);
+    if (fs.exists(path)) {
+      deleteOutputFiles(path, prefix);
+    }
 
     // Recover backup files to output directory
     if (fs.exists(backupDir)) {
@@ -1095,12 +1097,23 @@ public class FileTablespace extends Tablespace {
 
   private void deleteOutputFiles(Path path, String prefix) throws IOException {
     FileStatus[] statuses = fs.listStatus(path);
+
+    int deleteFileCount = 0, notDeleteFileCount = 0;
     for (FileStatus status : statuses) {
       if (status.isDirectory()) {
         deleteOutputFiles(status.getPath(), prefix);
-      } else if (status.isFile() && status.getPath().getName().startsWith(prefix)) {
-        fs.delete(status.getPath(), false);
+      } else if (status.isFile()) {
+        if (status.getPath().getName().startsWith(prefix)) {
+          fs.delete(status.getPath(), false);
+          deleteFileCount++;
+        } else {
+          notDeleteFileCount++;
+        }
       }
+    }
+
+    if (deleteFileCount > 0 && notDeleteFileCount == 0) {
+      fs.delete(path, false);
     }
   }
 

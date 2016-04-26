@@ -145,7 +145,12 @@ public class TestDirectOutputCommitter {
     List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
     boolean historyFound = false;
     for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
-      if (proto.getQueryId().equals(queryId.toString())) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
         historyFound = true;
       }
     }
@@ -232,7 +237,12 @@ public class TestDirectOutputCommitter {
     List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
     boolean historyFound = false;
     for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
-      if (proto.getQueryId().equals(queryId.toString())) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
         historyFound = true;
       }
     }
@@ -328,7 +338,12 @@ public class TestDirectOutputCommitter {
     List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
     boolean historyFound = false;
     for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
-      if (proto.getQueryId().equals(queryId.toString())) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
         historyFound = true;
       }
     }
@@ -491,9 +506,15 @@ public class TestDirectOutputCommitter {
     List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
     boolean historyFound = false;
     for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
-      if (proto.getQueryId().equals(queryId.toString())) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
         historyFound = true;
       }
+
     }
     assertTrue(historyFound);
 
@@ -559,7 +580,12 @@ public class TestDirectOutputCommitter {
     List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
     boolean historyFound = false;
     for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
-      if (proto.getQueryId().equals(queryId.toString())) {
+      if (proto.getQueryId().equals(queryId.toString())
+      && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
         historyFound = true;
       }
     }

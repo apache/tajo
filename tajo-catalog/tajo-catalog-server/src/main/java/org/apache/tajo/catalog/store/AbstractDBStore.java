@@ -3053,50 +3053,75 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       throw new DuplicateQueryIdException(history.getQueryId());
     }
 
-    final String insertHistorySql = "INSERT INTO " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES
-      + " (QUERY_ID, PATH, START_TIME, QUERY_STATE) VALUES (?, ?, ?, ?) ";
+    Connection conn = null;
+    PreparedStatement pstmt = null;
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(insertHistorySql);
-    }
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(insertHistorySql)) {
+      final String insertHistorySql = "INSERT INTO " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES
+        + " (QUERY_ID, PATH, START_TIME, QUERY_STATE) VALUES (?, ?, ?, ?) ";
 
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(insertHistorySql);
+      }
+
+      pstmt = conn.prepareStatement(insertHistorySql);
       pstmt.setString(1, history.getQueryId());
       pstmt.setString(2, history.getPath());
       pstmt.setLong(3, history.getStartTime());
       pstmt.setString(4, history.getQueryState());
       pstmt.executeUpdate();
-
+      conn.commit();
     } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
     }
   }
 
   @Override
   public void updateDirectOutputCommitHistoryProto(UpdateDirectOutputCommitHistoryProto history)
     throws UndefinedQueryIdException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
 
-    if (!existQueryIdFromDirectOutputCommitHistories(history.getQueryId())) {
-      throw new UndefinedQueryIdException(history.getQueryId());
-    }
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
 
-    final String updateHistorySql = "UPDATE " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES
-      + " SET END_TIME = ?, QUERY_STATE = ? WHERE QUERY_ID = ? ";
+      final String updateHistorySql = "UPDATE " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES
+        + " SET END_TIME = ?, QUERY_STATE = ? WHERE QUERY_ID = ? ";
 
-    if (LOG.isDebugEnabled()) {
-      LOG.debug(updateHistorySql);
-    }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(updateHistorySql);
+      }
 
-    try (PreparedStatement pstmt = getConnection().prepareStatement(updateHistorySql)) {
-
+      pstmt = conn.prepareStatement(updateHistorySql);
       pstmt.setLong(1, System.currentTimeMillis());
       pstmt.setString(2, history.getQueryState());
       pstmt.setString(3, history.getQueryId());
       pstmt.executeUpdate();
-
+      conn.commit();
     } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
       throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
     }
   }
 
