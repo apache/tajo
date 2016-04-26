@@ -56,6 +56,7 @@ public class PullServerUtil {
 
   private static boolean nativeIOPossible = false;
   private static Method posixFadviseIfPossible;
+  private static Object cacheManipulator;
 
   static {
     if (NativeIO.isAvailable() && loadNativeIO()) {
@@ -78,10 +79,10 @@ public class PullServerUtil {
                                             long offset, long len, int flags) {
     if (nativeIOPossible) {
       try {
-        posixFadviseIfPossible.invoke(null, identifier, fd, offset, len, flags);
+        posixFadviseIfPossible.invoke(cacheManipulator, identifier, fd, offset, len, flags);
       } catch (Throwable t) {
         nativeIOPossible = false;
-        LOG.warn("Failed to manage OS cache for " + identifier, t);
+        LOG.warn("Failed to manage OS cache for " + identifier + ", fd: " + fd.valid() + ", offset: " + offset + ", len: " + len + ", flags: " + flags + ", msg: " + t.getMessage(), t);
       }
     }
   }
@@ -96,9 +97,10 @@ public class PullServerUtil {
       Method getCacheManipulator = MethodUtils.getAccessibleMethod(NativeIO.POSIX.class, "getCacheManipulator", new Class[0]);
       Class posixClass;
       if (getCacheManipulator != null) {
-        Object posix = MethodUtils.invokeStaticMethod(NativeIO.POSIX.class, "getCacheManipulator", null);
-        posixClass = posix.getClass();
+        cacheManipulator = MethodUtils.invokeStaticMethod(NativeIO.POSIX.class, "getCacheManipulator", null);
+        posixClass = cacheManipulator.getClass();
       } else {
+        cacheManipulator = null;
         posixClass = NativeIO.POSIX.class;
       }
       posixFadviseIfPossible = MethodUtils.getAccessibleMethod(posixClass, "posixFadviseIfPossible", parameters);
