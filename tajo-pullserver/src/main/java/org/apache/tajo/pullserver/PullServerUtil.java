@@ -23,7 +23,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.gson.Gson;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang3.reflect.MethodUtils;
+import org.apache.commons.lang.reflect.MethodUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -82,7 +82,7 @@ public class PullServerUtil {
         posixFadviseIfPossible.invoke(cacheManipulator, identifier, fd, offset, len, flags);
       } catch (Throwable t) {
         nativeIOPossible = false;
-        LOG.warn("Failed to manage OS cache for " + identifier + ", fd: " + fd.valid() + ", offset: " + offset + ", len: " + len + ", flags: " + flags + ", msg: " + t.getMessage(), t);
+        LOG.warn("Failed to manage OS cache for " + identifier, t);
       }
     }
   }
@@ -111,10 +111,6 @@ public class PullServerUtil {
 
     if (posixFadviseIfPossible == null) {
       loaded = false;
-    } else {
-      final StringBuilder sb = new StringBuilder("posixFadviseIfPossible: ");
-      Arrays.stream(posixFadviseIfPossible.getParameterTypes()).forEach(p -> sb.append(p.getCanonicalName()).append(", "));
-      LOG.info(sb);
     }
     return loaded;
   }

@@ -165,10 +165,9 @@ public class FadvisedFileRegion extends DefaultFileRegion {
     if (PullServerUtil.isNativeIOPossible() && manageOsCache && getCount() > 0 && fileChannel != null && channelOpen) {
       try {
         PullServerUtil.posixFadviseIfPossible(identifier, fd, getPosition(), getCount(),
-//        NativeIO.POSIX.getCacheManipulator().posixFadviseIfPossible(identifier, fd, getPosition(), getCount(),
             NativeIO.POSIX.POSIX_FADV_DONTNEED);
       } catch (Throwable t) {
-        LOG.warn("Failed to manage OS cache for " + identifier + ", valid fd? " + fd.valid() + ", pos: " + getPosition() + ", count: " + getCount() + ", channelOpen: " + channelOpen, t);
+        LOG.warn("Failed to manage OS cache for " + identifier, t);
       }
     }
   }
