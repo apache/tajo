@@ -243,6 +243,7 @@ public class RemoteFetcher extends AbstractFetcher {
             if (msg instanceof LastHttpContent) {
               if (raf != null) {
                 fileLen = file.length();
+                fileNum = 1;
               }
 
               if (totalReceivedContentLength == length) {

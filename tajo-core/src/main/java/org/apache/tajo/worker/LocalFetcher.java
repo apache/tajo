@@ -185,7 +185,13 @@ public class LocalFetcher extends AbstractFetcher {
     }
     fileChunks.stream().forEach(c -> c.setEbId(tableName));
     endFetch(FetcherState.FETCH_DATA_FINISHED);
-    fileLen = fileChunks.get(0).getFile().length();
+    if (fileChunks.size() > 0) {
+      fileLen = fileChunks.get(0).getFile().length();
+      fileNum = 1;
+    } else {
+      fileNum = 0;
+      fileLen = 0;
+    }
     return fileChunks;
   }
 
@@ -230,6 +236,8 @@ public class LocalFetcher extends AbstractFetcher {
       chunk.setEbId(tableName);
       chunk.setFromRemote(false);
       fileChunks.add(chunk);
+      fileLen = file.length();
+      fileNum = 1;
     }
 
     endFetch(FetcherState.FETCH_DATA_FINISHED);
@@ -280,6 +288,7 @@ public class LocalFetcher extends AbstractFetcher {
         endFetch(FetcherState.FETCH_FAILED);
       } else {
         state = FetcherState.FETCH_DATA_FETCHING;
+        fileLen = fileNum = 0;
         for (FileChunkMeta eachMeta : chunkMetas) {
           Path outputPath = StorageUtil.concatPath(queryBaseDir, eachMeta.getTaskId(), "output");
           if (!localDirAllocator.ifExists(outputPath.toString(), conf)) {
@@ -287,10 +296,12 @@ public class LocalFetcher extends AbstractFetcher {
             continue;
           }
           Path path = localFileSystem.makeQualified(localDirAllocator.getLocalPathToRead(outputPath.toString(), conf));
-          FileChunk chunk = new FileChunk(new File(URI.create(path.toUri() + "/output")),
-              eachMeta.getStartOffset(), eachMeta.getLength());
+          File file = new File(URI.create(path.toUri() + "/output"));
+          FileChunk chunk = new FileChunk(file, eachMeta.getStartOffset(), eachMeta.getLength());
           chunk.setEbId(tableName);
           fileChunks.add(chunk);
+          fileLen += file.length();
+          fileNum++;
         }
         endFetch(FetcherState.FETCH_DATA_FINISHED);
       }

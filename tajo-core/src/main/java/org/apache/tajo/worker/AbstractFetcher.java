@@ -37,6 +37,7 @@ public abstract class AbstractFetcher {
 
   protected long startTime;
   protected volatile long finishTime;
+  protected int fileNum;
   protected long fileLen;
   protected int messageReceiveCount;
 
@@ -65,6 +66,10 @@ public abstract class AbstractFetcher {
 
   public long getFileLen() {
     return fileLen;
+  }
+
+  public int getFileNum() {
+    return fileNum;
   }
 
   public TajoProtos.FetcherState getState() {
