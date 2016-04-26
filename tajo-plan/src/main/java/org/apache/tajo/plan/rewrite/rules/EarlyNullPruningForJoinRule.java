@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
-import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.exception.TajoException;
@@ -33,9 +32,8 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
@@ -43,8 +41,8 @@ import java.util.stream.Collectors;
  *
  * This rule must be applied after in-subquery rewrite rule and join order optimization.
  */
-public class EarlyNullFilterForJoinRule implements LogicalPlanRewriteRule {
-  private final static String NAME = EarlyNullFilterForJoinRule.class.getSimpleName();
+public class EarlyNullPruningForJoinRule implements LogicalPlanRewriteRule {
+  private final static String NAME = EarlyNullPruningForJoinRule.class.getSimpleName();
 
   @Override
   public String getName() {
@@ -64,7 +62,8 @@ public class EarlyNullFilterForJoinRule implements LogicalPlanRewriteRule {
   }
 
   private static class Context {
-    final Map<Column, EvalNode> generatedFilters = new HashMap<>();
+//    final Map<Column, EvalNode> generatedFilters = new HashMap<>();
+    final List<Column> targetColumns = new ArrayList<>();
   }
 
   private static class Rewriter extends BasicLogicalPlanVisitor<Context, LogicalNode> {
@@ -72,8 +71,12 @@ public class EarlyNullFilterForJoinRule implements LogicalPlanRewriteRule {
     @Override
     public LogicalNode visitJoin(Context context, LogicalPlan plan, QueryBlock block, JoinNode join,
                                  Stack<LogicalNode> stack) throws TajoException {
-      EvalNode realQual = EvalTreeUtil.extractJoinConditions(join.getJoinQual(), join.getLeftChild().getOutSchema(), join.getRightChild().getOutSchema())[0];
-      context.generatedFilters.putAll(new NullFilterGenerator(realQual).gen()); // duplicated filters for the same column will be removed.
+      if (join.hasJoinQual()) {
+        EvalNode realQual = EvalTreeUtil.extractJoinConditions(join.getJoinQual(), join.getLeftChild().getOutSchema(), join.getRightChild().getOutSchema())[0];
+        if (realQual != null) {
+          context.targetColumns.addAll(EvalTreeUtil.findUniqueColumns(realQual));
+        }
+      }
 
       super.visitJoin(context, plan, block, join, stack);
 
@@ -85,13 +88,25 @@ public class EarlyNullFilterForJoinRule implements LogicalPlanRewriteRule {
                                  Stack<LogicalNode> stack) throws TajoException {
       super.visitScan(context, plan, block, scan, stack);
       Schema schema = scan.getPhysicalSchema(); // include partition columns
-      List<EvalNode> founds = context.generatedFilters.entrySet().stream()
-          .filter(e -> schema.contains(e.getKey()))
-          .map(e -> e.getValue())
+      List<EvalNode> filters = context.targetColumns.stream()
+          .filter(column -> schema.contains(column))
+          .map(column -> new IsNullEval(true, new FieldEval(column)))
           .collect(Collectors.toList());
+      filters.stream().forEach(filter -> context.targetColumns.remove(((FieldEval)filter.getChild(0)).getColumnRef()));
 
-      if (founds.size() > 0) {
-        EvalNode nullFilter = AlgebraicUtil.createSingletonExprFromCNF(founds);
+      if (scan.hasTargets()) {
+        filters.addAll(scan.getTargets().stream()
+            .filter(target -> target.hasAlias() &&
+                context.targetColumns.stream().anyMatch(column -> target.getAlias().equals(column.getSimpleName())))
+            .flatMap(target ->
+                EvalTreeUtil.findUniqueColumns(target.getEvalTree()).stream()
+                    .map(column -> new IsNullEval(true, new FieldEval(column))))
+            .collect(Collectors.toList()));
+      }
+      filters.stream().forEach(filter -> context.targetColumns.remove(((FieldEval)filter.getChild(0)).getColumnRef()));
+
+      if (filters.size() > 0) {
+        EvalNode nullFilter = AlgebraicUtil.createSingletonExprFromCNF(filters);
         if (scan.hasQual()) {
           scan.setQual(AlgebraicUtil.createSingletonExprFromCNF(nullFilter, scan.getQual()));
         } else {
@@ -99,34 +114,6 @@ public class EarlyNullFilterForJoinRule implements LogicalPlanRewriteRule {
         }
       }
       return scan;
-    }
-  }
-
-  private static class FilterGenContext {
-    private final Map<Column, EvalNode> generatedFilters = new HashMap<>();
-  }
-
-  private static class NullFilterGenerator extends SimpleEvalNodeVisitor<FilterGenContext> {
-    final EvalNode joinQual;
-
-    public NullFilterGenerator(EvalNode joinQual) {
-      this.joinQual = joinQual;
-    }
-
-    public Map<Column, EvalNode> gen() {
-      FilterGenContext context = new FilterGenContext();
-      this.visit(context, joinQual, new Stack<>());
-      return context.generatedFilters;
-    }
-
-    @Override
-    protected EvalNode visitField(FilterGenContext context, FieldEval evalNode, Stack<EvalNode> stack) {
-      context.generatedFilters.put(evalNode.getColumnRef(), genNullFilter(evalNode));
-      return evalNode;
-    }
-
-    private static EvalNode genNullFilter(FieldEval eval) {
-      return new IsNullEval(true, eval);
     }
   }
 }
