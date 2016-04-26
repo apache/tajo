@@ -23,7 +23,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.gson.Gson;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.reflect.MethodUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -43,10 +42,12 @@ import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexReader;
 import org.apache.tajo.util.Pair;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -55,11 +56,9 @@ public class PullServerUtil {
   private static final Log LOG = LogFactory.getLog(PullServerUtil.class);
 
   private static boolean nativeIOPossible = false;
-  private static Method posixFadviseIfPossible;
-  private static Object cacheManipulator;
 
   static {
-    if (NativeIO.isAvailable() && loadNativeIO()) {
+    if (NativeIO.isAvailable()) {
       nativeIOPossible = true;
     } else {
       LOG.warn("Unable to load hadoop nativeIO");
@@ -79,40 +78,12 @@ public class PullServerUtil {
                                             long offset, long len, int flags) {
     if (nativeIOPossible) {
       try {
-        posixFadviseIfPossible.invoke(cacheManipulator, identifier, fd, offset, len, flags);
+        NativeIO.POSIX.getCacheManipulator().posixFadviseIfPossible(identifier, fd, offset, len, flags);
       } catch (Throwable t) {
         nativeIOPossible = false;
         LOG.warn("Failed to manage OS cache for " + identifier, t);
       }
     }
-  }
-
-  /* load hadoop native method if possible */
-  private static boolean loadNativeIO() {
-    boolean loaded = true;
-    if (nativeIOPossible) return loaded;
-
-    Class[] parameters = {String.class, FileDescriptor.class, Long.TYPE, Long.TYPE, Integer.TYPE};
-    try {
-      Method getCacheManipulator = MethodUtils.getAccessibleMethod(NativeIO.POSIX.class, "getCacheManipulator", new Class[0]);
-      Class posixClass;
-      if (getCacheManipulator != null) {
-        cacheManipulator = MethodUtils.invokeStaticMethod(NativeIO.POSIX.class, "getCacheManipulator", null);
-        posixClass = cacheManipulator.getClass();
-      } else {
-        cacheManipulator = null;
-        posixClass = NativeIO.POSIX.class;
-      }
-      posixFadviseIfPossible = MethodUtils.getAccessibleMethod(posixClass, "posixFadviseIfPossible", parameters);
-    } catch (Throwable e) {
-      loaded = false;
-      LOG.warn("Failed to access posixFadviseIfPossible :" + e.getMessage(), e);
-    }
-
-    if (posixFadviseIfPossible == null) {
-      loaded = false;
-    }
-    return loaded;
   }
 
   public static Path getBaseOutputDir(String queryId, String executionBlockSequenceId) {

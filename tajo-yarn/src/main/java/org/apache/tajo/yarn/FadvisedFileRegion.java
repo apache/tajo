@@ -161,8 +161,7 @@ public class FadvisedFileRegion extends DefaultFileRegion {
    * we don't need the region to be cached anymore.
    */
   public void transferSuccessful() {
-    final boolean channelOpen = fileChannel.isOpen();
-    if (PullServerUtil.isNativeIOPossible() && manageOsCache && getCount() > 0 && fileChannel != null && channelOpen) {
+    if (PullServerUtil.isNativeIOPossible() && manageOsCache && getCount() > 0 && fileChannel != null) {
       try {
         PullServerUtil.posixFadviseIfPossible(identifier, fd, getPosition(), getCount(),
             NativeIO.POSIX.POSIX_FADV_DONTNEED);
