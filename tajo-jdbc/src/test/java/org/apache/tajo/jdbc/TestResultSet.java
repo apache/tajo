@@ -45,7 +45,6 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.sql.*;
-import java.time.*;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -243,11 +242,10 @@ public class TestResultSet {
 
       //Current timezone + 1 hour
       TimeZone tz = TimeZone.getDefault();
-      ZoneOffset offset = timestamp.toInstant().atZone(tz.toZoneId()).getOffset();
-      int secondsOfHour = offset.getTotalSeconds() +  (int) TimeUnit.HOURS.toSeconds(1);
+      tz.setRawOffset(tz.getRawOffset() + (int) TimeUnit.HOURS.toMillis(1));
 
-      Calendar cal = Calendar.getInstance(TimeZone.getTimeZone(ZoneOffset.ofTotalSeconds(secondsOfHour)));
-      assertEquals(secondsOfHour, cal.getTimeZone().getRawOffset() / 1000);
+      Calendar cal = Calendar.getInstance(tz);
+      assertEquals(tz.getRawOffset(), cal.getTimeZone().getRawOffset());
       date = res.getDate(1, cal);
       assertNotNull(date);
       assertEquals("2014-01-01", date.toString());

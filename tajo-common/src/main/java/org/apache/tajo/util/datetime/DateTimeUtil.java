@@ -29,8 +29,6 @@ import javax.annotation.Nullable;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -363,13 +361,12 @@ public class DateTimeUtil {
 
   public static Timestamp toJavaTimestamp(TimeMeta tm, @Nullable TimeZone tz) {
     long javaTime = DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm));
-    Instant instant = Instant.ofEpochMilli(javaTime);
 
     if (tz != null) {
-      ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, tz.toZoneId());
-      return Timestamp.valueOf(zonedDateTime.toLocalDateTime());
+      int offset = tz.getOffset(javaTime) - TimeZone.getDefault().getOffset(javaTime);
+      return new Timestamp(javaTime + offset);
     } else {
-      return Timestamp.from(instant);
+      return new Timestamp(javaTime);
     }
   }
 
