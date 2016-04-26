@@ -679,4 +679,18 @@ public class TestCreateTable extends QueryTestCaseBase {
     executeString("drop table d10.schemaless").close();
     executeString("drop database d10").close();
   }
+
+  @Test
+  public final void testArrayType1() throws Exception {
+    try {
+      executeString("CREATE DATABASE D11;").close();
+
+      assertTableNotExists("d11.array_table1");
+      executeQuery().close();
+      assertTableExists("d11.array_table1");
+    } finally {
+      executeString("DROP TABLE IF EXISTS D11.array_table1");
+      executeString("DROP DATABASE IF EXISTS D11").close();
+    }
+  }
 }

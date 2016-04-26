@@ -1,0 +1,1 @@
+CREATE TABLE array_table1 (vec array<double>);

@@ -33,8 +33,8 @@ import org.apache.tajo.type.Type;
  * Describes a column. It is an immutable object.
  */
 public class Column implements ProtoObject<ColumnProto>, GsonObject {
-	@Expose protected String name;
-	@Expose protected TypeDesc typeDesc;
+	protected String name;
+	protected TypeDesc typeDesc;
 
   /**
    * Column Constructor
