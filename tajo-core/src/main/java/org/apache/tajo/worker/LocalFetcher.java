@@ -186,7 +186,7 @@ public class LocalFetcher extends AbstractFetcher {
     fileChunks.stream().forEach(c -> c.setEbId(tableName));
     endFetch(FetcherState.FETCH_DATA_FINISHED);
     if (fileChunks.size() > 0) {
-      fileLen = fileChunks.get(0).getFile().length();
+      fileLen = fileChunks.get(0).length();
       fileNum = 1;
     } else {
       fileNum = 0;
@@ -236,7 +236,7 @@ public class LocalFetcher extends AbstractFetcher {
       chunk.setEbId(tableName);
       chunk.setFromRemote(false);
       fileChunks.add(chunk);
-      fileLen = file.length();
+      fileLen = chunk.length();
       fileNum = 1;
     }
 
@@ -299,7 +299,7 @@ public class LocalFetcher extends AbstractFetcher {
           FileChunk chunk = new FileChunk(file, eachMeta.getStartOffset(), eachMeta.getLength());
           chunk.setEbId(tableName);
           fileChunks.add(chunk);
-          fileLen += file.length();
+          fileLen += chunk.length();
           fileNum++;
         }
         endFetch(FetcherState.FETCH_DATA_FINISHED);
