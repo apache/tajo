@@ -23,7 +23,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.gson.Gson;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.reflect.MethodUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -46,10 +46,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -112,6 +109,10 @@ public class PullServerUtil {
 
     if (posixFadviseIfPossible == null) {
       loaded = false;
+    } else {
+      final StringBuilder sb = new StringBuilder("posixFadviseIfPossible: ");
+      Arrays.stream(posixFadviseIfPossible.getParameterTypes()).forEach(p -> sb.append(p.getCanonicalName()).append(", "));
+      LOG.info(sb);
     }
     return loaded;
   }
