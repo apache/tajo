@@ -52,5 +52,4 @@ public class Schema implements Iterable<Field> {
   public Iterator<Field> iterator() {
     return fields.iterator();
   }
-
 }

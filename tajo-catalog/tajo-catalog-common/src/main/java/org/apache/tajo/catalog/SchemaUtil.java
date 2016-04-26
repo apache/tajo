@@ -185,7 +185,7 @@ public class SchemaUtil {
                                              Column column) {
 
     if (column.getDataType().getType() == Type.RECORD) {
-      for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getRootColumns()) {
+      for (Column nestedColumn : TypeConverter.convert(column.type).nestedRecordSchema.getRootColumns()) {
         List<String> newPath = new ArrayList<>(path);
         newPath.add(column.getQualifiedName());
 

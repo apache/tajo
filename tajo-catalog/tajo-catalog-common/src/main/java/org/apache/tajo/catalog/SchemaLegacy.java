@@ -139,7 +139,7 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
 
     Column newColumn;
     for (Column c : columns) {
-      newColumn = new Column(qualifier + "." + c.getSimpleName(), c.typeDesc);
+      newColumn = new Column(qualifier + "." + c.getSimpleName(), c.type);
       addColumn(newColumn);
     }
   }
@@ -200,7 +200,7 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
 
       Column columnPath = new Column(
           column.getQualifiedName() + NestedPathUtil.makePath(paths, 1),
-          actualColumn.typeDesc);
+          actualColumn.type);
 
       return columnPath;
     } else {
@@ -441,7 +441,7 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
   }
 
 	private synchronized void addColumn(Column column) {
-		addColumn(column.getQualifiedName(), column.typeDesc);
+		addColumn(column.getQualifiedName(), TypeConverter.convert(column.type));
 	}
 
   @Override
@@ -488,7 +488,7 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
 
       if (column.getDataType().getType() == Type.RECORD) {
         DataType.Builder updatedType = DataType.newBuilder(column.getDataType());
-        updatedType.setNumNestedFields(column.typeDesc.nestedRecordSchema.size());
+        updatedType.setNumNestedFields(TypeConverter.convert(column.type).nestedRecordSchema.size());
 
         ColumnProto.Builder updatedColumn = ColumnProto.newBuilder(column.getProto());
         updatedColumn.setDataType(updatedType);

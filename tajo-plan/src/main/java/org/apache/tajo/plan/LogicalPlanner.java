@@ -2103,7 +2103,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private static Column convertColumn(ColumnDefinition columnDefinition) {
-    return new Column(columnDefinition.getColumnName(), convert(convertDataType(columnDefinition)));
+    return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
 
   public static Type convertDataType(DataTypeExpr dataType) {
