@@ -18,41 +18,25 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.tajo.ResourceProtos.TaskStatusProto;
+import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
+import org.apache.tajo.TaskAttemptId;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
 
-public interface Task {
+public class MockExecutionBlockContext extends ExecutionBlockContext {
 
-  void init() throws IOException;
+  public MockExecutionBlockContext(TajoWorker.WorkerContext workerContext,
+                                   ExecutionBlockContextResponse request) throws IOException {
+    super(workerContext, request, null, null);
+  }
 
-  void fetch(ExecutorService fetcherExecutor);
+  @Override
+  public void init() throws Throwable {
+    //skip
+  }
 
-  void run() throws Exception;
+  @Override
+  public void fatalError(TaskAttemptId taskAttemptId, Throwable throwable) {
 
-  void kill();
-
-  void abort();
-
-  void cleanup();
-
-  boolean hasFetchPhase();
-
-  boolean isProgressChanged();
-
-  boolean isStopped();
-
-  void updateProgress();
-
-  TaskAttemptContext getTaskContext();
-
-  ExecutionBlockContext getExecutionBlockContext();
-
-  TaskStatusProto getReport();
-
-  TaskHistory createTaskHistory();
-
-  List<AbstractFetcher> getFetchers();
+  }
 }

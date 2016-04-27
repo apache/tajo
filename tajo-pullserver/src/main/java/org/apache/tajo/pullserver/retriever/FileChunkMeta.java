@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,27 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.pullserver.retriever;
 
-import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
-import org.apache.tajo.TaskAttemptId;
+public class FileChunkMeta {
+  private final long startOffset;
+  private final long length;
+  private final String ebId;
+  private final String taskId;
 
-import java.io.IOException;
-
-public class MockExecutionBlock extends ExecutionBlockContext {
-
-  public MockExecutionBlock(TajoWorker.WorkerContext workerContext,
-                            ExecutionBlockContextResponse request) throws IOException {
-    super(workerContext, request, null);
+  public FileChunkMeta(long startOffset, long length, String ebId, String taskId) {
+    this.startOffset = startOffset;
+    this.length = length;
+    this.ebId = ebId;
+    this.taskId = taskId;
   }
 
-  @Override
-  public void init() throws Throwable {
-    //skip
+  public String getTaskId() {
+    return taskId;
   }
 
-  @Override
-  public void fatalError(TaskAttemptId taskAttemptId, Throwable throwable) {
+  public long getStartOffset() {
+    return startOffset;
+  }
 
+  public long getLength() {
+    return length;
+  }
+
+  public String getEbId() {
+    return ebId;
+  }
+
+  public String toString() {
+    return "ebId: " + ebId + ", taskId: " + taskId + " (" + startOffset + ", " + length + ")";
   }
 }
