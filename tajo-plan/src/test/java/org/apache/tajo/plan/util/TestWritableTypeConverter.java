@@ -27,6 +27,7 @@ import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 import org.junit.Test;
@@ -39,7 +40,7 @@ import static org.junit.Assert.*;
 
 public class TestWritableTypeConverter {
   @Test
-  public void testDateTypeConverting() {
+  public void testDateTypeConverting() throws UnsupportedDataTypeException {
     Datum testDatum;
     TimeMeta testTM = new TimeMeta();
 
@@ -57,7 +58,7 @@ public class TestWritableTypeConverter {
   }
 
   @Test
-  public void testTimestampTypeConverting() {
+  public void testTimestampTypeConverting() throws UnsupportedDataTypeException {
     Datum testDatum;
     long currentMills = System.currentTimeMillis();
 
@@ -80,10 +81,7 @@ public class TestWritableTypeConverter {
     try {
       WritableTypeConverter.convertWritableToTajoType(DummyWritable.class);
     } catch (Exception e) {
-      assertEquals(TajoRuntimeException.class, e.getClass());
-
-      TajoRuntimeException runtimeException = (TajoRuntimeException)e;
-      assertEquals(NotImplementedException.class, runtimeException.getCause().getClass());
+      assertEquals(UnsupportedDataTypeException.class, e.getClass());
     }
 
     try {

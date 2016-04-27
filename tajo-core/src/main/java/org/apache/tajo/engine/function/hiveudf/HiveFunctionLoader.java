@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.plan.util.WritableTypeConverter;
 import org.reflections.Reflections;
@@ -145,20 +146,25 @@ public class HiveFunctionLoader {
 
   private static void registerMethod(Method method, String [] names, UDFInvocationDesc udfInvocation,
                                      FunctionDescBuilder builder, List<FunctionDesc> list) {
-    TajoDataTypes.DataType retType =
-        WritableTypeConverter.convertWritableToTajoType((Class<? extends Writable>)method.getReturnType());
-    TajoDataTypes.DataType[] params = convertTajoParamterTypes(method.getParameterTypes());
+    try {
+      TajoDataTypes.DataType retType =
+          WritableTypeConverter.convertWritableToTajoType((Class<? extends Writable>) method.getReturnType());
+      TajoDataTypes.DataType[] params = convertTajoParamterTypes(method.getParameterTypes());
 
-    builder.setReturnType(retType).setParams(params);
+      builder.setReturnType(retType).setParams(params);
 
-    for (String name: names) {
-      builder.setName(name);
-      builder.setUDF(udfInvocation);
-      list.add(builder.build());
+      for (String name : names) {
+        builder.setName(name);
+        builder.setUDF(udfInvocation);
+        list.add(builder.build());
+      }
+    } catch (UnsupportedDataTypeException e) {
+      LOG.error(String.format("Hive UDF '%s' is not registered because of unsupported type: %s", names[0], e.getMessage()));
     }
   }
 
-  private static TajoDataTypes.DataType[] convertTajoParamterTypes(Class[] hiveUDFparams) {
+  private static TajoDataTypes.DataType[] convertTajoParamterTypes(Class[] hiveUDFparams)
+      throws UnsupportedDataTypeException {
     TajoDataTypes.DataType [] params = null;
 
     // convert types to ones of Tajo

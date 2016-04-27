@@ -39,7 +39,7 @@ public class WritableTypeConverter {
 
   private static DataType.Builder builder = DataType.newBuilder();
 
-  public static DataType convertWritableToTajoType(Class<? extends Writable> writableClass) {
+  public static DataType convertWritableToTajoType(Class<? extends Writable> writableClass) throws UnsupportedDataTypeException {
     if (writableClass == null)
       return null;
 
@@ -79,7 +79,7 @@ public class WritableTypeConverter {
       return builder.setType(Type.VARBINARY).build();
     }
 
-    throw new TajoRuntimeException(new NotImplementedException(writableClass.getSimpleName()));
+    throw new UnsupportedDataTypeException(writableClass.getSimpleName());
   }
 
   public static Writable convertDatum2Writable(Datum value) {
@@ -114,7 +114,7 @@ public class WritableTypeConverter {
     throw new TajoRuntimeException(new NotImplementedException(value.type().name()));
   }
 
-  public static Datum convertWritable2Datum(Writable value) {
+  public static Datum convertWritable2Datum(Writable value) throws UnsupportedDataTypeException {
     if (value == null) {
       return NullDatum.get();
     }

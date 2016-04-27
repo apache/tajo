@@ -22,9 +22,7 @@ import org.apache.hadoop.io.*;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UndefinedFunctionException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.plan.util.WritableTypeConverter;
@@ -87,8 +85,12 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
     int i = 0;
 
     for (Class writable: writableParams) {
-      if (!WritableTypeConverter.convertWritableToTajoType(writable).equals(tajoParams[i++])) {
-        return false;
+      try {
+        if (!WritableTypeConverter.convertWritableToTajoType(writable).equals(tajoParams[i++])) {
+          return false;
+        }
+      } catch (UnsupportedDataTypeException e) {
+        throw new TajoRuntimeException(e);
       }
     }
 
