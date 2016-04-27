@@ -16,43 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.yarn;
 
-import org.apache.tajo.ResourceProtos.TaskStatusProto;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
+public class FileCloseListener implements ChannelFutureListener {
 
-public interface Task {
+  private FadvisedFileRegion filePart;
 
-  void init() throws IOException;
+  public FileCloseListener(FadvisedFileRegion filePart) {
+    this.filePart = filePart;
+  }
 
-  void fetch(ExecutorService fetcherExecutor);
-
-  void run() throws Exception;
-
-  void kill();
-
-  void abort();
-
-  void cleanup();
-
-  boolean hasFetchPhase();
-
-  boolean isProgressChanged();
-
-  boolean isStopped();
-
-  void updateProgress();
-
-  TaskAttemptContext getTaskContext();
-
-  ExecutionBlockContext getExecutionBlockContext();
-
-  TaskStatusProto getReport();
-
-  TaskHistory createTaskHistory();
-
-  List<AbstractFetcher> getFetchers();
+  // TODO error handling; distinguish IO/connection failures,
+  //      attribute to appropriate spill output
+  @Override
+  public void operationComplete(ChannelFuture future) {
+    if(future.isSuccess()){
+      filePart.transferSuccessful();
+    }
+    filePart.releaseExternalResources();
+  }
 }

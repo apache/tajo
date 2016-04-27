@@ -16,16 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.pullserver;
+package org.apache.tajo.yarn;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.ReadaheadPool;
 import org.apache.hadoop.io.nativeio.NativeIO;
-
-import io.netty.channel.DefaultFileRegion;
+import org.apache.tajo.pullserver.PullServerUtil;
+import org.jboss.netty.channel.DefaultFileRegion;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -47,7 +46,7 @@ public class FadvisedFileRegion extends DefaultFileRegion {
   private final long position;
   private final int shuffleBufferSize;
   private final boolean shuffleTransferToAllowed;
-  private final FileChannel fileChannel;
+  private FileChannel fileChannel;
 
   private ReadaheadPool.ReadaheadRequest readaheadRequest;
   public static final int DEFAULT_SHUFFLE_BUFFER_SIZE = 128 * 1024;
@@ -81,8 +80,8 @@ public class FadvisedFileRegion extends DefaultFileRegion {
       throws IOException {
     if (PullServerUtil.isNativeIOPossible() && manageOsCache && readaheadPool != null) {
       readaheadRequest = readaheadPool.readaheadStream(identifier, fd,
-          position() + position, readaheadLength,
-          position() + count(), readaheadRequest);
+          getPosition() + position, readaheadLength,
+          getPosition() + getCount(), readaheadRequest);
     }
 
     if(this.shuffleTransferToAllowed) {
@@ -148,12 +147,13 @@ public class FadvisedFileRegion extends DefaultFileRegion {
 
 
   @Override
-  protected void deallocate() {
+  public void releaseExternalResources() {
     if (readaheadRequest != null) {
       readaheadRequest.cancel();
       readaheadRequest = null;
     }
-    super.deallocate();
+    fileChannel = null;
+    super.releaseExternalResources();
   }
 
   /**
@@ -161,9 +161,9 @@ public class FadvisedFileRegion extends DefaultFileRegion {
    * we don't need the region to be cached anymore.
    */
   public void transferSuccessful() {
-    if (PullServerUtil.isNativeIOPossible() && manageOsCache && count() > 0 && super.isOpen()) {
+    if (PullServerUtil.isNativeIOPossible() && manageOsCache && getCount() > 0 && fileChannel != null) {
       try {
-        PullServerUtil.posixFadviseIfPossible(identifier, fd, position(), count(),
+        PullServerUtil.posixFadviseIfPossible(identifier, fd, getPosition(), getCount(),
             NativeIO.POSIX.POSIX_FADV_DONTNEED);
       } catch (Throwable t) {
         LOG.warn("Failed to manage OS cache for " + identifier, t);
