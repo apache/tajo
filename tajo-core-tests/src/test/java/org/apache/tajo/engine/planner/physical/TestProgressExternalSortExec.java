@@ -86,7 +86,7 @@ public class TestProgressExternalSortExec {
         .add("deptname", TajoDataTypes.Type.TEXT)
         .build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW, conf);
     Path employeePath = new Path(testDir, "employee.raw");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
