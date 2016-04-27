@@ -132,7 +132,7 @@ public class TimestampDatum extends Datum {
   public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
     DateTimeUtil.toUserTimezone(tm, timeZone);
     if (includeTimeZone) {
-      tm.timeZone = timeZone.getRawOffset() / 1000;
+      tm.timeZone = tm.getZonedOffset(DateTimeUtil.toJulianTimestamp(tm), timeZone) / 1000;
     }
     return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
   }

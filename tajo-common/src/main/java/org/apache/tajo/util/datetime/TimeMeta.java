@@ -20,6 +20,8 @@ package org.apache.tajo.util.datetime;
 
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 
+import java.util.TimeZone;
+
 public class TimeMeta implements Comparable<TimeMeta> {
   public int      fsecs;    // 1/1,000,000 secs
   public int			secs;
@@ -128,6 +130,24 @@ public class TimeMeta implements Comparable<TimeMeta> {
 
   public void plusMillis(long millis) {
     plusTime(millis * 1000);
+  }
+
+  public void convertToUTC(TimeZone zone) {
+    long timestamp = DateTimeUtil.toJulianTimestamp(this);
+
+    timestamp -= (getZonedOffset(timestamp, zone) * 1000L);
+    DateTimeUtil.toJulianTimeMeta(timestamp, this);
+  }
+
+  public void convertToLocalTime(TimeZone zone) {
+    long timestamp = DateTimeUtil.toJulianTimestamp(this);
+
+    timestamp += (getZonedOffset(timestamp, zone) * 1000L);
+    DateTimeUtil.toJulianTimeMeta(timestamp, this);
+  }
+
+  public int getZonedOffset(long julianTimestamp, TimeZone zone) {
+    return zone.getOffset(DateTimeUtil.julianTimeToJavaTime(julianTimestamp));
   }
 
   public void plusTime(long time) {

@@ -54,9 +54,6 @@ import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.text.CSVLineSerDe;
 import org.apache.tajo.storage.text.TextLineDeserializer;
-import org.apache.tajo.storage.text.TextLineParsingError;
-import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
@@ -84,7 +81,7 @@ public class ExprTestBase {
   private static LogicalPlanVerifier annotatedPlanVerifier;
 
   public static String getUserTimeZoneDisplay(TimeZone tz) {
-    return DateTimeUtil.getTimeZoneDisplayTime(tz);
+    return DateTimeUtil.getDisplayTimeZoneOffset(tz, false);
   }
 
   public ExprTestBase() {

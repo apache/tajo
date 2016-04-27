@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util.datetime;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.exception.ValueOutOfRangeException;
@@ -1919,7 +1920,7 @@ public class DateTimeUtil {
 
         appendSecondsToEncodeOutput(sb, tm.secs, tm.fsecs, 6, true);
         if (tm.timeZone != 0 && tm.timeZone != Integer.MAX_VALUE) {
-          sb.append(getTimeZoneDisplayTime(tm.timeZone));
+          sb.append(getDisplayTimeZoneOffset(tm.timeZone));
         }
         if (tm.years <= 0) {
           sb.append(" BC");
@@ -1966,7 +1967,7 @@ public class DateTimeUtil {
         sb.append(String.format("%02d:%02d:", tm.hours, tm.minutes));
         appendSecondsToEncodeOutput(sb, tm.secs, tm.fsecs, 6, true);
         if (tm.timeZone != 0 && tm.timeZone != Integer.MAX_VALUE) {
-          sb.append(getTimeZoneDisplayTime(tm.timeZone));
+          sb.append(getDisplayTimeZoneOffset(tm.timeZone));
         }
         break;
     }
@@ -2105,18 +2106,19 @@ public class DateTimeUtil {
   }
 
   public static void toUserTimezone(TimeMeta tm, TimeZone timeZone) {
-    tm.plusMillis(timeZone.getRawOffset());
+    tm.convertToLocalTime(timeZone);
   }
 
   public static void toUTCTimezone(TimeMeta tm, TimeZone timeZone) {
-    tm.plusMillis(0 - timeZone.getRawOffset());
+    tm.convertToUTC(timeZone);
   }
 
-  public static String getTimeZoneDisplayTime(TimeZone timeZone) {
-    return getTimeZoneDisplayTime(timeZone.getRawOffset() / 1000);
+  @VisibleForTesting
+  public static String getDisplayTimeZoneOffset(TimeZone timeZone, boolean dst) {
+    return getDisplayTimeZoneOffset((timeZone.getRawOffset() + (dst ? timeZone.getDSTSavings() : 0)) / 1000);
   }
 
-  public static String getTimeZoneDisplayTime(int totalSecs) {
+  public static String getDisplayTimeZoneOffset(int totalSecs) {
     if (totalSecs == 0) {
       return "";
     }
