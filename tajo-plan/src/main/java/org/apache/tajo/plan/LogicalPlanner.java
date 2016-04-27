@@ -103,10 +103,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       this.evalOptimizer = evalOptimizer;
 
       // session's time zone
-      if (context.containsKey(SessionVars.TIMEZONE)) {
-        String timezoneId = context.get(SessionVars.TIMEZONE);
-        timeZone = TimeZone.getTimeZone(timezoneId);
-      }
+      String timezoneId = context.get(SessionVars.TIMEZONE);
+      this.timeZone = TimeZone.getTimeZone(timezoneId);
 
       this.debugOrUnitTests = debugOrUnitTests;
     }
@@ -1895,7 +1893,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     // Set default storage properties to table
-    createTableNode.setOptions(CatalogUtil.newDefaultProperty(createTableNode.getStorageType()));
+    createTableNode.setOptions(
+        CatalogUtil.newDefaultProperty(createTableNode.getStorageType(), context.getQueryContext().getConf()));
 
     // Priority to apply table properties
     // 1. Explicit table properties specified in WITH clause

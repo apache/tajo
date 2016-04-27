@@ -92,7 +92,7 @@ public class TestTimestampDatum {
   public void testAsText2() {
     // TAJO-1366
     TimestampDatum datum = DatumFactory.createTimestamp("Mon Nov 03 00:03:00 +0000 2014");
-    assertEquals("2014-11-03 00:03:00", datum.asChars());
+    assertEquals("2014-11-03 00:03:00", TimestampDatum.asChars(datum.asTimeMeta(), TimeZone.getTimeZone("+0000"), true));
   }
 
 	@Test
@@ -120,7 +120,7 @@ public class TestTimestampDatum {
   @Test
   public final void testTimeZone() {
     TimestampDatum datum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(2014, 5, 1, 15, 20, 30, 0));
-    assertEquals("2014-05-01 15:20:30", datum.asChars());
+    assertEquals("2014-05-01 15:20:30", TimestampDatum.asChars(datum.asTimeMeta(), TimeZone.getTimeZone("GMT"), true));
     assertEquals("2014-05-02 00:20:30+09", TimestampDatum.asChars(datum.asTimeMeta(), TimeZone.getTimeZone("GMT+9"), true));
   }
 
@@ -195,10 +195,6 @@ public class TestTimestampDatum {
     
     assertThat(theday.compareTo(thedaybefore) > 0, is(true));
     assertThat(thedaybefore.compareTo(theday) > 0, is(false));
-    
-    DateDatum date = DatumFactory.createDate("2014-11-12");
-    
-    assertThat(theday.compareTo(date) > 0, is(true));
   }
 
   @Test

@@ -151,6 +151,7 @@ public class FadvisedFileRegion extends DefaultFileRegion {
   protected void deallocate() {
     if (readaheadRequest != null) {
       readaheadRequest.cancel();
+      readaheadRequest = null;
     }
     super.deallocate();
   }

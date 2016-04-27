@@ -33,7 +33,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -106,9 +105,8 @@ public class TestMergeScanner {
         .add("age", Type.INT8)
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
+
     if (dataFormat.equalsIgnoreCase("AVRO")) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MULTIPLE_FILES_AVRO_SCHEMA);
     }
