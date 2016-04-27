@@ -514,19 +514,16 @@ public class Query implements EventHandler<QueryEvent> {
         finalState = finalizeQuery(query, stageEvent);
       } else if (stageEvent.getState() == StageState.FAILED) {
         finalState = QueryState.QUERY_FAILED;
-        clearDirectOutputCommit(query, finalState, stageEvent);
       } else if (stageEvent.getState() == StageState.KILLED) {
         finalState = QueryState.QUERY_KILLED;
-        clearDirectOutputCommit(query, finalState, stageEvent);
       } else {
         finalState = QueryState.QUERY_ERROR;
-        clearDirectOutputCommit(query, finalState, stageEvent);
       }
 
       // When a query is failed
       if (finalState != QueryState.QUERY_SUCCEEDED) {
         Stage lastStage = query.getStage(stageEvent.getExecutionBlockId());
-        handleQueryFailure(query, lastStage);
+        handleQueryFailure(query, lastStage, finalState);
       }
 
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
@@ -536,7 +533,7 @@ public class Query implements EventHandler<QueryEvent> {
     }
 
     // handle query failures
-    private void handleQueryFailure(Query query, Stage lastStage) {
+    private void handleQueryFailure(Query query, Stage lastStage, QueryState finalState) {
       QueryContext context = query.context.getQueryContext();
 
       if (lastStage != null && context.hasOutputTableUri()) {
@@ -544,16 +541,16 @@ public class Query implements EventHandler<QueryEvent> {
         try {
           LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
           space.rollbackTable(rootNode.getChild());
+          clearDirectOutputCommit(query, finalState, lastStage);
         } catch (Throwable e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
       }
     }
 
-    private void clearDirectOutputCommit(Query query, QueryState queryState, QueryCompletedEvent event) {
+    private void clearDirectOutputCommit(Query query, QueryState queryState, Stage lastStage) {
       try {
         QueryContext queryContext = query.context.getQueryContext();
-        Stage lastStage = query.getStage(event.getExecutionBlockId());
         NodeType type = lastStage.getBlock().getPlan().getType();
 
         if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
@@ -643,7 +640,7 @@ public class Query implements EventHandler<QueryEvent> {
         }
 
       } catch (Throwable e) {
-        clearDirectOutputCommit(query, QueryState.QUERY_ERROR, event);
+        clearDirectOutputCommit(query, QueryState.QUERY_ERROR, lastStage);
         LOG.fatal(e.getMessage(), e);
         query.failureReason = ErrorUtil.convertException(e);
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));

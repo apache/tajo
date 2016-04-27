@@ -1009,40 +1009,27 @@ public class FileTablespace extends Tablespace {
     }
 
     String queryType = queryContext.get(QueryVars.COMMAND_TYPE);
-
     String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.toString().substring(2).replaceAll("_", "-");
-    directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
-    PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
 
     try {
       if (queryType.equals(NodeType.INSERT.name()) && queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) {
         if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
           // Backup existing files
-          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
-            fs.rename(status.getPath(), backupDir);
-          }
+          recursiveRenameFilesStartingWith(finalOutputDir, backupDir, prefix);
         } else {
           // Backup existing files on added partition directory.
           if (partitions != null) {
             for(PartitionDescProto partition : partitions) {
-              Path partitionPath = new Path(partition.getPath());
-              for(FileStatus status : fs.listStatus(partitionPath, backupPathFilter)) {
-                renameDirectory(status.getPath(), backupDir);
-              }
+              String recoverPath = partition.getPath().replaceAll(finalOutputDir.toString(), backupDir.toString());
+              recursiveRenameFilesStartingWith(new Path(partition.getPath()), new Path(recoverPath), prefix);
             }
           }
         }
       } else if (queryType.equals(NodeType.CREATE_TABLE.name())) {
-        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
-          // Backup existing files
-          for(FileStatus status : fs.listStatus(finalOutputDir, backupPathFilter)) {
-            fs.rename(status.getPath(), backupDir);
-          }
-        } else {
-          // Backup existing files on existing partition directory.
-          renameRecursiveDirectory(finalOutputDir, backupDir, backupPathFilter);
-        }
+        // Backup existing files
+        recursiveRenameFilesStartingWith(finalOutputDir, backupDir, prefix);
       }
+
       // Delete backup files
       fs.delete(backupDir, true);
 
@@ -1061,77 +1048,65 @@ public class FileTablespace extends Tablespace {
     Path backupDir = new Path(path, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
     String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.substring(2).replaceAll("_", "-");
 
-    directOutputCommitterFileFilter committerFilter = new directOutputCommitterFileFilter(prefix);
-    PathFilter backupPathFilter = committerFilter.getBackupPathFilter();
-
     // Delete added files
     if (fs.exists(path)) {
-      deleteOutputFiles(path, prefix);
+      deleteOutputFiles(path, path, prefix);
     }
 
     // Recover backup files to output directory
     if (fs.exists(backupDir)) {
-      for (FileStatus status : fs.listStatus(backupDir, backupPathFilter)) {
-        renameDirectory(status.getPath(), path);
-      }
+      recursiveRenameFiles(backupDir, path);
     }
   }
 
-  private class directOutputCommitterFileFilter {
-    String prefix;
-
-    directOutputCommitterFileFilter(String prefix) {
-      this.prefix = prefix;
-    }
-
-    private  PathFilter getBackupPathFilter() {
-      PathFilter pathFilter = (Path p) -> {
-        String name = p.getName();
-        return !name.startsWith("_") && !name.startsWith(".")
-          && !name.startsWith(TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME)
-          && !name.startsWith(prefix);
-      };
-      return pathFilter;
-    }
-  }
-
-  private void deleteOutputFiles(Path path, String prefix) throws IOException {
+  private void deleteOutputFiles(Path path, Path rootPath, String prefix) throws IOException {
+    int deleteCount = 0, notDeleteCount = 0;
     FileStatus[] statuses = fs.listStatus(path);
-
-    int deleteFileCount = 0, notDeleteFileCount = 0;
     for (FileStatus status : statuses) {
       if (status.isDirectory()) {
-        deleteOutputFiles(status.getPath(), prefix);
+        deleteOutputFiles(status.getPath(), rootPath, prefix);
       } else if (status.isFile()) {
         if (status.getPath().getName().startsWith(prefix)) {
           fs.delete(status.getPath(), false);
-          deleteFileCount++;
+          deleteCount++;
         } else {
-          notDeleteFileCount++;
+          notDeleteCount++;
         }
       }
     }
 
-    if (deleteFileCount > 0 && notDeleteFileCount == 0) {
+    // If all files had been deleted, delete parent directory
+    if (deleteCount > 0 && notDeleteCount == 0) {
+      fs.delete(path, false);
+    // If there is no child directories, delete parent directory
+    } else if(fs.isDirectory(path) && fs.listStatus(path).length == 0 && !path.equals(rootPath)) {
       fs.delete(path, false);
     }
   }
 
-  protected void renameRecursiveDirectory(Path sourcePath, Path targetPath, PathFilter filter) throws IOException {
-    int fileCount = 0;
-    FileStatus[] statuses = fs.listStatus(sourcePath, filter);
+  protected void recursiveRenameFilesStartingWith(Path sourcePath, Path targetPath, String prefix) throws
+    IOException {
+    FileStatus[] statuses = fs.listStatus(sourcePath);
 
     for(FileStatus status : statuses) {
-      if(fs.isFile(status.getPath())) {
-        fileCount++;
-      } else {
-        renameRecursiveDirectory(status.getPath(), targetPath, filter);
+      if (fs.isDirectory(status.getPath())) {
+        recursiveRenameFilesStartingWith(status.getPath(), targetPath, prefix);
+      } else if(fs.isFile(status.getPath()) && !status.getPath().getName().startsWith(prefix)) {
+        renameDirectory(status.getPath(), new Path(targetPath, status.getPath().getName()));
       }
     }
+  }
 
-    // Check the number of files to avoid added directory
-    if (fileCount > 0) {
-      renameDirectory(sourcePath, targetPath);
+  protected void recursiveRenameFiles(Path sourcePath, Path targetPath) throws
+    IOException {
+    FileStatus[] statuses = fs.listStatus(sourcePath);
+
+    for(FileStatus status : statuses) {
+      if (fs.isDirectory(status.getPath())) {
+        recursiveRenameFiles(status.getPath(), targetPath);
+      } else {
+        renameDirectory(status.getPath(), new Path(targetPath, status.getPath().getName()));
+      }
     }
   }
 

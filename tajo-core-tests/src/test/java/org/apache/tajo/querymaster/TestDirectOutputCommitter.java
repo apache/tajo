@@ -70,7 +70,6 @@ public class TestDirectOutputCommitter {
     client.updateSessionVariables(variables);
   }
 
-
   @Test(timeout = 10000)
   public final void testInsertWithMixedSessionVariable() throws Exception {
     ResultSet res = null;
@@ -144,6 +143,216 @@ public class TestDirectOutputCommitter {
     // Check the status of query history from catalog
     List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
     boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
+
+    res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
+    res.close();
+  }
+
+  @Test(timeout = 10000)
+  public final void testInsertOverwriteWithPartitionedTableByOneColumn() throws Exception {
+    ResultSet res = null;
+    ClientProtos.SubmitQueryResponse response = null;
+    ClientProtos.QueryInfoProto queryInfo = null;
+    QueryMasterTask queryMasterTask = null;
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    FileSystem fs = cluster.getDefaultFileSystem();
+
+    setSessionVariable(true);
+    assertEquals("true", client.getSessionVariable(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname()));
+
+    // Create partition table
+    String tableName = CatalogUtil.normalizeIdentifier(name.getMethodName());
+
+    res = client.executeQueryAndGetResult("create table " + tableName
+      + " (col1 int4, col2 int4) partition by column(key float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    // Insert overwrite the data
+    response = client.executeQuery("insert overwrite into " + tableName
+      + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
+    QueryId queryId = new QueryId(response.getQueryId());
+
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+      if (queryInfo != null && queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertNotNull(queryInfo);
+
+    // Check the number of partitions and the prefix of each output file
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
+    assertEquals(5, partitions.size());
+
+    String prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
+    for (CatalogProtos.PartitionDescProto partition : partitions) {
+      Path path = new Path(partition.getPath());
+      FileStatus[] statuses = fs.listStatus(path);
+      assertNotNull(statuses);
+      assertEquals(1, statuses.length);
+      assertTrue(statuses[0].getPath().getName().toString().startsWith(prefix));
+    }
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
+
+    response = client.executeQuery("insert overwrite into " + tableName
+      + " select l_orderkey, l_partkey, l_quantity from lineitem");
+    queryId = new QueryId(response.getQueryId());
+
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+      if (queryInfo != null && queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+      Thread.sleep(100);
+
+    }
+    prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
+
+    // Make sure whether previous partitions exists or not.
+    for (CatalogProtos.PartitionDescProto partition : partitions) {
+      Path path = new Path(partition.getPath());
+      FileStatus[] statuses = fs.listStatus(path);
+      assertNotNull(statuses);
+      assertEquals(1, statuses.length);
+      assertTrue(statuses[0].getPath().getName().toString().startsWith(prefix));
+    }
+
+    // Check the status of query history from catalog
+    protos  = catalog.getAllDirectOutputCommitHistories();
+    historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
+
+    res = client.executeQueryAndGetResult("DROP TABLE " + tableName + " PURGE");
+    res.close();
+  }
+
+  @Test(timeout = 10000)
+  public final void testInsertOverwriteWithPartitionedTableByThreeColumns() throws Exception {
+    ResultSet res = null;
+    ClientProtos.SubmitQueryResponse response = null;
+    ClientProtos.QueryInfoProto queryInfo = null;
+    QueryMasterTask queryMasterTask = null;
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    FileSystem fs = cluster.getDefaultFileSystem();
+
+    setSessionVariable(true);
+    assertEquals("true", client.getSessionVariable(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname()));
+
+    // Create partition table
+    String tableName = CatalogUtil.normalizeIdentifier(name.getMethodName());
+
+    res = client.executeQueryAndGetResult("create table " + tableName
+      + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    // Insert overwrite the data
+    response = client.executeQuery("insert overwrite into " + tableName
+      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+    QueryId queryId = new QueryId(response.getQueryId());
+
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+      if (queryInfo != null && queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertNotNull(queryInfo);
+
+    // Check the number of partitions and the prefix of each output file
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
+    assertEquals(5, partitions.size());
+
+    String prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
+    for (CatalogProtos.PartitionDescProto partition : partitions) {
+      Path path = new Path(partition.getPath());
+      FileStatus[] statuses = fs.listStatus(path);
+      assertNotNull(statuses);
+      assertEquals(1, statuses.length);
+      assertTrue(statuses[0].getPath().getName().toString().startsWith(prefix));
+    }
+
+    // Check the status of query history from catalog
+    List<CatalogProtos.DirectOutputCommitHistoryProto> protos  = catalog.getAllDirectOutputCommitHistories();
+    boolean historyFound = false;
+    for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
+      if (proto.getQueryId().equals(queryId.toString())
+        && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_FAILED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_KILLED.name())
+        || proto.getQueryState().equals(TajoProtos.QueryState.QUERY_ERROR.name())
+      )) {
+        historyFound = true;
+      }
+    }
+    assertTrue(historyFound);
+
+    response = client.executeQuery("insert overwrite into " + tableName
+      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
+    queryId = new QueryId(response.getQueryId());
+
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+      if (queryInfo != null && queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+      Thread.sleep(100);
+
+    }
+    prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
+
+    // Make sure whether previous partitions exists or not.
+    for (CatalogProtos.PartitionDescProto partition : partitions) {
+      Path path = new Path(partition.getPath());
+      FileStatus[] statuses = fs.listStatus(path);
+      assertNotNull(statuses);
+      assertEquals(1, statuses.length);
+      assertTrue(statuses[0].getPath().getName().toString().startsWith(prefix));
+    }
+
+    // Check the status of query history from catalog
+    protos  = catalog.getAllDirectOutputCommitHistories();
+    historyFound = false;
     for (CatalogProtos.DirectOutputCommitHistoryProto proto : protos) {
       if (proto.getQueryId().equals(queryId.toString())
         && (proto.getQueryState().equals(TajoProtos.QueryState.QUERY_SUCCEEDED.name())

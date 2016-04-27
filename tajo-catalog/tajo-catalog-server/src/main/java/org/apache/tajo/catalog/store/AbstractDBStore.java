@@ -3091,6 +3091,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   @Override
   public void updateDirectOutputCommitHistoryProto(UpdateDirectOutputCommitHistoryProto history)
     throws UndefinedQueryIdException {
+
+    if (!existQueryIdFromDirectOutputCommitHistories(history.getQueryId())) {
+      throw new UndefinedQueryIdException(history.getQueryId());
+    }
+
     Connection conn = null;
     PreparedStatement pstmt = null;
 
