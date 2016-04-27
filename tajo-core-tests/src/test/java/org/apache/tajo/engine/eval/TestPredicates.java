@@ -295,7 +295,7 @@ public class TestPredicates extends ExprTestBase {
         .build();
 
     testEval(schema2, "table1", "a,b,c", "select col1 in ('a'), col2 in ('a', 'c') from table1", new String[]{"t","f"});
-    testEval(schema2, "table1", "a,,c", "select col1 in ('a','b','c'), (col2 in ('a', 'c')) is null from table1",
+    testEval(schema2, "table1", "a,\\NULL,c", "select col1 in ('a','b','c'), (col2 in ('a', 'c')) is null from table1",
         new String[]{"t","t"});
 
     testEval(schema2,
@@ -307,7 +307,7 @@ public class TestPredicates extends ExprTestBase {
     // null handling test
     testEval(schema2,
         "table1",
-        "2014-03-21,,2015-04-01",
+        "2014-03-21,\\NULL,2015-04-01",
         "select (substr(col2,1,4)::int4 in (2014,2015,2016)) is null from table1",
         new String[]{"t"});
   }
@@ -355,10 +355,10 @@ public class TestPredicates extends ExprTestBase {
         .add("col1", TEXT)
         .add("col2", TEXT)
         .build();
-    testEval(schema2, "table1", "_123,", "select ltrim(col1, '_') is null, upper(col2) is null as a from table1",
+    testEval(schema2, "table1", "_123,\\NULL", "select ltrim(col1, '_') is null, upper(col2) is null as a from table1",
         new String[]{"f", "t"});
 
-    testEval(schema2, "table1", "_123,",
+    testEval(schema2, "table1", "_123,\\NULL",
         "select ltrim(col1, '_') is not null, upper(col2) is not null as a from table1", new String[]{"t", "f"});
   }
 

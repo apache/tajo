@@ -77,7 +77,7 @@ public class TajoClientUtil {
   public static ResultSet createResultSet(TajoClient client, QueryId queryId,
                                           ClientProtos.GetQueryResultResponse response, int fetchRows)
       throws IOException {
-    TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
+    TableDesc desc = new TableDesc(response.getTableDesc());
     return new FetchResultSet(client, desc.getLogicalSchema(), queryId, fetchRows);
   }
 

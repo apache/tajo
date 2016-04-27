@@ -36,6 +36,8 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.tuple.memory.UnSafeTuple;
 import org.apache.tajo.tuple.memory.UnSafeTupleList;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -216,7 +218,10 @@ public class TestRadixSort {
         DatumFactory.createInt4(Integer.MAX_VALUE),
         DatumFactory.createInt2(Short.MAX_VALUE),
         DatumFactory.createDate(Integer.MAX_VALUE),
-        DatumFactory.createTimestamp(Long.MAX_VALUE),
+        DatumFactory.createTimestamp(
+            // FIXME 'Out of Range of Time'
+            //DateTimeUtil.toJulianDate(JULIAN_MAXYEAR, 1, 1)
+            DateTimeUtil.toJulianTimestamp(DateTimeConstants.JULIAN_MAXYEAR / 20, 1, 1, 0, 0, 0, 0)),
         DatumFactory.createTime(Long.MAX_VALUE),
         DatumFactory.createFloat4(Float.MAX_VALUE),
         DatumFactory.createFloat8(Double.MAX_VALUE)
