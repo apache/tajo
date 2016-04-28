@@ -18,10 +18,8 @@
 
 package org.apache.tajo.engine.function.datetime;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
@@ -44,7 +42,6 @@ import java.util.TimeZone;
     paramTypes = {@ParamTypes(paramTypes = {})}
 )
 public class CurrentDate extends GeneralFunction {
-  @Expose private TimeZone timezone;
   private DateDatum datum;
 
   public CurrentDate() {
@@ -53,8 +50,9 @@ public class CurrentDate extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] types) {
-    String timezoneId = context.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
-    timezone = TimeZone.getTimeZone(timezoneId);
+    if (!hasTimeZone()) {
+      setTimeZone(TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE)));
+    }
   }
 
   @Override
@@ -63,7 +61,7 @@ public class CurrentDate extends GeneralFunction {
       long julianTimestamp = DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis());
       TimeMeta tm = new TimeMeta();
       DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
-      DateTimeUtil.toUserTimezone(tm, timezone);
+      DateTimeUtil.toUserTimezone(tm, getTimeZone());
       datum = DatumFactory.createDate(tm.years, tm.monthOfYear, tm.dayOfMonth);
     }
     return datum;

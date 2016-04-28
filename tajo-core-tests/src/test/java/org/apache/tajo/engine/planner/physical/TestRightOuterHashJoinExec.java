@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -100,7 +101,7 @@ public class TestRightOuterHashJoinExec {
         .build();
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(dep3Meta, dep3Schema, dep3Path);
@@ -131,7 +132,7 @@ public class TestRightOuterHashJoinExec {
         .build();
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta job3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(job3Meta, job3Schema, job3Path);
@@ -172,7 +173,7 @@ public class TestRightOuterHashJoinExec {
         .build();
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(emp3Meta, emp3Schema, emp3Path);

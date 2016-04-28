@@ -69,7 +69,7 @@ public class TestConditionalExpressions extends ExprTestBase {
     testEval(schema, "table1", "str1,str2",
         "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
         new String[]{"str2"});
-    testEval(schema, "table1", ",str2",
+    testEval(schema, "table1", "\\NULL,str2",
         "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
         new String[]{NullDatum.get().toString()});
   }
