@@ -22,9 +22,10 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -98,12 +99,13 @@ public class TestFileSystems {
   @Test
   public void testBlockSplit() throws IOException {
 
-    Schema schema = SchemaFactory.newV1();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
     Tuple[] tuples = new Tuple[4];
     for (int i = 0; i < tuples.length; i++) {

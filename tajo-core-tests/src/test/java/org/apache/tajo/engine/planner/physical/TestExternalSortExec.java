@@ -19,10 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -84,7 +81,7 @@ public class TestExternalSortExec {
     this.sortAlgorithmString = sortAlgorithm;
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {SortAlgorithm.TIM.name()},
@@ -103,7 +100,7 @@ public class TestExternalSortExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    tableSchema = SchemaFactory.newV1(new Column[] {
+    tableSchema = SchemaBuilder.builder().addAll(new Column[] {
         new Column("managerid", Type.INT8),
         new Column("empid", Type.INT4),
         new Column("deptname", Type.TEXT),
@@ -119,9 +116,9 @@ public class TestExternalSortExec {
         new Column("col10", Type.INT8),
         new Column("col11", Type.INT8),
         new Column("col12", Type.INT8)
-    });
+    }).build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, tableSchema, employeePath);
@@ -215,10 +212,10 @@ public class TestExternalSortExec {
     Tuple curVal;
     int cnt = 0;
     exec.init();
-    Schema sortSchema = SchemaFactory.newV1(new Column[] {
+    Schema sortSchema = SchemaBuilder.builder().addAll(new Column[] {
         new Column("managerid", Type.INT8),
         new Column("empid", Type.INT4),
-    });
+    }).build();
 
     BaseTupleComparator comparator = new BaseTupleComparator(sortSchema,
         new SortSpec[]{

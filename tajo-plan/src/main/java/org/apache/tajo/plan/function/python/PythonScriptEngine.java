@@ -23,6 +23,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -40,6 +41,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.TUtil;
 
 import java.io.*;
 import java.net.URI;
@@ -269,7 +271,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     FUNCTION_TYPE,
   }
 
-  private Configuration systemConf;
+  private TajoConf systemConf;
 
   private Process process; // Handle to the external execution of python functions
 
@@ -287,10 +289,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private int[] projectionCols;
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
-  private final TableMeta pipeMeta = CatalogUtil.newTableMeta("TEXT");
+  private TableMeta pipeMeta;
 
   private final Tuple EMPTY_INPUT = new VTuple(0);
-  private final Schema EMPTY_SCHEMA = SchemaFactory.newV1();
+  private final Schema EMPTY_SCHEMA = SchemaBuilder.builder().build();
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
@@ -313,8 +315,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   @Override
-  public void start(Configuration systemConf) throws IOException {
-    this.systemConf = systemConf;
+  public void start(Configuration conf) throws IOException {
+    this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+    this.pipeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, systemConf);
     startUdfController();
     setStreams();
     createInputHandlers();
@@ -388,27 +391,31 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private void setSchema() {
     if (invocationDesc.isScalarFunction()) {
       TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-      inSchema = SchemaFactory.newV1();
+      SchemaBuilder inSchemaBuilder = SchemaBuilder.builder();
       for (int i = 0; i < paramTypes.length; i++) {
-        inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+        inSchemaBuilder.add(new Column("in_" + i, paramTypes[i]));
       }
-      outSchema = SchemaFactory.newV1(new Column[]{new Column("out", functionSignature.getReturnType())});
+      inSchema = inSchemaBuilder.build();
+      outSchema = SchemaBuilder.builder()
+          .addAll(new Column[]{new Column("out", functionSignature.getReturnType())})
+          .build();
     } else {
       // UDAF
       if (firstPhase) {
         // first phase
         TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-        inSchema = SchemaFactory.newV1();
+        SchemaBuilder inSchemaBuilder = SchemaBuilder.builder();
         for (int i = 0; i < paramTypes.length; i++) {
-          inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+          inSchemaBuilder.add(new Column("in_" + i, paramTypes[i]));
         }
-        outSchema = SchemaFactory.newV1(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        inSchema = inSchemaBuilder.build();
+        outSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
       } else if (lastPhase) {
-        inSchema = SchemaFactory.newV1(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
-        outSchema = SchemaFactory.newV1(new Column[]{new Column("out", functionSignature.getReturnType())});
+        inSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
+        outSchema = SchemaBuilder.builder().add(new Column("out", functionSignature.getReturnType())).build();
       } else {
         // intermediate phase
-        inSchema = outSchema = SchemaFactory.newV1(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        inSchema = outSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
       }
     }
     projectionCols = new int[outSchema.size()];

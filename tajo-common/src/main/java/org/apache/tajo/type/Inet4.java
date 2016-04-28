@@ -16,27 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.worker;
+package org.apache.tajo.type;
 
-import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
-import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.common.TajoDataTypes;
 
-import java.io.IOException;
-
-public class MockExecutionBlock extends ExecutionBlockContext {
-
-  public MockExecutionBlock(TajoWorker.WorkerContext workerContext,
-                            ExecutionBlockContextResponse request) throws IOException {
-    super(workerContext, request, null);
-  }
-
+public class Inet4 extends Type {
   @Override
-  public void init() throws Throwable {
-    //skip
-  }
-
-  @Override
-  public void fatalError(TaskAttemptId taskAttemptId, Throwable throwable) {
-
+  public TajoDataTypes.Type baseType() {
+    return TajoDataTypes.Type.INET4;
   }
 }

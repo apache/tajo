@@ -27,7 +27,7 @@ import org.apache.hadoop.hdfs.*;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -82,12 +82,13 @@ public class TestFileTablespace {
 
   @Test
 	public final void testGetScannerAndAppender() throws IOException {
-		Schema schema = SchemaFactory.newV1();
-		schema.addColumn("id", Type.INT4);
-		schema.addColumn("age",Type.INT4);
-		schema.addColumn("name",Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
 
-		TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+		TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 		
 		VTuple[] tuples = new VTuple[4];
 		for(int i=0; i < tuples.length; i++) {
@@ -145,11 +146,13 @@ public class TestFileTablespace {
       TablespaceManager.addTableSpaceForTest(space);
       assertEquals(fs.getUri(), space.getUri());
 
-      Schema schema = SchemaFactory.newV1();
-      schema.addColumn("id", Type.INT4);
-      schema.addColumn("age",Type.INT4);
-      schema.addColumn("name",Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("id", Type.INT4)
+          .add("age", Type.INT4)
+          .add("name", Type.TEXT)
+          .build();
+
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
@@ -199,11 +202,13 @@ public class TestFileTablespace {
       TablespaceManager.addTableSpaceForTest(space);
       assertEquals(fs.getUri(), space.getUri());
 
-      Schema schema = SchemaFactory.newV1();
-      schema.addColumn("id", Type.INT4);
-      schema.addColumn("age",Type.INT4);
-      schema.addColumn("name",Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("id", Type.INT4)
+          .add("age", Type.INT4)
+          .add("name", Type.TEXT)
+          .build();
+
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
@@ -242,11 +247,13 @@ public class TestFileTablespace {
       TablespaceManager.addTableSpaceForTest(sm);
       assertEquals(fs.getUri(), sm.getUri());
 
-      Schema schema = SchemaFactory.newV1();
-      schema.addColumn("id", Type.INT4);
-      schema.addColumn("age", Type.INT4);
-      schema.addColumn("name", Type.TEXT);
-      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+      Schema schema = SchemaBuilder.builder()
+          .add("id", Type.INT4)
+          .add("age", Type.INT4)
+          .add("name", Type.TEXT)
+          .build();
+
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       List<Fragment> splits = Lists.newArrayList();
       splits.addAll(sm.getSplits("data", meta, schema, tablePath));

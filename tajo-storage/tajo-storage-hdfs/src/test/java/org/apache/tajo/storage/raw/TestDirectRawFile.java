@@ -49,6 +49,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -75,7 +76,7 @@ public class TestDirectRawFile {
   @Rule
   public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: isLocal: {0}")
   public static Collection<Object[]> generateParameters() throws IOException {
     return Arrays.asList(new Object[][]{
         {false},
@@ -127,21 +128,22 @@ public class TestDirectRawFile {
   }
 
   static {
-    schema = SchemaFactory.newV1();
-    schema.addColumn("col0", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", TajoDataTypes.Type.TIMESTAMP);
-    schema.addColumn("col8", TajoDataTypes.Type.DATE);
-    schema.addColumn("col9", TajoDataTypes.Type.TIME);
-    schema.addColumn("col10", TajoDataTypes.Type.INTERVAL);
-    schema.addColumn("col11", TajoDataTypes.Type.INET4);
-    schema.addColumn("col12",
-        CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PrimitiveProtos.StringProto.class.getName()));
+    schema = SchemaBuilder.builder()
+        .add("col0", TajoDataTypes.Type.BOOLEAN)
+        .add("col1", TajoDataTypes.Type.INT2)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT8)
+        .add("col4", TajoDataTypes.Type.FLOAT4)
+        .add("col5", TajoDataTypes.Type.FLOAT8)
+        .add("col6", TajoDataTypes.Type.TEXT)
+        .add("col7", TajoDataTypes.Type.TIMESTAMP)
+        .add("col8", TajoDataTypes.Type.DATE)
+        .add("col9", TajoDataTypes.Type.TIME)
+        .add("col10", TajoDataTypes.Type.INTERVAL)
+        .add("col11", TajoDataTypes.Type.INET4)
+        .add("col12",
+            CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PrimitiveProtos.StringProto.class.getName()))
+        .build();
   }
 
   public FileStatus writeRowBlock(TajoConf conf, TableMeta meta, MemoryRowBlock rowBlock, Path outputFile)
@@ -170,7 +172,7 @@ public class TestDirectRawFile {
 
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
 
-    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, tajoConf);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
     rowBlock.release();
 
@@ -199,7 +201,7 @@ public class TestDirectRawFile {
     int rowNum = 2;
 
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
-    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, tajoConf);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
 
     rowBlock.release();
@@ -228,7 +230,7 @@ public class TestDirectRawFile {
 
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
 
-    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, tajoConf);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
     rowBlock.release();
 

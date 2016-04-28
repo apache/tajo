@@ -47,7 +47,6 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 public class TajoConf extends Configuration {
-  private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
 
   private static final Map<String, ConfVars> vars = new HashMap<>();
@@ -80,7 +79,6 @@ public class TajoConf extends Configuration {
     addResource(path);
   }
 
-  @SuppressWarnings("unused")
   public TimeZone getSystemTimezone() {
     return TimeZone.getTimeZone(getVar(ConfVars.$TIMEZONE));
   }
@@ -212,6 +210,7 @@ public class TajoConf extends Configuration {
     PULLSERVER_CACHE_TIMEOUT("tajo.pullserver.index-cache.timeout-min", 5, Validators.min("1")),
     PULLSERVER_FETCH_URL_MAX_LENGTH("tajo.pullserver.fetch-url.max-length", StorageUnit.KB,
         Validators.min("1")),
+    YARN_SHUFFLE_SERVICE_ENABLED("tajo.shuffle.yarn-service.enabled", false, Validators.bool()),
     SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false, Validators.bool()),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", BuiltinStorages.RAW, Validators.javaString()),
     SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num",

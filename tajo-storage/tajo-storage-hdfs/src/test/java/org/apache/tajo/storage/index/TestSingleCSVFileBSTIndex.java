@@ -56,12 +56,13 @@ public class TestSingleCSVFileBSTIndex {
   public TestSingleCSVFileBSTIndex() {
     conf = new TajoConf();
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
-    schema = SchemaFactory.newV1();
-    schema.addColumn(new Column("int", Type.INT4));
-    schema.addColumn(new Column("long", Type.INT8));
-    schema.addColumn(new Column("double", Type.FLOAT8));
-    schema.addColumn(new Column("float", Type.FLOAT4));
-    schema.addColumn(new Column("string", Type.TEXT));
+    schema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .add(new Column("float", Type.FLOAT4))
+        .add(new Column("string", Type.TEXT))
+        .build();
   }
 
   @Before
@@ -72,7 +73,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindValueInSingleCSV", "table.csv");
     fs.mkdirs(tablePath.getParent());
@@ -99,9 +100,10 @@ public class TestSingleCSVFileBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = SchemaFactory.newV1();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -163,7 +165,7 @@ public class TestSingleCSVFileBSTIndex {
 
   @Test
   public void testFindNextKeyValueInSingleCSV() throws IOException {
-    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindNextKeyValueInSingleCSV",
         "table1.csv");
@@ -190,9 +192,10 @@ public class TestSingleCSVFileBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = SchemaFactory.newV1();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
     

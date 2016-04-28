@@ -252,8 +252,9 @@ public class TestTajoCli {
     String consoleResult = new String(out.toByteArray());
 
     if (!cluster.isHiveCatalogStoreRunning()) {
-      assertOutputResult(resultFileName, consoleResult, new String[]{"${table.path}"},
-        new String[]{TablespaceManager.getDefault().getTableUri("default", tableName).toString()});
+      assertOutputResult(resultFileName, consoleResult, new String[]{"${table.timezone}", "${table.path}"},
+          new String[]{cluster.getConfiguration().getSystemTimezone().getID(),
+              TablespaceManager.getDefault().getTableUri("default", tableName).toString()});
     }
   }
 
@@ -487,10 +488,12 @@ public class TestTajoCli {
     tajoCli.executeMetaCommand("\\set TIMEZONE GMT+0");
     tajoCli.executeScript("create table " + tableName + " (col1 TIMESTAMP)");
     tajoCli.executeScript("insert into " + tableName + " select to_timestamp(0)");
+    out.reset();
+
     tajoCli.executeScript("select * from " + tableName);
     String consoleResult = new String(out.toByteArray());
     tajoCli.executeScript("DROP TABLE " + tableName + " PURGE");
-    assertTrue(consoleResult.contains("1970-01-01 00:00:00"));
+    assertEquals("1970-01-01 00:00:00", consoleResult.split("\n")[2]);
   }
 
   @Test
@@ -499,10 +502,12 @@ public class TestTajoCli {
     tajoCli.executeMetaCommand("\\set TIMEZONE GMT+1");
     tajoCli.executeScript("create table " + tableName + " (col1 TIMESTAMP)");
     tajoCli.executeScript("insert into " + tableName + " select to_timestamp(0)");
+    out.reset();
+
     tajoCli.executeScript("select * from " + tableName);
     String consoleResult = new String(out.toByteArray());
     tajoCli.executeScript("DROP TABLE " + tableName + " PURGE");
-    assertTrue(consoleResult.contains("1970-01-01 00:00:00"));
+    assertEquals("1970-01-01 01:00:00", consoleResult.split("\n")[2]);
   }
 
   @Test(timeout = 3000)

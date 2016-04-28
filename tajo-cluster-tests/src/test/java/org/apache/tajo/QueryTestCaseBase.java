@@ -56,10 +56,7 @@ import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
@@ -263,6 +260,11 @@ public class QueryTestCaseBase {
         Thread.activeCount(),
         getClass().getSimpleName(),
         name.getMethodName()));
+  }
+
+  @After
+  public void clear() {
+    getClient().unsetSessionVariables(Lists.newArrayList(SessionVars.TIMEZONE.name()));
   }
 
   public QueryTestCaseBase() {
@@ -680,7 +682,8 @@ public class QueryTestCaseBase {
     String methodName = name.getMethodName();
     // In the case of parameter execution name's pattern is methodName[0]
     if (methodName.endsWith("]")) {
-      methodName = methodName.substring(0, methodName.length() - 3);
+      int index = methodName.indexOf('[');
+      methodName = methodName.substring(0, index);
     }
     return methodName;
   }

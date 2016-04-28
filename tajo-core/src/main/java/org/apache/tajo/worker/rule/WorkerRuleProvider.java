@@ -18,19 +18,19 @@
 
 package org.apache.tajo.worker.rule;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.rule.SelfDiagnosisRule;
+import org.apache.tajo.rule.SelfDiagnosisRuleProvider;
+import org.apache.tajo.util.ClassUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rule.SelfDiagnosisRuleProvider;
-import org.apache.tajo.rule.SelfDiagnosisRule;
-import org.apache.tajo.util.ClassUtil;
-
 public class WorkerRuleProvider implements SelfDiagnosisRuleProvider {
 
-  private Log LOG = LogFactory.getLog(getClass());
+  private static final Log LOG = LogFactory.getLog(WorkerRuleProvider.class);
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
   @Override

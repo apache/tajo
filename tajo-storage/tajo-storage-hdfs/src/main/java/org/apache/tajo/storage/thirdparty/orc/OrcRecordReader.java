@@ -26,13 +26,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.common.io.DiskRange;
 import org.apache.hadoop.hive.common.io.DiskRangeList;
 import org.apache.orc.*;
-import org.apache.orc.OrcProto;
 import org.apache.orc.impl.*;
-import org.apache.orc.impl.StreamName;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaFactory;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -44,7 +41,7 @@ import java.util.*;
 
 public class OrcRecordReader implements Closeable {
 
-  private final Log LOG = LogFactory.getLog(OrcRecordReader.class);
+  private static final Log LOG = LogFactory.getLog(OrcRecordReader.class);
 
   private final Path path;
   private final long firstRow;
@@ -73,7 +70,7 @@ public class OrcRecordReader implements Closeable {
   public OrcRecordReader(List<StripeInformation> stripes,
                          FileSystem fileSystem,
                          Schema schema,
-                         Column[] target,
+                         Column[] targets,
                          FileFragment fragment,
                          List<OrcProto.Type> types,
                          CompressionCodec codec,
@@ -83,7 +80,7 @@ public class OrcRecordReader implements Closeable {
                          Configuration conf,
                          TimeZone timeZone) throws IOException {
 
-    result = new VTuple(target.length);
+    result = new VTuple(targets.length);
 
     this.conf = conf;
     this.path = fragment.getPath();
@@ -91,8 +88,8 @@ public class OrcRecordReader implements Closeable {
     this.types = types;
     this.bufferSize = bufferSize;
     this.included = new boolean[schema.size() + 1];
-    included[0] = target.length > 0; // always include root column except when target schema size is 0
-    Schema targetSchema = SchemaFactory.newV1(target);
+    included[0] = targets.length > 0; // always include root column except when target schema size is 0
+    Schema targetSchema = SchemaBuilder.builder().addAll(targets).build();
     for (int i = 1; i < included.length; i++) {
       included[i] = targetSchema.contains(schema.getColumn(i - 1));
     }
@@ -120,9 +117,9 @@ public class OrcRecordReader implements Closeable {
     firstRow = skippedRows;
     totalRowCount = rows;
 
-    reader = new DatumTreeReader[target.length];
+    reader = new DatumTreeReader[targets.length];
     for (int i = 0; i < reader.length; i++) {
-      reader[i] = TreeReaderFactory.createTreeReader(timeZone, schema.getColumnId(target[i].getQualifiedName()), target[i],
+      reader[i] = TreeReaderFactory.createTreeReader(timeZone, schema.getColumnId(targets[i].getQualifiedName()), targets[i],
           options.getSkipCorruptRecords());
     }
 
