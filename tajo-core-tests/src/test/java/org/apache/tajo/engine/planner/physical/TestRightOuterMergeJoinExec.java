@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -111,7 +112,7 @@ public class TestRightOuterMergeJoinExec {
         .build();
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(dep3Meta, dep3Schema, dep3Path);
@@ -151,7 +152,7 @@ public class TestRightOuterMergeJoinExec {
         .build();
 
 
-    TableMeta dep4Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta dep4Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path dep4Path = new Path(testDir, "dep4.csv");
     Appender appender4 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(dep4Meta, dep4Schema, dep4Path);
@@ -184,7 +185,7 @@ public class TestRightOuterMergeJoinExec {
         .build();
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta job3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(job3Meta, job3Schema, job3Path);
@@ -225,7 +226,7 @@ public class TestRightOuterMergeJoinExec {
         .build();
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(emp3Meta, emp3Schema, emp3Path);
@@ -278,7 +279,7 @@ public class TestRightOuterMergeJoinExec {
         .add("phone_number", Type.TEXT)
         .build();
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta phone3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path phone3Path = new Path(testDir, "phone3.csv");
     Appender appender5 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(phone3Meta, phone3Schema, phone3Path);
