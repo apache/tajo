@@ -116,7 +116,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
       if (entry.getKey().getType() == EvalType.CONST) {
         ConstEval constEval = (ConstEval) entry.getKey();
 
-        if (constEval.getValueType().getType() == TajoDataTypes.Type.INTERVAL) {
+        if (constEval.getValueType().baseType() == TajoDataTypes.Type.INTERVAL) {
           IntervalDatum datum = (IntervalDatum) constEval.getValue();
 
           final String internalName = TajoGeneratorAdapter.getInternalName(IntervalDatum.class);

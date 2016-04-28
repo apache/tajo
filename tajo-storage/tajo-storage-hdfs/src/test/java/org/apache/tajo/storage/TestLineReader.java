@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.compress.DeflateCodec;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
@@ -66,7 +67,7 @@ public class TestLineReader {
         .add("comment2", Type.TEXT)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     Path tablePath = new Path(testDir, "line.data");
     FileAppender appender = (FileAppender) TablespaceManager.getLocalFs().getAppender(
         null, null, meta, schema, tablePath);
@@ -119,7 +120,7 @@ public class TestLineReader {
         .add("comment2", Type.TEXT)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     meta.putProperty("compression.codec", DeflateCodec.class.getCanonicalName());
 
     Path tablePath = new Path(testDir, "testLineDelimitedReaderWithCompression." + DeflateCodec.class.getSimpleName());
@@ -179,7 +180,7 @@ public class TestLineReader {
         .add("comment2", Type.TEXT)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
     Path tablePath = new Path(testDir, "testLineDelimitedReader");
     FileAppender appender = (FileAppender) TablespaceManager.getLocalFs().getAppender(
@@ -286,7 +287,7 @@ public class TestLineReader {
         .add("comment2", Type.TEXT)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     Path tablePath = new Path(testDir, "testSeekableByteBufLineReader.data");
     FileAppender appender = (FileAppender) TablespaceManager.getLocalFs().getAppender(
         null, null, meta, schema, tablePath);

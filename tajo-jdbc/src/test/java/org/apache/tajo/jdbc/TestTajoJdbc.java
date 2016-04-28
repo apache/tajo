@@ -681,4 +681,103 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     }
   }
+
+  @Test
+  public void testTableValueWithTimeZone() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testTableValueWithTimeZone");
+
+    Statement stmt = null;
+    ResultSet res = null;
+    Connection conn = null;
+    try {
+      String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=GMT";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+      stmt.executeUpdate("create table " + tableName + " (cdate timestamp)");
+      res = stmt.executeQuery("insert overwrite into " + tableName + " select TIMESTAMP '2016-04-01 00:00:00'");
+      cleanupQuery(res);
+
+      res = stmt.executeQuery("select * from " + tableName);
+      assertTrue(res.next());
+      assertEquals("2016-04-01 00:00:00", res.getString(1));
+      cleanupQuery(res);
+      stmt.close();
+      conn.close();
+
+
+      // set time zone ('Asia/Tokyo' offset +9)
+      connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=Asia/Tokyo";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+
+      res = stmt.executeQuery("select * from " + tableName);
+      assertTrue(res.next());
+      assertEquals("2016-04-01 09:00:00", res.getString(1));
+    } finally {
+      cleanupQuery(res);
+      if (stmt != null) {
+        stmt.close();
+      }
+
+      if(conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testNonFromQueryWithTimeZone() throws Exception {
+    Statement stmt = null;
+    ResultSet res = null;
+    Connection conn = null;
+    try {
+      String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=GMT";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+
+      res = stmt.executeQuery("select TIMESTAMP '2016-04-01 00:00:00'");
+      assertTrue(res.next());
+      assertEquals("2016-04-01 00:00:00", res.getString(1));
+      cleanupQuery(res);
+      stmt.close();
+      conn.close();
+
+      // set different timezone
+      connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=Asia/Tokyo";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+      res = stmt.executeQuery("select TIMESTAMP '2016-04-01 00:00:00'");
+      assertTrue(res.next());
+      assertEquals("2016-04-01 00:00:00", res.getString(1));
+    } finally {
+      cleanupQuery(res);
+      if (stmt != null) {
+        stmt.close();
+      }
+
+      if(conn != null) {
+        conn.close();
+      }
+    }
+  }
 }
