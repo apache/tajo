@@ -40,7 +40,7 @@ public class BackendTestingUtil {
         .add("deptname", Type.TEXT)
         .add("score", Type.INT4)
         .build();
-    mockupMeta = CatalogUtil.newTableMeta("TEXT");
+    mockupMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, new TajoConf());
   }
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)

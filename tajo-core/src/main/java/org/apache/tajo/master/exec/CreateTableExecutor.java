@@ -57,7 +57,7 @@ public class CreateTableExecutor {
     if (createTable.hasOptions()) {
       meta = CatalogUtil.newTableMeta(createTable.getStorageType(), createTable.getOptions());
     } else {
-      meta = CatalogUtil.newTableMeta(createTable.getStorageType());
+      meta = CatalogUtil.newTableMeta(createTable.getStorageType(), queryContext.getConf());
     }
 
     if(PlannerUtil.isFileStorageType(createTable.getStorageType()) && createTable.isExternal()){

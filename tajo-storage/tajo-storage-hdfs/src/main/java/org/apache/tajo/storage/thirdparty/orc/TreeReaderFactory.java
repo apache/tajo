@@ -37,7 +37,6 @@ import org.apache.tajo.util.datetime.DateTimeUtil;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
@@ -753,7 +752,6 @@ public class TreeReaderFactory {
     private final TimeZone readerTimeZone;
     private TimeZone writerTimeZone;
     private boolean hasSameTZRules;
-    private final TimeZone timeZone;
 
     TimestampTreeReader(TimeZone timeZone, int columnId, boolean skipCorrupt) throws IOException {
       this(timeZone, columnId, null, null, null, null, skipCorrupt);
@@ -765,8 +763,8 @@ public class TreeReaderFactory {
       super(columnId, presentStream);
       this.skipCorrupt = skipCorrupt;
       this.baseTimestampMap = new HashMap<>();
-      this.readerTimeZone = TimeZone.getDefault();
-      this.writerTimeZone = readerTimeZone;
+      this.readerTimeZone = timeZone;
+      this.writerTimeZone = TimeZone.getDefault();
       this.hasSameTZRules = writerTimeZone.hasSameRules(readerTimeZone);
       this.base_timestamp = getBaseTimestamp(readerTimeZone.getID());
       if (encoding != null) {
@@ -780,7 +778,6 @@ public class TreeReaderFactory {
           this.nanos = createIntegerReader(encoding.getKind(), nanosStream, false, skipCorrupt);
         }
       }
-      this.timeZone = timeZone;
     }
 
     @Override
@@ -803,7 +800,7 @@ public class TreeReaderFactory {
       nanos = createIntegerReader(stripeFooter.getColumnsList().get(columnId).getKind(),
           streams.get(new org.apache.orc.impl.StreamName(columnId,
               OrcProto.Stream.Kind.SECONDARY)), false, skipCorrupt);
-      getBaseTimestamp(stripeFooter.getWriterTimezone());
+      base_timestamp = getBaseTimestamp(stripeFooter.getWriterTimezone());
     }
 
     private long getBaseTimestamp(String timeZoneId) throws IOException {
@@ -849,8 +846,7 @@ public class TreeReaderFactory {
 
       if (valuePresent) {
         long millis = decodeTimestamp(data.next(), nanos.next(), base_timestamp);
-        long adjustedMillis = millis - writerTimeZone.getRawOffset();
-        return DatumFactory.createTimestamp(DateTimeUtil.javaTimeToJulianTime(adjustedMillis));
+        return DatumFactory.createTimestamp(DateTimeUtil.javaTimeToJulianTime(millis));
       } else {
         return NullDatum.get();
       }
