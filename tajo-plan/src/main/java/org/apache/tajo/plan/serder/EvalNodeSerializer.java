@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.AnyDatum;
 import org.apache.tajo.datum.Datum;
@@ -96,7 +97,7 @@ public class EvalNodeSerializer
 
     PlanProto.EvalNode.Builder nodeBuilder = PlanProto.EvalNode.newBuilder();
     nodeBuilder.setId(sid);
-    nodeBuilder.setDataType(node.getValueType());
+    nodeBuilder.setDataType(TypeConverter.convert(node.getValueType()));
     nodeBuilder.setType(PlanProto.EvalType.valueOf(node.getType().name()));
     return nodeBuilder;
   }
@@ -118,10 +119,7 @@ public class EvalNodeSerializer
       unaryBuilder.setNegative(signedEval.isNegative());
     } else if (unary.getType() == EvalType.CAST) {
       CastEval castEval = (CastEval) unary;
-      unaryBuilder.setCastingType(castEval.getValueType());
-      if (castEval.hasTimeZone()) {
-        unaryBuilder.setTimezone(castEval.getTimezone().getID());
-      }
+      unaryBuilder.setCastingType(TypeConverter.convert(castEval.getValueType()));
     }
 
     // registering itself and building EvalNode

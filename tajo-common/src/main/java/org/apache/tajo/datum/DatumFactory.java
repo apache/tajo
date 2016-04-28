@@ -283,12 +283,6 @@ public class DatumFactory {
     return new TimeDatum(DateTimeUtil.toJulianTime(timeStr));
   }
 
-  public static TimeDatum createTime(String timeStr, TimeZone tz) {
-    TimeMeta tm = DateTimeUtil.decodeDateTime(timeStr);
-    DateTimeUtil.toUTCTimezone(tm, tz);
-    return new TimeDatum(DateTimeUtil.toTime(tm));
-  }
-
   public static TimestampDatum createTimestampDatumWithJavaMillis(long millis) {
     return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));
   }
@@ -335,7 +329,7 @@ public class DatumFactory {
     }
   }
 
-  public static TimeDatum createTime(Datum datum, @Nullable TimeZone tz) {
+  public static TimeDatum createTime(Datum datum) {
     switch (datum.type()) {
     case INT8:
       return new TimeDatum(datum.asInt8());
@@ -343,9 +337,6 @@ public class DatumFactory {
     case VARCHAR:
     case TEXT:
       TimeMeta tm = DateTimeFormat.parseDateTime(datum.asChars(), "HH24:MI:SS.MS");
-      if (tz != null) {
-        DateTimeUtil.toUTCTimezone(tm, tz);
-      }
       return new TimeDatum(DateTimeUtil.toTime(tm));
     case TIME:
       return (TimeDatum) datum;
@@ -362,6 +353,13 @@ public class DatumFactory {
         return parseTimestamp(datum.asChars(), tz);
       case TIMESTAMP:
         return (TimestampDatum) datum;
+      case DATE: {
+        TimeMeta tm = datum.asTimeMeta();
+        if (tz != null) {
+          DateTimeUtil.toUTCTimezone(tm, tz);
+        }
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+      }
       default:
         throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.TIMESTAMP));
     }
@@ -436,21 +434,13 @@ public class DatumFactory {
             return DatumFactory.createText(timestampDatum.asChars());
           }
         }
-        case TIME: {
-          TimeDatum timeDatum = (TimeDatum)operandDatum;
-          if (tz != null) {
-            return DatumFactory.createText(TimeDatum.asChars(operandDatum.asTimeMeta(), tz, false));
-          } else {
-            return DatumFactory.createText(timeDatum.asChars());
-          }
-        }
         default:
           return DatumFactory.createText(operandDatum.asTextBytes());
       }
     case DATE:
       return DatumFactory.createDate(operandDatum);
     case TIME:
-      return DatumFactory.createTime(operandDatum, tz);
+      return DatumFactory.createTime(operandDatum);
     case TIMESTAMP:
       return DatumFactory.createTimestamp(operandDatum, tz);
     case BLOB:

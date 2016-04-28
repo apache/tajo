@@ -33,6 +33,7 @@ import org.apache.tajo.org.objectweb.asm.commons.GeneratorAdapter;
 import org.apache.tajo.org.objectweb.asm.commons.TableSwitchGenerator;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalType;
+import org.apache.tajo.type.Char;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 
@@ -160,13 +161,14 @@ class TajoGeneratorAdapter {
     generatorAdapter = new GeneratorAdapter(methodVisitor, access, name, desc);
   }
 
-  public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
-    TajoDataTypes.Type type = dataType.getType();
-    return type == BOOLEAN || type == INT1 || type == INT2 || type == INT4 || type== INET4;
+  public static boolean isJVMInternalInt(org.apache.tajo.type.Type type) {
+    final TajoDataTypes.Type baseType = type.baseType();
+    return baseType == BOOLEAN || baseType == INT1 || baseType == INT2 || baseType == INT4 || baseType== INET4;
   }
 
-  public static int getWordSize(TajoDataTypes.DataType type) {
-    if (type.getType() == INT8 || type.getType() == FLOAT8 || type.getType() == TIMESTAMP || type.getType() == TIME) {
+  public static int getWordSize(org.apache.tajo.type.Type type) {
+    final TajoDataTypes.Type baseType = type.baseType();
+    if (baseType == INT8 || baseType == FLOAT8 || baseType == TIMESTAMP || baseType == TIME) {
       return 2;
     } else {
       return 1;
@@ -220,9 +222,9 @@ class TajoGeneratorAdapter {
     methodvisitor.visitLdcInsn(value);
   }
 
-  public void ifCmp(TajoDataTypes.DataType dataType, EvalType evalType, Label elseLabel) {
+  public void ifCmp(org.apache.tajo.type.Type type, EvalType evalType, Label elseLabel) {
 
-    if (isJVMInternalInt(dataType)) {
+    if (isJVMInternalInt(type)) {
       switch (evalType) {
       case EQUAL:
         methodvisitor.visitJumpInsn(Opcodes.IF_ICMPNE, elseLabel);
@@ -247,10 +249,10 @@ class TajoGeneratorAdapter {
       }
     } else {
 
-      if (dataType.getType() == TEXT) {
+      if (type.baseType() == TEXT) {
         invokeVirtual(String.class, "compareTo", int.class, new Class[]{String.class});
       } else {
-        int opCode = TajoGeneratorAdapter.getOpCode(evalType, dataType);
+        int opCode = TajoGeneratorAdapter.getOpCode(evalType, type);
         methodvisitor.visitInsn(opCode);
       }
 
@@ -279,8 +281,8 @@ class TajoGeneratorAdapter {
     }
   }
 
-  public void load(TajoDataTypes.DataType dataType, int idx) {
-    switch (dataType.getType()) {
+  public void load(org.apache.tajo.type.Type type, int idx) {
+    switch (type.baseType()) {
     case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
@@ -305,7 +307,7 @@ class TajoGeneratorAdapter {
       methodvisitor.visitVarInsn(Opcodes.ALOAD, idx);
       break;
     default:
-      throw new CompilationError("Unknown data type: " + dataType.getType().name());
+      throw new CompilationError("Unknown data type: " + type);
     }
   }
 
@@ -398,20 +400,22 @@ class TajoGeneratorAdapter {
     emitNullityCheck(ifNull);
   }
 
-  public void pushDummyValue(TajoDataTypes.DataType type) {
-    if (type.getType() == NULL_TYPE) {
+  public void pushDummyValue(org.apache.tajo.type.Type type) {
+    TajoDataTypes.Type baseType = type.baseType();
+
+    if (type.isNull()) {
       pushNullOfThreeValuedLogic();
-    } else if (isJVMInternalInt(type) || type.getType() == DATE) {
+    } else if (isJVMInternalInt(type) || baseType == DATE) {
       push(0);
-    } else if (type.getType() == TajoDataTypes.Type.INT8 || type.getType() == TIMESTAMP || type.getType() == TIME) {
+    } else if (baseType == INT8 || baseType == TIMESTAMP || baseType == TIME) {
       push(0L);
-    } else if (type.getType() == TajoDataTypes.Type.FLOAT8) {
+    } else if (baseType == FLOAT8) {
       push(0.0d);
-    } else if (type.getType() == TajoDataTypes.Type.FLOAT4) {
+    } else if (baseType == FLOAT4) {
       push(0.0f);
-    } else if (type.getType() == TajoDataTypes.Type.CHAR || type.getType() == TajoDataTypes.Type.TEXT) {
+    } else if (baseType == CHAR || baseType == TEXT) {
       push("");
-    } else if (type.getType() == INTERVAL || type.getType() == PROTOBUF) {
+    } else if (baseType == INTERVAL || baseType == PROTOBUF) {
       invokeStatic(NullDatum.class, "get", NullDatum.class, new Class[]{});
     } else {
       assert false;
@@ -443,25 +447,26 @@ class TajoGeneratorAdapter {
         getMethodDescription(returnType, paramTypes));
   }
 
-  public static boolean isPrimitiveOpCode(EvalType evalType, TajoDataTypes.DataType returnType) {
-    return TUtil.containsInNestedMap(OpCodesMap, evalType, returnType.getType());
+  public static boolean isPrimitiveOpCode(EvalType evalType, org.apache.tajo.type.Type returnType) {
+    return TUtil.containsInNestedMap(OpCodesMap, evalType, returnType.baseType());
   }
 
-  public static int getOpCode(EvalType evalType, TajoDataTypes.DataType returnType) {
+  public static int getOpCode(EvalType evalType, org.apache.tajo.type.Type returnType) {
     if (!isPrimitiveOpCode(evalType, returnType)) {
-      throw new CompilationError("No Such OpCode for " + evalType + " returning " + returnType.getType().name());
+      throw new CompilationError("No Such OpCode for " + evalType + " returning " + returnType);
     }
-    return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.getType());
+    return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.baseType());
   }
 
-  public void castInsn(TajoDataTypes.DataType srcType, TajoDataTypes.DataType targetType) {
-    TajoDataTypes.Type srcRawType = srcType.getType();
-    TajoDataTypes.Type targetRawType = targetType.getType();
-    switch(srcRawType) {
+  public void castInsn(org.apache.tajo.type.Type srcType, org.apache.tajo.type.Type targetType) {
+    TajoDataTypes.Type srcBaseType = srcType.baseType();
+    TajoDataTypes.Type targetBaseType = targetType.baseType();
+    switch(srcBaseType) {
     case BOOLEAN:
     case CHAR: {
-      if (srcType.hasLength() && srcType.getLength() == 1) {
-        switch (targetType.getType()) {
+      Char srcCharType = (Char) srcType;
+      if (srcCharType.length() == 1) {
+        switch (targetBaseType) {
         case CHAR:
         case INT1:
         case INT2:
@@ -474,7 +479,7 @@ class TajoGeneratorAdapter {
           throw new TajoRuntimeException(new InvalidValueForCastException(srcType, targetType));
         }
       } else {
-        switch (targetRawType) {
+        switch (targetBaseType) {
         case CHAR:
         case INT1:
         case INT2:
@@ -491,7 +496,7 @@ class TajoGeneratorAdapter {
     case INT1:
     case INT2:
     case INT4:
-      switch (targetType.getType()) {
+      switch (targetBaseType) {
       case CHAR:
       case INT1: methodvisitor.visitInsn(Opcodes.I2C); break;
       case INT2: methodvisitor.visitInsn(Opcodes.I2S); break;
@@ -504,7 +509,7 @@ class TajoGeneratorAdapter {
       }
       break;
     case INT8:
-      switch (targetRawType) {
+      switch (targetBaseType) {
       case CHAR:
       case INT1:
       case INT2:
@@ -517,7 +522,7 @@ class TajoGeneratorAdapter {
       }
       break;
     case FLOAT4:
-      switch (targetRawType) {
+      switch (targetBaseType) {
       case CHAR:
       case INT1:
       case INT2:
@@ -530,7 +535,7 @@ class TajoGeneratorAdapter {
       }
       break;
     case FLOAT8:
-      switch (targetRawType) {
+      switch (targetBaseType) {
       case CHAR:
       case INT1:
       case INT2:
@@ -543,7 +548,7 @@ class TajoGeneratorAdapter {
       }
       break;
     case TEXT:
-      switch (targetRawType) {
+      switch (targetBaseType) {
       case CHAR:
       case INT1:
       case INT2:
@@ -582,7 +587,7 @@ class TajoGeneratorAdapter {
     return clazz.getName().replace('.', '/');
   }
 
-  public void convertToPrimitive(TajoDataTypes.DataType type) {
+  public void convertToPrimitive(org.apache.tajo.type.Type type) {
 
     Label ifNull = new Label();
     Label afterAll = new Label();
@@ -595,7 +600,7 @@ class TajoGeneratorAdapter {
     methodvisitor.visitJumpInsn(Opcodes.IFEQ, ifNull);  // datum
 
     aload(datum);
-    switch (type.getType()) {
+    switch (type.baseType()) {
     case BOOLEAN:
     case INT1:
     case INT2:
@@ -634,11 +639,11 @@ class TajoGeneratorAdapter {
     methodvisitor.visitLabel(afterAll);
   }
 
-  public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) {
+  public void convertToDatum(org.apache.tajo.type.Type type, boolean castToDatum) {
     String convertMethod;
     Class returnType;
     Class [] paramTypes;
-    switch (type.getType()) {
+    switch (type.baseType()) {
     case NULL_TYPE:
       pop();      // pop null flag
       pop(type);  // pop null datum
@@ -716,7 +721,7 @@ class TajoGeneratorAdapter {
       paramTypes = new Class[] {int.class};
       break;
     default:
-      throw new RuntimeException("Unsupported type: " + type.getType().name());
+      throw new RuntimeException("Unsupported type: " + type);
     }
 
     Label ifNull = new Label();
@@ -738,7 +743,7 @@ class TajoGeneratorAdapter {
     }
   }
 
-  public void pop(TajoDataTypes.DataType type) {
+  public void pop(org.apache.tajo.type.Type type) {
     if (getWordSize(type) == 2) {
       methodvisitor.visitInsn(Opcodes.POP2);
     } else {
@@ -886,11 +891,11 @@ class TajoGeneratorAdapter {
     return varId;
   }
 
-  public int store(TajoDataTypes.DataType type) {
+  public int store(org.apache.tajo.type.Type type) {
     int varId = nextVarId;
     nextVarId += TajoGeneratorAdapter.getWordSize(type);
 
-    switch (type.getType()) {
+    switch (type.baseType()) {
     case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
@@ -916,14 +921,14 @@ class TajoGeneratorAdapter {
       methodvisitor.visitVarInsn(Opcodes.ASTORE, varId);
       break;
     default:
-      throw new CompilationError("Unknown data type: " + type.getType().name());
+      throw new CompilationError("Unknown data type: " + type);
     }
 
     return varId;
   }
 
-  public void emitBoxing(EvalCodeGenContext context, TajoDataTypes.DataType dataType) {
-    switch (dataType.getType()) {
+  public void emitBoxing(EvalCodeGenContext context, org.apache.tajo.type.Type type) {
+    switch (type.baseType()) {
     case CHAR:
     case TEXT:
 
@@ -944,12 +949,12 @@ class TajoGeneratorAdapter {
       break;
 
     default:
-      throw new RuntimeException(dataType.getType().name() + " is not supported yet");
+      throw new RuntimeException(type + " is not supported yet");
     }
   }
 
-  public void emitUnboxing(EvalCodeGenContext context, TajoDataTypes.DataType dataType) {
-    switch (dataType.getType()) {
+  public void emitUnboxing(EvalCodeGenContext context, org.apache.tajo.type.Type type) {
+    switch (type.baseType()) {
     case CHAR:
     case TEXT:
 
@@ -970,7 +975,7 @@ class TajoGeneratorAdapter {
       break;
 
     default:
-      throw new RuntimeException(dataType.getType().name() + " is not supported yet");
+      throw new RuntimeException(type + " is not supported yet");
     }
   }
 

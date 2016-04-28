@@ -37,6 +37,7 @@ import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.metrics.Node;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.pullserver.PullServerUtil;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.querymaster.QueryMaster;
 import org.apache.tajo.querymaster.QueryMasterManagerService;
@@ -64,7 +65,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
@@ -144,7 +144,12 @@ public class TajoWorker extends CompositeService {
     queryMasterManagerService = new QueryMasterManagerService(workerContext, qmManagerPort);
     addIfService(queryMasterManagerService);
 
-    this.taskManager = new TaskManager(dispatcher, workerContext);
+    if (!PullServerUtil.useExternalPullServerService(systemConf)) {
+      pullService = new TajoPullServerService();
+      addIfService(pullService);
+    }
+
+    this.taskManager = new TaskManager(dispatcher, workerContext, pullService);
     addService(taskManager);
 
     this.taskExecutor = new TaskExecutor(workerContext);
@@ -158,21 +163,16 @@ public class TajoWorker extends CompositeService {
     addService(new NodeStatusUpdater(workerContext));
 
     int httpPort = 0;
-    if(!TajoPullServerService.isStandalone()) {
-      pullService = new TajoPullServerService();
-      addIfService(pullService);
-    }
-
     if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {
       httpPort = initWebServer();
     }
 
     super.serviceInit(conf);
 
-    int pullServerPort;
+    int pullServerPort = systemConf.getIntVar(ConfVars.PULLSERVER_PORT);
     if(pullService != null){
       pullServerPort = pullService.getPort();
-    } else {
+    } else if (TajoPullServerService.isStandalone()) {
       pullServerPort = getStandAlonePullServerPort();
     }
 

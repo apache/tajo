@@ -21,19 +21,12 @@ package org.apache.tajo.plan;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.set.UnmodifiableSet;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.exception.UndefinedFunctionException;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil.Direction;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.NotImplementedException;
-import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.NodeType;
@@ -52,6 +45,7 @@ import java.util.TimeZone;
 
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.catalog.TypeConverter.convert;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -115,8 +109,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
    * @return a pair including left/right hand side terms
    */
   private static Pair<EvalNode, EvalNode> convertTypesIfNecessary(Context ctx, EvalNode lhs, EvalNode rhs) {
-    Type lhsType = lhs.getValueType().getType();
-    Type rhsType = rhs.getValueType().getType();
+    Type lhsType = lhs.getValueType().baseType();
+    Type rhsType = rhs.getValueType().baseType();
 
     // If one of both is NULL, it just returns the original types without casting.
     if (lhsType == Type.NULL_TYPE || rhsType == Type.NULL_TYPE) {
@@ -126,10 +120,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     Type toBeCasted = TUtil.getFromNestedMap(CatalogUtil.OPERATION_CASTING_MAP, lhsType, rhsType);
     if (toBeCasted != null) { // if not null, one of either should be converted to another type.
       // Overwrite lhs, rhs, or both with cast expression.
-      if (lhsType != toBeCasted) {
+
+      Direction direction = CatalogUtil.getCastingDirection(lhsType, rhsType);
+
+      if (lhsType != toBeCasted && (direction == Direction.BOTH || direction == Direction.LHS)) {
         lhs = convertType(ctx, lhs, CatalogUtil.newSimpleDataType(toBeCasted));
       }
-      if (rhsType != toBeCasted) {
+      if (rhsType != toBeCasted && (direction == Direction.BOTH || direction == Direction.RHS)) {
         rhs = convertType(ctx, rhs, CatalogUtil.newSimpleDataType(toBeCasted));
       }
     }
@@ -148,11 +145,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   private static EvalNode convertType(Context ctx, EvalNode evalNode, DataType toType) {
 
     // if original and toType is the same, we don't need type conversion.
-    if (evalNode.getValueType().equals(toType)) {
+    if (evalNode.getValueType().equals(TypeConverter.convert(toType))) {
       return evalNode;
     }
     // the conversion to null is not allowed.
-    if (evalNode.getValueType().getType() == Type.NULL_TYPE || toType.getType() == Type.NULL_TYPE) {
+    if (evalNode.getValueType().isNull() || toType.getType() == Type.NULL_TYPE) {
       return evalNode;
     }
 
@@ -314,7 +311,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop();
 
     // implicit type conversion
-    DataType widestType = CatalogUtil.getWidestType(predicand.getValueType(), begin.getValueType(), end.getValueType());
+    DataType widestType = CatalogUtil.getWidestType(
+        convert(predicand.getValueType()),
+        convert(begin.getValueType()),
+        convert(end.getValueType()));
 
     BetweenPredicateEval betweenEval = new BetweenPredicateEval(
         between.isNot(),
@@ -343,13 +343,15 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     // Getting the widest type from all if-then expressions and else expression.
-    DataType widestType = caseWhenEval.getIfThenEvals().get(0).getResult().getValueType();
+    DataType widestType = convert(caseWhenEval.getIfThenEvals().get(0).getResult().getValueType());
     for (int i = 1; i < caseWhenEval.getIfThenEvals().size(); i++) {
-      widestType = CatalogUtil.getWidestType(caseWhenEval.getIfThenEvals().get(i).getResult().getValueType(),
+      widestType = CatalogUtil.getWidestType(
+          convert(caseWhenEval.getIfThenEvals().get(i).getResult().getValueType()),
           widestType);
     }
     if (caseWhen.hasElseResult()) {
-      widestType = CatalogUtil.getWidestType(widestType, caseWhenEval.getElse().getValueType());
+      widestType = CatalogUtil.getWidestType(
+          widestType, convert(caseWhenEval.getElse().getValueType()));
     }
 
     assertEval(widestType != null, "Invalid Type Conversion for CaseWhen");
@@ -437,10 +439,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode rhs = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    if (lhs.getValueType().getType() != Type.TEXT) {
+    if (lhs.getValueType().baseType() != Type.TEXT) {
       lhs = convertType(ctx, lhs, CatalogUtil.newSimpleDataType(Type.TEXT));
     }
-    if (rhs.getValueType().getType() != Type.TEXT) {
+    if (rhs.getValueType().baseType() != Type.TEXT) {
       rhs = convertType(ctx, rhs, CatalogUtil.newSimpleDataType(Type.TEXT));
     }
 
@@ -585,7 +587,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     for (int i = 0; i < params.length; i++) {
       givenArgs[i] = visit(ctx, stack, params[i]);
-      paramTypes[i] = givenArgs[i].getValueType();
+      paramTypes[i] = TypeConverter.convert(givenArgs[i].getValueType());
     }
 
     stack.pop(); // <--- Pop
@@ -662,7 +664,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     if (setFunction.getSignature().equalsIgnoreCase("count")) {
       paramTypes[0] = CatalogUtil.newSimpleDataType(Type.ANY);
     } else {
-      paramTypes[0] = givenArgs[0].getValueType();
+      paramTypes[0] = TypeConverter.convert(givenArgs[0].getValueType());
     }
 
     if (!catalog.containFunction(setFunction.getSignature(), functionType, paramTypes)) {
@@ -719,11 +721,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
         paramTypes[0] = CatalogUtil.newSimpleDataType(Type.INT8);
       } else {
-        paramTypes[0] = givenArgs[0].getValueType();
+        paramTypes[0] = convert(givenArgs[0].getValueType());
       }
       for (int i = 1; i < params.length; i++) {
         givenArgs[i] = visit(ctx, stack, params[i]);
-        paramTypes[i] = givenArgs[i].getValueType();
+        paramTypes[i] = convert(givenArgs[i].getValueType());
       }
     } else {
       if (windowFunc.getSignature().equalsIgnoreCase("rank")) {
@@ -782,15 +784,9 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       ConstEval constEval = (ConstEval) child;
 
       // some cast operation may require earlier evaluation with timezone.
-      TimeZone tz = null;
-      if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
-        String tzId = ctx.queryContext.get(SessionVars.TIMEZONE);
-        tz = TimeZone.getTimeZone(tzId);
-      }
-
       return new ConstEval(
           DatumFactory.cast(constEval.getValue(),
-              LogicalPlanner.convertDataType(expr.getTarget()).getDataType(), tz));
+              LogicalPlanner.convertDataType(expr.getTarget()).getDataType(), ctx.timeZone));
 
     } else {
       return new CastEval(ctx.queryContext, child, LogicalPlanner.convertDataType(expr.getTarget()).getDataType());
@@ -859,11 +855,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-
-    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
-      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
-      DateTimeUtil.toUTCTimezone(tm, tz);
-    }
+    DateTimeUtil.toUTCTimezone(tm, ctx.timeZone);
 
     return new ConstEval(new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm)));
   }
@@ -889,11 +881,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
     TimeDatum timeDatum = new TimeDatum(time);
     TimeMeta tm = timeDatum.asTimeMeta();
-
-    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
-      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
-      DateTimeUtil.toUTCTimezone(tm, tz);
-    }
 
     return new ConstEval(new TimeDatum(DateTimeUtil.toTime(tm)));
   }
