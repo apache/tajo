@@ -12,6 +12,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2116: Simplify rpc address in default configuration. (jinho)
+
     TAJO-2126: Allow parallel execution of non-leaf sibling ExecutionBlocks.
     (jihooon)
 

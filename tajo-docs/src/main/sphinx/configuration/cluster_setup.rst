@@ -19,28 +19,21 @@ Please add the following configs to tajo-site.xml file:
 
   <property>
     <name>tajo.rootdir</name>
-    <value>hdfs://hostname:port/tajo</value>
+    <value>hdfs://nameservice/tajo</value>
   </property>
 
   <property>
     <name>tajo.master.umbilical-rpc.address</name>
     <value>hostname:26001</value>
+    <description>TajoMaster binding address between master and workers.</description>
   </property>
 
   <property>
     <name>tajo.master.client-rpc.address</name>
     <value>hostname:26002</value>
+    <description>TajoMaster binding address between master and remote clients.</description>
   </property>
 
-  <property>
-    <name>tajo.resource-tracker.rpc.address</name>
-    <value>hostname:26003</value>
-  </property>
-
-  <property>
-    <name>tajo.catalog.client-rpc.address</name>
-    <value>hostname:26005</value>
-  </property>
 
 Workers
 -------
@@ -82,5 +75,5 @@ Then, execute ``start-tajo.sh`` ::
 
 .. note::
 
-  By default, TajoMaster listens on 127.0.0.1 for clients. To allow remote clients to access TajoMaster, please set tajo.master.client-rpc.address config to tajo-site.xml. In order to know how to change the listen port, please refer :doc:`/configuration/service_config_defaults`.
+  By default, TajoMaster listens on localhost/127.0.0.1 for clients. To allow remote clients to access TajoMaster, please set tajo.master.client-rpc.address config to tajo-site.xml. In order to know how to change the listen port, please refer :doc:`/configuration/service_config_defaults`.
 
