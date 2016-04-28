@@ -101,17 +101,8 @@ public class ParallelExecutionQueue implements ExecutionQueue, Iterable<Executio
   }
 
   private boolean isExecutableNow(ExecutionBlock current) {
-    ExecutionBlock parent = masterPlan.getParent(current);
 
-    List<ExecutionBlock> dependents = masterPlan.getChilds(current);
-    if (parent != null && masterPlan.getChannel(current.getId(), parent.getId()).needShuffle()) {
-      // add all children of sibling for partitioning
-      dependents = new ArrayList<>();
-      for (ExecutionBlock sibling : masterPlan.getChilds(parent)) {
-        dependents.addAll(masterPlan.getChilds(sibling));
-      }
-    }
-    for (ExecutionBlock child : dependents) {
+    for (ExecutionBlock child : masterPlan.getChilds(current)) {
       if (!executed.contains(child.getId())) {
         return false;   // there's something should be done before this
       }

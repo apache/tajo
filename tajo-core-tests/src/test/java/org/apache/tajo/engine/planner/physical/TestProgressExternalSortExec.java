@@ -86,7 +86,7 @@ public class TestProgressExternalSortExec {
         .add("deptname", TajoDataTypes.Type.TEXT)
         .build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW, conf);
     Path employeePath = new Path(testDir, "employee.raw");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
@@ -173,13 +173,11 @@ public class TestProgressExternalSortExec {
     while ((tuple = exec.next()) != null) {
       if (cnt == 0) {
         initProgress = exec.getProgress();
-        System.out.println(initProgress);
         assertTrue(initProgress > 0.5f && initProgress < 1.0f);
       }
 
       if (cnt == testDataStats.getNumRows() / 2) {
         float progress = exec.getProgress();
-        System.out.println(progress);
         assertTrue(progress > initProgress);
       }
       curVal = tuple;
