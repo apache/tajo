@@ -120,6 +120,9 @@ public class TaskAttemptContext {
     this.partitionOutputVolume = Maps.newHashMap();
 
     this.partitions = new ArrayList<>();
+
+    // set to system timezone for forwarded query
+    this.evalContext.setTimeZone(queryContext.getConf().getSystemTimezone());
   }
 
   @VisibleForTesting

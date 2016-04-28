@@ -20,7 +20,6 @@ package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -175,7 +174,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     throwsIfThisError(res.getState(), UnavailableTableLocationException.class);
 
     ensureOk(res.getState());
-    return CatalogUtil.newTableDesc(res.getTable());
+    return new TableDesc(res.getTable());
   }
 
   @Override
@@ -241,7 +240,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
     }
 
     ensureOk(res.getState());
-    return CatalogUtil.newTableDesc(res.getTable());
+    return new TableDesc(res.getTable());
   }
 
   @Override

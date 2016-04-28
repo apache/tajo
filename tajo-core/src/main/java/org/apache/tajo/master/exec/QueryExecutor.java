@@ -73,6 +73,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.TimeZone;
 
 import static org.apache.tajo.exception.ReturnStateUtil.OK;
 import static org.apache.tajo.exception.ReturnStateUtil.errUndefinedDatabase;
@@ -327,6 +328,11 @@ public class QueryExecutor {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     EvalContext evalContext = new EvalContext();
+
+    //Non From query should be session's time zone. e,g, select to_char(now(), 'yyyy-MM-dd')
+    String timezoneId = queryContext.get(SessionVars.TIMEZONE);
+    evalContext.setTimeZone(TimeZone.getTimeZone(timezoneId));
+
     List<Target> targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new TajoInternalError("no targets");
