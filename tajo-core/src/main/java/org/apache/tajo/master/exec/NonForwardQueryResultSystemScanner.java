@@ -71,7 +71,7 @@ import java.util.Stack;
 
 public class NonForwardQueryResultSystemScanner implements NonForwardQueryResultScanner {
   
-  private final Log LOG = LogFactory.getLog(getClass());
+  private static final Log LOG = LogFactory.getLog(NonForwardQueryResultSystemScanner.class);
   
   private MasterContext masterContext;
   private LogicalPlan logicalPlan;

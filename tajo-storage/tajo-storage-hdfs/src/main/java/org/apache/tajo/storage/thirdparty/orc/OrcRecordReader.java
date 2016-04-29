@@ -41,7 +41,7 @@ import java.util.*;
 
 public class OrcRecordReader implements Closeable {
 
-  private final Log LOG = LogFactory.getLog(OrcRecordReader.class);
+  private static final Log LOG = LogFactory.getLog(OrcRecordReader.class);
 
   private final Path path;
   private final long firstRow;

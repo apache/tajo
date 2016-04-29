@@ -18,8 +18,6 @@
 
 package org.apache.tajo.client;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.annotation.ThreadSafe;
@@ -46,7 +44,6 @@ import java.util.concurrent.Future;
 @ThreadSafe
 public class TajoClientImpl extends SessionConnection implements TajoClient, QueryClient, CatalogAdminClient {
 
-  private final Log LOG = LogFactory.getLog(TajoClientImpl.class);
   QueryClient queryClient;
   CatalogAdminClient catalogClient;
 

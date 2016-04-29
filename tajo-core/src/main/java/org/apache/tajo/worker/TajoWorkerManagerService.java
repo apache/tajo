@@ -48,14 +48,12 @@ public class TajoWorkerManagerService extends CompositeService
 
   private AsyncRpcServer rpcServer;
   private InetSocketAddress bindAddr;
-  private int port;
 
   private TajoWorker.WorkerContext workerContext;
 
-  public TajoWorkerManagerService(TajoWorker.WorkerContext workerContext, int port) {
+  public TajoWorkerManagerService(TajoWorker.WorkerContext workerContext) {
     super(TajoWorkerManagerService.class.getName());
     this.workerContext = workerContext;
-    this.port = port;
   }
 
   @Override
@@ -64,8 +62,8 @@ public class TajoWorkerManagerService extends CompositeService
     TajoConf tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     try {
       // Setup RPC server
-      InetSocketAddress initIsa =
-          new InetSocketAddress("0.0.0.0", port);
+      InetSocketAddress initIsa = tajoConf.getSocketAddrVar(TajoConf.ConfVars.WORKER_PEER_RPC_ADDRESS);
+
       if (initIsa.getAddress() == null) {
         throw new IllegalArgumentException("Failed resolve of " + initIsa);
       }
@@ -75,13 +73,12 @@ public class TajoWorkerManagerService extends CompositeService
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
-      this.port = bindAddr.getPort();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
     // Get the master address
     LOG.info("TajoWorkerManagerService is bind to " + bindAddr);
-    tajoConf.setVar(TajoConf.ConfVars.WORKER_PEER_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddr));
+    tajoConf.setVar(TajoConf.ConfVars.WORKER_PEER_RPC_ADDRESS, NetUtils.getHostPortString(bindAddr));
     super.serviceInit(tajoConf);
   }
 

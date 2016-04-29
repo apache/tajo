@@ -19,8 +19,6 @@
 package org.apache.tajo.benchmark;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -38,7 +36,6 @@ import java.io.IOException;
 import java.util.Map;
 
 public class TPCH extends BenchmarkSet {
-  private final Log LOG = LogFactory.getLog(TPCH.class);
   private final String BENCHMARK_DIR = "benchmark/tpch";
 
   public static final String LINEITEM = "lineitem";
