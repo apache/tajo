@@ -30,7 +30,7 @@ class AvgPy:
 
     # eval at the first stage
     def eval(self, item):
-        if item: # null checking
+        if item != None: # null checking
             self.sum += item
             self.cnt += 1
 
