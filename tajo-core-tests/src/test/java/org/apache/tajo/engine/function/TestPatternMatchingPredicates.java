@@ -36,7 +36,7 @@ public class TestPatternMatchingPredicates extends ExprTestBase {
         .build();
 
     // test for null values
-    testEval(schema, "table1", ",", "select col1 like 'a%' from table1", new String[]{NullDatum.get().toString()});
+    testEval(schema, "table1", "\\NULL,", "select col1 like 'a%' from table1", new String[]{NullDatum.get().toString()});
     testSimpleEval("select null like 'a%'", new String[]{NullDatum.get().toString()});
 
     testEval(schema, "table1", "abc", "select col1 like '%c' from table1", new String[]{"t"});

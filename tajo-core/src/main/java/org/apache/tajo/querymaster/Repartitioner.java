@@ -50,6 +50,8 @@ import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.pullserver.PullServerConstants;
+import org.apache.tajo.pullserver.PullServerUtil.PullServerRequestURIBuilder;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
 import org.apache.tajo.storage.*;
@@ -70,7 +72,6 @@ import java.net.URLEncoder;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
@@ -1124,89 +1125,32 @@ public class Repartitioner {
   }
 
   public static List<URI> createFetchURL(int maxUrlLength, FetchProto fetch, boolean includeParts) {
-    String scheme = "http://";
-
-    StringBuilder urlPrefix = new StringBuilder(scheme);
+    PullServerRequestURIBuilder builder =
+        new PullServerRequestURIBuilder(fetch.getHost(), fetch.getPort(), maxUrlLength);
     ExecutionBlockId ebId = new ExecutionBlockId(fetch.getExecutionBlockId());
-    urlPrefix.append(fetch.getHost()).append(":").append(fetch.getPort()).append("/?")
-        .append("qid=").append(ebId.getQueryId().toString())
-        .append("&sid=").append(ebId.getId())
-        .append("&p=").append(fetch.getPartitionId())
-        .append("&type=");
+    builder.setRequestType(PullServerConstants.CHUNK_REQUEST_PARAM_STRING)
+        .setQueryId(ebId.getQueryId().toString())
+        .setEbId(ebId.getId())
+        .setPartId(fetch.getPartitionId());
+
     if (fetch.getType() == HASH_SHUFFLE) {
-      urlPrefix.append("h");
+      builder.setShuffleType(PullServerConstants.HASH_SHUFFLE_PARAM_STRING);
     } else if (fetch.getType() == RANGE_SHUFFLE) {
-      urlPrefix.append("r").append("&").append(getRangeParam(fetch));
+      builder.setShuffleType(PullServerConstants.RANGE_SHUFFLE_PARAM_STRING);
+      builder.setStartKeyBase64(new String(org.apache.commons.codec.binary.Base64.encodeBase64(fetch.getRangeStart().toByteArray())));
+      builder.setEndKeyBase64(new String(org.apache.commons.codec.binary.Base64.encodeBase64(fetch.getRangeEnd().toByteArray())));
+      builder.setLastInclude(fetch.getRangeLastInclusive());
     } else if (fetch.getType() == SCATTERED_HASH_SHUFFLE) {
-      urlPrefix.append("s");
+      builder.setShuffleType(PullServerConstants.SCATTERED_HASH_SHUFFLE_PARAM_STRING);
     }
-
     if (fetch.getLength() >= 0) {
-      urlPrefix.append("&offset=").append(fetch.getOffset()).append("&length=").append(fetch.getLength());
+      builder.setOffset(fetch.getOffset()).setLength(fetch.getLength());
     }
-
-    List<URI> fetchURLs = new ArrayList<>();
-    if(includeParts) {
-      if (fetch.getType() == HASH_SHUFFLE || fetch.getType() == SCATTERED_HASH_SHUFFLE) {
-        fetchURLs.add(URI.create(urlPrefix.toString()));
-      } else {
-        urlPrefix.append("&ta=");
-        // If the get request is longer than 2000 characters,
-        // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
-        // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
-        // The below code transforms a long request to multiple requests.
-        List<String> taskIdsParams = new ArrayList<>();
-        StringBuilder taskIdListBuilder = new StringBuilder();
-        
-        final List<Integer> taskIds = fetch.getTaskIdList();
-        final List<Integer> attemptIds = fetch.getAttemptIdList();
-
-        // Sort task ids to increase cache hit in pull server
-        final List<Pair<Integer, Integer>> taskAndAttemptIds = IntStream.range(0, taskIds.size())
-            .mapToObj(i -> new Pair<>(taskIds.get(i), attemptIds.get(i)))
-            .sorted((p1, p2) -> p1.getFirst() - p2.getFirst())
-            .collect(Collectors.toList());
-
-        boolean first = true;
-
-        for (int i = 0; i < taskAndAttemptIds.size(); i++) {
-          StringBuilder taskAttemptId = new StringBuilder();
-
-          if (!first) { // when comma is added?
-            taskAttemptId.append(",");
-          } else {
-            first = false;
-          }
-
-          int taskId = taskAndAttemptIds.get(i).getFirst();
-          if (taskId < 0) {
-            // In the case of hash shuffle each partition has single shuffle file per worker.
-            // TODO If file is large, consider multiple fetching(shuffle file can be split)
-            continue;
-          }
-          int attemptId = taskAndAttemptIds.get(i).getSecond();
-          taskAttemptId.append(taskId).append("_").append(attemptId);
-
-          if (urlPrefix.length() + taskIdListBuilder.length() > maxUrlLength) {
-            taskIdsParams.add(taskIdListBuilder.toString());
-            taskIdListBuilder = new StringBuilder(taskId + "_" + attemptId);
-          } else {
-            taskIdListBuilder.append(taskAttemptId);
-          }
-        }
-        // if the url params remain
-        if (taskIdListBuilder.length() > 0) {
-          taskIdsParams.add(taskIdListBuilder.toString());
-        }
-        for (String param : taskIdsParams) {
-          fetchURLs.add(URI.create(urlPrefix + param));
-        }
-      }
-    } else {
-      fetchURLs.add(URI.create(urlPrefix.toString()));
+    if (includeParts) {
+      builder.setTaskIds(fetch.getTaskIdList());
+      builder.setAttemptIds(fetch.getAttemptIdList());
     }
-
-    return fetchURLs;
+    return builder.build(includeParts);
   }
 
   public static Map<Integer, List<IntermediateEntry>> hashByKey(List<IntermediateEntry> entries) {

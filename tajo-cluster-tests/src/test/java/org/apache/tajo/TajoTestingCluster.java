@@ -49,6 +49,7 @@ import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
@@ -118,11 +119,6 @@ public class TajoTestingCluster {
 
   void initPropertiesAndConfigs() {
 
-    // Set time zone
-    TimeZone testDefaultTZ = TimeZone.getTimeZone(TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
-    conf.setSystemTimezone(testDefaultTZ);
-    TimeZone.setDefault(testDefaultTZ);
-
     // Injection of equality testing code of logical plan (de)serialization
     conf.setClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, LogicalPlanTestRuleProvider.class);
     conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
@@ -162,7 +158,7 @@ public class TajoTestingCluster {
     conf.setInt(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE.varname, 1);
     conf.setInt(ConfVars.$EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE.varname, 1);
 
-    /** decrease Hbase thread and memory cache for testing */
+    /* decrease Hbase thread and memory cache for testing */
     //server handler
     conf.setInt("hbase.regionserver.handler.count", 5);
     //client handler
@@ -387,14 +383,13 @@ public class TajoTestingCluster {
 
     InetSocketAddress tajoMasterAddress = tajoMaster.getContext().getTajoMasterService().getBindAddress();
 
-    this.conf.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-        tajoMasterAddress.getHostName() + ":" + tajoMasterAddress.getPort());
+    this.conf.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS, NetUtils.getHostPortString(tajoMasterAddress));
     this.conf.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, c.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
     
     InetSocketAddress tajoRestAddress = tajoMaster.getContext().getRestServer().getBindAddress();
 
-    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, tajoRestAddress.getHostName() + ":" + tajoRestAddress.getPort());
+    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, NetUtils.getHostPortString(tajoRestAddress));
 
     startTajoWorkers(numSlaves);
 
@@ -546,12 +541,6 @@ public class TajoTestingCluster {
     LOG.info("Minicluster is stopping");
     LOG.info("========================================");
 
-    try {
-      Thread.sleep(3000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
     shutdownMiniTajoCluster();
 
     if(this.catalogServer != null) {
@@ -560,7 +549,7 @@ public class TajoTestingCluster {
     }
 
     try {
-      Thread.sleep(3000);
+      Thread.sleep(2000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -613,7 +602,7 @@ public class TajoTestingCluster {
     for (int i = 0; i < names.length; i++) {
       createTable(names[i], schemas[i], tableOption, tables[i]);
     }
-    Thread.sleep(1000);
+
     ResultSet res = client.executeQueryAndGetResult(query);
     return res;
   }

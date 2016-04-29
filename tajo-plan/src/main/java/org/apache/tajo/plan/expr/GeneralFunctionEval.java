@@ -44,8 +44,14 @@ public class GeneralFunctionEval extends FunctionEval {
     super.bind(evalContext, schema);
     try {
       this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
-      if (evalContext != null && evalContext.hasScriptEngine(this)) {
-        this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+      if (evalContext != null) {
+        if (evalContext.hasScriptEngine(this)) {
+          this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+        }
+
+        if (evalContext.hasTimeZone()) {
+          this.invokeContext.setTimeZone(evalContext.getTimeZone());
+        }
       }
       this.funcInvoke.init(invokeContext);
     } catch (IOException e) {

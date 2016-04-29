@@ -117,7 +117,7 @@ public class TestPhysicalPlanner {
         .add("nullable", Type.TEXT)
         .build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
 
     Path employeePath = new Path(testDir, "employee.csv");
@@ -138,7 +138,7 @@ public class TestPhysicalPlanner {
     catalog.createTable(employee);
 
     Path scorePath = new Path(testDir, "score");
-    TableMeta scoreMeta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
+    TableMeta scoreMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     appender = sm.getAppender(scoreMeta, scoreSchema, scorePath);
     appender.init();
     score = new TableDesc(
@@ -435,7 +435,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta outputMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);;
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -504,7 +504,7 @@ public class TestPhysicalPlanner {
     long totalNum = 0;
     for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
       Scanner scanner =  ((FileTablespace) TablespaceManager.getLocalFs()).getFileScanner(
-          CatalogUtil.newTableMeta("TEXT"),
+          CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf),
           rootNode.getOutSchema(),
           status.getPath());
 
@@ -532,7 +532,7 @@ public class TestPhysicalPlanner {
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta("RCFILE");
+    TableMeta outputMeta = CatalogUtil.newTableMeta(BuiltinStorages.RCFILE, conf);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -648,7 +648,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat());
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat(), conf);
 
     FileSystem fs = sm.getFileSystem();
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();
@@ -745,7 +745,7 @@ public class TestPhysicalPlanner {
       long expectedFileNum = (long) Math.ceil(fileVolumSum / (float)StorageUnit.MB);
       assertEquals(expectedFileNum, fileStatuses.length);
     }
-    TableMeta outputMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta outputMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);;
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, new ArrayList<>(fragments));
     scanner.init();
 
@@ -782,7 +782,7 @@ public class TestPhysicalPlanner {
     ctx.setDataChannel(dataChannel);
     optimizer.optimize(plan);
 
-    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat());
+    TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getDataFormat(), conf);
 
     FileSystem fs = sm.getFileSystem();
     QueryId queryId = id.getTaskId().getExecutionBlockId().getQueryId();

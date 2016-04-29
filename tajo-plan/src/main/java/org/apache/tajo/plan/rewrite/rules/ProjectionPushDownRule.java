@@ -51,8 +51,7 @@ import java.util.*;
  */
 public class ProjectionPushDownRule extends
     BasicLogicalPlanVisitor<ProjectionPushDownRule.Context, LogicalNode> implements LogicalPlanRewriteRule {
-  /** Class Logger */
-  private final Log LOG = LogFactory.getLog(ProjectionPushDownRule.class);
+
   private static final String name = "ProjectionPushDown";
 
   @Override

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Sets;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -103,7 +104,7 @@ public class TestEvalTreeUtil {
         .add("age", TajoDataTypes.Type.INT4)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());

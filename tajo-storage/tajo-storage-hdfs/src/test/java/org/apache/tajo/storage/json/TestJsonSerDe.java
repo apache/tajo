@@ -21,6 +21,7 @@ package org.apache.tajo.storage.json;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
@@ -70,7 +71,7 @@ public class TestJsonSerDe {
   public void testVarioutType() throws IOException {
     TajoConf conf = new TajoConf();
 
-    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.JSON, conf);
     Path tablePath = new Path(getResourcePath("dataset", "TestJsonSerDe"), "testVariousType.json");
     FileSystem fs = FileSystem.getLocal(conf);
     FileStatus status = fs.getFileStatus(tablePath);
@@ -104,7 +105,7 @@ public class TestJsonSerDe {
   public void testUnicodeWithControlChar() throws IOException {
     TajoConf conf = new TajoConf();
 
-    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.JSON, conf);
     Path tablePath = new Path(getResourcePath("dataset", "TestJsonSerDe"), "testUnicodeWithControlChar.json");
     FileSystem fs = FileSystem.getLocal(conf);
     FileStatus status = fs.getFileStatus(tablePath);

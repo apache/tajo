@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;

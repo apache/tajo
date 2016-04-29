@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -85,7 +86,7 @@ public class TestHashAntiJoinExec {
         .add("deptname", Type.TEXT)
         .build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, employeeSchema, employeePath);
@@ -112,7 +113,7 @@ public class TestHashAntiJoinExec {
         .add("name", Type.TEXT)
         .add("age", Type.INT4)
         .build();
-    TableMeta peopleMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta peopleMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path peoplePath = new Path(testDir, "people.csv");
     appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(peopleMeta, peopleSchema, peoplePath);
