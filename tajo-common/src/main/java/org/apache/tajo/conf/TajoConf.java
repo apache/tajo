@@ -46,7 +46,6 @@ import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 public class TajoConf extends Configuration {
-  private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
   
   private static final Map<String, ConfVars> vars = TUtil.newHashMap();
@@ -79,7 +78,6 @@ public class TajoConf extends Configuration {
     addResource(path);
   }
 
-  @SuppressWarnings("unused")
   public TimeZone getSystemTimezone() {
     return TimeZone.getTimeZone(getVar(ConfVars.$TIMEZONE));
   }

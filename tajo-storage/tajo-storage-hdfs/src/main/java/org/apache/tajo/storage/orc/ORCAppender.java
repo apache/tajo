@@ -23,20 +23,15 @@ import org.apache.hadoop.fs.Path;
 import org.apache.orc.CompressionKind;
 import org.apache.orc.OrcConf;
 import org.apache.orc.TypeDescription;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.storage.FileAppender;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.TableStatistics;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.thirdparty.orc.OrcFile;
 import org.apache.tajo.storage.thirdparty.orc.OrcFile.EncodingStrategy;
 import org.apache.tajo.storage.thirdparty.orc.OrcUtils;
 import org.apache.tajo.storage.thirdparty.orc.Writer;
-import org.apache.tajo.storage.thirdparty.orc.WriterImpl;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -50,14 +45,13 @@ public class ORCAppender extends FileAppender {
   public ORCAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
                      TableMeta meta, Path workDir) {
     super(conf, taskAttemptId, schema, meta, workDir);
-
-    timezone = meta.containsOption(StorageConstants.TIMEZONE) ?
-        TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE)) :
-        TimeZone.getDefault();
   }
 
   @Override
   public void init() throws IOException {
+    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+        StorageUtil.TAJO_CONF.getSystemTimezone().getID()));
+
     writer = OrcFile.createWriter(path, buildWriterOptions(conf, meta, schema), timezone);
 
     if (tableStatsEnabled) {

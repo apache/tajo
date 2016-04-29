@@ -24,9 +24,9 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.event.NodeResourceAllocateEvent;
 import org.junit.After;
 import org.junit.Before;
@@ -210,7 +210,8 @@ public class TestTaskExecutor {
     @Override
     protected Task createTask(final ExecutionBlockContext context, TaskRequestProto taskRequest) {
       final TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
-      final TaskAttemptContext taskAttemptContext = new TaskAttemptContext(null, context, taskAttemptId, null, null);
+      final TaskAttemptContext taskAttemptContext =
+          new TaskAttemptContext(new QueryContext(conf), context, taskAttemptId, null, null);
 
       return new Task() {
         @Override

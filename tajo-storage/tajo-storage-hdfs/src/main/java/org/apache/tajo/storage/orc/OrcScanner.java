@@ -32,12 +32,12 @@ import org.apache.orc.*;
 import org.apache.orc.Reader.Options;
 import org.apache.orc.impl.BufferChunk;
 import org.apache.orc.impl.InStream;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.thirdparty.orc.OrcRecordReader;
@@ -68,6 +68,7 @@ public class OrcScanner extends FileScanner {
   private List<StripeInformation> stripes;
   protected int rowIndexStride;
   private long contentLength, numberOfRows;
+  private TimeZone timeZone;
 
   private List<Integer> versionList;
 
@@ -237,7 +238,7 @@ public class OrcScanner extends FileScanner {
   public OrcRecordReader createRecordReader() throws IOException {
     return new OrcRecordReader(this.stripes, fileSystem, schema, targets, fragment, types, codec, bufferSize,
         rowIndexStride, buildReaderOptions(meta), conf,
-        TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE)));
+        timeZone);
   }
 
   private static Options buildReaderOptions(TableMeta meta) {
@@ -273,7 +274,9 @@ public class OrcScanner extends FileScanner {
     this.versionList = footerMetaData.versionList;
     this.stripes = convertProtoStripesToStripes(rInfo.footer.getStripesList());
 
-    recordReader = createRecordReader();
+    this.timeZone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE,
+        StorageUtil.TAJO_CONF.getSystemTimezone().getID()));
+    this.recordReader = createRecordReader();
 
     super.init();
   }

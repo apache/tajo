@@ -44,7 +44,6 @@ import java.util.TimeZone;
     paramTypes = {@ParamTypes(paramTypes = {})}
 )
 public class CurrentDate extends GeneralFunction {
-  @Expose private TimeZone timezone;
   private DateDatum datum;
 
   public CurrentDate() {
@@ -53,8 +52,9 @@ public class CurrentDate extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] types) {
-    String timezoneId = context.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
-    timezone = TimeZone.getTimeZone(timezoneId);
+    if (!hasTimeZone()) {
+      setTimeZone(TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE)));
+    }
   }
 
   @Override
@@ -63,7 +63,7 @@ public class CurrentDate extends GeneralFunction {
       long julianTimestamp = DateTimeUtil.javaTimeToJulianTime(System.currentTimeMillis());
       TimeMeta tm = new TimeMeta();
       DateTimeUtil.toJulianTimeMeta(julianTimestamp, tm);
-      DateTimeUtil.toUserTimezone(tm, timezone);
+      DateTimeUtil.toUserTimezone(tm, getTimeZone());
       datum = DatumFactory.createDate(tm.years, tm.monthOfYear, tm.dayOfMonth);
     }
     return datum;

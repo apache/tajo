@@ -22,7 +22,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.QueryNotFoundException;
@@ -76,7 +75,7 @@ public class TajoClientUtil {
   public static ResultSet createResultSet(TajoClient client, QueryId queryId,
                                           ClientProtos.GetQueryResultResponse response, int fetchRows)
       throws IOException {
-    TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
+    TableDesc desc = new TableDesc(response.getTableDesc());
     return new FetchResultSet(client, desc.getLogicalSchema(), queryId, fetchRows);
   }
 

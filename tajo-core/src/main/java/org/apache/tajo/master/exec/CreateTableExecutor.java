@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.exec;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,7 +28,6 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.DuplicateTableException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedTableException;
-import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -59,7 +57,7 @@ public class CreateTableExecutor {
     if (createTable.hasOptions()) {
       meta = CatalogUtil.newTableMeta(createTable.getStorageType(), createTable.getOptions());
     } else {
-      meta = CatalogUtil.newTableMeta(createTable.getStorageType());
+      meta = CatalogUtil.newTableMeta(createTable.getStorageType(), queryContext.getConf());
     }
 
     if(PlannerUtil.isFileStorageType(createTable.getStorageType()) && createTable.isExternal()){

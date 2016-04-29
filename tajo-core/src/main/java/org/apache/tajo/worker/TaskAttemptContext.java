@@ -121,6 +121,9 @@ public class TaskAttemptContext {
     this.partitionOutputVolume = Maps.newHashMap();
 
     this.partitions = TUtil.newList();
+
+    // set to system timezone for forwarded query
+    this.evalContext.setTimeZone(queryContext.getConf().getSystemTimezone());
   }
 
   @VisibleForTesting

@@ -117,7 +117,7 @@ public class TestCompressionStorages {
     schema.addColumn("age", Type.FLOAT4);
     schema.addColumn("name", Type.TEXT);
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putOption("compression.codec", codec.getCanonicalName());
     meta.putOption("compression.type", SequenceFile.CompressionType.BLOCK.name());
     meta.putOption("rcfile.serde", TextSerializerDeserializer.class.getName());

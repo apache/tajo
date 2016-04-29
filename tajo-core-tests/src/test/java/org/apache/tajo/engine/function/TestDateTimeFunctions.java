@@ -21,8 +21,6 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
@@ -33,18 +31,19 @@ import org.junit.Test;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public class TestDateTimeFunctions extends ExprTestBase {
   @Test
   public void testToTimestamp() throws TajoException {
-    long expectedTimestamp = System.currentTimeMillis();
-    TimestampDatum expected = DatumFactory.createTimestmpDatumWithUnixTime((int)(expectedTimestamp/ 1000));
 
-    // (expectedTimestamp / 1000) means the translation from millis seconds to unix timestamp
-    String q1 = String.format("select to_timestamp(%d);", (expectedTimestamp / 1000));
-    testSimpleEval(q1, new String[]{expected.toString()});
+    QueryContext context = new QueryContext(getConf());
+    context.put(SessionVars.TIMEZONE, "GMT+9");
+
+    String q1 = String.format("select to_timestamp(%d);", 1389071574);
+    testSimpleEval(context, q1, new String[]{"2014-01-07 14:12:54"});
 
     testSimpleEval("select to_timestamp('1997-12-30 11:40:50.345', 'YYYY-MM-DD HH24:MI:SS.MS');",
         new String[]{"1997-12-30 11:40:50.345"});
@@ -232,9 +231,6 @@ public class TestDateTimeFunctions extends ExprTestBase {
 
   @Test
   public void testDatePart() throws TajoException {
-    TimeZone GMT = TimeZone.getTimeZone("GMT");
-    TimeZone PST = TimeZone.getTimeZone("PST");
-
     Schema schema2 = new Schema();
     schema2.addColumn("col1", TIMESTAMP);
 
@@ -243,11 +239,11 @@ public class TestDateTimeFunctions extends ExprTestBase {
         "select date_part('year', col1), date_part('month', col1), date_part('day', col1) from table1;",
         new String[]{"1970.0", "1.0", "17.0"});
     testEval(schema2, "table1",
-        "1970-01-17 22:09:37" + getUserTimeZoneDisplay(GMT),
+        "1970-01-17 22:09:37-00",
         "select date_part('year', col1), date_part('month', col1), date_part('day', col1) from table1;",
         new String[]{"1970.0", "1.0", "17.0"});
     testEval(schema2, "table1",
-        "1970-01-17 22:09:37" + getUserTimeZoneDisplay(PST),
+        "1970-01-17 22:09:37-04",
         "select date_part('year', col1), date_part('month', col1), date_part('day', col1) from table1;",
         new String[]{"1970.0", "1.0", "18.0"});
 
@@ -256,12 +252,12 @@ public class TestDateTimeFunctions extends ExprTestBase {
     testEval(schema3, "table1", "10:09:37.5",
         "select date_part('hour', col1), date_part('minute', col1), date_part('second', col1) from table1;",
         new String[]{"10.0", "9.0", "37.5"});
-    testEval(schema3, "table1", "10:09:37.5" + getUserTimeZoneDisplay(GMT),
+    testEval(schema3, "table1", "10:09:37.5",
         "select date_part('hour', col1), date_part('minute', col1), date_part('second', col1) from table1;",
         new String[]{"10.0", "9.0", "37.5"});
-    testEval(schema3, "table1", "10:09:37.5" + getUserTimeZoneDisplay(PST),
+    testEval(schema3, "table1", "10:09:37.5",
         "select date_part('hour', col1), date_part('minute', col1), date_part('second', col1) from table1;",
-        new String[]{"18.0", "9.0", "37.5"});
+        new String[]{"10.0", "9.0", "37.5"});
 
     Schema schema4 = new Schema();
     schema4.addColumn("col1", DATE);
@@ -425,59 +421,45 @@ public class TestDateTimeFunctions extends ExprTestBase {
 
   @Test
   public void testDateTimeNow() throws TajoException {
-    TimeZone originalTimezone = TimeZone.getDefault();
-    TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
-
     QueryContext context = new QueryContext(getConf());
-    context.put(SessionVars.TIMEZONE, "GMT-6");
+    context.put(SessionVars.TIMEZONE, "America/Los_Angeles");
 
-    try {
-      Date expectedDate = new Date(System.currentTimeMillis());
+    TimeZone timeZone = TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE));
 
-      testSimpleEval(context, "select to_char(now(), 'yyyy-MM-dd');",
-          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
-      testSimpleEval(context, "select cast(extract(year from now()) as INT4);",
-          new String[]{dateFormat(expectedDate, "yyyy")});
-      testSimpleEval(context, "select current_date();",
-          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
-      testSimpleEval(context, "select cast(extract(hour from current_time()) as INT4);",
-          new String[]{String.valueOf(Integer.parseInt(dateFormat(expectedDate, "HH")))});
+    testSimpleEval(context, "select to_char(now(), 'yyyy-MM-dd');",
+        new String[]{dateFormat(new Date(), "yyyy-MM-dd", timeZone)});
+    testSimpleEval(context, "select cast(extract(year from now()) as INT4);",
+        new String[]{dateFormat(new Date(), "yyyy", timeZone)});
+    testSimpleEval(context, "select current_date();",
+        new String[]{dateFormat(new Date(), "yyyy-MM-dd", timeZone)});
+    testSimpleEval(context, "select cast(extract(hour from current_time()) as INT4);",
+        new String[]{String.valueOf(Integer.parseInt(dateFormat(new Date(), "HH", timeZone)))});
 
-      expectedDate.setDate(expectedDate.getDate() + 1);
-
-      testSimpleEval(context, "select current_date() + 1;",
-          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
-    } finally {
-      TimeZone.setDefault(originalTimezone);
-    }
+    Date date = new Date();
+    date.setTime(date.getTime() + TimeUnit.DAYS.toMillis(1));
+    testSimpleEval(context, "select current_date() + 1;", new String[]{dateFormat(date, "yyyy-MM-dd", timeZone)});
   }
 
   @Test
   public void testTimeValueKeyword() throws TajoException {
-    TimeZone originTimeZone = TimeZone.getDefault();
-    TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
-
     QueryContext context = new QueryContext(getConf());
     context.put(SessionVars.TIMEZONE, "GMT-6");
 
-    try {
-      Date expectedDate = new Date(System.currentTimeMillis());
+    TimeZone timeZone = TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE));
 
-      testSimpleEval(context, "select to_char(current_timestamp, 'yyyy-MM-dd');",
-          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
-      testSimpleEval(context, "select cast(extract(year from current_timestamp) as INT4);",
-          new String[]{dateFormat(expectedDate, "yyyy")});
-      testSimpleEval(context, "select current_date;",
-          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
-      testSimpleEval(context, "select cast(extract(hour from current_time) as INT4);",
-          new String[]{String.valueOf(Integer.parseInt(dateFormat(expectedDate, "HH")))});
-    } finally {
-      TimeZone.setDefault(originTimeZone);
-    }
+    testSimpleEval(context, "select to_char(current_timestamp, 'yyyy-MM-dd');",
+        new String[]{dateFormat(new Date(), "yyyy-MM-dd", timeZone)});
+    testSimpleEval(context, "select cast(extract(year from current_timestamp) as INT4);",
+        new String[]{dateFormat(new Date(), "yyyy", timeZone)});
+    testSimpleEval(context, "select current_date;",
+        new String[]{dateFormat(new Date(), "yyyy-MM-dd", timeZone)});
+    testSimpleEval(context, "select cast(extract(hour from current_time) as INT4);",
+        new String[]{String.valueOf(Integer.parseInt(dateFormat(new Date(), "HH", timeZone)))});
   }
 
-  private String dateFormat(Date date, String format) {
+  private String dateFormat(Date date, String format, TimeZone zone) {
     SimpleDateFormat df = new SimpleDateFormat(format);
+    df.setTimeZone(zone);
     return df.format(date);
   }
 }

@@ -300,7 +300,7 @@ public class QueryClientImpl implements QueryClient {
 
     GetQueryResultResponse response = getResultResponse(queryId);
 
-    TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
+    TableDesc tableDesc = new TableDesc(response.getTableDesc());
     return new FetchResultSet(this, tableDesc.getLogicalSchema(), queryId, defaultFetchRows);
   }
 

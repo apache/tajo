@@ -247,7 +247,7 @@ public class IntervalDatum extends Datum {
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " + " + datum.type());
     }
   }
 
@@ -257,7 +257,7 @@ public class IntervalDatum extends Datum {
       IntervalDatum other = (IntervalDatum) datum;
       return new IntervalDatum(months - other.months, milliseconds - other.milliseconds);
     } else {
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException("operator does not exist: " + type() + " - " + datum.type());
     }
   }
 
@@ -274,7 +274,7 @@ public class IntervalDatum extends Datum {
         double float8Val = datum.asFloat8();
         return createIntervalDatum((double)months * float8Val, (double) milliseconds * float8Val);
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " * " + datum.type());
     }
   }
 
@@ -297,7 +297,7 @@ public class IntervalDatum extends Datum {
         }
         return createIntervalDatum((double) months / paramValueF8, (double) milliseconds / paramValueF8);
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " / " + datum.type());
     }
   }
 
@@ -380,6 +380,13 @@ public class IntervalDatum extends Datum {
           sb.append(".").append(df2.format(millisecond));
         }
       }
+    } else {
+      sb.append(prefix)
+          .append(df.format(0))
+          .append(":")
+          .append(df.format(0))
+          .append(":")
+          .append(df.format(0));
     }
   }
 
@@ -406,7 +413,7 @@ public class IntervalDatum extends Datum {
     } else if (datum.isNull()) {
       return datum;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

@@ -19,9 +19,9 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
+import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -38,11 +38,6 @@ public class CastEval extends UnaryEval implements Cloneable {
   public CastEval(OverridableConf context, EvalNode operand, DataType target) {
     super(EvalType.CAST, operand);
     this.target = target;
-
-    if (context.containsKey(SessionVars.TIMEZONE)) {
-      String timezoneId = context.get(SessionVars.TIMEZONE);
-      timezone = TimeZone.getTimeZone(timezoneId);
-    }
   }
 
   public EvalNode getOperand() {
@@ -54,17 +49,17 @@ public class CastEval extends UnaryEval implements Cloneable {
     return target;
   }
 
-  public boolean hasTimeZone() {
-    return this.timezone != null;
-  }
-
-  public TimeZone getTimezone() {
-    return this.timezone;
-  }
-
   @Override
   public String getName() {
     return target.getType().name();
+  }
+
+  @Override
+  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
+    if (evalContext != null) {
+      timezone = evalContext.getTimeZone();
+    }
+    return super.bind(evalContext, schema);
   }
 
   @Override
@@ -88,7 +83,6 @@ public class CastEval extends UnaryEval implements Cloneable {
     final int prime = 31;
     int result = super.hashCode();
     result = prime * result + ((target == null) ? 0 : target.hashCode());
-    result = prime * result + ((timezone == null) ? 0 : timezone.hashCode());
     return result;
   }
 
@@ -99,8 +93,7 @@ public class CastEval extends UnaryEval implements Cloneable {
       CastEval another = (CastEval) obj;
       boolean b1 = child.equals(another.child);
       boolean b2 = target.equals(another.target);
-      boolean b3 = TUtil.checkEquals(timezone, another.timezone);
-      return b1 && b2 && b3;
+      return b1 && b2;
     } else {
       return false;
     }
@@ -112,9 +105,7 @@ public class CastEval extends UnaryEval implements Cloneable {
     if (target != null) {
       clone.target = target;
     }
-    if (timezone != null) {
-      clone.timezone = timezone;
-    }
+
     return clone;
   }
 }

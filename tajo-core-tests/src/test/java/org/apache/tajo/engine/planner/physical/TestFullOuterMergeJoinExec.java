@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -28,12 +29,12 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -111,7 +112,7 @@ public class TestFullOuterMergeJoinExec {
     dep3Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta dep3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path dep3Path = new Path(testDir, "dep3.csv");
     Appender appender1 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep3Meta, dep3Schema, dep3Path);
     appender1.init();
@@ -149,7 +150,7 @@ public class TestFullOuterMergeJoinExec {
     dep4Schema.addColumn("loc_id", Type.INT4);
 
 
-    TableMeta dep4Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta dep4Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path dep4Path = new Path(testDir, "dep4.csv");
     Appender appender4 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(dep4Meta, dep4Schema, dep4Path);
     appender4.init();
@@ -180,7 +181,7 @@ public class TestFullOuterMergeJoinExec {
     job3Schema.addColumn("job_title", Type.TEXT);
 
 
-    TableMeta job3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta job3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path job3Path = new Path(testDir, "job3.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(job3Meta, job3Schema, job3Path);
     appender2.init();
@@ -219,7 +220,7 @@ public class TestFullOuterMergeJoinExec {
     emp3Schema.addColumn("job_id", Type.INT4);
 
 
-    TableMeta emp3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta emp3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path emp3Path = new Path(testDir, "emp3.csv");
     Appender appender3 = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(emp3Meta, emp3Schema, emp3Path);
     appender3.init();
@@ -271,7 +272,7 @@ public class TestFullOuterMergeJoinExec {
     phone3Schema.addColumn("phone_number", Type.TEXT);
 
 
-    TableMeta phone3Meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta phone3Meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path phone3Path = new Path(testDir, "phone3.csv");
     Appender appender5 = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(phone3Meta, phone3Schema, phone3Path);

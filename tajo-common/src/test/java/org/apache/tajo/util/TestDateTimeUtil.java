@@ -27,7 +27,6 @@ import org.apache.tajo.util.datetime.TimeMeta;
 import org.junit.Test;
 
 import java.util.Calendar;
-import java.util.Date;
 import java.util.TimeZone;
 
 import static org.junit.Assert.*;
@@ -385,11 +384,13 @@ public class TestDateTimeUtil {
 
   @Test
   public void testGetTimeZoneDisplayTime() {
-    assertEquals("", DateTimeUtil.getTimeZoneDisplayTime(TimeZone.getTimeZone("GMT")));
-    assertEquals("+09", DateTimeUtil.getTimeZoneDisplayTime(TimeZone.getTimeZone("GMT+9")));
-    assertEquals("+09:10", DateTimeUtil.getTimeZoneDisplayTime(TimeZone.getTimeZone("GMT+9:10")));
-    assertEquals("-09", DateTimeUtil.getTimeZoneDisplayTime(TimeZone.getTimeZone("GMT-9")));
-    assertEquals("-09:10", DateTimeUtil.getTimeZoneDisplayTime(TimeZone.getTimeZone("GMT-9:10")));
+    assertEquals("", DateTimeUtil.getDisplayTimeZoneOffset(TimeZone.getTimeZone("GMT"), false));
+    assertEquals("+09", DateTimeUtil.getDisplayTimeZoneOffset(TimeZone.getTimeZone("GMT+9"), false));
+    assertEquals("+09:10", DateTimeUtil.getDisplayTimeZoneOffset(TimeZone.getTimeZone("GMT+9:10"), false));
+    assertEquals("-09", DateTimeUtil.getDisplayTimeZoneOffset(TimeZone.getTimeZone("GMT-9"), false));
+    assertEquals("-09:10", DateTimeUtil.getDisplayTimeZoneOffset(TimeZone.getTimeZone("GMT-9:10"), false));
+    assertEquals("-07", DateTimeUtil.getDisplayTimeZoneOffset(TimeZone.getTimeZone("America/Los_Angeles"), true));
+    assertEquals("-08", DateTimeUtil.getDisplayTimeZoneOffset(TimeZone.getTimeZone("America/Los_Angeles"), false));
   }
   
   @Test

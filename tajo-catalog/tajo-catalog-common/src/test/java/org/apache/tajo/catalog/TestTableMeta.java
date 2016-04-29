@@ -22,6 +22,7 @@ import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,11 +30,12 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class TestTableMeta {
+  TajoConf conf = new TajoConf();
   TableMeta meta = null;
   
   @Before
   public void setUp() {
-    meta = CatalogUtil.newTableMeta("TEXT");
+    meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
   }
   
   @Test
@@ -41,7 +43,7 @@ public class TestTableMeta {
     Schema schema1 = new Schema();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
-    TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     
     TableMeta meta2 = new TableMeta(meta1.getProto());
     assertEquals(meta1, meta2);
@@ -52,7 +54,7 @@ public class TestTableMeta {
     Schema schema1 = new Schema();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
-    TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     
     TableMeta meta2 = (TableMeta) meta1.clone();
     assertEquals(meta1.getDataFormat(), meta2.getDataFormat());
@@ -64,7 +66,7 @@ public class TestTableMeta {
     Schema schema1 = new Schema();
     schema1.addColumn("name", Type.BLOB);
     schema1.addColumn("addr", Type.TEXT);
-    TableMeta meta1 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     
     TableMeta meta2 = (TableMeta) meta1.clone();
     
@@ -81,7 +83,7 @@ public class TestTableMeta {
     Schema schema2 = new Schema();
     schema2.addColumn("name", Type.BLOB);
     schema2.addColumn("addr", Type.TEXT);
-    TableMeta meta2 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta2 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
 
     assertTrue(meta.equals(meta2));
@@ -96,7 +98,7 @@ public class TestTableMeta {
 
 		int MAX_COUNT = 17;
 
-		TableMeta meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT);
+		TableMeta meta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 		for (int i = 0; i < MAX_COUNT; i++) {
 			meta1.putOption("key"+i, "value"+i);
 		}

@@ -19,11 +19,13 @@
 package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +35,7 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 
 public class TestTableDesc {
+  TajoConf conf = new TajoConf();
 	TableMeta info;
   Schema schema;
 	TableDesc desc;
@@ -44,7 +47,7 @@ public class TestTableDesc {
 	  schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    info = CatalogUtil.newTableMeta("TEXT");
+    info = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     path = new Path(CommonTestingUtil.getTestDir(), "table1");
     desc = new TableDesc("table1", schema, info, path.toUri());
     stats = new TableStats();
@@ -70,7 +73,7 @@ public class TestTableDesc {
     Schema schema = new Schema();
     schema.addColumn("name", Type.BLOB);
     schema.addColumn("addr", Type.TEXT);
-    TableMeta info = CatalogUtil.newTableMeta("TEXT");
+    TableMeta info = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     testClone(info);
 
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");

@@ -66,8 +66,8 @@ public class TablePropertyUtil {
   public static void setTableProperty(OverridableConf context, ScanNode node) {
     TableMeta meta = node.getTableDesc().getMeta();
 
-    setProperty(context, SessionVars.TIMEZONE, meta, StorageConstants.TIMEZONE);
-    setProperty(context, SessionVars.NULL_CHAR, meta, StorageConstants.TEXT_NULL);
+    // set default time zone, if there is no table timezone
+    setProperty(context.getConf(), TajoConf.ConfVars.$TIMEZONE, meta, StorageConstants.TIMEZONE);
   }
 
   /**
@@ -85,6 +85,22 @@ public class TablePropertyUtil {
 
     if (!meta.containsOption(propertyKey)) {
       meta.putOption(propertyKey, context.get(sessionVarKey));
+    }
+  }
+
+  /**
+   * If there is no table property for the propertyKey, set default property from system conf to the table.
+   *
+   * @param conf TajoConf
+   * @param confVarKey system variable key
+   * @param meta TableMeta
+   * @param propertyKey table property key
+   */
+  private static void setProperty(TajoConf conf, TajoConf.ConfVars confVarKey,
+                                  TableMeta meta, String propertyKey) {
+
+    if (!meta.containsOption(propertyKey)) {
+      meta.putOption(propertyKey, conf.getVar(confVarKey));
     }
   }
 }

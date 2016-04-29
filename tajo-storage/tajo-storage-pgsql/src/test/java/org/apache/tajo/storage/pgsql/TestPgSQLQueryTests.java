@@ -63,6 +63,7 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
   @SimpleTest
   @Test
+  @Option(sort = true)
   public void testDateTimeTypes() throws Exception {
     runSimpleTests();
   }

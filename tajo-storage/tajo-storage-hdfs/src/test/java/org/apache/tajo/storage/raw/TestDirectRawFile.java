@@ -173,7 +173,7 @@ public class TestDirectRawFile {
 
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
 
-    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, tajoConf);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
     rowBlock.release();
 
@@ -202,7 +202,7 @@ public class TestDirectRawFile {
     int rowNum = 2;
 
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
-    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, tajoConf);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
 
     rowBlock.release();
@@ -231,7 +231,7 @@ public class TestDirectRawFile {
 
     MemoryRowBlock rowBlock = createRowBlock(rowNum);
 
-    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.DRAW, tajoConf);
     FileStatus outputFile = writeRowBlock(tajoConf, meta, rowBlock);
     rowBlock.release();
 

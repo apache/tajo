@@ -165,7 +165,8 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     }
 
     if (leftType == Type.TIME &&
-        (rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME)) {
+        (rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME ||
+            rightType == Type.TIMESTAMP)) {
       return;
     }
 

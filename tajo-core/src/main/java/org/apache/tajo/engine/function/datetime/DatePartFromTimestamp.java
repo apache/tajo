@@ -18,10 +18,8 @@
 
 package org.apache.tajo.engine.function.datetime;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
@@ -47,7 +45,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type.*;
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TIMESTAMP})}
 )
 public class DatePartFromTimestamp extends GeneralFunction {
-  @Expose private TimeZone timezone;
   private DatePartExtractorFromTimestamp extractor = null;
 
   public DatePartFromTimestamp() {
@@ -59,8 +56,7 @@ public class DatePartFromTimestamp extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType [] types) {
-    String timezoneId = context.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
-    timezone = TimeZone.getTimeZone(timezoneId);
+    setTimeZone(TimeZone.getTimeZone(context.get(SessionVars.TIMEZONE)));
   }
 
   @Override
@@ -121,7 +117,7 @@ public class DatePartFromTimestamp extends GeneralFunction {
     }
 
     TimeMeta tm = params.getTimeDate(1);
-    DateTimeUtil.toUserTimezone(tm, timezone);
+    DateTimeUtil.toUserTimezone(tm, getTimeZone());
 
     return extractor.extract(tm);
   }
@@ -135,7 +131,7 @@ public class DatePartFromTimestamp extends GeneralFunction {
     public Datum extract(TimeMeta tm) {
       return DatumFactory.createFloat8((double) tm.getCenturyOfEra());
     }
-  } 
+  }
 
   private static class DayExtractorFromTimestamp implements DatePartExtractorFromTimestamp {
     @Override

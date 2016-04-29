@@ -25,6 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -45,6 +46,7 @@ import static org.junit.Assert.*;
 public class TestDelimitedTextFile {
   private static final Log LOG = LogFactory.getLog(TestDelimitedTextFile.class);
 
+  private static TajoConf conf = new TajoConf();
   private static Schema schema = new Schema();
 
   private static Tuple baseTuple;
@@ -103,7 +105,7 @@ public class TestDelimitedTextFile {
   public void testIgnoreAllErrors() throws IOException {
     TajoConf conf = new TajoConf();
 
-    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.JSON, conf);
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "-1");
     FileFragment fragment =  getFileFragment("testErrorTolerance1.json");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
@@ -125,7 +127,7 @@ public class TestDelimitedTextFile {
 
     TajoConf conf = new TajoConf();
 
-    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.JSON, conf);
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
     FileFragment fragment =  getFileFragment("testErrorTolerance1.json");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
@@ -147,7 +149,7 @@ public class TestDelimitedTextFile {
   @Test
   public void testNoErrorTolerance() throws IOException {
     TajoConf conf = new TajoConf();
-    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.JSON, conf);
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "0");
     FileFragment fragment =  getFileFragment("testErrorTolerance2.json");
     Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
@@ -166,7 +168,7 @@ public class TestDelimitedTextFile {
   @Test
   public void testIgnoreTruncatedValueErrorTolerance() throws IOException {
     TajoConf conf = new TajoConf();
-    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.JSON, conf);
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
     FileFragment fragment = getFileFragment("testErrorTolerance3.json");
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
@@ -182,7 +184,7 @@ public class TestDelimitedTextFile {
 
   @Test
   public void testSkippingHeaderWithJson() throws IOException {
-    TableMeta meta = CatalogUtil.newTableMeta("JSON");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.JSON, conf);
     meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "2");
     FileFragment fragment = getFileFragment("testNormal.json");
     Scanner scanner = TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
@@ -208,7 +210,7 @@ public class TestDelimitedTextFile {
 
   @Test
   public void testSkippingHeaderWithText() throws IOException {
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     meta.putOption(StorageConstants.TEXT_SKIP_HEADER_LINE, "1");
     meta.putOption(StorageConstants.TEXT_DELIMITER, ",");
     FileFragment fragment = getFileFragment("testSkip.txt");

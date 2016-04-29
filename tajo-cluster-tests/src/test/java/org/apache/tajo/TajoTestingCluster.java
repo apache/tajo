@@ -48,7 +48,6 @@ import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.history.QueryHistory;
@@ -63,7 +62,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.UUID;
 
 public class TajoTestingCluster {
@@ -118,11 +116,6 @@ public class TajoTestingCluster {
   }
 
   void initPropertiesAndConfigs() {
-
-    // Set time zone
-    TimeZone testDefaultTZ = TimeZone.getTimeZone(TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
-    conf.setSystemTimezone(testDefaultTZ);
-    TimeZone.setDefault(testDefaultTZ);
 
     // Injection of equality testing code of logical plan (de)serialization
     conf.setClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, LogicalPlanTestRuleProvider.class);
@@ -547,12 +540,6 @@ public class TajoTestingCluster {
     LOG.info("Minicluster is stopping");
     LOG.info("========================================");
 
-    try {
-      Thread.sleep(3000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    }
-
     shutdownMiniTajoCluster();
 
     if(this.catalogServer != null) {
@@ -561,7 +548,7 @@ public class TajoTestingCluster {
     }
 
     try {
-      Thread.sleep(3000);
+      Thread.sleep(2000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
@@ -614,7 +601,7 @@ public class TajoTestingCluster {
     for (int i = 0; i < names.length; i++) {
       createTable(names[i], schemas[i], tableOption, tables[i]);
     }
-    Thread.sleep(1000);
+
     ResultSet res = client.executeQueryAndGetResult(query);
     return res;
   }

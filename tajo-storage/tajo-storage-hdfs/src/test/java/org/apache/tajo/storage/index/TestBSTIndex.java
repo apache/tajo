@@ -85,7 +85,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -176,7 +176,7 @@ public class TestBSTIndex {
 
   @Test
   public void testBuildIndexWithAppender() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testBuildIndexWithAppender_" + dataFormat);
     FileAppender appender = (FileAppender) ((FileTablespace) TablespaceManager.getLocalFs())
@@ -256,7 +256,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindOmittedValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindOmittedValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(meta, schema, tablePath);
@@ -327,7 +327,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindNextKeyValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -420,7 +420,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyOmittedValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindNextKeyOmittedValue_" + dataFormat);
     Appender appender = (((FileTablespace) TablespaceManager.getLocalFs()))
@@ -502,7 +502,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindMinValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindMinValue" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -588,7 +588,7 @@ public class TestBSTIndex {
 
   @Test
   public void testMinMax() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testMinMax_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -694,7 +694,7 @@ public class TestBSTIndex {
 
   @Test
   public void testConcurrentAccess() throws IOException, InterruptedException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testConcurrentAccess_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -776,7 +776,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValueDescOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindValueDescOrder_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -870,7 +870,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyValueDescOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindNextKeyValueDescOrder_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(meta, schema, tablePath);
@@ -968,7 +968,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValueASCOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())

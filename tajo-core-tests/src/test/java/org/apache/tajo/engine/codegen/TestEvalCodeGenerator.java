@@ -78,28 +78,28 @@ public class TestEvalCodeGenerator extends ExprTestBase {
     schema.addColumn("col9", TajoDataTypes.Type.BOOLEAN);
     schema.addColumn("nullable", TajoDataTypes.Type.NULL_TYPE);
 
-    testEval(schema, "table1", ",1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,,3,4.5,6.5,F6,abc,abc,t,", "select col2 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,,4.5,6.5,F6,abc,abc,t,", "select col3 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,,6.5,F6,abc,abc,t,", "select col4 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,,F6,abc,abc,t,", "select col5 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,,abc,abc,t,", "select col6 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is null from table1;", new String[]{"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,,", "select col9 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "\\NULL,1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,\\NULL,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,\\NULL,3,4.5,6.5,F6,abc,abc,t,", "select col2 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,\\NULL,4.5,6.5,F6,abc,abc,t,", "select col3 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,\\NULL,6.5,F6,abc,abc,t,", "select col4 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,\\NULL,F6,abc,abc,t,", "select col5 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,\\NULL,abc,abc,t,", "select col6 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,\\NULL,abc,t,", "select col7 is null from table1;", new String[]{"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,\\NULL,t,", "select col8 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,\\NULL,", "select col9 is null from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,t,", "select nullable is null from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", ",1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,,3,4.5,6.5,F6,abc,abc,t,", "select col2 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,,4.5,6.5,F6,abc,abc,t,", "select col3 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,,6.5,F6,abc,abc,t,", "select col4 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,,F6,abc,abc,t,", "select col5 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,,abc,abc,t,", "select col6 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,,", "select col9 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "\\NULL,1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,\\NULL,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,\\NULL,3,4.5,6.5,F6,abc,abc,t,", "select col2 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,\\NULL,4.5,6.5,F6,abc,abc,t,", "select col3 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,\\NULL,6.5,F6,abc,abc,t,", "select col4 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,\\NULL,F6,abc,abc,t,", "select col5 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,\\NULL,abc,abc,t,", "select col6 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,\\NULL,abc,t,", "select col7 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,\\NULL,t,", "select col8 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,\\NULL,", "select col9 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,t,", "select nullable is not null from table1;", new String [] {"f"});
   }
 

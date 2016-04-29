@@ -115,7 +115,7 @@ public class DescTableCommand extends TajoShellCommand {
           FileUtil.humanReadableByteCount(desc.getStats().getNumBytes(),
               true)).append("\n");
     }
-    sb.append("Options: \n");
+    sb.append("Options:\n");
     for(Map.Entry<String, String> entry : desc.getMeta().toMap().entrySet()){
 
       /*

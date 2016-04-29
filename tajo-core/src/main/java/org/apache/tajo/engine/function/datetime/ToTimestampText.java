@@ -47,15 +47,15 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT})}
 )
 public class ToTimestampText extends GeneralFunction {
-  private TimeZone timezone;
 
   public ToTimestampText() {
     super(new Column[]{new Column("DateTimeText", TEXT), new Column("Pattern", TEXT)});
   }
 
-  public void init(OverridableConf queryContext, FunctionEval.ParamType [] paramTypes) {
-    String timezoneId = queryContext.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
-    timezone = TimeZone.getTimeZone(timezoneId);
+  public void init(OverridableConf context, FunctionEval.ParamType [] paramTypes) {
+    if (!hasTimeZone()) {
+      setTimeZone(context.getConf().getSystemTimezone());
+    }
   }
 
   @Override
@@ -65,7 +65,7 @@ public class ToTimestampText extends GeneralFunction {
     }
 
     TimeMeta tm = DateTimeFormat.parseDateTime(params.getText(0), params.getText(1));
-    DateTimeUtil.toUTCTimezone(tm, timezone);
+    DateTimeUtil.toUTCTimezone(tm, getTimeZone());
 
     return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
   }
