@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
@@ -32,6 +33,7 @@ import org.apache.tajo.worker.ExecutionBlockSharedResource;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -164,12 +166,14 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
       KeyTuple keyTuple = keyProjector.project(tuple);
-      TupleList newValue = map.get(keyTuple);
-      if (newValue == null) {
-        map.put(keyTuple, newValue = new TupleList());
+      if (Arrays.stream(keyTuple.getValues()).noneMatch(Datum::isNull)) {
+        TupleList newValue = map.get(keyTuple);
+        if (newValue == null) {
+          map.put(keyTuple, newValue = new TupleList());
+        }
+        // if source is scan or groupby, it needs not to be cloned
+        newValue.add(tuple);
       }
-      // if source is scan or groupby, it needs not to be cloned
-      newValue.add(tuple);
     }
     return map;
   }

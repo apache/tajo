@@ -92,6 +92,7 @@ public class TpchTestBase {
     util = new LocalTajoTestingUtility();
     KeyValueSet opt = new KeyValueSet();
     opt.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    opt.set(StorageConstants.TEXT_NULL, "\\\\N");
     util.setup(names, paths, schemas, opt);
   }
 

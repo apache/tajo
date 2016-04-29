@@ -39,6 +39,7 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
@@ -101,7 +102,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         return false;
       }
 
-      return partitionFilter.eval(tuple).asBool();
+      return partitionFilter.eval(tuple).isTrue();
     }
 
     @Override
@@ -463,7 +464,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
       int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
-      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
+      String pathName = StringUtils.unescapePathName(parts[1]);
+      if (pathName.equals(StorageConstants.DEFAULT_PARTITION_NAME)){
+        tuple.put(columnId, DatumFactory.createNullDatum());
+      } else {
+        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), pathName));
+      }
     }
     for (; i < partitionColumnSchema.size(); i++) {
       tuple.put(i, NullDatum.get());

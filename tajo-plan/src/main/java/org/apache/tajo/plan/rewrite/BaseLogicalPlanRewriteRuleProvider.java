@@ -57,7 +57,6 @@ public class BaseLogicalPlanRewriteRuleProvider extends LogicalPlanRewriteRulePr
   public Collection<Class<? extends LogicalPlanRewriteRule>> getPostRules() {
     List<Class<? extends LogicalPlanRewriteRule>> rules = new ArrayList<>();
     rules.add(ProjectionPushDownRule.class);
-    rules.add(EarlyNullPruningForJoinRule.class);
     rules.add(PartitionedTableRewriter.class);
     rules.add(AccessPathRewriter.class);
     return rules;

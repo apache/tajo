@@ -31,6 +31,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
 import java.util.Map;
@@ -210,6 +212,10 @@ public class TPCH extends BenchmarkSet {
 
   public void loadTable(String tableName) throws TajoException {
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, new TajoConf());
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+    meta.setPropertySet(tableOptions);
 
     PartitionMethodDesc partitionMethodDesc = null;
     if (tableName.equals(CUSTOMER_PARTS)) {

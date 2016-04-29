@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.BinaryEval;
@@ -95,7 +96,12 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
    * @return True if an input tuple is matched to the left join filter
    */
   protected boolean leftFiltered(Tuple left) {
-    return leftJoinFilter != null && !leftJoinFilter.eval(left).asBool();
+//    if (leftJoinFilter != null) {
+//      Datum result = leftJoinFilter.eval(left);
+//      return result.isNull() || !result.asBool();
+//    }
+//    return false;
+    return leftJoinFilter != null && !leftJoinFilter.eval(left).isTrue();
   }
 
   /**
@@ -105,7 +111,12 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
    * @return True if an input tuple is matched to the right join filter
    */
   protected boolean rightFiltered(Tuple right) {
-    return rightJoinFilter != null && !rightJoinFilter.eval(right).asBool();
+//    if (rightJoinFilter != null) {
+//      Datum result = rightJoinFilter.eval(right);
+//      return result.isNull() || !result.asBool();
+//    }
+//    return false;
+    return rightJoinFilter != null && !rightJoinFilter.eval(right).isTrue();
   }
 
   /**
@@ -125,7 +136,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
     return Iterators.filter(rightTuples.iterator(), new Predicate<Tuple>() {
       @Override
       public boolean apply(Tuple input) {
-        return rightJoinFilter.eval(input).asBool();
+        return rightJoinFilter.eval(input).isTrue();
       }
     });
   }
