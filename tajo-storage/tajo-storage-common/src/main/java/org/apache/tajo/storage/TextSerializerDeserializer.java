@@ -31,7 +31,6 @@ import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.TimeZone;
 
 // Compatibility with Apache Hive
 @Deprecated
@@ -101,12 +100,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         out.write(bytes);
         break;
       case TIME:
-        bytes = TimeDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
-        length = bytes.length;
-        out.write(bytes);
-        break;
-      case TIMESTAMP:
-        bytes = TimestampDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
+        bytes = tuple.getTextBytes(index);
         length = bytes.length;
         out.write(bytes);
         break;
@@ -184,10 +178,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case TIME:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createTime(new String(bytes, offset, length));
-        break;
-      case TIMESTAMP:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createTimestamp(new String(bytes, offset, length));
         break;
       case INTERVAL:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()

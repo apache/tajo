@@ -69,7 +69,7 @@ public class TestRowFile {
         .add("description", Type.TEXT)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("ROWFILE");
+    TableMeta meta = CatalogUtil.newTableMeta("ROWFILE", conf);
 
     FileTablespace sm = (FileTablespace) TablespaceManager.get(cluster.getDefaultFileSystem().getUri());
 

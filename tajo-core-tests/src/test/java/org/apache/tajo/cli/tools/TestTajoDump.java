@@ -49,7 +49,9 @@ public class TestTajoDump extends QueryTestCaseBase {
         TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
         printWriter.flush();
         printWriter.close();
-        assertStrings(new String(bos.toByteArray()));
+
+        assertOutputResult("testDump1.result", new String(bos.toByteArray()), new String[]{"${table.timezone}"},
+            new String[]{testingCluster.getConfiguration().getSystemTimezone().getID()});
         bos.close();
       } finally {
         executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
@@ -70,7 +72,9 @@ public class TestTajoDump extends QueryTestCaseBase {
         TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
         printWriter.flush();
         printWriter.close();
-        assertStrings(new String(bos.toByteArray()));
+
+        assertOutputResult("testDump2.result", new String(bos.toByteArray()), new String[]{"${table.timezone}"},
+            new String[]{testingCluster.getConfiguration().getSystemTimezone().getID()});
         bos.close();
       } finally {
         executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName2\"");
@@ -95,8 +99,10 @@ public class TestTajoDump extends QueryTestCaseBase {
         printWriter.flush();
         printWriter.close();
 
-        assertOutputResult("testDump3.result", new String(bos.toByteArray()), new String[]{"${index.path}"},
-          new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "test_idx").toString()});
+        assertOutputResult("testDump3.result", new String(bos.toByteArray()),
+            new String[]{"${index.path}", "${table.timezone}"},
+            new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "test_idx").toString(),
+                testingCluster.getConfiguration().getSystemTimezone().getID()});
         bos.close();
       } finally {
         executeString("DROP INDEX test_idx");
@@ -131,13 +137,12 @@ public class TestTajoDump extends QueryTestCaseBase {
         printWriter.flush();
         printWriter.close();
 
-        String[] paramValues = new String[] {
-          TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName3").toString()
-          , TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName4").toString()
-        };
+        assertOutputResult("testPartitionsDump.result", new String(bos.toByteArray()),
+            new String[]{"${partition.path1}", "${partition.path2}", "${table.timezone}"},
+            new String[]{TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName3").toString(),
+                TablespaceManager.getDefault().getTableUri(getCurrentDatabase(), "TableName4").toString(),
+                testingCluster.getConfiguration().getSystemTimezone().getID()});
 
-        assertOutputResult("testPartitionsDump.result", new String(bos.toByteArray())
-          , new String[]{"${partition.path1}", "${partition.path2}"}, paramValues);
         bos.close();
       } finally {
         executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName3\"");

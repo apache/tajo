@@ -72,13 +72,11 @@ public class JSPUtil {
   }
 
   public static String getTajoMasterHttpAddr(Configuration config) {
-    if (!(config instanceof TajoConf)) {
-      throw new IllegalArgumentException("config should be a TajoConf type.");
-    }
+
     try {
-      TajoConf conf = (TajoConf) config;
-      String [] masterAddr = conf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS).split(":");
-      return masterAddr[0] + ":" + conf.getVar(ConfVars.TAJO_MASTER_INFO_ADDRESS).split(":")[1];
+      TajoConf conf = TUtil.checkTypeAndGet(config, TajoConf.class);
+      return NetUtils.getHostPortString(conf.getSocketAddrVar(
+          ConfVars.TAJO_MASTER_INFO_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
     } catch (Exception e) {
       e.printStackTrace();
       return e.getMessage();

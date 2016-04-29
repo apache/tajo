@@ -5,7 +5,8 @@ table uri: ${table.path}
 store type: TEXT
 number of rows: 0
 volume: 0 B
-Options: 
+Options:
+	'timezone'='${table.timezone}'
 	'text.delimiter'='|'
 
 schema: 
@@ -19,7 +20,8 @@ table uri: ${table.path}
 store type: TEXT
 number of rows: 0
 volume: 0 B
-Options: 
+Options:
+	'timezone'='${table.timezone}'
 	'text.delimiter'='|'
 
 schema: 

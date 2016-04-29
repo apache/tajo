@@ -21,8 +21,20 @@ package org.apache.tajo.util;
 import java.net.*;
 
 public class NetUtils {
+
+  /**
+   * Compose a "host:port" string from the address.
+   */
+  public static String getHostPortString(InetSocketAddress addr) {
+    return getHostPortString(addr.getHostName(), addr.getPort());
+  }
+
+  public static String getHostPortString(String host, int port) {
+    return host + ":" + port;
+  }
+
   public static String normalizeInetSocketAddress(InetSocketAddress addr) {
-    return addr.getAddress().getHostAddress() + ":" + addr.getPort();
+    return getHostPortString(addr.getAddress().getHostAddress(), addr.getPort());
   }
 
   public static InetSocketAddress createSocketAddr(String addr) {

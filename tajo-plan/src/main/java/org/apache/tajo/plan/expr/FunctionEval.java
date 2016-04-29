@@ -23,11 +23,13 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.TUtil;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_AGGREGATION;
@@ -71,7 +73,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
     ParamType [] paramTypes = new ParamType[argEvals.length];
     for (int i = 0; i < argEvals.length; i++) {
       if (argEvals[i].getType() == EvalType.CONST) {
-        if (argEvals[i].getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
+        if (argEvals[i].getValueType().isNull()) {
           paramTypes[i] = ParamType.NULL;
         } else {
           paramTypes[i] = ParamType.CONSTANT;
@@ -111,8 +113,8 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   }
 
 
-	public DataType getValueType() {
-		return this.funcDesc.getReturnType();
+	public Type getValueType() {
+		return TypeConverter.convert(this.funcDesc.getReturnType());
 	}
 
 	@Override
