@@ -19,7 +19,7 @@
 package org.apache.tajo.service;
 
 import org.apache.tajo.conf.TajoConf;
-
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -38,11 +38,16 @@ public class BaseServiceTracker implements ServiceTracker {
     tajoMasterInfo = new TajoMasterInfo();
     tajoMasterInfo.setActive(true);
     tajoMasterInfo.setAvailable(true);
-    tajoMasterInfo.setTajoMasterAddress(conf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
-    tajoMasterInfo.setTajoClientAddress(conf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS));
-    tajoMasterInfo.setWorkerResourceTrackerAddr(conf.getSocketAddrVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
-    tajoMasterInfo.setCatalogAddress(conf.getSocketAddrVar(TajoConf.ConfVars.CATALOG_ADDRESS));
-    tajoMasterInfo.setWebServerAddress(conf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS));
+    tajoMasterInfo.setTajoMasterAddress(conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
+
+    tajoMasterInfo.setTajoClientAddress(
+        conf.getSocketAddrVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
+    tajoMasterInfo.setWorkerResourceTrackerAddr(
+        conf.getSocketAddrVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
+    tajoMasterInfo.setCatalogAddress(
+        conf.getSocketAddrVar(ConfVars.CATALOG_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
+    tajoMasterInfo.setWebServerAddress(
+        conf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
 
     tajoMasterInfos = Arrays.asList(tajoMasterInfo);
   }

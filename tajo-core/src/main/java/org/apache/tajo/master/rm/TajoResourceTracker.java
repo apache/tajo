@@ -56,7 +56,7 @@ import static org.apache.tajo.ResourceProtos.*;
  */
 public class TajoResourceTracker extends AbstractService implements TajoResourceTrackerProtocolService.Interface {
   /** Class logger */
-  private Log LOG = LogFactory.getLog(TajoResourceTracker.class);
+  private static final Log LOG = LogFactory.getLog(TajoResourceTracker.class);
 
   private final TajoResourceManager manager;
   /** the context of TajoResourceManager */
@@ -85,8 +85,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     TajoConf systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     activeInterval = systemConf.getIntVar(TajoConf.ConfVars.WORKER_HEARTBEAT_ACTIVE_INTERVAL);
 
-    String confMasterServiceAddr = systemConf.getVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
-    InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
+    InetSocketAddress initIsa = systemConf.getSocketAddrVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
 
     int workerNum = systemConf.getIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM);
     server = new AsyncRpcServer(TajoResourceTrackerProtocol.class, this, initIsa, workerNum);
@@ -94,7 +93,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     server.start();
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
     // Set actual bind address to the systemConf
-    systemConf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
+    systemConf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, NetUtils.getHostPortString(bindAddress));
 
     LOG.info("TajoResourceTracker starts up (" + this.bindAddress + ")");
     super.serviceInit(conf);

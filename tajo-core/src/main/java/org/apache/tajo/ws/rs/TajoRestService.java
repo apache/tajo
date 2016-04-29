@@ -37,7 +37,7 @@ import java.net.URI;
 
 public class TajoRestService extends CompositeService {
   
-  private final Log LOG = LogFactory.getLog(getClass());
+  private static final Log LOG = LogFactory.getLog(TajoRestService.class);
 
   private MasterContext masterContext;
   private NettyRestServer restServer;
