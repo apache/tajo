@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -185,7 +186,6 @@ public class S3TableSpace extends FileTablespace {
     Map<Path, Integer> partitionPathMap = Maps.newHashMap();
     for (int i = 0; i < pruningHandle.getPartitionKeys().length; i++) {
       partitionPathMap.put(pruningHandle.getPartitionPaths()[i], i);
-      LOG.info("### init partition - i:" + i + ", partition:" + pruningHandle.getPartitionPaths()[i]);
     }
 
     // Get common prefix of partition paths
@@ -217,120 +217,103 @@ public class S3TableSpace extends FileTablespace {
    * @throws IOException
    */
   private List<Fragment> getFragmentsByMarker(TableMeta meta, Schema schema, String tableName, Path path,
-             PartitionPruningHandle pruningHandle, Map<Path, Integer> partitionPathMap) throws IOException {
+                                              PartitionPruningHandle pruningHandle, Map<Path, Integer> partitionPathMap) throws IOException {
     List<Fragment> splits = Lists.newArrayList();
     long startTime = System.currentTimeMillis();
     ObjectListing objectListing;
     Path previousPartition = null, nextPartition = null;
     int callCount = 0, i = 0;
-    boolean finished = false, enabled = false;
+    boolean isFirst = true, isFinished = false, isAccepted = false;
 
     int partitionCount = pruningHandle.getPartitionPaths().length;
-    LOG.info("### 100 ### partitionCount:" + partitionCount);
+
     // Listing S3 Objects using AWS API
     String prefix = keyFromPath(path);
     if (!prefix.isEmpty()) {
       prefix += "/";
     }
-    LOG.info("### 110 ### prefix:" + prefix);
 
     ListObjectsRequest request = new ListObjectsRequest()
       .withBucketName(uri.getHost())
       .withPrefix(prefix);
 
     do {
-      enabled = true;
+      isAccepted = false;
 
       // Get first chunk of 1000 objects
       objectListing = s3.listObjects(request);
 
       int objectsCount = objectListing.getObjectSummaries().size();
-      LOG.info("### 200 ### objectsCount:" + objectsCount);
 
       // Get partition of last bucket from current objects
-      Path lastPath = getPathFromBucket(objectListing.getObjectSummaries().get(objectsCount - 1));
-      Path lastPartition = lastPath.getParent();
-      LOG.info("### 210 ### lastPath:" + lastPath);
+      S3ObjectSummary firstBucket = objectListing.getObjectSummaries().get(0);
+      Path firstPath = getPathFromBucket(firstBucket);
+      Path firstPartition = isFile(firstBucket) ? firstPath.getParent() : firstPath;
 
-      // Check target partition compare with last partition of current objects
-      if (previousPartition == null) {
-        if (pruningHandle.getPartitionPaths()[0].compareTo(lastPartition) > 0) {
-          enabled = false;
-          LOG.info("### 220 ###");
+      S3ObjectSummary lastBucket = objectListing.getObjectSummaries().get(objectsCount - 1);
+      Path lastPath = getPathFromBucket(lastBucket);
+      Path lastPartition = isFile(lastBucket) ? lastPath.getParent() : lastPath;
+
+      if (isFirst) {
+        nextPartition = pruningHandle.getPartitionPaths()[0];
+        if (nextPartition.compareTo(firstPartition) <= 0 || nextPartition.compareTo(lastPartition) <= 0) {
+          isAccepted = true;
         }
       } else {
-        if (previousPartition.compareTo(lastPartition) > 0) {
-          enabled = false;
-          LOG.info("### 230 ###");
+        if (previousPartition.compareTo(firstPartition) <= 0 || nextPartition.compareTo(firstPartition) <= 0
+          || previousPartition.compareTo(lastPartition) <= 0 || nextPartition.compareTo(lastPartition) <= 0) {
+          isAccepted = true;
         }
       }
-      LOG.info("### 300 ### callCount:" + callCount + ", nextMarker:" + objectListing.getNextMarker());
 
-      // Generate FileStatus and partition key
-      if (enabled) {
+      // If this is first call or current objects include target partition, generate fragments.
+      if (isAccepted) {
         for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
-          LOG.info("### 310 ### key:" + summary.getKey());
-          if (summary.getSize() > 0 && !summary.getKey().endsWith("/")) {
-            Path bucketPath = getPathFromBucket(summary);
-            LOG.info("### 310 ### bucketPath:" + bucketPath);
+          Optional<Path> bucketPath = getValidPathFromBucket(summary);
 
-            if (!bucketPath.getName().startsWith("_") && !bucketPath.getName().startsWith(".")) {
-              Path partitionPath = bucketPath.getParent();
-              LOG.info("### 320 ### partitionPath:" + partitionPath );
+          if (bucketPath.isPresent()) {
+            Path partitionPath = bucketPath.get().getParent();
 
-              // If Tajo can matched partition from partition map, add it to final list.
-              if (partitionPathMap.containsKey(partitionPath)) {
-                FileStatus file = getFileStatusFromBucket(summary, bucketPath);
-                String partitionKey = getPartitionKey(pruningHandle, partitionPathMap, partitionPath);
-                computePartitionSplits(file, meta, schema, tableName, partitionKey, splits);
-                previousPartition = partitionPath;
-                LOG.info("### 330 ### previousPartition:" + previousPartition );
+            // If Tajo can matched partition from partition map, add it to final list.
+            if (partitionPathMap.containsKey(partitionPath)) {
+              FileStatus file = getFileStatusFromBucket(summary, bucketPath.get());
+              String partitionKey = getPartitionKey(pruningHandle, partitionPathMap, partitionPath);
+              computePartitionSplits(file, meta, schema, tableName, partitionKey, splits);
+              previousPartition = partitionPath;
 
-                if (LOG.isDebugEnabled()){
-                  LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
-                }
-                i++;
+              int index = partitionPathMap.get(previousPartition);
+              if ((index + 1) < partitionCount) {
+                nextPartition = pruningHandle.getPartitionPaths()[index + 1];
               } else {
                 nextPartition = null;
+              }
 
-                // Get next target partition
-                if (previousPartition == null) {
-                  nextPartition = pruningHandle.getPartitionPaths()[0];
-                  LOG.info("### 400 ### nextPartition:" + nextPartition);
-                } else {
-                  // Find index of previous partition
-                  int index = partitionPathMap.get(previousPartition);
-
-                  // Find next target partition with the index of previous partition
-                  if ((index + 1) < partitionCount) {
-                    nextPartition = pruningHandle.getPartitionPaths()[index+1];
-                    LOG.info("### 410 ### nextPartition:" + nextPartition + ", index:" + index);
-                  } else if ((index + 1) == partitionCount) {
-                    finished = true;
-                    LOG.info("### 420 ### finished");
-                    break;
-                  }
+              if (LOG.isDebugEnabled()){
+                LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
+              }
+              i++;
+            } else {
+              // If current objects include next target partition, get next object.
+              if (nextPartition != null && nextPartition.compareTo(lastPartition) <= 0) {
+                continue;
+              } else {
+                if (previousPartition != null && nextPartition == null) {
+                  isFinished = true;
                 }
-
-                LOG.info("### 430 ###");
-                // If there is no matched partition, consider to move next marker. Otherwise access next object.
-                if (nextPartition != null  && nextPartition.compareTo(lastPartition) <= 0) {
-                  LOG.info("### 440 ###");
-                  continue;
-                } else {
-                  LOG.info("### 450 ###");
-                  break;
-                }
+                break;
               }
             }
           }
         }
       }
-      LOG.info("### 500 ### ");
 
+      if (isFirst) {
+        isFirst = false;
+      }
       request.setMarker(objectListing.getNextMarker());
       callCount++;
-    } while (objectListing.isTruncated() && !finished);
+    } while (objectListing.isTruncated() && !isFinished);
+
     long finishTime = System.currentTimeMillis();
     long elapsedMills = finishTime - startTime;
     LOG.info(String.format("List S3Objects: %d ms elapsed. API call count: %d", elapsedMills, callCount));
@@ -358,7 +341,7 @@ public class S3TableSpace extends FileTablespace {
     int i = 0;
     Iterable<S3ObjectSummary> objectSummaries = S3Objects.withPrefix(s3, uri.getHost(), prefix);
     for (S3ObjectSummary summary : objectSummaries) {
-      if (summary.getSize() >0 && !summary.getKey().endsWith("/")) {
+      if (summary.getSize() > 0 && !summary.getKey().endsWith("/")) {
         Path bucketPath = getPathFromBucket(summary);
         String fileName = bucketPath.getName();
 
@@ -423,9 +406,29 @@ public class S3TableSpace extends FileTablespace {
     }
   }
 
-  private FileStatus getFileStatusFromBucket(S3ObjectSummary summary, Path path) {
-    return new FileStatus(summary.getSize(), false, 1, BLOCK_SIZE.toBytes(),
-      summary.getLastModified().getTime(), path);
+  private Optional<Path> getValidPathFromBucket(S3ObjectSummary summary) {
+    Optional<Path> path = null;
+
+    if (isFile(summary)) {
+      Path bucketPath = getPathFromBucket(summary);
+      if (!bucketPath.getName().startsWith("_") && !bucketPath.getName().startsWith(".")) {
+        path = Optional.of(bucketPath);
+      } else {
+        path = Optional.empty();
+      }
+    } else {
+      path = Optional.empty();
+    }
+
+    return path;
+  }
+
+  private boolean isFile(S3ObjectSummary summary) {
+    if (summary.getSize() > 0 && !summary.getKey().endsWith("/")) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   private Path getPathFromBucket(S3ObjectSummary summary) {
@@ -433,6 +436,11 @@ public class S3TableSpace extends FileTablespace {
     String pathString = uri.getScheme() + "://" + bucketName + "/" + summary.getKey();
     Path path = new Path(pathString);
     return path;
+  }
+
+  private FileStatus getFileStatusFromBucket(S3ObjectSummary summary, Path path) {
+    return new FileStatus(summary.getSize(), false, 1, BLOCK_SIZE.toBytes(),
+      summary.getLastModified().getTime(), path);
   }
 
   @VisibleForTesting
