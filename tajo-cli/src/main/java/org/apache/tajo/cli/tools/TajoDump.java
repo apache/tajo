@@ -27,10 +27,12 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -64,16 +66,17 @@ public class TajoDump {
       port = Integer.parseInt(cmd.getOptionValue("p"));
     }
 
+    InetSocketAddress address = conf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
+        TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+
     if(hostName == null) {
-      if (conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        hostName = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[0];
-      }
+      hostName = address.getHostName();
     }
+
     if (port == null) {
-      if (conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        port = Integer.parseInt(conf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
-      }
+      port = address.getPort();
     }
+
     return new Pair<>(hostName, port);
   }
 
@@ -104,7 +107,7 @@ public class TajoDump {
       System.err.println("ERROR: cannot find any TajoMaster rpc address in arguments and tajo-site.xml.");
       System.exit(-1);
     } else if (hostName != null && port != null) {
-      conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
+      conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.getHostPortString(hostName, port));
       client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
     } else {
       client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
