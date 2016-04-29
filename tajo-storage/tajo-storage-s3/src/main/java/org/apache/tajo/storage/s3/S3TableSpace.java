@@ -242,10 +242,9 @@ public class S3TableSpace extends FileTablespace {
 
       // Get first chunk of 1000 objects
       objectListing = s3.listObjects(request);
-
       int objectsCount = objectListing.getObjectSummaries().size();
 
-      // Get partition of last bucket from current objects
+      // Get first bucket and last bucket from current objects
       S3ObjectSummary firstBucket = objectListing.getObjectSummaries().get(0);
       Path firstPath = getPathFromBucket(firstBucket);
       Path firstPartition = isFile(firstBucket) ? firstPath.getParent() : firstPath;
@@ -254,6 +253,7 @@ public class S3TableSpace extends FileTablespace {
       Path lastPath = getPathFromBucket(lastBucket);
       Path lastPartition = isFile(lastBucket) ? lastPath.getParent() : lastPath;
 
+      // Check if current objects include target partition.
       if (isFirst) {
         nextPartition = pruningHandle.getPartitionPaths()[0];
         if (nextPartition.compareTo(firstPartition) <= 0 || nextPartition.compareTo(lastPartition) <= 0) {
@@ -266,7 +266,7 @@ public class S3TableSpace extends FileTablespace {
         }
       }
 
-      // If this is first call or current objects include target partition, generate fragments.
+      // Generate fragments.
       if (isAccepted) {
         for (S3ObjectSummary summary : objectListing.getObjectSummaries()) {
           Optional<Path> bucketPath = getValidPathFromBucket(summary);
@@ -288,6 +288,10 @@ public class S3TableSpace extends FileTablespace {
                 nextPartition = null;
               }
 
+              if (isFirst) {
+                isFirst = false;
+              }
+
               if (LOG.isDebugEnabled()){
                 LOG.debug("# of average splits per partition: " + splits.size() / (i+1));
               }
@@ -307,9 +311,6 @@ public class S3TableSpace extends FileTablespace {
         }
       }
 
-      if (isFirst) {
-        isFirst = false;
-      }
       request.setMarker(objectListing.getNextMarker());
       callCount++;
     } while (objectListing.isTruncated() && !isFinished);
