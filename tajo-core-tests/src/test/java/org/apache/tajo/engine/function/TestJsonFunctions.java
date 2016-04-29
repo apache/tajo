@@ -51,7 +51,7 @@ public class TestJsonFunctions extends ExprTestBase {
   public void testJsonArrayContains() throws TajoException {
     testSimpleEval("select json_array_contains('" + JSON_COMPLEX_ARRAY + "', 100)", new String[]{"t"});
     testSimpleEval("select json_array_contains('" + JSON_COMPLEX_ARRAY + "', 'test')", new String[]{"t"});
-    testSimpleEval("select json_array_contains('" + JSON_COMPLEX_ARRAY + "', '2015-08-13 11:58:59'::timestamp)",
+    testSimpleEval("select json_array_contains('" + JSON_COMPLEX_ARRAY + "', '2015-08-13 11:58:59'::timestamp::text)",
         new String[]{"t"});
     testSimpleEval("select json_array_contains('" + JSON_COMPLEX_ARRAY + "', '2015-08-13 11:58:59'::date)",
         new String[]{"f"});

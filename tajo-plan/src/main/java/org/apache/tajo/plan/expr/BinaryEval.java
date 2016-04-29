@@ -20,21 +20,21 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.DataTypeUtil;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.Tuple;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.type.Type.Bool;
+import static org.apache.tajo.type.Type.Text;
 
 public class BinaryEval extends EvalNode implements Cloneable {
   @Expose protected EvalNode leftExpr;
   @Expose protected EvalNode rightExpr;
-  @Expose protected DataType returnType;
+  @Expose protected org.apache.tajo.type.Type returnType;
 
   protected BinaryEval(EvalType type) {
     super(type);
@@ -54,7 +54,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
             type == EvalType.GTH ||
             type == EvalType.LEQ ||
             type == EvalType.GEQ ) {
-      this.returnType = CatalogUtil.newSimpleDataType(Type.BOOLEAN);
+      this.returnType = Bool;
     } else if (
         type == EvalType.PLUS ||
             type == EvalType.MINUS ||
@@ -64,7 +64,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       this.returnType = DataTypeUtil.determineType(left.getValueType(), right.getValueType());
 
     } else if (type == EvalType.CONCATENATE) {
-      this.returnType = CatalogUtil.newSimpleDataType(Type.TEXT);
+      this.returnType = Text;
     }
   }
 
@@ -154,7 +154,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       return lhs.modular(rhs);
 
     case CONCATENATE:
-      if (lhs.type() == Type.NULL_TYPE || rhs.type() == Type.NULL_TYPE) {
+      if (lhs.type() == TajoDataTypes.Type.NULL_TYPE || rhs.type() == TajoDataTypes.Type.NULL_TYPE) {
         return NullDatum.get();
       }
       return DatumFactory.createText(lhs.asChars() + rhs.asChars());
@@ -169,7 +169,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
 	}
 
 	@Override
-	public DataType getValueType() {
+	public org.apache.tajo.type.Type getValueType() {
 	  return returnType;
 	}
 

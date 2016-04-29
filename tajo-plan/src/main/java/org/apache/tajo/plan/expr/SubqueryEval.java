@@ -20,12 +20,13 @@ package org.apache.tajo.plan.expr;
 
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 /**
  * SubqueryEval is a temporal eval to keep subquery information when the subquery occurs in expressions,
@@ -44,8 +45,8 @@ public class SubqueryEval extends ValueSetEval {
   }
 
   @Override
-  public DataType getValueType() {
-    return subQueryNode.getOutSchema().getColumn(0).getDataType();
+  public Type getValueType() {
+    return TypeConverter.convert(subQueryNode.getOutSchema().getColumn(0).getDataType());
   }
 
   @Override

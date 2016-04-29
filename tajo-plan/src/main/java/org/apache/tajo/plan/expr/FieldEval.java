@@ -21,9 +21,11 @@ package org.apache.tajo.plan.expr;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public class FieldEval extends EvalNode implements Cloneable {
 	@Expose private Column column;
@@ -33,6 +35,11 @@ public class FieldEval extends EvalNode implements Cloneable {
 		super(EvalType.FIELD);
 		this.column = new Column(columnName, domain);
 	}
+
+  public FieldEval(String columnName, Type type) {
+    super(EvalType.FIELD);
+    this.column = new Column(columnName, TypeConverter.convert(type));
+  }
 	
 	public FieldEval(Column column) {
 	  super(EvalType.FIELD);
@@ -62,8 +69,8 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 
   @Override
-	public DataType getValueType() {
-		return column.getDataType();
+	public Type getValueType() {
+		return TypeConverter.convert(column.getDataType());
 	}
 
   @Override

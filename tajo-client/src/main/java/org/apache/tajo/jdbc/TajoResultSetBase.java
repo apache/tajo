@@ -22,7 +22,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.*;
+import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -223,10 +223,10 @@ public abstract class TajoResultSetBase implements ResultSet {
       case FLOAT8:  return tuple.getFloat8(index);
       case NUMERIC:  return tuple.getFloat8(index);
       case DATE: {
-        return toDate(tuple.getTimeDate(index), timezone);
+        return toDate(tuple.getTimeDate(index), null);
       }
       case TIME: {
-        return toTime(tuple.getTimeDate(index), timezone);
+        return toTime(tuple.getTimeDate(index), null);
       }
       case TIMESTAMP: {
         return toTimestamp(tuple.getTimeDate(index), timezone);
@@ -268,8 +268,6 @@ public abstract class TajoResultSetBase implements ResultSet {
     switch(tuple.type(index)) {
       case BOOLEAN:
         return String.valueOf(tuple.getBool(index));
-      case TIME:
-        return TimeDatum.asChars(tuple.getTimeDate(index), timezone, false);
       case TIMESTAMP:
         return TimestampDatum.asChars(tuple.getTimeDate(index), timezone, false);
       default :
@@ -302,10 +300,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Date toDate(TimeMeta tm, TimeZone tz) {
-    if (tz != null) {
-      DateTimeUtil.toUserTimezone(tm, tz);
-    }
-    return new Date(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
+    return DateTimeUtil.toJavaDate(tm, tz);
   }
 
   @Override
@@ -333,10 +328,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Time toTime(TimeMeta tm, TimeZone tz) {
-    if (tz != null) {
-      DateTimeUtil.toUserTimezone(tm, tz);
-    }
-    return new Time(DateTimeUtil.toJavaTime(tm.hours, tm.minutes, tm.secs, tm.fsecs));
+    return DateTimeUtil.toJavaTime(tm, tz);
   }
 
   @Override
@@ -364,10 +356,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private Timestamp toTimestamp(TimeMeta tm, TimeZone tz) {
-    if (tz != null) {
-      DateTimeUtil.toUserTimezone(tm, tz);
-    }
-    return new Timestamp(DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm)));
+    return DateTimeUtil.toJavaTimestamp(tm, tz);
   }
 
   @Override

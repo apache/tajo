@@ -61,7 +61,7 @@ public class FileTablespace extends Tablespace {
       return !name.startsWith("_") && !name.startsWith(".");
     }
   };
-  private final Log LOG = LogFactory.getLog(FileTablespace.class);
+  private static final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
