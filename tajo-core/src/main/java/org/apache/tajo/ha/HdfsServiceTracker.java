@@ -256,16 +256,18 @@ public class HdfsServiceTracker extends HAServiceTracker {
         address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       case HAConstants.MASTER_CLIENT_RPC_ADDRESS:
-        address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
+        address = conf.getSocketAddrVar(
+            ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       case HAConstants.RESOURCE_TRACKER_RPC_ADDRESS:
-        address = conf.getSocketAddrVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
+        address = conf.getSocketAddrVar(
+            ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       case HAConstants.CATALOG_ADDRESS:
-        address = conf.getSocketAddrVar(ConfVars.CATALOG_ADDRESS);
+        address = conf.getSocketAddrVar(ConfVars.CATALOG_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       case HAConstants.MASTER_INFO_ADDRESS:
-        address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS);
+        address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS, ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       default:
         break;

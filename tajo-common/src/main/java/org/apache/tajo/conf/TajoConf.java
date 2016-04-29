@@ -28,6 +28,7 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.service.BaseServiceTracker;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.NetUtils;
@@ -133,12 +134,18 @@ public class TajoConf extends Configuration {
     // Tajo Master Service Addresses
     TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001",
         Validators.networkAddr()),
-    TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002",
-        Validators.networkAddr()),
+    TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002", Validators.networkAddr()),
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
+
+    // Resource tracker service
+    RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "0.0.0.0:26003", Validators.networkAddr()),
+    RESOURCE_TRACKER_HEARTBEAT_TIMEOUT("tajo.resource-tracker.heartbeat.timeout-secs", 120), // seconds
 
     // Tajo Rest Service
     REST_SERVICE_ADDRESS("tajo.rest.service.address", "0.0.0.0:26880", Validators.networkAddr()),
+
+    // Catalog
+    CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "0.0.0.0:26005", Validators.networkAddr()),
 
     // High availability configurations
     TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
@@ -151,16 +158,10 @@ public class TajoConf extends Configuration {
     HA_SERVICE_TRACKER_CLASS("tajo.discovery.ha-service-tracker.class", "org.apache.tajo.ha.HdfsServiceTracker"),
 
     // Async IO Task Service
-
     /** The number of threads for async tasks */
     MASTER_ASYNC_TASK_THREAD_NUM("tajo.master.async-task.thread-num", 4),
     /** How long it will wait for termination */
     MASTER_ASYNC_TASK_TERMINATION_WAIT_TIME("tajo.master.async-task.wait-time-sec", 60), // 1 min
-
-    // Resource tracker service
-    RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003",
-        Validators.networkAddr()),
-    RESOURCE_TRACKER_HEARTBEAT_TIMEOUT("tajo.resource-tracker.heartbeat.timeout-secs", 120), // seconds
 
     // QueryMaster resource
     QUERYMASTER_MINIMUM_MEMORY("tajo.qm.resource.min.memory-mb", 500, Validators.min("64")),
@@ -181,7 +182,7 @@ public class TajoConf extends Configuration {
 
     // Tajo Worker Resources
     WORKER_RESOURCE_AVAILABLE_CPU_CORES("tajo.worker.resource.cpu-cores",
-        Runtime.getRuntime().availableProcessors(), Validators.min("2")), // 1qm + 1task
+        Math.max(Runtime.getRuntime().availableProcessors(), 2), Validators.min("2")), // 1qm + 1task container
     WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1500, Validators.min("64")),
 
     WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM("tajo.worker.resource.disk.parallel-execution.num", 2,
@@ -198,9 +199,6 @@ public class TajoConf extends Configuration {
     QUERYMASTER_TASK_SCHEDULER_DELAY("tajo.qm.task-scheduler.delay", 50),  // 50 ms
 
     QUERYMASTER_TASK_SCHEDULER_REQUEST_MAX_NUM("tajo.qm.task-scheduler.request.max-num", 50),
-
-    // Catalog
-    CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005", Validators.networkAddr()),
 
     // Query Configuration
     QUERY_SESSION_TIMEOUT("tajo.query.session.timeout-sec", 60, Validators.min("0")),
@@ -744,6 +742,26 @@ public class TajoConf extends Configuration {
     return NetUtils.createSocketAddr(address);
   }
 
+  /**
+   * Returns InetSocketAddress that a client can use to connect to the server.
+   * If the configured address is any local address(”0.0.0.0”), finds default host in defaultVar.
+   *
+   * @param var
+   * @param defaultVar
+   * @return InetSocketAddress
+   */
+  public InetSocketAddress getSocketAddrVar(ConfVars var, ConfVars defaultVar) {
+
+    InetSocketAddress addr = NetUtils.createSocketAddr(getVar(var));
+
+    if (addr.getAddress().isAnyLocalAddress()) {
+      InetSocketAddress defaultAddr = NetUtils.createSocketAddr(getVar(defaultVar));
+      addr = NetUtils.createSocketAddr(defaultAddr.getHostName(), addr.getPort());
+    }
+
+    return addr;
+  }
+
   /////////////////////////////////////////////////////////////////////////////
   // Tajo System Specific Methods
   /////////////////////////////////////////////////////////////////////////////
@@ -752,7 +770,15 @@ public class TajoConf extends Configuration {
     String rootPath = conf.getVar(ConfVars.ROOT_DIR);
     Preconditions.checkNotNull(rootPath,
         ConfVars.ROOT_DIR.varname + " must be set before a Tajo Cluster starts up");
-    return new Path(rootPath);
+
+    FileSystem fs;
+
+    try {
+      fs = FileSystem.get(conf);
+    } catch (IOException e) {
+      throw new TajoInternalError(e);
+    }
+    return fs.makeQualified(new Path(rootPath));
   }
 
   public static Path getWarehouseDir(TajoConf conf) {

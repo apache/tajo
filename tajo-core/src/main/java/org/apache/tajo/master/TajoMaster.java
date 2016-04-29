@@ -320,8 +320,7 @@ public class TajoMaster extends CompositeService {
     initSystemMetrics();
 
     // Setting the system global configs
-    systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
-        NetUtils.getConnectAddress(catalogServer.getBindAddress()));
+    systemConf.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.getHostPortString(catalogServer.getBindAddress()));
 
     try {
       writeSystemConf();
