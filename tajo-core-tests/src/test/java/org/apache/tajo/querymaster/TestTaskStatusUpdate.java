@@ -58,9 +58,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       res = executeQuery();
 
       // tpch/lineitem.tbl
-      long[] expectedNumRows = new long[]{5, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{604, 18, 18, 48};
-      long[] expectedReadBytes = new long[]{604, 604, 18, 0};
+      long[] expectedNumRows = new long[]{6, 3, 3, 3};
+      long[] expectedNumBytes = new long[]{647, 26, 26, 68};
+      long[] expectedReadBytes = new long[]{647, 0, 26, 0};
       QueryId queryId = getQueryId(res);
 
       assertStatus(queryId, 2, expectedNumRows, expectedNumBytes, expectedReadBytes);
@@ -77,9 +77,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       res = executeQuery();
 
       // tpch/lineitem.tbl
-      long[] expectedNumRows = new long[]{5, 2, 2, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{604, 162, 162, 138, 138, 236};
-      long[] expectedReadBytes = new long[]{604, 604, 236, 0, 138, 0};
+      long[] expectedNumRows = new long[]{6, 3, 3, 3, 3, 3};
+      long[] expectedNumBytes = new long[]{647, 171, 171, 147, 147, 288};
+      long[] expectedReadBytes = new long[]{647, 0, 288, 0, 147, 0};
 
       QueryId queryId = getQueryId(res);
       assertStatus(queryId, 3, expectedNumRows, expectedNumBytes, expectedReadBytes);
@@ -106,9 +106,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       res = executeQuery();
 
       // in/out * stage(4)
-      long[] expectedNumRows = new long[]{5, 5, 2, 2, 2, 2, 2, 2};
-      long[] expectedNumBytes = new long[]{20, 75, 8, 34, 109, 34, 34, 64};
-      long[] expectedReadBytes = new long[]{20, 20, 8, 8, 64, 0, 34, 0};
+      long[] expectedNumRows   = new long[]{6,  6,  2, 2,  2,   2,  2,  2};
+      long[] expectedNumBytes  = new long[]{22, 82, 8, 34, 116, 34, 34, 64};
+      long[] expectedReadBytes = new long[]{22, 0,  8, 0,  64,  0,  34, 0};
 
       QueryId queryId = getQueryId(res);
       assertStatus(queryId, 4, expectedNumRows, expectedNumBytes, expectedReadBytes);
@@ -140,34 +140,42 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
                             long[] expectedReadBytes) throws Exception {
 
 
-      QueryHistory queryHistory  = testingCluster.getQueryHistory(queryId);
+    QueryHistory queryHistory  = testingCluster.getQueryHistory(queryId);
 
-      assertNotNull(queryHistory);
+    assertNotNull(queryHistory);
 
-      List<StageHistory> stages = queryHistory.getStageHistories();
-      assertEquals(numStages, stages.size());
+    List<StageHistory> stages = queryHistory.getStageHistories();
+    assertEquals(numStages, stages.size());
 
-      Collections.sort(stages, new Comparator<StageHistory>() {
-        @Override
-        public int compare(StageHistory o1, StageHistory o2) {
-          return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
-        }
-      });
-
-      int index = 0;
-      for (StageHistory eachStage : stages) {
-
-        assertEquals(expectedNumRows[index], eachStage.getTotalReadRows());
-        assertEquals(expectedNumBytes[index], eachStage.getTotalInputBytes());
-        assertEquals(expectedReadBytes[index], eachStage.getTotalReadBytes());
-
-        index++;
-
-        assertEquals(expectedNumRows[index], eachStage.getTotalWriteRows());
-        assertEquals(expectedNumBytes[index],eachStage.getTotalWriteBytes());
-
-        index++;
+    Collections.sort(stages, new Comparator<StageHistory>() {
+      @Override
+      public int compare(StageHistory o1, StageHistory o2) {
+        return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
       }
+    });
 
+    int index = 0;
+    StringBuilder expectedString = new StringBuilder();
+    StringBuilder actualString = new StringBuilder();
+
+    for (StageHistory eachStage : stages) {
+      expectedString.append(expectedNumRows[index]).append(",")
+          .append(expectedNumBytes[index]).append(",")
+          .append(expectedReadBytes[index]).append(",");
+      actualString.append(eachStage.getTotalReadRows()).append(",")
+          .append(eachStage.getTotalInputBytes()).append(",")
+          .append(eachStage.getTotalReadBytes()).append(",");
+
+      index++;
+
+      expectedString.append(expectedNumRows[index]).append(",")
+          .append(expectedNumBytes[index]).append("\n");
+      actualString.append(eachStage.getTotalWriteRows()).append(",")
+          .append(eachStage.getTotalWriteBytes()).append("\n");
+
+      index++;
+    }
+
+    assertEquals(expectedString.toString(), actualString.toString());
   }
 }

@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
@@ -88,11 +89,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private static class PartitionPathFilter implements PathFilter {
 
     private Schema schema;
-    private EvalNode partitionFilter;
-    public PartitionPathFilter(Schema schema, EvalNode partitionFilter) {
+    private @Nullable EvalNode partitionFilter;
+    public PartitionPathFilter(Schema schema, @Nullable EvalNode partitionFilter) {
       this.schema = schema;
       this.partitionFilter = partitionFilter;
-      partitionFilter.bind(null, schema);
+      if (this.partitionFilter != null) {
+        this.partitionFilter.bind(null, schema);
+      }
     }
 
     @Override
@@ -102,7 +105,11 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         return false;
       }
 
-      return partitionFilter.eval(tuple).isTrue();
+      if (partitionFilter != null) {
+        return partitionFilter.eval(tuple).isTrue();
+      } else {
+        return true;
+      }
     }
 
     @Override
@@ -305,16 +312,16 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return The array of path filter, accpeting all partition paths.
    */
   public static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
-    Column target;
+//    Column target;
     PathFilter [] filters = new PathFilter[partitionColumns.size()];
-    List<EvalNode> accumulatedFilters = Lists.newArrayList();
+//    List<EvalNode> accumulatedFilters = Lists.newArrayList();
     for (int i = 0; i < partitionColumns.size(); i++) { // loop from one to level
-      target = partitionColumns.getColumn(i);
-      accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
+//      target = partitionColumns.getColumn(i);
+//      accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
 
-      EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
-          accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
-      filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel);
+//      EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
+//          accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
+      filters[i] = new PartitionPathFilter(partitionColumns, null);
     }
     return filters;
   }

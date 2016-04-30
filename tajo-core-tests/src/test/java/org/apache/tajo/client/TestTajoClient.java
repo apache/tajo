@@ -675,7 +675,7 @@ public class TestTajoClient {
         count++;
       }
 
-      assertEquals(5, count);
+      assertEquals(6, count);
     } finally {
       client.closeQuery(queryId);
     }
@@ -729,7 +729,8 @@ public class TestTajoClient {
         "2|2|O\n" +
         "3|3|F\n" +
         "4||\\T\n" +
-        "5||\\T\n";
+        "5||\\T\n" +
+        "||\\T\n";
 
     String resultDatas = new String(buf, 0, readBytes);
 
@@ -770,7 +771,7 @@ public class TestTajoClient {
         return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
       }
     });
-    assertEquals(5, taskHistories.get(0).getTotalReadRows());
+    assertEquals(6, taskHistories.get(0).getTotalReadRows());
     assertEquals(1, taskHistories.get(0).getTotalWriteRows());
     assertEquals(1, taskHistories.get(1).getTotalReadRows());
     assertEquals(1, taskHistories.get(1).getTotalWriteRows());

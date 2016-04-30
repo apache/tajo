@@ -268,7 +268,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
   }
 
@@ -404,7 +404,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     res = executeString("select * from " + tableName + " where col2 = 2");
@@ -459,7 +459,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     if (nodeType == NodeType.INSERT) {
       res = testBase.execute(
-        "create table " + tableName + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
+        "create table " + tableName + " (col4 text) with ('text.null'='\\\\N') partition by column(col1 int4, col2 int4, col3 float8) ");
       res.close();
       TajoTestingCluster cluster = testBase.getTestingCluster();
       CatalogService catalog = cluster.getMaster().getCatalog();
@@ -468,7 +468,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeString("insert into " + tableName
         + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     } else {
-      res = executeString( "create table " + tableName + " (col4 text) "
+      res = executeString( "create table " + tableName + " (col4 text) with ('text.null'='\\\\N')"
         + " partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
     }
@@ -484,7 +484,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     FileSystem fs = FileSystem.get(conf);
     verifyDirectoriesForThreeColumns(fs, path, 1);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     res = executeString("select * from " + tableName + " where col2 = 2");
@@ -529,7 +529,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     verifyDirectoriesForThreeColumns(fs, path, 2);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     String expected = "N\n" +
@@ -541,7 +541,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "R\n" +
         "R\n" +
         "R\n" +
-        "R\n";
+        "R\n" +
+        "\\N\n" +
+        "\\N\n";
 
     String tableData = getTableFileContents(new Path(desc.getUri()));
     assertEquals(expected, tableData);
@@ -658,7 +660,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -710,7 +712,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -770,7 +772,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -868,7 +870,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -1002,7 +1004,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc("testinsertquery1", "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     if (nodeType == NodeType.INSERT) {
@@ -1016,7 +1018,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
     desc = catalog.getTableDesc("testinsertquery2", "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(6, desc.getStats().getNumRows().intValue());
     }
 
     executeString("DROP TABLE testinsertquery1.table1 PURGE").close();
@@ -1032,7 +1034,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
-        "create table " + tableName + " (col1 text) partition by column(col2 text) ");
+        "create table " + tableName + " (col1 text) with ('text.null'='\\\\N') partition by column(col2 text) ");
       res.close();
 
       assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
@@ -1040,7 +1042,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeString("insert overwrite into " + tableName + "(col1) select l_returnflag from lineitem");
 
     } else {
-      res = executeString("create table " + tableName + " (col1 text) partition by column(col2 text) " +
+      res = executeString("create table " + tableName + " (col1 text) with ('text.null'='\\\\N') partition by column(col2 text) " +
         " as select l_returnflag, null from lineitem");
     }
     res.close();
@@ -1279,7 +1281,11 @@ public class TestTablePartitions extends QueryTestCaseBase {
         if (i > 0) {
           partitionName.append("/");
         }
-        partitionName.append(partitionColumn).append("=").append(res.getString(partitionColumn));
+        String partitionValue = res.getString(partitionColumn);
+        if (partitionValue == null) {
+          partitionValue = StorageConstants.DEFAULT_PARTITION_NAME;
+        }
+        partitionName.append(partitionColumn).append("=").append(partitionValue);
       }
       partitionDescProto = catalog.getPartition(databaseName, tableName, partitionName.toString());
       assertNotNull(partitionDescProto);
@@ -1329,7 +1335,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       // partition. In previous Query and Stage, duplicated partitions were not deleted because they had been in List.
       // If you want to verify duplicated partitions, you need to use List instead of Set with DerbyStore.
       List<PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
-      assertEquals(2, partitions.size());
+      assertEquals(3, partitions.size());
 
       PartitionDescProto firstPartition = catalog.getPartition(DEFAULT_DATABASE_NAME, tableName, "key=N");
       assertNotNull(firstPartition);
@@ -1660,7 +1666,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "1,1,00:00:00\n" +
       "1,1,11:20:40\n" +
       "2,2,12:10:20\n" +
-      "3,3,00:00:00\n";
+      "3,3,00:00:00\n" +
+        "null,null,00:00:00\n";
 
     assertEquals(expectedResult, resultSetToString(res));
     res.close();
@@ -1732,7 +1739,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "1,1,36.0\n" +
       "2,2,38.0\n" +
       "3,2,45.0\n" +
-      "3,3,49.0\n";
+      "3,3,49.0\n" +
+        "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -1775,7 +1783,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     String result = resultSetToString(res);
     String expectedResult = "cnt\n" +
       "-------------------------------\n" +
-      "5\n";
+      "6\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -1786,7 +1794,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     fs.mkdirs(path);
     path = new Path(tableDesc.getUri().getPath(), "col1=a");
     fs.mkdirs(path);
-    assertEquals(8, fs.listStatus(path.getParent()).length);
 
     res = executeString("SELECT COUNT(*) AS cnt FROM " + externalTableName + " WHERE key > 40.0");
     result = resultSetToString(res);
@@ -1807,7 +1814,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "1,1,17.0\n" +
       "2,2,38.0\n" +
       "3,2,45.0\n" +
-      "3,3,49.0\n";
+      "3,3,49.0\n" +
+        "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -1815,7 +1823,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     result = resultSetToString(res);
     expectedResult = "cnt\n" +
       "-------------------------------\n" +
-      "3\n";
+      "4\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -1831,7 +1839,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "1,1,17.0\n" +
       "2,2,38.0\n" +
       "3,3,49.0\n" +
-      "3,2,45.0\n";
+      "3,2,45.0\n" +
+        "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -1871,7 +1880,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "N,1,1,36.0\n" +
       "N,2,2,38.0\n" +
       "R,3,2,45.0\n" +
-      "R,3,3,49.0\n";
+      "R,3,3,49.0\n" +
+        ",null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 

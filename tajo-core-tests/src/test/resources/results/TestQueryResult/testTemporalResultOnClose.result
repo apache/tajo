@@ -5,3 +5,4 @@ l_orderkey,l_partkey
 2,2
 3,2
 3,3
+null,null

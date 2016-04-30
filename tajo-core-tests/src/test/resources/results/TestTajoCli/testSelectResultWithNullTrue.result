@@ -5,4 +5,5 @@ c_custkey,  o_orderkey,  o_orderstatus
 3,  3,  F
 4,  testnull,  testnull
 5,  testnull,  testnull
-(5 rows, , 127 B selected)
+testnull,  testnull,  testnull
+(6 rows, , 143 B selected)
