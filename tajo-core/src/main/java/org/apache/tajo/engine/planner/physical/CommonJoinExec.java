@@ -96,11 +96,6 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
    * @return True if an input tuple is matched to the left join filter
    */
   protected boolean leftFiltered(Tuple left) {
-//    if (leftJoinFilter != null) {
-//      Datum result = leftJoinFilter.eval(left);
-//      return result.isNull() || !result.asBool();
-//    }
-//    return false;
     return leftJoinFilter != null && !leftJoinFilter.eval(left).isTrue();
   }
 
@@ -111,11 +106,6 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
    * @return True if an input tuple is matched to the right join filter
    */
   protected boolean rightFiltered(Tuple right) {
-//    if (rightJoinFilter != null) {
-//      Datum result = rightJoinFilter.eval(right);
-//      return result.isNull() || !result.asBool();
-//    }
-//    return false;
     return rightJoinFilter != null && !rightJoinFilter.eval(right).isTrue();
   }
 

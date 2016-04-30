@@ -166,7 +166,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
       KeyTuple keyTuple = keyProjector.project(tuple);
-      if (Arrays.stream(keyTuple.getValues()).noneMatch(Datum::isNull)) {
+      if (Arrays.stream(keyTuple.getValues()).noneMatch(Datum::isNull)) { // filter out null values
         TupleList newValue = map.get(keyTuple);
         if (newValue == null) {
           map.put(keyTuple, newValue = new TupleList());

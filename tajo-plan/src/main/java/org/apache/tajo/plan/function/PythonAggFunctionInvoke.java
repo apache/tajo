@@ -117,11 +117,7 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
     updateContextIfNecessary(context);
     // partial results are stored as json strings.
     String result = scriptEngine.getPartialResult(context);
-//    if (result.equals("-")) {
-//      return DatumFactory.createNullDatum();
-//    } else {
-      return DatumFactory.createText(result);
-//    }
+    return DatumFactory.createText(result);
   }
 
   @Override

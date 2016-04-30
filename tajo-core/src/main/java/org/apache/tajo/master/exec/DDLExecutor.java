@@ -601,14 +601,13 @@ public class DDLExecutor {
     // Get the array of path filter, accepting all partition paths.
     PathFilter[] filters = PartitionedTableRewriter.buildAllAcceptingPathFilters(partitionColumns);
 
-//     loop from one to the number of partition columns
+    // loop from one to the number of partition columns
     Path [] filteredPaths = toPathArray(fs.listStatus(tablePath, filters[0]));
 
-//     Get all file status matched to a ith level path filter.
+    // Get all file status matched to a ith level path filter.
     for (int i = 1; i < partitionColumns.size(); i++) {
       filteredPaths = toPathArray(fs.listStatus(filteredPaths, filters[i]));
     }
-//    Path[] filteredPaths = toPathArray(fs.listStatus(tablePath));
 
     // Find missing partitions from filesystem
     List<PartitionDescProto> existingPartitions = catalog.getPartitionsOfTable(databaseName, simpleTableName);

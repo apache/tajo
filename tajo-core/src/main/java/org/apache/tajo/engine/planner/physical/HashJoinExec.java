@@ -47,9 +47,7 @@ public class HashJoinExec extends CommonHashJoinExec<TupleList> {
     while (!context.isStopped() && !finished) {
       if (iterator != null && iterator.hasNext()) {
         frameTuple.setRight(iterator.next());
-//        if (!hasJoinQual || joinQual.eval(frameTuple).isTrue()) { // Null join keys should be filtered out here.
           return projector.eval(frameTuple);
-//        }
       }
 
       Tuple leftTuple = leftChild.next(); // it comes from a disk

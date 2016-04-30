@@ -22,13 +22,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionsByAlgebraProto;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.*;
@@ -46,7 +49,9 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private CatalogService catalog;
@@ -312,15 +317,8 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return The array of path filter, accpeting all partition paths.
    */
   public static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
-//    Column target;
     PathFilter [] filters = new PathFilter[partitionColumns.size()];
-//    List<EvalNode> accumulatedFilters = Lists.newArrayList();
     for (int i = 0; i < partitionColumns.size(); i++) { // loop from one to level
-//      target = partitionColumns.getColumn(i);
-//      accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
-
-//      EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
-//          accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
       filters[i] = new PartitionPathFilter(partitionColumns, null);
     }
     return filters;
