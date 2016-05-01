@@ -209,7 +209,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         //////////////////////////////////////////////////////////////////////
 
         // Check null values
-        Tuple leftKey = leftKeyExtractor.project(leftTuple);
+        Tuple leftKey = rightKeyExtractor.project(rightTuple);
         boolean containNull = false;
         for (int i = 0; i < leftKey.size(); i++) {
           if (leftKey.isBlankOrNull(i)) {

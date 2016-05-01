@@ -6,3 +6,5 @@ l_orderkey,c_custkey,c_name,c_nationkey,n_name
 3,3,Customer#000000003,1,CANADA
 3,3,Customer#000000003,1,CANADA
 null,null,null,null,null
+null,null,null,null,null
+null,null,null,null,null

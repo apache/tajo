@@ -6,3 +6,5 @@ c_custkey,o_orderkey,o_orderstatus,o_orderdate
 4,null,null,null
 5,null,null,null
 null,null,null,null
+null,null,null,null
+null,null,null,null

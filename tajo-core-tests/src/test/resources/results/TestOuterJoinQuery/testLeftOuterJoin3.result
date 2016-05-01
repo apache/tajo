@@ -8,3 +8,5 @@ c_custkey,c_name,c_nationkey,l_orderkey,o_orderdate,o_orderdate,n_name,p_name
 4,Customer#000000004,4,null,null,null,null,null
 5,Customer#000000005,3,null,null,null,null,null
 null,null,null,null,null,null,null,null
+null,null,null,null,null,null,null,null
+null,null,null,null,null,null,null,null
