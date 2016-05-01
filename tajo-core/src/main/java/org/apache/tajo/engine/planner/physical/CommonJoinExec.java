@@ -20,17 +20,16 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.expr.AlgebraicUtil;
-import org.apache.tajo.plan.expr.BinaryEval;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
@@ -39,7 +38,6 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 
 
@@ -58,6 +56,17 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
 
   protected final Schema leftSchema;
   protected final Schema rightSchema;
+
+  protected final KeyProjector leftKeyExtractor;
+  protected final KeyProjector rightKeyExtractor;
+
+  protected final List<Column[]> joinKeyPairs;
+
+  protected final int rightNumCols;
+  protected final int leftNumCols;
+
+  protected final Column[] leftKeyList;
+  protected final Column[] rightKeyList;
 
   protected final FrameTuple frameTuple;
 
@@ -83,6 +92,46 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
 
     // for join
     this.frameTuple = new FrameTuple();
+
+    switch (plan.getJoinType()) {
+
+      case CROSS:
+        if (hasJoinQual) {
+          throw new TajoInternalError("Cross join cannot evaluate join conditions.");
+        } else {
+          joinKeyPairs = null;
+          rightNumCols = leftNumCols = -1;
+          leftKeyList = rightKeyList = null;
+          leftKeyExtractor = null;
+          rightKeyExtractor = null;
+        }
+        break;
+
+      case INNER:
+        // Other join types except INNER join can have empty join condition.
+        if (!hasJoinQual) {
+          throw new TajoInternalError("Inner join must have any join conditions.");
+        }
+      default:
+        // HashJoin only can manage equi join key pairs.
+        this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
+            inner.getSchema(), false);
+
+        leftKeyList = new Column[joinKeyPairs.size()];
+        rightKeyList = new Column[joinKeyPairs.size()];
+
+        for (int i = 0; i < joinKeyPairs.size(); i++) {
+          leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
+          rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
+        }
+
+        leftNumCols = outer.getSchema().size();
+        rightNumCols = inner.getSchema().size();
+
+        leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
+        rightKeyExtractor = new KeyProjector(rightSchema, rightKeyList);
+        break;
+    }
   }
 
   public JoinNode getPlan() {

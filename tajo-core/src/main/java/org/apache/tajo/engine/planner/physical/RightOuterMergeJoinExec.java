@@ -208,6 +208,28 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         // END MOVE FORWARDING STAGE
         //////////////////////////////////////////////////////////////////////
 
+        // Check null values
+        Tuple leftKey = leftKeyExtractor.project(leftTuple);
+        boolean containNull = false;
+        for (int i = 0; i < leftKey.size(); i++) {
+          if (leftKey.isBlankOrNull(i)) {
+            containNull = true;
+            break;
+          }
+        }
+
+        if (containNull) {
+          frameTuple.set(nullPaddedTuple, rightTuple);
+          outTuple = projector.eval(frameTuple);
+          leftTuple = leftChild.next();
+          rightTuple = rightChild.next();
+
+          if (leftTuple == null || rightTuple == null) {
+            end = true;
+          }
+          return outTuple;
+        }
+
         // once a match is found, retain all tuples with this key in tuple slots on each side
         if(!end) {
           endInPopulationStage = false;
