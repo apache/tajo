@@ -6,3 +6,5 @@ l_orderkey,shipmode_first,linenumber_first,suppkey_first,shipdate_first,commitda
 3,AIR,1,1798,1993-11-09,1993-12-20 00:00:00,46796.47,0.06
 3,AIR,1,1798,1993-11-09,1993-12-20 00:00:00,46796.47,0.06
 null,null,null,null,null,null,null,null
+null,null,null,null,null,null,null,null
+null,null,null,null,null,null,null,null

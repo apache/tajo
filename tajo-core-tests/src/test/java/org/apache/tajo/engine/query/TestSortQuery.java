@@ -226,7 +226,7 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testTopkWithJson() throws Exception {
-    // select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3;
+    // select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 5;
     ResultSet res = executeJsonQuery();
     assertResultSet(res);
     cleanupQuery(res);

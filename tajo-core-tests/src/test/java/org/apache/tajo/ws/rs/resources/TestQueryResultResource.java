@@ -226,7 +226,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
       }
     }
 
-    assertEquals(6, tupleList.size());
+    assertEquals(8, tupleList.size());
 
     for (int i = 0; i < 5; i++) {
       assertTrue(tupleList.get(i).getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
@@ -268,7 +268,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertTrue(eos);
     assertEquals(0, offset);
-    assertEquals(6, count);
+    assertEquals(8, count);
 
 
     DataInputStream queryResultSetInputStream =
@@ -296,7 +296,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     }
 
     assertEquals(contentLength, receviedSize);
-    assertEquals(6, tupleList.size());
+    assertEquals(8, tupleList.size());
 
     for (int i = 0; i < 5; i++) {
       assertTrue(tupleList.get(i).getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
@@ -338,7 +338,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertTrue(eos);
     assertEquals(0, offset);
-    assertEquals(6, count);
+    assertEquals(8, count);
     assertTrue(length > 0);
 
     DataInputStream queryResultSetInputStream =
@@ -355,7 +355,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     } catch (EOFException eof) {
     }
 
-    assertEquals(6, count);
+    assertEquals(8, count);
   }
 
   @Test
@@ -392,7 +392,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertTrue(eos);
     assertEquals(0, offset);
-    assertEquals(6, count);
+    assertEquals(8, count);
     assertTrue(length > 0);
 
     DataInputStream queryResultSetInputStream =
@@ -409,6 +409,6 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     } catch (EOFException eof) {
     }
 
-    assertEquals(6, count);
+    assertEquals(8, count);
   }
 }

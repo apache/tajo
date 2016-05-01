@@ -58,9 +58,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       res = executeQuery();
 
       // tpch/lineitem.tbl
-      long[] expectedNumRows = new long[]{6, 3, 3, 3};
-      long[] expectedNumBytes = new long[]{647, 26, 26, 68};
-      long[] expectedReadBytes = new long[]{647, 0, 26, 0};
+      long[] expectedNumRows = new long[]{8, 3, 3, 3};
+      long[] expectedNumBytes = new long[]{737, 26, 26, 68};
+      long[] expectedReadBytes = new long[]{737, 0, 26, 0};
       QueryId queryId = getQueryId(res);
 
       assertStatus(queryId, 2, expectedNumRows, expectedNumBytes, expectedReadBytes);
@@ -77,9 +77,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       res = executeQuery();
 
       // tpch/lineitem.tbl
-      long[] expectedNumRows = new long[]{6, 3, 3, 3, 3, 3};
-      long[] expectedNumBytes = new long[]{647, 171, 171, 147, 147, 288};
-      long[] expectedReadBytes = new long[]{647, 0, 288, 0, 147, 0};
+      long[] expectedNumRows = new long[]{8, 3, 3, 3, 3, 3};
+      long[] expectedNumBytes = new long[]{737, 171, 171, 147, 147, 288};
+      long[] expectedReadBytes = new long[]{737, 0, 288, 0, 147, 0};
 
       QueryId queryId = getQueryId(res);
       assertStatus(queryId, 3, expectedNumRows, expectedNumBytes, expectedReadBytes);
@@ -106,9 +106,9 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       res = executeQuery();
 
       // in/out * stage(4)
-      long[] expectedNumRows   = new long[]{6,  6,  2, 2,  2,   2,  2,  2};
-      long[] expectedNumBytes  = new long[]{22, 82, 8, 34, 116, 34, 34, 64};
-      long[] expectedReadBytes = new long[]{22, 0,  8, 0,  64,  0,  34, 0};
+      long[] expectedNumRows   = new long[]{8,  8,  2, 2,  2,   2,  2,  2};
+      long[] expectedNumBytes  = new long[]{26, 96, 8, 34, 130, 34, 34, 64};
+      long[] expectedReadBytes = new long[]{26, 0,  8, 0,  64,  0,  34, 0};
 
       QueryId queryId = getQueryId(res);
       assertStatus(queryId, 4, expectedNumRows, expectedNumBytes, expectedReadBytes);

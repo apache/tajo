@@ -185,6 +185,8 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
           "2,null\n" +
           "3,null\n" +
           "3,null\n" +
+          "null,null\n" +
+          "null,null\n" +
           "null,null\n";
       assertEquals(expected, resultSetToString(res));
       cleanupQuery(res);

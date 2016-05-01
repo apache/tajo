@@ -6,3 +6,5 @@ l_orderkey,l_quantity,?windowfunction
 3,45.0,94.0
 3,49.0,94.0
 null,null,null
+null,null,null
+null,null,null

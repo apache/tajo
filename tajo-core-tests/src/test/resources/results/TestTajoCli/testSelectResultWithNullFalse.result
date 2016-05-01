@@ -6,4 +6,9 @@ c_custkey,  o_orderkey,  o_orderstatus
 4,  testnull,  testnull
 5,  testnull,  testnull
 testnull,  testnull,  testnull
-(6 rows, , 143 B selected)
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+(11 rows, , 223 B selected)

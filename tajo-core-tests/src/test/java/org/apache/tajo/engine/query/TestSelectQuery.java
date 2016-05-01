@@ -380,7 +380,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "orderkeys"));
     TableDesc orderKeys = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "orderkeys");
     if (!cluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, orderKeys.getStats().getNumRows().intValue());
+      assertEquals(8, orderKeys.getStats().getNumRows().intValue());
     }
   }
 

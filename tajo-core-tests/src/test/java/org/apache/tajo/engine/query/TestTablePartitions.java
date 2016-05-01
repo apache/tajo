@@ -268,7 +268,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
   }
 
@@ -404,7 +404,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     res = executeString("select * from " + tableName + " where col2 = 2");
@@ -484,7 +484,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     FileSystem fs = FileSystem.get(conf);
     verifyDirectoriesForThreeColumns(fs, path, 1);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     res = executeString("select * from " + tableName + " where col2 = 2");
@@ -529,7 +529,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     verifyDirectoriesForThreeColumns(fs, path, 2);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     String expected = "N\n" +
@@ -542,6 +542,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "R\n" +
         "R\n" +
         "R\n" +
+        "\\N\n" +
+        "\\N\n" +
+        "\\N\n" +
+        "\\N\n" +
         "\\N\n" +
         "\\N\n";
 
@@ -660,7 +664,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -712,7 +716,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -772,7 +776,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -870,7 +874,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     FileSystem fs = FileSystem.get(conf);
@@ -1004,7 +1008,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc("testinsertquery1", "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     if (nodeType == NodeType.INSERT) {
@@ -1018,7 +1022,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
     desc = catalog.getTableDesc("testinsertquery2", "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(6, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     executeString("DROP TABLE testinsertquery1.table1 PURGE").close();
@@ -1667,6 +1671,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "1,1,11:20:40\n" +
       "2,2,12:10:20\n" +
       "3,3,00:00:00\n" +
+        "null,null,00:00:00\n" +
+        "null,null,00:00:00\n" +
         "null,null,00:00:00\n";
 
     assertEquals(expectedResult, resultSetToString(res));
@@ -1740,6 +1746,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "2,2,38.0\n" +
       "3,2,45.0\n" +
       "3,3,49.0\n" +
+        "null,null,null\n" +
+        "null,null,null\n" +
         "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
@@ -1783,7 +1791,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     String result = resultSetToString(res);
     String expectedResult = "cnt\n" +
       "-------------------------------\n" +
-      "6\n";
+      "8\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -1815,6 +1823,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "2,2,38.0\n" +
       "3,2,45.0\n" +
       "3,3,49.0\n" +
+        "null,null,null\n" +
+        "null,null,null\n" +
         "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
@@ -1823,7 +1833,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     result = resultSetToString(res);
     expectedResult = "cnt\n" +
       "-------------------------------\n" +
-      "4\n";
+      "6\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -1840,6 +1850,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "2,2,38.0\n" +
       "3,3,49.0\n" +
       "3,2,45.0\n" +
+        "null,null,null\n" +
+        "null,null,null\n" +
         "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
@@ -1881,6 +1893,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "N,2,2,38.0\n" +
       "R,3,2,45.0\n" +
       "R,3,3,49.0\n" +
+        ",null,null,null\n" +
+        ",null,null,null\n" +
         ",null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);

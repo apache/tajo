@@ -80,7 +80,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         Map<String, Integer> result = Maps.newHashMap();
         result.put("NO", 3);
         result.put("RF", 2);
-        result.put(null, 1);
+        result.put(null, 3);
 
         assertNotNull(res);
         assertTrue(res.next());
@@ -385,7 +385,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
-            result.put(null, 1);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());
@@ -448,7 +448,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
-            result.put(null, 1);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());

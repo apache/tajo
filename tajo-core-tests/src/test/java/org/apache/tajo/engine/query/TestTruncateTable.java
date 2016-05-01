@@ -44,7 +44,7 @@ public class TestTruncateTable extends QueryTestCaseBase {
       while (res.next()) {
         numRows++;
       }
-      assertEquals(6, numRows);
+      assertEquals(8, numRows);
       res.close();
 
       executeString("truncate table truncate_table1");
