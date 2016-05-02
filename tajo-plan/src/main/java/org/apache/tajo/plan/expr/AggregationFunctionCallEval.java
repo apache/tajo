@@ -21,12 +21,13 @@ package org.apache.tajo.plan.expr;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.AggFunctionInvoke;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -106,11 +107,11 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   @Override
-  public DataType getValueType() {
+  public Type getValueType() {
     if (!lastPhase) {
-      return functionInvoke.getPartialResultType();
+      return TypeConverter.convert(functionInvoke.getPartialResultType());
     } else {
-      return funcDesc.getReturnType();
+      return TypeConverter.convert(funcDesc.getReturnType());
     }
   }
 

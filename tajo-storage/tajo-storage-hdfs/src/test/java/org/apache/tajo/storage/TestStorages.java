@@ -48,7 +48,6 @@ import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.JavaResourceUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -193,7 +192,7 @@ public class TestStorages {
           .add("age", Type.INT8)
           .build();
 
-      TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+      TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
       Path tablePath = new Path(testDir, "Splitable.data");
       FileTablespace sm = TablespaceManager.getLocalFs();
       Appender appender = sm.getAppender(meta, schema, tablePath);
@@ -249,8 +248,7 @@ public class TestStorages {
         .add("score", Type.FLOAT4)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
@@ -293,7 +291,7 @@ public class TestStorages {
           .add("age", Type.INT8)
           .build();
 
-      TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+      TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
       Path tablePath = new Path(testDir, "Splitable.data");
       FileTablespace sm = TablespaceManager.getLocalFs();
       Appender appender = sm.getAppender(meta, schema, tablePath);
@@ -349,8 +347,7 @@ public class TestStorages {
         .add("score", Type.FLOAT4)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
@@ -428,9 +425,7 @@ public class TestStorages {
 
     Schema schema = schemaBld.build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       String path = JavaResourceUtil.getResourceURL("dataset/testVariousTypes.avsc").toString();
       meta.putProperty(StorageConstants.AVRO_SCHEMA_URL, path);
@@ -506,9 +501,7 @@ public class TestStorages {
 
     Schema schema = schemaBld.build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty(StorageConstants.TEXT_NULL, "\\\\N");
     meta.putProperty(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putProperty(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
@@ -603,9 +596,7 @@ public class TestStorages {
 
     Schema schema = schemaBld.build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty(StorageConstants.TEXT_NULL, "\\\\N");
     meta.putProperty(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putProperty(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
@@ -708,8 +699,7 @@ public class TestStorages {
         .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testRCFileTextSerializeDeserialize.data");
@@ -774,8 +764,7 @@ public class TestStorages {
         .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testRCFileBinarySerializeDeserialize.data");
@@ -839,8 +828,7 @@ public class TestStorages {
         .add("col10", Type.INET4)
         .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName())).build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testSequenceFileTextSerializeDeserialize.data");
@@ -908,8 +896,7 @@ public class TestStorages {
         .add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()))
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
@@ -973,8 +960,8 @@ public class TestStorages {
         schema.add("col" + index++, Type.TIME);
       }
 
-      KeyValueSet options = new KeyValueSet();
-      TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+      TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
+      assertTrue(meta.containsProperty(StorageConstants.TIMEZONE));
 
       Path tablePath = new Path(testDir, "testTime.data");
       FileTablespace sm = TablespaceManager.getLocalFs();
@@ -1021,7 +1008,7 @@ public class TestStorages {
         .add("comment", Type.TEXT)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     Path tablePath = new Path(testDir, "Seekable.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
     FileAppender appender = (FileAppender) sm.getAppender(meta, schema, tablePath);
@@ -1099,8 +1086,7 @@ public class TestStorages {
         .add("col5", Type.INT8)
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
     }
@@ -1165,9 +1151,7 @@ public class TestStorages {
         .add("col3", Type.INT2)
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -1231,9 +1215,7 @@ public class TestStorages {
         .add("col1", Type.CHAR)
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "test_dataformat_oversize.data");
     FileTablespace sm = TablespaceManager.getLocalFs();
@@ -1273,8 +1255,7 @@ public class TestStorages {
 
     Schema schema = SchemaBuilder.builder().add("col1", Type.TEXT).build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     FileTablespace sm = TablespaceManager.getLocalFs();
     Path tablePath = new Path(testDir, "testTextHandling.data");
@@ -1317,8 +1298,7 @@ public class TestStorages {
         .add("score", Type.FLOAT4)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);
@@ -1355,8 +1335,7 @@ public class TestStorages {
         .add("col5", Type.INT8)
         .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
     }
@@ -1402,8 +1381,7 @@ public class TestStorages {
         .add("score", Type.FLOAT4)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.AVRO)) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL,
           TEST_PROJECTION_AVRO_SCHEMA);

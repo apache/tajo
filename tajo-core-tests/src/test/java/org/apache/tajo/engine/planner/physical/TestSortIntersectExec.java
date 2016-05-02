@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -91,7 +92,7 @@ public class TestSortIntersectExec {
         .add("deptname", TajoDataTypes.Type.TEXT)
         .build();
 
-    TableMeta employeeMeta1 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta1 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath1 = new Path(testDir, "employee1.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).
         getAppender(employeeMeta1, employeeSchema1, employeePath1);
@@ -119,7 +120,7 @@ public class TestSortIntersectExec {
         .add("deptname", TajoDataTypes.Type.TEXT)
         .build();
 
-    TableMeta employeeMeta2 = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta2 = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath2 = new Path(testDir, "employee2.csv");
     Appender appender2 = ((FileTablespace) TablespaceManager.getLocalFs()).
         getAppender(employeeMeta2, employeeSchema2, employeePath2);

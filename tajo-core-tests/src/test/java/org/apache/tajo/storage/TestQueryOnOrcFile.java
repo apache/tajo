@@ -47,7 +47,6 @@ public class TestQueryOnOrcFile extends QueryTestCaseBase {
     executeString("SET TIME ZONE 'GMT+9'");
     ResultSet res = executeQuery();
     assertResultSet(res);
-    executeString("SET TIME ZONE 'GMT'");
     cleanupQuery(res);
   }
 
@@ -56,7 +55,6 @@ public class TestQueryOnOrcFile extends QueryTestCaseBase {
     executeString("SET TIME ZONE 'GMT+1'");
     ResultSet res = executeString("select * from timezoned_orc");
     assertResultSet(res);
-    executeString("SET TIME ZONE 'GMT'");
     cleanupQuery(res);
   }
 
@@ -73,7 +71,6 @@ public class TestQueryOnOrcFile extends QueryTestCaseBase {
     executeString("\\set TIMEZONE 'GMT-5'");
     ResultSet res = executeString("select * from timezoned_orc");
     assertResultSet(res);
-    executeString("SET TIME ZONE 'GMT'");
     cleanupQuery(res);
   }
 }

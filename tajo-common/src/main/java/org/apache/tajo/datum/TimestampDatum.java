@@ -23,7 +23,6 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
-import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -133,7 +132,7 @@ public class TimestampDatum extends Datum {
   public static String asChars(TimeMeta tm, TimeZone timeZone, boolean includeTimeZone) {
     DateTimeUtil.toUserTimezone(tm, timeZone);
     if (includeTimeZone) {
-      tm.timeZone = timeZone.getRawOffset() / 1000;
+      tm.timeZone = tm.getZonedOffset(DateTimeUtil.toJulianTimestamp(tm), timeZone) / 1000;
     }
     return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
   }
@@ -150,13 +149,7 @@ public class TimestampDatum extends Datum {
   @Override
   public String asChars() {
     TimeMeta tm = asTimeMeta();
-    return DateTimeUtil.encodeDateTime(tm, DateStyle.ISO_DATES);
-  }
-
-  public String toChars(String format) {
-    TimeMeta tm = asTimeMeta();
-
-    return DateTimeFormat.to_char(tm, format);
+    return asChars(tm, TimeZone.getDefault(), true);
   }
 
   @Override
@@ -190,11 +183,6 @@ public class TimestampDatum extends Datum {
     if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       TimestampDatum another = (TimestampDatum) datum;
       return Longs.compare(timestamp, another.timestamp);
-    } else if (datum.type() == TajoDataTypes.Type.DATE) {
-      TimeMeta myMeta, otherMeta;
-      myMeta = asTimeMeta();
-      otherMeta = datum.asTimeMeta();
-      return myMeta.compareTo(otherMeta);
     } else if (datum.isNull()) {
       return -1;
     } else {
@@ -214,28 +202,39 @@ public class TimestampDatum extends Datum {
 
   @Override
   public Datum plus(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.INTERVAL) {
-      IntervalDatum interval = (IntervalDatum)datum;
+    switch (datum.type()) {
+    case INTERVAL:
+      IntervalDatum interval = (IntervalDatum) datum;
       TimeMeta tm = asTimeMeta();
       tm.plusInterval(interval.months, interval.milliseconds);
       return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-    } else {
-      throw new InvalidOperationException(datum.type());
+    case TIME:
+      TimeMeta tm1 = asTimeMeta();
+      TimeMeta tm2 = datum.asTimeMeta();
+      tm1.plusTime(DateTimeUtil.toTime(tm2));
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
+    default:
+      throw new InvalidOperationException("operator does not exist: " + type() + " + " + datum.type());
     }
   }
 
   @Override
   public Datum minus(Datum datum) {
-    switch(datum.type()) {
-      case INTERVAL:
-        IntervalDatum interval = (IntervalDatum)datum;
-        TimeMeta tm = asTimeMeta();
-        tm.plusInterval(-interval.months, -interval.milliseconds);
-        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-      case TIMESTAMP:
-        return new IntervalDatum((timestamp - ((TimestampDatum)datum).timestamp) / 1000);
-      default:
-        throw new InvalidOperationException(datum.type());
+    switch (datum.type()) {
+    case INTERVAL:
+      IntervalDatum interval = (IntervalDatum) datum;
+      TimeMeta tm = asTimeMeta();
+      tm.plusInterval(-interval.months, -interval.milliseconds);
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+    case TIMESTAMP:
+      return new IntervalDatum((timestamp - ((TimestampDatum) datum).timestamp) / 1000);
+    case TIME:
+      TimeMeta tm1 = asTimeMeta();
+      TimeMeta tm2 = datum.asTimeMeta();
+      tm1.plusTime(0 - DateTimeUtil.toTime(tm2));
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
+    default:
+      throw new InvalidOperationException("operator does not exist: " + type() + " - " + datum.type());
     }
   }
 
