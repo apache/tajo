@@ -74,6 +74,19 @@ public class TestHiveFunctions extends ExprTestBase {
     assertEquals(2, desc.getParamTypes().length);
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[0].getType());
     assertEquals(TajoDataTypes.Type.TEXT, desc.getParamTypes()[1].getType());
+
+    // multiple signatures
+    // my_substr has two types, (Text, IntWritable) and (Text, IntWritable, IntWritable)
+    desc = catService.getFunction("my_substr", CatalogProtos.FunctionType.UDF,
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT), CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4),
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4));
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
+    assertEquals(3, desc.getParamTypes().length);
+
+    desc = catService.getFunction("my_substr", CatalogProtos.FunctionType.UDF,
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT), CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4));
+    assertEquals(TajoDataTypes.Type.TEXT, desc.getReturnType().getType());
+    assertEquals(2, desc.getParamTypes().length);
   }
 
   @Test
@@ -81,5 +94,9 @@ public class TestHiveFunctions extends ExprTestBase {
     testSimpleEval("select my_upper(null)", new String [] {"NULL"});
     testSimpleEval("select my_upper('abcd')", new String [] {"ABCD"});
     testSimpleEval("select my_divide(1,2)", new String [] {"0.5"});
+
+    // my_substr() uses 1-based index
+    testSimpleEval("select my_substr('abcde', 3)", new String [] {"cde"});
+    testSimpleEval("select my_substr('abcde', 1, 2)", new String [] {"ab"});
   }
 }

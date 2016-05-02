@@ -84,6 +84,10 @@ public class HiveFunctionInvoke extends FunctionInvoke implements Cloneable {
   private boolean checkParamTypes(Class [] writableParams, TajoDataTypes.DataType [] tajoParams) {
     int i = 0;
 
+    if (writableParams.length != tajoParams.length) {
+      return false;
+    }
+
     for (Class writable: writableParams) {
       try {
         if (!WritableTypeConverter.convertWritableToTajoType(writable).equals(tajoParams[i++])) {
