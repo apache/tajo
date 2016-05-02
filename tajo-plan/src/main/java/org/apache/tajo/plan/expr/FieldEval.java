@@ -56,10 +56,10 @@ public class FieldEval extends EvalNode implements Cloneable {
     super.bind(evalContext, schema);
     // TODO - column namespace should be improved to simplify name handling and resolving.
 
-    fieldId = schema.getColumnId(field.name().raw());
+    fieldId = schema.getColumnId(field.name().interned());
 
     if (fieldId == -1) { // fallback
-      fieldId = schema.getColumnIdByName(field.name().raw());
+      fieldId = schema.getColumnIdByName(field.name().interned());
     }
 
     if (fieldId == -1) {
@@ -95,11 +95,11 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 	
 	public String getQualifier() {
-	  return IdentifierUtil.extractQualifier(field.name().raw());
+	  return IdentifierUtil.extractQualifier(field.name().interned());
 	}
 	
 	public String getColumnName() {
-    return IdentifierUtil.extractSimpleName(field.name().raw());
+    return IdentifierUtil.extractSimpleName(field.name().interned());
 	}
 	
 	public void replaceColumnRef(String columnName) {
@@ -108,7 +108,7 @@ public class FieldEval extends EvalNode implements Cloneable {
 
 	@Override
 	public String getName() {
-		return this.field.name().raw();
+		return this.field.name().interned();
 	}
 
 	public String toString() {

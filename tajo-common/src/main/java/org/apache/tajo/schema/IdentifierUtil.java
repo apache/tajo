@@ -19,12 +19,19 @@
 package org.apache.tajo.schema;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.schema.IdentifierPolicy.IdentifierCase;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
+
+import static org.apache.tajo.schema.Identifier._;
+import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
+import static org.apache.tajo.schema.QualifiedIdentifier.$;
 
 /**
  * Util methods for Identifiers
@@ -59,6 +66,38 @@ public class IdentifierUtil {
       "WHEN", "WHERE", "WINDOW", "WITH"
   };
 
+  public static QualifiedIdentifier makeIdentifier(String raw, IdentifierPolicy policy) {
+    if (raw == null || raw.equals("")) {
+      return $(raw);
+    }
+
+    final String [] splitted = raw.split(IDENTIFIER_DELIMITER_REGEXP);
+    final ImmutableList.Builder<Identifier> builder = ImmutableList.builder();
+
+    for (String part : splitted) {
+      boolean quoted = isDelimited(part, policy);
+      if (quoted) {
+        builder.add(_(stripQuote(part), true));
+      } else {
+        builder.add(internIdentifierPart(part, policy));
+      }
+    }
+    return $(builder.build());
+  }
+
+  public static Identifier internIdentifierPart(String rawPart, IdentifierPolicy policy) {
+    IdentifierCase unquotedIdentifierCase = policy.storesUnquotedIdentifierAs();
+    final String interned;
+    if (unquotedIdentifierCase == IdentifierCase.LowerCase) {
+      interned = rawPart.toLowerCase(Locale.ENGLISH);
+    } else if (unquotedIdentifierCase == IdentifierCase.UpperCase) {
+      interned = rawPart.toUpperCase(Locale.ENGLISH);
+    } else {
+      interned = rawPart;
+    }
+
+    return _(interned, false);
+  }
 
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
@@ -142,8 +181,8 @@ public class IdentifierUtil {
     }
   }
 
-  public static boolean isShouldBeQuoted(String columnName) {
-    for (char character : columnName.toCharArray()) {
+  public static boolean isShouldBeQuoted(String interned) {
+    for (char character : interned.toCharArray()) {
       if (Character.isUpperCase(character)) {
         return true;
       }
@@ -152,7 +191,7 @@ public class IdentifierUtil {
         return true;
       }
 
-      if (RESERVED_KEYWORDS_SET.contains(columnName.toUpperCase())) {
+      if (RESERVED_KEYWORDS_SET.contains(interned.toUpperCase())) {
         return true;
       }
     }
@@ -160,22 +199,27 @@ public class IdentifierUtil {
     return false;
   }
 
-  public static String stripQuote(String str) {
-    return str.substring(1, str.length() - 1);
+  public static String stripQuote(String raw) {
+    return raw.substring(1, raw.length() - 1);
   }
 
-  public static boolean isDelimited(String identifier) {
-    boolean openQuote = identifier.charAt(0) == '"';
-    boolean closeQuote = identifier.charAt(identifier.length() - 1) == '"';
+  public static boolean isDelimited(String raw) {
+    return isDelimited(raw, DefaultPolicy());
+  }
+
+  public static boolean isDelimited(String raw, IdentifierPolicy policy) {
+    char quoteString = policy.getIdentifierQuoteString();
+    boolean openQuote = raw.charAt(0) == quoteString;
+    boolean closeQuote = raw.charAt(raw.length() - 1) == quoteString;
 
     // if at least one quote mark exists, the identifier must be grater than equal to 2 characters,
-    if (openQuote ^ closeQuote && identifier.length() < 2) {
-      throw new IllegalArgumentException("Invalid Identifier: " + identifier);
+    if (openQuote ^ closeQuote && raw.length() < 2) {
+      throw new IllegalArgumentException("Invalid Identifier: " + raw);
     }
 
     // does not allow the empty identifier (''),
-    if (openQuote && closeQuote && identifier.length() == 2) {
-      throw new IllegalArgumentException("zero-length delimited identifier: " + identifier);
+    if (openQuote && closeQuote && raw.length() == 2) {
+      throw new IllegalArgumentException("zero-length delimited identifier: " + raw);
     }
 
     // Ensure the quote open and close

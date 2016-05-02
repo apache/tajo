@@ -33,7 +33,7 @@ public class Field implements Cloneable {
   protected final Type type;
   protected final QualifiedIdentifier name;
 
-  public Field(Type type, QualifiedIdentifier name) {
+  public Field(QualifiedIdentifier name, Type type) {
     this.type = type;
     this.name = name;
   }
@@ -43,16 +43,16 @@ public class Field implements Cloneable {
   }
 
   public static Field Record(QualifiedIdentifier name, Collection<Field> fields) {
-    return new Field(Type.Struct(fields), name);
+    return new Field(name, Type.Record(fields));
   }
 
   @VisibleForTesting
   public static Field Field(String name, Type type) {
-    return new Field(type, QualifiedIdentifier.$(name));
+    return new Field(QualifiedIdentifier.$(name), type);
   }
 
   public static Field Field(QualifiedIdentifier name, Type type) {
-    return new Field(type, name);
+    return new Field(name, type);
   }
 
   public QualifiedIdentifier name() {

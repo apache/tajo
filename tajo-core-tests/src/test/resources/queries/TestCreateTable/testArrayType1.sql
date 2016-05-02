@@ -1,1 +1,1 @@
-CREATE TABLE array_table1 (vec array<double>);
+CREATE TABLE d11.array_table1 (vec array<double>);

@@ -22,13 +22,20 @@ import org.apache.tajo.schema.IdentifierPolicy.IdentifierCase;
 
 import java.util.Objects;
 
+import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
+
 /**
- * Identifier Element
+ * Represents an identifier part
  */
 public class Identifier {
   private String name;
   private boolean quoted;
 
+  /**
+   * Identifier constructor
+   * @param name Identifier part string
+   * @param quoted quoted or not
+   */
   private Identifier(String name, boolean quoted) {
     this.name = name;
     this.quoted = quoted;
@@ -42,7 +49,12 @@ public class Identifier {
     return new Identifier(name, quoted);
   }
 
-  public String displayString(IdentifierPolicy policy) {
+  /**
+   * Raw string for an identifier, which is equivalent to an identifier directly used in SQL statements.
+   * @param policy IdentifierPolicy
+   * @return Raw string
+   */
+  public String raw(IdentifierPolicy policy) {
     StringBuilder sb = new StringBuilder();
     if (quoted) {
       appendByCase(sb, policy.storesQuotedIdentifierAs());
@@ -56,11 +68,11 @@ public class Identifier {
   }
 
   /**
-   * Raw string of an identifier
-   * @param policy Identifier Policy
-   * @return raw string
+   * Interned string of an identifier
+   * @param policy IdentifierPolicy
+   * @return interned string
    */
-  public String raw(IdentifierPolicy policy) {
+  public String interned(IdentifierPolicy policy) {
     StringBuilder sb = new StringBuilder();
     if (quoted) {
       appendByCase(sb, policy.storesQuotedIdentifierAs());
@@ -87,7 +99,7 @@ public class Identifier {
 
   @Override
   public String toString() {
-    return displayString(IdentifierPolicy.DefaultPolicy());
+    return raw(DefaultPolicy());
   }
 
   public int hashCode() {

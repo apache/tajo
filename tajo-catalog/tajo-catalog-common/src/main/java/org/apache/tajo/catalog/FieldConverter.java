@@ -21,14 +21,12 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Function;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.schema.Field;
 import org.apache.tajo.schema.Identifier;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.schema.QualifiedIdentifier;
-import org.apache.tajo.type.Record;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -47,29 +45,13 @@ public class FieldConverter {
   }
 
   public static Field convert(Column column) {
-    if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
-
-      if (column.getTypeDesc().getNestedSchema() == null) {
-        throw new TajoRuntimeException(new NotImplementedException("record type projection"));
-      }
+    if (column.type.isStruct() && column.getTypeDesc().getNestedSchema() == null) {
+      throw new TajoRuntimeException(new NotImplementedException("record type projection"));
     }
-
-    return new Field(TypeConverter.convert(column.getTypeDesc()), toQualifiedIdentifier(column.getQualifiedName()));
+    return new Field(toQualifiedIdentifier(column.getQualifiedName()), column.type);
   }
 
   public static Column convert(Field field) {
-    if (field.isStruct()) {
-      Record record = field.type();
-      Collection<Column> converted = Collections2
-          .transform(record.fields(), new Function<Field, Column>() {
-        @Override
-        public Column apply(@Nullable Field namedType) {
-          return FieldConverter.convert(namedType);
-        }
-      });
-      return new Column(field.name().raw(), new TypeDesc(new SchemaLegacy(converted)));
-    } else {
-      return new Column(field.name().raw(), TypeConverter.convert(field));
-    }
+    return new Column(field.name().interned(), field.type());
   }
 }

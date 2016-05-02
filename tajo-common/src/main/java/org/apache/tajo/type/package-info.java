@@ -16,23 +16,14 @@
  * limitations under the License.
  */
 
+/**
+ * Design Consideration:
+ * <ul>
+ *   <li>Parameterized Type</li>
+ * </ul>
+ *
+ * numeric (precise, scale)
+ * record (x int)
+ * map[int, text]
+ */
 package org.apache.tajo.type;
-
-import com.google.common.collect.ImmutableList;
-
-import static org.apache.tajo.common.TajoDataTypes.Type.NUMERIC;
-
-public class Numeric extends ValueParamterizedType {
-
-  public Numeric(int precision, int scale) {
-    super(NUMERIC, ImmutableList.of((Object)precision, scale));
-  }
-
-  public int precision() {
-    return (int) this.params.get(0);
-  }
-
-  public int scale() {
-    return (int) this.params.get(1);
-  }
-}

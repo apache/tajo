@@ -424,13 +424,13 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
     return false;
   }
 
-  private SchemaLegacy addColumn(String name, TypeDesc typeDesc) {
+  private SchemaLegacy addColumn(String name, org.apache.tajo.type.Type type) {
     String normalized = name;
     if(fieldsByQualifiedName.containsKey(normalized)) {
       throw new TajoRuntimeException(new DuplicateColumnException(normalized));
     }
 
-    Column newCol = new Column(normalized, typeDesc);
+    Column newCol = new Column(normalized, type);
     fields.add(newCol);
     fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
     List<Integer> inputList = new ArrayList<>();
@@ -441,7 +441,7 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
   }
 
 	private synchronized void addColumn(Column column) {
-		addColumn(column.getQualifiedName(), TypeConverter.convert(column.type));
+		addColumn(column.getQualifiedName(), column.type);
 	}
 
   @Override

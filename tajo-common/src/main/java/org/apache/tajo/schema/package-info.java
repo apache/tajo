@@ -16,23 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.type;
-
-import com.google.common.collect.ImmutableList;
-
-import static org.apache.tajo.common.TajoDataTypes.Type.NUMERIC;
-
-public class Numeric extends ValueParamterizedType {
-
-  public Numeric(int precision, int scale) {
-    super(NUMERIC, ImmutableList.of((Object)precision, scale));
-  }
-
-  public int precision() {
-    return (int) this.params.get(0);
-  }
-
-  public int scale() {
-    return (int) this.params.get(1);
-  }
-}
+/**
+ * Provide Schema and its relevant classes and utilities.
+ */
+package org.apache.tajo.schema;

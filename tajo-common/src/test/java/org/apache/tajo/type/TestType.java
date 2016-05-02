@@ -36,7 +36,6 @@ import static org.apache.tajo.type.Type.Int4;
 import static org.apache.tajo.type.Type.Int8;
 import static org.apache.tajo.type.Type.Map;
 import static org.apache.tajo.type.Type.Numeric;
-import static org.apache.tajo.type.Type.Struct;
 import static org.apache.tajo.type.Type.Time;
 import static org.apache.tajo.type.Type.Timestamp;
 import static org.apache.tajo.type.Type.Varchar;
@@ -71,7 +70,7 @@ public class TestType {
     assertEquals(varchar.baseType(), VARCHAR);
     assertEquals(varchar.length(), 2);
 
-    Record record = Struct(Field("x", Int8), Field("y", Array(Float8)));
+    Record record = Type.Record(Field("x", Int8), Field("y", Array(Float8)));
     assertEquals(record.baseType(), RECORD);
     assertEquals(record.field(0).baseType(), INT8);
     assertEquals(record.field(0).name(), $("x"));
@@ -112,7 +111,7 @@ public class TestType {
     Varchar varchar = Varchar(2);
     assertEquals("VARCHAR(2)", varchar.toString());
 
-    Record record = Struct(Field("x", Int8), Field("y", Array(Float8)));
+    Record record = Type.Record(Field("x", Int8), Field("y", Array(Float8)));
     assertEquals("RECORD(x (INT8), y (ARRAY<FLOAT8>))", record.toString());
 
     Map map = Map(Int8, Array(Timestamp));

@@ -20,7 +20,6 @@ package org.apache.tajo.schema;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.util.StringUtils;
 
@@ -30,6 +29,10 @@ import java.util.Objects;
 
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 
+/**
+ * Represents a qualified identifier. In other words, it represents identifiers for
+ * all kinds of of database objects, such as databases, tables, and columns.
+ */
 public class QualifiedIdentifier {
   private ImmutableList<Identifier> names;
 
@@ -37,26 +40,14 @@ public class QualifiedIdentifier {
     this.names = names;
   }
 
-  public String displayString(final IdentifierPolicy policy) {
-    return StringUtils.join(names, policy.getIdentifierSeperator(), new Function<Identifier, String>() {
-      @Override
-      public String apply(@Nullable Identifier identifier) {
-        return identifier.displayString(policy);
-      }
-    });
-  }
-
-  public String raw() {
-    return raw(DefaultPolicy());
-  }
-
   /**
-   * Raw string of qualified identifier
-   * @param policy Identifier Policy
-   * @return raw string
+   * Return a raw string representation for an identifier, which is equivalent to ones used in SQL statements.
+   *
+   * @param policy IdentifierPolicy
+   * @return Raw identifier string
    */
   public String raw(final IdentifierPolicy policy) {
-    return StringUtils.join(names, policy.getIdentifierSeperator(), new Function<Identifier, String>() {
+    return StringUtils.join(names, "" + policy.getIdentifierSeperator(), new Function<Identifier, String>() {
       @Override
       public String apply(@Nullable Identifier identifier) {
         return identifier.raw(policy);
@@ -64,9 +55,27 @@ public class QualifiedIdentifier {
     });
   }
 
+  public String interned() {
+    return interned(DefaultPolicy());
+  }
+
+  /**
+   * Raw string of qualified identifier
+   * @param policy Identifier Policy
+   * @return raw string
+   */
+  public String interned(final IdentifierPolicy policy) {
+    return StringUtils.join(names, "" + policy.getIdentifierSeperator(), new Function<Identifier, String>() {
+      @Override
+      public String apply(@Nullable Identifier identifier) {
+        return identifier.interned(policy);
+      }
+    });
+  }
+
   @Override
   public String toString() {
-    return raw(DefaultPolicy());
+    return interned(DefaultPolicy());
   }
 
   @Override
@@ -94,11 +103,16 @@ public class QualifiedIdentifier {
     return new QualifiedIdentifier(ImmutableList.copyOf(names));
   }
 
+  /**
+   * It takes interned strings. It assumes all parameters already stripped. It is used only for tests.
+   * @param names interned strings
+   * @return QualifiedIdentifier
+   */
   @VisibleForTesting
   public static QualifiedIdentifier $(String...names) {
-    ImmutableList.Builder<Identifier> builder = new ImmutableList.Builder();
+    final ImmutableList.Builder<Identifier> builder = ImmutableList.builder();
     for (String n : names) {
-      for (String split : n.split(StringUtils.escapeRegexp(DefaultPolicy().getIdentifierSeperator()))) {
+      for (String split : n.split(StringUtils.escapeRegexp(""+DefaultPolicy().getIdentifierSeperator()))) {
         builder.add(Identifier._(split, IdentifierUtil.isShouldBeQuoted(split)));
       }
     }

@@ -20,55 +20,58 @@ package org.apache.tajo.type;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.schema.Field;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Objects;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
-
 /**
- * Represents Record type
+ * Represents a type which takes value parameters (e.g., Numeric(10, 6))
  */
-public class Record extends Type {
-  private final ImmutableList<Field> memberTypes;
+public abstract class ValueParamterizedType extends Type {
+  protected ImmutableList<Object> params;
 
-  public Record(Collection<Field> memberTypes) {
-    super(RECORD);
-    this.memberTypes = ImmutableList.copyOf(memberTypes);
-  }
-
-  public int size() {
-    return memberTypes.size();
-  }
-
-  public Field field(int idx) {
-    return memberTypes.get(idx);
-  }
-
-  public List<Field> fields() {
-    return this.memberTypes;
+  public ValueParamterizedType(TajoDataTypes.Type type, ImmutableList<Object> params) {
+    super(type);
+    this.params = params;
   }
 
   @Override
-  public String toString() {
-    return "RECORD(" + StringUtils.join(memberTypes, ", ") + ")";
+  public boolean isValueParameterized() {
+    return true;
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(baseType(), Objects.hash(memberTypes));
+  public Collection<Object> getValueParameters() {
+    return params;
   }
 
   @Override
   public boolean equals(Object object) {
-    if (object instanceof Record) {
-      Record other = (Record) object;
-      return memberTypes.equals(other.memberTypes);
+    if (object == this) {
+      return true;
+    }
+
+    if (object instanceof ValueParamterizedType) {
+      ValueParamterizedType other = (ValueParamterizedType) object;
+      return this.baseType.equals(other.baseType) && params.equals(other.params);
     }
 
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(baseType(), params);
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(typeName(this.baseType));
+    sb.append("(");
+    sb.append(StringUtils.join(params, ","));
+    sb.append(")");
+    return sb.toString();
   }
 }

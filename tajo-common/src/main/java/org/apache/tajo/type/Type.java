@@ -19,11 +19,16 @@
 package org.apache.tajo.type;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.schema.Field;
 
 import java.util.Arrays;
 import java.util.Collection;
 
+/**
+ * Represents Type
+ */
 public abstract class Type implements Cloneable {
 
   // No paramter types
@@ -44,10 +49,30 @@ public abstract class Type implements Cloneable {
   public static final Blob Blob = new Blob();
   public static final Inet4 Inet4 = new Inet4();
 
-  public abstract TajoDataTypes.Type baseType();
+  protected TajoDataTypes.Type baseType;
 
-  public boolean hasParam() {
+  public Type(TajoDataTypes.Type baseType) {
+    this.baseType = baseType;
+  }
+
+  public TajoDataTypes.Type baseType() {
+    return baseType;
+  }
+
+  public boolean isTypeParameterized() {
     return false;
+  }
+
+  public boolean isValueParameterized() {
+    return false;
+  }
+
+  public Collection<Type> getTypeParameters() {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  public Collection<Object> getValueParameters() {
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   protected static String typeName(TajoDataTypes.Type type) {
@@ -98,7 +123,7 @@ public abstract class Type implements Cloneable {
     return new Varchar(len);
   }
 
-  public static Record Struct(Collection<Field> types) {
+  public static Record Record(Collection<Field> types) {
     return new Record(types);
   }
 
@@ -106,7 +131,7 @@ public abstract class Type implements Cloneable {
     return new Array(type);
   }
 
-  public static Record Struct(Field... types) {
+  public static Record Record(Field... types) {
     return new Record(Arrays.asList(types));
   }
 

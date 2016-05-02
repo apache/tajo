@@ -22,15 +22,14 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.schema.Field;
+import org.apache.tajo.schema.QualifiedIdentifier;
 import org.apache.tajo.type.Type;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
 
 import static org.apache.tajo.catalog.FieldConverter.toQualifiedIdentifier;
-import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 
 /**
  * Builder for Schema
@@ -67,7 +66,7 @@ public class SchemaBuilder {
   }
 
   public SchemaBuilder add(QualifiedIdentifier id, Type type) {
-    add(new Field(type, id));
+    add(new Field(id, type));
     return this;
   }
 
@@ -171,7 +170,7 @@ public class SchemaBuilder {
   public SchemaLegacy build() {
     ImmutableList.Builder<Column> columns = new ImmutableList.Builder();
     for (Field field : fields.build()) {
-      columns.add(new Column(field.name().raw(), TypeConverter.convert(field)));
+      columns.add(new Column(field.name().interned(), field.type()));
     }
 
     return new SchemaLegacy(columns.build());

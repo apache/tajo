@@ -24,8 +24,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
@@ -72,7 +70,6 @@ import static org.apache.tajo.type.Type.*;
  * This class creates a logical plan from a nested tajo algebra expression ({@link org.apache.tajo.algebra})
  */
 public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContext, LogicalNode> {
-  private static Log LOG = LogFactory.getLog(LogicalPlanner.class);
   private final CatalogService catalog;
   private final StorageService storage;
 
@@ -2126,7 +2123,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     } else if (type == TajoDataTypes.Type.ARRAY) {
       return Array(convertDataType(dataType.getElementType()));
     } else if (type == TajoDataTypes.Type.RECORD) {
-      return Struct(convertTableElementsSchema(dataType.getNestedRecordTypes()));
+      return Record(convertTableElementsSchema(dataType.getNestedRecordTypes()));
     } else if (type == TajoDataTypes.Type.NUMERIC) {
       if (dataType.hasLengthOrPrecision() && dataType.hasScale()) {
         return Numeric(dataType.getLengthOrPrecision(), dataType.getScale());

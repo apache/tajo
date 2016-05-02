@@ -27,6 +27,8 @@ import org.apache.tajo.schema.Field;
 import org.apache.tajo.type.*;
 
 import static org.apache.tajo.catalog.CatalogUtil.newDataTypeWithLen;
+import static org.apache.tajo.catalog.CatalogUtil.newSimpleDataType;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.apache.tajo.type.Type.*;
 
 public class TypeConverter {
@@ -37,7 +39,7 @@ public class TypeConverter {
       for (Column c : type.getNestedSchema().getRootColumns()) {
         fields.add(FieldConverter.convert(c));
       }
-      return Struct(fields.build());
+      return Record(fields.build());
     } else {
       return convert(type.dataType);
     }
@@ -105,6 +107,22 @@ public class TypeConverter {
       return Null;
     case ANY:
       return Any;
+
+    case BOOLEAN_ARRAY:
+      return Array(Bool);
+    case INT1_ARRAY:
+      return Array(Int1);
+    case INT2_ARRAY:
+      return Array(Int2);
+    case INT4_ARRAY:
+      return Array(Int4);
+    case INT8_ARRAY:
+      return Array(Int8);
+    case FLOAT4_ARRAY:
+      return Array(Float4);
+    case FLOAT8_ARRAY:
+      return Array(Float8);
+
     default:
       throw new TajoRuntimeException(new UnsupportedException(legacyBaseType.name()));
     }
@@ -132,11 +150,32 @@ public class TypeConverter {
       Record record = (Record) type;
       ImmutableList.Builder<Column> fields = ImmutableList.builder();
       for (Field t: record.fields()) {
-        fields.add(new Column(t.name().raw(), convert(t)));
+        fields.add(new Column(t.name().interned(), convert(t)));
       }
       return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());
+
+    case ARRAY:
+      Array array = (Array) type;
+      Type elemType = array.elementType();
+      switch (elemType.baseType()) {
+      case INT1:
+        return new TypeDesc(newSimpleDataType(INT1_ARRAY));
+      case INT2:
+        return new TypeDesc(newSimpleDataType(INT2_ARRAY));
+      case INT4:
+        return new TypeDesc(newSimpleDataType(INT4_ARRAY));
+      case INT8:
+        return new TypeDesc(newSimpleDataType(INT8_ARRAY));
+      case FLOAT4:
+        return new TypeDesc(newSimpleDataType(FLOAT4_ARRAY));
+      case FLOAT8:
+        return new TypeDesc(newSimpleDataType(FLOAT8_ARRAY));
+      default:
+        return new TypeDesc(newSimpleDataType(type.baseType()));
+      }
+
     default:
-      return new TypeDesc(CatalogUtil.newSimpleDataType(type.baseType()));
+      return new TypeDesc(newSimpleDataType(type.baseType()));
     }
   }
 }
