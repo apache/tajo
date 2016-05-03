@@ -22,6 +22,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.plan.*;
@@ -39,6 +40,8 @@ import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.schema.IdentifierUtil;
 
 import java.util.*;
+
+import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 
 /**
  * BaseSchemaBuildPhase builds a basic schema information of tables which have pre-defined schema.
@@ -258,6 +261,10 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       List<Target> targets = new ArrayList<>();
       for (NamedExpr namedExpr : exprs) {
         TajoDataTypes.DataType dataType = typeDeterminant.determineDataType(context, namedExpr.getExpr());
+
+        if (dataType.getType() == RECORD) {
+          throw new NotImplementedException("record projection");
+        }
 
         if (namedExpr.hasAlias()) {
           targets.add(new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType))));

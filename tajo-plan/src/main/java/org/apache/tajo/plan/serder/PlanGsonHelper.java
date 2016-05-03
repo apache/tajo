@@ -60,6 +60,7 @@ public class PlanGsonHelper {
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
     adapters.put(TimeZone.class, new TimeZoneGsonSerdeAdapter());
+    adapters.put(org.apache.tajo.type.Type.class, new TypeAdapter());
     adapters.put(Schema.class, new SchemaAdapter());
 
     return adapters;

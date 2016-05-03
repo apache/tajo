@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.base.Objects;
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.common.ProtoObject;
@@ -32,8 +33,8 @@ import org.apache.tajo.type.Type;
  * Describes a column. It is an immutable object.
  */
 public class Column implements ProtoObject<ColumnProto>, GsonObject {
-	protected String name;
-	protected Type type;
+	@Expose protected String name;
+  @Expose protected Type type;
 
   /**
    * Column Constructor
