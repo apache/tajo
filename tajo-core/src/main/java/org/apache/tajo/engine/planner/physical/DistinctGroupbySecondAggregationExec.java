@@ -212,7 +212,6 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
 
         prevKeyTuple = getKeyTuple(prevKeyTupleMap, keyTuple.getValues());
         prevTuple.put(tuple.getValues());
-        prevTuple.put(tuple.getValues());
         prevSeq = distinctSeq;
 
         if (distinctSeq == 0 && nonDistinctAggrFunctions != null) {
