@@ -162,8 +162,8 @@ public class TestAlterTable extends QueryTestCaseBase {
       "45.0,R,3,2\n" +
       "49.0,R,3,3\n" +
       "null,,null,null\n" +
-        "null,,null,null\n" +
-        "null,,null,null\n";
+      "null,,null,null\n" +
+      "null,,null,null\n";
 
     res.close();
     assertEquals(expectedResult, result);
@@ -242,9 +242,9 @@ public class TestAlterTable extends QueryTestCaseBase {
       "2,2,38.0\n" +
       "3,3,49.0\n" +
       "3,2,45.0\n" +
-        "null,null,null\n" +
-        "null,null,null\n" +
-        "null,null,null\n";
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -289,9 +289,9 @@ public class TestAlterTable extends QueryTestCaseBase {
       "2,2,38.0\n" +
       "3,3,49.0\n" +
       "3,2,45.0\n" +
-        "null,null,null\n" +
-        "null,null,null\n" +
-        "null,null,null\n";
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -347,9 +347,9 @@ public class TestAlterTable extends QueryTestCaseBase {
       "2,2,1997-01-28\n" +
       "3,3,1993-11-09\n" +
       "3,2,1994-02-02\n" +
-        "null,null,null\n" +
-        "null,null,null\n" +
-        "null,null,null\n";
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -394,9 +394,9 @@ public class TestAlterTable extends QueryTestCaseBase {
       "2,2,1997-01-28 00:00:00\n" +
       "3,3,1993-11-09 00:00:00\n" +
       "3,2,1994-02-02 00:00:00\n" +
-        "null,null,null\n" +
-        "null,null,null\n" +
-        "null,null,null\n";
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -494,8 +494,8 @@ public class TestAlterTable extends QueryTestCaseBase {
       "R,3,3,49.0\n" +
       "R,3,2,45.0\n" +
       ",null,null,null\n" +
-        ",null,null,null\n" +
-        ",null,null,null\n";
+      ",null,null,null\n" +
+      ",null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
