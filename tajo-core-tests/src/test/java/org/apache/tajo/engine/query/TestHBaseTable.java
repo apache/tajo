@@ -19,16 +19,10 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.base.Optional;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.MiniHBaseCluster;
-import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.InclusiveStopFilter;
@@ -47,13 +41,11 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UnavailableTableLocationException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,8 +62,6 @@ import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
 public class TestHBaseTable extends QueryTestCaseBase {
-  private static final Log LOG = LogFactory.getLog(TestHBaseTable.class);
-
   private static String tableSpaceUri;
   private static String hostName,zkPort;
 
@@ -829,10 +819,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
@@ -841,8 +827,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -885,10 +871,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
@@ -896,8 +878,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -943,10 +925,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
@@ -955,8 +933,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -1001,10 +979,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id1", Type.TEXT);
     schema.addColumn("id2", Type.TEXT);
@@ -1014,8 +988,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id1, id2, name from base_table ").close();
@@ -1058,10 +1032,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
@@ -1069,8 +1039,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select id, name from base_table ").close();
@@ -1114,10 +1084,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("rk", Type.TEXT);
     schema.addColumn("col2_key", Type.TEXT);
@@ -1129,8 +1095,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
         datas.add(i + "|ck-" + j + "|value-" + j + "|col3-" + i);
       }
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     executeString("insert into hbase_mapped_table " +
         "select rk, col2_key, col2_value, col3 from base_table ").close();
@@ -1203,10 +1169,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     assertTableExists("hbase_mapped_table");
 
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
     schema.addColumn("name", Type.TEXT);
@@ -1214,8 +1176,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(i + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     try {
       executeString("insert into hbase_mapped_table " +
@@ -1275,10 +1237,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
   @Test
   public void testCTAS() throws Exception {
     // create test table
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
@@ -1287,8 +1245,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     for (int i = 99; i >= 0; i--) {
       datas.add(df.format(i) + "|value" + i);
     }
-    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-        schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+    TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+        schema, datas.toArray(new String[datas.size()]), 2);
 
     executeString(
         "CREATE TABLE hbase_mapped_table (rk text, col1 text) TABLESPACE cluster1 " +
@@ -1396,10 +1354,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     try {
       // create test table
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
       Schema schema = new Schema();
       schema.addColumn("id", Type.TEXT);
       schema.addColumn("name", Type.TEXT);
@@ -1409,8 +1363,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
       for (int i = 99; i >= 0; i--) {
         datas.add(df.format(i) + "|value" + i + "|comment-" + i);
       }
-      TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
-          schema, tableOptions, datas.toArray(new String[datas.size()]), 2);
+      TajoTestingCluster.createTable(conf, getCurrentDatabase() + ".base_table",
+          schema, datas.toArray(new String[datas.size()]), 2);
 
       executeString("insert into location '/tmp/hfile_test' " +
           "select id, name, comment from base_table ").close();

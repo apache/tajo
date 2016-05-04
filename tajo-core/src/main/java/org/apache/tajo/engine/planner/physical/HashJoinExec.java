@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -27,9 +28,12 @@ import java.util.Iterator;
 
 public class HashJoinExec extends CommonHashJoinExec<TupleList> {
 
+  private final boolean isCrossJoin;
+
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
       PhysicalExec rightExec) {
     super(context, plan, leftExec, rightExec);
+    isCrossJoin = plan.getJoinType().equals(JoinType.CROSS);
   }
 
   @Override

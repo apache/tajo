@@ -80,12 +80,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         Map<String, Integer> result = Maps.newHashMap();
         result.put("NO", 3);
         result.put("RF", 2);
+        result.put(null, 3);
 
         assertNotNull(res);
         assertTrue(res.next());
         assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
         assertTrue(res.next());
         assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+        assertTrue(res.next());
+        assertNull(res.getString(1));
+        assertNull(res.getString(2));
+        assertTrue(result.get(null) == res.getInt(3));
         assertFalse(res.next());
 
         ResultSetMetaData rsmd = res.getMetaData();
@@ -380,12 +385,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+            assertTrue(res.next());
+            assertNull(res.getString(1));
+            assertNull(res.getString(2));
+            assertTrue(result.get(null) == res.getInt(3));
             assertFalse(res.next());
 
             ResultSetMetaData rsmd = res.getMetaData();
@@ -438,12 +448,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+            assertTrue(res.next());
+            assertNull(res.getString(1));
+            assertNull(res.getString(2));
+            assertTrue(result.get(null) == res.getInt(3));
             assertFalse(res.next());
 
             ResultSetMetaData rsmd = res.getMetaData();

@@ -51,9 +51,9 @@ public class SignedEval extends UnaryEval implements Cloneable {
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
-    NumericDatum result = child.eval(tuple);
-    if (negative) {
-      return result.inverseSign();
+    Datum result = child.eval(tuple);
+    if (result.isNotNull() && negative) {
+      return ((NumericDatum)result).inverseSign();
     }
     return result;
   }

@@ -136,7 +136,7 @@ public class PgSQLTestServer {
 
   private String restoreTableContents(String tableName) throws IOException {
     Path filePath = new Path(testPath, tableName + ".tbl");
-    storeTableContents("tpch/" + tableName + ".tbl", filePath);
+    storeTableContents("dataset/" + tableName + ".tbl", filePath);
     return filePath.toUri().getPath();
   }
 

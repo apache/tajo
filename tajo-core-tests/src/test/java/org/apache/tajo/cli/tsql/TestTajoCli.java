@@ -293,6 +293,7 @@ public class TestTajoCli {
 
   @Test
   public void testSelectResultWithNullFalse() throws Exception {
+    setVar(tajoCli, SessionVars.CLI_NULL_CHAR, "testnull");
     String sql =
       "select\n" +
         "  c_custkey,\n" +

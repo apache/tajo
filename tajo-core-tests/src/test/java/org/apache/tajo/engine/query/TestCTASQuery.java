@@ -79,7 +79,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     ResultSet res2 = executeFile("check1.sql");
@@ -122,7 +122,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     if (!cluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     ResultSet res2 = executeFile("check2.sql");

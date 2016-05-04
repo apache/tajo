@@ -22,8 +22,6 @@ import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.StageHistory;
@@ -417,17 +415,13 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationCasebyCase11() throws Exception {
     ResultSet res;
 
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
     schema.addColumn("code", Type.TEXT);
     schema.addColumn("qty", Type.INT4);
     schema.addColumn("qty2", Type.FLOAT8);
     String[] data = new String[]{"1|a|3|3.0", "1|a|4|4.0", "1|b|5|5.0", "2|a|1|6.0", "2|c|2|7.0", "2|d|3|8.0"};
-    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+    TajoTestingCluster.createTable(conf, "table10", schema, data);
 
     res = executeString("select id, count(distinct code), " +
         "avg(qty), min(qty), max(qty), sum(qty), " +
@@ -471,10 +465,6 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testDistinctAggregationCaseByCase3() throws Exception {
     // first distinct is smaller than second distinct.
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
     schema.addColumn("col2", Type.TEXT);
@@ -489,7 +479,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         "a|b-3|\\N"
     };
 
-    TajoTestingCluster.createTable("table10", schema, tableOptions, data);
+    TajoTestingCluster.createTable(conf, "table10", schema, data);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -501,10 +491,6 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testDistinctAggregationCaseByCase4() throws Exception {
     // Reproduction case for TAJO-994
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
     schema.addColumn("col2", Type.TEXT);
@@ -518,7 +504,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         "a|\\N|"
     };
 
-    TajoTestingCluster.createTable("testDistinctAggregationCaseByCase4".toLowerCase(), schema, tableOptions, data);
+    TajoTestingCluster.createTable(conf, "testDistinctAggregationCaseByCase4".toLowerCase(), schema, data);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -688,10 +674,6 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testNumShufflePartition() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
     schema.addColumn("col2", Type.TEXT);
@@ -716,7 +698,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
         break;
       }
     }
-    TajoTestingCluster.createTable("testnumshufflepartition", schema, tableOptions, data.toArray(new String[]{}), 3);
+    TajoTestingCluster.createTable(conf, "testnumshufflepartition", schema, data.toArray(new String[]{}), 3);
 
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname, "2");

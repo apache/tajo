@@ -219,12 +219,13 @@ public class TestQueryResultResource extends QueryTestCaseBase {
       }
     }
 
-    assertEquals(5, tupleList.size());
+    assertEquals(8, tupleList.size());
     assertEquals(tajoDigest, Base64.encodeBase64String(messageDigest.digest()));
 
-    for (Tuple aTuple: tupleList) {
-      assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(tupleList.get(i).getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
     }
+    assertEquals(0, tupleList.get(5).getInt4(response.getSchema().getColumnId("l_orderkey")));
   }
 
   @Test
@@ -261,7 +262,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     assertTrue(tajoDigest != null && !tajoDigest.isEmpty());
     assertTrue(eos);
     assertEquals(0, offset);
-    assertEquals(5, count);
+    assertEquals(8, count);
 
     DataInputStream queryResultSetInputStream =
         new DataInputStream(new BufferedInputStream(queryResultSetResponse.readEntity(InputStream.class)));
@@ -287,11 +288,12 @@ public class TestQueryResultResource extends QueryTestCaseBase {
       }
     }
 
-    assertEquals(5, tupleList.size());
+    assertEquals(8, tupleList.size());
     assertEquals(tajoDigest, Base64.encodeBase64String(messageDigest.digest()));
 
-    for (Tuple aTuple: tupleList) {
-      assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(tupleList.get(i).getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
     }
+    assertEquals(0, tupleList.get(5).getInt4(response.getSchema().getColumnId("l_orderkey")));
   }
 }

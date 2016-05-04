@@ -1,4 +1,4 @@
 col1,col2
 -------------------------------
-N,__TAJO_DEFAULT_PARTITION__
-N,__TAJO_DEFAULT_PARTITION__
+N,null
+N,null

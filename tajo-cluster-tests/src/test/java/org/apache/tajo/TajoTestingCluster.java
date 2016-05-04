@@ -589,7 +589,6 @@ public class TajoTestingCluster {
 
   public static ResultSet run(String[] names,
                               Schema[] schemas,
-                              KeyValueSet tableOption,
                               String[][] tables,
                               String query,
                               TajoClient client) throws Exception {
@@ -599,7 +598,7 @@ public class TajoTestingCluster {
     Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
     fs.mkdirs(rootDir);
     for (int i = 0; i < names.length; i++) {
-      createTable(names[i], schemas[i], tableOption, tables[i]);
+      createTable(util.conf, names[i], schemas[i], tables[i]);
     }
 
     ResultSet res = client.executeQueryAndGetResult(query);
@@ -608,7 +607,6 @@ public class TajoTestingCluster {
 
   public static ResultSet run(String[] names,
                               Schema[] schemas,
-                              KeyValueSet tableOption,
                               String[][] tables,
                               String query) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
@@ -623,7 +621,7 @@ public class TajoTestingCluster {
     TajoClient client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
 
     try {
-      return run(names, schemas, tableOption, tables, query, client);
+      return run(names, schemas, tables, query, client);
     } finally {
       client.close();
     }
@@ -640,13 +638,13 @@ public class TajoTestingCluster {
     return new TajoClientImpl(ServiceTrackerFactory.get(conf));
   }
 
-  public static void createTable(String tableName, Schema schema,
-                                 KeyValueSet tableOption, String[] tableDatas) throws Exception {
-    createTable(tableName, schema, tableOption, tableDatas, 1);
+  public static void createTable(TajoConf conf, String tableName, Schema schema,
+                                 String[] tableDatas) throws Exception {
+    createTable(conf, tableName, schema, tableDatas, 1);
   }
 
-  public static void createTable(String tableName, Schema schema,
-                                 KeyValueSet tableOption, String[] tableDatas, int numDataFiles) throws Exception {
+  public static void createTable(TajoConf conf, String tableName, Schema schema,
+                                 String[] tableDatas, int numDataFiles) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
     TajoTestingCluster util = instance.getTestingCluster();
     TajoClient client = newTajoClient(util);
@@ -685,7 +683,7 @@ public class TajoTestingCluster {
           out.close();
         }
       }
-      TableMeta meta = CatalogUtil.newTableMeta("TEXT", tableOption);
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
       client.createExternalTable(tableName, schema, tablePath.toUri(), meta);
     } finally {
       client.close();
