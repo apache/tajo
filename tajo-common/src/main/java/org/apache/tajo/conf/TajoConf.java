@@ -28,6 +28,7 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.service.BaseServiceTracker;
 import org.apache.tajo.unit.StorageUnit;
@@ -383,7 +384,7 @@ public class TajoConf extends Configuration {
     $DATE_ORDER("tajo.datetime.date-order", "YMD"),
 
     // null character for text file output
-    $TEXT_NULL("tajo.text.null", "\\\\N"),
+    $TEXT_NULL("tajo.text.null", NullDatum.DEFAULT_TEXT),
 
     // Only for Debug and Testing
     $DEBUG_ENABLED(TajoConstants.DEBUG_KEY, false),

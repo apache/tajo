@@ -225,9 +225,9 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "GERMANY,3,7\n" +
           "INDIA,2,8\n" +
           "INDONESIA,2,9\n" +
-          ",null,null\n" +
-          ",null,null\n" +
-          ",null,null\n";
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n";
 
       assertEquals(expected, resultSetToString(res));
       res.close();
@@ -286,12 +286,12 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "INDIA,2,8\n" +
           "INDONESIA,2,9\n" +
           "INDONESIA,2,9\n" +
-          ",null,null\n" +
-          ",null,null\n" +
-          ",null,null\n" +
-          ",null,null\n" +
-          ",null,null\n" +
-          ",null,null\n";
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n";
 
       assertEquals(expected, resultSetToString(res));
 

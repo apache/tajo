@@ -41,7 +41,6 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -459,7 +458,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     if (nodeType == NodeType.INSERT) {
       res = testBase.execute(
-        "create table " + tableName + " (col4 text) with ('text.null'='\\\\N') partition by column(col1 int4, col2 int4, col3 float8) ");
+        "create table " + tableName + " (col4 text) partition by column(col1 int4, col2 int4, col3 float8) ");
       res.close();
       TajoTestingCluster cluster = testBase.getTestingCluster();
       CatalogService catalog = cluster.getMaster().getCatalog();
@@ -468,7 +467,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeString("insert into " + tableName
         + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
     } else {
-      res = executeString( "create table " + tableName + " (col4 text) with ('text.null'='\\\\N')"
+      res = executeString( "create table " + tableName + " (col4 text)"
         + " partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
     }
@@ -1038,7 +1037,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     if (nodeType == NodeType.INSERT) {
       res = executeString(
-        "create table " + tableName + " (col1 text) with ('text.null'='\\\\N') partition by column(col2 text) ");
+        "create table " + tableName + " (col1 text) partition by column(col2 text) ");
       res.close();
 
       assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
@@ -1046,7 +1045,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeString("insert overwrite into " + tableName + "(col1) select l_returnflag from lineitem");
 
     } else {
-      res = executeString("create table " + tableName + " (col1 text) with ('text.null'='\\\\N') partition by column(col2 text) " +
+      res = executeString("create table " + tableName + " (col1 text) partition by column(col2 text) " +
         " as select l_returnflag, null from lineitem");
     }
     res.close();
@@ -1097,10 +1096,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.varname, "2");
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.varname, "1");
     try {
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
       Schema schema = SchemaBuilder.builder()
           .add("col1", TajoDataTypes.Type.TEXT)
           .add("col2", TajoDataTypes.Type.TEXT)
@@ -1127,7 +1122,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
         index++;
       }
 
-      TajoTestingCluster.createTable("testscatteredhashshuffle", schema, tableOptions, data.toArray(new String[data.size()]), 3);
+      TajoTestingCluster.createTable(conf, "testscatteredhashshuffle", schema, data.toArray(new String[data.size()]), 3);
       CatalogService catalog = testingCluster.getMaster().getCatalog();
       assertTrue(catalog.existsTable("default", "testscatteredhashshuffle"));
 
@@ -1893,9 +1888,9 @@ public class TestTablePartitions extends QueryTestCaseBase {
       "N,2,2,38.0\n" +
       "R,3,2,45.0\n" +
       "R,3,3,49.0\n" +
-        ",null,null,null\n" +
-        ",null,null,null\n" +
-        ",null,null,null\n";
+        "null,null,null,null\n" +
+        "null,null,null,null\n" +
+        "null,null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 

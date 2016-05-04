@@ -161,9 +161,9 @@ public class TestAlterTable extends QueryTestCaseBase {
       "38.0,N,2,2\n" +
       "45.0,R,3,2\n" +
       "49.0,R,3,3\n" +
-      "null,,null,null\n" +
-      "null,,null,null\n" +
-      "null,,null,null\n";
+      "null,null,null,null\n" +
+      "null,null,null,null\n" +
+      "null,null,null,null\n";
 
     res.close();
     assertEquals(expectedResult, result);
@@ -493,9 +493,9 @@ public class TestAlterTable extends QueryTestCaseBase {
       "N,2,2,38.0\n" +
       "R,3,3,49.0\n" +
       "R,3,2,45.0\n" +
-      ",null,null,null\n" +
-      ",null,null,null\n" +
-      ",null,null,null\n";
+      "null,null,null,null\n" +
+      "null,null,null,null\n" +
+      "null,null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
