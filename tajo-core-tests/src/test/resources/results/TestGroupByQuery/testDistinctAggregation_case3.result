@@ -2,3 +2,4 @@ quantity,partkey,?count,?max_1,l_returnflag
 -------------------------------
 91.0,2,3,38.0,N
 94.0,2,2,49.0,R
+null,0,0,null,null

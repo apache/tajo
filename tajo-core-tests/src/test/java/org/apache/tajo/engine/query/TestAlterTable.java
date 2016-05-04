@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.storage.StorageConstants;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -159,12 +160,15 @@ public class TestAlterTable extends QueryTestCaseBase {
       "36.0,N,1,1\n" +
       "38.0,N,2,2\n" +
       "45.0,R,3,2\n" +
-      "49.0,R,3,3\n";
+      "49.0,R,3,3\n" +
+      "null,null,null,null\n" +
+      "null,null,null,null\n" +
+      "null,null,null,null\n";
 
     res.close();
     assertEquals(expectedResult, result);
 
-    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 5);
 
     Path tablePath = new Path(tableDesc.getUri());
     FileSystem fs = tablePath.getFileSystem(conf);
@@ -179,6 +183,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 2 , col2 = 2)").close();
     executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 2)").close();
     executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)").close();
+    executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = null , col2 = null)").close();
 
     verifyPartitionCount(getCurrentDatabase(), simpleTableName, 0);
 
@@ -187,28 +192,29 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=2/col2=2")));
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=2")));
     assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=3/col2=3")));
+    assertTrue(fs.isDirectory(new Path(tablePath.toUri() + "/col1=" + StorageConstants.DEFAULT_PARTITION_NAME +
+        "/col2=" + StorageConstants.DEFAULT_PARTITION_NAME)));
 
     executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
-    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 5);
 
     // Remove just one of existing partitions
     executeString("ALTER TABLE " + simpleTableName + " DROP PARTITION (col1 = 3 , col2 = 3)").close();
     executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
-    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 5);
 
     // Remove a partition directory from filesystem
     fs.delete(new Path(tablePath.toUri() + "/col1=3/col2=3"), true);
     executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
-    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 5);
 
     // Add abnormal directories
     assertTrue(fs.mkdirs(new Path(tablePath.toUri() + "/col10=1/col20=1")));
     assertTrue(fs.mkdirs(new Path(tablePath.toUri() + "/col1=")));
     assertTrue(fs.mkdirs(new Path(tablePath.toUri() + "/test")));
-    assertEquals(6, fs.listStatus(new Path(tablePath.toUri())).length);
 
     executeString("ALTER TABLE " + simpleTableName + " REPAIR PARTITION").close();
-    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 4);
+    verifyPartitionCount(getCurrentDatabase(), simpleTableName, 5);
     catalog.dropTable(tableName);
   }
 
@@ -225,7 +231,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
     assertNotNull(tableDesc);
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     ResultSet res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     String result = resultSetToString(res);
@@ -235,7 +241,10 @@ public class TestAlterTable extends QueryTestCaseBase {
       "1,1,17.0\n" +
       "2,2,38.0\n" +
       "3,3,49.0\n" +
-      "3,2,45.0\n";
+      "3,2,45.0\n" +
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -246,7 +255,7 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     executeString("ALTER TABLE " + canonicalTableName + " REPAIR PARTITION").close();
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     result = resultSetToString(res);
@@ -269,7 +278,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
     assertNotNull(tableDesc);
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     ResultSet res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     String result = resultSetToString(res);
@@ -279,7 +288,10 @@ public class TestAlterTable extends QueryTestCaseBase {
       "1,1,17.0\n" +
       "2,2,38.0\n" +
       "3,3,49.0\n" +
-      "3,2,45.0\n";
+      "3,2,45.0\n" +
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -298,11 +310,10 @@ public class TestAlterTable extends QueryTestCaseBase {
     fs.mkdirs(path);
     path = new Path(tableDesc.getUri().getPath(), "col1=a");
     fs.mkdirs(path);
-    assertEquals(9, fs.listStatus(path.getParent()).length);
 
     executeString("ALTER TABLE " + canonicalTableName + " REPAIR PARTITION").close();
 
-    verifyPartitionCount(databaseName, tableName, 7);
+    verifyPartitionCount(databaseName, tableName, 8);
 
     res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     result = resultSetToString(res);
@@ -325,7 +336,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
     assertNotNull(tableDesc);
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     ResultSet res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     String result = resultSetToString(res);
@@ -335,7 +346,10 @@ public class TestAlterTable extends QueryTestCaseBase {
       "1,1,1996-03-13\n" +
       "2,2,1997-01-28\n" +
       "3,3,1993-11-09\n" +
-      "3,2,1994-02-02\n";
+      "3,2,1994-02-02\n" +
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -346,7 +360,7 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     executeString("ALTER TABLE " + canonicalTableName + " REPAIR PARTITION").close();
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     result = resultSetToString(res);
@@ -369,7 +383,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(databaseName, tableName);
     assertNotNull(tableDesc);
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     ResultSet res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     String result = resultSetToString(res);
@@ -379,7 +393,10 @@ public class TestAlterTable extends QueryTestCaseBase {
       "1,1,1996-03-13 00:00:00\n" +
       "2,2,1997-01-28 00:00:00\n" +
       "3,3,1993-11-09 00:00:00\n" +
-      "3,2,1994-02-02 00:00:00\n";
+      "3,2,1994-02-02 00:00:00\n" +
+      "null,null,null\n" +
+      "null,null,null\n" +
+      "null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -390,7 +407,7 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     executeString("ALTER TABLE " + canonicalTableName + " REPAIR PARTITION").close();
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     res = executeString("SELECT * FROM " + canonicalTableName + " ORDER BY col1, col2 desc, key desc;");
     result = resultSetToString(res);
@@ -426,7 +443,10 @@ public class TestAlterTable extends QueryTestCaseBase {
       "1,1,00:00:00\n" +
       "2,2,12:10:20\n" +
       "3,3,00:00:00\n" +
-      "3,2,12:10:30\n";
+      "3,2,12:10:30\n" +
+      "null,null,00:00:00\n" +
+      "null,null,00:00:00\n" +
+      "null,null,00:00:00\n";
     res.close();
     assertEquals(expectedResult, result);
 
@@ -472,11 +492,14 @@ public class TestAlterTable extends QueryTestCaseBase {
       "N,1,1,17.0\n" +
       "N,2,2,38.0\n" +
       "R,3,3,49.0\n" +
-      "R,3,2,45.0\n";
+      "R,3,2,45.0\n" +
+      "null,null,null,null\n" +
+      "null,null,null,null\n" +
+      "null,null,null,null\n";
     res.close();
     assertEquals(expectedResult, result);
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     // Check the volume of partition
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
@@ -491,7 +514,7 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     executeString("ALTER TABLE " + canonicalTableName + " REPAIR PARTITION").close();
 
-    verifyPartitionCount(databaseName, tableName, 5);
+    verifyPartitionCount(databaseName, tableName, 6);
 
     res = executeString("SELECT * FROM " + canonicalTableName
       + " ORDER BY col1, col2 desc, col3 desc, col4;");    result = resultSetToString(res);
@@ -528,17 +551,25 @@ public class TestAlterTable extends QueryTestCaseBase {
           sb.append(",");
         }
 
-        switch (colums.get(i).getDataType().getType()) {
-          case TEXT:
-          case TIME:
-          case TIMESTAMP:
-          case DATE:
-            sb.append(partitionColumnValue[0]).append("='").append(partitionColumnValue[1]).append("'");
-            break;
-          default:
-            sb.append(partitionColumnValue[0]).append("=").append(partitionColumnValue[1]);
-            break;
+        final String key = partitionColumnValue[0];
+        final String value;
+        if (partitionColumnValue[1].equalsIgnoreCase(StorageConstants.DEFAULT_PARTITION_NAME)) {
+          value = "null";
+        } else {
+          switch (colums.get(i).getDataType().getType()) {
+            case TEXT:
+            case TIME:
+            case TIMESTAMP:
+            case DATE:
+              value = "'" + partitionColumnValue[1] + "'";
+              break;
+            default:
+              value = partitionColumnValue[1];
+              break;
+          }
         }
+
+        sb.append(key).append("=").append(value);
       }
       sb.append(")");
       executeString(sb.toString()).close();

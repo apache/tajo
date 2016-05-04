@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.UndefinedOperatorException;
 import org.apache.tajo.storage.StorageConstants;
@@ -1014,6 +1015,7 @@ public class CatalogUtil {
 
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      options.set(StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
     } else if (dataFormat.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
     } else if (dataFormat.equalsIgnoreCase("RCFILE")) {

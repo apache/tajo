@@ -5,3 +5,6 @@ l_orderkey,l_quantity,r
 2,38.0,1
 3,45.0,1
 3,49.0,1
+null,null,1
+null,null,1
+null,null,1

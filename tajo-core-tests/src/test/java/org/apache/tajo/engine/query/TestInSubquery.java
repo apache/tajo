@@ -98,35 +98,40 @@ public class TestInSubquery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testMultipleNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInAndNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedInAndNotInSubQuery() throws Exception {
