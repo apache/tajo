@@ -32,8 +32,6 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -495,16 +493,12 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testNowInMultipleTasks() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", Type.INT4)
         .add("name", Type.TEXT)
         .build();
     String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5" };
-    TajoTestingCluster.createTable("testNowInMultipleTasks".toLowerCase(), schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable(conf, "testNowInMultipleTasks".toLowerCase(), schema, data, 2);
 
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");

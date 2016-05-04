@@ -56,6 +56,13 @@ public abstract class TextLineSerDe {
     return nullChars;
   }
 
+  /**
+   * Returns the bytes of null characters.
+   * The default value is '\\N' as in Hive.
+   *
+   * @param meta table meta
+   * @return a byte array of null characters
+   */
   public static byte [] getNullCharsAsBytes(TableMeta meta) {
     return getNullCharsAsBytes(meta, StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
   }
