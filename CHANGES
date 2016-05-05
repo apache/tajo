@@ -8,6 +8,8 @@ Release 0.11.3 - unreleased
 
   TASKS
 
+    TAJO-2142: Temporarily disable NOT IN subquery. (jihoon)
+
   BUG FIXES
 
     TAJO-2135: Invalid join result when join key columns contain nulls. (jihoon)

@@ -22,6 +22,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -174,5 +175,10 @@ public class TestInSubquery extends TestJoinQuery {
     // select * from lineitem, orders where l_orderkey = o_orderkey and l_partkey in
     // (select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9))
     runSimpleTests();
+  }
+
+  @Test(expected = NotImplementedException.class)
+  public final void testNotInSubquery() throws TajoException {
+    executeString("select n_name from nation where n_nationkey not in (select r_regionkey from region)");
   }
 }
