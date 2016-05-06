@@ -122,6 +122,14 @@ public class TypeConverter {
       return Array(Float4);
     case FLOAT8_ARRAY:
       return Array(Float8);
+    case TIMESTAMP_ARRAY:
+      return Array(Timestamp);
+    case DATE_ARRAY:
+      return Array(Date);
+    case TIME_ARRAY:
+      return Array(Time);
+    case TEXT_ARRAY:
+      return Array(Text);
 
     default:
       throw new TajoRuntimeException(new UnsupportedException(legacyBaseType.name()));
