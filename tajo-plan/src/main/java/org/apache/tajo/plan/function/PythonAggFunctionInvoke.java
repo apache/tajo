@@ -116,7 +116,8 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
   public Datum getPartialResult(FunctionContext context) {
     updateContextIfNecessary(context);
     // partial results are stored as json strings.
-    return DatumFactory.createText(scriptEngine.getPartialResult(context));
+    String result = scriptEngine.getPartialResult(context);
+    return DatumFactory.createText(result);
   }
 
   @Override

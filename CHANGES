@@ -12,10 +12,13 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2106: Fix minor typo in PostgreSQL Storage Handler documentation.
+    (Byunghoon Lim via jihoon)
+
     TAJO-2116: Simplify rpc address in default configuration. (jinho)
 
     TAJO-2126: Allow parallel execution of non-leaf sibling ExecutionBlocks.
-    (jihooon)
+    (jihoon)
 
     TAJO-2127: Use Type instead of DataType for EvalNode. (hyunsik)
 
@@ -139,6 +142,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2135: Invalid join result when join key columns contain nulls. (jihoon)
+
     TAJO-2110: Fix incorrect DateTime and remove hard coded tests. (jinho)
 
     TAJO-2119: Invalid sort result when sort key columns contain non-ascii values. 
@@ -251,6 +256,8 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2142: Temporarily disable NOT IN subquery. (jihoon)
 
     TAJO-2088: Change QueryTestCaseBase.runSimpleTests() to return a set of 
     TajoResultSetBase. (jihoon)

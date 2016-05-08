@@ -25,8 +25,6 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -50,16 +48,12 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMaxLongWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value", TajoDataTypes.Type.INT8)
         .build();
     String[] data = new String[]{ "1|-111", "2|\\N", "3|-333" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select max(value) as max_value from testbuiltin11");
@@ -77,15 +71,11 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinMaxDate() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("value", TajoDataTypes.Type.DATE)
         .build();
     String[] data = new String[]{ "2014-01-02", "2014-12-01", "2015-01-01", "1999-08-09", "2000-03-01" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from testbuiltin11");
@@ -102,15 +92,11 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinMaxDateWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("value", TajoDataTypes.Type.DATE)
         .build();
     String[] data = new String[]{ "2014-01-02", "2014-12-01", "\\N", "\\N", "2000-03-01" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from testbuiltin11");
@@ -127,15 +113,11 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinMaxTime() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("value", TajoDataTypes.Type.TIME)
         .build();
     String[] data = new String[]{ "11:11:11", "23:12:50", "00:00:01", "09:59:59", "12:13:14" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from testbuiltin11");
@@ -152,15 +134,11 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinMaxTimeWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("value", TajoDataTypes.Type.TIME)
         .build();
     String[] data = new String[]{ "11:11:11", "\\N", "\\N", "09:59:59", "12:13:14" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from testbuiltin11");
@@ -177,16 +155,12 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinMaxTimestamp() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("value", TajoDataTypes.Type.TIMESTAMP)
         .build();
     String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "2016-12-24 00:00:01", 
             "1977-05-04 09:59:59", "2002-11-21 12:13:14" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from testbuiltin11");
@@ -203,14 +177,10 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinMaxTimestampWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder().add("value", TajoDataTypes.Type.TIMESTAMP).build();
     String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "\\N",
             "\\N", "2002-11-21 12:13:14" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from testbuiltin11");
@@ -234,16 +204,12 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinLongWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value", TajoDataTypes.Type.INT8)
         .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(value) as min_value from testbuiltin11");
@@ -268,16 +234,12 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMaxStringWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("name", TajoDataTypes.Type.TEXT)
         .build();
     String[] data = new String[]{ "1|\\N", "2|\\N", "3|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select max(name) as max_name from testbuiltin11");
@@ -302,16 +264,12 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testMinStringWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("name", TajoDataTypes.Type.TEXT)
         .build();
     String[] data = new String[]{ "1|def", "2|\\N", "3|abc" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select min(name) as min_name from testbuiltin11");
@@ -364,10 +322,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testAvgWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -376,7 +330,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         .add("value_double", TajoDataTypes.Type.FLOAT8)
         .build();
     String[] data = new String[]{ "1|\\N|-111|1.2|-50.5", "2|1|\\N|\\N|52.5", "3|2|-333|2.8|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select avg(value_int) as avg_int, avg(value_long) as avg_long, avg(value_float) as avg_float, avg(value_double) as avg_double from testbuiltin11");
@@ -394,10 +348,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testAvgWithAllNulls() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -406,7 +356,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         .add("value_double", TajoDataTypes.Type.FLOAT8)
         .build();
     String[] data = new String[]{ "1|\\N|\\N|\\N|\\N", "2|\\N|\\N|\\N|\\N", "3|\\N|\\N|\\N|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select avg(value_int) as avg_int, avg(value_long) as avg_long, avg(value_float) as avg_float, avg(value_double) as avg_double from testbuiltin11");
@@ -424,10 +374,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testSumWithNull() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -436,7 +382,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         .add("value_double", TajoDataTypes.Type.FLOAT8)
         .build();
     String[] data = new String[]{ "1|\\N|-111|1.2|-50.5", "2|1|\\N|\\N|52.5", "3|2|-333|2.8|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select sum(value_int) as sum_int, sum(value_long) as sum_long, sum(value_float) as sum_float, sum(value_double) as sum_double from testbuiltin11");
@@ -454,10 +400,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testSumWithAllNulls() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -466,7 +408,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         .add("value_double", TajoDataTypes.Type.FLOAT8)
         .build();
     String[] data = new String[]{ "1|\\N|\\N|\\N|\\N", "2|\\N|\\N|\\N|\\N", "3|\\N|\\N|\\N|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select sum(value_int) as sum_int, sum(value_long) as sum_long, sum(value_float) as sum_float, sum(value_double) as sum_double from testbuiltin11");
@@ -484,10 +426,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testStdDevSamp() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -499,7 +437,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         "1|\\N|-111|1.2|-50.5",
         "2|1|\\N|\\N|52.5",
         "3|2|-333|2.8|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select stddev_samp(value_int) as sdsamp_int, stddev_samp(value_long) as sdsamp_long, stddev_samp(value_float) as sdsamp_float, stddev_samp(value_double) as sdsamp_double from testbuiltin11");
@@ -517,10 +455,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testStdDevSampWithFewNumbers() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -532,7 +466,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         "1|\\N|\\N|\\N|-50.5",
         "2|1|\\N|\\N|\\N",
         "3|\\N|\\N|\\N|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select stddev_samp(value_int) as sdsamp_int, stddev_samp(value_long) as sdsamp_long, stddev_samp(value_float) as sdsamp_float, stddev_samp(value_double) as sdsamp_double from testbuiltin11");
@@ -550,10 +484,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testStdDevPop() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -565,7 +495,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         "1|\\N|-111|1.2|-50.5",
         "2|1|\\N|\\N|52.5",
         "3|2|-333|2.8|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select stddev_pop(value_int) as sdpop_int, stddev_pop(value_long) as sdpop_long, stddev_pop(value_float) as sdpop_float, stddev_pop(value_double) as sdpop_double from testbuiltin11");
@@ -583,10 +513,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testStdDevPopWithFewNumbers() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -598,7 +524,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         "1|\\N|\\N|\\N|-50.5",
         "2|1|\\N|\\N|\\N",
         "3|\\N|\\N|\\N|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select stddev_pop(value_int) as sdpop_int, stddev_pop(value_long) as sdpop_long, stddev_pop(value_float) as sdpop_float, stddev_pop(value_double) as sdpop_double from testbuiltin11");
@@ -616,10 +542,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testVarSamp() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -631,7 +553,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
             "1|\\N|-111|1.2|-50.5",
             "2|1|\\N|\\N|52.5",
             "3|2|-333|2.8|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select var_samp(value_int) as vs_int, var_samp(value_long) as vs_long, var_samp(value_float) as vs_float, var_samp(value_double) as vs_double from testbuiltin11");
@@ -648,10 +570,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testVarSampWithFewNumbers() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -663,7 +581,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
             "1|\\N|\\N|\\N|-50.5",
             "2|1|\\N|\\N|\\N",
             "3|\\N|\\N|\\N|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select var_samp(value_int) as vsamp_int, var_samp(value_long) as vsamp_long, var_samp(value_float) as vsamp_float, var_samp(value_double) as vsamp_double from testbuiltin11");
@@ -680,10 +598,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testVarPop() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -695,7 +609,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
             "1|\\N|-111|1.2|-50.5",
             "2|1|\\N|\\N|52.5",
             "3|2|-333|2.8|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select var_pop(value_int) as vpop_int, var_pop(value_long) as vpop_long, var_pop(value_float) as vpop_float, var_pop(value_double) as vpop_double from testbuiltin11");
@@ -712,9 +626,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testVarPopWithFewNumbers() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
@@ -727,7 +638,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
             "1|\\N|\\N|\\N|-50.5",
             "2|1|\\N|\\N|\\N",
             "3|\\N|\\N|\\N|\\N" };
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select var_pop(value_int) as vpop_int, var_pop(value_long) as vpop_long, var_pop(value_float) as vpop_float, var_pop(value_double) as vpop_double from testbuiltin11");
@@ -774,21 +685,17 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
   
   @Test
   public void testRankWithTwoTables() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .build();
     String[] data = new String[] {"1", "3", "2", "4"};
-    TajoTestingCluster.createTable("rank_table1", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "rank_table1", schema, data, 1);
     schema = SchemaBuilder.builder()
         .add("refid", TajoDataTypes.Type.INT4)
         .add("value", TajoDataTypes.Type.TEXT)
         .build();
     data = new String[] {"1|efgh", "2|abcd", "4|erjk", "8|dfef"};
-    TajoTestingCluster.createTable("rank_table2", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "rank_table2", schema, data, 1);
     ResultSet res = null;
     
     try {
@@ -814,10 +721,6 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   @Test
   public void testCorr() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", TajoDataTypes.Type.INT4)
         .add("value_int", TajoDataTypes.Type.INT4)
@@ -831,7 +734,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
         "3|2|-333|2.8|\\N",
         "4|3|-555|2.8|43.2",
         "5|4|-111|1.1|10.2",};
-    TajoTestingCluster.createTable("testbuiltin11", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testbuiltin11", schema, data, 1);
 
     try {
       ResultSet res = executeString("select corr(value_int, value_long) as corr1, corr(value_long, value_float) as corr2, corr(value_float, value_double) as corr3, corr(value_double, value_int) as corr4 from testbuiltin11");

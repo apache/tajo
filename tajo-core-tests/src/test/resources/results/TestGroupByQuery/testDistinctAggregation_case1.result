@@ -2,3 +2,4 @@ quantity,suppkey,l_returnflag
 -------------------------------
 91.0,3,N
 94.0,2,R
+null,0,null

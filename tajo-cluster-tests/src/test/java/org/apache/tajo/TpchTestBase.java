@@ -24,11 +24,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.JavaResourceUtil;
-import org.apache.tajo.util.KeyValueSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -90,9 +88,7 @@ public class TpchTestBase {
 
   private void setUp() throws Exception {
     util = new LocalTajoTestingUtility();
-    KeyValueSet opt = new KeyValueSet();
-    opt.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    util.setup(names, paths, schemas, opt);
+    util.setup(names, paths, schemas);
   }
 
   public static TpchTestBase getInstance() {

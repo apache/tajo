@@ -30,22 +30,30 @@ class AvgPy:
 
     # eval at the first stage
     def eval(self, item):
-        self.sum += item
-        self.cnt += 1
+        if item != None: # null checking
+            self.sum += item
+            self.cnt += 1
 
     # get intermediate result
     def get_partial_result(self):
-        return [self.sum, self.cnt]
+        if self.cnt == 0:
+            return None
+        else:
+            return [self.sum, self.cnt]
 
     # merge intermediate results
     def merge(self, list):
-        self.sum += list[0]
-        self.cnt += list[1]
+        if list: # null checking
+            self.sum += list[0]
+            self.cnt += list[1]
 
     # get final result
     @output_type('float8')
     def get_final_result(self):
-        return self.sum / float(self.cnt)
+        if self.cnt == 0:
+            return None
+        else:
+            return self.sum / float(self.cnt)
 
 
 class CountPy:
