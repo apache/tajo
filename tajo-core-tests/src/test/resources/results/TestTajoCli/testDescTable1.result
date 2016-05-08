@@ -7,6 +7,7 @@ number of rows: 0
 volume: 0 B
 Options:
 	'timezone'='${table.timezone}'
+	'text.null'='\\N'
 	'text.delimiter'='|'
 
 schema: 
@@ -22,6 +23,7 @@ number of rows: 0
 volume: 0 B
 Options:
 	'timezone'='${table.timezone}'
+	'text.null'='\\N'
 	'text.delimiter'='|'
 
 schema: 

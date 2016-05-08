@@ -5,3 +5,6 @@ l_orderkey,l_quantity,r,const_val
 2,38.0,1,5
 3,45.0,1,5
 3,49.0,1,5
+null,null,1,5
+null,null,1,5
+null,null,1,5

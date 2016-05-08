@@ -115,6 +115,8 @@ public class StorageConstants {
   // Internal storage properties -------------------------------------------------
   public static final String SHUFFLE_TYPE = "shuffle.type";
 
+  public static final String DEFAULT_PARTITION_NAME = "__TAJO_DEFAULT_PARTITION__";
+
   static {
     PARQUET_DEFAULT_BLOCK_SIZE = Integer.toString(DEFAULT_BLOCK_SIZE);
     PARQUET_DEFAULT_PAGE_SIZE = Integer.toString(DEFAULT_PAGE_SIZE);
