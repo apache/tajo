@@ -560,8 +560,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       if (parts.length == 2) {
         int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
         Column keyColumn = partitionColumnSchema.getColumn(columnId);
-        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(),
-          StringUtils.unescapePathName(parts[1])));
+
+        if (parts[1].equals(StorageConstants.DEFAULT_PARTITION_NAME)){
+          tuple.put(columnId, DatumFactory.createNullDatum());
+        } else {
+          tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(),
+            StringUtils.unescapePathName(parts[1])));
+        }
       }
     }
 
