@@ -21,12 +21,12 @@ package org.apache.tajo.engine.planner;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
@@ -34,12 +34,13 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.partition.PartitionPruningHandle;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
-import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -47,6 +48,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
   
   final static String PARTITION_TABLE_NAME = "tb_partition";
   final static String MULTIPLE_PARTITION_TABLE_NAME = "tb_multiple_partition";
+  final static String ARBITRARY_PARTITION_TABLE_NAME = "tb_arbitrary_partition";
+  final static private String[] ARBITRARY_PATH = new String[3];
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -63,6 +66,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
     createExternalTableIncludedOnePartitionKeyColumn(fs, rootDir, schema, meta);
     createExternalTableIncludedMultiplePartitionKeyColumns(fs, rootDir, schema, meta);
+    createExternalTableIncludeArbitraryDirectories(fs, rootDir, schema, meta);
   }
 
   private static void createExternalTableIncludedOnePartitionKeyColumn(FileSystem fs, Path rootDir, Schema schema,
@@ -73,7 +77,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc("TestPartitionedTableRewriter", PARTITION_TABLE_NAME,
-        CatalogProtos.PartitionType.COLUMN, "key", partSchema);
+        PartitionType.COLUMN, "key", partSchema);
 
     Path tablePath = new Path(rootDir, PARTITION_TABLE_NAME);
     fs.mkdirs(tablePath);
@@ -104,10 +108,9 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
       .add("key3", TajoDataTypes.Type.INT8)
       .build();
 
-
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc("TestPartitionedTableRewriter", MULTIPLE_PARTITION_TABLE_NAME,
-        CatalogProtos.PartitionType.COLUMN, "key1,key2,key3", partSchema);
+        PartitionType.COLUMN, "key1,key2,key3", partSchema);
 
     Path tablePath = new Path(rootDir, MULTIPLE_PARTITION_TABLE_NAME);
     fs.mkdirs(tablePath);
@@ -136,6 +139,67 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     path = new Path(tableDesc.getUri().toString() + "/key1=part789/key2=supp789/key3=3");
     fs.mkdirs(path);
     FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
+  }
+
+
+  private static void createExternalTableIncludeArbitraryDirectories(FileSystem fs, Path rootDir,
+                                                                             Schema schema, TableMeta meta) throws Exception {
+    Schema partSchema = SchemaBuilder.builder()
+      .add("year", TajoDataTypes.Type.TEXT)
+      .add("month", TajoDataTypes.Type.TEXT)
+      .add("day", TajoDataTypes.Type.TEXT)
+      .build();
+
+    PartitionMethodDesc partitionMethodDesc =
+      new PartitionMethodDesc("TestPartitionedTableRewriter", ARBITRARY_PARTITION_TABLE_NAME,
+        PartitionType.COLUMN, "year,month,day", partSchema);
+
+    Path tablePath = new Path(rootDir, ARBITRARY_PARTITION_TABLE_NAME);
+    fs.mkdirs(tablePath);
+
+    client.createExternalTable(ARBITRARY_PARTITION_TABLE_NAME, schema, tablePath.toUri(), meta, partitionMethodDesc);
+
+    TableDesc tableDesc = client.getTableDesc(ARBITRARY_PARTITION_TABLE_NAME);
+    assertNotNull(tableDesc);
+
+    Path path = new Path(tableDesc.getUri().toString() + "/2016");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().toString() + "/2016/3");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().toString() + "/2016/3/1");
+    fs.mkdirs(path);
+    FileUtil.writeTextToFile("1|ARGENTINA|1", new Path(path, "data"));
+
+    client.executeQuery("ALTER TABLE " + ARBITRARY_PARTITION_TABLE_NAME
+      + " ADD PARTITION (year='2016', month = '3', day ='1') LOCATION '" + path + "'");
+
+    ARBITRARY_PATH[0] = path.toString();
+
+    path = new Path(tableDesc.getUri().toString() + "/2016/3/2");
+    fs.mkdirs(path);
+    FileUtil.writeTextToFile("2|BRAZIL|1", new Path(path, "data"));
+
+    client.executeQuery("ALTER TABLE " + ARBITRARY_PARTITION_TABLE_NAME
+      + " ADD PARTITION (year='2016', month = '3', day ='2') LOCATION '" + path + "'");
+
+    ARBITRARY_PATH[1] = path.toString();
+
+    path = new Path(tableDesc.getUri().toString() + "/2015");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().toString() + "/2015/3");
+    fs.mkdirs(path);
+    path = new Path(tableDesc.getUri().toString() + "/2015/3/1");
+    fs.mkdirs(path);
+    FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
+
+    client.executeQuery("ALTER TABLE " + ARBITRARY_PARTITION_TABLE_NAME
+      + " ADD PARTITION (year='2015', month = '3', day ='1') LOCATION '" + path + "'");
+
+    ARBITRARY_PATH[2] = path.toString();
+
+    List<PartitionDescProto> partitions = catalog.getPartitionsOfTable("default", ARBITRARY_PARTITION_TABLE_NAME);
+    assertEquals(3L, partitions.size());
+
   }
 
   @AfterClass
@@ -439,7 +503,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
   @Test
   public final void testPartitionPruningWitCTAS() throws Exception {
     String tableName = "testPartitionPruningUsingDirectories".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"" + getCurrentDatabase() +"\"", tableName);
+    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"" + getCurrentDatabase() + "\"", tableName);
 
     executeString(
       "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
@@ -492,4 +556,87 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
     executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
   }
+
+  @Test
+  public void testFilterWithArbitraryDirectories1() throws Exception {
+    Expr expr = sqlParser.parse("SELECT * FROM " + ARBITRARY_PARTITION_TABLE_NAME
+      + " WHERE year = '2016' ORDER BY year, month, day");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
+
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    ProjectionNode projNode = root.getChild();
+
+    assertEquals(NodeType.SORT, projNode.getChild().getType());
+    SortNode sortNode = projNode.getChild();
+
+    assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
+    SelectionNode selNode = sortNode.getChild();
+    assertTrue(selNode.hasQual());
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    scanNode.setQual(selNode.getQual());
+
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
+
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
+
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
+    assertEquals(2, filteredPaths.length);
+    assertEquals(ARBITRARY_PATH[0], filteredPaths[0].toString());
+    assertEquals(ARBITRARY_PATH[1], filteredPaths[1].toString());
+
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
+    assertEquals(2, partitionKeys.length);
+    assertEquals("year=2016/month=3/day=1", partitionKeys[0]);
+    assertEquals("year=2016/month=3/day=2", partitionKeys[1]);
+
+    assertEquals(23L, partitionPruningHandle.getTotalVolume());
+  }
+
+  @Test
+  public void testFilterWithArbitraryDirectories2() throws Exception {
+    Expr expr = sqlParser.parse("SELECT * FROM " + ARBITRARY_PARTITION_TABLE_NAME
+      + " WHERE year = '2016' and month = '3' and day = '2' ");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
+    LogicalNode plan = newPlan.getRootBlock().getRoot();
+
+    assertEquals(NodeType.ROOT, plan.getType());
+    LogicalRootNode root = (LogicalRootNode) plan;
+
+    ProjectionNode projNode = root.getChild();
+
+    assertEquals(NodeType.SELECTION, projNode.getChild().getType());
+    SelectionNode selNode = projNode.getChild();
+    assertTrue(selNode.hasQual());
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    scanNode.setQual(selNode.getQual());
+
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
+
+    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
+    assertNotNull(partitionPruningHandle);
+
+    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
+    assertEquals(1, filteredPaths.length);
+    assertEquals(ARBITRARY_PATH[1], filteredPaths[0].toString());
+
+    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
+    assertEquals(1, partitionKeys.length);
+    assertEquals("year=2016/month=3/day=2", partitionKeys[0]);
+
+    assertEquals(10L, partitionPruningHandle.getTotalVolume());
+  }
+
+
 }

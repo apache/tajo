@@ -164,7 +164,7 @@ public class TestCatalogAgainstCaseSensitivity {
     }
   }
 
-  // TODO: This should be added at TAJO-1891
+  @Test
   public void testTablePartition() throws Exception {
     //////////////////////////////////////////////////////////////////////////////
     // Test add partition

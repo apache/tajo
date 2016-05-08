@@ -23,6 +23,7 @@ import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
@@ -192,14 +193,10 @@ public class TajoDump {
           writer.write("--\n");
           writer.write(String.format("-- Table Partitions: %s%n", tableName));
           writer.write("--\n");
-          // TODO: This should be improved at TAJO-1891
-//          List<PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
-//          for (PartitionDescProto eachPartitionProto : partitionProtos) {
-//            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
-//          }
-          writer.write(String.format("ALTER TABLE %s REPAIR PARTITION;",
-            CatalogUtil.denormalizeIdentifier(databaseName) + "." + CatalogUtil.denormalizeIdentifier(tableName)));
-
+          List<CatalogProtos.PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
+          for (CatalogProtos.PartitionDescProto eachPartitionProto : partitionProtos) {
+            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
+          }
           writer.write("\n\n");
         }
 

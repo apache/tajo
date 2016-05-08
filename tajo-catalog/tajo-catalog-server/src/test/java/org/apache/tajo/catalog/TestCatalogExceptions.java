@@ -89,11 +89,11 @@ public class TestCatalogExceptions {
   @Test(expected = UndefinedTablespaceException.class)
   public void testAlterUndefinedTablespace() throws Exception {
     catalog.alterTablespace(AlterTablespaceProto.newBuilder().
-        setSpaceName("undefined").
-        addCommand(
-            AlterTablespaceCommand.newBuilder().
-                setType(AlterTablespaceType.LOCATION).
-                setLocation("hdfs://zzz.com/warehouse")).build());
+      setSpaceName("undefined").
+      addCommand(
+        AlterTablespaceCommand.newBuilder().
+          setType(AlterTablespaceType.LOCATION).
+          setLocation("hdfs://zzz.com/warehouse")).build());
   }
 
   @Test(expected = DuplicateDatabaseException.class)
@@ -132,7 +132,7 @@ public class TestCatalogExceptions {
   @Test(expected = DuplicateTableException.class)
   public void testCreateDuplicateTable() throws Exception {
     catalog.createTable(CatalogTestingUtil.buildTableDesc("TestDatabase1", "TestTable1",
-        CommonTestingUtil.getTestDir().toString()));
+      CommonTestingUtil.getTestDir().toString()));
   }
 
   @Test(expected = UndefinedDatabaseException.class)
@@ -158,7 +158,7 @@ public class TestCatalogExceptions {
         build());
   }
 
-  // TODO: This should be added at TAJO-1891
+  @Test
   public void testAddPartitionWithWrongUri() throws Exception {
     // TODO: currently, wrong uri does not occur any exception.
     String partitionName = "DaTe=/=AaA";
@@ -172,7 +172,7 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
-  // TODO: This should be added at TAJO-1891
+  @Test(expected = DuplicatePartitionException.class)
   public void testAddDuplicatePartition() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
@@ -195,7 +195,7 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
-  // TODO: This should be added at TAJO-1891
+  @Test(expected = UndefinedTableException.class)
   public void testAddPartitionToUndefinedTable() throws Exception {
     String partitionName = "DaTe=bBb/dAtE=AaA";
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
@@ -208,19 +208,6 @@ public class TestCatalogExceptions {
     catalog.alterTable(alterTableDesc);
   }
 
-  // TODO: This should be removed at TAJO-1891
-  @Test(expected = NotImplementedException.class)
-  public void testAddPartitionNotimplementedException() throws Exception {
-    String partitionName = "DaTe=/=AaA";
-    PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
-
-    AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
-    alterTableDesc.setPartitionDesc(partitionDesc);
-    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
-
-    catalog.alterTable(alterTableDesc);
-  }
 
   @Test(expected = UndefinedPartitionException.class)
   public void testDropUndefinedPartition() throws Exception {
