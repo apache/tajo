@@ -5,3 +5,6 @@ l_orderkey,l_discount,r1
 3,0.06,3
 1,0.09,4
 3,0.1,5
+null,null,6
+null,null,6
+null,null,6

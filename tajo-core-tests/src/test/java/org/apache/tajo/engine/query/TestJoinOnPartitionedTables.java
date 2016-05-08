@@ -170,7 +170,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
           " select l_partkey, l_suppkey, l_linenumber, \n" +
           " l_quantity, l_extendedprice, l_discount, l_tax, \n" +
           " l_returnflag, l_linestatus, l_shipdate, l_commitdate, \n" +
-          " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem");
+          " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem").close();
 
       ResultSet res = executeString(
           "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
@@ -184,7 +184,10 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
           "1,null\n" +
           "2,null\n" +
           "3,null\n" +
-          "3,null\n";
+          "3,null\n" +
+          "null,null\n" +
+          "null,null\n" +
+          "null,null\n";
       assertEquals(expected, resultSetToString(res));
       cleanupQuery(res);
     } finally {

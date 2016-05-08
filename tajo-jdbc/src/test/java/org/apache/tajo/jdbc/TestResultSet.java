@@ -36,7 +36,6 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -206,11 +205,9 @@ public class TestResultSet {
       String [] data = {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"
       };
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
       res = TajoTestingCluster
-          .run(table, schemas, tableOptions, new String[][]{data}, query, client);
+          .run(table, schemas, new String[][]{data}, query, client);
 
       assertTrue(res.next());
 
