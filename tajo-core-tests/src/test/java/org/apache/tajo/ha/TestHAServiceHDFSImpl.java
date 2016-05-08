@@ -68,7 +68,8 @@ public class TestHAServiceHDFSImpl  {
       .add("deptname", TajoDataTypes.Type.TEXT)
       .build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
+
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
       .getAppender(employeeMeta, schema, employeePath);
