@@ -49,6 +49,7 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -2079,13 +2080,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param exprs
    * @return
    */
-  private static String[] convertExprsToStrings(Expr[] exprs) {
+  private static String[] convertExprsToPartitionTableStringValues(Expr[] exprs) {
     int exprCount = exprs.length;
     String[] values = new String[exprCount];
 
     for(int i = 0; i < exprCount; i++) {
-      LiteralValue expr = (LiteralValue)exprs[i];
-      values[i] = expr.getValue();
+      if (exprs[i].getType() == OpType.NullLiteral) {
+        values[i] = StorageConstants.DEFAULT_PARTITION_NAME;
+      } else {
+        LiteralValue expr = (LiteralValue) exprs[i];
+        values[i] = expr.getValue();
+      }
     }
 
     return values;
@@ -2160,7 +2165,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (alterTable.getValues() != null) {
-      alterTableNode.setPartitionValues(convertExprsToStrings(alterTable.getValues()));
+      alterTableNode.setPartitionValues(convertExprsToPartitionTableStringValues(alterTable.getValues()));
     }
 
     if (alterTable.getLocation() != null) {

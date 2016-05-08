@@ -21,6 +21,7 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.NamedTest;
 import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -98,35 +99,40 @@ public class TestInSubquery extends TestJoinQuery {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testMultipleNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testInAndNotInSubQuery() throws Exception {
     runSimpleTests();
   }
 
-  @Test
+  // TODO: enable after TAJO-2141
+//  @Test
   @Option(withExplain = false, withExplainGlobal = false, parameterized = true, sort = true)
   @SimpleTest()
   public final void testNestedInAndNotInSubQuery() throws Exception {
@@ -164,5 +170,10 @@ public class TestInSubquery extends TestJoinQuery {
     // select * from lineitem, orders where l_orderkey = o_orderkey and l_partkey in
     // (select l_partkey from lineitem where l_linenumber in (1, 3, 5, 7, 9))
     runSimpleTests();
+  }
+
+  @Test(expected = NotImplementedException.class)
+  public final void testNotInSubquery() throws TajoException {
+    executeString("select n_name from nation where n_nationkey not in (select r_regionkey from region)");
   }
 }

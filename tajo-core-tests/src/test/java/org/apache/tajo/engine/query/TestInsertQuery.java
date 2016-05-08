@@ -86,7 +86,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     executeString("DROP TABLE table1 PURGE");
@@ -106,7 +106,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     res = executeFile("testInsertInto.sql");
@@ -136,11 +136,17 @@ public class TestInsertQuery extends QueryTestCaseBase {
         "2|2|38.0\n" +
         "3|2|45.0\n" +
         "3|3|49.0\n" +
+        "||\n" +
+        "||\n" +
+        "||\n" +
         "1|1|17.0\n" +
         "1|1|36.0\n" +
         "2|2|38.0\n" +
         "3|2|45.0\n" +
-        "3|3|49.0\n";
+        "3|3|49.0\n" +
+        "||\n" +
+        "||\n" +
+        "||\n";
 
     assertNotNull(tableDatas);
     assertEquals(expected, tableDatas);
@@ -171,7 +177,10 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "1|1|2\n" +
           "2|2|1\n" +
           "3|2|1\n" +
-          "3|3|2\n";
+          "3|3|2\n" +
+          "||\n" +
+          "||\n" +
+          "||\n";
 
       assertEquals(expected, resultFileData);
 
@@ -196,7 +205,10 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "1|1|2\n" +
           "2|2|1\n" +
           "3|2|1\n" +
-          "3|3|2\n";
+          "3|3|2\n" +
+          "||\n" +
+          "||\n" +
+          "||\n";
 
       assertEquals(expected + expected, resultFileData);
 
@@ -256,7 +268,10 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "FRANCE,3,6\n" +
           "GERMANY,3,7\n" +
           "INDIA,2,8\n" +
-          "INDONESIA,2,9\n";
+          "INDONESIA,2,9\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n";
 
       assertEquals(expected, resultSetToString(res));
       res.close();
@@ -314,7 +329,13 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "INDIA,2,8\n" +
           "INDIA,2,8\n" +
           "INDONESIA,2,9\n" +
-          "INDONESIA,2,9\n";
+          "INDONESIA,2,9\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n";
 
       assertEquals(expected, resultSetToString(res));
 
@@ -326,7 +347,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
       FileStatus[] files = fs.listStatus(path);
       assertNotNull(files);
-      assertEquals(25, files.length);
+      assertEquals(26, files.length);
 
       for (FileStatus eachFileStatus: files) {
         assertTrue(eachFileStatus.getPath().getName().indexOf("n_nationkey=") == 0);
@@ -360,7 +381,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
     assertEquals(originalDesc.getSchema(), desc.getSchema());
 
@@ -380,7 +401,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     res = executeString("select * from " + CatalogUtil.denormalizeIdentifier(getCurrentDatabase()) + ".table1");
@@ -413,6 +434,21 @@ public class TestInsertQuery extends QueryTestCaseBase {
     assertTrue(0f == res.getFloat(2));
     assertTrue(res.wasNull());
     assertTrue(49.0 == res.getFloat(3));
+
+    assertTrue(res.next());
+    assertEquals(0, res.getLong(1));
+    assertEquals(0.0, 0.0, res.getFloat(2));
+    assertEquals(0.0, 0.0, res.getFloat(3));
+
+    assertTrue(res.next());
+    assertEquals(0, res.getLong(1));
+    assertEquals(0.0, 0.0, res.getFloat(2));
+    assertEquals(0.0, 0.0, res.getFloat(3));
+
+    assertTrue(res.next());
+    assertEquals(0, res.getLong(1));
+    assertEquals(0.0, 0.0, res.getFloat(2));
+    assertEquals(0.0, 0.0, res.getFloat(3));
 
     assertFalse(res.next());
     res.close();
@@ -451,7 +487,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "lineitem_year_month");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     res = executeQuery();
@@ -473,7 +509,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
     TableDesc orderKeys = catalog.getTableDesc(getCurrentDatabase(), tableName);
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, orderKeys.getStats().getNumRows().intValue());
+      assertEquals(8, orderKeys.getStats().getNumRows().intValue());
     }
 
     // this query will result in the two rows.
@@ -603,7 +639,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
       TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "parquet_table");
       if (!testingCluster.isHiveCatalogStoreRunning()) {
-        assertEquals(5, desc.getStats().getNumRows().intValue());
+        assertEquals(8, desc.getStats().getNumRows().intValue());
       }
 
       ResultSet res = executeString("select l_orderkey, l_shipdate, l_shipdate_function " +
@@ -615,7 +651,10 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "1,1996-04-12,1996-04-12\n" +
           "2,1997-01-28,1997-01-28\n" +
           "3,1994-02-02,1994-02-02\n" +
-          "3,1993-11-09,1993-11-09\n";
+          "3,1993-11-09,1993-11-09\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n";
 
       assertEquals(expected, resultSetToString(res));
 
@@ -638,7 +677,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
       TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "parquet_table");
       if (!testingCluster.isHiveCatalogStoreRunning()) {
-        assertEquals(5, desc.getStats().getNumRows().intValue());
+        assertEquals(8, desc.getStats().getNumRows().intValue());
       }
 
       ResultSet res = executeString("select l_orderkey, l_shipdate, l_shipdate_function " +
@@ -650,7 +689,10 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "3,1994-02-02,1994-02-02\n" +
           "1,1996-03-13,1996-03-13\n" +
           "1,1996-04-12,1996-04-12\n" +
-          "2,1997-01-28,1997-01-28\n";
+          "2,1997-01-28,1997-01-28\n" +
+          "null,null,null\n" +
+          "null,null,null\n" +
+          "null,null,null\n";
 
       assertEquals(expected, resultSetToString(res));
 
@@ -671,7 +713,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
     executeString("DROP TABLE table1 PURGE");
   }
@@ -807,9 +849,15 @@ public class TestInsertQuery extends QueryTestCaseBase {
         "2|2|38.0\n" +
         "3|2|45.0\n" +
         "3|3|49.0\n" +
+        "||\n" +
+        "||\n" +
+        "||\n" +
         "1|3|173665.47\n" +
         "2|4|46929.18\n" +
-        "3|2|193846.25\n";
+        "3|2|193846.25\n" +
+        "||\n" +
+        "||\n" +
+        "||\n";
 
     assertNotNull(tableDatas);
     assertEquals(expected, tableDatas);
@@ -835,9 +883,15 @@ public class TestInsertQuery extends QueryTestCaseBase {
         "2|2|38.0\n" +
         "3|2|45.0\n" +
         "3|3|49.0\n" +
+        "||\n" +
+        "||\n" +
+        "||\n" +
         "1|3|173665.47\n" +
         "2|4|46929.18\n" +
-        "3|2|193846.25\n";
+        "3|2|193846.25\n" +
+        "||\n" +
+        "||\n" +
+        "||\n";
 
     assertNotNull(tableDatas);
     assertEquals(expected, tableDatas);
@@ -857,9 +911,15 @@ public class TestInsertQuery extends QueryTestCaseBase {
         "2|2|38.0\n" +
         "3|2|45.0\n" +
         "3|3|49.0\n" +
+        "||\n" +
+        "||\n" +
+        "||\n" +
         "1|3|173665.47\n" +
         "2|4|46929.18\n" +
-        "3|2|193846.25\n";
+        "3|2|193846.25\n" +
+        "||\n" +
+        "||\n" +
+        "||\n";
 
     assertNotNull(resultDatas);
     assertEquals(expected, resultDatas);
@@ -877,9 +937,15 @@ public class TestInsertQuery extends QueryTestCaseBase {
         "2|2|38.0\n" +
         "3|2|45.0\n" +
         "3|3|49.0\n" +
+        "||\n" +
+        "||\n" +
+        "||\n" +
         "1|3|173665.47\n" +
         "2|4|46929.18\n" +
-        "3|2|193846.25\n";
+        "3|2|193846.25\n" +
+        "||\n" +
+        "||\n" +
+        "||\n";
 
     assertNotNull(resultDatas);
     assertEquals(expected, resultDatas);
