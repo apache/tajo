@@ -47,8 +47,7 @@ public class FragmentConvertor {
    */
   private static final Class<?>[] DEFAULT_FRAGMENT_PARAMS = { ByteString.class };
 
-  public static Class<? extends Fragment> getFragmentClass(Configuration conf, String dataFormat)
-  throws IOException {
+  public static Class<? extends Fragment> getFragmentClass(Configuration conf, String dataFormat) {
     Class<? extends Fragment> fragmentClass = CACHED_FRAGMENT_CLASSES.get(dataFormat.toLowerCase());
     if (fragmentClass == null) {
       fragmentClass = conf.getClass(
@@ -57,7 +56,7 @@ public class FragmentConvertor {
     }
 
     if (fragmentClass == null) {
-      throw new IOException("No such a fragment for " + dataFormat.toLowerCase());
+      throw new TajoInternalError("No such a fragment for " + dataFormat.toLowerCase());
     }
 
     return fragmentClass;
@@ -80,11 +79,10 @@ public class FragmentConvertor {
     return result;
   }
 
-  public static <T extends Fragment> T convert(Configuration conf, FragmentProto fragment)
-      throws IOException {
+  public static <T extends Fragment> T convert(Configuration conf, FragmentProto fragment) {
     Class<T> fragmentClass = (Class<T>) getFragmentClass(conf, fragment.getDataFormat().toLowerCase());
     if (fragmentClass == null) {
-      throw new IOException("No such a fragment class for " + fragment.getDataFormat());
+      throw new TajoInternalError("No such a fragment class for " + fragment.getDataFormat());
     }
     return convert(fragmentClass, fragment);
   }
@@ -101,7 +99,7 @@ public class FragmentConvertor {
     return list;
   }
 
-  public static <T extends Fragment> List<T> convert(Configuration conf, FragmentProto...fragments) throws IOException {
+  public static <T extends Fragment> List<T> convert(Configuration conf, FragmentProto...fragments) {
     List<T> list = Lists.newArrayList();
     if (fragments == null) {
       return list;

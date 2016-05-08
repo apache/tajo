@@ -47,6 +47,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
@@ -294,6 +295,7 @@ public class TestTajoCli {
 
   @Test
   public void testSelectResultWithNullFalse() throws Exception {
+    setVar(tajoCli, SessionVars.CLI_NULL_CHAR, "testnull");
     String sql =
       "select\n" +
         "  c_custkey,\n" +
@@ -387,10 +389,11 @@ public class TestTajoCli {
 
     String consoleResult = new String(out.toByteArray());
 
-    String masterAddress = tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-    String host = masterAddress.split(":")[0];
+    InetSocketAddress masterAddress =
+        tajoCli.getContext().getConf().getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+
     tajoCli.close();
-    assertEquals(consoleResult, host + "\n");
+    assertEquals(consoleResult, masterAddress.getHostName() + "\n");
   }
 
   @Test
