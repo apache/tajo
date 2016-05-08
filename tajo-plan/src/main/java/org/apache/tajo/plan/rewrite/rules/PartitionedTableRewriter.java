@@ -25,6 +25,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -43,12 +44,15 @@ import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private CatalogService catalog;
@@ -94,11 +98,13 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private static class PartitionPathFilter implements PathFilter {
 
     private Schema schema;
-    private EvalNode partitionFilter;
-    public PartitionPathFilter(Schema schema, EvalNode partitionFilter) {
+    private @Nullable EvalNode partitionFilter;
+    public PartitionPathFilter(Schema schema, @Nullable EvalNode partitionFilter) {
       this.schema = schema;
       this.partitionFilter = partitionFilter;
-      partitionFilter.bind(null, schema);
+      if (this.partitionFilter != null) {
+        this.partitionFilter.bind(null, schema);
+      }
     }
 
     @Override
@@ -108,7 +114,11 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         return false;
       }
 
-      return partitionFilter.eval(tuple).asBool();
+      if (partitionFilter != null) {
+        return partitionFilter.eval(tuple).isTrue();
+      } else {
+        return true;
+      }
     }
 
     @Override
@@ -149,7 +159,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         partitions = catalog.getPartitionsOfTable(splits[0], splits[1]);
         if (partitions.isEmpty()) {
           partitionPruningHandle = getPartitionPruningHandleByFileSystem(partitionColumns, conjunctiveForms, fs,
-              tablePath);
+            tablePath);
         } else {
           partitionPruningHandle = getPartitionPruningHandleByCatalog(partitions);
         }
@@ -160,7 +170,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
           partitionPruningHandle = getPartitionPruningHandleByCatalog(partitions);
         } else {
           partitionPruningHandle = getPartitionPruningHandleByFileSystem(partitionColumns, conjunctiveForms, fs,
-              tablePath);
+            tablePath);
         }
       }
     } catch (UnsupportedException ue) {
@@ -333,16 +343,9 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return The array of path filter, accpeting all partition paths.
    */
   public static PathFilter [] buildAllAcceptingPathFilters(Schema partitionColumns) {
-    Column target;
     PathFilter [] filters = new PathFilter[partitionColumns.size()];
-    List<EvalNode> accumulatedFilters = Lists.newArrayList();
     for (int i = 0; i < partitionColumns.size(); i++) { // loop from one to level
-      target = partitionColumns.getColumn(i);
-      accumulatedFilters.add(new IsNullEval(true, new FieldEval(target)));
-
-      EvalNode filterPerLevel = AlgebraicUtil.createSingletonExprFromCNF(
-          accumulatedFilters.toArray(new EvalNode[accumulatedFilters.size()]));
-      filters[i] = new PartitionPathFilter(partitionColumns, filterPerLevel);
+      filters[i] = new PartitionPathFilter(partitionColumns, null);
     }
     return filters;
   }
@@ -501,7 +504,12 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       }
       int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
       Column keyColumn = partitionColumnSchema.getColumn(columnId);
-      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
+      String pathName = StringUtils.unescapePathName(parts[1]);
+      if (pathName.equals(StorageConstants.DEFAULT_PARTITION_NAME)){
+        tuple.put(columnId, DatumFactory.createNullDatum());
+      } else {
+        tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), pathName));
+      }
     }
     for (; i < partitionColumnSchema.size(); i++) {
       tuple.put(i, NullDatum.get());

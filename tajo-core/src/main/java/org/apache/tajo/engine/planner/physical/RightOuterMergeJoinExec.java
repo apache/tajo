@@ -208,6 +208,28 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
         // END MOVE FORWARDING STAGE
         //////////////////////////////////////////////////////////////////////
 
+        // Check null values
+        Tuple leftKey = rightKeyExtractor.project(rightTuple);
+        boolean containNull = false;
+        for (int i = 0; i < leftKey.size(); i++) {
+          if (leftKey.isBlankOrNull(i)) {
+            containNull = true;
+            break;
+          }
+        }
+
+        if (containNull) {
+          frameTuple.set(nullPaddedTuple, rightTuple);
+          outTuple = projector.eval(frameTuple);
+          leftTuple = leftChild.next();
+          rightTuple = rightChild.next();
+
+          if (leftTuple == null || rightTuple == null) {
+            end = true;
+          }
+          return outTuple;
+        }
+
         // once a match is found, retain all tuples with this key in tuple slots on each side
         if(!end) {
           endInPopulationStage = false;
@@ -282,7 +304,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
           posRightTupleSlots = posRightTupleSlots + 1;
 
           frameTuple.set(nextLeft, aTuple);
-          if (joinQual.eval(frameTuple).asBool()) {
+          if (joinQual.eval(frameTuple).isTrue()) {
             return projector.eval(frameTuple);
           } else {
             // padding null
@@ -301,7 +323,7 @@ public class RightOuterMergeJoinExec extends CommonJoinExec {
 
             frameTuple.set(nextLeft, aTuple);
 
-            if (joinQual.eval(frameTuple).asBool()) {
+            if (joinQual.eval(frameTuple).isTrue()) {
               return projector.eval(frameTuple);
             } else {
               // padding null

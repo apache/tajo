@@ -23,8 +23,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -129,9 +127,6 @@ public class TestSortQuery extends QueryTestCaseBase {
   public final void testSortFirstDesc() throws Exception {
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
       Schema schema = SchemaBuilder.builder()
           .add("col1", Type.INT4)
@@ -147,7 +142,7 @@ public class TestSortQuery extends QueryTestCaseBase {
           "3|dat",
           "1|abe"
       };
-      TajoTestingCluster.createTable("sortfirstdesc", schema, tableOptions, data, 2);
+      TajoTestingCluster.createTable(conf, "sortfirstdesc", schema, data, 2);
 
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -226,7 +221,7 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testTopkWithJson() throws Exception {
-    // select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3;
+    // select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 5;
     ResultSet res = executeJsonQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -236,9 +231,6 @@ public class TestSortQuery extends QueryTestCaseBase {
   public final void testSortOnNullColumn() throws Exception {
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
       Schema schema = SchemaBuilder.builder()
           .add("id", Type.INT4)
@@ -250,7 +242,7 @@ public class TestSortQuery extends QueryTestCaseBase {
           "3|ARGENTINA",
           "4|CANADA"
       };
-      TajoTestingCluster.createTable("nullsort", schema, tableOptions, data, 2);
+      TajoTestingCluster.createTable(conf, "nullsort", schema, data, 2);
 
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -263,16 +255,12 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSortOnNullColumn2() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", Type.INT4)
         .add("name", Type.TEXT)
         .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
-    TajoTestingCluster.createTable("testSortOnNullColumn2".toLowerCase(), schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testSortOnNullColumn2".toLowerCase(), schema, data, 1);
 
     try {
       ResultSet res = executeString("select * from testSortOnNullColumn2 order by name asc");
@@ -301,16 +289,12 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSortOnNullColumn3() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", Type.INT4)
         .add("name", Type.TEXT)
         .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
-    TajoTestingCluster.createTable("testSortOnNullColumn3".toLowerCase(), schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testSortOnNullColumn3".toLowerCase(), schema, data, 1);
 
     try {
       ResultSet res = executeString("select * from testSortOnNullColumn3 order by name nulls first");
@@ -330,16 +314,12 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSortOnNullColumn4() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", Type.INT4)
         .add("name", Type.TEXT)
         .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
-    TajoTestingCluster.createTable("testSortOnNullColumn4".toLowerCase(), schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testSortOnNullColumn4".toLowerCase(), schema, data, 1);
 
     try {
       ResultSet res = executeString("select * from testSortOnNullColumn4 order by name desc nulls last");
@@ -359,16 +339,12 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSortOnNullColumn5() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", Type.INT4)
         .add("name", Type.TEXT)
         .build();
     String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
-    TajoTestingCluster.createTable("testSortOnNullColumn5".toLowerCase(), schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "testSortOnNullColumn5".toLowerCase(), schema, data, 1);
 
     try {
       ResultSet res = executeString("select * from testSortOnNullColumn5 order by name asc nulls first");
@@ -390,10 +366,6 @@ public class TestSortQuery extends QueryTestCaseBase {
   public final void testSortOnUnicodeTextAsc() throws Exception {
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
       Schema schema = SchemaBuilder.builder()
           .add("col1", Type.INT4)
           .add("col2", Type.TEXT)
@@ -404,7 +376,7 @@ public class TestSortQuery extends QueryTestCaseBase {
           "3|가가가",
           "4|냐하하"
       };
-      TajoTestingCluster.createTable("unicode_sort1", schema, tableOptions, data, 2);
+      TajoTestingCluster.createTable(conf, "unicode_sort1", schema, data, 2);
 
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -419,9 +391,6 @@ public class TestSortQuery extends QueryTestCaseBase {
   public final void testSortOnUnicodeTextDesc() throws Exception {
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
       Schema schema = SchemaBuilder.builder()
           .add("col1", Type.INT4)
@@ -433,7 +402,7 @@ public class TestSortQuery extends QueryTestCaseBase {
           "3|가가가",
           "4|냐하하"
       };
-      TajoTestingCluster.createTable("unicode_sort2", schema, tableOptions, data, 2);
+      TajoTestingCluster.createTable(conf, "unicode_sort2", schema, data, 2);
 
       ResultSet res = executeQuery();
       assertResultSet(res);
