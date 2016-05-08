@@ -196,7 +196,7 @@ public class TestDirectOutputCommitter {
 
     // Check the number of partitions and the prefix of each output file
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
-    assertEquals(5, partitions.size());
+    assertEquals(6, partitions.size());
 
     String prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
     for (CatalogProtos.PartitionDescProto partition : partitions) {
@@ -301,7 +301,7 @@ public class TestDirectOutputCommitter {
 
     // Check the number of partitions and the prefix of each output file
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
-    assertEquals(5, partitions.size());
+    assertEquals(6, partitions.size());
 
     String prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
     for (CatalogProtos.PartitionDescProto partition : partitions) {
@@ -498,7 +498,7 @@ public class TestDirectOutputCommitter {
 
     // Check the number of partitions and the prefix of each output file
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
-    assertEquals(5, partitions.size());
+    assertEquals(6, partitions.size());
 
     String prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
     for (CatalogProtos.PartitionDescProto partition : partitions) {
@@ -599,7 +599,7 @@ public class TestDirectOutputCommitter {
 
     // Check the number of partitions and the prefix of each output file
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME, tableName);
-    assertEquals(5, partitions.size());
+    assertEquals(6, partitions.size());
 
     String prefix = "UUID-" + queryId.toString().substring(2).replaceAll("_", "-");
     for (CatalogProtos.PartitionDescProto partition : partitions) {
