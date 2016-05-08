@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
@@ -240,6 +241,56 @@ public class EvalTreeUtil {
   public static boolean containColumnRef(EvalNode expr, Column target) {
     Set<Column> exprSet = findUniqueColumns(expr);
     return exprSet.contains(target);
+  }
+
+  /**
+   * It separates a singular CNF-formed join condition into a join condition, a left join filter, and
+   * right join filter.
+   *
+   * @param joinQual the original join condition
+   * @param leftSchema Left table schema
+   * @param rightSchema Left table schema
+   * @return Three element EvalNodes, 0 - join condition, 1 - left join filter, 2 - right join filter.
+   */
+  public static EvalNode[] extractJoinConditions(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+    List<EvalNode> joinQuals = Lists.newArrayList();
+    List<EvalNode> leftFilters = Lists.newArrayList();
+    List<EvalNode> rightFilters = Lists.newArrayList();
+    for (EvalNode eachQual : AlgebraicUtil.toConjunctiveNormalFormArray(joinQual)) {
+      if (!(eachQual instanceof BinaryEval)) {
+        continue; // todo 'between', etc.
+      }
+      BinaryEval binaryEval = (BinaryEval)eachQual;
+      LinkedHashSet<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
+      LinkedHashSet<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
+      boolean leftInLeft = leftSchema.containsAny(leftColumns);
+      boolean rightInLeft = leftSchema.containsAny(rightColumns);
+      boolean leftInRight = rightSchema.containsAny(leftColumns);
+      boolean rightInRight = rightSchema.containsAny(rightColumns);
+
+      boolean columnsFromLeft = leftInLeft || rightInLeft;
+      boolean columnsFromRight = leftInRight || rightInRight;
+      if (!columnsFromLeft && !columnsFromRight) {
+        continue; // todo constant expression : this should be done in logical phase
+      }
+      if (columnsFromLeft ^ columnsFromRight) {
+        if (columnsFromLeft) {
+          leftFilters.add(eachQual);
+        } else {
+          rightFilters.add(eachQual);
+        }
+        continue;
+      }
+      if ((leftInLeft && rightInLeft) || (leftInRight && rightInRight)) {
+        continue; // todo not allowed yet : this should be checked in logical phase
+      }
+      joinQuals.add(eachQual);
+    }
+    return new EvalNode[] {
+        joinQuals.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(joinQuals),
+        leftFilters.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(leftFilters),
+        rightFilters.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(rightFilters)
+    };
   }
 
   /**

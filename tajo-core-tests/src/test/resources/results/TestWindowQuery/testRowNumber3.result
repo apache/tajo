@@ -5,3 +5,6 @@ l_orderkey,row_num,l_discount,average
 2,1,0.0,0.0
 3,1,0.06,0.08
 3,2,0.1,0.08
+null,1,null,null
+null,2,null,null
+null,3,null,null
