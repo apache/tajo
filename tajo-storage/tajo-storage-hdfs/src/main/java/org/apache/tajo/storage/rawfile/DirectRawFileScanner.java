@@ -100,12 +100,12 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     }
 
     // initial set position
-    if (fragment.getStartKey() > 0) {
-      channel.seek(fragment.getStartKey());
+    if (fragment.getStartKey().getKey() > 0) {
+      channel.seek(fragment.getStartKey().getKey());
     }
 
-    filePosition = fragment.getStartKey();
-    endOffset = fragment.getStartKey() + fragment.getLength();
+    filePosition = fragment.getStartKey().getKey();
+    endOffset = fragment.getStartKey().getKey() + fragment.getLength();
     if (LOG.isDebugEnabled()) {
       LOG.debug("RawFileScanner open:" + fragment.getPath() + ", offset :" +
           fragment.getStartKey() + ", fragment length :" + fragment.getLength());
@@ -163,7 +163,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   @Override
   public void reset() throws IOException {
     // reload initial buffer
-    filePosition = fragment.getStartKey();
+    filePosition = fragment.getStartKey().getKey();
     recordCount = 0;
     seek(filePosition);
     eos = false;
@@ -172,7 +172,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   @Override
   public void close() throws IOException {
     if (tableStats != null) {
-      tableStats.setReadBytes(filePosition - fragment.getStartKey());
+      tableStats.setReadBytes(filePosition - fragment.getStartKey().getKey());
       tableStats.setNumRows(recordCount);
     }
     if(tupleBuffer != null) {
@@ -208,7 +208,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   public TableStats getInputStats() {
     if(tableStats != null){
       tableStats.setNumRows(recordCount);
-      tableStats.setReadBytes(filePosition - fragment.getStartKey()); // actual read bytes (scan + rescan * n)
+      tableStats.setReadBytes(filePosition - fragment.getStartKey().getKey()); // actual read bytes (scan + rescan * n)
       tableStats.setNumBytes(fragment.getLength());
     }
     return tableStats;
@@ -222,7 +222,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       return 1.0f;
     }
 
-    long readBytes = filePosition - fragment.getStartKey();
+    long readBytes = filePosition - fragment.getStartKey().getKey();
     if (readBytes == 0) {
       return 0.0f;
     } else {

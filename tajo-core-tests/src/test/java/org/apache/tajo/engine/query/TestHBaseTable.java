@@ -555,8 +555,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Tablespace tablespace = TablespaceManager.getByName("cluster1");
     List<Fragment> fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(1, fragments.size());
-    assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));
-    assertEquals("021" + postFix, new String(((HBaseFragment)fragments.get(0)).getStopRow()));
+    assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartKey().getKey()));
+    assertEquals("021" + postFix, new String(((HBaseFragment)fragments.get(0)).getEndKey().getKey()));
 
     // where rk >= '020' and rk <= '055'
     EvalNode evalNode1 = new BinaryEval(EvalType.GEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
@@ -569,12 +569,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
     fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(2, fragments.size());
     HBaseFragment fragment1 = (HBaseFragment) fragments.get(0);
-    assertEquals("020", new String(fragment1.getStartRow()));
-    assertEquals("040", new String(fragment1.getStopRow()));
+    assertEquals("020", new String(fragment1.getStartKey().getKey()));
+    assertEquals("040", new String(fragment1.getEndKey().getKey()));
 
     HBaseFragment fragment2 = (HBaseFragment) fragments.get(1);
-    assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("055" + postFix, new String(fragment2.getStopRow()));
+    assertEquals("040", new String(fragment2.getStartKey().getKey()));
+    assertEquals("055" + postFix, new String(fragment2.getEndKey().getKey()));
 
     // where (rk >= '020' and rk <= '055') or rk = '075'
     EvalNode evalNode3 = new BinaryEval(EvalType.EQUAL, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
@@ -584,16 +584,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     fragments = tablespace.getSplits("hbase_mapped_table", tableDesc, scanNode.getQual());
     assertEquals(3, fragments.size());
     fragment1 = (HBaseFragment) fragments.get(0);
-    assertEquals("020", new String(fragment1.getStartRow()));
-    assertEquals("040", new String(fragment1.getStopRow()));
+    assertEquals("020", new String(fragment1.getStartKey().getKey()));
+    assertEquals("040", new String(fragment1.getEndKey().getKey()));
 
     fragment2 = (HBaseFragment) fragments.get(1);
-    assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("055" + postFix, new String(fragment2.getStopRow()));
+    assertEquals("040", new String(fragment2.getStartKey().getKey()));
+    assertEquals("055" + postFix, new String(fragment2.getEndKey().getKey()));
 
     HBaseFragment fragment3 = (HBaseFragment) fragments.get(2);
-    assertEquals("075", new String(fragment3.getStartRow()));
-    assertEquals("075" + postFix, new String(fragment3.getStopRow()));
+    assertEquals("075", new String(fragment3.getStartKey().getKey()));
+    assertEquals("075" + postFix, new String(fragment3.getEndKey().getKey()));
 
 
     // where (rk >= '020' and rk <= '055') or (rk >= '072' and rk <= '078')
@@ -608,16 +608,16 @@ public class TestHBaseTable extends QueryTestCaseBase {
     assertEquals(3, fragments.size());
 
     fragment1 = (HBaseFragment) fragments.get(0);
-    assertEquals("020", new String(fragment1.getStartRow()));
-    assertEquals("040", new String(fragment1.getStopRow()));
+    assertEquals("020", new String(fragment1.getStartKey().getKey()));
+    assertEquals("040", new String(fragment1.getEndKey().getKey()));
 
     fragment2 = (HBaseFragment) fragments.get(1);
-    assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("055" + postFix, new String(fragment2.getStopRow()));
+    assertEquals("040", new String(fragment2.getStartKey().getKey()));
+    assertEquals("055" + postFix, new String(fragment2.getEndKey().getKey()));
 
     fragment3 = (HBaseFragment) fragments.get(2);
-    assertEquals("072", new String(fragment3.getStartRow()));
-    assertEquals("078" + postFix, new String(fragment3.getStopRow()));
+    assertEquals("072", new String(fragment3.getStartKey().getKey()));
+    assertEquals("078" + postFix, new String(fragment3.getEndKey().getKey()));
 
     // where (rk >= '020' and rk <= '055') or (rk >= '057' and rk <= '059')
     evalNode4 = new BinaryEval(EvalType.GEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
@@ -631,12 +631,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
     assertEquals(2, fragments.size());
 
     fragment1 = (HBaseFragment) fragments.get(0);
-    assertEquals("020", new String(fragment1.getStartRow()));
-    assertEquals("040", new String(fragment1.getStopRow()));
+    assertEquals("020", new String(fragment1.getStartKey().getKey()));
+    assertEquals("040", new String(fragment1.getEndKey().getKey()));
 
     fragment2 = (HBaseFragment) fragments.get(1);
-    assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("059" + postFix, new String(fragment2.getStopRow()));
+    assertEquals("040", new String(fragment2.getStartKey().getKey()));
+    assertEquals("059" + postFix, new String(fragment2.getEndKey().getKey()));
   }
 
   @Test

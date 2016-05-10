@@ -29,6 +29,7 @@ import org.apache.tajo.storage.StorageFragmentProtos.FileFragmentProto;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,8 +39,9 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneable {
   @Expose private String tableName; // required
   @Expose private Path uri; // required
-  @Expose public Long startOffset; // required
-  @Expose public Long length; // required
+  @Expose private FileFragmentKey startKey; // required
+  @Expose private FileFragmentKey endKey; // required
+  @Expose private Long length; // required
 
   private String[] hosts; // Datanode hostnames
   @Expose private int[] diskIds;
@@ -89,7 +91,8 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
       long length, String[] hosts, int[] diskIds) {
     this.tableName = tableName;
     this.uri = path;
-    this.startOffset = start;
+    this.startKey = new FileFragmentKey(start);
+    this.endKey = new FileFragmentKey(start + length);
     this.length = length;
     this.hosts = hosts;
     this.diskIds = diskIds;
@@ -123,6 +126,11 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
   }
 
   @Override
+  public URI getUri() {
+    return uri.toUri();
+  }
+
+  @Override
   public String getTableName() {
     return this.tableName;
   }
@@ -135,13 +143,14 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     this.uri = path;
   }
 
-  public Long getStartKey() {
-    return this.startOffset;
+  @Override
+  public FileFragmentKey getStartKey() {
+    return this.startKey;
   }
 
   @Override
-  public String getKey() {
-    return this.uri.toString();
+  public FileFragmentKey getEndKey() {
+    return this.endKey;
   }
 
   @Override
@@ -163,7 +172,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
   @Override
   public int compareTo(FileFragment t) {
     if (getPath().equals(t.getPath())) {
-      long diff = this.getStartKey() - t.getStartKey();
+      long diff = this.getStartKey().getKey() - t.getStartKey().getKey();
       if (diff < 0) {
         return -1;
       } else if (diff > 0) {
@@ -191,15 +200,19 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableName, uri, startOffset, length);
+    return Objects.hashCode(tableName, uri, startKey, endKey, length, diskIds, hosts);
   }
-  
+
+  @Override
   public Object clone() throws CloneNotSupportedException {
     FileFragment frag = (FileFragment) super.clone();
     frag.tableName = tableName;
     frag.uri = uri;
     frag.diskIds = diskIds;
     frag.hosts = hosts;
+    frag.startKey = new FileFragmentKey(this.startKey.getKey());
+    frag.endKey = new FileFragmentKey(this.endKey.getKey());
+    frag.length = length;
 
     return frag;
   }
@@ -214,7 +227,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
   public FragmentProto getProto() {
     FileFragmentProto.Builder builder = FileFragmentProto.newBuilder();
     builder.setId(this.tableName);
-    builder.setStartOffset(this.startOffset);
+    builder.setStartOffset(this.startKey.getKey());
     builder.setLength(this.length);
     builder.setPath(this.uri.toString());
     if(diskIds != null) {

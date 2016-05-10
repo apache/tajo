@@ -852,7 +852,7 @@ public class ExternalSortExec extends SortExec {
         if (!chunk.isMemory()) {
           FileFragment frag = chunk.getFragment();
           File tmpFile = new File(localFS.makeQualified(frag.getPath()).toUri());
-          if (frag.getStartKey() == 0 && frag.getLength() == tmpFile.length()) {
+          if (frag.getStartKey().getKey() == 0 && frag.getLength() == tmpFile.length()) {
             localFS.delete(frag.getPath(), true);
             if(LOG.isDebugEnabled()) {
               debug(LOG, "Delete file: " + frag);

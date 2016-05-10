@@ -20,20 +20,68 @@ package org.apache.tajo.storage.fragment;
 
 import org.apache.tajo.common.ProtoObject;
 
+import java.net.URI;
+
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public interface Fragment extends ProtoObject<FragmentProto> {
 
-  public abstract String getTableName();
+  /**
+   * Returns an URI of the target table.
+   *
+   * @return URI of the target table
+   */
+  URI getUri();
 
+  /**
+   * Returns the name of the target table.
+   *
+   * @return target table name
+   */
+  String getTableName();
+
+  /**
+   * Returns a serialized protocol buffer message object.
+   *
+   * @return serialized message
+   */
   @Override
-  public abstract FragmentProto getProto();
+  FragmentProto getProto();
 
-  public abstract long getLength();
+  /**
+   * Returns a start key of the data range.
+   *
+   * @param <T> a key class implementing {@link FragmentKey}
+   * @return start key
+   */
+  <T extends FragmentKey> T getStartKey();
 
-  public abstract String getKey();
+  /**
+   * Returns an end key of the data range.
+   *
+   * @param <T> a key class implementing {@link FragmentKey}
+   * @return end key
+   */
+  <T extends FragmentKey> T getEndKey();
 
-  public String[] getHosts();
+  /**
+   * Returns the length of the data range.
+   *
+   * @return length of the range
+   */
+  long getLength();
 
-  public abstract boolean isEmpty();
+  /**
+   * Returns host names which has the part of the table specified in this fragment.
+   *
+   * @return host names
+   */
+  String[] getHosts();
+
+  /**
+   * Indicates the fragment is empty or not.
+   *
+   * @return true if the length is 0. Otherwise, false.
+   */
+  boolean isEmpty();
 }
