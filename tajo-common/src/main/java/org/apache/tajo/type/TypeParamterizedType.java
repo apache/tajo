@@ -54,7 +54,7 @@ public abstract class TypeParamterizedType extends Type {
 
     if (object instanceof TypeParamterizedType) {
       TypeParamterizedType other = (TypeParamterizedType) object;
-      return this.baseType.equals(other.baseType) && params.equals(other.params);
+      return this.kind.equals(other.kind) && params.equals(other.params);
     }
 
     return false;
@@ -62,13 +62,13 @@ public abstract class TypeParamterizedType extends Type {
 
   @Override
   public int hashCode() {
-    return Objects.hash(baseType(), params);
+    return Objects.hash(kind(), params);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append(typeName(this.baseType));
+    sb.append(typeName(this.kind));
     sb.append("<");
     sb.append(StringUtils.join(params, ","));
     sb.append(">");

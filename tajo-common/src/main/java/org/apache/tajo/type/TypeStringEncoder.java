@@ -46,7 +46,7 @@ public class TypeStringEncoder {
    * @return A type string representation
    */
   public static String serialize(Type type) {
-    StringBuilder sb = new StringBuilder(type.baseType().name());
+    StringBuilder sb = new StringBuilder(type.kind().name());
 
     if (type.isTypeParameterized()) {
       sb.append("<");

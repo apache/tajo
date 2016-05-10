@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INET4;
 
-public class Inet4 extends PrimitiveType {
+public class Inet4 extends Type {
   public Inet4() {
     super(INET4);
   }

@@ -60,7 +60,7 @@ public class Field implements Cloneable {
   }
 
   public TajoDataTypes.Type baseType() {
-    return this.type.baseType();
+    return this.type.kind();
   }
 
   public <T extends Type> T type() {

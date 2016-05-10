@@ -44,47 +44,47 @@ import static org.junit.Assert.assertEquals;
 public class TestType {
   @Test
   public final void testPrimitiveTypes() {
-    assertEquals(Bool.baseType(), BOOLEAN);
-    assertEquals(Int1.baseType(), INT1);
-    assertEquals(Int2.baseType(), INT2);
-    assertEquals(Int4.baseType(), INT4);
-    assertEquals(Int8.baseType(), INT8);
-    assertEquals(Float4.baseType(), FLOAT4);
-    assertEquals(Float8.baseType(), FLOAT8);
-    assertEquals(Date.baseType(), DATE);
-    assertEquals(Time.baseType(), TIME);
-    assertEquals(Timestamp.baseType(), TIMESTAMP);
+    assertEquals(Bool.kind(), BOOLEAN);
+    assertEquals(Int1.kind(), INT1);
+    assertEquals(Int2.kind(), INT2);
+    assertEquals(Int4.kind(), INT4);
+    assertEquals(Int8.kind(), INT8);
+    assertEquals(Float4.kind(), FLOAT4);
+    assertEquals(Float8.kind(), FLOAT8);
+    assertEquals(Date.kind(), DATE);
+    assertEquals(Time.kind(), TIME);
+    assertEquals(Timestamp.kind(), TIMESTAMP);
 
     Numeric n = Numeric(4, 2);
-    assertEquals(n.baseType(), NUMERIC);
+    assertEquals(n.kind(), NUMERIC);
     assertEquals(n.precision(), 4);
     assertEquals(n.scale(), 2);
 
-    assertEquals(Blob.baseType(), BLOB);
+    assertEquals(Blob.kind(), BLOB);
 
     Char c = Char(2);
-    assertEquals(c.baseType(), CHAR);
+    assertEquals(c.kind(), CHAR);
     assertEquals(c.length(), 2);
 
     Varchar varchar = Varchar(2);
-    assertEquals(varchar.baseType(), VARCHAR);
+    assertEquals(varchar.kind(), VARCHAR);
     assertEquals(varchar.length(), 2);
 
     Record record = Type.Record(Field("x", Int8), Field("y", Array(Float8)));
-    assertEquals(record.baseType(), RECORD);
+    assertEquals(record.kind(), RECORD);
     assertEquals(record.field(0).baseType(), INT8);
     assertEquals(record.field(0).name(), $("x"));
     assertEquals(record.field(1).baseType(), ARRAY);
     assertEquals(record.field(1).name(), $("y"));
 
     Map map = Map(Int8, Array(Timestamp));
-    assertEquals(map.baseType(), MAP);
-    assertEquals(map.keyType().baseType(), INT8);
-    assertEquals(map.valueType().baseType(), ARRAY);
+    assertEquals(map.kind(), MAP);
+    assertEquals(map.keyType().kind(), INT8);
+    assertEquals(map.valueType().kind(), ARRAY);
 
     Array array = Array(Int8);
-    assertEquals(array.baseType(), ARRAY);
-    assertEquals(array.elementType().baseType(), INT8);
+    assertEquals(array.kind(), ARRAY);
+    assertEquals(array.elementType().kind(), INT8);
   }
 
   @Test

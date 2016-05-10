@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
-public class Text extends PrimitiveType {
+public class Text extends Type {
   public Text() {
     super(TEXT);
   }

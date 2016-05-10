@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.DATE;
 
-public class Date extends PrimitiveType {
+public class Date extends Type {
   public Date() {
     super(DATE);
   }

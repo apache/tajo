@@ -19,7 +19,6 @@
 package org.apache.tajo.type;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.schema.Field;
 import org.apache.tajo.util.StringUtils;
 
@@ -60,7 +59,7 @@ public class Record extends Type implements Iterable<Field> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(baseType(), Objects.hash(fields));
+    return Objects.hash(kind(), Objects.hash(fields));
   }
 
   @Override
@@ -71,11 +70,6 @@ public class Record extends Type implements Iterable<Field> {
     }
 
     return false;
-  }
-
-  @Override
-  public TajoDataTypes.TypeProto getProto() {
-    return null;
   }
 
   @Override

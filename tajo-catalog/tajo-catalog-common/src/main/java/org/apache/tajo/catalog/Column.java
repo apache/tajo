@@ -28,6 +28,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeProtobufEncoder;
 
 /**
  * Describes a column. It is an immutable object.
@@ -77,7 +78,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
 
 	public Column(ColumnProto proto) {
     name = proto.getName();
-    type = TypeConverter.convert(new TypeDesc(proto.getDataType()));
+    type = TypeProtobufEncoder.decode(proto.getType());
 	}
 
   /**
@@ -122,6 +123,13 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
   }
 
   /**
+   * @return Type which includes domain type and scale.
+   */
+  public Type getType() {
+    return this.type;
+  }
+
+  /**
    *
    * @return DataType which includes domain type and scale.
    */
@@ -151,7 +159,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
     builder
         .setName(this.name)
-        .setDataType(TypeConverter.convert(this.type).dataType);
+        .setType(this.type.getProto());
     return builder.build();
 	}
 	

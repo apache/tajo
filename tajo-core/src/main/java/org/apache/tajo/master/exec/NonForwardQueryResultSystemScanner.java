@@ -28,7 +28,6 @@ import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.codegen.CompilationError;
@@ -40,6 +39,7 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.InvalidSessionException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
@@ -52,7 +52,6 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.resource.NodeResource;
 import org.apache.tajo.resource.NodeResources;
-import org.apache.tajo.exception.InvalidSessionException;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -60,6 +59,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
+import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -286,11 +287,11 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         } else if ("ordinal_position".equalsIgnoreCase(colObj.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(columnId));
         } else if ("data_type".equalsIgnoreCase(colObj.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(column.getDataType().getType().toString()));
+          aTuple.put(fieldId, DatumFactory.createText(column.getType().toString()));
         } else if ("type_length".equalsIgnoreCase(colObj.getSimpleName())) {
-          DataType dataType = column.getDataType();
-          if (dataType.hasLength()) {
-            aTuple.put(fieldId, DatumFactory.createInt4(dataType.getLength()));
+          Type type = TypeProtobufEncoder.decode(column.getType());
+          if (type.isValueParameterized()) {
+            aTuple.put(fieldId, DatumFactory.createInt4(type.getValueParameters().get(0)));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }

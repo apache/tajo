@@ -409,7 +409,7 @@ public class TestCatalogAgainstCaseSensitivity {
     
     int expected = 0;
     for (String eachTableName : catalog.getAllTableNames(databaseName)) {
-      expected += catalog.getTableDesc(databaseName, eachTableName).getSchema().getAllColumns().size();
+      expected += catalog.getTableDesc(databaseName, eachTableName).getSchema().getRootColumns().size();
     }
     assertEquals(expected, columnCount);
   }

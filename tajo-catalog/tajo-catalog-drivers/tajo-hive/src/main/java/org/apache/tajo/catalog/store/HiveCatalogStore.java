@@ -59,6 +59,7 @@ import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.thrift.TException;
 
@@ -461,7 +462,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       for (Column eachField : columns) {
         cols.add(new FieldSchema(eachField.getSimpleName(),
-            HiveCatalogUtil.getHiveFieldType(eachField.getDataType()), ""));
+            HiveCatalogUtil.getHiveFieldType(eachField.getType()), ""));
       }
       sd.setCols(cols);
 
@@ -470,7 +471,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         List<FieldSchema> partitionKeys = new ArrayList<>();
         for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           partitionKeys.add(new FieldSchema(eachPartitionKey.getSimpleName(),
-              HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));
+              HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getType()), ""));
         }
         table.setPartitionKeys(partitionKeys);
       }
@@ -714,7 +715,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       List<FieldSchema> columns = table.getSd().getCols();
       columns.add(new FieldSchema(columnProto.getName(),
-        HiveCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
+        HiveCatalogUtil.getHiveFieldType(TypeProtobufEncoder.decode(columnProto.getType())), ""));
       client.getHiveClient().alter_table(databaseName, tableName, table);
 
 

@@ -40,14 +40,14 @@ import static org.apache.tajo.type.Type.Map;
 import static org.apache.tajo.type.Type.Record;
 
 public class TypeProtobufEncoder {
-  public static TypeProto serialize(Type type) {
+  public static TypeProto encode(Type type) {
 
     final TypeProto.Builder builder = TypeProto.newBuilder();
     new Visitor(builder).visit(type);
     return builder.build();
   }
 
-  public static Type deserialize(TypeProto proto) {
+  public static Type decode(TypeProto proto) {
     Stack<Type> stack = new Stack<>();
 
     for (int curIdx = 0; curIdx < proto.getElementsCount(); curIdx++) {
@@ -90,14 +90,7 @@ public class TypeProtobufEncoder {
   }
 
   static boolean isValueParameterized(TajoDataTypes.Type baseType) {
-    switch (baseType) {
-    case CHAR:
-    case VARCHAR:
-    case NUMERIC:
-      return true;
-    default:
-      return false;
-    }
+    return baseType == CHAR || baseType == VARCHAR || baseType == NUMERIC;
   }
 
   static Type createPrimitiveType(TypeElement element) {
@@ -105,6 +98,8 @@ public class TypeProtobufEncoder {
 
     if (isValueParameterized(element.getKind())) {
       return TypeFactory.create(element.getKind(), EMPTY_LIST, element.getValueParamsList(), EMPTY_LIST);
+    } else if (element.getKind() == PROTOBUF) { // TODO - PROTOBUF type should be removed later
+      return new Protobuf(element.getStringParams(0));
     } else {
       return TypeFactory.create(element.getKind());
     }
@@ -138,10 +133,12 @@ public class TypeProtobufEncoder {
     @Override
     public void visitPrimitive(Type type) {
       TypeElement.Builder typeElemBuilder = TypeElement.newBuilder()
-          .setKind(type.baseType);
+          .setKind(type.kind);
 
       if (type.isValueParameterized()) {
         typeElemBuilder.addAllValueParams(type.getValueParameters());
+      } else if (type.kind == PROTOBUF) {
+        typeElemBuilder.addStringParams(((Protobuf)type).getMessageName());
       }
 
       builder.addElements(typeElemBuilder);
@@ -151,7 +148,7 @@ public class TypeProtobufEncoder {
     public void visitMap(Map map) {
       super.visitMap(map);
       builder.addElements(TypeElement.newBuilder()
-             .setKind(map.baseType)
+             .setKind(map.kind)
              .setChildNum(2)
           );
     }
@@ -161,7 +158,7 @@ public class TypeProtobufEncoder {
       super.visitArray(array);
       builder
           .addElements(TypeElement.newBuilder()
-              .setKind(array.baseType)
+              .setKind(array.kind)
               .setChildNum(1)
           );
     }

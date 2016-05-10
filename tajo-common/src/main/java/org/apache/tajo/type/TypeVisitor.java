@@ -22,7 +22,7 @@ import org.apache.tajo.schema.Field;
 
 public abstract class TypeVisitor {
   public void visit(Type type) {
-    switch (type.baseType) {
+    switch (type.kind) {
     case ARRAY:
       visitArray((Array) type);
       break;

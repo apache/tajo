@@ -64,7 +64,7 @@ public class TypeConverter {
   }
 
   public static TypeDesc convert(Type type) {
-    switch (type.baseType()) {
+    switch (type.kind()) {
     case CHAR:
       Char charType = (Char) type;
       return new TypeDesc(newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length()));
@@ -88,7 +88,7 @@ public class TypeConverter {
     case ARRAY:
       Array array = (Array) type;
       Type elemType = array.elementType();
-      switch (elemType.baseType()) {
+      switch (elemType.kind()) {
       case INT1:
         return new TypeDesc(newSimpleDataType(INT1_ARRAY));
       case INT2:
@@ -102,11 +102,11 @@ public class TypeConverter {
       case FLOAT8:
         return new TypeDesc(newSimpleDataType(FLOAT8_ARRAY));
       default:
-        return new TypeDesc(newSimpleDataType(type.baseType()));
+        return new TypeDesc(newSimpleDataType(type.kind()));
       }
 
     default:
-      return new TypeDesc(newSimpleDataType(type.baseType()));
+      return new TypeDesc(newSimpleDataType(type.kind()));
     }
   }
 }

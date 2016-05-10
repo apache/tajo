@@ -18,13 +18,13 @@
 
 package org.apache.tajo.type;
 
-import static org.apache.tajo.type.TypeProtobufEncoder.deserialize;
-import static org.apache.tajo.type.TypeProtobufEncoder.serialize;
+import static org.apache.tajo.type.TypeProtobufEncoder.decode;
+import static org.apache.tajo.type.TypeProtobufEncoder.encode;
 import static org.junit.Assert.assertEquals;
 
 public class TestTypeProtobufEncoder extends TestTypeEncoder {
 
   public void assertSerialize(Type type) {
-    assertEquals(type, deserialize(serialize(type)));
+    assertEquals(type, decode(encode(type)));
   }
 }

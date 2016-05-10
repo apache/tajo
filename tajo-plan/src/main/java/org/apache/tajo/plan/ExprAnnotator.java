@@ -112,8 +112,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
    * @return a pair including left/right hand side terms
    */
   private static Pair<EvalNode, EvalNode> convertTypesIfNecessary(Context ctx, EvalNode lhs, EvalNode rhs) {
-    Type lhsType = lhs.getValueType().baseType();
-    Type rhsType = rhs.getValueType().baseType();
+    Type lhsType = lhs.getValueType().kind();
+    Type rhsType = rhs.getValueType().kind();
 
     // If one of both is NULL, it just returns the original types without casting.
     if (lhsType == Type.NULL_TYPE || rhsType == Type.NULL_TYPE) {
@@ -439,10 +439,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode rhs = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    if (lhs.getValueType().baseType() != Type.TEXT) {
+    if (lhs.getValueType().kind() != Type.TEXT) {
       lhs = convertType(ctx, lhs, CatalogUtil.newSimpleDataType(Type.TEXT));
     }
-    if (rhs.getValueType().baseType() != Type.TEXT) {
+    if (rhs.getValueType().kind() != Type.TEXT) {
       rhs = convertType(ctx, rhs, CatalogUtil.newSimpleDataType(Type.TEXT));
     }
 

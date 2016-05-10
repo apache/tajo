@@ -271,7 +271,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
    * @return SQL DataType
    */
   public String convertTajoTypeToSQLType(Type dataType) {
-    switch (dataType.baseType()) {
+    switch (dataType.kind()) {
     case INT1:
       return "TINYINT";
     case INT2:
@@ -285,7 +285,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
     case FLOAT8:
       return "DOUBLE";
     default:
-      return dataType.baseType().name();
+      return dataType.kind().name();
     }
   }
 

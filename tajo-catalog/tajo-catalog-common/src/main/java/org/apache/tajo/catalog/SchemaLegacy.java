@@ -18,22 +18,25 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.DuplicateColumnException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.StringUtils;
 
+import javax.annotation.Nullable;
 import java.util.*;
+
+import static com.google.common.collect.Collections2.transform;
 
 public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
@@ -55,44 +58,15 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
 	public SchemaLegacy(SchemaProto proto) {
     init();
 
-    List<Column> toBeAdded = new ArrayList<>();
-    for (int i = 0; i < proto.getFieldsCount(); i++) {
-      deserializeColumn(toBeAdded, proto.getFieldsList(), i);
-    }
+    Collection<Column> toBeAdded = transform(proto.getFieldsList(), new Function<ColumnProto, Column>() {
+      @Override
+      public Column apply(@Nullable ColumnProto proto) {
+        return new Column(proto);
+      }
+    });
 
     for (Column c : toBeAdded) {
       addColumn(c);
-    }
-  }
-
-  /**
-   * This method transforms a list of ColumnProtos into a schema tree.
-   * It assumes that <code>protos</code> contains a list of ColumnProtos in the depth-first order.
-   *
-   * @param tobeAdded
-   * @param protos
-   * @param serializedColumnIndex
-   */
-  private static void deserializeColumn(List<Column> tobeAdded, List<ColumnProto> protos, int serializedColumnIndex) {
-    ColumnProto columnProto = protos.get(serializedColumnIndex);
-    if (columnProto.getDataType().getType() == Type.RECORD) {
-
-      // Get the number of child fields
-      int childNum = columnProto.getDataType().getNumNestedFields();
-      // where is start index of nested fields?
-      int childStartIndex = tobeAdded.size() - childNum;
-      // Extract nested fields
-      List<Column> nestedColumns = new ArrayList<>(tobeAdded.subList(childStartIndex, childStartIndex + childNum));
-
-      // Remove nested fields from the the current level
-      for (int i = 0; i < childNum; i++) {
-        tobeAdded.remove(tobeAdded.size() - 1);
-      }
-
-      // Add the nested fields to the list as a single record column
-      tobeAdded.add(new Column(columnProto.getName(), new TypeDesc(new SchemaLegacy(nestedColumns))));
-    } else {
-      tobeAdded.add(new Column(protos.get(serializedColumnIndex)));
     }
   }
 
@@ -472,33 +446,14 @@ public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable
 	@Override
 	public SchemaProto getProto() {
     SchemaProto.Builder builder = SchemaProto.newBuilder();
-    SchemaProtoBuilder recursiveBuilder = new SchemaProtoBuilder(builder);
-    SchemaUtil.visitSchema(this, recursiveBuilder);
+    builder.addAllFields(Iterables.transform(getRootColumns(), new Function<Column, ColumnProto>() {
+      @Override
+      public ColumnProto apply(@Nullable Column column) {
+        return column.getProto();
+      }
+    }));
     return builder.build();
 	}
-
-  private static class SchemaProtoBuilder implements ColumnVisitor {
-    private SchemaProto.Builder builder;
-    public SchemaProtoBuilder(SchemaProto.Builder builder) {
-      this.builder = builder;
-    }
-
-    @Override
-    public void visit(int depth, List<String> path, Column column) {
-
-      if (column.getDataType().getType() == Type.RECORD) {
-        DataType.Builder updatedType = DataType.newBuilder(column.getDataType());
-        updatedType.setNumNestedFields(TypeConverter.convert(column.type).nestedRecordSchema.size());
-
-        ColumnProto.Builder updatedColumn = ColumnProto.newBuilder(column.getProto());
-        updatedColumn.setDataType(updatedType);
-
-        builder.addFields(updatedColumn.build());
-      } else {
-        builder.addFields(column.getProto());
-      }
-    }
-  }
 
   @Override
 	public String toString() {

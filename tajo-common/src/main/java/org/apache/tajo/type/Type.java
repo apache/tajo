@@ -52,14 +52,14 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
   public static final Blob Blob = new Blob();
   public static final Inet4 Inet4 = new Inet4();
 
-  protected TajoDataTypes.Type baseType;
+  protected TajoDataTypes.Type kind;
 
-  public Type(TajoDataTypes.Type baseType) {
-    this.baseType = baseType;
+  public Type(TajoDataTypes.Type kind) {
+    this.kind = kind;
   }
 
-  public TajoDataTypes.Type baseType() {
-    return baseType;
+  public TajoDataTypes.Type kind() {
+    return kind;
   }
 
   public boolean isTypeParameterized() {
@@ -84,24 +84,24 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
 
   @Override
   public int hashCode() {
-    return baseType().hashCode();
+    return kind().hashCode();
   }
 
   @Override
   public boolean equals(Object t) {
-    return t instanceof Type && ((Type)t).baseType() == baseType();
+    return t instanceof Type && ((Type)t).kind() == kind();
   }
 
   @Override
   public String toString() {
-    return typeName(baseType());
+    return typeName(kind());
   }
 
   public boolean isStruct() {
-    return this.baseType() == TajoDataTypes.Type.RECORD;
+    return this.kind() == TajoDataTypes.Type.RECORD;
   }
 
-  public boolean isNull() { return this.baseType() == TajoDataTypes.Type.NULL_TYPE; }
+  public boolean isNull() { return this.kind() == TajoDataTypes.Type.NULL_TYPE; }
 
   public static int DEFAULT_PRECISION = 0;
   public static int DEFAULT_SCALE = 0;
@@ -148,6 +148,6 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
 
   @Override
   public TypeProto getProto() {
-    return TypeProtobufEncoder.serialize(this);
+    return TypeProtobufEncoder.encode(this);
   }
 }

@@ -123,8 +123,9 @@ message TypeProto {
 message TypeElement {
  required Type kind = 1;
  repeated int32 value_params = 2;
- repeated QualifiedIdentifierProto field_names = 3;
- optional int32 child_num = 4;
+ repeated string string_params = 3;
+ repeated QualifiedIdentifierProto field_names = 4;
+ optional int32 child_num = 5;
 }
 
 message QualifiedIdentifierProto {

@@ -146,8 +146,8 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     org.apache.tajo.type.Type leftDataType = leftExpr.getValueType();
     org.apache.tajo.type.Type rightDataType = rightExpr.getValueType();
 
-    TajoDataTypes.Type leftType = leftDataType.baseType();
-    TajoDataTypes.Type rightType = rightDataType.baseType();
+    TajoDataTypes.Type leftType = leftDataType.kind();
+    TajoDataTypes.Type rightType = rightDataType.kind();
 
     if (leftType == DATE &&
           (checkIntType(rightDataType) ||
@@ -178,26 +178,26 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   }
 
   private static boolean checkNetworkType(org.apache.tajo.type.Type dataType) {
-    return dataType.baseType() == INET4 || dataType.baseType() == INET6;
+    return dataType.kind() == INET4 || dataType.kind() == INET6;
   }
 
   private static boolean checkIntType(org.apache.tajo.type.Type dataType) {
-    int typeNumber = dataType.baseType().getNumber();
+    int typeNumber = dataType.kind().getNumber();
     return INT1.getNumber() < typeNumber && typeNumber <= INT8.getNumber();
   }
 
   private static boolean checkNumericType(org.apache.tajo.type.Type dataType) {
-    int typeNumber = dataType.baseType().getNumber();
+    int typeNumber = dataType.kind().getNumber();
     return INT1.getNumber() <= typeNumber && typeNumber <= NUMERIC.getNumber();
   }
 
   private static boolean checkTextData(org.apache.tajo.type.Type dataType) {
-    int typeNumber = dataType.baseType().getNumber();
+    int typeNumber = dataType.kind().getNumber();
     return CHAR.getNumber() <= typeNumber && typeNumber <= TEXT.getNumber();
   }
 
   private static boolean checkDateTime(org.apache.tajo.type.Type dataType) {
-    int typeNumber = dataType.baseType().getNumber();
+    int typeNumber = dataType.kind().getNumber();
     return (DATE.getNumber() <= typeNumber && typeNumber <= INTERVAL.getNumber()) ||
         (TIMEZ.getNumber() <= typeNumber && typeNumber <= TIMESTAMPZ.getNumber());
   }
