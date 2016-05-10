@@ -261,6 +261,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2117: Add some missing index to MariaDBStore.
+    (Janaka Chathuranga Thilakarathna via jaehwa)
+
     TAJO-2142: Temporarily disable NOT IN subquery. (jihoon)
 
     TAJO-2088: Change QueryTestCaseBase.runSimpleTests() to return a set of 
