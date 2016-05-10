@@ -12,6 +12,8 @@ Release 0.11.3 - unreleased
 
   BUG FIXES
 
+    TAJO-2143: Fix race condition in task history writer. (jinho)
+
     TAJO-2140: TajoInternalError does not contains reason stack trace. (jinho)
 
     TAJO-2135: Invalid join result when join key columns contain nulls. (jihoon)
