@@ -8,6 +8,9 @@ Release 0.11.3 - unreleased
 
   TASKS
 
+    TAJO-2145: Error codes based on errno.h need prefix.
+    (Jongyoung Park via hyunsik)
+
     TAJO-2142: Temporarily disable NOT IN subquery. (jihoon)
 
   BUG FIXES
