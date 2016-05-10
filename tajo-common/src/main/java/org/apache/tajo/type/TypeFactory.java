@@ -30,6 +30,7 @@ import org.apache.tajo.util.StringUtils;
 import java.util.List;
 
 import static org.apache.tajo.type.Type.Char;
+import static org.apache.tajo.type.Type.Null;
 import static org.apache.tajo.type.Type.Varchar;
 
 public class TypeFactory {
@@ -162,17 +163,19 @@ public class TypeFactory {
           "Array Type requires 1 type parameters, but it takes (%s).", StringUtils.join(typeParams));
       return Type.Array(typeParams.get(0));
     }
+    case RECORD: {
+      Assert.assertCondition(fieldParams.size() >= 1,
+          "Record Type requires at least 1 field parameters, but it takes (%s).", StringUtils.join(fieldParams));
+      return Type.Record(fieldParams);
+    }
     case MAP: {
       Assert.assertCondition(typeParams.size() == 2,
           "Map Type requires 2 type parameters, but it takes (%s).", StringUtils.join(typeParams));
 
       return Type.Map(typeParams.get(0), typeParams.get(1));
     }
-    case RECORD: {
-      Assert.assertCondition(fieldParams.size() >= 1,
-          "Record Type requires at least 1 field parameters, but it takes (%s).", StringUtils.join(fieldParams));
-      return Type.Record(fieldParams);
-    }
+    case NULL_TYPE:
+      return Null();
 
     default:
       throw new TajoInternalError(new UnsupportedException(baseType.name()));

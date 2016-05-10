@@ -77,9 +77,4 @@ public abstract class ValueParamterizedType extends Type implements ProtoObject<
     sb.append(")");
     return sb.toString();
   }
-
-  @Override
-  public TypeProto getProto() {
-    return TypeProto.newBuilder().addElements(TypeElement.newBuilder().addAllValueParams(params)).build();
-  }
 }

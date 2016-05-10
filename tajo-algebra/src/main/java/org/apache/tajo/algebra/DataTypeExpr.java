@@ -88,6 +88,16 @@ public class DataTypeExpr extends Expr {
     return arrayType.type;
   }
 
+  public DataTypeExpr getKeyType() {
+    Preconditions.checkState(isMapType());
+    return mapType.keyType;
+  }
+
+  public DataTypeExpr getValueType() {
+    Preconditions.checkState(isMapType());
+    return mapType.valueType;
+  }
+
   public ColumnDefinition [] getNestedRecordTypes() {
     return recordType.schema;
   }

@@ -2124,6 +2124,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return Array(convertDataType(dataType.getElementType()));
     } else if (type == TajoDataTypes.Type.RECORD) {
       return Record(convertTableElementsSchema(dataType.getNestedRecordTypes()));
+    } else if (type == TajoDataTypes.Type.MAP) {
+      return Map(convertDataType(dataType.getKeyType()), convertDataType(dataType.getValueType()));
     } else if (type == TajoDataTypes.Type.NUMERIC) {
       if (dataType.hasLengthOrPrecision() && dataType.hasScale()) {
         return Numeric(dataType.getLengthOrPrecision(), dataType.getScale());

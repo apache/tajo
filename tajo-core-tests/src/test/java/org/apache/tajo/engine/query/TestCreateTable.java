@@ -681,15 +681,15 @@ public class TestCreateTable extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testArrayType1() throws Exception {
+  public final void testComplexType1() throws Exception {
     try {
       executeString("CREATE DATABASE D11;").close();
 
-      assertTableNotExists("d11.array_table1");
+      assertTableNotExists("d11.complex_type1");
       executeQuery().close();
-      assertTableExists("d11.array_table1");
+      assertTableExists("d11.complex_type1");
     } finally {
-      executeString("DROP TABLE IF EXISTS D11.array_table1");
+      executeString("DROP TABLE IF EXISTS D11.complex_type1");
       executeString("DROP DATABASE IF EXISTS D11").close();
     }
   }
