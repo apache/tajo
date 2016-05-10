@@ -35,7 +35,7 @@ public class TajoInternalError extends TajoError {
   }
 
   public TajoInternalError(Throwable t) {
-    super(ResultCode.INTERNAL_ERROR, t.getMessage());
+    super(ResultCode.INTERNAL_ERROR, t, t.getMessage());
   }
 
   public TajoInternalError(TajoException t) {

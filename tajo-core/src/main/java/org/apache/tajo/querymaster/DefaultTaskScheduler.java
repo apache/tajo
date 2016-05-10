@@ -776,7 +776,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       return attemptId;
     }
 
-    public void assignToLeafTasks(LinkedList<TaskRequestEvent> taskRequests) {
+    public void assignToLeafTasks(LinkedList<TaskRequestEvent> taskRequests) throws InterruptedException {
       Collections.shuffle(taskRequests);
       LinkedList<TaskRequestEvent> remoteTaskRequests = new LinkedList<TaskRequestEvent>();
       String queryMasterHostAndPort = context.getMasterContext().getQueryMasterContext().getWorkerContext().
@@ -927,6 +927,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             warn(LOG, "Canceled requests: " + requestProto.getTaskRequestCount()
                 + " by " + ExceptionUtils.getFullStackTrace(e));
             continue;
+          } catch (InterruptedException e) {
+            throw e;
           } catch (Exception e) {
             throw new TajoInternalError(e);
           }
@@ -964,7 +966,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       return true;
     }
 
-    public void assignToNonLeafTasks(LinkedList<TaskRequestEvent> taskRequests) {
+    public void assignToNonLeafTasks(LinkedList<TaskRequestEvent> taskRequests) throws InterruptedException {
       Collections.shuffle(taskRequests);
       String queryMasterHostAndPort = context.getMasterContext().getQueryMasterContext().getWorkerContext().
           getConnectionInfo().getHostAndQMPort();
@@ -1047,6 +1049,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             warn(LOG, "Canceled requests: " + requestProto.getTaskRequestCount()
                 + " by " + ExceptionUtils.getFullStackTrace(e));
             continue;
+          } catch (InterruptedException e) {
+            throw e;
           } catch (Exception e) {
             throw new TajoInternalError(e);
           }
