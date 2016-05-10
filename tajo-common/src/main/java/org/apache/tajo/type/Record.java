@@ -24,6 +24,7 @@ import org.apache.tajo.schema.Field;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,43 +33,53 @@ import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 /**
  * Represents Record type
  */
-public class Record extends Type {
-  private final ImmutableList<Field> memberTypes;
+public class Record extends Type implements Iterable<Field> {
+  private final ImmutableList<Field> fields;
 
-  public Record(Collection<Field> memberTypes) {
+  public Record(Collection<Field> fields) {
     super(RECORD);
-    this.memberTypes = ImmutableList.copyOf(memberTypes);
+    this.fields = ImmutableList.copyOf(fields);
   }
 
   public int size() {
-    return memberTypes.size();
+    return fields.size();
   }
 
   public Field field(int idx) {
-    return memberTypes.get(idx);
+    return fields.get(idx);
   }
 
   public List<Field> fields() {
-    return this.memberTypes;
+    return this.fields;
   }
 
   @Override
   public String toString() {
-    return "RECORD(" + StringUtils.join(memberTypes, ", ") + ")";
+    return "RECORD(" + StringUtils.join(fields, ", ") + ")";
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(baseType(), Objects.hash(memberTypes));
+    return Objects.hash(baseType(), Objects.hash(fields));
   }
 
   @Override
   public boolean equals(Object object) {
     if (object instanceof Record) {
       Record other = (Record) object;
-      return memberTypes.equals(other.memberTypes);
+      return fields.equals(other.fields);
     }
 
     return false;
+  }
+
+  @Override
+  public TajoDataTypes.TypeProto getProto() {
+    return null;
+  }
+
+  @Override
+  public Iterator<Field> iterator() {
+    return fields.iterator();
   }
 }

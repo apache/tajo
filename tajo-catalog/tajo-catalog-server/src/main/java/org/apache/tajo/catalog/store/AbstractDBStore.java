@@ -757,7 +757,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    String[] splitted = IdentifierUtil.splitTableName(table.getTableName());
+    final String[] splitted = IdentifierUtil.splitTableName(table.getTableName());
     if (splitted.length == 1) {
       throw new TajoInternalError(
           "createTable() requires a qualified table name, but it is '" + table.getTableName() + "'");

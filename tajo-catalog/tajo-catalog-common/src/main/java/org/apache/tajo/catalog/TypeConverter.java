@@ -20,9 +20,6 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.NotImplementedException;
-import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.schema.Field;
 import org.apache.tajo.type.*;
 
@@ -58,81 +55,7 @@ public class TypeConverter {
     case PROTOBUF:
       return new Protobuf(legacyType.getCode());
     default:
-      return convert(legacyType.getType());
-    }
-  }
-
-  /**
-   * This is for base types.
-   *
-   * @param legacyBaseType legacy base type
-   * @return Type
-   */
-  public static Type convert(TajoDataTypes.Type legacyBaseType) {
-    switch (legacyBaseType) {
-    case BOOLEAN:
-      return Bool;
-    case INT1:
-      return Int1;
-    case INT2:
-      return Int2;
-    case INT4:
-      return Int4;
-    case INT8:
-      return Int8;
-    case FLOAT4:
-      return Float4;
-    case FLOAT8:
-      return Float8;
-    case DATE:
-      return Date;
-    case TIME:
-      return Time;
-    case TIMESTAMP:
-      return Timestamp;
-    case INTERVAL:
-      return Interval;
-    case CHAR:
-      return Char(1); // default len = 1
-    case TEXT:
-      return Text;
-    case BLOB:
-      return Blob;
-    case INET4:
-      return Inet4;
-    case RECORD:
-      // for better exception
-      throw new TajoRuntimeException(new NotImplementedException("record projection"));
-    case NULL_TYPE:
-      return Null;
-    case ANY:
-      return Any;
-
-    case BOOLEAN_ARRAY:
-      return Array(Bool);
-    case INT1_ARRAY:
-      return Array(Int1);
-    case INT2_ARRAY:
-      return Array(Int2);
-    case INT4_ARRAY:
-      return Array(Int4);
-    case INT8_ARRAY:
-      return Array(Int8);
-    case FLOAT4_ARRAY:
-      return Array(Float4);
-    case FLOAT8_ARRAY:
-      return Array(Float8);
-    case TIMESTAMP_ARRAY:
-      return Array(Timestamp);
-    case DATE_ARRAY:
-      return Array(Date);
-    case TIME_ARRAY:
-      return Array(Time);
-    case TEXT_ARRAY:
-      return Array(Text);
-
-    default:
-      throw new TajoRuntimeException(new UnsupportedException(legacyBaseType.name()));
+      return TypeFactory.create(legacyType.getType());
     }
   }
 

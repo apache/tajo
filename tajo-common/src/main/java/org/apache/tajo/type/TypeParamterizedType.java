@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.StringUtils;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -42,7 +42,7 @@ public abstract class TypeParamterizedType extends Type {
   }
 
   @Override
-  public Collection<Type> getTypeParameters() {
+  public List<Type> getTypeParameters() {
     return params;
   }
 

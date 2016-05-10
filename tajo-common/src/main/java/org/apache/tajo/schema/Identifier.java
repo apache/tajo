@@ -18,6 +18,8 @@
 
 package org.apache.tajo.schema;
 
+import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes.IdentifierProto;
 import org.apache.tajo.schema.IdentifierPolicy.IdentifierCase;
 
 import java.util.Objects;
@@ -27,7 +29,7 @@ import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 /**
  * Represents an identifier part
  */
-public class Identifier {
+public class Identifier implements ProtoObject<IdentifierProto> {
   private String name;
   private boolean quoted;
 
@@ -117,5 +119,17 @@ public class Identifier {
     }
 
     return false;
+  }
+
+  @Override
+  public IdentifierProto getProto() {
+    return IdentifierProto.newBuilder()
+        .setName(name)
+        .setQuoted(quoted)
+        .build();
+  }
+
+  public static Identifier fromProto(IdentifierProto proto) {
+    return new Identifier(proto.getName(), proto.getQuoted());
   }
 }

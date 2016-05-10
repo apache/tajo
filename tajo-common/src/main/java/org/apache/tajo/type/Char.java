@@ -24,10 +24,10 @@ import static org.apache.tajo.common.TajoDataTypes.Type.CHAR;
 
 public class Char extends ValueParamterizedType {
   public Char(int length) {
-    super(CHAR, ImmutableList.of((Object)length));
+    super(CHAR, ImmutableList.of(length));
   }
 
   public int length() {
-    return (int) params.get(0);
+    return params.get(0);
   }
 }

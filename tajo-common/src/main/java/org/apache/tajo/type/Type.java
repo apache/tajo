@@ -18,18 +18,21 @@
 
 package org.apache.tajo.type;
 
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.TypeProto;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.schema.Field;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Represents Type
  */
-public abstract class Type implements Cloneable {
+public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
 
   // No paramter types
   public static final Any Any = new Any();
@@ -67,11 +70,11 @@ public abstract class Type implements Cloneable {
     return false;
   }
 
-  public Collection<Type> getTypeParameters() {
+  public List<Type> getTypeParameters() {
     throw new TajoRuntimeException(new UnsupportedException());
   }
 
-  public Collection<Object> getValueParameters() {
+  public List<Integer> getValueParameters() {
     throw new TajoRuntimeException(new UnsupportedException());
   }
 
@@ -141,5 +144,10 @@ public abstract class Type implements Cloneable {
 
   public static Null Null() {
     return new Null();
+  }
+
+  @Override
+  public TypeProto getProto() {
+    return TypeProtobufEncoder.serialize(this);
   }
 }

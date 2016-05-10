@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.BLOB;
 
-public class Blob extends Type {
+public class Blob extends PrimitiveType {
   public Blob() {
     super(BLOB);
   }

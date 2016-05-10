@@ -19,19 +19,22 @@
 package org.apache.tajo.type;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.TypeElement;
+import org.apache.tajo.common.TajoDataTypes.TypeProto;
 import org.apache.tajo.util.StringUtils;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
 /**
  * Represents a type which takes value parameters (e.g., Numeric(10, 6))
  */
-public abstract class ValueParamterizedType extends Type {
-  protected ImmutableList<Object> params;
+public abstract class ValueParamterizedType extends Type implements ProtoObject<TypeProto> {
+  protected ImmutableList<Integer> params;
 
-  public ValueParamterizedType(TajoDataTypes.Type type, ImmutableList<Object> params) {
+  public ValueParamterizedType(TajoDataTypes.Type type, ImmutableList<Integer> params) {
     super(type);
     this.params = params;
   }
@@ -42,7 +45,7 @@ public abstract class ValueParamterizedType extends Type {
   }
 
   @Override
-  public Collection<Object> getValueParameters() {
+  public List<Integer> getValueParameters() {
     return params;
   }
 
@@ -73,5 +76,10 @@ public abstract class ValueParamterizedType extends Type {
     sb.append(StringUtils.join(params, ","));
     sb.append(")");
     return sb.toString();
+  }
+
+  @Override
+  public TypeProto getProto() {
+    return TypeProto.newBuilder().addElements(TypeElement.newBuilder().addAllValueParams(params)).build();
   }
 }

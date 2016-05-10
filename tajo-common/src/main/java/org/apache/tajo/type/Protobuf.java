@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.PROTOBUF;
 
-public class Protobuf extends Type {
+public class Protobuf extends PrimitiveType {
   private String msgName;
 
   public Protobuf(String msgName) {

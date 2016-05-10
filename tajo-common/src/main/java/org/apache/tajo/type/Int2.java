@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INT2;
 
-public class Int2 extends Type {
+public class Int2 extends PrimitiveType {
   public Int2() {
     super(INT2);
   }

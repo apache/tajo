@@ -18,10 +18,37 @@
 
 package org.apache.tajo.type;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.INET4;
+import org.apache.tajo.schema.Field;
 
-public class Inet4 extends PrimitiveType {
-  public Inet4() {
-    super(INET4);
+public abstract class TypeVisitor {
+  public void visit(Type type) {
+    switch (type.baseType) {
+    case ARRAY:
+      visitArray((Array) type);
+      break;
+    case RECORD:
+      visitRecord((Record) type);
+      break;
+    case MAP:
+      visitMap((Map) type);
+      break;
+    default:
+      visitPrimitive(type);
+    }
+  }
+
+  void visitPrimitive(Type type) {}
+
+  void visitMap(Map map) {
+    visit(map.keyType());
+    visit(map.valueType());
+  }
+  void visitArray(Array array) {
+    visit(array.elementType());
+  }
+  void visitRecord(Record record) {
+    for (Field field : record.fields()) {
+      visit(field.type());
+    }
   }
 }

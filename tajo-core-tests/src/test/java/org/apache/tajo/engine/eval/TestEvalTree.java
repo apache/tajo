@@ -26,6 +26,7 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeFactory;
 import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
@@ -387,26 +388,26 @@ public class TestEvalTree extends ExprTestBase {
   @Test
   public final void testHashAndEqual() {
     EvalNode e1 = new BinaryEval(EvalType.EQUAL,
-        new FieldEval("default.n1.n_nationkey", TypeConverter.convert(INT4)),
-        new FieldEval("default.n2.n_nationkey", TypeConverter.convert(INT4))
+        new FieldEval("default.n1.n_nationkey", TypeFactory.create(INT4)),
+        new FieldEval("default.n2.n_nationkey", TypeFactory.create(INT4))
     );
 
     EvalNode e2 = new BinaryEval(EvalType.EQUAL,
-        new FieldEval("default.n1.n_name", TypeConverter.convert(INT4)),
-        new FieldEval("default.n2.n_name", TypeConverter.convert(INT4))
+        new FieldEval("default.n1.n_name", TypeFactory.create(INT4)),
+        new FieldEval("default.n2.n_name", TypeFactory.create(INT4))
     );
 
     EvalNode e3 = new BinaryEval(EvalType.EQUAL,
-        new FieldEval("default.n1.n_regionkey", TypeConverter.convert(INT4)),
-        new FieldEval("default.n2.n_regionkey", TypeConverter.convert(INT4))
+        new FieldEval("default.n1.n_regionkey", TypeFactory.create(INT4)),
+        new FieldEval("default.n2.n_regionkey", TypeFactory.create(INT4))
     );
 
     EvalNode e4 = new BinaryEval(EvalType.EQUAL,
-        new FieldEval("default.n1.n_comment", TypeConverter.convert(TEXT)),
-        new FieldEval("default.n2.n_comment", TypeConverter.convert(TEXT))
+        new FieldEval("default.n1.n_comment", TypeFactory.create(TEXT)),
+        new FieldEval("default.n2.n_comment", TypeFactory.create(TEXT))
     );
 
-    FieldEval f1 = new FieldEval("default.n1.n_nationkey", TypeConverter.convert(INT4));
+    FieldEval f1 = new FieldEval("default.n1.n_nationkey", TypeFactory.create(INT4));
     System.out.println(f1.hashCode());
     System.out.println(e1.hashCode());
 

@@ -18,10 +18,10 @@
 
 package org.apache.tajo.type;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.INET4;
+import org.apache.tajo.common.TajoDataTypes;
 
-public class Inet4 extends PrimitiveType {
-  public Inet4() {
-    super(INET4);
+public abstract class PrimitiveType extends Type {
+  public PrimitiveType(TajoDataTypes.Type baseType) {
+    super(baseType);
   }
 }

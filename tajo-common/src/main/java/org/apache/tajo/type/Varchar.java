@@ -25,10 +25,10 @@ import static org.apache.tajo.common.TajoDataTypes.Type.VARCHAR;
 public class Varchar extends ValueParamterizedType {
 
   public Varchar(int length) {
-    super(VARCHAR, ImmutableList.of((Object)length));
+    super(VARCHAR, ImmutableList.of(length));
   }
 
   public int length() {
-    return (int) params.get(0);
+    return params.get(0);
   }
 }

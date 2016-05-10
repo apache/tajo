@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
 
-public class Float8 extends Type {
+public class Float8 extends PrimitiveType {
   public Float8() {
     super(FLOAT8);
   }

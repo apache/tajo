@@ -51,6 +51,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.schema.Field;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeFactory;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -60,7 +61,6 @@ import java.net.URI;
 import java.util.*;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
-import static org.apache.tajo.catalog.TypeConverter.convert;
 import static org.apache.tajo.plan.ExprNormalizer.ExprNormalizedResult;
 import static org.apache.tajo.plan.LogicalPlan.BlockType;
 import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
@@ -2133,7 +2133,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         return Numeric();
       }
     } else {
-      return convert(type);
+      return TypeFactory.create(type);
     }
   }
 

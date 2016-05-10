@@ -18,10 +18,12 @@
 
 package org.apache.tajo.type;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.INET4;
+import static org.apache.tajo.type.TypeStringEncoder.deserialize;
+import static org.apache.tajo.type.TypeStringEncoder.serialize;
+import static org.junit.Assert.assertEquals;
 
-public class Inet4 extends PrimitiveType {
-  public Inet4() {
-    super(INET4);
+public class TestTypeStringEncoder extends TestTypeEncoder {
+  public void assertSerialize(Type type) {
+    assertEquals(type, deserialize(serialize(type)));
   }
 }

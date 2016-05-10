@@ -30,8 +30,8 @@ import java.util.Objects;
  * Represent a field in a schema.
  */
 public class Field implements Cloneable {
-  protected final Type type;
   protected final QualifiedIdentifier name;
+  protected final Type type;
 
   public Field(QualifiedIdentifier name, Type type) {
     this.type = type;

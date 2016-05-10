@@ -20,7 +20,12 @@ package org.apache.tajo.schema;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes.IdentifierProto;
+import org.apache.tajo.common.TajoDataTypes.QualifiedIdentifierProto;
 import org.apache.tajo.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -33,11 +38,11 @@ import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
  * Represents a qualified identifier. In other words, it represents identifiers for
  * all kinds of of database objects, such as databases, tables, and columns.
  */
-public class QualifiedIdentifier {
+public class QualifiedIdentifier implements ProtoObject<QualifiedIdentifierProto> {
   private ImmutableList<Identifier> names;
 
-  private QualifiedIdentifier(ImmutableList<Identifier> names) {
-    this.names = names;
+  private QualifiedIdentifier(Collection<Identifier> names) {
+    this.names = ImmutableList.copyOf(names);
   }
 
   /**
@@ -103,6 +108,16 @@ public class QualifiedIdentifier {
     return new QualifiedIdentifier(ImmutableList.copyOf(names));
   }
 
+  public static QualifiedIdentifier fromProto(QualifiedIdentifierProto proto) {
+    Collection<Identifier> ids = Collections2.transform(proto.getNamesList(), new Function<IdentifierProto, Identifier>() {
+      @Override
+      public Identifier apply(@Nullable IdentifierProto identifierProto) {
+        return Identifier.fromProto(identifierProto);
+      }
+    });
+    return new QualifiedIdentifier(ids);
+  }
+
   /**
    * It takes interned strings. It assumes all parameters already stripped. It is used only for tests.
    * @param names interned strings
@@ -117,5 +132,17 @@ public class QualifiedIdentifier {
       }
     }
     return new QualifiedIdentifier(builder.build());
+  }
+
+  @Override
+  public QualifiedIdentifierProto getProto() {
+    return QualifiedIdentifierProto.newBuilder()
+        .addAllNames(Iterables.transform(names, new Function<Identifier, IdentifierProto>() {
+          @Override
+          public IdentifierProto apply(@Nullable Identifier identifier) {
+            return identifier.getProto();
+          }
+        }))
+        .build();
   }
 }

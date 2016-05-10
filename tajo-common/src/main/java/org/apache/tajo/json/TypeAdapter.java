@@ -19,9 +19,7 @@
 package org.apache.tajo.json;
 
 import com.google.gson.*;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.type.TypeSerializer;
+import org.apache.tajo.type.TypeStringEncoder;
 
 import java.lang.reflect.Type;
 
@@ -32,13 +30,13 @@ public class TypeAdapter implements GsonSerDerAdapter<org.apache.tajo.type.Type>
   public org.apache.tajo.type.Type deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
       throws JsonParseException {
     JsonObject obj = (JsonObject) json;
-    return TypeSerializer.deserialize(CommonGsonHelper.getOrDie(obj, "type").getAsString());
+    return TypeStringEncoder.deserialize(CommonGsonHelper.getOrDie(obj, "type").getAsString());
   }
 
   @Override
   public JsonElement serialize(org.apache.tajo.type.Type src, Type typeOfSrc, JsonSerializationContext context) {
     JsonObject json = new JsonObject();
-    json.addProperty("type", TypeSerializer.serialize(src));
+    json.addProperty("type", TypeStringEncoder.serialize(src));
     return json;
   }
 }

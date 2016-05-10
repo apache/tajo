@@ -16,12 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.type;
+package org.apache.tajo;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.INET4;
+import org.apache.tajo.exception.TajoInternalError;
 
-public class Inet4 extends PrimitiveType {
-  public Inet4() {
-    super(INET4);
+public class Assert {
+
+  public static void assertCondition(boolean condition, String message, Object... arguments) {
+    if (!condition) {
+      throw new TajoInternalError(String.format(message, arguments));
+    }
   }
 }

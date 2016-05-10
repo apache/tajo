@@ -20,6 +20,7 @@ package org.apache.tajo.type;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import org.apache.tajo.Assert;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
@@ -33,13 +34,11 @@ import java.util.List;
 import java.util.Stack;
 
 import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
-import static org.apache.tajo.type.Type.Char;
-import static org.apache.tajo.type.Type.Varchar;
 
 /**
  * This class enables to serialize a type into a string representation and vice versa.
  */
-public class TypeSerializer {
+public class TypeStringEncoder {
 
   /**
    * Serialize a type into a string representation
@@ -54,7 +53,7 @@ public class TypeSerializer {
       sb.append(StringUtils.join(type.getTypeParameters(), ",", new Function<Type, String>() {
         @Override
         public String apply(@Nullable Type type) {
-          return TypeSerializer.serialize(type);
+          return TypeStringEncoder.serialize(type);
         }
       }));
       sb.append(">");
@@ -114,14 +113,14 @@ public class TypeSerializer {
 
       if (c == '<') {
         if (stack.isEmpty()) {
-          assertArgument(baseType == null, "Expected baseName to be null");
+          Assert.assertCondition(baseType == null, "Expected baseName to be null");
           baseType = signature.substring(0, i);
         }
         stack.push('<');
         spanStack.push(i + 1);
 
       } else if (c == '>') {
-        assertArgument(stack.pop() == '<', "Bad signature: '%s'", signature);
+        Assert.assertCondition(stack.pop() == '<', "Bad signature: '%s'", signature);
         int paramStartIdx = spanStack.pop();
 
         if (stack.isEmpty()) { // ensure outermost parameters
@@ -138,7 +137,7 @@ public class TypeSerializer {
 
       } else if (c == '[') {
         if (stack.isEmpty()) {
-          assertArgument(baseType == null, "Expected baseName to be null");
+          Assert.assertCondition(baseType == null, "Expected baseName to be null");
           baseType = signature.substring(0, i);
         }
 
@@ -146,7 +145,7 @@ public class TypeSerializer {
         spanStack.push(i + 1);
 
       } else if (c == ']') {
-        assertArgument(stack.pop() == '[', "Bad signature: '%s'", signature);
+        Assert.assertCondition(stack.pop() == '[', "Bad signature: '%s'", signature);
 
         int paramStartIdx = spanStack.pop();
         if (stack.isEmpty()) { // ensure outermost parameters
@@ -163,14 +162,14 @@ public class TypeSerializer {
 
       } else if (c == '(') {
         if (stack.isEmpty()) {
-          assertArgument(baseType == null, "Expected baseName to be null");
+          Assert.assertCondition(baseType == null, "Expected baseName to be null");
           baseType = signature.substring(0, i);
         }
         stack.push('(');
         spanStack.push(i + 1);
 
       } else if (c == ')') {
-        assertArgument(stack.pop() == '(', "Bad signature: '%s'", signature);
+        Assert.assertCondition(stack.pop() == '(', "Bad signature: '%s'", signature);
         int paramStartIdx = spanStack.pop();
 
         if (stack.isEmpty()) { // ensure outermost parameters
@@ -219,11 +218,11 @@ public class TypeSerializer {
       if (c == '<' || c == '[' || c == '(') {
         stack.push(c);
       } else if (c == '>') {
-        assertArgument(stack.pop() == '<', "Bad signature: '%s'", str);
+        Assert.assertCondition(stack.pop() == '<', "Bad signature: '%s'", str);
       } else if (c == ']') {
-        assertArgument(stack.pop() == '[', "Bad signature: '%s'", str);
+        Assert.assertCondition(stack.pop() == '[', "Bad signature: '%s'", str);
       } else if (c == ')') {
-        assertArgument(stack.pop() == '(', "Bad signature: '%s'", str);
+        Assert.assertCondition(stack.pop() == '(', "Bad signature: '%s'", str);
       } else if (c == ',') {
         if (stack.isEmpty()) { // ensure outermost type parameters
           fields.add(itemParser.apply(str.substring(paramStartIdx, i)));
@@ -232,7 +231,7 @@ public class TypeSerializer {
       }
     }
 
-    assertArgument(stack.empty(), "Bad signature: '%s'", str);
+    Assert.assertCondition(stack.empty(), "Bad signature: '%s'", str);
     if (paramStartIdx < str.length()) {
       fields.add(itemParser.apply(str.substring(paramStartIdx, str.length())));
     }
@@ -248,7 +247,7 @@ public class TypeSerializer {
   static Field parseField(String str) {
     // A field consists of an identifier and a type, and they are delimited by space.
     if (!str.contains(" ")) {
-      assertArgument(false, "Bad field signature: '%s'", str);
+      Assert.assertCondition(false, "Bad field signature: '%s'", str);
     }
 
     // Stack to track the nested bracket depth
@@ -260,11 +259,11 @@ public class TypeSerializer {
       if (c == '<' || c == '[' || c == '(') {
         stack.push(c);
       } else if (c == '>') { // for validation
-        assertArgument(stack.pop() == '<', "Bad field signature: '%s'", str);
+        Assert.assertCondition(stack.pop() == '<', "Bad field signature: '%s'", str);
       } else if (c == ']') { // for validation
-        assertArgument(stack.pop() == '[', "Bad field signature: '%s'", str);
+        Assert.assertCondition(stack.pop() == '[', "Bad field signature: '%s'", str);
       } else if (c == ')') { // for validation
-        assertArgument(stack.pop() == '(', "Bad field signature: '%s'", str);
+        Assert.assertCondition(stack.pop() == '(', "Bad field signature: '%s'", str);
 
       } else if (c == ' ') {
         if (stack.isEmpty()) { // ensure outermost type parameters
@@ -279,7 +278,7 @@ public class TypeSerializer {
     return null;
   }
 
-  static Type createType(String baseTypeStr,
+  public static Type createType(String baseTypeStr,
                                 List<Type> typeParams,
                                 List<Integer> valueParams,
                                 List<Field> fieldParams) {
@@ -291,77 +290,7 @@ public class TypeSerializer {
       throw new TajoInternalError(new UnsupportedException(baseTypeStr));
     }
 
-    switch (baseType) {
-    case CHAR: {
-      assertArgument(valueParams.size() == 1,
-          "Char type requires 1 integer parameters, but it takes (%s).", StringUtils.join(typeParams));
-      return Char(valueParams.get(0));
-    }
-    case VARCHAR: {
-      assertArgument(valueParams.size() == 1,
-          "Varchar type requires 1 integer parameters, but it takes (%s).", StringUtils.join(typeParams));
-      return Varchar(valueParams.get(0));
-    }
-    case TEXT: return Type.Text;
-
-    case BOOLEAN: return Type.Bool;
-    case INT1: return Type.Int1;
-    case INT2: return Type.Int2;
-    case INT4: return Type.Int4;
-    case INT8: return Type.Int8;
-    case FLOAT4: return Type.Float4;
-    case FLOAT8: return Type.Float8;
-    case NUMERIC: {
-      if (valueParams.size() == 0) {
-        return Numeric.Numeric();
-
-      } else {
-        for (Object p : valueParams) {
-          assertArgument(p instanceof Integer, "Numeric type requires integer parameters");
-        }
-        if (valueParams.size() == 1) {
-          return Numeric.Numeric(valueParams.get(0));
-        } else if (valueParams.size() == 2) {
-          return Numeric.Numeric(valueParams.get(0), valueParams.get(1));
-        } else {
-          assertArgument(false,
-              "Numeric type can take 2 or less integer parameters, but it takes (%s).", StringUtils.join(valueParams));
-        }
-      }
-    }
-
-    case DATE: return Type.Date;
-    case TIME: return Type.Time;
-    case TIMESTAMP: return Type.Timestamp;
-    case INTERVAL: return Type.Interval;
-    case BLOB: return Type.Blob;
-    case INET4: return Type.Inet4;
-
-    case ARRAY: {
-      assertArgument(typeParams.size() == 1,
-          "Array Type requires 1 type parameters, but it takes (%s).", StringUtils.join(typeParams));
-      return Type.Array(typeParams.get(0));
-    }
-    case MAP: {
-      assertArgument(typeParams.size() == 2,
-          "Map Type requires 2 type parameters, but it takes (%s).", StringUtils.join(typeParams));
-
-      return Type.Map(typeParams.get(0), typeParams.get(1));
-    }
-    case RECORD: {
-      assertArgument(fieldParams.size() >= 1,
-          "Record Type requires at least 1 field parameters, but it takes (%s).", StringUtils.join(fieldParams));
-      return Type.Record(fieldParams);
-    }
-
-    default:
-      throw new TajoInternalError(new UnsupportedException(baseTypeStr));
-    }
+    return TypeFactory.create(baseType, typeParams, valueParams, fieldParams);
   }
 
-  static void assertArgument(boolean condition, String message, Object ... arguments) {
-    if (!condition) {
-      throw new TajoInternalError(String.format(message, arguments));
-    }
-  }
 }

@@ -20,7 +20,7 @@ package org.apache.tajo.type;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT4;
 
-public class Float4 extends Type {
+public class Float4 extends PrimitiveType {
   public Float4() {
     super(FLOAT4);
   }
