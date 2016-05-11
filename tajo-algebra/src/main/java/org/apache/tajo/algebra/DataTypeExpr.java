@@ -33,7 +33,7 @@ public class DataTypeExpr extends Expr {
   @Expose @SerializedName("Scale")
   Integer scale;
   @Expose @SerializedName("Array")
-  ArrayType arrayType; // not null if the type is RECORD
+  ArrayType arrayType; // not null if the type is ARRAY
   @Expose @SerializedName("Record")
   RecordType recordType; // not null if the type is RECORD
   @Expose @SerializedName("Map")
@@ -68,7 +68,7 @@ public class DataTypeExpr extends Expr {
   }
 
   public boolean isPrimitiveType() {
-    return !this.isRecordType() && !isMapType();
+    return !isArrayType()&& !isRecordType() && !isMapType();
   }
 
   public boolean isArrayType() {
