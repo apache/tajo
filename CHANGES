@@ -12,6 +12,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2071: Supporting DATE type in Parquet format. 
+    (Jongyoung Park via hyunsik)
+
     TAJO-2106: Fix minor typo in PostgreSQL Storage Handler documentation.
     (Byunghoon Lim via jihoon)
 

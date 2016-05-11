@@ -30,6 +30,7 @@ import org.apache.parquet.io.api.RecordConsumer;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -139,6 +140,10 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
         break;
       case TEXT:
         recordConsumer.addBinary(Binary.fromByteArray(tuple.getTextBytes(index)));
+        break;
+      case DATE:
+        // Parquet DATE type is based on Unix Epoch(Jan 1, 1970).
+        recordConsumer.addInteger(tuple.getInt4(index) - DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
         break;
       case PROTOBUF:
       case BLOB:

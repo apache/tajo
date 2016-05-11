@@ -33,6 +33,7 @@ import org.apache.parquet.io.api.GroupConverter;
 import org.apache.parquet.io.api.PrimitiveConverter;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.Type;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -117,6 +118,8 @@ public class TajoRecordConverter extends GroupConverter {
         return new FieldInet4Converter(parent);
       case INET6:
         throw new RuntimeException("No converter for INET6");
+      case DATE:
+        return new FieldDateConverter(parent);
       case TEXT:
         return new FieldTextConverter(parent);
       case PROTOBUF:
@@ -321,6 +324,20 @@ public class TajoRecordConverter extends GroupConverter {
     @Override
     final public void addBinary(Binary value) {
       parent.add(DatumFactory.createInet4(value.getBytes()));
+    }
+  }
+
+  static final class FieldDateConverter extends PrimitiveConverter {
+    private final ParentValueContainer parent;
+
+    public FieldDateConverter(ParentValueContainer parent) {
+      this.parent = parent;
+    }
+
+    @Override
+    final public void addInt(int value) {
+      // Parquet DATE type is based on Unix Epoch(Jan 1, 1970).
+      parent.add(DatumFactory.createDate(value + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH));
     }
   }
 
