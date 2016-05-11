@@ -26,13 +26,11 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.DataFormat;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.UndefinedOperatorException;
 import org.apache.tajo.schema.IdentifierUtil;
@@ -93,8 +91,8 @@ public class CatalogUtil {
     }
   }
 
-  public static TableMeta newTableMeta(String dataFormat) {
-    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(dataFormat);
+  public static TableMeta newTableMeta(String dataFormat, TajoConf conf) {
+    KeyValueSet defaultProperties = CatalogUtil.newDefaultProperty(dataFormat, conf);
     return new TableMeta(dataFormat, defaultProperties);
   }
 
@@ -638,12 +636,31 @@ public class CatalogUtil {
     return pair;
   }
 
-  /*
+  /**
    * It is the relationship graph of type conversions.
    * It contains tuples, each of which (LHS type, RHS type, Result type).
    */
 
   public static final Map<Type, Map<Type, Type>> OPERATION_CASTING_MAP = Maps.newHashMap();
+
+  /**
+   * It is the casting direction of relationship graph
+   */
+  private static final Map<Type, Map<Type, Direction>> CASTING_DIRECTION_MAP = Maps.newHashMap();
+
+  public static Direction getCastingDirection(Type lhs, Type rhs) {
+    Direction direction = TUtil.getFromNestedMap(CatalogUtil.CASTING_DIRECTION_MAP, lhs, rhs);
+    if (direction == null) {
+      return Direction.BOTH;
+    }
+    return direction;
+  }
+
+  public enum Direction {
+    LHS,
+    RHS,
+    BOTH
+  }
 
   static {
     // Type Conversion Map
@@ -710,7 +727,18 @@ public class CatalogUtil {
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.VARCHAR, Type.TEXT);
 
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIME, Type.TIME, Type.TIME);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIME, Type.DATE, Type.TIMESTAMP);
+    TUtil.putToNestedMap(CASTING_DIRECTION_MAP, Type.TIME, Type.DATE, Direction.RHS);
+
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.DATE, Type.DATE, Type.DATE);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.DATE, Type.TIME, Type.TIMESTAMP);
+    TUtil.putToNestedMap(CASTING_DIRECTION_MAP, Type.DATE, Type.TIME, Direction.LHS);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.DATE, Type.INTERVAL, Type.TIMESTAMP);
+    TUtil.putToNestedMap(CASTING_DIRECTION_MAP, Type.DATE, Type.INTERVAL, Direction.LHS);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INTERVAL, Type.DATE, Type.TIMESTAMP);
+    TUtil.putToNestedMap(CASTING_DIRECTION_MAP, Type.INTERVAL, Type.DATE, Direction.RHS);
 
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INET4, Type.INET4, Type.INET4);
   }
@@ -728,10 +756,14 @@ public class CatalogUtil {
    * @param dataFormat DataFormat
    * @return Table properties
    */
-  public static KeyValueSet newDefaultProperty(String dataFormat) {
+  public static KeyValueSet newDefaultProperty(String dataFormat, TajoConf conf) {
     KeyValueSet options = new KeyValueSet();
+    // set default timezone to the system timezone
+    options.set(StorageConstants.TIMEZONE, conf.getSystemTimezone().getID());
+
     if (dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      options.set(StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
     } else if (dataFormat.equalsIgnoreCase("JSON")) {
       options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
     } else if (dataFormat.equalsIgnoreCase("RCFILE")) {

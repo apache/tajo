@@ -39,6 +39,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -283,7 +284,10 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       TaskAttemptId id2 = TajoIdUtils.parseTaskAttemptId("ta_1412326813565_0001_000001_000002_00");
       org.apache.tajo.worker.TaskHistory taskHistory2 = new org.apache.tajo.worker.TaskHistory(
           id2, TaskAttemptState.TA_SUCCEEDED, 1.0f, startTime, System.currentTimeMillis() - 500, tableStats);
-      writer.appendAndSync(taskHistory2);
+      writer.appendHistory(taskHistory2);
+
+      HistoryWriter.WriterFuture future = writer.flushTaskHistories();
+      future.get(10, TimeUnit.SECONDS);
 
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
       String startDate = df.format(new Date(startTime));

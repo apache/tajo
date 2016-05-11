@@ -32,8 +32,6 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -380,7 +378,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "orderkeys"));
     TableDesc orderKeys = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "orderkeys");
     if (!cluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, orderKeys.getStats().getNumRows().intValue());
+      assertEquals(8, orderKeys.getStats().getNumRows().intValue());
     }
   }
 
@@ -495,16 +493,12 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testNowInMultipleTasks() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
     Schema schema = SchemaBuilder.builder()
         .add("id", Type.INT4)
         .add("name", Type.TEXT)
         .build();
     String[] data = new String[]{ "1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5" };
-    TajoTestingCluster.createTable("testNowInMultipleTasks".toLowerCase(), schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable(conf, "testNowInMultipleTasks".toLowerCase(), schema, data, 2);
 
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
@@ -627,8 +621,6 @@ public class TestSelectQuery extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE IF EXISTS timezoned3");
     }
-
-    getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
   }
 
   @Test
@@ -649,8 +641,9 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public void testTimezonedTable5() throws Exception {
     // Table - timezone = GMT+9 (by a specified system timezone)
-    // TajoClient uses JVM default timezone (GMT+9)
+    // Client - GMT+9 (SET TIME ZONE 'GMT+9';)
 
+    TimeZone systemTimeZone = testingCluster.getConfiguration().getSystemTimezone();
     try {
       testingCluster.getConfiguration().setSystemTimezone(TimeZone.getTimeZone("GMT+9"));
 
@@ -662,7 +655,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE IF EXISTS timezoned5");
 
       // restore the config
-      testingCluster.getConfiguration().setSystemTimezone(TimeZone.getTimeZone("GMT"));
+      testingCluster.getConfiguration().setSystemTimezone(systemTimeZone);
     }
   }
 
@@ -677,7 +670,6 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
       ResultSet res = executeQuery();
       assertResultSet(res, "testTimezonedTable3.result");
-      executeString("SET TIME ZONE 'GMT'");
       cleanupQuery(res);
     } finally {
       executeString("DROP TABLE IF EXISTS timezoned_load1");

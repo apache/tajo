@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -86,7 +87,7 @@ public class TestPlannerUtil {
         .add("deptname", Type.TEXT)
         .add("score", CatalogUtil.newSimpleDataType(Type.INT4)).build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     TableDesc people = new TableDesc(
         IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());

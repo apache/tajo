@@ -23,11 +23,8 @@ package org.apache.tajo.jdbc;
 
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.CodecType;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
@@ -40,7 +37,6 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -51,6 +47,7 @@ import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -74,7 +71,8 @@ public class TestResultSet {
         .add("deptname", Type.TEXT)
         .add("score", Type.INT4)
         .build();
-    scoreMeta = CatalogUtil.newTableMeta("TEXT");
+
+    scoreMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scoreSchema));
     TableStats stats = new TableStats();
 
@@ -208,11 +206,9 @@ public class TestResultSet {
       String [] data = {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"
       };
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
       res = TajoTestingCluster
-          .run(table, schemas, tableOptions, new String[][]{data}, query, client);
+          .run(table, schemas, new String[][]{data}, query, client);
 
       assertTrue(res.next());
 
@@ -241,7 +237,13 @@ public class TestResultSet {
       assertEquals(Timestamp.valueOf("2014-01-01 01:00:00"), timestamp);
 
       // assert with timezone
-      Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT+9"));
+
+      //Current timezone + 1 hour
+      TimeZone tz = TimeZone.getDefault();
+      tz.setRawOffset(tz.getRawOffset() + (int) TimeUnit.HOURS.toMillis(1));
+
+      Calendar cal = Calendar.getInstance(tz);
+      assertEquals(tz.getRawOffset(), cal.getTimeZone().getRawOffset());
       date = res.getDate(1, cal);
       assertNotNull(date);
       assertEquals("2014-01-01", date.toString());
@@ -250,21 +252,21 @@ public class TestResultSet {
       assertNotNull(date);
       assertEquals("2014-01-01", date.toString());
 
-      time = res.getTime(2, cal);
+      time = res.getTime(2);
       assertNotNull(time);
-      assertEquals("10:00:00", time.toString());
+      assertEquals("01:00:00", time.toString());
 
-      time = res.getTime("col2", cal);
+      time = res.getTime("col2");
       assertNotNull(time);
-      assertEquals("10:00:00", time.toString());
+      assertEquals("01:00:00", time.toString());
 
       timestamp = res.getTimestamp(3, cal);
       assertNotNull(timestamp);
-      assertEquals("2014-01-01 10:00:00.0", timestamp.toString());
+      assertEquals("2014-01-01 02:00:00.0", timestamp.toString());
 
       timestamp = res.getTimestamp("col3", cal);
       assertNotNull(timestamp);
-      assertEquals("2014-01-01 10:00:00.0", timestamp.toString());
+      assertEquals("2014-01-01 02:00:00.0", timestamp.toString());
     } finally {
       if (res != null) {
         res.close();

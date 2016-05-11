@@ -25,8 +25,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,11 +68,9 @@ public class TestNullValues {
         "2||",
         "3|filled|0.2"
     };
-    KeyValueSet opts = new KeyValueSet();
-    opts.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
     try (ResultSet res = TajoTestingCluster
-            .run(table, schemas, opts, new String[][]{data},
+            .run(table, schemas, new String[][]{data},
                     "select * from nulltable1 where col3 is null", client)) {
       assertTrue(res.next());
       assertEquals(2, res.getInt(1));
@@ -95,10 +91,8 @@ public class TestNullValues {
         "||",
         "3|filled|"
     };
-    KeyValueSet opts = new KeyValueSet();
-    opts.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     try (ResultSet res = TajoTestingCluster
-            .run(table, schemas, opts, new String[][]{data},
+            .run(table, schemas, new String[][]{data},
                     "select * from nulltable2 where col1 is not null", client)) {
       assertTrue(res.next());
       assertEquals(1, res.getInt(1));
@@ -125,13 +119,11 @@ public class TestNullValues {
         .build();
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
-        ",,,,672287821,1301460,1,313895860387,126288907,1024",
-        ",,,43578,19,13,6,3581,2557,1024"
+        "||||672287821|1301460|1|313895860387|126288907|1024",
+        "|||43578|19|13|6|3581|2557|1024"
     };
-    KeyValueSet opts = new KeyValueSet();
-    opts.set(StorageConstants.TEXT_DELIMITER, ",");
     try (ResultSet res = TajoTestingCluster
-            .run(table, schemas, opts, new String[][]{data},
+            .run(table, schemas, new String[][]{data},
                     "select * from nulltable3 where col1 is null and col2 is null and col3 is null and col4 = 43578", client)) {
       assertTrue(res.next());
       assertEquals(43578, res.getLong(4));
@@ -156,14 +148,11 @@ public class TestNullValues {
         .build();
     Schema [] schemas = new Schema[] {schema};
     String [] data = {
-        "\\N,,,,672287821,",
-        ",\\N,,43578"
+        "\\N||||672287821|",
+        "|\\N||43578"
     };
-    KeyValueSet opts = new KeyValueSet();
-    opts.set(StorageConstants.TEXT_DELIMITER, ",");
-    opts.set(StorageConstants.TEXT_NULL, "\\\\N");
     try (ResultSet res = TajoTestingCluster
-            .run(table, schemas, opts, new String[][]{data},
+            .run(table, schemas, new String[][]{data},
                     "select * from nulltable4 where col1 is null and col2 is null and col3 is null and col5 is null and col4 = 43578"
                     , client)) {
       assertTrue(res.next());
@@ -269,14 +258,11 @@ public class TestNullValues {
         "3|c|\\N|t",
         "4|d|4.0|\\N"
     };
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     if (client == null) {
-      return TajoTestingCluster.run(table, schemas, tableOptions, new String[][]{data}, query);
+      return TajoTestingCluster.run(table, schemas, new String[][]{data}, query);
     } else {
-      return TajoTestingCluster.run(table, schemas, tableOptions, new String[][]{data}, query, client);
+      return TajoTestingCluster.run(table, schemas, new String[][]{data}, query, client);
     }
   }
 

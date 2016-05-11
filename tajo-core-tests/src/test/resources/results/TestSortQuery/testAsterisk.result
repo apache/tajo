@@ -1,5 +1,8 @@
 l_orderkey,l_partkey,l_suppkey,l_linenumber,l_quantity,l_extendedprice,l_discount,l_tax,l_returnflag,l_linestatus,l_shipdate,l_commitdate,l_receiptdate,l_shipinstruct,l_shipmode,l_comment,len_comment
 -------------------------------
+null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,for null test,13
+null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,for null test2,14
+null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,for null test3,14
 3,3,6540,2,49.0,46796.47,0.1,0.0,R,F,1993-11-09,1993-12-20,1993-11-24,TAKE BACK RETURN,RAIL, unusual accounts. eve,22
 1,1,7706,1,17.0,21168.23,0.04,0.02,N,O,1996-03-13,1996-02-12,1996-03-22,DELIVER IN PERSON,TRUCK,egular courts above the,23
 2,2,1191,1,38.0,44694.46,0.0,0.05,N,O,1997-01-28,1997-01-14,1997-02-02,TAKE BACK RETURN,RAIL,ven requests. deposits breach a,31

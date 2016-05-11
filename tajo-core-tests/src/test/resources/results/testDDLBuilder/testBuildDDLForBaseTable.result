@@ -1,4 +1,4 @@
 --
 -- Name: db1.table2; Type: TABLE; Storage: TEXT
 --
-CREATE TABLE db1.table2 (name BLOB, addr TEXT) USING TEXT WITH ('compression.codec'='org.apache.hadoop.io.compress.GzipCodec', 'text.delimiter'='|');
+CREATE TABLE db1.table2 (name BLOB, addr TEXT) USING TEXT WITH ('compression.codec'='org.apache.hadoop.io.compress.GzipCodec', 'text.delimiter'='|', 'text.null'='\\N', 'timezone'='Asia/Seoul');

@@ -12,7 +12,7 @@ CREATE DATABASE IF NOT EXISTS "TestTajoDump";
 --
 -- Name: "TestTajoDump"."TableName1"; Type: TABLE; Storage: TEXT
 --
-CREATE TABLE "TestTajoDump"."TableName1" ("Age" INT4, "FirstName" TEXT, lastname TEXT) USING TEXT WITH ('text.delimiter'='|');
+CREATE TABLE "TestTajoDump"."TableName1" ("Age" INT4, "FirstName" TEXT, lastname TEXT) USING TEXT WITH ('text.delimiter'='|', 'text.null'='\\N', 'timezone'='${table.timezone}');
 
 --
 -- Name: test_idx; Type: INDEX; Index Method: TWO_LEVEL_BIN_TREE

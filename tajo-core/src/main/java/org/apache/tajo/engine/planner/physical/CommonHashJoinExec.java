@@ -19,21 +19,19 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.Column;
+import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.planner.KeyProjector;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
-import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.ExecutionBlockSharedResource;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * common exec for all hash join execs
@@ -45,19 +43,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   // temporal tuples and states for nested loop join
   protected boolean first = true;
   protected TupleMap<T> tupleSlots;
-
   protected Iterator<Tuple> iterator;
-
-  protected final boolean isCrossJoin;
-  protected final List<Column[]> joinKeyPairs;
-
-  protected final int rightNumCols;
-  protected final int leftNumCols;
-
-  protected final Column[] leftKeyList;
-  protected final Column[] rightKeyList;
-
-  protected final KeyProjector leftKeyExtractor;
 
   protected boolean finished;
 
@@ -65,46 +51,6 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
 
   public CommonHashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer, PhysicalExec inner) {
     super(context, plan, outer, inner);
-
-    switch (plan.getJoinType()) {
-
-      case CROSS:
-        if (hasJoinQual) {
-          throw new TajoInternalError("Cross join cannot evaluate join conditions.");
-        } else {
-          isCrossJoin = true;
-          joinKeyPairs = null;
-          rightNumCols = leftNumCols = -1;
-          leftKeyList = rightKeyList = null;
-          leftKeyExtractor = null;
-        }
-        break;
-
-      case INNER:
-        // Other join types except INNER join can have empty join condition.
-        if (!hasJoinQual) {
-          throw new TajoInternalError("Inner join must have any join conditions.");
-        }
-      default:
-        isCrossJoin = false;
-        // HashJoin only can manage equi join key pairs.
-        this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
-            inner.getSchema(), false);
-
-        leftKeyList = new Column[joinKeyPairs.size()];
-        rightKeyList = new Column[joinKeyPairs.size()];
-
-        for (int i = 0; i < joinKeyPairs.size(); i++) {
-          leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
-          rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
-        }
-
-        leftNumCols = outer.getSchema().size();
-        rightNumCols = inner.getSchema().size();
-
-        leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
-        break;
-    }
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -138,7 +84,7 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   }
 
   protected TupleMap<TupleList> buildRightToHashTable() throws IOException {
-    if (isCrossJoin) {
+    if (plan.getJoinType().equals(JoinType.CROSS)) {
       return buildRightToHashTableForCrossJoin();
     } else {
       return buildRightToHashTableForNonCrossJoin();
@@ -160,18 +106,37 @@ public abstract class CommonHashJoinExec<T> extends CommonJoinExec {
   protected TupleMap<TupleList> buildRightToHashTableForNonCrossJoin() throws IOException {
     Tuple tuple;
     TupleMap<TupleList> map = new TupleMap<>(context.getQueryContext().getInt(SessionVars.JOIN_HASH_TABLE_SIZE));
-    KeyProjector keyProjector = new KeyProjector(rightSchema, rightKeyList);
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
-      KeyTuple keyTuple = keyProjector.project(tuple);
-      TupleList newValue = map.get(keyTuple);
-      if (newValue == null) {
-        map.put(keyTuple, newValue = new TupleList());
+      KeyTuple keyTuple = rightKeyExtractor.project(tuple);
+      if (isLoadable(plan, keyTuple)) { // filter out null values
+        TupleList newValue = map.get(keyTuple);
+        if (newValue == null) {
+          map.put(keyTuple, newValue = new TupleList());
+        }
+        // if source is scan or groupby, it needs not to be cloned
+        newValue.add(tuple);
       }
-      // if source is scan or groupby, it needs not to be cloned
-      newValue.add(tuple);
     }
     return map;
+  }
+
+  /**
+   * Check the given tuple is able to be loaded into the hash table or not.
+   * When the plan is full outer join, every tuple including null values should be loaded
+   * because both input tables of the join are preserved-row relations as well as null-supplying relations.
+   *
+   * Otherwise, except for anti join, only the tuples not containing null values should be loaded.
+   *
+   * For the case of anti join, the right table is expected to be empty if there are any null values.
+   *
+   * @param plan
+   * @param tuple
+   * @return
+   */
+  private static boolean isLoadable(JoinNode plan, Tuple tuple) {
+    return plan.getJoinType().equals(JoinType.FULL_OUTER)
+        || Arrays.stream(tuple.getValues()).noneMatch(Datum::isNull);
   }
 
   // todo: convert loaded data to cache condition

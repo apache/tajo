@@ -120,7 +120,7 @@ public class TestCompressionStorages {
         .add("name", Type.TEXT)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty("compression.codec", codec.getCanonicalName());
     meta.putProperty("compression.type", SequenceFile.CompressionType.BLOCK.name());
     meta.putProperty("rcfile.serde", TextSerializerDeserializer.class.getName());

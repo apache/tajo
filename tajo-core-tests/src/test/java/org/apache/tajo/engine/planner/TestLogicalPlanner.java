@@ -21,10 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.QueryVars;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JoinType;
@@ -102,7 +99,7 @@ public class TestLogicalPlanner {
         .add("score", Type.INT4)
         .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     TableDesc people = new TableDesc(
         IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
@@ -131,7 +128,7 @@ public class TestLogicalPlanner {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpchTables) {
-      TableMeta m = CatalogUtil.newTableMeta("TEXT");
+      TableMeta m = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
       TableDesc d = CatalogUtil.newTableDesc(
           IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m,
           CommonTestingUtil.getTestDir());
@@ -1335,7 +1332,8 @@ public class TestLogicalPlanner {
 
   @Test
   public void testSelectFromSelfDescTable() throws Exception {
-    TableDesc tableDesc = new TableDesc("default.self_desc_table1", null, CatalogUtil.newTableMeta("TEXT"),
+    TableDesc tableDesc = new TableDesc("default.self_desc_table1", null,
+        CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration()),
         CommonTestingUtil.getTestDir().toUri(), true);
     catalog.createTable(tableDesc);
     assertTrue(catalog.existsTable("default.self_desc_table1"));
@@ -1388,7 +1386,8 @@ public class TestLogicalPlanner {
 
   @Test
   public void testSelectWhereFromSelfDescTable() throws Exception {
-    TableDesc tableDesc = new TableDesc("default.self_desc_table1", null, CatalogUtil.newTableMeta("TEXT"),
+    TableDesc tableDesc = new TableDesc("default.self_desc_table1", null,
+        CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration()),
         CommonTestingUtil.getTestDir().toUri(), true);
     catalog.createTable(tableDesc);
     assertTrue(catalog.existsTable("default.self_desc_table1"));

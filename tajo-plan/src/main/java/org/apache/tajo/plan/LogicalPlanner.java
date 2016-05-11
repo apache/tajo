@@ -52,6 +52,7 @@ import org.apache.tajo.schema.Field;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.Type;
 import org.apache.tajo.type.TypeFactory;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
@@ -106,10 +107,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       this.evalOptimizer = evalOptimizer;
 
       // session's time zone
-      if (context.containsKey(SessionVars.TIMEZONE)) {
-        String timezoneId = context.get(SessionVars.TIMEZONE);
-        timeZone = TimeZone.getTimeZone(timezoneId);
-      }
+      String timezoneId = context.get(SessionVars.TIMEZONE);
+      this.timeZone = TimeZone.getTimeZone(timezoneId);
 
       this.debugOrUnitTests = debugOrUnitTests;
     }
@@ -1902,7 +1901,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     // Set default storage properties to table
-    createTableNode.setOptions(CatalogUtil.newDefaultProperty(createTableNode.getStorageType()));
+    createTableNode.setOptions(
+        CatalogUtil.newDefaultProperty(createTableNode.getStorageType(), context.getQueryContext().getConf()));
 
     // Priority to apply table properties
     // 1. Explicit table properties specified in WITH clause
@@ -2087,13 +2087,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param exprs
    * @return
    */
-  private static String[] convertExprsToStrings(Expr[] exprs) {
+  private static String[] convertExprsToPartitionTableStringValues(Expr[] exprs) {
     int exprCount = exprs.length;
     String[] values = new String[exprCount];
 
     for(int i = 0; i < exprCount; i++) {
-      LiteralValue expr = (LiteralValue)exprs[i];
-      values[i] = expr.getValue();
+      if (exprs[i].getType() == OpType.NullLiteral) {
+        values[i] = StorageConstants.DEFAULT_PARTITION_NAME;
+      } else {
+        LiteralValue expr = (LiteralValue) exprs[i];
+        values[i] = expr.getValue();
+      }
     }
 
     return values;
@@ -2178,7 +2182,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (alterTable.getValues() != null) {
-      alterTableNode.setPartitionValues(convertExprsToStrings(alterTable.getValues()));
+      alterTableNode.setPartitionValues(convertExprsToPartitionTableStringValues(alterTable.getValues()));
     }
 
     if (alterTable.getLocation() != null) {

@@ -120,9 +120,6 @@ public class EvalNodeSerializer
     } else if (unary.getType() == EvalType.CAST) {
       CastEval castEval = (CastEval) unary;
       unaryBuilder.setCastingType(TypeConverter.convert(castEval.getValueType()).getDataType());
-      if (castEval.hasTimeZone()) {
-        unaryBuilder.setTimezone(castEval.getTimezone().getID());
-      }
     }
 
     // registering itself and building EvalNode

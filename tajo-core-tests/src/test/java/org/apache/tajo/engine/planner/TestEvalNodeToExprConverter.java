@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.TajoTestingCluster;
@@ -79,7 +80,7 @@ public class TestEvalNodeToExprConverter {
     tpch.loadSchemas();
     tpch.loadOutSchema();
     for (String table : tpchTables) {
-      TableMeta m = CatalogUtil.newTableMeta("TEXT");
+      TableMeta m = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
       TableDesc d = CatalogUtil.newTableDesc(
         IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, table), tpch.getSchema(table), m,
         CommonTestingUtil.getTestDir());

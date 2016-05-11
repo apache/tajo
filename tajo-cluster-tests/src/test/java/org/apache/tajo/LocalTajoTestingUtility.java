@@ -40,7 +40,6 @@ import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.File;
@@ -96,8 +95,7 @@ public class LocalTajoTestingUtility {
 
   public void setup(String[] names,
                     String[] tablepaths,
-                    Schema[] schemas,
-                    KeyValueSet option) throws Exception {
+                    Schema[] schemas) throws Exception {
     LOG.info("===================================================");
     LOG.info("Starting Test Cluster.");
     LOG.info("===================================================");
@@ -116,7 +114,7 @@ public class LocalTajoTestingUtility {
       fs.mkdirs(tablePath);
       Path dfsPath = new Path(tablePath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
-      TableMeta meta = CatalogUtil.newTableMeta("TEXT", option);
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       // Add fake table statistic data to tables.
       // It gives more various situations to unit tests.

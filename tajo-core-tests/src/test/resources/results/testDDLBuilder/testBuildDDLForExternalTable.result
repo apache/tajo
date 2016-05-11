@@ -2,4 +2,4 @@
 -- Name: db1.table1; Type: TABLE; Storage: TEXT
 -- Path: /table1
 --
-CREATE EXTERNAL TABLE db1.table1 (name BLOB, addr TEXT) USING TEXT WITH ('compression.codec'='org.apache.hadoop.io.compress.GzipCodec', 'text.delimiter'='|') PARTITION BY COLUMN(key INT4, key2 TEXT) LOCATION '/table1';
+CREATE EXTERNAL TABLE db1.table1 (name BLOB, addr TEXT) USING TEXT WITH ('compression.codec'='org.apache.hadoop.io.compress.GzipCodec', 'text.delimiter'='|', 'text.null'='\\N', 'timezone'='Asia/Seoul') PARTITION BY COLUMN(key INT4, key2 TEXT) LOCATION '/table1';

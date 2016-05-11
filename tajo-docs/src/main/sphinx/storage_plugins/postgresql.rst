@@ -17,10 +17,9 @@ PostgreSQL storage handler is a builtin storage handler. So, you can eaisly regi
   {
     "spaces": {
       "pgsql_db1": {
-        "uri": "jdbc:postgresql://hostname:port/db1"
-        
+        "uri": "jdbc:postgresql://hostname:port/db1",
         "configs": {
-          "mapped_database": "tajo_db1"
+          "mapped_database": "tajo_db1",
           "connection_properties": {
             "user":     "tajo",
             "password": "xxxx"

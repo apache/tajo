@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.partition.PartitionDesc;
@@ -434,7 +435,7 @@ public class TestCatalog {
 
     String tableName = "indexed";
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, server.getConf());
     return new TableDesc(
         IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), relationSchema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());

@@ -36,7 +36,7 @@ import java.net.URLDecoder;
 
 public class HttpFileServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
   
-  private final Log LOG = LogFactory.getLog(HttpFileServerHandler.class);
+  private static final Log LOG = LogFactory.getLog(HttpFileServerHandler.class);
 
   @Override
   public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {

@@ -21,12 +21,13 @@ package org.apache.tajo.plan;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.set.UnmodifiableSet;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil.Direction;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.*;
@@ -123,10 +124,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     Type toBeCasted = TUtil.getFromNestedMap(CatalogUtil.OPERATION_CASTING_MAP, lhsType, rhsType);
     if (toBeCasted != null) { // if not null, one of either should be converted to another type.
       // Overwrite lhs, rhs, or both with cast expression.
-      if (lhsType != toBeCasted) {
+
+      Direction direction = CatalogUtil.getCastingDirection(lhsType, rhsType);
+
+      if (lhsType != toBeCasted && (direction == Direction.BOTH || direction == Direction.LHS)) {
         lhs = convertType(ctx, lhs, CatalogUtil.newSimpleDataType(toBeCasted));
       }
-      if (rhsType != toBeCasted) {
+      if (rhsType != toBeCasted && (direction == Direction.BOTH || direction == Direction.RHS)) {
         rhs = convertType(ctx, rhs, CatalogUtil.newSimpleDataType(toBeCasted));
       }
     }
@@ -784,15 +788,9 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       ConstEval constEval = (ConstEval) child;
 
       // some cast operation may require earlier evaluation with timezone.
-      TimeZone tz = null;
-      if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
-        String tzId = ctx.queryContext.get(SessionVars.TIMEZONE);
-        tz = TimeZone.getTimeZone(tzId);
-      }
-
       return new ConstEval(
           DatumFactory.cast(constEval.getValue(),
-              convert(LogicalPlanner.convertDataType(expr.getTarget())).getDataType(), tz));
+              convert(LogicalPlanner.convertDataType(expr.getTarget())).getDataType(), ctx.timeZone));
 
     } else {
       return new CastEval(ctx.queryContext, child,
@@ -862,11 +860,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-
-    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
-      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
-      DateTimeUtil.toUTCTimezone(tm, tz);
-    }
+    DateTimeUtil.toUTCTimezone(tm, ctx.timeZone);
 
     return new ConstEval(new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm)));
   }
@@ -892,11 +886,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
     TimeDatum timeDatum = new TimeDatum(time);
     TimeMeta tm = timeDatum.asTimeMeta();
-
-    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
-      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
-      DateTimeUtil.toUTCTimezone(tm, tz);
-    }
 
     return new ConstEval(new TimeDatum(DateTimeUtil.toTime(tm)));
   }
