@@ -12,6 +12,9 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2071: Supporting DATE type in Parquet format. 
+    (Jongyoung Park via hyunsik)
+
     TAJO-2106: Fix minor typo in PostgreSQL Storage Handler documentation.
     (Byunghoon Lim via jihoon)
 
@@ -142,6 +145,10 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2143: Fix race condition in task history writer. (jinho)
+
+    TAJO-2140: TajoInternalError does not contains reason stack trace. (jinho)
+
     TAJO-2135: Invalid join result when join key columns contain nulls. (jihoon)
 
     TAJO-2110: Fix incorrect DateTime and remove hard coded tests. (jinho)
@@ -256,6 +263,12 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2145: Error codes based on errno.h need prefix. 
+    (Jongyoung Park via hyunsik)
+
+    TAJO-2117: Add some missing index to MariaDBStore.
+    (Janaka Chathuranga Thilakarathna via jaehwa)
 
     TAJO-2142: Temporarily disable NOT IN subquery. (jihoon)
 
