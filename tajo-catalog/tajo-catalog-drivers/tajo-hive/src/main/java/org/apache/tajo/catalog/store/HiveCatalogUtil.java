@@ -106,7 +106,7 @@ public class HiveCatalogUtil {
     case DATE: return serdeConstants.DATE_TYPE_NAME;
     case TIMESTAMP: return serdeConstants.TIMESTAMP_TYPE_NAME;
     default:
-      throw new LMDNoMatchedDatatypeException(TypeStringEncoder.serialize(type));
+      throw new LMDNoMatchedDatatypeException(TypeStringEncoder.encode(type));
     }
   }
 

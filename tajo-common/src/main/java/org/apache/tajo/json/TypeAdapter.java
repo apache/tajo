@@ -30,13 +30,13 @@ public class TypeAdapter implements GsonSerDerAdapter<org.apache.tajo.type.Type>
   public org.apache.tajo.type.Type deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
       throws JsonParseException {
     JsonObject obj = (JsonObject) json;
-    return TypeStringEncoder.deserialize(CommonGsonHelper.getOrDie(obj, "type").getAsString());
+    return TypeStringEncoder.decode(CommonGsonHelper.getOrDie(obj, "type").getAsString());
   }
 
   @Override
   public JsonElement serialize(org.apache.tajo.type.Type src, Type typeOfSrc, JsonSerializationContext context) {
     JsonObject json = new JsonObject();
-    json.addProperty("type", TypeStringEncoder.serialize(src));
+    json.addProperty("type", TypeStringEncoder.encode(src));
     return json;
   }
 }

@@ -18,12 +18,12 @@
 
 package org.apache.tajo.type;
 
-import static org.apache.tajo.type.TypeStringEncoder.deserialize;
-import static org.apache.tajo.type.TypeStringEncoder.serialize;
+import static org.apache.tajo.type.TypeStringEncoder.decode;
+import static org.apache.tajo.type.TypeStringEncoder.encode;
 import static org.junit.Assert.assertEquals;
 
 public class TestTypeStringEncoder extends TestTypeEncoder {
   public void assertSerialize(Type type) {
-    assertEquals(type, deserialize(serialize(type)));
+    assertEquals(type, decode(encode(type)));
   }
 }

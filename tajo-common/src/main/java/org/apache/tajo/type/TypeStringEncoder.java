@@ -41,11 +41,11 @@ import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
 public class TypeStringEncoder {
 
   /**
-   * Serialize a type into a string representation
+   * Encode a type into a string representation
    * @param type A type
    * @return A type string representation
    */
-  public static String serialize(Type type) {
+  public static String encode(Type type) {
     StringBuilder sb = new StringBuilder(type.kind().name());
 
     if (type.isTypeParameterized()) {
@@ -53,7 +53,7 @@ public class TypeStringEncoder {
       sb.append(StringUtils.join(type.getTypeParameters(), ",", new Function<Type, String>() {
         @Override
         public String apply(@Nullable Type type) {
-          return TypeStringEncoder.serialize(type);
+          return TypeStringEncoder.encode(type);
         }
       }));
       sb.append(">");
@@ -87,15 +87,15 @@ public class TypeStringEncoder {
    * @return String representation for a field
    */
   static String serializeField(Field field) {
-    return field.name().raw(DefaultPolicy()) + " " + serialize(field.type());
+    return field.name().raw(DefaultPolicy()) + " " + encode(field.type());
   }
 
   /**
-   * Parse and transform a type string representation to a Type.
+   * Decode a string representation to a Type.
    * @param signature Type string representation
    * @return Type
    */
-  public static Type deserialize(String signature) {
+  public static Type decode(String signature) {
 
     // termination condition in this recursion
     if (!(signature.contains("<") || signature.contains("(") || signature.contains("["))) {
@@ -128,7 +128,7 @@ public class TypeStringEncoder {
               parseList(signature.substring(paramStartIdx, i), new Function<String, Type>() {
                 @Override
                 public Type apply(@Nullable String s) {
-                  return deserialize(s);
+                  return decode(s);
                 }
               }),
               ImmutableList.<Integer>of(),
@@ -270,7 +270,7 @@ public class TypeStringEncoder {
           QualifiedIdentifier identifier =
               IdentifierUtil.makeIdentifier(str.substring(paramStartIdx, i), DefaultPolicy());
           String typePart = str.substring(i + 1, str.length());
-          return new Field(identifier, deserialize(typePart));
+          return new Field(identifier, decode(typePart));
         }
       }
     }

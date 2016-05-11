@@ -141,7 +141,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
         initMethod.visitTypeInsn(Opcodes.NEW, internalName);
         consAdapter.dup();
         emitCreateEval(consAdapter, initMethod, inEval.getLeftExpr());
-        emitRowConstantEval(consAdapter, initMethod, (RowConstantEval) inEval.getRightExpr());
+        emitRowConstantEval(consAdapter, initMethod, inEval.getRightExpr());
         consAdapter.push(inEval.isNot());
         consAdapter.invokeSpecial(InEval.class, "<init>", void.class,
             new Class [] {EvalNode.class, RowConstantEval.class, boolean.class});

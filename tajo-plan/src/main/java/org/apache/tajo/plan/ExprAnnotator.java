@@ -26,7 +26,6 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.CatalogUtil.Direction;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;

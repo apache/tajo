@@ -19,9 +19,6 @@
 package org.apache.tajo.type;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.common.TajoDataTypes;
-
-import java.util.Objects;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.MAP;
 

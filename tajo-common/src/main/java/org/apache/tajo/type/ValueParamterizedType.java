@@ -21,7 +21,6 @@ package org.apache.tajo.type;
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.TypeElement;
 import org.apache.tajo.common.TajoDataTypes.TypeProto;
 import org.apache.tajo.util.StringUtils;
 

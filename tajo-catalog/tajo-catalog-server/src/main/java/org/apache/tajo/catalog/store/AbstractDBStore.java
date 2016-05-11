@@ -51,6 +51,8 @@ import java.util.*;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
+import static org.apache.tajo.schema.IdentifierUtil.extractQualifier;
+import static org.apache.tajo.schema.IdentifierUtil.extractSimpleName;
 
 public abstract class AbstractDBStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -827,9 +829,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         org.apache.tajo.type.Type type = TypeProtobufEncoder.decode(col.getType());
 
         pstmt.setInt(1, tableId);
-        pstmt.setString(2, IdentifierUtil.extractSimpleName(col.getName()));
+        pstmt.setString(2, extractSimpleName(col.getName()));
         pstmt.setInt(3, i);
-        pstmt.setString(4, TypeStringEncoder.serialize(type));
+        pstmt.setString(4, TypeStringEncoder.encode(type));
         pstmt.addBatch();
         pstmt.clearParameters();
       }
@@ -992,7 +994,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     switch (alterTableDescProto.getAlterTableType()) {
     case RENAME_TABLE:
-      String simpleNewTableName = IdentifierUtil.extractSimpleName(alterTableDescProto.getNewTableName());
+      String simpleNewTableName = extractSimpleName(alterTableDescProto.getNewTableName());
       if (existTable(databaseName, simpleNewTableName)) {
         throw new DuplicateTableException(alterTableDescProto.getNewTableName());
       }
@@ -1171,13 +1173,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       conn.setAutoCommit(false);
 
-      String tableName = IdentifierUtil.extractQualifier(alterColumnProto.getOldColumnName());
-      String simpleOldColumnName = IdentifierUtil.extractSimpleName(alterColumnProto.getOldColumnName());
-      String simpleNewColumnName = IdentifierUtil.extractSimpleName(alterColumnProto.getNewColumnName());
+      String tableName = extractQualifier(alterColumnProto.getOldColumnName());
+      String simpleOldColumnName = extractSimpleName(alterColumnProto.getOldColumnName());
+      String simpleNewColumnName = extractSimpleName(alterColumnProto.getNewColumnName());
 
-      if (!tableName.equals(IdentifierUtil.extractQualifier(alterColumnProto.getNewColumnName()))) {
+      if (!tableName.equals(extractQualifier(alterColumnProto.getNewColumnName()))) {
         throw new AmbiguousTableException(
-            tableName + ", " + IdentifierUtil.extractQualifier(alterColumnProto.getNewColumnName()));
+            tableName + ", " + extractQualifier(alterColumnProto.getNewColumnName()));
       }
 
       //SELECT COLUMN
@@ -1187,7 +1189,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultSet = pstmt.executeQuery();
 
       CatalogProtos.ColumnProto columnProto = null;
-      String typeStr = null;
+      String typeStr;
       int ordinalPosition = 0;
 
       if (resultSet.next()) {
@@ -1195,7 +1197,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         //NOTE ==> Setting new column Name
         columnProto = columnProto.toBuilder().setName(alterColumnProto.getNewColumnName()).build();
         ordinalPosition = resultSet.getInt("ORDINAL_POSITION");
-        typeStr = TypeStringEncoder.serialize(TypeProtobufEncoder.decode(columnProto.getType()));
+        typeStr = TypeStringEncoder.encode(TypeProtobufEncoder.decode(columnProto.getType()));
       } else {
         throw new UndefinedColumnException(alterColumnProto.getOldColumnName());
       }
@@ -1248,7 +1250,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       pstmt = conn.prepareStatement(existColumnSql);
       pstmt.setInt(1, tableId);
-      pstmt.setString(2, IdentifierUtil.extractSimpleName(columnProto.getName()));
+      pstmt.setString(2, extractSimpleName(columnProto.getName()));
       resultSet =  pstmt.executeQuery();
 
       if (resultSet.next()) {
@@ -1272,9 +1274,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       pstmt = conn.prepareStatement(insertNewColumnSql);
       pstmt.setInt(1, tableId);
-      pstmt.setString(2, IdentifierUtil.extractSimpleName(columnProto.getName()));
+      pstmt.setString(2, extractSimpleName(columnProto.getName()));
       pstmt.setInt(3, position + 1);
-      pstmt.setString(4, TypeStringEncoder.serialize(type));
+      pstmt.setString(4, TypeStringEncoder.encode(type));
       pstmt.executeUpdate();
 
     } catch (SQLException sqlException) {
@@ -1856,7 +1858,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         String tableName = getTableName(conn, tid);
         builder.setTid(tid);
         builder.setName(IdentifierUtil.buildFQName(databaseName, tableName, resultSet.getString("COLUMN_NAME")));
-        org.apache.tajo.type.Type type = TypeStringEncoder.deserialize(resultSet.getString("DATA_TYPE").trim());
+        org.apache.tajo.type.Type type = TypeStringEncoder.decode(resultSet.getString("DATA_TYPE").trim());
         builder.setType(type.getProto());
         columns.add(builder.build());
       }
@@ -2467,7 +2469,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     final String databaseName = proto.getTableIdentifier().getDatabaseName();
-    final String tableName = IdentifierUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
+    final String tableName = extractSimpleName(proto.getTableIdentifier().getTableName());
 
     try {
 
@@ -2887,7 +2889,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     for (int i = 0; i < columnNum; i++) {
       SortSpecProto.Builder colSpecBuilder = SortSpecProto.newBuilder();
       colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(IdentifierUtil.buildFQName(qualifier, columnNames[i]))
-          .setType(TypeStringEncoder.deserialize(dataTypes[i]).getProto()).build());
+          .setType(TypeStringEncoder.decode(dataTypes[i]).getProto()).build());
       colSpecBuilder.setAscending(orders[i].equals("true"));
       colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));
       builder.addKeySortSpecs(colSpecBuilder.build());
@@ -2899,7 +2901,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private ColumnProto resultToColumnProto(final ResultSet res) throws SQLException {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
     builder.setName(res.getString("column_name").trim());
-    org.apache.tajo.type.Type type = TypeStringEncoder.deserialize(res.getString("data_type").trim());
+    org.apache.tajo.type.Type type = TypeStringEncoder.decode(res.getString("data_type").trim());
     builder.setType(type.getProto());
     return builder.build();
   }

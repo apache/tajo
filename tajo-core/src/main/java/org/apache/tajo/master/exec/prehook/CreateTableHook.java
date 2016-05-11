@@ -38,7 +38,6 @@ public class CreateTableHook implements DistributedQueryHook {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     CreateTableNode createTableNode = rootNode.getChild();
     String [] splitted  = IdentifierUtil.splitFQTableName(createTableNode.getTableName());
-    String databaseName = splitted[0];
     String tableName = splitted[1];
     queryContext.setOutputTable(tableName);
 

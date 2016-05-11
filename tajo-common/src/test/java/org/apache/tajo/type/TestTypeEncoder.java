@@ -112,7 +112,7 @@ public abstract class TestTypeEncoder {
     List<Type> types = parseList("TEXT,ARRAY<FLOAT8>", new Function<String, Type>() {
       @Override
       public Type apply(@Nullable String s) {
-        return deserialize(s);
+        return decode(s);
       }
     });
     assertEquals(2, types.size());
