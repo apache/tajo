@@ -939,7 +939,7 @@ public class TreeReaderFactory {
     Datum next() throws IOException {
       super.next();
       return valuePresent ?
-          DatumFactory.createDate((int) reader.next() + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH) : NullDatum.get();
+          DatumFactory.createDate((int) reader.next() + DateTimeConstants.UNIX_EPOCH_JDATE) : NullDatum.get();
     }
 
     @Override
