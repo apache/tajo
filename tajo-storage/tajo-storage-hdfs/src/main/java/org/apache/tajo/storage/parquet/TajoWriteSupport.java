@@ -19,18 +19,18 @@
 package org.apache.tajo.storage.parquet;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
-import org.apache.tajo.storage.Tuple;
 import org.apache.parquet.hadoop.api.WriteSupport;
 import org.apache.parquet.io.api.Binary;
 import org.apache.parquet.io.api.RecordConsumer;
 import org.apache.parquet.schema.GroupType;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.Type;
-import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.datetime.DateTimeConstants;
 
 import java.util.HashMap;
 import java.util.List;
@@ -143,7 +143,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
         break;
       case DATE:
         // Parquet DATE type is based on Unix Epoch(Jan 1, 1970).
-        recordConsumer.addInteger(tuple.getInt4(index) - DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH);
+        recordConsumer.addInteger(tuple.getInt4(index) - DateTimeConstants.UNIX_EPOCH_JDATE);
         break;
       case PROTOBUF:
       case BLOB:
