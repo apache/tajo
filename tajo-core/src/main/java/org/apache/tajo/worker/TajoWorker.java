@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.metrics.Node;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
@@ -196,6 +197,7 @@ public class TajoWorker extends CompositeService {
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
 
     FunctionLoader.loadUserDefinedFunctions(systemConf);
+    HiveFunctionLoader.loadHiveUDFs(systemConf);
 
     PythonScriptEngine.initPythonScriptEngineFiles();
     
@@ -204,7 +206,6 @@ public class TajoWorker extends CompositeService {
 
   private void initWorkerMetrics() {
     workerSystemMetrics = new TajoSystemMetrics(systemConf, Node.class, workerContext.getWorkerName());
-    
     workerSystemMetrics.start();
 
     workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM,
