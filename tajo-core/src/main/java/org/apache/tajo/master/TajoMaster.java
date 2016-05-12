@@ -36,6 +36,7 @@ import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
@@ -47,6 +48,7 @@ import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.io.AsyncTaskService;
 import org.apache.tajo.master.rm.TajoResourceManager;
@@ -78,7 +80,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.net.InetSocketAddress;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -97,6 +99,7 @@ public class TajoMaster extends CompositeService {
   @SuppressWarnings("OctalInteger")
   final public static FsPermission SYSTEM_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
+  @SuppressWarnings("OctalInteger")
   final public static FsPermission SYSTEM_RESOURCE_DIR_PERMISSION = FsPermission.createImmutable((short) 0755);
   /** rw-r--r-- */
   @SuppressWarnings("OctalInteger")
@@ -113,9 +116,6 @@ public class TajoMaster extends CompositeService {
   private TajoConf systemConf;
   private FileSystem defaultFS;
   private Clock clock;
-
-  private Path tajoRootPath;
-  private Path wareHousePath;
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
@@ -182,7 +182,7 @@ public class TajoMaster extends CompositeService {
     checkAndInitializeSystemDirectories();
     diagnoseTajoMaster();
 
-    catalogServer = new CatalogServer(TablespaceManager.getMetadataProviders(), FunctionLoader.loadFunctions(systemConf));
+    catalogServer = new CatalogServer(TablespaceManager.getMetadataProviders(), loadFunctions());
     addIfService(catalogServer);
     catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
@@ -220,12 +220,48 @@ public class TajoMaster extends CompositeService {
     LOG.info("Tajo Master is initialized.");
   }
 
+  private Collection<FunctionDesc> loadFunctions() throws IOException, AmbiguousFunctionException {
+    List<FunctionDesc> functionList = new ArrayList<>(FunctionLoader.loadBuiltinFunctions().values());
+
+    HashMap<Integer, FunctionDesc> funcSet = new HashMap<>();
+
+    for (FunctionDesc desc: functionList) {
+      funcSet.put(desc.hashCodeWithoutType(), desc);
+    }
+
+    checkUDFduplicateAndMerge(FunctionLoader.loadUserDefinedFunctions(systemConf).orElse(Collections.emptyList()), funcSet, functionList);
+    checkUDFduplicateAndMerge(HiveFunctionLoader.loadHiveUDFs(systemConf).orElse(Collections.emptyList()), funcSet, functionList);
+
+    return functionList;
+  }
+
+  /**
+   * Checks duplicates between pre-loaded functions and UDFs. And they are meged to funcList.
+   *
+   * @param udfs UDF list
+   * @param funcSet set for pre-loaded functions to match signature
+   * @param funcList list to be merged
+   * @throws AmbiguousFunctionException
+   */
+  private static void checkUDFduplicateAndMerge(List<FunctionDesc> udfs, HashMap<Integer, FunctionDesc> funcSet, List<FunctionDesc> funcList)
+      throws AmbiguousFunctionException {
+    for (FunctionDesc desc: udfs) {
+      // check
+      if (funcSet.containsKey(desc.hashCodeWithoutType())) {
+        throw new AmbiguousFunctionException(String.format("UDF %s", desc.toString()));
+      }
+
+      // merge
+      funcSet.put(desc.hashCodeWithoutType(), desc);
+      funcList.add(desc);
+    }
+  }
+
   private void initSystemMetrics() {
     systemMetrics = new TajoSystemMetrics(systemConf, Master.class, getMasterName());
     systemMetrics.start();
 
     systemMetrics.register(Master.Cluster.UPTIME, () -> context.getClusterUptime());
-
     systemMetrics.register(Master.Cluster.class, new ClusterResourceMetricSet(context));
   }
 
@@ -246,7 +282,7 @@ public class TajoMaster extends CompositeService {
 
   private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
-    this.tajoRootPath = TajoConf.getTajoRootDir(systemConf);
+    Path tajoRootPath = TajoConf.getTajoRootDir(systemConf);
     LOG.info("Tajo Root Directory: " + tajoRootPath);
 
     // Check and Create Tajo root dir
@@ -271,7 +307,7 @@ public class TajoMaster extends CompositeService {
     }
 
     // Get Warehouse dir
-    this.wareHousePath = TajoConf.getWarehouseDir(systemConf);
+    Path wareHousePath = TajoConf.getWarehouseDir(systemConf);
     LOG.info("Tajo Warehouse dir: " + wareHousePath);
 
     // Check and Create Warehouse dir
@@ -543,7 +579,7 @@ public class TajoMaster extends CompositeService {
     }
   }
 
-  String getThreadTaskName(long id, String name) {
+  private String getThreadTaskName(long id, String name) {
     if (name == null) {
       return Long.toString(id);
     }

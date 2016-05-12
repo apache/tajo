@@ -359,6 +359,7 @@ message FunctionSignatureProto {
   required string name = 2;
   required DataType return_type = 3;
   repeated DataType parameter_types = 4;
+  optional bool deterministic = 5;
 }
 
 message FunctionSupplementProto {
@@ -373,7 +374,7 @@ message FunctionInvocationProto {
   optional ClassBaseInvocationDescProto aggregation = 3;
   optional StaticMethodInvocationDescProto scalar_jit = 4;
   optional ClassBaseInvocationDescProto aggregation_jit = 5;
-  optional PythonInvocationDescProto python = 6;
+  optional UDFinvocationDescProto udf_invocation = 6;
 }
 
 message ClassBaseInvocationDescProto {
@@ -387,10 +388,16 @@ message StaticMethodInvocationDescProto {
   repeated string param_classes = 4;
 }
 
-message PythonInvocationDescProto {
-  required string func_name = 1;
-  required string file_path = 2;
+enum UDFtype {
+  PYTHON = 0;
+  HIVE = 1;
+}
+
+message UDFinvocationDescProto {
+  required UDFtype type = 1;
+  required string func_name = 2;
   required bool is_scalar_function = 3;
+  optional string file_path = 4;
 }
 
 message TableResponse {

@@ -47,6 +47,8 @@ public abstract class FunctionInvoke implements Cloneable {
       return new ClassBasedScalarFunctionInvoke(desc);
     } else if (desc.getInvocation().hasPython()) {
       return new PythonFunctionInvoke(desc);
+    } else if (desc.getInvocation().hasHiveUDF()) {
+      return new HiveFunctionInvoke(desc);
     } else {
       throw new TajoRuntimeException(new UnsupportedException("function invocation '" + desc.getInvocation() + "'"));
     }

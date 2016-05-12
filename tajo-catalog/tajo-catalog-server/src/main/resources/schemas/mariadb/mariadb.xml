@@ -19,7 +19,8 @@
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
-      * 13 - 2016-04-11: Support DirectOutputCommitter for AWS S3 file system (TAJO-2087)
+      * 14 - 2016-05-12: Support DirectOutputCommitter for AWS S3 file system (TAJO-2087)
+      * 13 - 2016-05-07: Add some missing index to MariaDBStore (TAJO-2117)
       * 12 - 2015-09-28: Change the variable name storeType to dataFormat (TAJO-1663)
       * 11 - 2015-09-23: Add contents length and file count for partition directory (TAJO-1493)
       * 10 - 2015-09-22: Well support for self-describing data formats (TAJO-1832)
@@ -33,7 +34,7 @@
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-  <tns:base version="12">
+  <tns:base version="14">
     <tns:objects>
       <tns:Object order="0" type="table" name="META">
         <tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -127,7 +128,10 @@
         )]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object order="7" type="table" name="STATS">
+      <tns:Object order="7" type="index" name="INDEXES_IDX_TID_COLUMN_NAME" dependsOn="INDEXES">
+        <tns:sql><![CDATA[CREATE INDEX INDEXES_IDX_TID_COLUMN_NAME on INDEXES (DB_ID, TID, COLUMN_NAMES)]]></tns:sql>
+      </tns:Object>
+      <tns:Object order="8" type="table" name="STATS">
         <tns:sql><![CDATA[
         CREATE TABLE STATS (
           TID INT NOT NULL PRIMARY KEY,
@@ -137,7 +141,7 @@
         )]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object order="8" type="table" name="PARTITION_METHODS">
+      <tns:Object order="9" type="table" name="PARTITION_METHODS">
         <tns:sql><![CDATA[
         CREATE TABLE PARTITION_METHODS (
           TID INT NOT NULL PRIMARY KEY,
@@ -148,7 +152,7 @@
         )]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object order="9" type="table" name="PARTITIONS">
+      <tns:Object order="10" type="table" name="PARTITIONS">
         <tns:sql><![CDATA[
         CREATE TABLE PARTITIONS (
           PARTITION_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -161,7 +165,7 @@
         )]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object order="10" type="table" name="PARTITION_KEYS">
+      <tns:Object order="11" type="table" name="PARTITION_KEYS">
         <tns:sql><![CDATA[
         CREATE TABLE PARTITION_KEYS (
           PARTITION_ID INT NOT NULL,
@@ -173,7 +177,7 @@
         )]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object order="11" type="table" name="DIRECT_OUTPUT_COMMIT_HISTORIES">
+      <tns:Object order="12" type="table" name="DIRECT_OUTPUT_COMMIT_HISTORIES">
         <tns:sql><![CDATA[
         CREATE TABLE DIRECT_OUTPUT_COMMIT_HISTORIES (
           QUERY_ID VARCHAR(128) NOT NULL,

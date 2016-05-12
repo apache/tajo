@@ -460,20 +460,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    */
   private EvalExprNode buildPlanForNoneFromStatement(PlanContext context, Stack<Expr> stack, Projection projection)
       throws TajoException {
-    LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
-    int finalTargetNum = projection.getNamedExprs().size();
     List<Target> targets = new ArrayList<>();
 
-    for (int i = 0; i < finalTargetNum; i++) {
-      NamedExpr namedExpr = projection.getNamedExprs().get(i);
-      EvalNode evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.RELS_ONLY);
-      if (namedExpr.hasAlias()) {
-        targets.add(new Target(evalNode, namedExpr.getAlias()));
-      } else {
-        targets.add(new Target(evalNode, context.plan.generateUniqueColumnName(namedExpr.getExpr())));
-      }
+    for (NamedExpr namedExpr: projection.getNamedExprs()) {
+      Expr expr = namedExpr.getExpr();
+      EvalNode evalNode = exprAnnotator.createEvalNode(context, expr, NameResolvingMode.RELS_ONLY);
+
+      String alias = namedExpr.hasAlias() ? namedExpr.getAlias() : context.plan.generateUniqueColumnName(expr);
+      targets.add(new Target(evalNode, alias));
     }
     EvalExprNode evalExprNode = context.queryBlock.getNodeFromExpr(projection);
     evalExprNode.setTargets(targets);

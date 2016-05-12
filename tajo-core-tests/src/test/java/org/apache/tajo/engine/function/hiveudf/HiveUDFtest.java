@@ -1,4 +1,4 @@
-/*
+/***
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,29 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.exception;
+package org.apache.tajo.engine.function.hiveudf;
 
-import org.apache.tajo.error.Errors.ResultCode;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
+import org.apache.hadoop.hive.ql.exec.Description;
+import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.hive.ql.udf.UDFType;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
 
 /**
- * Exception for Internal Bugs and Unexpected exception
+ * Hive UDF sample class for testing.
+ * Actually it's deterministic, but it is set as false to test.
  */
-public class TajoInternalError extends TajoError {
+@UDFType(deterministic = false)
+@Description(
+    name="multiplestr",
+    value = "repeat string",
+    extended = "multiplestr(str, num)"
+)
+public class HiveUDFtest extends UDF {
+  public Text evaluate(Text str, IntWritable num) {
+    String origin = str.toString();
 
-  public TajoInternalError(ReturnState state) {
-    super(state);
-  }
+    for (int i=0; i<num.get()-1; i++) {
+      origin += origin;
+    }
 
-  public TajoInternalError(String message) {
-    super(ResultCode.INTERNAL_ERROR, message);
-  }
-
-  public TajoInternalError(Throwable t) {
-    super(ResultCode.INTERNAL_ERROR, t, t.getMessage());
-  }
-
-  public TajoInternalError(TajoException t) {
-    super(t.getErrorCode(), t.getMessage());
+    return new Text(origin);
   }
 }
