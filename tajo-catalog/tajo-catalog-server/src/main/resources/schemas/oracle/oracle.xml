@@ -19,6 +19,7 @@
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+      * 13 - 2016-05-11: Change the size of the VALUE_ column in OPTIONS table (TAJO-2115)
       * 12 - 2015-09-28: Change the variable name storeType to dataFormat (TAJO-1663)
       * 11 - 2015-09-23: Add contents length and file count for partition directory (TAJO-1493)
       * 10 - 2015-09-22: Well support for self-describing data formats (TAJO-1832)
@@ -32,7 +33,7 @@
       * 2 - 2014-06-09: First versioning
       * 1-  Before 2013-03-20
     -->
-  <tns:base version="12">
+  <tns:base version="13">
     <tns:objects>
   		<tns:Object order="0" type="table" name="meta">
   			<tns:sql><![CDATA[
@@ -152,7 +153,7 @@
   			CREATE TABLE OPTIONS (
 					TID INT NOT NULL,
 					KEY_ VARCHAR2(255) NOT NULL,
-					VALUE_ VARCHAR2(4000) NOT NULL,
+					VALUE_ LONG NOT NULL,
 					CONSTRAINT OPTIONS_PKEY PRIMARY KEY (TID, KEY_),
 					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>
