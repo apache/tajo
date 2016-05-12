@@ -77,7 +77,7 @@ public class TestPartitionedTableRewriter  {
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
 
     createTableWithOnePartitionKeyColumn(fs, schema, meta);
-    createlTableWithMultiplePartitionKeyColumns(fs, schema, meta);
+    createTableWithMultiplePartitionKeyColumns(fs, schema, meta);
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
@@ -116,7 +116,7 @@ public class TestPartitionedTableRewriter  {
     FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
   }
 
-  private void createlTableWithMultiplePartitionKeyColumns(FileSystem fs,
+  private void createTableWithMultiplePartitionKeyColumns(FileSystem fs,
     Schema schema, TableMeta meta) throws Exception {
     Schema partSchema = SchemaBuilder.builder()
       .add("key1", TajoDataTypes.Type.TEXT)
