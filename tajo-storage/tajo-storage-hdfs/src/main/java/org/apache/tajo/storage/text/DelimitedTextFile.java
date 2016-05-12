@@ -290,8 +290,8 @@ public class DelimitedTextFile {
         splittable = true;
       }
 
-      startOffset = this.fragment.getStartKey().getKey();
-      endOffset = this.fragment.getEndKey().getKey();
+      startOffset = this.fragment.getStartKey();
+      endOffset = this.fragment.getEndKey();
 
       errorTorrenceMaxNum =
           Integer.parseInt(meta.getProperty(TEXT_ERROR_TOLERANCE_MAXNUM, DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM));

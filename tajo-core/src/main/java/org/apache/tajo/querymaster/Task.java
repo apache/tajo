@@ -330,7 +330,7 @@ public class Task implements EventHandler<TaskEvent> {
 	}
 
   private void addDataLocation(Fragment fragment) {
-    String[] hosts = fragment.getHosts();
+    String[] hosts = fragment.getHostNames();
     int[] diskIds = null;
     if (fragment instanceof FileFragment) {
       diskIds = ((FileFragment)fragment).getDiskIds();

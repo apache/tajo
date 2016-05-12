@@ -165,7 +165,7 @@ public class TestFileTablespace {
       splits.addAll(space.getSplits("data", meta, schema,
           partitions.subList(0, partitions.size() / 2).toArray(new Path[partitions.size() / 2])));
       assertEquals(testCount / 2, splits.size());
-      assertEquals(1, splits.get(0).getHosts().length);
+      assertEquals(1, splits.get(0).getHostNames().length);
       assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
 
       fs.close();
@@ -259,7 +259,7 @@ public class TestFileTablespace {
       splits.addAll(sm.getSplits("data", meta, schema, tablePath));
 
       assertEquals(testCount, splits.size());
-      assertEquals(2, splits.get(0).getHosts().length);
+      assertEquals(2, splits.get(0).getHostNames().length);
       assertEquals(2, ((FileFragment)splits.get(0)).getDiskIds().length);
       assertNotEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
 

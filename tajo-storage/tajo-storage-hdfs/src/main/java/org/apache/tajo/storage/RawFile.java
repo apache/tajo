@@ -91,8 +91,8 @@ public class RawFile {
       }
       fis = new FileInputStream(file);
       channel = fis.getChannel();
-      filePosition = startOffset = fragment.getStartKey().getKey();
-      endOffset = fragment.getEndKey().getKey();
+      filePosition = startOffset = fragment.getStartKey();
+      endOffset = fragment.getEndKey();
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("RawFileScanner open:" + fragment + "," + channel.position() + ", file size :" + channel.size()
@@ -114,8 +114,8 @@ public class RawFile {
       headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength(); // The middle 2 bytes is for NullFlagSize
 
       // initial set position
-      if (fragment.getStartKey().getKey() > 0) {
-        channel.position(fragment.getStartKey().getKey());
+      if (fragment.getStartKey() > 0) {
+        channel.position(fragment.getStartKey());
       }
 
       forceFillBuffer = true;
@@ -398,7 +398,7 @@ public class RawFile {
       // reset the buffer
       buffer.clear();
       forceFillBuffer = true;
-      filePosition = fragment.getStartKey().getKey();
+      filePosition = fragment.getStartKey();
       recordCount = 0;
       channel.position(filePosition);
       eos = false;

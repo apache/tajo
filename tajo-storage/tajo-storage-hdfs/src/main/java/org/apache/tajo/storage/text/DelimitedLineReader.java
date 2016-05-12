@@ -87,8 +87,8 @@ public class DelimitedLineReader implements Closeable {
       fs = FileScanner.getFileSystem((TajoConf) conf, fragment.getPath());
     }
 
-    pos = startOffset = fragment.getStartKey().getKey();
-    end = fragment.getEndKey().getKey();
+    pos = startOffset = fragment.getStartKey();
+    end = fragment.getEndKey();
 
     if (codec != null) {
       fis = fs.open(fragment.getPath());

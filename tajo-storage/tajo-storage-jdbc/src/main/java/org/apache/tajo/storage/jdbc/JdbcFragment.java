@@ -18,40 +18,20 @@
 
 package org.apache.tajo.storage.jdbc;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentKey;
 import org.apache.tajo.storage.jdbc.JdbcFragmentProtos.JdbcFragmentProto;
 
 import java.net.URI;
 import java.util.Arrays;
 
-public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneable {
-  URI uri;
-  String inputSourceId;
-  String [] hostNames;
-
-
-  public JdbcFragment(ByteString raw) throws InvalidProtocolBufferException {
-    JdbcFragmentProto.Builder builder = JdbcFragmentProto.newBuilder();
-    builder.mergeFrom(raw);
-    builder.build();
-    init(builder.build());
-  }
+public class JdbcFragment extends Fragment<Long> implements Comparable<JdbcFragment> {
 
   public JdbcFragment(String inputSourceId, URI uri) {
-    this.inputSourceId = inputSourceId;
+    this.tableName = inputSourceId;
     this.uri = uri;
     this.hostNames = extractHosts(uri);
-  }
-
-  private void init(JdbcFragmentProto proto) {
-    this.uri = URI.create(proto.getUri());
-    this.inputSourceId = proto.getInputSourceId();
-    this.hostNames = proto.getHostsList().toArray(new String [proto.getHostsCount()]);
   }
 
   private String [] extractHosts(URI uri) {
@@ -60,7 +40,7 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
 
   @Override
   public String getTableName() {
-    return inputSourceId;
+    return tableName;
   }
 
   @Override
@@ -69,7 +49,7 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
   }
 
   @Override
-  public String[] getHosts() {
+  public String[] getHostNames() {
     return hostNames;
   }
 
@@ -81,14 +61,14 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
   @Override
   public CatalogProtos.FragmentProto getProto() {
     JdbcFragmentProto.Builder builder = JdbcFragmentProto.newBuilder();
-    builder.setInputSourceId(this.inputSourceId);
+    builder.setInputSourceId(this.tableName);
     builder.setUri(this.uri.toASCIIString());
     if(hostNames != null) {
       builder.addAllHosts(Arrays.asList(hostNames));
     }
 
     CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();
-    fragmentBuilder.setId(this.inputSourceId);
+    fragmentBuilder.setId(this.tableName);
     fragmentBuilder.setDataFormat("JDBC");
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     return fragmentBuilder.build();
@@ -100,12 +80,12 @@ public class JdbcFragment implements Fragment, Comparable<JdbcFragment>, Cloneab
   }
 
   @Override
-  public FragmentKey getStartKey() {
+  public Long getStartKey() {
     return null;
   }
 
   @Override
-  public FragmentKey getEndKey() {
+  public Long getEndKey() {
     return null;
   }
 
