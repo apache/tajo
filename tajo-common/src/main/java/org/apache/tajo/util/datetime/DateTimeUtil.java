@@ -44,8 +44,6 @@ public class DateTimeUtil {
   /** maximum possible number of fields in a date * string */
   private static int MAXDATEFIELDS = 25;
 
-  public final static int DAYS_FROM_JULIAN_TO_EPOCH = 2440588;
-
   public static boolean isJulianCalendar(int year, int month, int day) {
     return year <= 1752 && month <= 9 && day < 14;
   }
@@ -308,12 +306,12 @@ public class DateTimeUtil {
 
   /**
    * Converts julian timestamp to java timestamp.
-   * @param timestamp
-   * @return
+   * @param timestamp julian time in millisecond
+   * @return java time in millisecond
    */
   public static long julianTimeToJavaTime(long timestamp) {
     double totalSecs = (double)timestamp / (double)DateTimeConstants.MSECS_PER_SEC;
-    return (long)(Math.round(totalSecs + DateTimeConstants.SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME * 1000.0));
+    return Math.round(totalSecs + DateTimeConstants.SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME * 1000.0);
   }
 
   /**
@@ -2137,43 +2135,28 @@ public class DateTimeUtil {
   }
 
   public static long getDay(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         0, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getHour(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         dateTime.hours, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getMinute(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         dateTime.hours, dateTime.minutes, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getSecond(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         dateTime.hours, dateTime.minutes, dateTime.secs, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getMonth(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, 1, 0, 0, 0, 0)) *
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, 1, 0, 0, 0, 0)) *
         DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getDayOfWeek(TimeMeta dateTime, int weekday) {    
@@ -2183,22 +2166,17 @@ public class DateTimeUtil {
     
     int week = date2isoweek(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth);
     int jday = isoweek2j(dateTime.years, week);
-    long usecs = 0;
-    
+
     jday += (weekday - 1);
     
     jday -=  DateTimeConstants.POSTGRES_EPOCH_JDATE;
-    usecs = julianTimeToJavaTime(toJulianTimestamp(jday, 0, 0, 0, 0)) *
-        DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
+
+    return julianTimeToJavaTime(toJulianTimestamp(jday, 0, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
   }
 
   public static long getYear(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, 1, 1, 0, 0, 0, 0)) *
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, 1, 1, 0, 0, 0, 0)) *
         DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static TimeMeta getUTCDateTime(Int8Datum int8Datum){
