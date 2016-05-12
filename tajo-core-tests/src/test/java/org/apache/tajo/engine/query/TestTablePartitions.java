@@ -23,10 +23,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.client.TajoClientUtil;
@@ -41,6 +38,8 @@ import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.KeyValueSet;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -59,17 +58,28 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   private NodeType nodeType;
 
-  public TestTablePartitions(NodeType nodeType) throws IOException {
+  public TestTablePartitions(NodeType nodeType, boolean isDirectOutputCommit) throws IOException {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
     this.nodeType = nodeType;
+
+    Map<String, String> variables = new HashMap<>();
+    variables.put(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname(), Boolean.toString(isDirectOutputCommit));
+    client.updateSessionVariables(variables);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    client.unsetSessionVariables(Arrays.asList(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED.keyname()));
   }
 
   @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
       //type
-      {NodeType.INSERT},
-      {NodeType.CREATE_TABLE},
+      {NodeType.INSERT, false},
+      {NodeType.INSERT, true},
+      {NodeType.CREATE_TABLE, false},
+      {NodeType.CREATE_TABLE, true},
     });
   }
 
@@ -1236,6 +1246,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
       ResultSet res = executeString("select * from testIgnoreFilesInIntermediateDir;");
       assertFalse(res.next());
       res.close();
+      executeString("DROP TABLE testIgnoreFilesInIntermediateDir PURGE").close();
     }
   }
 

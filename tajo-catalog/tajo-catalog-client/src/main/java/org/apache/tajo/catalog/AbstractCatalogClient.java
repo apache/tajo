@@ -25,6 +25,7 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.catalog.CatalogProtocol.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -957,4 +958,65 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
       throw new RuntimeException(e);
     }
   }
+
+  @Override
+  public void addDirectOutputCommitHistory(DirectOutputCommitHistoryProto history) throws DuplicateQueryIdException
+    , InsufficientPrivilegeException{
+    try {
+      final BlockingInterface stub = getStub();
+      final ReturnState state = stub.addDirectOutputCommitHistory(null, history);
+
+      throwsIfThisError(state, DuplicateQueryIdException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
+      ensureOk(state);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void updateDirectOutputCommitHistoryProto(UpdateDirectOutputCommitHistoryProto history)
+    throws UndefinedQueryIdException, InsufficientPrivilegeException {
+    try {
+      final BlockingInterface stub = getStub();
+      final ReturnState state = stub.updateDirectOutputCommitHistory(null, history);
+
+      throwsIfThisError(state, UndefinedQueryIdException.class);
+      throwsIfThisError(state, InsufficientPrivilegeException.class);
+      ensureOk(state);
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<DirectOutputCommitHistoryProto> getAllDirectOutputCommitHistories() {
+    try {
+      final BlockingInterface stub = getStub();
+      final DirectOutputCommitHistoryListResponse response = stub.getAllDirectOutputCommitHistories(null,
+        ProtoUtil.NULL_PROTO);
+
+      ensureOk(response.getState());
+      return response.getCommitHistoryList();
+
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public List<DirectOutputCommitHistoryProto> getIncompleteDirectOutputCommitHistories() {
+    try {
+      final BlockingInterface stub = getStub();
+      final DirectOutputCommitHistoryListResponse response = stub.getIncompleteDirectOutputCommitHistories(null,
+        ProtoUtil.NULL_PROTO);
+
+      ensureOk(response.getState());
+      return response.getCommitHistoryList();
+
+    } catch (ServiceException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
 }

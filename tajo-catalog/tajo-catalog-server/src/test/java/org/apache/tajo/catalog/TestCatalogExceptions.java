@@ -20,7 +20,9 @@ package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
@@ -36,6 +38,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class TestCatalogExceptions {
 
@@ -89,11 +95,11 @@ public class TestCatalogExceptions {
   @Test(expected = UndefinedTablespaceException.class)
   public void testAlterUndefinedTablespace() throws Exception {
     catalog.alterTablespace(AlterTablespaceProto.newBuilder().
-        setSpaceName("undefined").
-        addCommand(
-            AlterTablespaceCommand.newBuilder().
-                setType(AlterTablespaceType.LOCATION).
-                setLocation("hdfs://zzz.com/warehouse")).build());
+      setSpaceName("undefined").
+      addCommand(
+        AlterTablespaceCommand.newBuilder().
+          setType(AlterTablespaceType.LOCATION).
+          setLocation("hdfs://zzz.com/warehouse")).build());
   }
 
   @Test(expected = DuplicateDatabaseException.class)
@@ -132,7 +138,7 @@ public class TestCatalogExceptions {
   @Test(expected = DuplicateTableException.class)
   public void testCreateDuplicateTable() throws Exception {
     catalog.createTable(CatalogTestingUtil.buildTableDesc("TestDatabase1", "TestTable1",
-        CommonTestingUtil.getTestDir().toString()));
+      CommonTestingUtil.getTestDir().toString()));
   }
 
   @Test(expected = UndefinedDatabaseException.class)
@@ -267,7 +273,7 @@ public class TestCatalogExceptions {
   public void testAddDuplicateColumn() throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setAddColumn(new Column(CatalogUtil.buildFQName("TestDatabase1", "TestTable1", "cOlumn"),
-        CatalogUtil.newSimpleDataType(Type.BLOB)));
+      CatalogUtil.newSimpleDataType(Type.BLOB)));
     alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestTable1"));
     alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
     catalog.alterTable(alterTableDesc);
@@ -279,17 +285,17 @@ public class TestCatalogExceptions {
     SortSpec[] colSpecs = new SortSpec[1];
     colSpecs[0] = new SortSpec(tableDesc.getSchema().getColumn(0), true, false);
     catalog.createIndex(
-        new IndexDesc("TestDatabase1", "testTable1",
-            "new_index", new URI("idx_test"), colSpecs,
-            IndexMethod.TWO_LEVEL_BIN_TREE, true, true, tableDesc.getSchema()));
+      new IndexDesc("TestDatabase1", "testTable1",
+        "new_index", new URI("idx_test"), colSpecs,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, tableDesc.getSchema()));
 
     tableDesc = catalog.getTableDesc("TestDatabase1", "testTable1");
     colSpecs = new SortSpec[1];
     colSpecs[0] = new SortSpec(tableDesc.getSchema().getColumn(0), true, false);
     catalog.createIndex(
-        new IndexDesc("TestDatabase1", "testTable1",
-            "new_index", new URI("idx_test"), colSpecs,
-            IndexMethod.TWO_LEVEL_BIN_TREE, true, true, tableDesc.getSchema()));
+      new IndexDesc("TestDatabase1", "testTable1",
+        "new_index", new URI("idx_test"), colSpecs,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, tableDesc.getSchema()));
   }
 
   @Test(expected = UndefinedDatabaseException.class)
@@ -300,5 +306,35 @@ public class TestCatalogExceptions {
   @Test(expected = UndefinedIndexException.class)
   public void testDropUndefinedIndex() throws Exception {
     catalog.dropIndex("TestDatabase1", "undefined");
+  }
+
+  @Test(expected = DuplicateQueryIdException.class)
+  public final void testAddDirectOutputCommitHistories() throws Exception {
+    catalog.addDirectOutputCommitHistory(getDirectOutputCommitHistoryProto(1));
+    catalog.addDirectOutputCommitHistory(getDirectOutputCommitHistoryProto(2));
+    catalog.addDirectOutputCommitHistory(getDirectOutputCommitHistoryProto(2));
+  }
+
+  @Test(expected = UndefinedQueryIdException.class)
+  public final void testUpdateDirectOutputCommitHistory() throws Exception {
+    catalog.updateDirectOutputCommitHistoryProto(getUpdateDirectOutputCommitHistoryProto(10));
+  }
+
+  private CatalogProtos.DirectOutputCommitHistoryProto getDirectOutputCommitHistoryProto(int index) {
+    CatalogProtos.DirectOutputCommitHistoryProto.Builder builder = CatalogProtos.DirectOutputCommitHistoryProto
+      .newBuilder();
+    builder.setQueryId("query_" + index);
+    builder.setPath("hdfs://localhost:9010/table" + index);
+    builder.setStartTime(System.currentTimeMillis());
+    builder.setQueryState(TajoProtos.QueryState.QUERY_RUNNING.name());
+    return builder.build();
+  }
+
+  private CatalogProtos.UpdateDirectOutputCommitHistoryProto getUpdateDirectOutputCommitHistoryProto(int index) {
+    CatalogProtos.UpdateDirectOutputCommitHistoryProto.Builder builder = CatalogProtos
+      .UpdateDirectOutputCommitHistoryProto.newBuilder();
+    builder.setQueryId("query_" + index);
+    builder.setQueryState(TajoProtos.QueryState.QUERY_SUCCEEDED.name());
+    return builder.build();
   }
 }

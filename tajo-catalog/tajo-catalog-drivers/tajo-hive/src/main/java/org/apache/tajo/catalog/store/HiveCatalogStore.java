@@ -1294,4 +1294,24 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   public List<TablespaceProto> getTablespaces() {
     return Lists.newArrayList(getTablespace(TajoConstants.DEFAULT_TABLESPACE_NAME));
   }
+
+  @Override
+  public void addDirectOutputCommitHistory(DirectOutputCommitHistoryProto history) {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  @Override
+  public void updateDirectOutputCommitHistoryProto(UpdateDirectOutputCommitHistoryProto history) {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  @Override
+  public List<DirectOutputCommitHistoryProto> getAllDirectOutputCommitHistories() {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  @Override
+  public List<DirectOutputCommitHistoryProto> getIncompleteDirectOutputCommitHistories() {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
 }

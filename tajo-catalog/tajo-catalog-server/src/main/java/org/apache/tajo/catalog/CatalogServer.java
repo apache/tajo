@@ -45,6 +45,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.rpc.BlockingRpcServer;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
@@ -1611,6 +1612,84 @@ public class CatalogServer extends AbstractService {
       } catch (Throwable t) {
         printStackTraceIfError(LOG, t);
         return returnError(t);
+      }
+    }
+
+    @Override
+    public ReturnState addDirectOutputCommitHistory(RpcController controller, DirectOutputCommitHistoryProto request)
+      throws ServiceException {
+      wlock.lock();
+      try {
+        store.addDirectOutputCommitHistory(request);
+        return OK;
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+
+      } finally {
+        wlock.unlock();
+      }
+    }
+
+    @Override
+    public ReturnState updateDirectOutputCommitHistory(RpcController controller,
+      UpdateDirectOutputCommitHistoryProto request) throws ServiceException {
+      wlock.lock();
+      try {
+        store.updateDirectOutputCommitHistoryProto(request);
+        return OK;
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+        return returnError(t);
+
+      } finally {
+        wlock.unlock();
+      }
+    }
+
+    @Override
+    public DirectOutputCommitHistoryListResponse getAllDirectOutputCommitHistories(RpcController controller,
+      NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return DirectOutputCommitHistoryListResponse.newBuilder()
+          .setState(OK)
+          .addAllCommitHistory(store.getAllDirectOutputCommitHistories())
+          .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return DirectOutputCommitHistoryListResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
+
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public DirectOutputCommitHistoryListResponse getIncompleteDirectOutputCommitHistories(RpcController controller,
+      NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return DirectOutputCommitHistoryListResponse.newBuilder()
+          .setState(OK)
+          .addAllCommitHistory(store.getIncompleteDirectOutputCommitHistories())
+          .build();
+
+      } catch (Throwable t) {
+        printStackTraceIfError(LOG, t);
+
+        return DirectOutputCommitHistoryListResponse.newBuilder()
+          .setState(returnError(t))
+          .build();
+
+      } finally {
+        rlock.unlock();
       }
     }
   }

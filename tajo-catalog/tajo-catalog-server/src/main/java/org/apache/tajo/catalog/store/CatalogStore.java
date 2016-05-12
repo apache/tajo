@@ -226,4 +226,15 @@ public interface CatalogStore extends Closeable {
   void existFunction(FunctionDesc func);
 
   List<String> getAllFunctionNames();
+
+  /************************** DirectOutputCommitter *****************************/
+
+  void addDirectOutputCommitHistory(DirectOutputCommitHistoryProto history) throws DuplicateQueryIdException;
+
+  void updateDirectOutputCommitHistoryProto(UpdateDirectOutputCommitHistoryProto history)
+    throws UndefinedQueryIdException;
+
+  List<DirectOutputCommitHistoryProto> getAllDirectOutputCommitHistories();
+
+  List<DirectOutputCommitHistoryProto> getIncompleteDirectOutputCommitHistories();
 }

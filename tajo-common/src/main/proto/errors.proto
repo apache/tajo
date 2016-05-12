@@ -117,6 +117,7 @@ enum ResultCode {
   UNDEFINED_PARTITION_KEY               = 523; // ?
   UNDEFINED_TABLESPACE_HANDLER          = 524; // SQLState: 42T11 - No Tablespace Handler for the URI scheme
   UNDEFINED_PARTITIONS                  = 525; // ?
+  UNDEFINED_QUERY_ID                    = 526; // ?
 
   DUPLICATE_TABLESPACE                  = 531;
   DUPLICATE_DATABASE                    = 532; // SQLState: 42P04
@@ -127,6 +128,7 @@ enum ResultCode {
   DUPLICATE_FUNCTION                    = 537; // SQLState: 42723
   DUPLICATE_INDEX                       = 538; // SQLState: 42T07
   DUPLICATE_PARTITION                   = 539; // SQLState: 42T08
+  DUPLICATE_QUERY_ID                    = 540; // ?
 
   AMBIGUOUS_TABLE                       = 541; // SQLState: 42P09
   AMBIGUOUS_COLUMN                      = 542; // SQLState: 42702;

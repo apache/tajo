@@ -37,6 +37,8 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.DirectOutputCommitHistoryProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.UpdateDirectOutputCommitHistoryProto;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
@@ -47,6 +49,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.error.Errors.SerializedException;
 import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -451,15 +454,49 @@ public class Query implements EventHandler<QueryEvent> {
     public void transition(Query query, QueryEvent queryEvent) {
 
       query.setStartTime();
+
+      Stage lastStage = null;
       ExecutionQueue executionQueue = query.newExecutionQueue();
       for (ExecutionBlock executionBlock : executionQueue.first()) {
         Stage stage = new Stage(query.context, query.getPlan(), executionBlock);
         stage.setPriority(query.priority--);
         query.addStage(stage);
 
+        if (stage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE
+          || stage.getBlock().getPlan().getType() == NodeType.INSERT) {
+          lastStage = stage;
+        }
+
         stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_INIT));
         LOG.debug("Schedule unit plan: \n" + stage.getBlock().getPlan());
       }
+
+      // Add direct output commit history to catalog
+      if (lastStage != null) {
+        addDirectOutputCommitHistory(query, lastStage);
+      }
+    }
+  }
+
+  public static void addDirectOutputCommitHistory(Query query, Stage stage) {
+    try {
+      QueryContext queryContext = query.context.getQueryContext();
+
+      if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+        CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+
+        DirectOutputCommitHistoryProto.Builder builder = DirectOutputCommitHistoryProto.newBuilder();
+        builder.setQueryId(query.getId().toString());
+        builder.setQueryState(query.getState().name());
+        builder.setStartTime(System.currentTimeMillis());
+        Path path = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+        builder.setPath(path.toString());
+
+        catalog.addDirectOutputCommitHistory(builder.build());
+      }
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
+      query.eventHandler.handle(new QueryEvent(query.getId(), QueryEventType.INTERNAL_ERROR));
     }
   }
 
@@ -486,7 +523,7 @@ public class Query implements EventHandler<QueryEvent> {
       // When a query is failed
       if (finalState != QueryState.QUERY_SUCCEEDED) {
         Stage lastStage = query.getStage(stageEvent.getExecutionBlockId());
-        handleQueryFailure(query, lastStage);
+        handleQueryFailure(query, lastStage, finalState);
       }
 
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
@@ -496,7 +533,7 @@ public class Query implements EventHandler<QueryEvent> {
     }
 
     // handle query failures
-    private void handleQueryFailure(Query query, Stage lastStage) {
+    private void handleQueryFailure(Query query, Stage lastStage, QueryState finalState) {
       QueryContext context = query.context.getQueryContext();
 
       if (lastStage != null && context.hasOutputTableUri()) {
@@ -504,9 +541,36 @@ public class Query implements EventHandler<QueryEvent> {
         try {
           LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
           space.rollbackTable(rootNode.getChild());
+          clearDirectOutputCommit(query, finalState, lastStage);
         } catch (Throwable e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }
+      }
+    }
+
+    private void clearDirectOutputCommit(Query query, QueryState queryState, Stage lastStage) {
+      try {
+        QueryContext queryContext = query.context.getQueryContext();
+        NodeType type = lastStage.getBlock().getPlan().getType();
+
+        if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
+          && (type == NodeType.CREATE_TABLE || type == NodeType.INSERT)) {
+          Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
+          Path path = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+          space.clearDirectOutputCommit(query.getId().toString(), path);
+
+          CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+
+          UpdateDirectOutputCommitHistoryProto.Builder builder = UpdateDirectOutputCommitHistoryProto.newBuilder();
+          builder.setQueryState(queryState.name());
+          builder.setQueryId(query.getId().toString());
+
+          catalog.updateDirectOutputCommitHistoryProto(builder.build());
+        }
+      } catch (UnsupportedException ue) {
+        // HBaseTableSpace and JDBCTableSpace don't support directOutputCommitter
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
 
@@ -525,43 +589,58 @@ public class Query implements EventHandler<QueryEvent> {
         // In this case, we should use default tablespace.
         Tablespace space = TablespaceManager.get(queryContext.get(QueryVars.OUTPUT_TABLE_URI, ""));
 
+        List<PartitionDescProto> partitions = null;
+        if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
+          partitions = query.getPartitions();
+        }
+
         Path finalOutputDir = space.commitTable(
-            query.context.getQueryContext(),
-            lastStage.getId(),
-            lastStage.getMasterPlan().getLogicalPlan(),
-            lastStage.getOutSchema(),
-            tableDesc);
+          query.context.getQueryContext(),
+          lastStage.getId(),
+          lastStage.getMasterPlan().getLogicalPlan(),
+          lastStage.getOutSchema(),
+          tableDesc,
+          partitions);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
 
         // Add dynamic partitions to catalog for partition table.
-        if (queryContext.hasOutputTableUri() && queryContext.hasPartition()) {
-          List<PartitionDescProto> partitions = query.getPartitions();
-          if (partitions != null) {
-            // Set contents length and file count to PartitionDescProto by listing final output directories.
-            List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
-              finalOutputDir, partitions);
+        if (partitions != null) {
+          // Set contents length and file count to PartitionDescProto by listing final output directories.
+          List<PartitionDescProto> finalPartitions = getPartitionsWithContentsSummary(query.systemConf,
+            finalOutputDir, partitions);
 
-            String databaseName, simpleTableName;
-            if (CatalogUtil.isFQTableName(tableDesc.getName())) {
-              String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
-              databaseName = split[0];
-              simpleTableName = split[1];
-            } else {
-              databaseName = queryContext.getCurrentDatabase();
-              simpleTableName = tableDesc.getName();
-            }
-
-            // Store partitions to CatalogStore using alter table statement.
-            catalog.addPartitions(databaseName, simpleTableName, finalPartitions, true);
-            LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
+          String databaseName, simpleTableName;
+          if (CatalogUtil.isFQTableName(tableDesc.getName())) {
+            String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
+            databaseName = split[0];
+            simpleTableName = split[1];
           } else {
-            LOG.info("Can't find partitions for adding.");
+            databaseName = queryContext.getCurrentDatabase();
+            simpleTableName = tableDesc.getName();
           }
+
+          // Store partitions to CatalogStore using alter table statement.
+          catalog.addPartitions(databaseName, simpleTableName, finalPartitions, true);
+          LOG.info("Added partitions to catalog (total=" + partitions.size() + ")");
+
           query.clearPartitions();
         }
+
+        // Update the status of direct output commit history
+        if (queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)
+          && (lastStage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE
+          || lastStage.getBlock().getPlan().getType() == NodeType.INSERT)) {
+          UpdateDirectOutputCommitHistoryProto.Builder builder = UpdateDirectOutputCommitHistoryProto.newBuilder();
+          builder.setQueryState(QueryState.QUERY_SUCCEEDED.name());
+          builder.setQueryId(query.getId().toString());
+
+          catalog.updateDirectOutputCommitHistoryProto(builder.build());
+        }
+
       } catch (Throwable e) {
+        clearDirectOutputCommit(query, QueryState.QUERY_ERROR, lastStage);
         LOG.fatal(e.getMessage(), e);
         query.failureReason = ErrorUtil.convertException(e);
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
@@ -816,6 +895,12 @@ public class Query implements EventHandler<QueryEvent> {
         query.addStage(nextStage);
         nextStage.getEventHandler().handle(new StageEvent(nextStage.getId(), StageEventType.SQ_INIT));
 
+        // Add direct output commit history to catalog
+        if (nextStage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE
+          || nextStage.getBlock().getPlan().getType() == NodeType.INSERT) {
+          addDirectOutputCommitHistory(query, nextStage);
+        }
+
         LOG.info("Scheduling Stage:" + nextStage.getId());
         if (LOG.isDebugEnabled()) {
           LOG.debug("Scheduling Stage's Priority: " + nextStage.getPriority());
@@ -864,9 +949,9 @@ public class Query implements EventHandler<QueryEvent> {
           query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
         }
         LOG.info(String.format("Complete Stage[%s], State: %s, %d/%d. ",
-            castEvent.getExecutionBlockId().toString(),
-            castEvent.getState().toString(),
-            query.completedStagesCount,
+          castEvent.getExecutionBlockId().toString(),
+          castEvent.getState().toString(),
+          query.completedStagesCount,
             query.stages.size()));
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);

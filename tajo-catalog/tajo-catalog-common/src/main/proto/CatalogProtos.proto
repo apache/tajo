@@ -429,3 +429,26 @@ message PartitionListResponse {
   required ReturnState state = 1;
   repeated PartitionDescProto partition = 2;
 }
+
+
+////////////////////////////////////////////////
+// DirectOutputCommitter
+////////////////////////////////////////////////
+
+message DirectOutputCommitHistoryProto {
+  required string query_id = 1;
+  required string path = 2;
+  required int64 start_time = 3;
+  optional int64 end_time = 4;
+  required string query_state = 5;
+}
+
+message DirectOutputCommitHistoryListResponse {
+  required ReturnState state = 1;
+  repeated DirectOutputCommitHistoryProto commitHistory = 2;
+}
+
+message UpdateDirectOutputCommitHistoryProto {
+  required string query_id = 1;
+  required string query_state = 2;
+}

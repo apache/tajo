@@ -3024,6 +3024,166 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return exist;
   }
 
+  private boolean existQueryIdFromDirectOutputCommitHistories(String queryId) {
+    ResultSet res = null;
+    boolean exist = false;
+
+    String sql = "SELECT PATH FROM " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES + " WHERE QUERY_ID = ? ";
+
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(sql);
+    }
+
+    try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
+      pstmt.setString(1, queryId);
+      res = pstmt.executeQuery();
+      exist = res.next();
+    } catch (SQLException se) {
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(res);
+    }
+
+    return exist;
+  }
+  @Override
+  public void addDirectOutputCommitHistory(DirectOutputCommitHistoryProto history) throws DuplicateQueryIdException {
+
+    if (existQueryIdFromDirectOutputCommitHistories(history.getQueryId())) {
+      throw new DuplicateQueryIdException(history.getQueryId());
+    }
+
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      final String insertHistorySql = "INSERT INTO " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES
+        + " (QUERY_ID, PATH, START_TIME, QUERY_STATE) VALUES (?, ?, ?, ?) ";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(insertHistorySql);
+      }
+
+      pstmt = conn.prepareStatement(insertHistorySql);
+      pstmt.setString(1, history.getQueryId());
+      pstmt.setString(2, history.getPath());
+      pstmt.setLong(3, history.getStartTime());
+      pstmt.setString(4, history.getQueryState());
+      pstmt.executeUpdate();
+      conn.commit();
+    } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
+  }
+
+  @Override
+  public void updateDirectOutputCommitHistoryProto(UpdateDirectOutputCommitHistoryProto history)
+    throws UndefinedQueryIdException {
+
+    if (!existQueryIdFromDirectOutputCommitHistories(history.getQueryId())) {
+      throw new UndefinedQueryIdException(history.getQueryId());
+    }
+
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      final String updateHistorySql = "UPDATE " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES
+        + " SET END_TIME = ?, QUERY_STATE = ? WHERE QUERY_ID = ? ";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(updateHistorySql);
+      }
+
+      pstmt = conn.prepareStatement(updateHistorySql);
+      pstmt.setLong(1, System.currentTimeMillis());
+      pstmt.setString(2, history.getQueryState());
+      pstmt.setString(3, history.getQueryId());
+      pstmt.executeUpdate();
+      conn.commit();
+    } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e, e);
+        }
+      }
+      throw new TajoInternalError(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
+  }
+
+  @Override
+  public List<DirectOutputCommitHistoryProto> getAllDirectOutputCommitHistories() {
+    List<DirectOutputCommitHistoryProto> histories = new ArrayList<>();
+
+    String sql = "SELECT * FROM " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES;
+
+    try (Statement stmt = getConnection().createStatement();
+      ResultSet rs = stmt.executeQuery(sql)) {
+      while (rs.next()) {
+        DirectOutputCommitHistoryProto.Builder builder = DirectOutputCommitHistoryProto.newBuilder();
+
+        builder.setQueryId(rs.getString("QUERY_ID"));
+        builder.setPath(rs.getString("PATH"));
+        builder.setStartTime(rs.getLong("START_TIME"));
+        builder.setEndTime(rs.getLong("END_TIME"));
+        builder.setQueryState(rs.getString("QUERY_STATE"));
+        histories.add(builder.build());
+      }
+
+    } catch (SQLException e) {
+      throw new TajoInternalError(e);
+    }
+
+    return histories;
+  }
+
+  @Override
+  public List<DirectOutputCommitHistoryProto> getIncompleteDirectOutputCommitHistories() {
+    List<DirectOutputCommitHistoryProto> histories = new ArrayList<>();
+
+    String sql = "SELECT * FROM " + TB_DIRECT_OUTPUT_COMMIT_HISTORIES
+      + " WHERE END_TIME IS NULL "
+      + " OR QUERY_STATE NOT IN ('QUERY_SUCCEEDED', 'QUERY_FAILED', 'QUERY_KILLED', 'QUERY_ERROR')";
+
+    try (Statement stmt = getConnection().createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+      while (rs.next()) {
+        DirectOutputCommitHistoryProto.Builder builder = DirectOutputCommitHistoryProto.newBuilder();
+
+        builder.setQueryId(rs.getString("QUERY_ID"));
+        builder.setPath(rs.getString("PATH"));
+        builder.setStartTime(rs.getLong("START_TIME"));
+        builder.setEndTime(rs.getLong("END_TIME"));
+        builder.setQueryState(rs.getString("QUERY_STATE"));
+        histories.add(builder.build());
+      }
+
+    } catch (SQLException e) {
+      throw new TajoInternalError(e);
+    }
+
+    return histories;
+  }
+
   class PartitionFilterSet {
     private String columnName;
     private List<Pair<Type, Object>> parameters;

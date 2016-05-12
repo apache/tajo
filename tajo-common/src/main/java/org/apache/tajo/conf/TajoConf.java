@@ -370,6 +370,9 @@ public class TajoConf extends Configuration {
     $INDEX_ENABLED("tajo.query.index.enabled", false),
     $INDEX_SELECTIVITY_THRESHOLD("tajo.query.index.selectivity.threshold", 0.05f),
 
+    // for DirectOutputCommitter
+    $DIRECT_OUTPUT_COMMITTER_ENABLED("tajo.query.direct-output-committer.enabled", false, Validators.bool()),
+
     // Client -----------------------------------------------------------------
     $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
 

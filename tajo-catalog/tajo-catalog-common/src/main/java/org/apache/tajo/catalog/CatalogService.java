@@ -257,4 +257,17 @@ public interface CatalogService {
        NotImplementedException;
 
   void updateTableStats(UpdateTableStatsProto stats) throws UndefinedTableException, InsufficientPrivilegeException;
+
+
+  /************************** DirectOutputCommitter *****************************/
+
+  void addDirectOutputCommitHistory(DirectOutputCommitHistoryProto history) throws DuplicateQueryIdException
+    , InsufficientPrivilegeException;
+
+  void updateDirectOutputCommitHistoryProto(UpdateDirectOutputCommitHistoryProto history)
+    throws UndefinedQueryIdException, InsufficientPrivilegeException;
+
+  List<DirectOutputCommitHistoryProto> getAllDirectOutputCommitHistories();
+
+  List<DirectOutputCommitHistoryProto> getIncompleteDirectOutputCommitHistories();
 }

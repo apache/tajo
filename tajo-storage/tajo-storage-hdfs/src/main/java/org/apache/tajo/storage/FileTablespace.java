@@ -32,6 +32,7 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoInternalError;
@@ -50,6 +51,7 @@ import java.net.URI;
 import java.text.NumberFormat;
 import java.util.*;
 
+import static java.lang.String.format;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT;
 
@@ -64,6 +66,9 @@ public class FileTablespace extends Tablespace {
   private static final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
+
+  static final String DIRECT_OUTPUT_FILE_PREFIX="UUID-";
+
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
       new ThreadLocal<NumberFormat>() {
         @Override
@@ -260,17 +265,30 @@ public class FileTablespace extends Tablespace {
   // FileInputFormat Area
   /////////////////////////////////////////////////////////////////////////////
   public Path getAppenderFilePath(TaskAttemptId taskAttemptId, Path workDir) {
+    return getAppenderFilePath(taskAttemptId, workDir, false);
+  }
+
+  public Path getAppenderFilePath(TaskAttemptId taskAttemptId, Path workDir, boolean isDirectOutputCommit) {
     if (taskAttemptId == null) {
       // For testcase
       return workDir;
     }
-    // The final result of a task will be written in a file named part-ss-nnnnnnn,
-    // where ss is the stage id associated with this task, and nnnnnn is the task id.
-    Path outFilePath = StorageUtil.concatPath(workDir, TajoConstants.RESULT_DIR_NAME,
+
+    Path outFilePath = null;
+    if (isDirectOutputCommit && !workDir.toString().startsWith(this.stagingRootPath.toString())) {
+      QueryId queryId = taskAttemptId.getTaskId().getExecutionBlockId().getQueryId();
+      outFilePath = StorageUtil.concatPath(workDir, DIRECT_OUTPUT_FILE_PREFIX +
+        queryId.toString().substring(2).replaceAll("_", "-") + "-" +
+        OUTPUT_FILE_FORMAT_STAGE.get().format(taskAttemptId.getTaskId().getExecutionBlockId().getId()) + "-" +
+        OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getTaskId().getId()) + "-" +
+        OUTPUT_FILE_FORMAT_SEQ.get().format(0));
+    } else {
+      outFilePath = StorageUtil.concatPath(workDir, TajoConstants.RESULT_DIR_NAME,
         OUTPUT_FILE_PREFIX +
-            OUTPUT_FILE_FORMAT_STAGE.get().format(taskAttemptId.getTaskId().getExecutionBlockId().getId()) + "-" +
-            OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getTaskId().getId()) + "-" +
-            OUTPUT_FILE_FORMAT_SEQ.get().format(0));
+          OUTPUT_FILE_FORMAT_STAGE.get().format(taskAttemptId.getTaskId().getExecutionBlockId().getId()) + "-" +
+          OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getTaskId().getId()) + "-" +
+          OUTPUT_FILE_FORMAT_SEQ.get().format(0));
+    }
     LOG.info("Output File Path: " + outFilePath);
 
     return outFilePath;
@@ -699,12 +717,16 @@ public class FileTablespace extends Tablespace {
       // for temporarily written in the storage directory
       stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
     } else {
-      Tablespace space = TablespaceManager.get(outputPath);
-      if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
-        // If this space allows move operation, the staging directory will be underneath the final output table uri.
-        stagingDir = fs.makeQualified(StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId));
+      if (context.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+        stagingDir = new Path(context.get(QueryVars.OUTPUT_TABLE_URI));
       } else {
-        stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
+        Tablespace space = TablespaceManager.get(outputPath);
+        if (space.getProperty().isMovable()) { // checking if this tablespace allows MOVE operation
+          // If this space allows move operation, the staging directory will be underneath the final output table uri.
+          stagingDir = fs.makeQualified(StorageUtil.concatPath(outputPath, TMP_STAGING_DIR_PREFIX, queryId));
+        } else {
+          stagingDir = fs.makeQualified(new Path(stagingRootPath, queryId));
+        }
       }
     }
 
@@ -732,10 +754,17 @@ public class FileTablespace extends Tablespace {
     // Create Output Directory
     ////////////////////////////////////////////
 
-    if (fs.exists(stagingDir)) {
-      throw new IOException("The staging directory '" + stagingDir + "' already exists");
+    if (!context.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      if (fs.exists(stagingDir)) {
+        throw new IOException("The staging directory '" + stagingDir + "' already exists");
+      }
+      fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+    } else {
+      if (!fs.exists(stagingDir)) {
+        fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+      }
     }
-    fs.mkdirs(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
+
     FileStatus fsStatus = fs.getFileStatus(stagingDir);
     String owner = fsStatus.getOwner();
 
@@ -754,8 +783,10 @@ public class FileTablespace extends Tablespace {
       fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
     }
 
-    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-    fs.mkdirs(stagingResultDir);
+    if (!context.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+      Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
+      fs.mkdirs(stagingResultDir);
+    }
 
     return stagingDir.toUri();
   }
@@ -766,8 +797,14 @@ public class FileTablespace extends Tablespace {
 
   @Override
   public Path commitTable(OverridableConf queryContext, ExecutionBlockId finalEbId, LogicalPlan plan,
-                          Schema schema, TableDesc tableDesc) throws IOException {
-    return commitOutputData(queryContext, true);
+                          Schema schema, TableDesc tableDesc, List<PartitionDescProto> partitions) throws IOException {
+
+    if (!queryContext.get(QueryVars.OUTPUT_TABLE_URI, "").isEmpty()
+      && queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED)) {
+        return directCommitOutputData(queryContext, finalEbId.getQueryId(), partitions);
+    } else {
+      return commitOutputData(queryContext, true);
+    }
   }
 
   @Override
@@ -958,6 +995,147 @@ public class FileTablespace extends Tablespace {
     }
 
     return finalOutputDir;
+  }
+
+
+  private Path directCommitOutputData(OverridableConf queryContext, QueryId queryId,
+                                      List<PartitionDescProto> partitions) throws IOException {
+
+    Path finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_URI));
+
+    Path backupDir = new Path(finalOutputDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+    if (!fs.exists(backupDir)) {
+      fs.mkdirs(backupDir);
+    }
+
+    String queryType = queryContext.get(QueryVars.COMMAND_TYPE);
+    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.toString().substring(2).replaceAll("_", "-");
+
+    try {
+      if (queryType.equals(NodeType.INSERT.name()) && queryContext.getBool(QueryVars.OUTPUT_OVERWRITE, false)) {
+        if (queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
+          // Backup existing files
+          recursiveRenameFilesStartingWith(finalOutputDir, backupDir, prefix);
+        } else {
+          // Backup existing files on added partition directory.
+          if (partitions != null) {
+            for(PartitionDescProto partition : partitions) {
+              String recoverPath = partition.getPath().replaceAll(finalOutputDir.toString(), backupDir.toString());
+              recursiveRenameFilesStartingWith(new Path(partition.getPath()), new Path(recoverPath), prefix);
+            }
+          }
+        }
+      } else if (queryType.equals(NodeType.CREATE_TABLE.name())) {
+        // Backup existing files
+        recursiveRenameFilesStartingWith(finalOutputDir, backupDir, prefix);
+      }
+
+      // Delete backup files
+      fs.delete(backupDir, true);
+
+      // Delete Staging directory
+      Path stagingDir = new Path(finalOutputDir, ".staging");
+      fs.delete(stagingDir, true);
+    } catch (Exception e) {
+      clearDirectOutputCommit(queryId.getId(), finalOutputDir);
+      throw new IOException(e);
+    }
+    return finalOutputDir;
+  }
+
+  @Override
+  public void clearDirectOutputCommit(String queryId, Path path) throws IOException {
+    Path backupDir = new Path(path, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+    String prefix = DIRECT_OUTPUT_FILE_PREFIX + queryId.substring(2).replaceAll("_", "-");
+
+    // Delete added files
+    if (fs.exists(path)) {
+      deleteOutputFiles(path, path, prefix);
+    }
+
+    // Recover backup files to output directory
+    if (fs.exists(backupDir)) {
+      recursiveRenameFiles(backupDir, path);
+    }
+  }
+
+  private void deleteOutputFiles(Path path, Path rootPath, String prefix) throws IOException {
+    int deleteCount = 0, notDeleteCount = 0;
+    FileStatus[] statuses = fs.listStatus(path);
+    for (FileStatus status : statuses) {
+      if (status.isDirectory()) {
+        deleteOutputFiles(status.getPath(), rootPath, prefix);
+      } else if (status.isFile()) {
+        if (status.getPath().getName().startsWith(prefix)) {
+          fs.delete(status.getPath(), false);
+          deleteCount++;
+        } else {
+          notDeleteCount++;
+        }
+      }
+    }
+
+    // If all files had been deleted, delete parent directory
+    if (deleteCount > 0 && notDeleteCount == 0) {
+      fs.delete(path, false);
+    // If there is no child directories, delete parent directory
+    } else if(fs.isDirectory(path) && fs.listStatus(path).length == 0 && !path.equals(rootPath)) {
+      fs.delete(path, false);
+    }
+  }
+
+  protected void recursiveRenameFilesStartingWith(Path sourcePath, Path targetPath, String prefix) throws
+    IOException {
+    FileStatus[] statuses = fs.listStatus(sourcePath);
+
+    for(FileStatus status : statuses) {
+      if (fs.isDirectory(status.getPath())) {
+        recursiveRenameFilesStartingWith(status.getPath(), targetPath, prefix);
+      } else if(fs.isFile(status.getPath()) && !status.getPath().getName().startsWith(prefix)) {
+        renameDirectory(status.getPath(), new Path(targetPath, status.getPath().getName()));
+      }
+    }
+  }
+
+  protected void recursiveRenameFiles(Path sourcePath, Path targetPath) throws
+    IOException {
+    FileStatus[] statuses = fs.listStatus(sourcePath);
+
+    for(FileStatus status : statuses) {
+      if (fs.isDirectory(status.getPath())) {
+        recursiveRenameFiles(status.getPath(), targetPath);
+      } else {
+        renameDirectory(status.getPath(), new Path(targetPath, status.getPath().getName()));
+      }
+    }
+  }
+
+  protected void renameDirectory(Path sourcePath, Path targetPath) throws IOException {
+    try {
+      if (!fs.exists(targetPath.getParent())) {
+        createDirectory(targetPath.getParent());
+      }
+      if (!rename(sourcePath, targetPath)) {
+        throw new IOException(format("Failed to rename %s to %s: rename returned false", sourcePath, targetPath));
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+      throw new IOException(format("Failed to rename %s to %s", sourcePath, targetPath), e);
+    }
+  }
+
+  protected void createDirectory(Path path) throws IOException {
+    try {
+      if (!fs.mkdirs(path)) {
+        throw new IOException(format("mkdirs %s returned false", path));
+      }
+    } catch (IOException e) {
+      throw new IOException("Failed to create directory:" + path, e);
+    }
+  }
+
+  protected boolean rename(Path sourcePath, Path targetPath) throws IOException {
+    return fs.rename(sourcePath, targetPath);
   }
 
   /**

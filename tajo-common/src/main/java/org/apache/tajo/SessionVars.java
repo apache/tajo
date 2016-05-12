@@ -148,6 +148,10 @@ public enum SessionVars implements ConfigKey {
   INDEX_SELECTIVITY_THRESHOLD(ConfVars.$INDEX_SELECTIVITY_THRESHOLD, "the selectivity threshold for index scan",
       DEFAULT),
 
+  // for DirectOutputCommitter
+  DIRECT_OUTPUT_COMMITTER_ENABLED(ConfVars.$DIRECT_OUTPUT_COMMITTER_ENABLED,
+    "If true, a task will write the output data directly to the final location.", DEFAULT),
+
   // for partition overwrite
   PARTITION_NO_RESULT_OVERWRITE_ENABLED(ConfVars.$PARTITION_NO_RESULT_OVERWRITE_ENABLED,
     "If true, a partitioned table is overwritten even if a sub query leads to no result. "

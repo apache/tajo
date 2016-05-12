@@ -27,6 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.FetcherState;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -148,7 +149,8 @@ public class TaskImpl implements Task {
       }
     } else {
       Path outFilePath = ((FileTablespace) TablespaceManager.get(queryContext.getStagingDir().toUri()))
-          .getAppenderFilePath(getId(), queryContext.getStagingDir());
+          .getAppenderFilePath(getId(), queryContext.getStagingDir(),
+            queryContext.getBool(SessionVars.DIRECT_OUTPUT_COMMITTER_ENABLED));
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);
     }

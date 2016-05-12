@@ -19,6 +19,7 @@
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
   <!--
       Catalog base version history
+			* 13 - 2016-04-11: Support DirectOutputCommitter for AWS S3 file system (TAJO-2087)
       * 12 - 2015-09-28: Change the variable name storeType to dataFormat (TAJO-1663)
       * 11 - 2015-09-23: Add contents length and file count for partition directory (TAJO-1493)
       * 10 - 2015-09-22: Well support for self-describing data formats (TAJO-1832)
@@ -251,6 +252,20 @@
       <tns:Object order="23" type="index" name="PARTITION_KEYS_IDX" dependsOn="PARTITION_KEYS">
         <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (TID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
       </tns:Object>
+			<tns:Object order="24" type="table" name="DIRECT_OUTPUT_COMMIT_HISTORIES">
+				<tns:sql><![CDATA[
+				CREATE TABLE DIRECT_OUTPUT_COMMIT_HISTORIES (
+					QUERY_ID VARCHAR(128) NOT NULL PRIMARY KEY,
+					PATH VARCHAR2(4096) NOT NULL,
+					START_TIME NUMBER NOT NULL,
+					END_TIME NUMBER,
+					QUERY_STATE VARCHAR(50) NOT NULL
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object order="25" type="index" name="DIRECT_OUTPUT_COMMIT_HISTORIES_IDX" dependsOn="DIRECT_OUTPUT_COMMIT_HISTORIES">
+				<tns:sql><![CDATA[CREATE INDEX DIRECT_OUTPUT_COMMIT_HISTORIES_IDX on DIRECT_OUTPUT_COMMIT_HISTORIES (END_TIME, QUERY_STATE)]]></tns:sql>
+			</tns:Object>
     </tns:objects>
   </tns:base>
   <tns:existQueries>

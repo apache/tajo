@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -1089,7 +1090,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getFunctionName(), "testint");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.INT4));
-    assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
+    assertEquals(retrieved.getParamTypes()[1], CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
   @Test(expected=UndefinedFunctionException.class)
@@ -1118,7 +1119,7 @@ public class TestCatalog {
 
     assertEquals(retrieved.getFunctionName(), "testfloat");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.FLOAT8));
-    assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
+    assertEquals(retrieved.getParamTypes()[1], CatalogUtil.newSimpleDataType(Type.INT4));
   }
 
   @Test(expected=UndefinedFunctionException.class)
@@ -1156,5 +1157,57 @@ public class TestCatalog {
     retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.TEXT));
     assertEquals(retrieved.getFunctionName(), "testany");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
+  }
+
+  @Test
+  public final void testDirectOutputCommitHistories() throws Exception {
+    catalog.addDirectOutputCommitHistory(getDirectOutputCommitHistoryProto(1));
+    catalog.addDirectOutputCommitHistory(getDirectOutputCommitHistoryProto(2));
+
+    List<CatalogProtos.DirectOutputCommitHistoryProto> allHistories = catalog.getAllDirectOutputCommitHistories();
+    assertNotNull(allHistories);
+    assertEquals(2, allHistories.size());
+
+    catalog.updateDirectOutputCommitHistoryProto(getUpdateDirectOutputCommitHistoryProto(1));
+
+    List<CatalogProtos.DirectOutputCommitHistoryProto> incompleteHistories = catalog
+      .getIncompleteDirectOutputCommitHistories();
+
+    assertNotNull(incompleteHistories);
+    assertEquals(1, incompleteHistories.size());
+
+    catalog.updateDirectOutputCommitHistoryProto(getUpdateDirectOutputCommitHistoryProto(2));
+
+    incompleteHistories = catalog.getIncompleteDirectOutputCommitHistories();
+
+    assertNotNull(incompleteHistories);
+    assertEquals(0, incompleteHistories.size());
+
+    allHistories = catalog.getAllDirectOutputCommitHistories();
+    assertNotNull(allHistories);
+    assertEquals(2, allHistories.size());
+
+    for (CatalogProtos.DirectOutputCommitHistoryProto history : allHistories) {
+      assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED.name(), history.getQueryState());
+      assertNotNull(history.getEndTime());
+    }
+  }
+
+  private CatalogProtos.DirectOutputCommitHistoryProto getDirectOutputCommitHistoryProto(int index) {
+    CatalogProtos.DirectOutputCommitHistoryProto.Builder builder = CatalogProtos.DirectOutputCommitHistoryProto
+      .newBuilder();
+    builder.setQueryId("query_" + index);
+    builder.setPath("hdfs://localhost:9010/table" + index);
+    builder.setStartTime(System.currentTimeMillis());
+    builder.setQueryState(TajoProtos.QueryState.QUERY_RUNNING.name());
+    return builder.build();
+  }
+
+  private CatalogProtos.UpdateDirectOutputCommitHistoryProto getUpdateDirectOutputCommitHistoryProto(int index) {
+    CatalogProtos.UpdateDirectOutputCommitHistoryProto.Builder builder = CatalogProtos
+      .UpdateDirectOutputCommitHistoryProto.newBuilder();
+    builder.setQueryId("query_" + index);
+    builder.setQueryState(TajoProtos.QueryState.QUERY_SUCCEEDED.name());
+    return builder.build();
   }
 }
