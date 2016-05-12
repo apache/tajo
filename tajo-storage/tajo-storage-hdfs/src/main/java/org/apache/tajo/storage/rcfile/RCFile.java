@@ -1160,7 +1160,7 @@ public class RCFile {
       super(conf, schema, meta, fragment);
       conf.setInt("io.file.buffer.size", 4096); //TODO remove
 
-      startOffset = this.fragment.getStartKey();
+      startOffset = this.fragment.getStartKey().getKey();
       endOffset = startOffset + this.fragment.getLength();
       start = 0;
     }

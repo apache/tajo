@@ -98,8 +98,8 @@ public class OrcRecordReader implements Closeable {
 
     long rows = 0;
     long skippedRows = 0;
-    long offset = fragment.getStartKey();
-    long maxOffset = fragment.getStartKey() + fragment.getLength();
+    long offset = fragment.getStartKey().getKey();
+    long maxOffset = fragment.getEndKey().getKey();
     for(StripeInformation stripe: stripes) {
       long stripeStart = stripe.getOffset();
       if (offset > stripeStart) {

@@ -26,6 +26,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.fragment.HBaseFragmentKey;
 import org.apache.tajo.storage.hbase.StorageFragmentProtos.HBaseFragmentProto;
 
 import java.net.URI;
@@ -38,9 +39,9 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
   @Expose
   private String hbaseTableName;
   @Expose
-  private byte[] startRow;
+  private HBaseFragmentKey startKey;
   @Expose
-  private byte[] stopRow;
+  private HBaseFragmentKey endKey;
   @Expose
   private String regionLocation;
   @Expose
@@ -53,8 +54,8 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     this.uri = uri;
     this.tableName = tableName;
     this.hbaseTableName = hbaseTableName;
-    this.startRow = startRow;
-    this.stopRow = stopRow;
+    this.startKey = new HBaseFragmentKey(startRow);
+    this.endKey = new HBaseFragmentKey(stopRow);
     this.regionLocation = regionLocation;
     this.last = false;
   }
@@ -70,8 +71,8 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     this.uri = URI.create(proto.getUri());
     this.tableName = proto.getTableName();
     this.hbaseTableName = proto.getHbaseTableName();
-    this.startRow = proto.getStartRow().toByteArray();
-    this.stopRow = proto.getStopRow().toByteArray();
+    this.startKey = new HBaseFragmentKey(proto.getStartRow().toByteArray());
+    this.endKey = new HBaseFragmentKey(proto.getStopRow().toByteArray());
     this.regionLocation = proto.getRegionLocation();
     this.length = proto.getLength();
     this.last = proto.getLast();
@@ -79,9 +80,10 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
 
   @Override
   public int compareTo(HBaseFragment t) {
-    return Bytes.compareTo(startRow, t.startRow);
+    return Bytes.compareTo(startKey.getKey(), t.startKey.getKey());
   }
 
+  @Override
   public URI getUri() {
     return uri;
   }
@@ -92,13 +94,8 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
   }
 
   @Override
-  public String getKey() {
-    return new String(startRow);
-  }
-
-  @Override
   public boolean isEmpty() {
-    return startRow == null || stopRow == null;
+    return startKey.isEmpty() || endKey.isEmpty();
   }
 
   @Override
@@ -120,8 +117,8 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     frag.uri = uri;
     frag.tableName = tableName;
     frag.hbaseTableName = hbaseTableName;
-    frag.startRow = startRow;
-    frag.stopRow = stopRow;
+    frag.startKey = new HBaseFragmentKey(startKey.getKey());
+    frag.endKey = new HBaseFragmentKey(endKey.getKey());
     frag.regionLocation = regionLocation;
     frag.last = last;
     frag.length = length;
@@ -133,8 +130,8 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     if (o instanceof HBaseFragment) {
       HBaseFragment t = (HBaseFragment) o;
       if (tableName.equals(t.tableName)
-          && Bytes.equals(startRow, t.startRow)
-          && Bytes.equals(stopRow, t.stopRow)) {
+          && Bytes.equals(startKey.getKey(), t.startKey.getKey())
+          && Bytes.equals(endKey.getKey(), t.endKey.getKey())) {
         return true;
       }
     }
@@ -143,7 +140,7 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(tableName, hbaseTableName, startRow, stopRow);
+    return Objects.hashCode(tableName, hbaseTableName, startKey, endKey);
   }
 
   @Override
@@ -151,8 +148,8 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     return
         "\"fragment\": {\"uri:\"" + uri.toString() +"\", \"tableName\": \""+ tableName +
             "\", hbaseTableName\": \"" + hbaseTableName + "\"" +
-            ", \"startRow\": \"" + new String(startRow) + "\"" +
-            ", \"stopRow\": \"" + new String(stopRow) + "\"" +
+            ", \"startRow\": \"" + new String(startKey.getKey()) + "\"" +
+            ", \"stopRow\": \"" + new String(endKey.getKey()) + "\"" +
             ", \"length\": \"" + length + "\"}" ;
   }
 
@@ -163,8 +160,8 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
         .setUri(uri.toString())
         .setTableName(tableName)
         .setHbaseTableName(hbaseTableName)
-        .setStartRow(ByteString.copyFrom(startRow))
-        .setStopRow(ByteString.copyFrom(stopRow))
+        .setStartRow(ByteString.copyFrom(startKey.getKey()))
+        .setStopRow(ByteString.copyFrom(endKey.getKey()))
         .setLast(last)
         .setLength(length)
         .setRegionLocation(regionLocation);
@@ -176,12 +173,14 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     return fragmentBuilder.build();
   }
 
-  public byte[] getStartRow() {
-    return startRow;
+  @Override
+  public HBaseFragmentKey getStartKey() {
+    return startKey;
   }
 
-  public byte[] getStopRow() {
-    return stopRow;
+  @Override
+  public HBaseFragmentKey getEndKey() {
+    return endKey;
   }
 
   public String getRegionLocation() {
@@ -205,10 +204,10 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
   }
 
   public void setStartRow(byte[] startRow) {
-    this.startRow = startRow;
+    this.startKey.setKey(startRow);
   }
 
   public void setStopRow(byte[] stopRow) {
-    this.stopRow = stopRow;
+    this.endKey.setKey(stopRow);
   }
 }
