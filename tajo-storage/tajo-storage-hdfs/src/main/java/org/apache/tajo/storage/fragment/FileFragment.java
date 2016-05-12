@@ -19,6 +19,8 @@
 package org.apache.tajo.storage.fragment;
 
 import com.google.common.base.Objects;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
@@ -26,15 +28,21 @@ import org.apache.tajo.storage.StorageFragmentProtos.FileFragmentProto;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class FileFragment extends Fragment<Long> implements Comparable<FileFragment> {
+public class FileFragment extends Fragment<Long> {
   private int[] diskIds;
+
+  public FileFragment(ByteString raw) throws InvalidProtocolBufferException {
+    FileFragmentProto.Builder builder = FileFragmentProto.newBuilder();
+    builder.mergeFrom(raw);
+    builder.build();
+    init(builder.build());
+  }
 
   public FileFragment(String tableName, Path uri, BlockLocation blockLocation)
       throws IOException {
@@ -54,6 +62,10 @@ public class FileFragment extends Fragment<Long> implements Comparable<FileFragm
   }
 
   public FileFragment(FileFragmentProto proto) {
+    init(proto);
+  }
+
+  private void init(FileFragmentProto proto) {
     int[] diskIds = new int[proto.getDiskIdsList().size()];
     int i = 0;
     for(Integer eachValue: proto.getDiskIdsList()) {
@@ -104,64 +116,12 @@ public class FileFragment extends Fragment<Long> implements Comparable<FileFragm
     this.diskIds = diskIds;
   }
 
-  @Override
-  public URI getUri() {
-    return uri;
-  }
-
-  @Override
-  public String getTableName() {
-    return this.tableName;
-  }
-
   public Path getPath() {
     return new Path(uri);
   }
 
   public void setPath(Path path) {
     this.uri = path.toUri();
-  }
-
-  @Override
-  public Long getStartKey() {
-    return this.startKey;
-  }
-
-  @Override
-  public Long getEndKey() {
-    return this.endKey;
-  }
-
-  @Override
-  public long getLength() {
-    return this.length;
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return this.length <= 0;
-  }
-  /**
-   * 
-   * The offset range of tablets <b>MUST NOT</b> be overlapped.
-   * 
-   * @param t
-   * @return If the table paths are not same, return -1.
-   */
-  @Override
-  public int compareTo(FileFragment t) {
-    if (getPath().equals(t.getPath())) {
-      long diff = this.getStartKey() - t.getStartKey();
-      if (diff < 0) {
-        return -1;
-      } else if (diff > 0) {
-        return 1;
-      } else {
-        return 0;
-      }
-    } else {
-      return -1;
-    }
   }
 
   @Override
@@ -201,7 +161,7 @@ public class FileFragment extends Fragment<Long> implements Comparable<FileFragm
     builder.setId(this.tableName);
     builder.setStartOffset(this.startKey);
     builder.setLength(this.length);
-    builder.setPath(this.uri.toString());
+    builder.setPath(getPath().toString());
     if(diskIds != null) {
       List<Integer> idList = new ArrayList<>();
       for(int eachId: diskIds) {

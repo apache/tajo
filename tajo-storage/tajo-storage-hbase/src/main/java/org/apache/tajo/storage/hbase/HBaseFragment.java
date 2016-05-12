@@ -20,17 +20,18 @@ package org.apache.tajo.storage.hbase;
 
 import com.google.common.base.Objects;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.hbase.HBaseFragment.HBaseFragmentKey;
 import org.apache.tajo.storage.hbase.StorageFragmentProtos.HBaseFragmentProto;
 
 import java.net.URI;
 
-public class HBaseFragment extends Fragment<byte[]> implements Comparable<HBaseFragment> {
+public class HBaseFragment extends Fragment<HBaseFragmentKey> {
   private String hbaseTableName;
-  private String regionLocation;
   private boolean last;
 
   public HBaseFragment(URI uri, String tableName, String hbaseTableName, byte[] startRow, byte[] stopRow,
@@ -38,25 +39,28 @@ public class HBaseFragment extends Fragment<byte[]> implements Comparable<HBaseF
     this.uri = uri;
     this.tableName = tableName;
     this.hbaseTableName = hbaseTableName;
-    this.startKey = startRow;
-    this.endKey = stopRow;
-    this.regionLocation = regionLocation;
+    this.startKey = new HBaseFragmentKey(startRow);
+    this.endKey = new HBaseFragmentKey(stopRow);
+    this.hostNames = new String[]{regionLocation};
     this.last = false;
   }
 
-  @Override
-  public int compareTo(HBaseFragment t) {
-    return Bytes.compareTo(startKey, t.startKey);
+  public HBaseFragment(ByteString raw) throws InvalidProtocolBufferException {
+    HBaseFragmentProto.Builder builder = HBaseFragmentProto.newBuilder();
+    builder.mergeFrom(raw);
+    builder.build();
+    init(builder.build());
   }
 
-  @Override
-  public URI getUri() {
-    return uri;
-  }
-
-  @Override
-  public String getTableName() {
-    return tableName;
+  private void init(HBaseFragmentProto proto) {
+    this.uri = URI.create(proto.getUri());
+    this.tableName = proto.getTableName();
+    this.hbaseTableName = proto.getHbaseTableName();
+    this.startKey = new HBaseFragmentKey(proto.getStartRow().toByteArray());
+    this.endKey = new HBaseFragmentKey(proto.getStopRow().toByteArray());
+    this.hostNames = new String[]{proto.getRegionLocation()};
+    this.length = proto.getLength();
+    this.last = proto.getLast();
   }
 
   @Override
@@ -64,24 +68,13 @@ public class HBaseFragment extends Fragment<byte[]> implements Comparable<HBaseF
     return startKey == null || endKey == null;
   }
 
-  @Override
-  public long getLength() {
-    return length;
-  }
-
   public void setLength(long length) {
     this.length = length;
-  }
-
-  @Override
-  public String[] getHostNames() {
-    return new String[] {regionLocation};
   }
 
   public Object clone() throws CloneNotSupportedException {
     HBaseFragment frag = (HBaseFragment) super.clone();
     frag.hbaseTableName = hbaseTableName;
-    frag.regionLocation = regionLocation;
     frag.last = last;
     return frag;
   }
@@ -91,8 +84,8 @@ public class HBaseFragment extends Fragment<byte[]> implements Comparable<HBaseF
     if (o instanceof HBaseFragment) {
       HBaseFragment t = (HBaseFragment) o;
       if (tableName.equals(t.tableName)
-          && Bytes.equals(startKey, t.startKey)
-          && Bytes.equals(endKey, t.endKey)) {
+          && startKey.equals(t.startKey)
+          && endKey.equals(t.endKey)) {
         return true;
       }
     }
@@ -109,8 +102,8 @@ public class HBaseFragment extends Fragment<byte[]> implements Comparable<HBaseF
     return
         "\"fragment\": {\"uri:\"" + uri.toString() +"\", \"tableName\": \""+ tableName +
             "\", hbaseTableName\": \"" + hbaseTableName + "\"" +
-            ", \"startRow\": \"" + new String(startKey) + "\"" +
-            ", \"stopRow\": \"" + new String(endKey) + "\"" +
+            ", \"startRow\": \"" + new String(startKey.key) + "\"" +
+            ", \"stopRow\": \"" + new String(endKey.key) + "\"" +
             ", \"length\": \"" + length + "\"}" ;
   }
 
@@ -121,31 +114,17 @@ public class HBaseFragment extends Fragment<byte[]> implements Comparable<HBaseF
         .setUri(uri.toString())
         .setTableName(tableName)
         .setHbaseTableName(hbaseTableName)
-        .setStartRow(ByteString.copyFrom(startKey))
-        .setStopRow(ByteString.copyFrom(endKey))
+        .setStartRow(ByteString.copyFrom(startKey.key))
+        .setStopRow(ByteString.copyFrom(endKey.key))
         .setLast(last)
         .setLength(length)
-        .setRegionLocation(regionLocation);
+        .setRegionLocation(hostNames[0]);
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     fragmentBuilder.setDataFormat(BuiltinStorages.HBASE);
     return fragmentBuilder.build();
-  }
-
-  @Override
-  public byte[] getStartKey() {
-    return startKey;
-  }
-
-  @Override
-  public byte[] getEndKey() {
-    return endKey;
-  }
-
-  public String getRegionLocation() {
-    return regionLocation;
   }
 
   public boolean isLast() {
@@ -165,10 +144,42 @@ public class HBaseFragment extends Fragment<byte[]> implements Comparable<HBaseF
   }
 
   public void setStartRow(byte[] startRow) {
-    this.startKey = startRow;
+    this.startKey = new HBaseFragmentKey(startRow);
   }
 
   public void setStopRow(byte[] stopRow) {
-    this.endKey = stopRow;
+    this.endKey = new HBaseFragmentKey(stopRow);
+  }
+
+  public static class HBaseFragmentKey implements Comparable<HBaseFragmentKey> {
+    byte[] key;
+
+    public HBaseFragmentKey(byte[] key) {
+      this.key = key;
+    }
+
+    @Override
+    public int hashCode() {
+      return Bytes.hashCode(key);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (o instanceof HBaseFragmentKey) {
+        HBaseFragmentKey other = (HBaseFragmentKey) o;
+        return Bytes.equals(key, other.key);
+      }
+      return false;
+    }
+
+    @Override
+    public int compareTo(HBaseFragmentKey o) {
+      return Bytes.compareTo(key, o.key);
+    }
+
+    @Override
+    public String toString() {
+      return new String(key);
+    }
   }
 }

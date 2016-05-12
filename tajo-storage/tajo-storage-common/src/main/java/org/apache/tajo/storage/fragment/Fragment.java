@@ -24,7 +24,8 @@ import java.net.URI;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public abstract class Fragment<T> implements ProtoObject<FragmentProto>, Cloneable {
+public abstract class Fragment<T extends Comparable>
+    implements Comparable<Fragment<T>>, ProtoObject<FragmentProto>, Cloneable {
 
   protected URI uri;
   protected String tableName;
@@ -113,6 +114,27 @@ public abstract class Fragment<T> implements ProtoObject<FragmentProto>, Cloneab
    */
   public boolean isEmpty() {
     return length == 0;
+  }
+
+  /**
+   *
+   * The offset range of tablets <b>MUST NOT</b> be overlapped.
+   *
+   * @param t
+   * @return If the table paths are not same, return -1.
+   */
+  @Override
+  public int compareTo(Fragment<T> t) {
+    if (uri.equals(t.uri)) {
+      if (startKey != null && t.startKey != null) {
+        long diff = startKey.compareTo(t.startKey);
+        return diff == 0 ? 0 : diff < 0 ? -1 : 1;
+      } else {
+        return -1;
+      }
+    } else {
+      return -1;
+    }
   }
 
   @Override

@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.jdbc;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -26,7 +28,14 @@ import org.apache.tajo.storage.jdbc.JdbcFragmentProtos.JdbcFragmentProto;
 import java.net.URI;
 import java.util.Arrays;
 
-public class JdbcFragment extends Fragment<Long> implements Comparable<JdbcFragment> {
+public class JdbcFragment extends Fragment<Long> {
+
+  public JdbcFragment(ByteString raw) throws InvalidProtocolBufferException {
+    JdbcFragmentProto.Builder builder = JdbcFragmentProto.newBuilder();
+    builder.mergeFrom(raw);
+    builder.build();
+    init(builder.build());
+  }
 
   public JdbcFragment(String inputSourceId, URI uri) {
     this.tableName = inputSourceId;
@@ -34,23 +43,14 @@ public class JdbcFragment extends Fragment<Long> implements Comparable<JdbcFragm
     this.hostNames = extractHosts(uri);
   }
 
+  private void init(JdbcFragmentProto proto) {
+    this.uri = URI.create(proto.getUri());
+    this.tableName = proto.getInputSourceId();
+    this.hostNames = proto.getHostsList().toArray(new String [proto.getHostsCount()]);
+  }
+
   private String [] extractHosts(URI uri) {
     return new String[] {ConnectionInfo.fromURI(uri).host};
-  }
-
-  @Override
-  public String getTableName() {
-    return tableName;
-  }
-
-  @Override
-  public URI getUri() {
-    return uri;
-  }
-
-  @Override
-  public String[] getHostNames() {
-    return hostNames;
   }
 
   @Override
@@ -77,20 +77,5 @@ public class JdbcFragment extends Fragment<Long> implements Comparable<JdbcFragm
   @Override
   public long getLength() {
     return TajoConstants.UNKNOWN_LENGTH;
-  }
-
-  @Override
-  public Long getStartKey() {
-    return null;
-  }
-
-  @Override
-  public Long getEndKey() {
-    return null;
-  }
-
-  @Override
-  public int compareTo(JdbcFragment o) {
-    return this.uri.compareTo(o.uri);
   }
 }
