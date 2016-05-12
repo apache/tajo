@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
+import com.google.common.base.Preconditions;
 import io.netty.buffer.Unpooled;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.*;
@@ -32,6 +33,7 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
@@ -61,6 +63,7 @@ import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +100,14 @@ public class ExprTestBase {
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.loadBuiltinFunctions();
     List<FunctionDesc> list = new ArrayList<>(map.values());
-    list.addAll(FunctionLoader.loadUserDefinedFunctions(conf));
+    list.addAll(FunctionLoader.loadUserDefinedFunctions(conf).orElse(new ArrayList<>()));
+
+    // load Hive UDFs
+    URL hiveUDFURL = ClassLoader.getSystemResource("hiveudf");
+    Preconditions.checkNotNull(hiveUDFURL, "hive udf directory is absent.");
+    conf.set(TajoConf.ConfVars.HIVE_UDF_DIR.varname, hiveUDFURL.toString().substring("file:".length()));
+    list.addAll(HiveFunctionLoader.loadHiveUDFs(conf).orElse(new ArrayList<>()));
+
     for (FunctionDesc funcDesc : list) {
       cat.createFunction(funcDesc);
     }
@@ -116,6 +126,10 @@ public class ExprTestBase {
 
   public TajoConf getConf() {
     return new TajoConf(conf);
+  }
+
+  protected TajoTestingCluster getCluster() {
+    return cluster;
   }
 
   /**

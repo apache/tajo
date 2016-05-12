@@ -46,9 +46,9 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   public FunctionDesc() {
   }
 
-  public FunctionDesc(String signature, Class<? extends Function> clazz,
+  public FunctionDesc(String funcName, Class<? extends Function> clazz,
       FunctionType funcType, DataType retType, @NotNull DataType [] params) {
-    this.signature = new FunctionSignature(funcType, signature.toLowerCase(), retType, params);
+    this.signature = new FunctionSignature(funcType, funcName.toLowerCase(), retType, params);
     this.invocation = new FunctionInvocation();
     this.invocation.setLegacy(new ClassBaseInvocationDesc<>(clazz));
     this.supplement = new FunctionSupplement();
@@ -116,6 +116,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     return signature.getReturnType();
   }
 
+  public boolean isDeterministic() {
+    return signature.isDeterministic();
+  }
+
   ////////////////////////////////////////
   // Invocation
   ////////////////////////////////////////
@@ -161,7 +165,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   public int hashCodeWithoutType() {
     return signature.hashCodeWithoutType();
   }
-  
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof FunctionDesc) {
@@ -174,7 +178,8 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
 
   public boolean equalsSignature(Object obj) {
     if (obj instanceof FunctionDesc) {
-      return this.getSignature().equalsWithoutType(((FunctionDesc) obj).getSignature());
+      FunctionSignature targetSig = ((FunctionDesc)obj).getSignature();
+      return this.getSignature().equalsWithoutType(targetSig);
     }
     return false;
   }

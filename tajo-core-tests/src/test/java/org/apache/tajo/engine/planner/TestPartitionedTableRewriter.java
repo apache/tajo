@@ -20,41 +20,62 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.partition.PartitionPruningHandle;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.KeyValueSet;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
+import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
 
-public class TestPartitionedTableRewriter extends QueryTestCaseBase {
-  
+public class TestPartitionedTableRewriter  {
+  private TajoConf conf;
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestPartitionedTableRewriter";
+  private TajoTestingCluster util;
+  private CatalogService catalog;
+  private SQLAnalyzer analyzer;
+  private LogicalPlanner planner;
+  private Path testDir;
+  private FileSystem fs;
+
   final static String PARTITION_TABLE_NAME = "tb_partition";
   final static String MULTIPLE_PARTITION_TABLE_NAME = "tb_multiple_partition";
   final static String ARBITRARY_PARTITION_TABLE_NAME = "tb_arbitrary_partition";
   final static private String[] ARBITRARY_PATH = new String[3];
 
-  @BeforeClass
-  public static void setUp() throws Exception {
-    FileSystem fs = FileSystem.get(conf);
-    Path rootDir = TajoConf.getWarehouseDir(testingCluster.getConfiguration());
+  @Before
+  public void setUp() throws Exception {
+    util = new TajoTestingCluster();
+    util.initTestDir();
+    util.startCatalogCluster();
+    catalog = util.getCatalogService();
+    testDir = CommonTestingUtil.getTestDir(TEST_PATH);
+    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
+    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
+    conf = util.getConfiguration();
+    fs = FileSystem.get(conf);
 
     Schema schema = SchemaBuilder.builder()
       .add("n_nationkey", TajoDataTypes.Type.INT8)
@@ -62,29 +83,34 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
       .add("n_regionkey", TajoDataTypes.Type.INT8)
       .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT", new KeyValueSet());
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
 
-    createExternalTableIncludedOnePartitionKeyColumn(fs, rootDir, schema, meta);
-    createExternalTableIncludedMultiplePartitionKeyColumns(fs, rootDir, schema, meta);
-    createExternalTableIncludeArbitraryDirectories(fs, rootDir, schema, meta);
+    createTableWithOnePartitionKeyColumn(fs, schema, meta);
+    createlTableWithMultiplePartitionKeyColumns(fs, schema, meta);
+    createTableIncludeArbitraryDirectories(fs, schema, meta);
+
+    analyzer = new SQLAnalyzer();
+    planner = new LogicalPlanner(catalog, TablespaceManager.getInstance());
   }
 
-  private static void createExternalTableIncludedOnePartitionKeyColumn(FileSystem fs, Path rootDir, Schema schema,
+  private void createTableWithOnePartitionKeyColumn(FileSystem fs, Schema schema,
                                                                        TableMeta meta) throws Exception {
     Schema partSchema = SchemaBuilder.builder()
       .add("key", TajoDataTypes.Type.TEXT)
       .build();
 
     PartitionMethodDesc partitionMethodDesc =
-      new PartitionMethodDesc("TestPartitionedTableRewriter", PARTITION_TABLE_NAME,
-        PartitionType.COLUMN, "key", partSchema);
+      new PartitionMethodDesc(DEFAULT_DATABASE_NAME, PARTITION_TABLE_NAME,
+        CatalogProtos.PartitionType.COLUMN, "key", partSchema);
 
-    Path tablePath = new Path(rootDir, PARTITION_TABLE_NAME);
+    Path tablePath = new Path(testDir, PARTITION_TABLE_NAME);
     fs.mkdirs(tablePath);
 
-    client.createExternalTable(PARTITION_TABLE_NAME, schema, tablePath.toUri(), meta, partitionMethodDesc);
+    TableDesc desc = CatalogUtil.newTableDesc(DEFAULT_DATABASE_NAME + "." + PARTITION_TABLE_NAME, schema, meta,
+      tablePath, partitionMethodDesc);
+    catalog.createTable(desc);
 
-    TableDesc tableDesc = client.getTableDesc(PARTITION_TABLE_NAME);
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME + "." + PARTITION_TABLE_NAME);
     assertNotNull(tableDesc);
 
     Path path = new Path(tableDesc.getUri().toString() + "/key=part123");
@@ -100,7 +126,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
   }
 
-  private static void createExternalTableIncludedMultiplePartitionKeyColumns(FileSystem fs, Path rootDir,
+  private void createlTableWithMultiplePartitionKeyColumns(FileSystem fs,
     Schema schema, TableMeta meta) throws Exception {
     Schema partSchema = SchemaBuilder.builder()
       .add("key1", TajoDataTypes.Type.TEXT)
@@ -109,15 +135,17 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
       .build();
 
     PartitionMethodDesc partitionMethodDesc =
-      new PartitionMethodDesc("TestPartitionedTableRewriter", MULTIPLE_PARTITION_TABLE_NAME,
-        PartitionType.COLUMN, "key1,key2,key3", partSchema);
+      new PartitionMethodDesc("default", MULTIPLE_PARTITION_TABLE_NAME,
+        CatalogProtos.PartitionType.COLUMN, "key1,key2,key3", partSchema);
 
-    Path tablePath = new Path(rootDir, MULTIPLE_PARTITION_TABLE_NAME);
+    Path tablePath = new Path(testDir, MULTIPLE_PARTITION_TABLE_NAME);
     fs.mkdirs(tablePath);
 
-    client.createExternalTable(MULTIPLE_PARTITION_TABLE_NAME, schema, tablePath.toUri(), meta, partitionMethodDesc);
+    TableDesc desc = CatalogUtil.newTableDesc(DEFAULT_DATABASE_NAME + "." + MULTIPLE_PARTITION_TABLE_NAME, schema,
+      meta, tablePath, partitionMethodDesc);
+    catalog.createTable(desc);
 
-    TableDesc tableDesc = client.getTableDesc(MULTIPLE_PARTITION_TABLE_NAME);
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME + "." + MULTIPLE_PARTITION_TABLE_NAME);
     assertNotNull(tableDesc);
 
     Path path = new Path(tableDesc.getUri().toString() + "/key1=part123");
@@ -141,9 +169,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
   }
 
-
-  private static void createExternalTableIncludeArbitraryDirectories(FileSystem fs, Path rootDir,
-                                                                             Schema schema, TableMeta meta) throws Exception {
+  private void createTableIncludeArbitraryDirectories(FileSystem fs,
+                                                              Schema schema, TableMeta meta) throws Exception {
     Schema partSchema = SchemaBuilder.builder()
       .add("year", TajoDataTypes.Type.TEXT)
       .add("month", TajoDataTypes.Type.TEXT)
@@ -151,15 +178,17 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
       .build();
 
     PartitionMethodDesc partitionMethodDesc =
-      new PartitionMethodDesc("TestPartitionedTableRewriter", ARBITRARY_PARTITION_TABLE_NAME,
+      new PartitionMethodDesc(DEFAULT_DATABASE_NAME, ARBITRARY_PARTITION_TABLE_NAME,
         PartitionType.COLUMN, "year,month,day", partSchema);
 
-    Path tablePath = new Path(rootDir, ARBITRARY_PARTITION_TABLE_NAME);
+    Path tablePath = new Path(testDir, ARBITRARY_PARTITION_TABLE_NAME);
     fs.mkdirs(tablePath);
 
-    client.createExternalTable(ARBITRARY_PARTITION_TABLE_NAME, schema, tablePath.toUri(), meta, partitionMethodDesc);
+    TableDesc desc = CatalogUtil.newTableDesc(DEFAULT_DATABASE_NAME + "." + ARBITRARY_PARTITION_TABLE_NAME, schema,
+      meta, tablePath, partitionMethodDesc);
+    catalog.createTable(desc);
 
-    TableDesc tableDesc = client.getTableDesc(ARBITRARY_PARTITION_TABLE_NAME);
+    TableDesc tableDesc = catalog.getTableDesc(DEFAULT_DATABASE_NAME + "." + PARTITION_TABLE_NAME);
     assertNotNull(tableDesc);
 
     Path path = new Path(tableDesc.getUri().toString() + "/2016");
@@ -170,8 +199,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     fs.mkdirs(path);
     FileUtil.writeTextToFile("1|ARGENTINA|1", new Path(path, "data"));
 
-    client.executeQuery("ALTER TABLE " + ARBITRARY_PARTITION_TABLE_NAME
-      + " ADD PARTITION (year='2016', month = '3', day ='1') LOCATION '" + path + "'");
+    catalog.alterTable(getAlterTableDesc("year=2016/month=3/day=1", path));
 
     ARBITRARY_PATH[0] = path.toString();
 
@@ -179,8 +207,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     fs.mkdirs(path);
     FileUtil.writeTextToFile("2|BRAZIL|1", new Path(path, "data"));
 
-    client.executeQuery("ALTER TABLE " + ARBITRARY_PARTITION_TABLE_NAME
-      + " ADD PARTITION (year='2016', month = '3', day ='2') LOCATION '" + path + "'");
+    catalog.alterTable(getAlterTableDesc("year=2016/month=3/day=2", path));
 
     ARBITRARY_PATH[1] = path.toString();
 
@@ -192,26 +219,65 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     fs.mkdirs(path);
     FileUtil.writeTextToFile("3|CANADA|1", new Path(path, "data"));
 
-    client.executeQuery("ALTER TABLE " + ARBITRARY_PARTITION_TABLE_NAME
-      + " ADD PARTITION (year='2015', month = '3', day ='1') LOCATION '" + path + "'");
+    catalog.alterTable(getAlterTableDesc("year=2015/month=3/day=1", path));
 
     ARBITRARY_PATH[2] = path.toString();
 
-    List<PartitionDescProto> partitions = catalog.getPartitionsOfTable("default", ARBITRARY_PARTITION_TABLE_NAME);
+    List<PartitionDescProto> partitions = catalog.getPartitionsOfTable(DEFAULT_DATABASE_NAME,
+      ARBITRARY_PARTITION_TABLE_NAME);
     assertEquals(3L, partitions.size());
-
   }
 
-  @AfterClass
-  public static void tearDown() throws Exception {
-    client.executeQuery("DROP TABLE IF EXISTS " + PARTITION_TABLE_NAME + " PURGE;");
-    client.executeQuery("DROP TABLE IF EXISTS " + MULTIPLE_PARTITION_TABLE_NAME + " PURGE;");
+  private AlterTableDesc getAlterTableDesc(String partitionName, Path path) throws IOException {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(DEFAULT_DATABASE_NAME + "." + ARBITRARY_PARTITION_TABLE_NAME);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    String[] partitionNames = partitionName.split("/");
+
+    List<CatalogProtos.PartitionKeyProto> partitionKeyList = new ArrayList<>();
+    for (String partition : partitionNames) {
+      String[] splits = partition.split("=");
+      String columnName = "", partitionValue = "";
+      if (splits.length == 2) {
+        columnName = splits[0];
+        partitionValue = splits[1];
+      } else if (splits.length == 1) {
+        if (partition.charAt(0) == '=') {
+          partitionValue = splits[0];
+        } else {
+          columnName = "";
+        }
+      }
+
+      CatalogProtos.PartitionKeyProto.Builder builder = CatalogProtos.PartitionKeyProto.newBuilder();
+      builder.setColumnName(columnName);
+      builder.setPartitionValue(partitionValue);
+      partitionKeyList.add(builder.build());
+    }
+
+    partitionDesc.setPartitionKeys(partitionKeyList);
+    partitionDesc.setPath(path.toString());
+    partitionDesc.setNumBytes(fs.getFileStatus(path).getLen());
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    return alterTableDesc;
+  }
+
+
+  @After
+  public void tearDown() throws Exception {
+    util.shutdownCatalogCluster();
   }
 
   @Test
   public void testFilterIncludePartitionKeyColumn() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + PARTITION_TABLE_NAME + " WHERE key = 'part456' ORDER BY key");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    Expr expr = analyzer.parse("SELECT * FROM " + PARTITION_TABLE_NAME + " WHERE key = 'part456' ORDER BY key");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -241,7 +307,6 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals(1, filteredPaths.length);
     assertEquals("key=part456", filteredPaths[0].getName());
 
-
     String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(1, partitionKeys.length);
     assertEquals("key=part456", partitionKeys[0]);
@@ -251,8 +316,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
   public void testWithoutAnyFilters() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + PARTITION_TABLE_NAME + " ORDER BY key");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    Expr expr = analyzer.parse("SELECT * FROM " + PARTITION_TABLE_NAME + " ORDER BY key");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -290,8 +355,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
   public void testFilterIncludeNonExistingPartitionValue() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + PARTITION_TABLE_NAME + " WHERE key = 'part123456789'");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    Expr expr = analyzer.parse("SELECT * FROM " + PARTITION_TABLE_NAME + " WHERE key = 'part123456789'");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -322,9 +387,8 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
   public void testFilterIncludeNonPartitionKeyColumn() throws Exception {
-    String sql = "SELECT * FROM " + PARTITION_TABLE_NAME + " WHERE n_nationkey = 1";
-    Expr expr = sqlParser.parse(sql);
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    Expr expr = analyzer.parse("SELECT * FROM " + PARTITION_TABLE_NAME + " WHERE n_nationkey = 1");
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -364,9 +428,9 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
   public void testFilterIncludeEveryPartitionKeyColumn() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + MULTIPLE_PARTITION_TABLE_NAME
+    Expr expr = analyzer.parse("SELECT * FROM " + MULTIPLE_PARTITION_TABLE_NAME
       + " WHERE key1 = 'part789' and key2 = 'supp789' and key3=3");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -404,9 +468,9 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
   public void testFilterIncludeSomeOfPartitionKeyColumns() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + MULTIPLE_PARTITION_TABLE_NAME
+    Expr expr = analyzer.parse("SELECT * FROM " + MULTIPLE_PARTITION_TABLE_NAME
       + " WHERE key1 = 'part123' and key2 = 'supp123' order by n_nationkey");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -453,9 +517,9 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
 
   @Test
   public void testFilterIncludeNonPartitionKeyColumns() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + MULTIPLE_PARTITION_TABLE_NAME
+    Expr expr = analyzer.parse("SELECT * FROM " + MULTIPLE_PARTITION_TABLE_NAME
       + " WHERE key1 = 'part123' and n_nationkey >= 2 order by n_nationkey");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -501,67 +565,10 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testPartitionPruningWitCTAS() throws Exception {
-    String tableName = "testPartitionPruningUsingDirectories".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName("\"" + getCurrentDatabase() + "\"", tableName);
-
-    executeString(
-      "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
-        + " as select l_orderkey, l_partkey, l_quantity from default.lineitem");
-
-    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    assertNotNull(tableDesc);
-
-    // With a filter which checks a partition key column
-    Expr expr = sqlParser.parse("SELECT * FROM " + canonicalTableName + " WHERE key <= 40.0 ORDER BY key");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
-    LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
-    LogicalNode plan = newPlan.getRootBlock().getRoot();
-
-    assertEquals(NodeType.ROOT, plan.getType());
-    LogicalRootNode root = (LogicalRootNode) plan;
-
-    ProjectionNode projNode = root.getChild();
-
-    assertEquals(NodeType.SORT, projNode.getChild().getType());
-    SortNode sortNode = projNode.getChild();
-
-    assertEquals(NodeType.SELECTION, sortNode.getChild().getType());
-    SelectionNode selNode = sortNode.getChild();
-    assertTrue(selNode.hasQual());
-
-    assertEquals(NodeType.SCAN, selNode.getChild().getType());
-    ScanNode scanNode = selNode.getChild();
-    scanNode.setQual(selNode.getQual());
-
-    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
-    rewriter.setCatalog(catalog);
-
-    PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
-    assertNotNull(partitionPruningHandle);
-
-    Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
-    assertEquals(3, filteredPaths.length);
-    assertEquals("key=17.0", filteredPaths[0].getName());
-    assertEquals("key=36.0", filteredPaths[1].getName());
-    assertEquals("key=38.0", filteredPaths[2].getName());
-
-    String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
-    assertEquals(3, partitionKeys.length);
-    assertEquals("key=17.0", partitionKeys[0]);
-    assertEquals("key=36.0", partitionKeys[1]);
-    assertEquals("key=38.0", partitionKeys[2]);
-
-    assertEquals(12L, partitionPruningHandle.getTotalVolume());
-
-    executeString("DROP TABLE " + canonicalTableName + " PURGE").close();
-  }
-
-  @Test
   public void testFilterWithArbitraryDirectories1() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + ARBITRARY_PARTITION_TABLE_NAME
+    Expr expr = analyzer.parse("SELECT * FROM " + ARBITRARY_PARTITION_TABLE_NAME
       + " WHERE year = '2016' ORDER BY year, month, day");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -597,14 +604,14 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals("year=2016/month=3/day=1", partitionKeys[0]);
     assertEquals("year=2016/month=3/day=2", partitionKeys[1]);
 
-    assertEquals(23L, partitionPruningHandle.getTotalVolume());
+    assertEquals(272L, partitionPruningHandle.getTotalVolume());
   }
 
   @Test
   public void testFilterWithArbitraryDirectories2() throws Exception {
-    Expr expr = sqlParser.parse("SELECT * FROM " + ARBITRARY_PARTITION_TABLE_NAME
+    Expr expr = analyzer.parse("SELECT * FROM " + ARBITRARY_PARTITION_TABLE_NAME
       + " WHERE year = '2016' and month = '3' and day = '2' ");
-    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(testingCluster.getConfiguration());
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     LogicalNode plan = newPlan.getRootBlock().getRoot();
 
@@ -635,8 +642,7 @@ public class TestPartitionedTableRewriter extends QueryTestCaseBase {
     assertEquals(1, partitionKeys.length);
     assertEquals("year=2016/month=3/day=2", partitionKeys[0]);
 
-    assertEquals(10L, partitionPruningHandle.getTotalVolume());
+    assertEquals(136L, partitionPruningHandle.getTotalVolume());
   }
-
 
 }
