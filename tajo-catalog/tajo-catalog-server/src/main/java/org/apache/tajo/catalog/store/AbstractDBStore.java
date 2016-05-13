@@ -2063,8 +2063,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     ensurePartitionTable(tableName, tableId);
 
     String sql = "SELECT PATH, PARTITION_NAME, " + COL_PARTITIONS_PK + ", " + COL_PARTITION_BYTES
-            + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  "
-            + " ORDER BY PATH ";
+            + " FROM " + TB_PARTTIONS +" WHERE " + COL_TABLES_PK + " = ?  ";
 
     if (LOG.isDebugEnabled()) {
       LOG.debug(sql);
