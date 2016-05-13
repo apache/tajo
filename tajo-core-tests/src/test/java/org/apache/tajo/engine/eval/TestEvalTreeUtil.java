@@ -44,6 +44,7 @@ import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -106,7 +107,7 @@ public class TestEvalTreeUtil {
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     TableDesc desc = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(desc);
 

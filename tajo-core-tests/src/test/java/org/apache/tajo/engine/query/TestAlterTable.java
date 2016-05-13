@@ -22,11 +22,11 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +35,6 @@ import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -93,7 +92,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableAddPartition() throws Exception {
     executeDDL("create_partitioned_table.sql", null);
 
-    String tableName = CatalogUtil.buildFQName("TestAlterTable", "partitioned_table");
+    String tableName = IdentifierUtil.buildFQName("TestAlterTable", "partitioned_table");
     assertTrue(catalog.existsTable(tableName));
 
     TableDesc retrieved = catalog.getTableDesc(tableName);
@@ -137,7 +136,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     executeDDL("create_partitioned_table2.sql", null);
 
     String simpleTableName = "partitioned_table2";
-    String tableName = CatalogUtil.buildFQName(getCurrentDatabase(), simpleTableName);
+    String tableName = IdentifierUtil.buildFQName(getCurrentDatabase(), simpleTableName);
     assertTrue(catalog.existsTable(tableName));
 
     TableDesc tableDesc = catalog.getTableDesc(tableName);
@@ -222,7 +221,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testRepairPartitionWithDatabaseNameIncludeTableName() throws Exception {
     String databaseName = "test_repair_partition";
     String tableName = "part";
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
 
     executeString("create database " + databaseName).close();
     executeString("create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
@@ -270,7 +269,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public void testRepairPartitionWithAbnormalDirectories()  throws Exception {
     String databaseName = getCurrentDatabase().toLowerCase();
     String tableName = "testRepairPartitionWithAbnormalDirectories".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
 
     executeString("create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key float8) "
       + " as select l_orderkey, l_partkey, l_quantity from default.lineitem").close();
@@ -327,7 +326,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public void testRepairPartitionWithDatePartitionColumn()  throws Exception {
     String databaseName = getCurrentDatabase().toLowerCase();
     String tableName = "testRepairPartitionWithDatePartitionColumn".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
 
     executeString(
       "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key date) "
@@ -374,7 +373,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public void testRepairPartitionWithTimestampPartitionColumn()  throws Exception {
     String databaseName = getCurrentDatabase().toLowerCase();
     String tableName = "testRepairPartitionWithTimestampPartitionColumn".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
 
     executeString(
       "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key timestamp) "
@@ -421,7 +420,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public void testRepairPartitionWithTimesPartitionColumn()  throws Exception {
     String databaseName = getCurrentDatabase().toLowerCase();
     String tableName = "testRepairPartitionWithTimesPartitionColumn".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
 
     executeString(
       "create table " + canonicalTableName + "(col1 int4, col2 int4) partition by column(key time) "
@@ -474,7 +473,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public void testRepairPartitionWithMutiplePartitionColumn()  throws Exception {
     String databaseName = getCurrentDatabase().toLowerCase();
     String tableName = "testRepairPartitionWithMutiplePartitionColumn".toLowerCase();
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
 
     executeString("create table " + canonicalTableName + " (col4 text) "
       + " partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
@@ -535,7 +534,7 @@ public class TestAlterTable extends QueryTestCaseBase {
 
   private void dropPartitions(String databaseName, String tableName, List<Column> colums)
     throws Exception {
-    String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+    String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
     List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitionsOfTable(databaseName, tableName);
 
     StringBuilder sb = new StringBuilder();

@@ -60,14 +60,14 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   public DataType visitUnaryOperator(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, UnaryOperator expr)
       throws TajoException {
     stack.push(expr);
-    DataType dataType = null;
+    DataType dataType;
     switch (expr.getType()) {
     case IsNullPredicate:
     case ExistsPredicate:
       dataType = BOOL_TYPE;
       break;
     case Cast:
-      dataType = LogicalPlanner.convertDataType(((CastExpr)expr).getTarget()).getDataType();
+      dataType = convert(LogicalPlanner.convertDataType(((CastExpr)expr).getTarget())).getDataType();
       break;
     default:
       dataType = visit(ctx, stack, expr.getChild());
@@ -83,7 +83,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     DataType lhsType = visit(ctx, stack, expr.getLeft());
     DataType rhsType = visit(ctx, stack, expr.getRight());
     stack.pop();
-    return convert(computeBinaryType(expr.getType(), convert(lhsType), convert(rhsType)));
+    return convert(computeBinaryType(expr.getType(), convert(lhsType), convert(rhsType))).getDataType();
   }
 
   public Type computeBinaryType(OpType type, Type lhsDataType, Type rhsDataType) throws TajoException {
@@ -278,7 +278,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   @Override
   public DataType visitDataType(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DataTypeExpr expr)
       throws TajoException {
-    return LogicalPlanner.convertDataType(expr).getDataType();
+    return convert(LogicalPlanner.convertDataType(expr)).getDataType();
   }
 
   @Override

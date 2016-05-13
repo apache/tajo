@@ -45,6 +45,7 @@ import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
@@ -151,7 +152,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     PartitionPruningHandle partitionPruningHandle = null;
     FileSystem fs = tablePath.getFileSystem(conf);
-    String [] splits = CatalogUtil.splitFQTableName(tableName);
+    String [] splits = IdentifierUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
 
     try {
@@ -222,7 +223,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
    * @return
    * @throws IOException
    */
-  private PartitionPruningHandle getPartitionPruningHandleByFileSystem(Schema partitionColumns, 
+  private PartitionPruningHandle getPartitionPruningHandleByFileSystem(Schema partitionColumns,
     EvalNode [] conjunctiveForms, FileSystem fs, Path tablePath) throws IOException{
     Path [] filteredPaths = null;
     PathFilter [] filters;
@@ -597,5 +598,4 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
       return null;
     }
   }
-
 }

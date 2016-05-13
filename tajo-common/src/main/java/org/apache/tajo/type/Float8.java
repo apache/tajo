@@ -18,11 +18,10 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
+import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
 
 public class Float8 extends Type {
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.FLOAT8;
+  public Float8() {
+    super(FLOAT8);
   }
 }

@@ -39,6 +39,6 @@ public class InvalidValueForCastException extends TajoException {
   }
 
   public InvalidValueForCastException(Type src, Type target) {
-    super(Errors.ResultCode.INVALID_VALUE_FOR_CAST, src.baseType().name(), target.baseType().name());
+    super(Errors.ResultCode.INVALID_VALUE_FOR_CAST, src.kind().name(), target.kind().name());
   }
 }

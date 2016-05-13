@@ -19,54 +19,61 @@
 package org.apache.tajo.type;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.schema.Field;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
-public class Struct extends Type {
-  private final ImmutableList<Type> memberTypes;
+import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 
-  public Struct(Collection<Type> memberTypes) {
-    this.memberTypes = ImmutableList.copyOf(memberTypes);
+/**
+ * Represents Record type
+ */
+public class Record extends Type implements Iterable<Field> {
+  private final ImmutableList<Field> fields;
+
+  public Record(Collection<Field> fields) {
+    super(RECORD);
+    this.fields = ImmutableList.copyOf(fields);
   }
 
   public int size() {
-    return memberTypes.size();
+    return fields.size();
   }
 
-  public Type memberType(int idx) {
-    return memberTypes.get(idx);
+  public Field field(int idx) {
+    return fields.get(idx);
   }
 
-  public List<Type> memberTypes() {
-    return this.memberTypes;
-  }
-
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.RECORD;
+  public List<Field> fields() {
+    return this.fields;
   }
 
   @Override
   public String toString() {
-    return "struct(" + StringUtils.join(memberTypes, ",") + ")";
+    return "RECORD(" + StringUtils.join(fields, ", ") + ")";
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(baseType(), Objects.hash(memberTypes));
+    return Objects.hash(kind(), Objects.hash(fields));
   }
 
   @Override
   public boolean equals(Object object) {
-    if (object instanceof Struct) {
-      Struct other = (Struct) object;
-      return memberTypes.equals(other.memberTypes);
+    if (object instanceof Record) {
+      Record other = (Record) object;
+      return fields.equals(other.fields);
     }
 
     return false;
+  }
+
+  @Override
+  public Iterator<Field> iterator() {
+    return fields.iterator();
   }
 }

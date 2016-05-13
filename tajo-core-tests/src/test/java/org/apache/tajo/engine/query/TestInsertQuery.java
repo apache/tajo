@@ -27,8 +27,8 @@ import org.apache.hadoop.io.compress.DeflateCodec;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -189,7 +189,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertIntoPartitionedTable() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testInsertIntoPartitionedTable");
+    String tableName = IdentifierUtil.normalizeIdentifier("testInsertIntoPartitionedTable");
     executeString("create table " + tableName + " (n_name TEXT, n_regionkey INT4)" +
         "USING csv PARTITION by column(n_nationkey INT4)" ).close();
 
@@ -355,7 +355,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
       assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
-    res = executeString("select * from " + CatalogUtil.denormalizeIdentifier(getCurrentDatabase()) + ".table1");
+    res = executeString("select * from " + IdentifierUtil.denormalizeIdentifier(getCurrentDatabase()) + ".table1");
 
     assertTrue(res.next());
     assertEquals(1, res.getLong(1));
@@ -450,7 +450,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteIntoSelect() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("insertoverwriteintoselect");
+    String tableName = IdentifierUtil.normalizeIdentifier("insertoverwriteintoselect");
     ResultSet res = executeString("create table " + tableName + " as select l_orderkey from default.lineitem");
     assertFalse(res.next());
     res.close();
@@ -478,7 +478,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteCapitalTableName() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testInsertOverwriteCapitalTableName");
+    String tableName = IdentifierUtil.normalizeIdentifier("testInsertOverwriteCapitalTableName");
     ResultSet res = executeString("create table " + tableName + " as select * from default.lineitem");
     res.close();
 
@@ -505,7 +505,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteWithCompression() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testInsertOverwriteWithCompression");
+    String tableName = IdentifierUtil.normalizeIdentifier("testInsertOverwriteWithCompression");
     ResultSet res = executeFile("testInsertOverwriteWithCompression_ddl.sql");
     res.close();
 
@@ -670,7 +670,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
   }
 
   public final void testInsertOverwriteAllValues(String rawTableName, String query) throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier(rawTableName);
+    String tableName = IdentifierUtil.normalizeIdentifier(rawTableName);
     ResultSet res = executeString("create table " + tableName +" (col1 int4, col2 float4, col3 text)");
     res.close();
     CatalogService catalog = testingCluster.getMaster().getCatalog();
@@ -710,7 +710,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
   }
 
   public final void testInsertOverwriteSomeValues(String rawTableName, String sql) throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier(rawTableName);
+    String tableName = IdentifierUtil.normalizeIdentifier(rawTableName);
     ResultSet res = executeString("create table " + tableName +" (col1 int4, col2 float4, col3 text)");
     res.close();
     CatalogService catalog = testingCluster.getMaster().getCatalog();

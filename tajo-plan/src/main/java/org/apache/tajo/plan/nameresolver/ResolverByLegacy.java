@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.nameresolver;
 
 import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.exception.AmbiguousColumnException;
@@ -29,6 +28,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.Pair;
 
 import java.util.ArrayList;
@@ -57,7 +57,7 @@ public class ResolverByLegacy extends NameResolver {
 
     Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef, includeSeflDescTable);
     qualifier = normalized.getFirst();
-    qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
+    qualifiedName = IdentifierUtil.buildFQName(qualifier, columnRef.getName());
 
     Column found = resolveFromRelsWithinBlock(plan, block, columnRef, includeSeflDescTable);
     if (found == null) {
