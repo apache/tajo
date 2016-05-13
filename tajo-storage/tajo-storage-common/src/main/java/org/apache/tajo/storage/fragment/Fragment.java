@@ -117,23 +117,25 @@ public abstract class Fragment<T extends Comparable>
   }
 
   /**
-   *
-   * The offset range of tablets <b>MUST NOT</b> be overlapped.
+   * First compares URIs of fragments, and then compares their start keys.
    *
    * @param t
-   * @return If the table paths are not same, return -1.
+   * @return return 0 if two fragments are same. If not same, return -1 if this fragment is smaller than the other.
+   * Otherwise, return 1;
    */
   @Override
-  public int compareTo(Fragment<T> t) {
-    if (uri.equals(t.uri)) {
+  public final int compareTo(Fragment<T> t) {
+    int cmp = uri.compareTo(t.uri);
+    if (cmp == 0) {
       if (startKey != null && t.startKey != null) {
-        long diff = startKey.compareTo(t.startKey);
-        return diff == 0 ? 0 : diff < 0 ? -1 : 1;
+        return startKey.compareTo(t.startKey);
+      } else if (startKey == null) {  // nulls last
+        return 1;
       } else {
         return -1;
       }
     } else {
-      return -1;
+      return cmp;
     }
   }
 
