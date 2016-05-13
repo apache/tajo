@@ -199,7 +199,7 @@ public class TestPartitionedTableRewriter  {
 
     Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(1, filteredPaths.length);
-    assertEquals("key=part456", filteredPaths[0].getName());
+    assertTrue(filteredPaths[0].toString().endsWith("key=part456"));
 
     String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(1, partitionKeys.length);
@@ -233,24 +233,20 @@ public class TestPartitionedTableRewriter  {
     assertNotNull(partitionPruningHandle);
 
     Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
-      .sorted((path1, path2) -> {
-        return path1.compareTo(path2);
-      });
+      .sorted((path1, path2) -> path1.compareTo(path2));
     List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
     assertEquals(3, partitionPathList.size());
-    assertTrue(partitionPathList.get(0).toString().indexOf("key=part123") > -1);
-    assertTrue(partitionPathList.get(1).toString().indexOf("key=part456") > -1);
-    assertTrue(partitionPathList.get(2).toString().indexOf("key=part789") > -1);
+    assertTrue(partitionPathList.get(0).toString().endsWith("key=part123"));
+    assertTrue(partitionPathList.get(1).toString().endsWith("key=part456"));
+    assertTrue(partitionPathList.get(2).toString().endsWith("key=part789"));
 
     Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
-      .sorted((keys1, keys2) -> {
-        return keys1.compareTo(keys2);
-      });
+      .sorted((keys1, keys2) -> keys1.compareTo(keys2));
     List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
     assertEquals(3, partitionKeysList.size());
-    assertTrue(partitionKeysList.get(0).toString().indexOf("key=part123") > -1);
-    assertTrue(partitionKeysList.get(1).toString().indexOf("key=part456") > -1);
-    assertTrue(partitionKeysList.get(2).toString().indexOf("key=part789") > -1);
+    assertEquals(partitionKeysList.get(0), "key=part123");
+    assertEquals(partitionKeysList.get(1), "key=part456");
+    assertEquals(partitionKeysList.get(2), "key=part789");
 
     assertEquals(33L, partitionPruningHandle.getTotalVolume());
   }
@@ -314,24 +310,20 @@ public class TestPartitionedTableRewriter  {
     assertNotNull(partitionPruningHandle);
 
     Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
-      .sorted((path1, path2) -> {
-        return path1.compareTo(path2);
-      });
+      .sorted((path1, path2) -> path1.compareTo(path2));
     List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
     assertEquals(3, partitionPathList.size());
-    assertTrue(partitionPathList.get(0).toString().indexOf("key=part123") > -1);
-    assertTrue(partitionPathList.get(1).toString().indexOf("key=part456") > -1);
-    assertTrue(partitionPathList.get(2).toString().indexOf("key=part789") > -1);
+    assertTrue(partitionPathList.get(0).toString().endsWith("key=part123"));
+    assertTrue(partitionPathList.get(1).toString().endsWith("key=part456"));
+    assertTrue(partitionPathList.get(2).toString().endsWith("key=part789"));
 
     Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
-      .sorted((keys1, keys2) -> {
-        return keys1.compareTo(keys2);
-      });
+      .sorted((keys1, keys2) -> keys1.compareTo(keys2));
     List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
     assertEquals(3, partitionKeysList.size());
-    assertTrue(partitionKeysList.get(0).toString().indexOf("key=part123") > -1);
-    assertTrue(partitionKeysList.get(1).toString().indexOf("key=part456") > -1);
-    assertTrue(partitionKeysList.get(2).toString().indexOf("key=part789") > -1);
+    assertEquals(partitionKeysList.get(0), "key=part123");
+    assertEquals(partitionKeysList.get(1), "key=part456");
+    assertEquals(partitionKeysList.get(2), "key=part789");
 
     assertEquals(33L, partitionPruningHandle.getTotalVolume());
   }
@@ -365,9 +357,7 @@ public class TestPartitionedTableRewriter  {
 
     Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(1, filteredPaths.length);
-    assertEquals("key3=3", filteredPaths[0].getName());
-    assertEquals("key2=supp789", filteredPaths[0].getParent().getName());
-    assertEquals("key1=part789", filteredPaths[0].getParent().getParent().getName());
+    assertTrue(filteredPaths[0].toString().endsWith("key1=part789/key2=supp789/key3=3"));
 
     String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(1, partitionKeys.length);
@@ -407,22 +397,18 @@ public class TestPartitionedTableRewriter  {
     assertNotNull(partitionPruningHandle);
 
     Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
-      .sorted((path1, path2) -> {
-        return path1.compareTo(path2);
-      });
+      .sorted((path1, path2) -> path1.compareTo(path2));
     List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
     assertEquals(2, partitionPathList.size());
-    assertTrue(partitionPathList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
-    assertTrue(partitionPathList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
+    assertTrue(partitionPathList.get(0).toString().endsWith("key1=part123/key2=supp123/key3=1"));
+    assertTrue(partitionPathList.get(1).toString().endsWith("key1=part123/key2=supp123/key3=2"));
 
     Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
-      .sorted((keys1, keys2) -> {
-        return keys1.compareTo(keys2);
-      });
+      .sorted((keys1, keys2) -> keys1.compareTo(keys2));
     List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
     assertEquals(2, partitionKeysList.size());
-    assertTrue(partitionKeysList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
-    assertTrue(partitionKeysList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
+    assertEquals(partitionKeysList.get(0), ("key1=part123/key2=supp123/key3=1"));
+    assertEquals(partitionKeysList.get(1), ("key1=part123/key2=supp123/key3=2"));
 
     assertEquals(23L, partitionPruningHandle.getTotalVolume());
   }
@@ -458,22 +444,18 @@ public class TestPartitionedTableRewriter  {
     assertNotNull(partitionPruningHandle);
 
     Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
-      .sorted((path1, path2) -> {
-        return path1.compareTo(path2);
-      });
+      .sorted((path1, path2) -> path1.compareTo(path2));
     List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
     assertEquals(2, partitionPathList.size());
-    assertTrue(partitionPathList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
-    assertTrue(partitionPathList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
+    assertTrue(partitionPathList.get(0).toString().endsWith("key1=part123/key2=supp123/key3=1"));
+    assertTrue(partitionPathList.get(1).toString().endsWith("key1=part123/key2=supp123/key3=2"));
 
     Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
-      .sorted((keys1, keys2) -> {
-        return keys1.compareTo(keys2);
-      });
+      .sorted((keys1, keys2) -> keys1.compareTo(keys2));
     List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
     assertEquals(2, partitionKeysList.size());
-    assertTrue(partitionKeysList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
-    assertTrue(partitionKeysList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
+    assertEquals(partitionKeysList.get(0), ("key1=part123/key2=supp123/key3=1"));
+    assertEquals(partitionKeysList.get(1), ("key1=part123/key2=supp123/key3=2"));
 
     assertEquals(23L, partitionPruningHandle.getTotalVolume());
   }
