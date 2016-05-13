@@ -599,18 +599,14 @@ public class TestPartitionedTableRewriter  {
     assertNotNull(partitionPruningHandle);
 
     Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
-      .sorted((path1, path2) -> {
-        return path1.compareTo(path2);
-      });
+      .sorted((path1, path2) -> path1.compareTo(path2));
     List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
     assertEquals(2, partitionPathList.size());
     assertEquals(partitionPathList.get(0), ARBITRARY_PATH[0]);
     assertEquals(partitionPathList.get(1), ARBITRARY_PATH[1]);
 
     Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
-      .sorted((keys1, keys2) -> {
-        return keys1.compareTo(keys2);
-      });
+      .sorted((keys1, keys2) -> keys1.compareTo(keys2));
     List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
     assertEquals(2, partitionKeysList.size());
     assertEquals(partitionKeysList.get(0), "year=2016/month=3/day=1");
