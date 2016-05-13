@@ -142,4 +142,42 @@ public class FileUtil {
       throw ioe;
     }
   }
+
+  public static String getCommonPrefix(Path... paths){
+    String prefix = "";
+    String[][] folders = new String[paths.length][];
+
+    // split on file separator
+    for(int i = 0; i < paths.length; i++){
+      folders[i] = paths[i].toString().split("/");
+    }
+
+    for(int j = 0; j < folders[0].length; j++){
+      // grab the next folder name in the first path
+      String thisFolder = folders[0][j];
+      // assume all have matched in case there are no more paths
+      boolean allMatched = true;
+
+      // look at the other paths
+      for(int i = 1; i < folders.length && allMatched; i++){
+        // if there is no folder here
+        if(folders[i].length < j){
+          allMatched = false;
+          // stop looking because we've gone as far as we can
+          break;
+        }
+        // check if it matched
+        allMatched &= folders[i][j].equals(thisFolder);
+      }
+      // if they all matched this folder name
+      if(allMatched) {
+        // add it to the answer
+        prefix += thisFolder + "/";
+      } else {
+        break;
+      }
+    }
+
+    return prefix;
+  }
 }

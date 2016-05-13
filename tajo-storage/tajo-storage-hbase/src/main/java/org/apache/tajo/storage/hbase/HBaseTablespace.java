@@ -1118,4 +1118,10 @@ public class HBaseTablespace extends Tablespace {
       }
     }
   }
+
+  @Override
+  public long calculateSize(Path path) throws IOException {
+    FileSystem fs = path.getFileSystem(conf);
+    return fs.getContentSummary(path).getLength();
+  }
 }

@@ -32,3 +32,14 @@ message FileFragmentProto {
   repeated string hosts = 5;
   repeated int32 disk_ids = 6;
 }
+
+message PartitionFileFragmentProto {
+  required string id = 1;
+  required string path = 2;
+  required int64 start_offset = 3;
+  required int64 length = 4;
+  repeated string hosts = 5;
+  repeated int32 disk_ids = 6;
+  // Partition Keys: country=KOREA/city=SEOUL
+  required string partitionKeys = 7;
+}

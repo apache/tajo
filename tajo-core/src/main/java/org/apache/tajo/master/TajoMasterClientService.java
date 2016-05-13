@@ -567,7 +567,8 @@ public class TajoMasterClientService extends AbstractService {
               queryId,
               scanNode,
               Integer.MAX_VALUE,
-              codecType);
+              codecType,
+              context.getCatalog());
 
           queryResultScanner.init();
           session.addNonForwardQueryResultScanner(queryResultScanner);

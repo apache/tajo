@@ -511,8 +511,8 @@ public class DDLExecutor {
 
         long numBytes = 0L;
         if (fs.exists(partitionPath)) {
-          ContentSummary summary = fs.getContentSummary(partitionPath);
-          numBytes = summary.getLength();
+          Tablespace tablespace = TablespaceManager.get(desc.getUri());
+          numBytes = tablespace.calculateSize(partitionPath);
         }
 
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
@@ -623,6 +623,7 @@ public class DDLExecutor {
     }
 
     // Find missing partitions from CatalogStore
+    Tablespace tablespace = TablespaceManager.get(tableDesc.getUri());
     List<PartitionDescProto> targetPartitions = new ArrayList<>();
     for(Path filteredPath : filteredPaths) {
 
@@ -631,7 +632,7 @@ public class DDLExecutor {
 
       // if there is partition column in the path
       if (startIdx > -1) {
-        PartitionDescProto targetPartition = getPartitionDesc(tablePath, filteredPath, fs);
+        PartitionDescProto targetPartition = getPartitionDesc(tablespace, tablePath, filteredPath);
         if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
           if (LOG.isDebugEnabled()) {
             LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
@@ -657,7 +658,8 @@ public class DDLExecutor {
     LOG.info("Total added partitions to CatalogStore: " + targetPartitions.size());
   }
 
-  private PartitionDescProto getPartitionDesc(Path tablePath, Path partitionPath, FileSystem fs) throws IOException {
+  private PartitionDescProto getPartitionDesc(Tablespace tablespace, Path tablePath, Path partitionPath)
+    throws IOException {
     String partitionName = StringUtils.unescapePathName(partitionPath.toString());
 
     int startIndex = partitionName.indexOf(tablePath.toString()) + tablePath.toString().length();
@@ -679,9 +681,7 @@ public class DDLExecutor {
     }
 
     builder.setPath(partitionPath.toString());
-
-    ContentSummary contentSummary = fs.getContentSummary(partitionPath);
-    builder.setNumBytes(contentSummary.getLength());
+    builder.setNumBytes(tablespace.calculateSize(partitionPath));
 
     return builder.build();
   }

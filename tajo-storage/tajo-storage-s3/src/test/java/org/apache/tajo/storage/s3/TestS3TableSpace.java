@@ -18,6 +18,11 @@
 
 package org.apache.tajo.storage.s3;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.InstanceProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.google.common.base.Throwables;
 import net.minidev.json.JSONObject;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
@@ -26,9 +31,12 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestS3TableSpace {
@@ -41,6 +49,8 @@ public class TestS3TableSpace {
 
     TajoConf tajoConf = new TajoConf();
     tajoConf.set("fs.s3.impl", MockS3FileSystem.class.getName());
+    tajoConf.set("fs.s3a.access.key", "test_access_key_id");
+    tajoConf.set("fs.s3a.secret.key", "test_secret_access_key");
     tablespace.init(tajoConf);
 
     TablespaceManager.addTableSpaceForTest(tablespace);
@@ -58,5 +68,34 @@ public class TestS3TableSpace {
 
     assertTrue((TablespaceManager.get(S3_URI)) instanceof S3TableSpace);
     assertEquals(S3_URI, TablespaceManager.get(S3_URI).getUri().toASCIIString());
+  }
+
+  @Test
+  public void testInstanceCredentialsEnabled() throws Exception {
+    assertTrue((TablespaceManager.getByName(SPACENAME)) instanceof S3TableSpace);
+    S3TableSpace tableSpace = TablespaceManager.getByName(SPACENAME);
+
+    assertNotNull(tableSpace.getAmazonS3Client());
+    assertTrue((tableSpace.getAmazonS3Client()) instanceof AmazonS3Client);
+
+    assertTrue(getAwsCredentialsProvider(tableSpace.getAmazonS3Client())
+      instanceof InstanceProfileCredentialsProvider);
+  }
+
+  private AWSCredentialsProvider getAwsCredentialsProvider(AmazonS3 s3) {
+    return getFieldValue(s3, "awsCredentialsProvider", AWSCredentialsProvider.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T> T getFieldValue(Object instance, String name, Class<T> type) {
+    try {
+      Field field = instance.getClass().getDeclaredField(name);
+      checkArgument(field.getType() == type, "expected %s but found %s", type, field.getType());
+      field.setAccessible(true);
+      return (T) field.get(instance);
+    }
+    catch (ReflectiveOperationException e) {
+      throw Throwables.propagate(e);
+    }
   }
 }
