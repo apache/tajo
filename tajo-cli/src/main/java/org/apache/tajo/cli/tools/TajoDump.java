@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
@@ -164,10 +165,10 @@ public class TajoDump {
       throws SQLException, ServiceException {
     writer.write("\n");
     writer.write("--\n");
-    writer.write(String.format("-- Database name: %s%n", CatalogUtil.denormalizeIdentifier(databaseName)));
+    writer.write(String.format("-- Database name: %s%n", IdentifierUtil.denormalizeIdentifier(databaseName)));
     writer.write("--\n");
     writer.write("\n");
-    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", CatalogUtil.denormalizeIdentifier(databaseName)));
+    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", IdentifierUtil.denormalizeIdentifier(databaseName)));
     writer.write("\n\n");
 
     // returned list is immutable.
@@ -175,7 +176,7 @@ public class TajoDump {
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {
-        String fqName = CatalogUtil.buildFQName(databaseName, tableName);
+        String fqName = IdentifierUtil.buildFQName(databaseName, tableName);
         TableDesc table = client.getTableDesc(fqName);
 
         if (table.getMeta().getDataFormat().equalsIgnoreCase("SYSTEM")) {
@@ -198,7 +199,7 @@ public class TajoDump {
 //            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
 //          }
           writer.write(String.format("ALTER TABLE %s REPAIR PARTITION;",
-            CatalogUtil.denormalizeIdentifier(databaseName) + "." + CatalogUtil.denormalizeIdentifier(tableName)));
+            IdentifierUtil.denormalizeIdentifier(databaseName) + "." + IdentifierUtil.denormalizeIdentifier(tableName)));
 
           writer.write("\n\n");
         }

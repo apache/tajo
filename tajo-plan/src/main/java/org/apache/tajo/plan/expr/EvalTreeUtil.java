@@ -33,6 +33,7 @@ import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.schema.IdentifierUtil;
 
 import java.util.*;
 
@@ -180,7 +181,7 @@ public class EvalTreeUtil {
     case DIVIDE:
     case CONST:
     case FUNCTION:
-        return TypeConverter.convert(expr.getValueType());
+        return TypeConverter.convert(expr.getValueType()).getDataType();
 
     case FIELD:
       FieldEval fieldEval = (FieldEval) expr;
@@ -393,14 +394,14 @@ public class EvalTreeUtil {
 
   private static boolean isJoinQualWithOnlyColumns(@Nullable LogicalPlan.QueryBlock block,
                                                    Column left, Column right) {
-    String leftQualifier = CatalogUtil.extractQualifier(left.getQualifiedName());
-    String rightQualifier = CatalogUtil.extractQualifier(right.getQualifiedName());
+    String leftQualifier = IdentifierUtil.extractQualifier(left.getQualifiedName());
+    String rightQualifier = IdentifierUtil.extractQualifier(right.getQualifiedName());
 
     // if block is given, it will track an original expression of each term in order to decide whether
     // this expression is a join condition, or not.
     if (block != null) {
-      boolean leftQualified = CatalogUtil.isFQColumnName(left.getQualifiedName());
-      boolean rightQualified = CatalogUtil.isFQColumnName(right.getQualifiedName());
+      boolean leftQualified = IdentifierUtil.isFQColumnName(left.getQualifiedName());
+      boolean rightQualified = IdentifierUtil.isFQColumnName(right.getQualifiedName());
 
       if (!leftQualified) { // if left one is aliased name
 
@@ -410,7 +411,7 @@ public class EvalTreeUtil {
 
         // ensure there is only one column of an original expression
         if (foundColumns.size() == 1) {
-          leftQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+          leftQualifier = IdentifierUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
         }
       }
       if (!rightQualified) { // if right one is aliased name
@@ -421,7 +422,7 @@ public class EvalTreeUtil {
 
         // ensure there is only one column of an original expression
         if (foundColumns.size() == 1) {
-          rightQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+          rightQualifier = IdentifierUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
         }
       }
     }

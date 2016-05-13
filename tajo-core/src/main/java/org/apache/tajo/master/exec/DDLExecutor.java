@@ -42,6 +42,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tablespace;
@@ -138,15 +139,15 @@ public class DDLExecutor {
       throws DuplicateIndexException, UndefinedTableException, UndefinedDatabaseException {
 
     String databaseName, simpleIndexName, qualifiedIndexName;
-    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
-      String[] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+    if (IdentifierUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String[] splits = IdentifierUtil.splitFQTableName(createIndexNode.getIndexName());
       databaseName = splits[0];
       simpleIndexName = splits[1];
       qualifiedIndexName = createIndexNode.getIndexName();
     } else {
       databaseName = queryContext.getCurrentDatabase();
       simpleIndexName = createIndexNode.getIndexName();
-      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+      qualifiedIndexName = IdentifierUtil.buildFQName(databaseName, simpleIndexName);
     }
 
     if (catalog.existIndexByName(databaseName, simpleIndexName)) {
@@ -158,7 +159,7 @@ public class DDLExecutor {
       throw new InternalError("Cannot find the table of the relation");
     }
 
-    IndexDesc indexDesc = new IndexDesc(databaseName, CatalogUtil.extractSimpleName(scanNode.getTableName()),
+    IndexDesc indexDesc = new IndexDesc(databaseName, IdentifierUtil.extractSimpleName(scanNode.getTableName()),
         simpleIndexName, createIndexNode.getIndexPath(),
         createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
         createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
@@ -170,8 +171,8 @@ public class DDLExecutor {
       throws UndefinedIndexException, UndefinedDatabaseException {
 
     String databaseName, simpleIndexName;
-    if (CatalogUtil.isFQTableName(dropIndexNode.getIndexName())) {
-      String[] splits = CatalogUtil.splitFQTableName(dropIndexNode.getIndexName());
+    if (IdentifierUtil.isFQTableName(dropIndexNode.getIndexName())) {
+      String[] splits = IdentifierUtil.splitFQTableName(dropIndexNode.getIndexName());
       databaseName = splits[0];
       simpleIndexName = splits[1];
     } else {
@@ -293,15 +294,15 @@ public class DDLExecutor {
 
     String databaseName;
     String simpleTableName;
-    if (CatalogUtil.isFQTableName(tableName)) {
-      String[] splitted = CatalogUtil.splitFQTableName(tableName);
+    if (IdentifierUtil.isFQTableName(tableName)) {
+      String[] splitted = IdentifierUtil.splitFQTableName(tableName);
       databaseName = splitted[0];
       simpleTableName = splitted[1];
     } else {
       databaseName = queryContext.getCurrentDatabase();
       simpleTableName = tableName;
     }
-    String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+    String qualifiedName = IdentifierUtil.buildFQName(databaseName, simpleTableName);
 
     boolean exists = catalog.existsTable(qualifiedName);
     if (!exists) {
@@ -340,15 +341,15 @@ public class DDLExecutor {
 
     List<TableDesc> tableDescList = new ArrayList<>();
     for (String eachTableName : tableNames) {
-      if (CatalogUtil.isFQTableName(eachTableName)) {
-        String[] split = CatalogUtil.splitFQTableName(eachTableName);
+      if (IdentifierUtil.isFQTableName(eachTableName)) {
+        String[] split = IdentifierUtil.splitFQTableName(eachTableName);
         databaseName = split[0];
         simpleTableName = split[1];
       } else {
         databaseName = queryContext.getCurrentDatabase();
         simpleTableName = eachTableName;
       }
-      final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+      final String qualifiedName = IdentifierUtil.buildFQName(databaseName, simpleTableName);
 
       if (!catalog.existsTable(databaseName, simpleTableName)) {
         throw new UndefinedTableException(qualifiedName);
@@ -404,15 +405,15 @@ public class DDLExecutor {
 
     String databaseName;
     String simpleTableName;
-    if (CatalogUtil.isFQTableName(tableName)) {
-      String[] split = CatalogUtil.splitFQTableName(tableName);
+    if (IdentifierUtil.isFQTableName(tableName)) {
+      String[] split = IdentifierUtil.splitFQTableName(tableName);
       databaseName = split[0];
       simpleTableName = split[1];
     } else {
       databaseName = queryContext.getCurrentDatabase();
       simpleTableName = tableName;
     }
-    final String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+    final String qualifiedName = IdentifierUtil.buildFQName(databaseName, simpleTableName);
 
     if (!catalog.existsTable(databaseName, simpleTableName)) {
       throw new UndefinedTableException(qualifiedName);
@@ -573,8 +574,8 @@ public class DDLExecutor {
 
     String databaseName;
     String simpleTableName;
-    if (CatalogUtil.isFQTableName(tableName)) {
-      String[] split = CatalogUtil.splitFQTableName(tableName);
+    if (IdentifierUtil.isFQTableName(tableName)) {
+      String[] split = IdentifierUtil.splitFQTableName(tableName);
       databaseName = split[0];
       simpleTableName = split[1];
     } else {

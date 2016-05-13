@@ -60,6 +60,7 @@ import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.memory.MemoryBlock;
@@ -595,15 +596,15 @@ public class QueryExecutor {
       throws DuplicateIndexException {
 
     String databaseName, simpleIndexName, qualifiedIndexName;
-    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
-      String[] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+    if (IdentifierUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String[] splits = IdentifierUtil.splitFQTableName(createIndexNode.getIndexName());
       databaseName = splits[0];
       simpleIndexName = splits[1];
       qualifiedIndexName = createIndexNode.getIndexName();
     } else {
       databaseName = queryContext.getCurrentDatabase();
       simpleIndexName = createIndexNode.getIndexName();
-      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+      qualifiedIndexName = IdentifierUtil.buildFQName(databaseName, simpleIndexName);
     }
 
     if (catalog.existIndexByName(databaseName, simpleIndexName)) {

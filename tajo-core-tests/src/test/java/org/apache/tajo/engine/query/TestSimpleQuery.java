@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.exception.QueryNotFoundException;
@@ -30,6 +29,7 @@ import org.apache.tajo.master.QueryManager;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.StringUtils;
 import org.junit.AfterClass;
@@ -84,12 +84,12 @@ public class TestSimpleQuery extends QueryTestCaseBase {
   }
 
   private static void createTestTable() throws Exception {
-    partitionedTable = CatalogUtil.normalizeIdentifier("TestSimpleQuery_Partitioned");
+    partitionedTable = IdentifierUtil.normalizeIdentifier("TestSimpleQuery_Partitioned");
     client.executeQueryAndGetResult("create table " + partitionedTable +
         " (col4 text)  partition by column(col1 int4, col2 int4, col3 float8) "
         + "as select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");
 
-    table = CatalogUtil.normalizeIdentifier("TestSimpleQuery");
+    table = IdentifierUtil.normalizeIdentifier("TestSimpleQuery");
     client.executeQueryAndGetResult("create table " + table
         + " (col4 text, col1 int4, col2 int4, col3 float8) "
         + "as select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem");

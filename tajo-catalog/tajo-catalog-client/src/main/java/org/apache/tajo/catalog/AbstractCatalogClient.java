@@ -32,6 +32,7 @@ import org.apache.tajo.exception.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.io.Closeable;
@@ -281,7 +282,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public TableDesc getTableDesc(String qualifiedName) throws UndefinedTableException {
-    String[] splitted = CatalogUtil.splitFQTableName(qualifiedName);
+    String[] splitted = IdentifierUtil.splitFQTableName(qualifiedName);
     return getTableDesc(splitted[0], splitted[1]);
   }
 
@@ -596,7 +597,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
   public void dropTable(String tableName)
       throws UndefinedDatabaseException, UndefinedTableException, InsufficientPrivilegeException {
 
-    String[] splitted = CatalogUtil.splitFQTableName(tableName);
+    String[] splitted = IdentifierUtil.splitFQTableName(tableName);
     final String databaseName = splitted[0];
     final String simpleName = splitted[1];
 
@@ -617,7 +618,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final boolean existsTable(final String databaseName, final String tableName) {
-    if (CatalogUtil.isFQTableName(tableName)) {
+    if (IdentifierUtil.isFQTableName(tableName)) {
       throw new IllegalArgumentException(
           "tableName cannot be composed of multiple parts, but it is \"" + tableName + "\"");
     }
@@ -640,7 +641,7 @@ public abstract class AbstractCatalogClient implements CatalogService, Closeable
 
   @Override
   public final boolean existsTable(final String tableName) {
-    String[] splitted = CatalogUtil.splitFQTableName(tableName);
+    String[] splitted = IdentifierUtil.splitFQTableName(tableName);
     return existsTable(splitted[0], splitted[1]);
   }
 

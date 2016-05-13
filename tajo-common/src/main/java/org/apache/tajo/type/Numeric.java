@@ -18,49 +18,21 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Objects;
+import static org.apache.tajo.common.TajoDataTypes.Type.NUMERIC;
 
-public class Numeric extends Type {
-  private final int precision;
-  private final int scale;
+public class Numeric extends ValueParamterizedType {
 
   public Numeric(int precision, int scale) {
-    this.precision = precision;
-    this.scale = scale;
+    super(NUMERIC, ImmutableList.of(precision, scale));
   }
 
   public int precision() {
-    return this.precision;
+    return this.params.get(0);
   }
 
   public int scale() {
-    return this.scale;
-  }
-
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.NUMERIC;
-  }
-
-  @Override
-  public String toString() {
-    return "numeric(" + precision + "," + scale + ")";
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(baseType(), precision, scale);
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (object instanceof Numeric) {
-      Numeric other = (Numeric) object;
-      return precision == other.precision && scale == other.scale;
-    }
-
-    return false;
+    return this.params.get(1);
   }
 }

@@ -31,7 +31,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.InvalidStatementException;
 import org.apache.tajo.cli.tsql.ParsedResult;
@@ -53,6 +52,7 @@ import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
@@ -221,7 +221,7 @@ public class QueryTestCaseBase {
   @AfterClass
   public static void tearDownClass() throws Exception {
     for (String tableName : createdTableGlobalSet) {
-      client.updateQuery("DROP TABLE IF EXISTS " + CatalogUtil.denormalizeIdentifier(tableName));
+      client.updateQuery("DROP TABLE IF EXISTS " + IdentifierUtil.denormalizeIdentifier(tableName));
     }
     createdTableGlobalSet.clear();
 
@@ -303,7 +303,7 @@ public class QueryTestCaseBase {
     try {
       // if the current database is "default", we don't need create it because it is already prepated at startup time.
       if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
-        client.updateQuery("CREATE DATABASE IF NOT EXISTS " + CatalogUtil.denormalizeIdentifier(currentDatabase));
+        client.updateQuery("CREATE DATABASE IF NOT EXISTS " + IdentifierUtil.denormalizeIdentifier(currentDatabase));
       }
       client.selectDatabase(currentDatabase);
       currentResultFS = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
@@ -1047,10 +1047,10 @@ public class QueryTestCaseBase {
         DropTable dropTable = (DropTable) expr;
         String tableName = dropTable.getTableName();
         assertTrue("table '" + tableName + "' existence check",
-            client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
+            client.existTable(IdentifierUtil.buildFQName(currentDatabase, tableName)));
         assertTrue("table drop is failed.", client.updateQuery(parsedResult.getHistoryStatement()));
         assertFalse("table '" + tableName + "' dropped check",
-            client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
+            client.existTable(IdentifierUtil.buildFQName(currentDatabase, tableName)));
         if (isLocalTable) {
           createdTableGlobalSet.remove(tableName);
         }

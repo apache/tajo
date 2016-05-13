@@ -20,66 +20,25 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.NotImplementedException;
-import org.apache.tajo.exception.TajoRuntimeException;
-import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.schema.Schema;
+import org.apache.tajo.schema.Field;
 import org.apache.tajo.type.*;
 
-import java.util.Collection;
-
+import static org.apache.tajo.catalog.CatalogUtil.newDataTypeWithLen;
+import static org.apache.tajo.catalog.CatalogUtil.newSimpleDataType;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.apache.tajo.type.Type.*;
 
 public class TypeConverter {
 
-  public static Collection<Schema.NamedType> convert(TypeDesc type) {
-    ImmutableList.Builder<Schema.NamedType> fields = ImmutableList.builder();
-    for (Column c : type.getNestedSchema().getRootColumns()) {
-      fields.add(FieldConverter.convert(c));
-    }
-    return fields.build();
-  }
-
-  public static Type convert(TajoDataTypes.Type legacyBaseType) {
-    switch (legacyBaseType) {
-    case BOOLEAN:
-      return Bool;
-    case INT1:
-      return Int1;
-    case INT2:
-      return Int2;
-    case INT4:
-      return Int4;
-    case INT8:
-      return Int8;
-    case FLOAT4:
-      return Float4;
-    case FLOAT8:
-      return Float8;
-    case DATE:
-      return Date;
-    case TIME:
-      return Time;
-    case TIMESTAMP:
-      return Timestamp;
-    case INTERVAL:
-      return Interval;
-    case CHAR:
-      return Char(1); // default len = 1
-    case TEXT:
-      return Text;
-    case BLOB:
-      return Blob;
-    case INET4:
-      return Inet4;
-    case RECORD:
-      throw new TajoRuntimeException(new NotImplementedException("record projection"));
-    case NULL_TYPE:
-      return Null;
-    case ANY:
-      return Any;
-    default:
-      throw new TajoRuntimeException(new UnsupportedException(legacyBaseType.name()));
+  public static Type convert(TypeDesc type) {
+    if (type.getDataType().getType() == TajoDataTypes.Type.RECORD) {
+      ImmutableList.Builder<Field> fields = ImmutableList.builder();
+      for (Column c : type.getNestedSchema().getRootColumns()) {
+        fields.add(FieldConverter.convert(c));
+      }
+      return Record(fields.build());
+    } else {
+      return convert(type.dataType);
     }
   }
 
@@ -96,26 +55,58 @@ public class TypeConverter {
     case PROTOBUF:
       return new Protobuf(legacyType.getCode());
     default:
-      return convert(legacyType.getType());
+      return TypeFactory.create(legacyType.getType());
     }
   }
 
-  public static TajoDataTypes.DataType convert(Type type) {
-    switch (type.baseType()) {
-      case CHAR:
-        Char charType = (Char) type;
-        return CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length());
-      case VARCHAR:
-        Varchar varcharType = (Varchar) type;
-        return CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length());
-      case PROTOBUF:
-        Protobuf protobuf = (Protobuf) type;
-        return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName());
-      case NUMERIC:
-        Numeric numericType = (Numeric) type;
-        return CatalogUtil.newDataTypeWithLen(TajoDataTypes.Type.NUMERIC, numericType.precision());
+  public static TypeDesc convert(Field src) {
+    return convert(src.type());
+  }
+
+  public static TypeDesc convert(Type type) {
+    switch (type.kind()) {
+    case CHAR:
+      Char charType = (Char) type;
+      return new TypeDesc(newDataTypeWithLen(TajoDataTypes.Type.CHAR, charType.length()));
+    case VARCHAR:
+      Varchar varcharType = (Varchar) type;
+      return new TypeDesc(newDataTypeWithLen(TajoDataTypes.Type.VARCHAR, varcharType.length()));
+    case NUMERIC:
+      Numeric numericType = (Numeric) type;
+      return new TypeDesc(newDataTypeWithLen(TajoDataTypes.Type.NUMERIC, numericType.precision()));
+    case PROTOBUF:
+      Protobuf protobuf = (Protobuf) type;
+      return new TypeDesc(CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, protobuf.getMessageName()));
+    case RECORD:
+      Record record = (Record) type;
+      ImmutableList.Builder<Column> fields = ImmutableList.builder();
+      for (Field t: record.fields()) {
+        fields.add(new Column(t.name().interned(), convert(t)));
+      }
+      return new TypeDesc(SchemaBuilder.builder().addAll(fields.build()).build());
+
+    case ARRAY:
+      Array array = (Array) type;
+      Type elemType = array.elementType();
+      switch (elemType.kind()) {
+      case INT1:
+        return new TypeDesc(newSimpleDataType(INT1_ARRAY));
+      case INT2:
+        return new TypeDesc(newSimpleDataType(INT2_ARRAY));
+      case INT4:
+        return new TypeDesc(newSimpleDataType(INT4_ARRAY));
+      case INT8:
+        return new TypeDesc(newSimpleDataType(INT8_ARRAY));
+      case FLOAT4:
+        return new TypeDesc(newSimpleDataType(FLOAT4_ARRAY));
+      case FLOAT8:
+        return new TypeDesc(newSimpleDataType(FLOAT8_ARRAY));
       default:
-        return CatalogUtil.newSimpleDataType(type.baseType());
+        return new TypeDesc(newSimpleDataType(type.kind()));
+      }
+
+    default:
+      return new TypeDesc(newSimpleDataType(type.kind()));
     }
   }
 }

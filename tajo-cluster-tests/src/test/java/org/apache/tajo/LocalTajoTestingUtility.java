@@ -36,6 +36,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
@@ -120,7 +121,7 @@ public class LocalTajoTestingUtility {
       TableStats stats = new TableStats();
       stats.setNumBytes(TPCH.tableVolumes.get(names[i]));
       TableDesc tableDesc = new TableDesc(
-          CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, names[i]), schemas[i], meta,
+          IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, names[i]), schemas[i], meta,
           tablePath.toUri());
       tableDesc.setStats(stats);
       util.getMaster().getCatalog().createTable(tableDesc);

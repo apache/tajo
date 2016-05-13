@@ -18,12 +18,21 @@
 
 package org.apache.tajo.type;
 
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.TypeProto;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.schema.Field;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
-public abstract class Type {
+/**
+ * Represents Type
+ */
+public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
 
   // No paramter types
   public static final Any Any = new Any();
@@ -43,38 +52,63 @@ public abstract class Type {
   public static final Blob Blob = new Blob();
   public static final Inet4 Inet4 = new Inet4();
 
-  public abstract TajoDataTypes.Type baseType();
+  protected TajoDataTypes.Type kind;
 
-  public boolean hasParam() {
+  public Type(TajoDataTypes.Type kind) {
+    this.kind = kind;
+  }
+
+  public TajoDataTypes.Type kind() {
+    return kind;
+  }
+
+  public boolean isTypeParameterized() {
     return false;
   }
 
+  public boolean isValueParameterized() {
+    return false;
+  }
+
+  public List<Type> getTypeParameters() {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
+  public List<Integer> getValueParameters() {
+    throw new TajoRuntimeException(new UnsupportedException());
+  }
+
   protected static String typeName(TajoDataTypes.Type type) {
-    return type.name().toLowerCase();
+    return type.name().toUpperCase();
   }
 
   @Override
   public int hashCode() {
-    return baseType().hashCode();
+    return kind().hashCode();
   }
 
   @Override
   public boolean equals(Object t) {
-    return t instanceof Type && ((Type)t).baseType() == baseType();
+    return t instanceof Type && ((Type)t).kind() == kind();
   }
 
   @Override
   public String toString() {
-    return typeName(baseType());
+    return typeName(kind());
   }
 
   public boolean isStruct() {
-    return this.baseType() == TajoDataTypes.Type.RECORD;
+    return this.kind() == TajoDataTypes.Type.RECORD;
   }
 
-  public boolean isNull() { return this.baseType() == TajoDataTypes.Type.NULL_TYPE; }
+  public boolean isNull() { return this.kind() == TajoDataTypes.Type.NULL_TYPE; }
 
+  public static int DEFAULT_PRECISION = 0;
   public static int DEFAULT_SCALE = 0;
+
+  public static Numeric Numeric() {
+    return new Numeric(DEFAULT_PRECISION, DEFAULT_SCALE);
+  }
 
   public static Numeric Numeric(int precision) {
     return new Numeric(precision, DEFAULT_SCALE);
@@ -82,22 +116,6 @@ public abstract class Type {
 
   public static Numeric Numeric(int precision, int scale) {
     return new Numeric(precision, scale);
-  }
-
-  public static Date Date() {
-    return new Date();
-  }
-
-  public static Time Time() {
-    return new Time();
-  }
-
-  public static Timestamp Timestamp() {
-    return new Timestamp();
-  }
-
-  public static Interval Interval() {
-    return new Interval();
   }
 
   public static Char Char(int len) {
@@ -108,28 +126,16 @@ public abstract class Type {
     return new Varchar(len);
   }
 
-  public static Text Text() {
-    return new Text();
-  }
-
-  public static Blob Blob() {
-    return new Blob();
-  }
-
-  public static Inet4 Inet4() {
-    return new Inet4();
-  }
-
-  public static Struct Struct(Collection<Type> types) {
-    return new Struct(types);
-  }
-
-  public static Struct Struct(Type ... types) {
-    return new Struct(Arrays.asList(types));
+  public static Record Record(Collection<Field> types) {
+    return new Record(types);
   }
 
   public static Array Array(Type type) {
     return new Array(type);
+  }
+
+  public static Record Record(Field... types) {
+    return new Record(Arrays.asList(types));
   }
 
   public static Map Map(Type keyType, Type valueType) {
@@ -138,5 +144,10 @@ public abstract class Type {
 
   public static Null Null() {
     return new Null();
+  }
+
+  @Override
+  public TypeProto getProto() {
+    return TypeProtobufEncoder.encode(this);
   }
 }
