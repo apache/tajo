@@ -26,7 +26,6 @@ import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.storage.StorageFragmentProtos.PartitionFileFragmentProto;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.ArrayList;
