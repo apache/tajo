@@ -24,9 +24,9 @@ package org.apache.tajo.schema;
 public abstract class IdentifierPolicy {
 
   /** Quote String; e.g., 'abc' */
-  public static final String ANSI_SQL_QUOTE_STRING = "'";
+  public static final char ANSI_SQL_QUOTE_STRING = '\'';
   /** Separator; e.g., abc.xyz */
-  public static final String ANSI_SQL_SEPERATOR_STRING = ".";
+  public static final char ANSI_SQL_SEPERATOR_STRING = '.';
   /** Maximum length of identifiers */
   public final static int MAX_IDENTIFIER_LENGTH = 128;
 
@@ -49,7 +49,7 @@ public abstract class IdentifierPolicy {
    *
    * @return the quoting string or a space if quoting is not supported
    */
-  abstract String getIdentifierQuoteString();
+  abstract char getIdentifierQuoteString();
 
   /**
    * Retrieves the <code>String</code> that this policy uses as the separator between
@@ -57,7 +57,7 @@ public abstract class IdentifierPolicy {
    *
    * @return the separator string
    */
-  abstract String getIdentifierSeperator();
+  abstract char getIdentifierSeperator();
 
   /**
    * Retrieves the maximum number of characters this policy allows for a column name.

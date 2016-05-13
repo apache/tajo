@@ -23,10 +23,10 @@ import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
@@ -165,10 +165,10 @@ public class TajoDump {
       throws SQLException, ServiceException {
     writer.write("\n");
     writer.write("--\n");
-    writer.write(String.format("-- Database name: %s%n", CatalogUtil.denormalizeIdentifier(databaseName)));
+    writer.write(String.format("-- Database name: %s%n", IdentifierUtil.denormalizeIdentifier(databaseName)));
     writer.write("--\n");
     writer.write("\n");
-    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", CatalogUtil.denormalizeIdentifier(databaseName)));
+    writer.write(String.format("CREATE DATABASE IF NOT EXISTS %s;", IdentifierUtil.denormalizeIdentifier(databaseName)));
     writer.write("\n\n");
 
     // returned list is immutable.
@@ -176,7 +176,7 @@ public class TajoDump {
     Collections.sort(tableNames);
     for (String tableName : tableNames) {
       try {
-        String fqName = CatalogUtil.buildFQName(databaseName, tableName);
+        String fqName = IdentifierUtil.buildFQName(databaseName, tableName);
         TableDesc table = client.getTableDesc(fqName);
 
         if (table.getMeta().getDataFormat().equalsIgnoreCase("SYSTEM")) {

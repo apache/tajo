@@ -33,6 +33,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.function.Function;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -189,7 +190,7 @@ public class TestCatalog {
         .build();
     Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
     TableDesc table = new TableDesc(
-        CatalogUtil.buildFQName(databaseName, tableName),
+        IdentifierUtil.buildFQName(databaseName, tableName),
         schema1,
         new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
@@ -290,7 +291,7 @@ public class TestCatalog {
         Collection<String> tablesForThisDatabase = catalog.getAllTableNames(entry.getKey());
         assertEquals(createdTablesMap.get(entry.getKey()).size(), tablesForThisDatabase.size());
         for (String tableName : tablesForThisDatabase) {
-          assertTrue(createdTablesMap.get(entry.getKey()).contains(CatalogUtil.extractSimpleName(tableName)));
+          assertTrue(createdTablesMap.get(entry.getKey()).contains(IdentifierUtil.extractSimpleName(tableName)));
         }
       }
     }
@@ -308,7 +309,7 @@ public class TestCatalog {
         .build();
     Path path = new Path(CommonTestingUtil.getTestDir(), "table1");
     TableDesc meta = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
+        IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
         schema1,
         "TEXT",
         new KeyValueSet(),
@@ -318,7 +319,7 @@ public class TestCatalog {
     catalog.createTable(meta);
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
 
-    catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"));
+    catalog.dropTable(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"));
     assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
 	}
 
@@ -328,7 +329,7 @@ public class TestCatalog {
   private static void assertSchemaEquality(String tableName, Schema schema) throws IOException, TajoException {
     Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
     TableDesc tableDesc = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
+        IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
         schema,
         "TEXT",
         new KeyValueSet(),
@@ -340,12 +341,12 @@ public class TestCatalog {
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
     // change it for the equals test.
-    schema.setQualifier(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+    schema.setQualifier(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
     TableDesc restored = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     assertEquals(schema, restored.getSchema());
 
     // drop test
-    catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+    catalog.dropTable(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
     assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
   }
 
@@ -436,7 +437,7 @@ public class TestCatalog {
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, server.getConf());
     return new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), relationSchema, meta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), relationSchema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());
   }
 
@@ -632,7 +633,7 @@ public class TestCatalog {
         .add("score", Type.FLOAT8)
         .build();
 
-    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
@@ -674,7 +675,7 @@ public class TestCatalog {
         .add("score", Type.FLOAT8)
         .build();
 
-    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
@@ -714,7 +715,7 @@ public class TestCatalog {
         .add("score", Type.FLOAT8)
         .build();
 
-    String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
@@ -753,7 +754,7 @@ public class TestCatalog {
         .add("score", Type.FLOAT8)
         .build();
 
-    String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
@@ -793,7 +794,7 @@ public class TestCatalog {
         .build();
 
     String simpleTableName = "addedtable";
-    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, simpleTableName);
+    String tableName = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, simpleTableName);
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
@@ -944,7 +945,7 @@ public class TestCatalog {
 
     catalog.alterTable(alterTableDesc);
 
-    String [] split = CatalogUtil.splitFQTableName(tableName);
+    String [] split = IdentifierUtil.splitFQTableName(tableName);
 
     CatalogProtos.PartitionDescProto resultDesc = catalog.getPartition(split[0], split[1], partitionName);
 

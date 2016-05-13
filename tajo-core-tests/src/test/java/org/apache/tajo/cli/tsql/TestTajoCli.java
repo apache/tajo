@@ -28,7 +28,6 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.commands.TajoShellCommand;
 import org.apache.tajo.client.ClientParameters;
@@ -36,6 +35,7 @@ import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.RpcConstants;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
@@ -549,7 +549,7 @@ public class TestTajoCli {
 
   @Test
   public void testAlterTableAddDropPartition() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
+    String tableName = IdentifierUtil.normalizeIdentifier("testAlterTableAddPartition");
 
     tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
     tajoCli.executeScript("alter table " + tableName + " add partition (key2 = 0.1)");

@@ -21,6 +21,8 @@ package org.apache.tajo.catalog.dictionary;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
+import org.apache.tajo.schema.IdentifierUtil;
+import org.apache.tajo.type.TypeFactory;
 
 abstract class AbstractTableDescriptor implements TableDescriptor {
   
@@ -40,13 +42,7 @@ abstract class AbstractTableDescriptor implements TableDescriptor {
       columnBuilder = ColumnProto.newBuilder();
       
       columnBuilder.setName(columnDescriptor.getName().toLowerCase());
-      if (columnDescriptor.getLength() > 0) {
-        columnBuilder.setDataType(CatalogUtil.newDataTypeWithLen(columnDescriptor.getType(),
-            columnDescriptor.getLength()));
-      } else {
-        columnBuilder.setDataType(CatalogUtil.newSimpleDataType(columnDescriptor.getType()));
-      }
-      
+      columnBuilder.setType(TypeFactory.create(columnDescriptor.getType()).getProto());
       schemaBuilder.addFields(columnBuilder.build());
     }
     
@@ -71,7 +67,7 @@ abstract class AbstractTableDescriptor implements TableDescriptor {
   public TableDescProto getTableDescription() {
     TableDescProto.Builder tableBuilder = TableDescProto.newBuilder();
     
-    tableBuilder.setTableName(CatalogUtil.buildFQName(dictionary.getSystemDatabaseName(), getTableNameString()));
+    tableBuilder.setTableName(IdentifierUtil.buildFQName(dictionary.getSystemDatabaseName(), getTableNameString()));
     tableBuilder.setPath(dictionary.getTablePath());
     
     tableBuilder.setSchema(CatalogUtil.getQualfiedSchema(

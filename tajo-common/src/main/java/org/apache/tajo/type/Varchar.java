@@ -18,47 +18,17 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Objects;
+import static org.apache.tajo.common.TajoDataTypes.Type.VARCHAR;
 
-public class Varchar extends Type {
-  private final int length;
+public class Varchar extends ValueParamterizedType {
 
   public Varchar(int length) {
-    this.length = length;
+    super(VARCHAR, ImmutableList.of(length));
   }
 
   public int length() {
-    return length;
-  }
-
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.VARCHAR;
-  }
-
-  @Override
-  public boolean hasParam() {
-    return true;
-  }
-
-  @Override
-  public String toString() {
-    return "varchar(" + length + ")";
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(baseType(), length);
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (object instanceof Varchar) {
-      return length == ((Varchar) object).length;
-    }
-
-    return false;
+    return params.get(0);
   }
 }

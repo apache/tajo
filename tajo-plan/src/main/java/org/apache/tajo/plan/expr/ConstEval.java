@@ -20,10 +20,10 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeFactory;
 
 public class ConstEval extends EvalNode implements Comparable<ConstEval>, Cloneable {
 	@Expose Datum datum = null;
@@ -51,7 +51,7 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
 
   @Override
 	public Type getValueType() {
-    return TypeConverter.convert(datum.type());
+    return TypeFactory.create(datum.type());
 	}
 
   @Override

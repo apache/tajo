@@ -39,6 +39,7 @@ import org.apache.tajo.plan.rewrite.BaseSchemaBuildPhase.Processor.NameRefInSele
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphVisitor;
@@ -65,9 +66,9 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
   }
 
   private static String getQualifiedName(PlanContext context, String simpleName) {
-    return CatalogUtil.isFQTableName(simpleName) ?
+    return IdentifierUtil.isFQTableName(simpleName) ?
         simpleName :
-        CatalogUtil.buildFQName(context.getQueryContext().get(SessionVars.CURRENT_DATABASE), simpleName);
+        IdentifierUtil.buildFQName(context.getQueryContext().get(SessionVars.CURRENT_DATABASE), simpleName);
   }
 
   @Override
@@ -421,7 +422,7 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
           for (int i = 0; i < paths.length-1; i++) {
             String parentName = paths[i];
             if (i == 0) {
-              parentName = CatalogUtil.buildFQName(eachColumn.getQualifier(), parentName);
+              parentName = IdentifierUtil.buildFQName(eachColumn.getQualifier(), parentName);
             }
             // Leaf column type is TEXT; otherwise, RECORD.
             ColumnVertex childVertex = new ColumnVertex(

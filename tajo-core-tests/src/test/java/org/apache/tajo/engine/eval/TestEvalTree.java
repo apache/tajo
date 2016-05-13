@@ -18,10 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
@@ -29,9 +26,11 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeFactory;
 import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
+import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 import static org.junit.Assert.*;
 
 public class TestEvalTree extends ExprTestBase {
@@ -383,6 +382,7 @@ public class TestEvalTree extends ExprTestBase {
   private void assertCloneEqual(EvalNode eval) throws CloneNotSupportedException {
     EvalNode copy = (EvalNode) eval.clone();
     assertEquals(eval, copy);
+    assertEquals(eval.hashCode(), copy.hashCode());
     assertFalse(eval == copy);
   }
 }

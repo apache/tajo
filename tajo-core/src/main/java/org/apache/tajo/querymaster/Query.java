@@ -50,6 +50,7 @@ import org.apache.tajo.exception.ErrorUtil;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
@@ -544,8 +545,8 @@ public class Query implements EventHandler<QueryEvent> {
               finalOutputDir, partitions);
 
             String databaseName, simpleTableName;
-            if (CatalogUtil.isFQTableName(tableDesc.getName())) {
-              String[] split = CatalogUtil.splitFQTableName(tableDesc.getName());
+            if (IdentifierUtil.isFQTableName(tableDesc.getName())) {
+              String[] split = IdentifierUtil.splitFQTableName(tableDesc.getName());
               databaseName = split[0];
               simpleTableName = split[1];
             } else {
@@ -630,21 +631,21 @@ public class Query implements EventHandler<QueryEvent> {
 
         CreateIndexNode createIndexNode = (CreateIndexNode) lastStage.getBlock().getPlan();
         String databaseName, simpleIndexName, qualifiedIndexName;
-        if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
-          String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+        if (IdentifierUtil.isFQTableName(createIndexNode.getIndexName())) {
+          String [] splits = IdentifierUtil.splitFQTableName(createIndexNode.getIndexName());
           databaseName = splits[0];
           simpleIndexName = splits[1];
           qualifiedIndexName = createIndexNode.getIndexName();
         } else {
           databaseName = queryContext.getCurrentDatabase();
           simpleIndexName = createIndexNode.getIndexName();
-          qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+          qualifiedIndexName = IdentifierUtil.buildFQName(databaseName, simpleIndexName);
         }
         ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
         if (scanNode == null) {
           throw new IOException("Cannot find the table of the relation");
         }
-        IndexDesc indexDesc = new IndexDesc(databaseName, CatalogUtil.extractSimpleName(scanNode.getTableName()),
+        IndexDesc indexDesc = new IndexDesc(databaseName, IdentifierUtil.extractSimpleName(scanNode.getTableName()),
             simpleIndexName, createIndexNode.getIndexPath(),
             createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
             createIndexNode.isUnique(), false, scanNode.getLogicalSchema());

@@ -46,5 +46,6 @@ create table various_types (
   -- col42 binary(10),
   -- col43 varbinary(10),
   -- col44 binary Varying(10),
-  col45 blOb
+  col45 blOb,
+  col46 array<integer>
 );

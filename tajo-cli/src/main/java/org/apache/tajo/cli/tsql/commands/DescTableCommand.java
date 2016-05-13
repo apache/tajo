@@ -24,7 +24,6 @@ import jline.console.completer.StringsCompleter;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -32,6 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.StringUtils;
 
@@ -72,7 +72,7 @@ public class DescTableCommand extends TajoShellCommand {
             sb.append("\"").append(index.getIndexName()).append("\" ");
             sb.append(index.getIndexMethod()).append(" (");
             for (SortSpecProto key : index.getKeySortSpecsList()) {
-              sb.append(CatalogUtil.extractSimpleName(key.getColumn().getName()));
+              sb.append(IdentifierUtil.extractSimpleName(key.getColumn().getName()));
               sb.append(key.getAscending() ? " ASC" : " DESC");
               sb.append(key.getNullFirst() ? " NULLS FIRST, " : " NULLS LAST, ");
             }

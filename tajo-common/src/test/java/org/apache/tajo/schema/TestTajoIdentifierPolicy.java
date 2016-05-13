@@ -45,10 +45,10 @@ public class TestTajoIdentifierPolicy {
   }
 
   public static void assertIdentifier(IdentifierPolicy p, Identifier id, String expected) {
-    assertEquals(expected, id.displayString(p));
+    assertEquals(expected, id.raw(p));
   }
 
   public static void assertQualifiedIdentifier(IdentifierPolicy p, QualifiedIdentifier id, String expected) {
-    assertEquals(expected, id.displayString(p));
+    assertEquals(expected, id.raw(p));
   }
 }

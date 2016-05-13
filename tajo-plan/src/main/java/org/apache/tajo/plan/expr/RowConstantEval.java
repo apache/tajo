@@ -19,11 +19,11 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeFactory;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
@@ -39,7 +39,7 @@ public class RowConstantEval extends ValueSetEval {
 
   @Override
   public Type getValueType() {
-    return TypeConverter.convert(values[0].type());
+    return TypeFactory.create(values[0].type());
   }
 
   @Override

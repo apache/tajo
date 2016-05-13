@@ -14,6 +14,8 @@ Release 0.12.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-2129: Apply new type implementation to Schema and Catalog. (hyunsik)
+
     TAJO-2071: Supporting DATE type in Parquet format. 
     (Jongyoung Park via hyunsik)
 

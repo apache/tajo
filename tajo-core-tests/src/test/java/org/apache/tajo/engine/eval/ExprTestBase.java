@@ -56,6 +56,12 @@ import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.text.CSVLineSerDe;
 import org.apache.tajo.storage.text.TextLineDeserializer;
+import org.apache.tajo.schema.IdentifierUtil;
+import org.apache.tajo.storage.LazyTuple;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
@@ -204,20 +210,20 @@ public class ExprTestBase {
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
       throws TajoException {
-    testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
+    testEval(null, schema, tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
         expected, ',', true);
   }
 
   public void testEval(OverridableConf context, Schema schema, String tableName, String csvTuple, String query,
                        String [] expected)
       throws TajoException {
-    testEval(context, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
+    testEval(context, schema, tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null, csvTuple,
         query, expected, ',', true);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query,
                        String [] expected, char delimiter, boolean condition) throws TajoException {
-    testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
+    testEval(null, schema, tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null, csvTuple,
         query, expected, delimiter, condition);
   }
 
@@ -233,8 +239,8 @@ public class ExprTestBase {
 
     VTuple vtuple  = null;
     String qualifiedTableName =
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME,
-            tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null);
+        IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME,
+            tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null);
     Schema inputSchema = null;
 
 
