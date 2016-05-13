@@ -525,10 +525,10 @@ public class HBaseTablespace extends Tablespace {
 
           if (fragmentMap.containsKey(regionStartKey)) {
             final HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
-            if (Bytes.compareTo(fragmentStart, prevFragment.getStartKey().key) < 0) {
+            if (Bytes.compareTo(fragmentStart, prevFragment.getStartKey().getBytes()) < 0) {
               prevFragment.setStartRow(fragmentStart);
             }
-            if (Bytes.compareTo(fragmentStop, prevFragment.getEndKey().key) > 0) {
+            if (Bytes.compareTo(fragmentStop, prevFragment.getEndKey().getBytes()) > 0) {
               prevFragment.setStopRow(fragmentStop);
             }
           } else {

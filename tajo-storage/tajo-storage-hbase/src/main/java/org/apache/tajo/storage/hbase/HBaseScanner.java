@@ -181,16 +181,16 @@ public class HBaseScanner implements Scanner {
       }
     }
 
-    scan.setStartRow(fragment.getStartKey().key);
+    scan.setStartRow(fragment.getStartKey().getBytes());
     if (fragment.isLast() && fragment.getEndKey() != null &&
-        fragment.getEndKey().key.length > 0) {
+        fragment.getEndKey().getBytes().length > 0) {
       // last and stopRow is not empty
       if (filters == null) {
         filters = new FilterList();
       }
-      filters.addFilter(new InclusiveStopFilter(fragment.getEndKey().key));
+      filters.addFilter(new InclusiveStopFilter(fragment.getEndKey().getBytes()));
     } else {
-      scan.setStopRow(fragment.getEndKey().key);
+      scan.setStopRow(fragment.getEndKey().getBytes());
     }
 
     if (filters != null) {

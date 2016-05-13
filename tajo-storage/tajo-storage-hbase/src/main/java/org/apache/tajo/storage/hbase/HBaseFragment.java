@@ -102,8 +102,8 @@ public class HBaseFragment extends Fragment<HBaseFragmentKey> {
     return
         "\"fragment\": {\"uri:\"" + uri.toString() +"\", \"tableName\": \""+ tableName +
             "\", hbaseTableName\": \"" + hbaseTableName + "\"" +
-            ", \"startRow\": \"" + new String(startKey.key) + "\"" +
-            ", \"stopRow\": \"" + new String(endKey.key) + "\"" +
+            ", \"startRow\": \"" + new String(startKey.bytes) + "\"" +
+            ", \"stopRow\": \"" + new String(endKey.bytes) + "\"" +
             ", \"length\": \"" + length + "\"}" ;
   }
 
@@ -114,8 +114,8 @@ public class HBaseFragment extends Fragment<HBaseFragmentKey> {
         .setUri(uri.toString())
         .setTableName(tableName)
         .setHbaseTableName(hbaseTableName)
-        .setStartRow(ByteString.copyFrom(startKey.key))
-        .setStopRow(ByteString.copyFrom(endKey.key))
+        .setStartRow(ByteString.copyFrom(startKey.bytes))
+        .setStopRow(ByteString.copyFrom(endKey.bytes))
         .setLast(last)
         .setLength(length)
         .setRegionLocation(hostNames[0]);
@@ -152,34 +152,38 @@ public class HBaseFragment extends Fragment<HBaseFragmentKey> {
   }
 
   public static class HBaseFragmentKey implements Comparable<HBaseFragmentKey> {
-    byte[] key;
+    private final byte[] bytes;
 
     public HBaseFragmentKey(byte[] key) {
-      this.key = key;
+      this.bytes = key;
+    }
+
+    public byte[] getBytes() {
+      return bytes;
     }
 
     @Override
     public int hashCode() {
-      return Bytes.hashCode(key);
+      return Bytes.hashCode(bytes);
     }
 
     @Override
     public boolean equals(Object o) {
       if (o instanceof HBaseFragmentKey) {
         HBaseFragmentKey other = (HBaseFragmentKey) o;
-        return Bytes.equals(key, other.key);
+        return Bytes.equals(bytes, other.bytes);
       }
       return false;
     }
 
     @Override
     public int compareTo(HBaseFragmentKey o) {
-      return Bytes.compareTo(key, o.key);
+      return Bytes.compareTo(bytes, o.bytes);
     }
 
     @Override
     public String toString() {
-      return new String(key);
+      return new String(bytes);
     }
   }
 }
