@@ -41,6 +41,7 @@ import org.junit.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -127,7 +128,6 @@ public class TestPartitionedTableRewriter  {
       .add("key2", TajoDataTypes.Type.TEXT)
       .add("key3", TajoDataTypes.Type.INT8)
       .build();
-
 
     PartitionMethodDesc partitionMethodDesc =
       new PartitionMethodDesc("default", MULTIPLE_PARTITION_TABLE_NAME,
@@ -233,17 +233,25 @@ public class TestPartitionedTableRewriter  {
     PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
     assertNotNull(partitionPruningHandle);
 
-    List filteredPaths = Arrays.asList(partitionPruningHandle.getPartitionPaths());
-    assertEquals(3, filteredPaths.size());
-    assertTrue(filteredPaths.stream().anyMatch(path -> path.toString().indexOf("key=part123") > -1));
-    assertTrue(filteredPaths.stream().anyMatch(path -> path.toString().indexOf("key=part456") > -1));
-    assertTrue(filteredPaths.stream().anyMatch(path -> path.toString().indexOf("key=part789") > -1));
+    Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
+      .sorted((path1, path2) -> {
+        return path1.compareTo(path2);
+      });
+    List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
+    assertEquals(3, partitionPathList.size());
+    assertTrue(partitionPathList.get(0).toString().indexOf("key=part123") > -1);
+    assertTrue(partitionPathList.get(1).toString().indexOf("key=part456") > -1);
+    assertTrue(partitionPathList.get(2).toString().indexOf("key=part789") > -1);
 
-    List partitionKeys = Arrays.asList(partitionPruningHandle.getPartitionKeys());
-    assertEquals(3, partitionKeys.size());
-    assertTrue(partitionKeys.stream().anyMatch(path -> path.toString().indexOf("key=part123") > -1));
-    assertTrue(partitionKeys.stream().anyMatch(path -> path.toString().indexOf("key=part456") > -1));
-    assertTrue(partitionKeys.stream().anyMatch(path -> path.toString().indexOf("key=part789") > -1));
+    Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
+      .sorted((keys1, keys2) -> {
+        return keys1.compareTo(keys2);
+      });
+    List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
+    assertEquals(3, partitionKeysList.size());
+    assertTrue(partitionKeysList.get(0).toString().indexOf("key=part123") > -1);
+    assertTrue(partitionKeysList.get(1).toString().indexOf("key=part456") > -1);
+    assertTrue(partitionKeysList.get(2).toString().indexOf("key=part789") > -1);
 
     assertEquals(33L, partitionPruningHandle.getTotalVolume());
   }
@@ -306,17 +314,25 @@ public class TestPartitionedTableRewriter  {
     PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
     assertNotNull(partitionPruningHandle);
 
-    List filteredPaths = Arrays.asList(partitionPruningHandle.getPartitionPaths());
-    assertEquals(3, filteredPaths.size());
-    assertTrue(filteredPaths.stream().anyMatch(path -> path.toString().indexOf("key=part123") > -1));
-    assertTrue(filteredPaths.stream().anyMatch(path -> path.toString().indexOf("key=part456") > -1));
-    assertTrue(filteredPaths.stream().anyMatch(path -> path.toString().indexOf("key=part789") > -1));
+    Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
+      .sorted((path1, path2) -> {
+        return path1.compareTo(path2);
+      });
+    List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
+    assertEquals(3, partitionPathList.size());
+    assertTrue(partitionPathList.get(0).toString().indexOf("key=part123") > -1);
+    assertTrue(partitionPathList.get(1).toString().indexOf("key=part456") > -1);
+    assertTrue(partitionPathList.get(2).toString().indexOf("key=part789") > -1);
 
-    List partitionKeys = Arrays.asList(partitionPruningHandle.getPartitionKeys());
-    assertEquals(3, partitionKeys.size());
-    assertTrue(partitionKeys.stream().anyMatch(path -> path.toString().indexOf("key=part123") > -1));
-    assertTrue(partitionKeys.stream().anyMatch(path -> path.toString().indexOf("key=part456") > -1));
-    assertTrue(partitionKeys.stream().anyMatch(path -> path.toString().indexOf("key=part789") > -1));
+    Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
+      .sorted((keys1, keys2) -> {
+        return keys1.compareTo(keys2);
+      });
+    List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
+    assertEquals(3, partitionKeysList.size());
+    assertTrue(partitionKeysList.get(0).toString().indexOf("key=part123") > -1);
+    assertTrue(partitionKeysList.get(1).toString().indexOf("key=part456") > -1);
+    assertTrue(partitionKeysList.get(2).toString().indexOf("key=part789") > -1);
 
     assertEquals(33L, partitionPruningHandle.getTotalVolume());
   }
@@ -391,19 +407,23 @@ public class TestPartitionedTableRewriter  {
     PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
     assertNotNull(partitionPruningHandle);
 
-    List filteredPaths = Arrays.asList(partitionPruningHandle.getPartitionPaths());
-    assertEquals(2, filteredPaths.size());
-    assertTrue(filteredPaths.stream().
-      anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=1") > -1));
-    assertTrue(filteredPaths.stream().
-      anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=2") > -1));
+    Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
+      .sorted((path1, path2) -> {
+        return path1.compareTo(path2);
+      });
+    List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
+    assertEquals(2, partitionPathList.size());
+    assertTrue(partitionPathList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
+    assertTrue(partitionPathList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
 
-    List partitionKeys = Arrays.asList(partitionPruningHandle.getPartitionKeys());
-    assertEquals(2, partitionKeys.size());
-    assertTrue(partitionKeys.stream()
-      .anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=1") > -1));
-    assertTrue(partitionKeys.stream()
-      .anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=2") > -1));
+    Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
+      .sorted((keys1, keys2) -> {
+        return keys1.compareTo(keys2);
+      });
+    List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
+    assertEquals(2, partitionKeysList.size());
+    assertTrue(partitionKeysList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
+    assertTrue(partitionKeysList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
 
     assertEquals(23L, partitionPruningHandle.getTotalVolume());
   }
@@ -438,19 +458,23 @@ public class TestPartitionedTableRewriter  {
     PartitionPruningHandle partitionPruningHandle = rewriter.getPartitionPruningHandle(conf, scanNode);
     assertNotNull(partitionPruningHandle);
 
-    List filteredPaths = Arrays.asList(partitionPruningHandle.getPartitionPaths());
-    assertEquals(2, filteredPaths.size());
-    assertTrue(filteredPaths.stream().
-      anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=1") > -1));
-    assertTrue(filteredPaths.stream().
-      anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=2") > -1));
+    Stream<Path> partitionPathStream = Stream.of(partitionPruningHandle.getPartitionPaths())
+      .sorted((path1, path2) -> {
+        return path1.compareTo(path2);
+      });
+    List<Path> partitionPathList = partitionPathStream.collect(Collectors.toList());
+    assertEquals(2, partitionPathList.size());
+    assertTrue(partitionPathList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
+    assertTrue(partitionPathList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
 
-    List partitionKeys = Arrays.asList(partitionPruningHandle.getPartitionKeys());
-    assertEquals(2, partitionKeys.size());
-    assertTrue(partitionKeys.stream()
-      .anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=1") > -1));
-    assertTrue(partitionKeys.stream()
-      .anyMatch(path -> path.toString().indexOf("key1=part123/key2=supp123/key3=2") > -1));
+    Stream<String> partitionKeysStream = Stream.of(partitionPruningHandle.getPartitionKeys())
+      .sorted((keys1, keys2) -> {
+        return keys1.compareTo(keys2);
+      });
+    List<String> partitionKeysList = partitionKeysStream.collect(Collectors.toList());
+    assertEquals(2, partitionKeysList.size());
+    assertTrue(partitionKeysList.get(0).toString().indexOf("key1=part123/key2=supp123/key3=1") > -1);
+    assertTrue(partitionKeysList.get(1).toString().indexOf("key1=part123/key2=supp123/key3=2") > -1);
 
     assertEquals(23L, partitionPruningHandle.getTotalVolume());
   }
