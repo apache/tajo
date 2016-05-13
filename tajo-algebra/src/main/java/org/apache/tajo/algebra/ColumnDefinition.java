@@ -37,17 +37,14 @@ public  class ColumnDefinition extends DataTypeExpr {
       }
     }
 
-    // nested records
     if (dataType.isRecordType()) {
       this.recordType = dataType.recordType;
     }
 
-    // map type
     if (dataType.isMapType()) {
       this.mapType = dataType.mapType;
     }
 
-    // map type
     if (dataType.isArrayType()) {
       this.arrayType = dataType.arrayType;
     }

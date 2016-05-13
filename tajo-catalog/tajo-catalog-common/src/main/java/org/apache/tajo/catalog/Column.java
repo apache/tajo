@@ -33,6 +33,7 @@ import org.apache.tajo.type.TypeProtobufEncoder;
 /**
  * Describes a column. It is an immutable object.
  */
+@Deprecated
 public class Column implements ProtoObject<ColumnProto>, GsonObject {
 	@Expose protected String name;
   @Expose protected Type type;

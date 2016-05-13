@@ -22,8 +22,11 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.apache.tajo.Assert;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.TUtil;
+
+import static org.apache.tajo.Assert.assertNotNull;
 
 public class DataTypeExpr extends Expr {
   @Expose @SerializedName("DataTypeName")
@@ -41,24 +44,27 @@ public class DataTypeExpr extends Expr {
 
   public DataTypeExpr(String typeName) {
     super(OpType.DataType);
+    assertNotNull(typeName);
     this.typeName = typeName;
   }
 
   public DataTypeExpr(ArrayType array) {
     super(OpType.DataType);
+    assertNotNull(array);
     this.typeName = Type.ARRAY.name();
     this.arrayType = array;
   }
 
   public DataTypeExpr(RecordType record) {
     super(OpType.DataType);
+    assertNotNull(record);
     this.typeName = Type.RECORD.name();
     this.recordType = record;
   }
 
   public DataTypeExpr(MapType map) {
     super(OpType.DataType);
-    // RECORD = 51 in DataTypes.proto
+    assertNotNull(map);
     this.typeName = Type.MAP.name();
     this.mapType = map;
   }

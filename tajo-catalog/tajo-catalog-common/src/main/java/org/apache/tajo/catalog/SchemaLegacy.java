@@ -38,6 +38,7 @@ import java.util.*;
 
 import static com.google.common.collect.Collections2.transform;
 
+@Deprecated
 public class SchemaLegacy implements Schema, ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
 	@Expose protected List<Column> fields = null;

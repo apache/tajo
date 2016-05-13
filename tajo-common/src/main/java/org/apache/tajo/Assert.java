@@ -22,6 +22,12 @@ import org.apache.tajo.exception.TajoInternalError;
 
 public class Assert {
 
+  public static void assertNotNull(Object obj) {
+    if (obj == null) {
+      throw new TajoInternalError("The argument must not be NULL.");
+    }
+  }
+
   public static void assertCondition(boolean condition, String message, Object... arguments) {
     if (!condition) {
       throw new TajoInternalError(String.format(message, arguments));
