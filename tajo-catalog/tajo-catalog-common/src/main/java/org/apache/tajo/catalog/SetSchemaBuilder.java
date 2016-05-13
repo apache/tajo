@@ -20,47 +20,41 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.collections.collection.UnmodifiableCollection;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.schema.QualifiedIdentifier;
-import org.apache.tajo.schema.Schema.NamedPrimitiveType;
-import org.apache.tajo.schema.Schema.NamedStructType;
-import org.apache.tajo.schema.Schema.NamedType;
-import org.apache.tajo.type.Type;
+import org.apache.tajo.schema.Field;
 
-import java.util.*;
-
-import static org.apache.tajo.catalog.FieldConverter.toQualifiedIdentifier;
-import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 
 public class SetSchemaBuilder implements SchemaBuilder.SchemaCollector {
   private final Set<QualifiedIdentifier> nameSet = new HashSet<>();
-  private final ImmutableList.Builder<NamedType> fields = new ImmutableList.Builder();
+  private final ImmutableList.Builder<Field> fields = new ImmutableList.Builder();
 
   @Override
-  public void add(NamedType namedType) {
-    if (!nameSet.contains(namedType.name())) {
-      fields.add(namedType);
-      nameSet.add(namedType.name());
+  public void add(Field field) {
+    if (!nameSet.contains(field.name())) {
+      fields.add(field);
+      nameSet.add(field.name());
     }
   }
 
   @Override
-  public void addAll(Iterator<NamedType> fields) {
+  public void addAll(Iterator<Field> fields) {
     while (fields.hasNext()) {
       add(fields.next());
     }
   }
 
   @Override
-  public void addAll(Iterable<NamedType> fields) {
-    for (NamedType n : fields) {
+  public void addAll(Iterable<Field> fields) {
+    for (Field n : fields) {
       add(n);
     }
   }
 
   @Override
-  public ImmutableCollection<NamedType> build() {
+  public ImmutableCollection<Field> build() {
     return fields.build();
   }
 }

@@ -20,30 +20,30 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableList;
-import org.apache.tajo.schema.Schema.NamedType;
+import org.apache.tajo.schema.Field;
 
 import java.util.Iterator;
 
 public class ListSchemaBuilder implements SchemaBuilder.SchemaCollector {
-  private final ImmutableList.Builder<NamedType> fields = new ImmutableList.Builder();
+  private final ImmutableList.Builder<Field> fields = new ImmutableList.Builder();
 
   @Override
-  public void add(NamedType namedType) {
-    fields.add(namedType);
+  public void add(Field field) {
+    fields.add(field);
   }
 
   @Override
-  public void addAll(Iterator<NamedType> fields) {
+  public void addAll(Iterator<Field> fields) {
     this.fields.addAll(fields);
   }
 
   @Override
-  public void addAll(Iterable<NamedType> fields) {
+  public void addAll(Iterable<Field> fields) {
     this.fields.addAll(fields);
   }
 
   @Override
-  public ImmutableCollection<NamedType> build() {
+  public ImmutableCollection<Field> build() {
     return fields.build();
   }
 }

@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 
 import java.io.IOException;
@@ -83,7 +84,7 @@ public class MiniCatalogServer extends CatalogServer {
   public void cleanup() throws UndefinedTableException, InsufficientPrivilegeException, UndefinedDatabaseException,
       UndefinedTablespaceException {
     for (String table : catalog.getAllTableNames(DEFAULT_DATABASE_NAME)) {
-      catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, table));
+      catalog.dropTable(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, table));
     }
     for (String database : catalog.getAllDatabaseNames()) {
       if (!database.equals(TajoConstants.DEFAULT_DATABASE_NAME) &&

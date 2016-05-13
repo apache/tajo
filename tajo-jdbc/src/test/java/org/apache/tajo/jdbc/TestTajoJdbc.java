@@ -20,10 +20,10 @@ package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Maps;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -338,7 +338,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertEquals(22, numCols);
       int numColumns = 0;
 
-      TableDesc tableDesc = client.getTableDesc(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+      TableDesc tableDesc = client.getTableDesc(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
       assertNotNull(tableDesc);
 
       List<Column> columns = tableDesc.getSchema().getRootColumns();
@@ -495,7 +495,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
   @Test
   public void testCreateTableWithDateAndTimestamp() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
 
     int result;
     Statement stmt = null;
@@ -612,7 +612,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
 
-        String tableName = CatalogUtil.normalizeIdentifier("testAlterTablePartition");
+        String tableName = IdentifierUtil.normalizeIdentifier("testAlterTablePartition");
         resultSet = executeString(
           "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
         resultSet.close();
@@ -699,7 +699,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
   @Test
   public void testTableValueWithTimeZone() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testTableValueWithTimeZone");
+    String tableName = IdentifierUtil.normalizeIdentifier("testTableValueWithTimeZone");
 
     Statement stmt = null;
     ResultSet res = null;

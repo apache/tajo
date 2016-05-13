@@ -18,47 +18,17 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Objects;
+import static org.apache.tajo.common.TajoDataTypes.Type.ARRAY;
 
-public class Array extends Type {
-  private final Type elementType;
+public class Array extends TypeParamterizedType {
 
   public Array(Type elementType) {
-    this.elementType = elementType;
+    super(ARRAY, ImmutableList.of(elementType));
   }
 
   public Type elementType() {
-    return this.elementType;
-  }
-
-  @Override
-  public boolean hasParam() {
-    return true;
-  }
-
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.ARRAY;
-  }
-
-  @Override
-  public String toString() {
-    return "array<" + elementType + ">";
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(baseType(), elementType);
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (object instanceof Array) {
-      return elementType.equals(((Array)object).elementType);
-    }
-
-    return false;
+    return this.params.get(0);
   }
 }

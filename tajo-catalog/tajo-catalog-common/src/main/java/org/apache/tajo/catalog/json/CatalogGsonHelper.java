@@ -48,6 +48,7 @@ public class CatalogGsonHelper {
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
     adapters.put(Schema.class, new SchemaAdapter());
+    adapters.put(org.apache.tajo.type.Type.class, new TypeAdapter());
     return adapters;
   }
 

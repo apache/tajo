@@ -49,6 +49,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -441,7 +442,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public ReturnState alterTable(RpcController controller, AlterTableDescProto proto) {
-      String [] split = CatalogUtil.splitTableName(proto.getTableName());
+      String [] split = IdentifierUtil.splitTableName(proto.getTableName());
 
       if (linkedMetadataManager.existsDatabase(split[0])) {
         return errInsufficientPrivilege("alter a table in database '" + split[0] + "'");
@@ -666,7 +667,7 @@ public class CatalogServer extends AbstractService {
     @Override
     public ReturnState createTable(RpcController controller, TableDescProto request) {
 
-      String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+      String [] splitted = IdentifierUtil.splitFQTableName(request.getTableName());
 
       String dbName = splitted[0];
       String tbName = splitted[1];
@@ -683,7 +684,7 @@ public class CatalogServer extends AbstractService {
       try {
         store.createTable(request);
         LOG.info(String.format("relation \"%s\" is added to the catalog (%s)",
-            CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddress));
+            IdentifierUtil.getCanonicalTableName(dbName, tbName), bindAddress));
         return OK;
 
       } catch (Throwable t) {
@@ -713,7 +714,7 @@ public class CatalogServer extends AbstractService {
       try {
         store.dropTable(dbName, tbName);
         LOG.info(String.format("relation \"%s\" is deleted from the catalog (%s)",
-            CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddress));
+            IdentifierUtil.getCanonicalTableName(dbName, tbName), bindAddress));
 
         return OK;
 

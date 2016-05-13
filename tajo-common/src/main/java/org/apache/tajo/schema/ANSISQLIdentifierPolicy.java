@@ -29,12 +29,12 @@ public class ANSISQLIdentifierPolicy extends IdentifierPolicy {
   }
 
   @Override
-  public String getIdentifierQuoteString() {
+  public char getIdentifierQuoteString() {
     return ANSI_SQL_QUOTE_STRING;
   }
 
   @Override
-  String getIdentifierSeperator() {
+  char getIdentifierSeperator() {
     return ANSI_SQL_SEPERATOR_STRING;
   }
 
