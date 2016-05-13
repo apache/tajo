@@ -666,7 +666,7 @@ public class TestPartitionedTableRewriter  {
 
     Path[] filteredPaths = partitionPruningHandle.getPartitionPaths();
     assertEquals(1, filteredPaths.length);
-    assertEquals(ARBITRARY_PATH[1], filteredPaths[0].toString());
+    assertEquals(ARBITRARY_PATH[1], filteredPaths[0]);
 
     String[] partitionKeys = partitionPruningHandle.getPartitionKeys();
     assertEquals(1, partitionKeys.length);
