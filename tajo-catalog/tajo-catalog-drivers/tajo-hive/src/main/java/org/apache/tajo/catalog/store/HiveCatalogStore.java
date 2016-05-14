@@ -57,7 +57,9 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.thrift.TException;
 
@@ -165,8 +167,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         }
 
         if (!isPartitionKey) {
-          String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
-              CatalogConstants.IDENTIFIER_DELIMITER + eachField.getName();
+          String fieldName = databaseName + IdentifierUtil.IDENTIFIER_DELIMITER + tableName +
+              IdentifierUtil.IDENTIFIER_DELIMITER + eachField.getName();
           TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(eachField.getType());
           schemaBuilder.add(fieldName, dataType);
         }
@@ -246,8 +248,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType());
-            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
-                CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            String fieldName = databaseName + IdentifierUtil.IDENTIFIER_DELIMITER + tableName +
+                IdentifierUtil.IDENTIFIER_DELIMITER + fieldSchema.getName();
             expressionSchema.add(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
@@ -421,7 +423,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     TableDesc tableDesc = new TableDesc(tableDescProto);
-    String[] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
+    String[] splitted = IdentifierUtil.splitFQTableName(tableDesc.getName());
     String databaseName = splitted[0];
     String tableName = splitted[1];
 
@@ -460,7 +462,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       for (Column eachField : columns) {
         cols.add(new FieldSchema(eachField.getSimpleName(),
-            HiveCatalogUtil.getHiveFieldType(eachField.getDataType()), ""));
+            HiveCatalogUtil.getHiveFieldType(eachField.getType()), ""));
       }
       sd.setCols(cols);
 
@@ -469,7 +471,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         List<FieldSchema> partitionKeys = new ArrayList<>();
         for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           partitionKeys.add(new FieldSchema(eachPartitionKey.getSimpleName(),
-              HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));
+              HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getType()), ""));
         }
         table.setPartitionKeys(partitionKeys);
       }
@@ -605,7 +607,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       throws DuplicateTableException, DuplicateColumnException, DuplicatePartitionException,
       UndefinedPartitionException {
 
-    final String[] split = CatalogUtil.splitFQTableName(alterTableDescProto.getTableName());
+    final String[] split = IdentifierUtil.splitFQTableName(alterTableDescProto.getTableName());
 
     if (split.length == 1) {
       throw new IllegalArgumentException("alterTable() requires a qualified table name, but it is \""
@@ -713,7 +715,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       List<FieldSchema> columns = table.getSd().getCols();
       columns.add(new FieldSchema(columnProto.getName(),
-        HiveCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
+        HiveCatalogUtil.getHiveFieldType(TypeProtobufEncoder.decode(columnProto.getType())), ""));
       client.getHiveClient().alter_table(databaseName, tableName, table);
 
 
@@ -812,8 +814,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType());
-            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
-                CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            String fieldName = databaseName + IdentifierUtil.IDENTIFIER_DELIMITER + tableName +
+                IdentifierUtil.IDENTIFIER_DELIMITER + fieldSchema.getName();
             expressionSchema.add(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
@@ -1041,7 +1043,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           if (i > 0) {
             partitionName.append(File.separator);
           }
-          partitionName.append(CatalogUtil.extractSimpleName(parititonColumns.get(i).getName()));
+          partitionName.append(IdentifierUtil.extractSimpleName(parititonColumns.get(i).getName()));
           partitionName.append("=");
           partitionName.append(hivePartition.getValues().get(i));
         }

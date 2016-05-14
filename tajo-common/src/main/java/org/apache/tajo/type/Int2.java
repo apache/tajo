@@ -18,11 +18,10 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
+import static org.apache.tajo.common.TajoDataTypes.Type.INT2;
 
 public class Int2 extends Type {
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.INT2;
+  public Int2() {
+    super(INT2);
   }
 }

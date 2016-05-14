@@ -113,3 +113,24 @@ message DataType {
   optional int32 num_nested_fields = 4;
 }
 
+message TypeProto {
+  repeated TypeElement elements = 1;
+}
+
+message TypeElement {
+ required Type kind = 1;
+ repeated int32 value_params = 2;
+ repeated string string_params = 3;
+ repeated QualifiedIdentifierProto field_names = 4;
+ optional int32 child_num = 5;
+}
+
+message QualifiedIdentifierProto {
+  repeated IdentifierProto names = 1;
+}
+
+message IdentifierProto {
+  required string name = 1;
+  required bool quoted = 2;
+}
+

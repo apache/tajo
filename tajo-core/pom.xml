@@ -252,6 +252,10 @@
       <artifactId>hadoop-yarn-server-common</artifactId>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-exec</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.google.protobuf</groupId>
@@ -305,6 +309,10 @@
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.reflections</groupId>
+      <artifactId>reflections</artifactId>
     </dependency>
   </dependencies>
 

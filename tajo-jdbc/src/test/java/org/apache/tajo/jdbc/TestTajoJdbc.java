@@ -20,10 +20,10 @@ package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Maps;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,12 +80,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         Map<String, Integer> result = Maps.newHashMap();
         result.put("NO", 3);
         result.put("RF", 2);
+        result.put(null, 3);
 
         assertNotNull(res);
         assertTrue(res.next());
         assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
         assertTrue(res.next());
         assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+        assertTrue(res.next());
+        assertNull(res.getString(1));
+        assertNull(res.getString(2));
+        assertTrue(result.get(null) == res.getInt(3));
         assertFalse(res.next());
 
         ResultSetMetaData rsmd = res.getMetaData();
@@ -333,7 +338,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertEquals(22, numCols);
       int numColumns = 0;
 
-      TableDesc tableDesc = client.getTableDesc(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+      TableDesc tableDesc = client.getTableDesc(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
       assertNotNull(tableDesc);
 
       List<Column> columns = tableDesc.getSchema().getRootColumns();
@@ -380,12 +385,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+            assertTrue(res.next());
+            assertNull(res.getString(1));
+            assertNull(res.getString(2));
+            assertTrue(result.get(null) == res.getInt(3));
             assertFalse(res.next());
 
             ResultSetMetaData rsmd = res.getMetaData();
@@ -438,12 +448,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+            assertTrue(res.next());
+            assertNull(res.getString(1));
+            assertNull(res.getString(2));
+            assertTrue(result.get(null) == res.getInt(3));
             assertFalse(res.next());
 
             ResultSetMetaData rsmd = res.getMetaData();
@@ -480,7 +495,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
   @Test
   public void testCreateTableWithDateAndTimestamp() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
 
     int result;
     Statement stmt = null;
@@ -597,7 +612,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
 
-        String tableName = CatalogUtil.normalizeIdentifier("testAlterTablePartition");
+        String tableName = IdentifierUtil.normalizeIdentifier("testAlterTablePartition");
         resultSet = executeString(
           "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
         resultSet.close();
@@ -684,7 +699,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
   @Test
   public void testTableValueWithTimeZone() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testTableValueWithTimeZone");
+    String tableName = IdentifierUtil.normalizeIdentifier("testTableValueWithTimeZone");
 
     Statement stmt = null;
     ResultSet res = null;

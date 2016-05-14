@@ -20,27 +20,34 @@ package org.apache.tajo.function;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.proto.CatalogProtos.PythonInvocationDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.UDFtype;
+import org.apache.tajo.catalog.proto.CatalogProtos.UDFinvocationDescProto;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
 
 /**
- * <code>PythonInvocationDesc</code> describes a function name
+ * <code>UDFInvocationDesc</code> describes a function name
  * and a file path to the script where the function is defined.
  */
-public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescProto>, Cloneable {
+public class UDFInvocationDesc implements ProtoObject<UDFinvocationDescProto>, Cloneable {
+  @Expose private UDFtype type;
   @Expose private boolean isScalarFunction; // true if udf, false if udaf
-  @Expose private String funcOrClassName; // function name if udf, class name if udaf
-  @Expose private String filePath; // file path to the python module
+  @Expose private String funcOrClassName; // function name if python udf, class name if python udaf or others
+  @Expose private String filePath; // file path to the python module, or jar path to hive udf
+
+  public UDFInvocationDesc(UDFtype type, String funcOrClassName, boolean isScalarFunction) {
+    this(type, funcOrClassName, null, isScalarFunction);
+  }
 
   /**
-   * Constructor of {@link PythonInvocationDesc}.
+   * Constructor of {@link UDFInvocationDesc}.
    *
    * @param funcOrClassName if udf, function name. else, class name.
    * @param filePath path to script file
    * @param isScalarFunction
    */
-  public PythonInvocationDesc(String funcOrClassName, String filePath, boolean isScalarFunction) {
+  public UDFInvocationDesc(UDFtype type, String funcOrClassName, String filePath, boolean isScalarFunction) {
+    this.type = type;
     this.funcOrClassName = funcOrClassName;
     this.filePath = filePath;
     this.isScalarFunction = isScalarFunction;
@@ -50,8 +57,12 @@ public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescPro
     this.filePath = filePath;
   }
 
-  public PythonInvocationDesc(PythonInvocationDescProto proto) {
-    this(proto.getFuncName(), proto.getFilePath(), proto.getIsScalarFunction());
+  public UDFInvocationDesc(UDFinvocationDescProto proto) {
+    this(proto.getType(), proto.getFuncName(), proto.getFilePath(), proto.getIsScalarFunction());
+  }
+
+  public UDFtype getType() {
+    return type;
   }
 
   public String getName() {
@@ -67,16 +78,19 @@ public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescPro
   }
 
   @Override
-  public PythonInvocationDescProto getProto() {
-    PythonInvocationDescProto.Builder builder = PythonInvocationDescProto.newBuilder();
-    builder.setFuncName(funcOrClassName).setFilePath(filePath).setIsScalarFunction(isScalarFunction);
+  public UDFinvocationDescProto getProto() {
+    UDFinvocationDescProto.Builder builder = UDFinvocationDescProto.newBuilder();
+    builder.setType(type).setFuncName(funcOrClassName).setIsScalarFunction(isScalarFunction);
+    if (filePath != null) {
+      builder.setFilePath(filePath);
+    }
     return builder.build();
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof PythonInvocationDesc) {
-      PythonInvocationDesc other = (PythonInvocationDesc) o;
+    if (o instanceof UDFInvocationDesc) {
+      UDFInvocationDesc other = (UDFInvocationDesc) o;
       return TUtil.checkEquals(funcOrClassName, other.funcOrClassName) &&
           TUtil.checkEquals(filePath, other.filePath) && isScalarFunction == other.isScalarFunction;
     }
@@ -90,12 +104,13 @@ public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescPro
 
   @Override
   public String toString() {
-    return isScalarFunction ? "[UDF] " : "[UDAF] " + funcOrClassName + " at " + filePath;
+    return '['+type.toString()+'/'+ (isScalarFunction ? "UDF] " : "UDAF] ") +
+        funcOrClassName + (filePath != null ? (" at " + filePath) : "");
   }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    PythonInvocationDesc clone = (PythonInvocationDesc) super.clone();
+    UDFInvocationDesc clone = (UDFInvocationDesc) super.clone();
     clone.funcOrClassName = funcOrClassName == null ? null : funcOrClassName;
     clone.filePath = filePath == null ? null : filePath;
     clone.isScalarFunction = isScalarFunction;

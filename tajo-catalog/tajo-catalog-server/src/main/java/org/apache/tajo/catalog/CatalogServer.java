@@ -49,6 +49,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.ReturnState;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListResponse;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -92,7 +93,6 @@ public class CatalogServer extends AbstractService {
   // RPC variables
   private BlockingRpcServer rpcServer;
   private InetSocketAddress bindAddress;
-  private String bindAddressStr;
   final CatalogProtocolHandler handler;
 
   private Collection<FunctionDesc> builtinFuncs;
@@ -158,28 +158,26 @@ public class CatalogServer extends AbstractService {
 
   @Override
   public void serviceStart() throws Exception {
-    String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
-    InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
+    InetSocketAddress initIsa =  conf.getSocketAddrVar(ConfVars.CATALOG_ADDRESS);
     int workerNum = conf.getIntVar(ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM);
     try {
       this.rpcServer = new BlockingRpcServer(CatalogProtocol.class, handler, initIsa, workerNum);
       this.rpcServer.start();
 
       this.bindAddress = NetUtils.getConnectAddress(this.rpcServer.getListenAddress());
-      this.bindAddressStr = NetUtils.normalizeInetSocketAddress(bindAddress);
-      conf.setVar(ConfVars.CATALOG_ADDRESS, bindAddressStr);
+      conf.setVar(ConfVars.CATALOG_ADDRESS, NetUtils.getHostPortString(bindAddress));
     } catch (Exception e) {
       LOG.error("CatalogServer startup failed", e);
       throw new TajoInternalError(e);
     }
 
-    LOG.info("Catalog Server startup (" + bindAddressStr + ")");
+    LOG.info("Catalog Server startup (" + bindAddress + ")");
     super.serviceStart();
   }
 
   @Override
   public void serviceStop() throws Exception {
-    LOG.info("Catalog Server (" + bindAddressStr + ") shutdown");
+    LOG.info("Catalog Server (" + bindAddress + ") shutdown");
 
     // If CatalogServer shutdowns before it started, rpcServer and store may be NULL.
     // So, we should check Nullity of them.
@@ -444,7 +442,7 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public ReturnState alterTable(RpcController controller, AlterTableDescProto proto) {
-      String [] split = CatalogUtil.splitTableName(proto.getTableName());
+      String [] split = IdentifierUtil.splitTableName(proto.getTableName());
 
       if (linkedMetadataManager.existsDatabase(split[0])) {
         return errInsufficientPrivilege("alter a table in database '" + split[0] + "'");
@@ -669,7 +667,7 @@ public class CatalogServer extends AbstractService {
     @Override
     public ReturnState createTable(RpcController controller, TableDescProto request) {
 
-      String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+      String [] splitted = IdentifierUtil.splitFQTableName(request.getTableName());
 
       String dbName = splitted[0];
       String tbName = splitted[1];
@@ -686,7 +684,7 @@ public class CatalogServer extends AbstractService {
       try {
         store.createTable(request);
         LOG.info(String.format("relation \"%s\" is added to the catalog (%s)",
-            CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddressStr));
+            IdentifierUtil.getCanonicalTableName(dbName, tbName), bindAddress));
         return OK;
 
       } catch (Throwable t) {
@@ -716,7 +714,7 @@ public class CatalogServer extends AbstractService {
       try {
         store.dropTable(dbName, tbName);
         LOG.info(String.format("relation \"%s\" is deleted from the catalog (%s)",
-            CatalogUtil.getCanonicalTableName(dbName, tbName), bindAddressStr));
+            IdentifierUtil.getCanonicalTableName(dbName, tbName), bindAddress));
 
         return OK;
 

@@ -18,16 +18,10 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
-
-import java.util.Objects;
+import static org.apache.tajo.common.TajoDataTypes.Type.ANY;
 
 public class Any extends Type {
-
-  public static Any INSTANCE = new Any();
-
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.ANY;
+  public Any() {
+    super(ANY);
   }
 }

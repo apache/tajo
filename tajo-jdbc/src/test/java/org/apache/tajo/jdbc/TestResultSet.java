@@ -32,11 +32,11 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -100,7 +100,7 @@ public class TestResultSet {
     stats.setAvgRows(tupleNum);
     stats.setNumBlocks(1000);
     stats.setNumShuffleOutputs(100);
-    desc = new TableDesc(CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score"),
+    desc = new TableDesc(IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score"),
         scoreSchema, scoreMeta, p.toUri());
     desc.setStats(stats);
     assertEquals(tupleNum, rowBlock.rows());
@@ -206,11 +206,9 @@ public class TestResultSet {
       String [] data = {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"
       };
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
       res = TajoTestingCluster
-          .run(table, schemas, tableOptions, new String[][]{data}, query, client);
+          .run(table, schemas, new String[][]{data}, query, client);
 
       assertTrue(res.next());
 

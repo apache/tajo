@@ -41,7 +41,6 @@ import static org.junit.Assert.assertTrue;
 
 
 public class TestFunctionLoader {
-
   @Test
   public void testFindScalarFunctions() throws IOException {
     List<FunctionDesc> collections = Lists.newArrayList(FunctionLoader.findScalarFunctions());
@@ -50,46 +49,5 @@ public class TestFunctionLoader {
 
     String result = getResultText(TestFunctionLoader.class, "testFindScalarFunctions.result");
     assertEquals(result.trim(), functionList.trim());
-  }
-
-  @Test
-  public void testAmbiguousException() {
-    FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.GENERAL, "test1",
-        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT),
-        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8));
-
-    FunctionInvocation invocation = new FunctionInvocation();
-    FunctionSupplement supplement = new FunctionSupplement();
-
-    FunctionDesc desc = new FunctionDesc(signature, invocation, supplement);
-
-    List<FunctionDesc> builtins = new ArrayList<>();
-    builtins.add(desc);
-
-    signature = new FunctionSignature(CatalogProtos.FunctionType.GENERAL, "test2",
-        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8),
-        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8));
-
-    desc = new FunctionDesc(signature, invocation, supplement);
-    builtins.add(desc);
-
-    List<FunctionDesc> udfs = new ArrayList<>();
-
-    signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, "test1",
-        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT),
-        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.FLOAT8));
-
-    desc = new FunctionDesc(signature, invocation, supplement);
-    udfs.add(desc);
-
-    boolean afexOccurs = false;
-
-    try {
-      FunctionLoader.mergeFunctionLists(builtins, udfs);
-    } catch (AmbiguousFunctionException e) {
-      afexOccurs = true;
-    }
-
-    assertTrue(afexOccurs);
   }
 }

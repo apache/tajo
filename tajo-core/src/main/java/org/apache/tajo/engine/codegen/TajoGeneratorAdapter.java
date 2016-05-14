@@ -162,12 +162,12 @@ class TajoGeneratorAdapter {
   }
 
   public static boolean isJVMInternalInt(org.apache.tajo.type.Type type) {
-    final TajoDataTypes.Type baseType = type.baseType();
+    final TajoDataTypes.Type baseType = type.kind();
     return baseType == BOOLEAN || baseType == INT1 || baseType == INT2 || baseType == INT4;
   }
 
   public static int getWordSize(org.apache.tajo.type.Type type) {
-    final TajoDataTypes.Type baseType = type.baseType();
+    final TajoDataTypes.Type baseType = type.kind();
     if (baseType == INT8 || baseType == FLOAT8 || baseType == TIMESTAMP || baseType == TIME) {
       return 2;
     } else {
@@ -249,7 +249,7 @@ class TajoGeneratorAdapter {
       }
     } else {
 
-      if (type.baseType() == TEXT) {
+      if (type.kind() == TEXT) {
         invokeVirtual(String.class, "compareTo", int.class, new Class[]{String.class});
       } else {
         int opCode = TajoGeneratorAdapter.getOpCode(evalType, type);
@@ -282,7 +282,7 @@ class TajoGeneratorAdapter {
   }
 
   public void load(org.apache.tajo.type.Type type, int idx) {
-    switch (type.baseType()) {
+    switch (type.kind()) {
     case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
@@ -400,7 +400,7 @@ class TajoGeneratorAdapter {
   }
 
   public void pushDummyValue(org.apache.tajo.type.Type type) {
-    TajoDataTypes.Type baseType = type.baseType();
+    TajoDataTypes.Type baseType = type.kind();
 
     if (type.isNull()) {
       pushNullOfThreeValuedLogic();
@@ -447,19 +447,19 @@ class TajoGeneratorAdapter {
   }
 
   public static boolean isPrimitiveOpCode(EvalType evalType, org.apache.tajo.type.Type returnType) {
-    return TUtil.containsInNestedMap(OpCodesMap, evalType, returnType.baseType());
+    return TUtil.containsInNestedMap(OpCodesMap, evalType, returnType.kind());
   }
 
   public static int getOpCode(EvalType evalType, org.apache.tajo.type.Type returnType) {
     if (!isPrimitiveOpCode(evalType, returnType)) {
       throw new CompilationError("No Such OpCode for " + evalType + " returning " + returnType);
     }
-    return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.baseType());
+    return TUtil.getFromNestedMap(OpCodesMap, evalType, returnType.kind());
   }
 
   public void castInsn(org.apache.tajo.type.Type srcType, org.apache.tajo.type.Type targetType) {
-    TajoDataTypes.Type srcBaseType = srcType.baseType();
-    TajoDataTypes.Type targetBaseType = targetType.baseType();
+    TajoDataTypes.Type srcBaseType = srcType.kind();
+    TajoDataTypes.Type targetBaseType = targetType.kind();
     switch(srcBaseType) {
     case BOOLEAN:
     case CHAR: {
@@ -599,7 +599,7 @@ class TajoGeneratorAdapter {
     methodvisitor.visitJumpInsn(Opcodes.IFEQ, ifNull);  // datum
 
     aload(datum);
-    switch (type.baseType()) {
+    switch (type.kind()) {
     case BOOLEAN:
     case INT1:
     case INT2:
@@ -642,7 +642,7 @@ class TajoGeneratorAdapter {
     String convertMethod;
     Class returnType;
     Class [] paramTypes;
-    switch (type.baseType()) {
+    switch (type.kind()) {
     case NULL_TYPE:
       pop();      // pop null flag
       pop(type);  // pop null datum
@@ -889,7 +889,7 @@ class TajoGeneratorAdapter {
     int varId = nextVarId;
     nextVarId += TajoGeneratorAdapter.getWordSize(type);
 
-    switch (type.baseType()) {
+    switch (type.kind()) {
     case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
@@ -921,7 +921,7 @@ class TajoGeneratorAdapter {
   }
 
   public void emitBoxing(EvalCodeGenContext context, org.apache.tajo.type.Type type) {
-    switch (type.baseType()) {
+    switch (type.kind()) {
     case CHAR:
     case TEXT:
 
@@ -947,7 +947,7 @@ class TajoGeneratorAdapter {
   }
 
   public void emitUnboxing(EvalCodeGenContext context, org.apache.tajo.type.Type type) {
-    switch (type.baseType()) {
+    switch (type.kind()) {
     case CHAR:
     case TEXT:
 

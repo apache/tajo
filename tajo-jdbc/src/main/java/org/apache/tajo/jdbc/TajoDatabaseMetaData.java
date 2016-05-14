@@ -27,6 +27,7 @@ import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.VersionInfo;
 
 import java.sql.*;
@@ -110,7 +111,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getIdentifierQuoteString() throws SQLException {
-    return CatalogConstants.IDENTIFIER_QUOTE_STRING;
+    return IdentifierUtil.IDENTIFIER_QUOTE_STRING;
   }
 
   @Override
@@ -167,7 +168,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getCatalogSeparator() throws SQLException {
-    return CatalogConstants.IDENTIFIER_DELIMITER;
+    return IdentifierUtil.IDENTIFIER_DELIMITER;
   }
 
   @Override
@@ -182,7 +183,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxColumnNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -217,7 +218,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxCursorNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -227,17 +228,17 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxSchemaNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
   public int getMaxProcedureNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
   public int getMaxCatalogNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -262,7 +263,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxTableNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -503,7 +504,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         for (String table: tables) {
           if (table.matches(regtableNamePattern)) {
             TableDesc tableDesc = conn.getCatalogAdminClient().getTableDesc(
-                CatalogUtil.buildFQName(databaseName, table));
+                IdentifierUtil.buildFQName(databaseName, table));
             int pos = 0;
 
             for (Column column: tableDesc.getLogicalSchema().getRootColumns()) {

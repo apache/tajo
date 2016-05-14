@@ -180,6 +180,7 @@ public class TestStorages {
   private boolean dateTypeSupport() {
     return internalType
         || dataFormat.equalsIgnoreCase(BuiltinStorages.TEXT)
+        || dataFormat.equalsIgnoreCase(BuiltinStorages.PARQUET)
         || dataFormat.equalsIgnoreCase(BuiltinStorages.ORC);
   }
 
@@ -414,8 +415,11 @@ public class TestStorages {
         .add("col7", Type.FLOAT8)
         .add("col8", Type.TEXT)
         .add("col9", Type.BLOB);
+    if (dateTypeSupport()) {
+      schemaBld.add("col10", Type.DATE);
+    }
     if (protoTypeSupport()) {
-      schemaBld.add("col10", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+      schemaBld.add("col11", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
     }
 
     Schema schema = schemaBld.build();
@@ -433,7 +437,7 @@ public class TestStorages {
 
     QueryId queryid = new QueryId("12345", 5);
 
-    VTuple tuple = new VTuple(9 + (protoTypeSupport() ? 1 : 0));
+    VTuple tuple = new VTuple(9 + (dateTypeSupport() ? 1 : 0) + (protoTypeSupport() ? 1 : 0));
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createChar("hyunsik"),
@@ -446,8 +450,15 @@ public class TestStorages {
         DatumFactory.createBlob("hyunsik".getBytes()),
     });
 
+    short currentIdx = 9;
+
+    if (dateTypeSupport()) {
+      tuple.put(currentIdx, DatumFactory.createDate(2016, 6, 28));
+      currentIdx++;
+    }
+
     if (protoTypeSupport()) {
-      tuple.put(9, ProtobufDatumFactory.createDatum(queryid.getProto()));
+      tuple.put(currentIdx, ProtobufDatumFactory.createDatum(queryid.getProto()));
     }
 
     appender.addTuple(tuple);
@@ -925,13 +936,13 @@ public class TestStorages {
   public void testTime() throws IOException {
     if (dateTypeSupport() || timeTypeSupport()) {
 
-      int index = 2;
-      SchemaBuilder schema = SchemaBuilder.builder()
-      .add("col1", Type.TIMESTAMP);
+      int index = 1;
+      SchemaBuilder schema = SchemaBuilder.builder();
       if (dateTypeSupport()) {
         schema.add("col" + index++, Type.DATE);
       }
       if (timeTypeSupport()) {
+        schema.add("col" + index++, Type.TIMESTAMP);
         schema.add("col" + index++, Type.TIME);
       }
 
@@ -945,11 +956,11 @@ public class TestStorages {
 
       VTuple tuple = new VTuple(index - 1);
       index = 0;
-      tuple.put(index++, DatumFactory.createTimestampDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
       if (dateTypeSupport()) {
         tuple.put(index++, DatumFactory.createDate("1980-04-01"));
       }
       if (timeTypeSupport()) {
+        tuple.put(index++, DatumFactory.createTimestampDatumWithUnixTime((int)(System.currentTimeMillis() / 1000)));
         tuple.put(index, DatumFactory.createTime("12:34:56"));
       }
       appender.addTuple(tuple);

@@ -42,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 public class AdvancedDataRetriever implements DataRetriever {
-  private final Log LOG = LogFactory.getLog(AdvancedDataRetriever.class);
+  private static final Log LOG = LogFactory.getLog(AdvancedDataRetriever.class);
   private final Map<String, RetrieverHandler> handlerMap = Maps.newConcurrentMap();
 
   public AdvancedDataRetriever() {

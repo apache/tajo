@@ -177,6 +177,10 @@ public class TajoSchemaConverter {
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY,
                          OriginalType.UTF8);
+      case DATE:
+        return primitive(column.getSimpleName(),
+                        PrimitiveTypeName.INT32,
+                        OriginalType.DATE);
       case PROTOBUF:
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY);

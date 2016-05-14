@@ -36,6 +36,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -66,9 +67,9 @@ public class TestRightOuterHashJoinExec {
   private TableDesc job3;
   private TableDesc emp3;
 
-  private final String DEP3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dep3");
-  private final String JOB3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "job3");
-  private final String EMP3_NAME = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "emp3");
+  private final String DEP3_NAME = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "dep3");
+  private final String JOB3_NAME = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "job3");
+  private final String EMP3_NAME = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "emp3");
 
   @Before
   public void setUp() throws Exception {

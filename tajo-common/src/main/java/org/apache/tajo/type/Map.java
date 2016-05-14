@@ -18,49 +18,20 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Objects;
+import static org.apache.tajo.common.TajoDataTypes.Type.MAP;
 
-public class Map extends Type {
-  private final Type keyType;
-  private final Type valueType;
-
+public class Map extends TypeParamterizedType {
   public Map(Type keyType, Type valueType) {
-    this.keyType = keyType;
-    this.valueType = valueType;
+    super(MAP, ImmutableList.of(keyType, valueType));
   }
 
   public Type keyType() {
-    return this.keyType;
+    return this.params.get(0);
   }
 
   public Type valueType() {
-    return this.valueType;
-  }
-
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.MAP;
-  }
-
-  @Override
-  public String toString() {
-    return "map<" + keyType + "," + valueType + ">";
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(baseType(), keyType, valueType);
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (object instanceof Map) {
-      Map other = (Map) object;
-      return keyType.equals(other.keyType) && valueType.equals(other.valueType);
-    }
-
-    return false;
+    return this.params.get(1);
   }
 }

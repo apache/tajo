@@ -97,7 +97,7 @@ public class EvalNodeSerializer
 
     PlanProto.EvalNode.Builder nodeBuilder = PlanProto.EvalNode.newBuilder();
     nodeBuilder.setId(sid);
-    nodeBuilder.setDataType(TypeConverter.convert(node.getValueType()));
+    nodeBuilder.setDataType(TypeConverter.convert(node.getValueType()).getDataType());
     nodeBuilder.setType(PlanProto.EvalType.valueOf(node.getType().name()));
     return nodeBuilder;
   }
@@ -119,7 +119,7 @@ public class EvalNodeSerializer
       unaryBuilder.setNegative(signedEval.isNegative());
     } else if (unary.getType() == EvalType.CAST) {
       CastEval castEval = (CastEval) unary;
-      unaryBuilder.setCastingType(TypeConverter.convert(castEval.getValueType()));
+      unaryBuilder.setCastingType(TypeConverter.convert(castEval.getValueType()).getDataType());
     }
 
     // registering itself and building EvalNode

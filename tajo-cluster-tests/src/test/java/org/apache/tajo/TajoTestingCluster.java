@@ -45,10 +45,11 @@ import org.apache.tajo.querymaster.Query;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
@@ -62,7 +63,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.UUID;
 
 public class TajoTestingCluster {
@@ -382,14 +382,13 @@ public class TajoTestingCluster {
 
     InetSocketAddress tajoMasterAddress = tajoMaster.getContext().getTajoMasterService().getBindAddress();
 
-    this.conf.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-        tajoMasterAddress.getHostName() + ":" + tajoMasterAddress.getPort());
+    this.conf.setVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS, NetUtils.getHostPortString(tajoMasterAddress));
     this.conf.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, c.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
     
     InetSocketAddress tajoRestAddress = tajoMaster.getContext().getRestServer().getBindAddress();
 
-    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, tajoRestAddress.getHostName() + ":" + tajoRestAddress.getPort());
+    this.conf.setVar(ConfVars.REST_SERVICE_ADDRESS, NetUtils.getHostPortString(tajoRestAddress));
 
     startTajoWorkers(numSlaves);
 
@@ -590,7 +589,6 @@ public class TajoTestingCluster {
 
   public static ResultSet run(String[] names,
                               Schema[] schemas,
-                              KeyValueSet tableOption,
                               String[][] tables,
                               String query,
                               TajoClient client) throws Exception {
@@ -600,7 +598,7 @@ public class TajoTestingCluster {
     Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
     fs.mkdirs(rootDir);
     for (int i = 0; i < names.length; i++) {
-      createTable(names[i], schemas[i], tableOption, tables[i]);
+      createTable(util.conf, names[i], schemas[i], tables[i]);
     }
 
     ResultSet res = client.executeQueryAndGetResult(query);
@@ -609,7 +607,6 @@ public class TajoTestingCluster {
 
   public static ResultSet run(String[] names,
                               Schema[] schemas,
-                              KeyValueSet tableOption,
                               String[][] tables,
                               String query) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
@@ -623,7 +620,7 @@ public class TajoTestingCluster {
     TajoConf conf = util.getConfiguration();
 
     try (TajoClient client = new TajoClientImpl(ServiceTrackerFactory.get(conf))) {
-      return run(names, schemas, tableOption, tables, query, client);
+      return run(names, schemas, tables, query, client);
     }
   }
 
@@ -638,13 +635,13 @@ public class TajoTestingCluster {
     return new TajoClientImpl(ServiceTrackerFactory.get(conf));
   }
 
-  public static void createTable(String tableName, Schema schema,
-                                 KeyValueSet tableOption, String[] tableDatas) throws Exception {
-    createTable(tableName, schema, tableOption, tableDatas, 1);
+  public static void createTable(TajoConf conf, String tableName, Schema schema,
+                                 String[] tableDatas) throws Exception {
+    createTable(conf, tableName, schema, tableDatas, 1);
   }
 
-  public static void createTable(String tableName, Schema schema,
-                                 KeyValueSet tableOption, String[] tableDatas, int numDataFiles) throws Exception {
+  public static void createTable(TajoConf conf, String tableName, Schema schema,
+                                 String[] tableDatas, int numDataFiles) throws Exception {
     TpchTestBase instance = TpchTestBase.getInstance();
     TajoTestingCluster util = instance.getTestingCluster();
     try (TajoClient client = newTajoClient(util)) {
@@ -654,8 +651,8 @@ public class TajoTestingCluster {
         fs.mkdirs(rootDir);
       }
       Path tablePath;
-      if (CatalogUtil.isFQTableName(tableName)) {
-        Pair<String, String> name = CatalogUtil.separateQualifierAndName(tableName);
+      if (IdentifierUtil.isFQTableName(tableName)) {
+        Pair<String, String> name = IdentifierUtil.separateQualifierAndName(tableName);
         tablePath = new Path(rootDir, new Path(name.getFirst(), name.getSecond()));
       } else {
         tablePath = new Path(rootDir, tableName);
@@ -682,7 +679,7 @@ public class TajoTestingCluster {
           out.close();
         }
       }
-      TableMeta meta = CatalogUtil.newTableMeta("TEXT", tableOption);
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
       client.createExternalTable(tableName, schema, tablePath.toUri(), meta);
     }
   }

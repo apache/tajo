@@ -211,7 +211,7 @@ truncate_table_statement
 
 /*
 ===============================================================================
-  11.21 <data types>
+  11.21 <drop table statement>
 ===============================================================================
 */
 
@@ -354,6 +354,7 @@ nonreserved_keywords
   | FLOAT
   | FLOAT4
   | FLOAT8
+  | INET4
   | INT
   | INT1
   | INT2
@@ -440,8 +441,7 @@ predefined_type
   | datetime_type
   | bit_type
   | binary_type
-  | record_type
-  | map_type
+  | complex_type
   ;
 
 character_string_type
@@ -531,6 +531,16 @@ binary_type
   : BINARY type_length?
   | BINARY VARYING type_length?
   | VARBINARY type_length?
+  ;
+
+complex_type
+  : array_type
+  | record_type
+  | map_type
+  ;
+
+array_type
+  : ARRAY LTH data_type GTH
   ;
 
 record_type
@@ -757,10 +767,6 @@ term
 
 factor
   : (sign)? numeric_primary
-  ;
-
-array
-  : LEFT_PAREN numeric_value_expression (COMMA numeric_value_expression )* RIGHT_PAREN
   ;
 
 numeric_primary

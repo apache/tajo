@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
@@ -31,6 +30,7 @@ import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 
@@ -100,8 +100,8 @@ public abstract class NameResolver {
         found.add(relation);
 
       // if a table name is not qualified
-      } else if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
-          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
+      } else if (IdentifierUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
+          IdentifierUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
         found.add(relation);
       }
     }
@@ -184,7 +184,7 @@ public abstract class NameResolver {
 
       Column column;
       if (includeSeflDescTable && describeSchemaByItself(relationOp)) {
-        column = guessColumn(CatalogUtil.buildFQName(normalized.getFirst(), normalized.getSecond()));
+        column = guessColumn(IdentifierUtil.buildFQName(normalized.getFirst(), normalized.getSecond()));
 
       } else {
         // Please consider a query case:
@@ -192,9 +192,9 @@ public abstract class NameResolver {
         //
         // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still should be available.
         // The below code makes it possible. Otherwise, it cannot find any match in the relation schema.
-        if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
+        if (block.isAlreadyRenamedTableName(IdentifierUtil.extractQualifier(canonicalName))) {
           canonicalName =
-              CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
+              IdentifierUtil.buildFQName(relationOp.getCanonicalName(), IdentifierUtil.extractSimpleName(canonicalName));
         }
 
         Schema schema = relationOp.getLogicalSchema();
@@ -242,7 +242,7 @@ public abstract class NameResolver {
    */
   static Column lookupColumnFromAllRelsInBlock(LogicalPlan.QueryBlock block,
                                                String columnName, boolean includeSelfDescTable) throws AmbiguousColumnException {
-    Preconditions.checkArgument(CatalogUtil.isSimpleIdentifier(columnName));
+    Preconditions.checkArgument(IdentifierUtil.isSimpleIdentifier(columnName));
 
     List<Column> candidates = new ArrayList<>();
 
@@ -266,7 +266,7 @@ public abstract class NameResolver {
           }
         }
         if (candidateRels.size() == 1) {
-          return guessColumn(CatalogUtil.buildFQName(candidateRels.get(0).getCanonicalName(), columnName));
+          return guessColumn(IdentifierUtil.buildFQName(candidateRels.get(0).getCanonicalName(), columnName));
         } else if (candidateRels.size() > 1) {
           throw new AmbiguousColumnException(columnName);
         }
@@ -377,7 +377,7 @@ public abstract class NameResolver {
 
     // check for dbname.tbname.column_name.nested_field
     if (qualifierParts.length >= 2) {
-      RelationNode rel = lookupTable(block, CatalogUtil.buildFQName(qualifierParts[0], qualifierParts[1]));
+      RelationNode rel = lookupTable(block, IdentifierUtil.buildFQName(qualifierParts[0], qualifierParts[1]));
       if (rel != null) {
         guessedRelations.add(rel);
         columnNamePosition = 2;

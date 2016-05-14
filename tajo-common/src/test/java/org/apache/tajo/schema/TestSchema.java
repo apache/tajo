@@ -20,11 +20,11 @@ package org.apache.tajo.schema;
 
 import org.junit.Test;
 
+import static org.apache.tajo.schema.Field.Field;
+import static org.apache.tajo.schema.Field.Record;
 import static org.apache.tajo.schema.Identifier._;
 import static org.apache.tajo.schema.QualifiedIdentifier.$;
-import static org.apache.tajo.schema.Schema.*;
 import static org.apache.tajo.schema.Schema.Schema;
-import static org.apache.tajo.schema.Schema.Struct;
 import static org.apache.tajo.type.Type.*;
 import static org.junit.Assert.assertEquals;
 
@@ -32,30 +32,30 @@ public class TestSchema {
 
   @Test
   public final void testSchema1() {
-    NamedType struct1 = Struct($("f12"), Field($("f1"), Int8), Field($("f2"), Int4));
-    NamedType struct2 = Struct($("f34"), Field($("f3"), Int8), Field($("f4"), Int4));
+    Field struct1 = Record($("f12"), Field($("f1"), Int8), Field($("f2"), Int4));
+    Field struct2 = Record($("f34"), Field($("f3"), Int8), Field($("f4"), Int4));
     Schema schema = Schema(struct1, struct2);
 
-    assertEquals(schema.toString(), "f12 record (f1 int8,f2 int4),f34 record (f3 int8,f4 int4)");
+    assertEquals("f12 (RECORD(f1 (INT8), f2 (INT4))), f34 (RECORD(f3 (INT8), f4 (INT4)))", schema.toString());
   }
 
   @Test
   public final void testSchema2() {
-    NamedType f1 = Field($("x"), Array(Int8));
-    NamedType f2 = Field($("y"), Int8);
-    NamedType f3 = Struct($("z"), Field($("z-1"), Time()), Field($("z-2"), Array(Int8)));
+    Field f1 = Field($("x"), Array(Int8));
+    Field f2 = Field($("y"), Int8);
+    Field f3 = Record($("z"), Field($("z-1"), Time), Field($("z-2"), Array(Int8)));
     Schema schema = Schema(f1, f2, f3);
 
-    assertEquals(schema.toString(), "x array<int8>,y int8,z record (z-1 time,z-2 array<int8>)");
+    assertEquals("x (ARRAY<INT8>), y (INT8), z (RECORD(z-1 (TIME), z-2 (ARRAY<INT8>)))", schema.toString());
   }
 
   @Test
   public final void testSchemaWithIdentifiers() {
-    NamedType f1 = Field($("x", "y"), Array(Int8));
-    NamedType f2 = Field($(_("y"), _("B", true)), Int8);
-    NamedType f3 = Struct($("z"), Field($("z-1"), Time), Field($("z-2"), Array(Int8)));
+    Field f1 = Field($("x", "y"), Array(Int8));
+    Field f2 = Field($(_("y"), _("B", true)), Int8);
+    Field f3 = Record($("z"), Field($("z-1"), Time), Field($("z-2"), Array(Int8)));
     Schema schema = Schema(f1, f2, f3);
 
-    assertEquals(schema.toString(), "x.y array<int8>,y.'B' int8,z record (z-1 time,z-2 array<int8>)");
+    assertEquals("x.y (ARRAY<INT8>), y.B (INT8), z (RECORD(z-1 (TIME), z-2 (ARRAY<INT8>)))", schema.toString());
   }
 }

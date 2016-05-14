@@ -28,7 +28,6 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.commands.TajoShellCommand;
 import org.apache.tajo.client.ClientParameters;
@@ -36,6 +35,7 @@ import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.RpcConstants;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.FileUtil;
@@ -47,6 +47,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
@@ -294,6 +295,7 @@ public class TestTajoCli {
 
   @Test
   public void testSelectResultWithNullFalse() throws Exception {
+    setVar(tajoCli, SessionVars.CLI_NULL_CHAR, "testnull");
     String sql =
       "select\n" +
         "  c_custkey,\n" +
@@ -387,10 +389,11 @@ public class TestTajoCli {
 
     String consoleResult = new String(out.toByteArray());
 
-    String masterAddress = tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-    String host = masterAddress.split(":")[0];
+    InetSocketAddress masterAddress =
+        tajoCli.getContext().getConf().getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+
     tajoCli.close();
-    assertEquals(consoleResult, host + "\n");
+    assertEquals(consoleResult, masterAddress.getHostName() + "\n");
   }
 
   @Test
@@ -547,7 +550,7 @@ public class TestTajoCli {
   // TODO: This should be removed at TAJO-1891
   @Test
   public void testAddPartitionNotimplementedException() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testAddPartitionNotimplementedException");
+    String tableName = IdentifierUtil.normalizeIdentifier("testAddPartitionNotimplementedException");
     tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
     tajoCli.executeScript("alter table " + tableName + " add partition (key2 = 0.1)");
 
@@ -558,7 +561,7 @@ public class TestTajoCli {
 
   // TODO: This should be added at TAJO-1891
   public void testAlterTableAddDropPartition() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
+    String tableName = IdentifierUtil.normalizeIdentifier("testAlterTableAddPartition");
 
     tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
     tajoCli.executeScript("alter table " + tableName + " add partition (key2 = 0.1)");

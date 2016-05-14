@@ -40,6 +40,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
@@ -61,7 +62,7 @@ public class FileTablespace extends Tablespace {
       return !name.startsWith("_") && !name.startsWith(".");
     }
   };
-  private final Log LOG = LogFactory.getLog(FileTablespace.class);
+  private static final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
@@ -612,7 +613,7 @@ public class FileTablespace extends Tablespace {
   @Override
   public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
     if (!tableDesc.isExternal()) {
-      String [] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
+      String [] splitted = IdentifierUtil.splitFQTableName(tableDesc.getName());
       String databaseName = splitted[0];
       String simpleTableName = splitted[1];
 

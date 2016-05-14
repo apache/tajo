@@ -124,7 +124,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
       client.updateQuery("CREATE TABLE TestTajoCliNegatives.table12u79 ( name RECORD(last TEXT, first TEXT) )");
 
       assertScriptFailure("select name FROM TestTajoCliNegatives.table12u79",
-          "ERROR: org.apache.tajo.exception.NotImplementedException: not implemented feature: record projection\n");
+          "ERROR: not implemented feature: record projection\n");
 
     } finally {
       client.updateQuery("DROP TABLE IF EXISTS TestTajoCliNegatives.table12u79");

@@ -27,10 +27,10 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
@@ -40,7 +40,7 @@ import java.sql.ResultSet;
 import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.apache.tajo.catalog.CatalogUtil.buildFQName;
+import static org.apache.tajo.schema.IdentifierUtil.buildFQName;
 import static org.junit.Assert.*;
 
 
@@ -59,7 +59,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     res.close();
 
-    String tableName = CatalogUtil.normalizeIdentifier("testCtasWithoutTableDefinition");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCtasWithoutTableDefinition");
     CatalogService catalog = testBase.getTestingCluster().getMaster().getCatalog();
     String qualifiedTableName = buildFQName(DEFAULT_DATABASE_NAME, tableName);
     TableDesc desc = catalog.getTableDesc(qualifiedTableName);
@@ -79,7 +79,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     if (!testingCluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     ResultSet res2 = executeFile("check1.sql");
@@ -103,7 +103,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     res.close();
 
-    String tableName = CatalogUtil.normalizeIdentifier("testCtasWithColumnedPartition");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCtasWithColumnedPartition");
 
     TajoTestingCluster cluster = testBase.getTestingCluster();
     CatalogService catalog = cluster.getMaster().getCatalog();
@@ -122,7 +122,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=45.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=49.0")));
     if (!cluster.isHiveCatalogStoreRunning()) {
-      assertEquals(5, desc.getStats().getNumRows().intValue());
+      assertEquals(8, desc.getStats().getNumRows().intValue());
     }
 
     ResultSet res2 = executeFile("check2.sql");
@@ -205,7 +205,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
     assertEquals(expected, actual);
 
-    TableDesc desc = client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    TableDesc desc = client.getTableDesc(IdentifierUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
   }
 
@@ -218,7 +218,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     resultSetToString(res2);
     res2.close();
 
-    TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    TableDesc desc =  client.getTableDesc(IdentifierUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
     assertTrue("RCFILE".equalsIgnoreCase(desc.getMeta().getDataFormat()));
   }
@@ -232,7 +232,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     resultSetToString(res2);
     res2.close();
 
-    TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    TableDesc desc =  client.getTableDesc(IdentifierUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
     assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getDataFormat()));
   }
@@ -246,7 +246,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
     resultSetToString(res2);
     res2.close();
 
-    TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    TableDesc desc =  client.getTableDesc(IdentifierUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
     assertTrue("TEXT".equalsIgnoreCase(desc.getMeta().getDataFormat()));
 

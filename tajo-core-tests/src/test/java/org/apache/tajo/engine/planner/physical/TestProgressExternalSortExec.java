@@ -37,6 +37,7 @@ import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.unit.StorageUnit;
@@ -106,7 +107,7 @@ public class TestProgressExternalSortExec {
 
     testDataStats = appender.getStats();
     employee = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
         employeePath.toUri());
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();
