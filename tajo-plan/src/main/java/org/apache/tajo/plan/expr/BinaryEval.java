@@ -21,7 +21,6 @@ package org.apache.tajo.plan.expr;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.DataTypeUtil;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -154,7 +153,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
       return lhs.modular(rhs);
 
     case CONCATENATE:
-      if (lhs.type() == TajoDataTypes.Type.NULL_TYPE || rhs.type() == TajoDataTypes.Type.NULL_TYPE) {
+      if (lhs.type().isNull() || rhs.type().isNull()) {
         return NullDatum.get();
       }
       return DatumFactory.createText(lhs.asChars() + rhs.asChars());

@@ -94,7 +94,7 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public TajoDataTypes.Type type(int fieldId) {
-    return values[fieldId].type();
+    return values[fieldId].kind();
   }
 
   @Override

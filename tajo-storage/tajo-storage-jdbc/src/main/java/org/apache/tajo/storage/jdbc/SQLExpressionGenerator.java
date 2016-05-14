@@ -229,7 +229,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
    * @param d Datum
    */
   public String convertDatumToSQLLiteral(Datum d) {
-    switch (d.type()) {
+    switch (d.kind()) {
     case BOOLEAN:
       return d.asBool() ? "TRUE" : "FALSE";
 
@@ -260,7 +260,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
       return "NULL";
 
     default:
-      throw new TajoRuntimeException(new UnsupportedDataTypeException(d.type().name()));
+      throw new TajoRuntimeException(new UnsupportedDataTypeException(d.type().toString()));
     }
   }
 

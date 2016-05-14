@@ -85,7 +85,7 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public TajoDataTypes.Type type(int fieldId) {
-    return values.get(fieldId).type();
+    return values.get(fieldId).kind();
   }
 
   @Override

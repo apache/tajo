@@ -20,6 +20,7 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -30,7 +31,7 @@ import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 public abstract class Datum implements Comparable<Datum>, GsonObject {
   static boolean abortWhenDivideByZero;
@@ -45,18 +46,22 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     }
   }
 
-  @Expose	private final Type type;
+  @Expose	protected final org.apache.tajo.type.Type type;
 
-  public Datum(Type type) {
+  public Datum(org.apache.tajo.type.Type type) {
     this.type = type;
   }
 
-  public Type type() {
+  public org.apache.tajo.type.Type type() {
     return this.type;
   }
 
+  public TajoDataTypes.Type kind() {
+    return this.type.kind();
+  }
+
   public boolean isTrue() {
-    return type == Type.BOOLEAN && asBool();
+    return type.kind() == BOOLEAN && asBool();
   }
 
   public boolean isNull() {
@@ -68,48 +73,48 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public boolean asBool() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.BOOLEAN));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type.kind(), BOOLEAN));
   }
 
   public byte asByte() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.BIT));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, BIT));
   }
 
   public char asChar() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.CHAR));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, CHAR));
   }
 
   public short asInt2() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.INT2));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, INT2));
   }
 
   public int asInt4() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.INT4));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, INT4));
   }
 
   public long asInt8() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.INT8));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, INT8));
   }
 
   public byte [] asByteArray() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.BLOB));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, BLOB));
   }
 
   public float asFloat4() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.FLOAT4));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, FLOAT4));
   }
 
   public double asFloat8() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.FLOAT8));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, FLOAT8));
   }
 
   public String asChars() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.TEXT));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, TEXT));
   }
 
   // todo remove this
   public char [] asUnicodeChars() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.TEXT));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, TEXT));
   }
 
   public byte[] asTextBytes() {
@@ -117,7 +122,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public TimeMeta asTimeMeta() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(type, Type.INT8));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, TajoDataTypes.Type.INT8));
   }
 
   public boolean isNumeric() {
@@ -129,7 +134,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public boolean isReal() {
-    return TajoTypeUtil.isReal(type);
+    return TajoTypeUtil.isReal(type.kind());
   }
 
   protected static void initAbortWhenDivideByZero(TajoConf tajoConf) {
@@ -140,31 +145,31 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
 
   // belows should be extracted out of datum
   public Datum and(Datum datum) {
-    throw new InvalidOperationException(datum.type);
+    throw new InvalidOperationException(type);
   }
 
   public Datum or(Datum datum) {
-    throw new InvalidOperationException(datum.type);
+    throw new InvalidOperationException(type);
   }
 
   public Datum plus(Datum datum) {
-    throw new InvalidOperationException(datum.type);
+    throw new InvalidOperationException(type);
   }
 
   public Datum minus(Datum datum) {
-    throw new InvalidOperationException(datum.type);
+    throw new InvalidOperationException(type);
   }
 
   public Datum multiply(Datum datum) {
-    throw new InvalidOperationException(datum.type);
+    throw new InvalidOperationException(type);
   }
 
   public Datum divide(Datum datum) {
-    throw new InvalidOperationException(datum.type);
+    throw new InvalidOperationException(type);
   }
 
   public Datum modular(Datum datum) {
-    throw new InvalidOperationException(datum.type);
+    throw new InvalidOperationException(type);
   }
 
   public Datum equalsTo(Datum datum) {
@@ -184,28 +189,28 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public Datum lessThan(Datum datum) {
-    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+    if (type.isNull() || datum.type().isNull()) {
       return NullDatum.get();
     }
     return DatumFactory.createBool(compareTo(datum) < 0);
   }
 
   public Datum lessThanEqual(Datum datum) {
-    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+    if (type.isNull() || datum.type().isNull()) {
       return NullDatum.get();
     }
     return DatumFactory.createBool(compareTo(datum) <= 0);
   }
 
   public Datum greaterThan(Datum datum) {
-    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+    if (type.isNull() || datum.type().isNull()) {
       return NullDatum.get();
     }
     return DatumFactory.createBool(compareTo(datum) > 0);
   }
 
   public Datum greaterThanEqual(Datum datum) {
-    if (this.type() == Type.NULL_TYPE || datum.type() == Type.NULL_TYPE) {
+    if (type.isNull() || datum.type().isNull()) {
       return NullDatum.get();
     }
     return DatumFactory.createBool(compareTo(datum) >= 0);

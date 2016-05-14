@@ -19,8 +19,7 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-
-import static org.apache.tajo.common.TajoDataTypes.Type.ANY;
+import org.apache.tajo.type.Type;
 
 /**
  * <code>AnyDatum</code> can contain any types of datum.
@@ -29,7 +28,7 @@ public class AnyDatum extends Datum {
   @Expose Datum val;
 
   public AnyDatum(Datum val) {
-    super(ANY);
+    super(Type.Any);
     this.val = val;
   }
 
@@ -58,7 +57,7 @@ public class AnyDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == ANY) {
+    if (datum.type.isAny()) {
       AnyDatum other = (AnyDatum) datum;
       return val.equalsTo(other.val);
     }
@@ -67,7 +66,7 @@ public class AnyDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == ANY) {
+    if (datum.type.isAny()) {
       AnyDatum other = (AnyDatum) datum;
       return val.compareTo(other.val);
     }

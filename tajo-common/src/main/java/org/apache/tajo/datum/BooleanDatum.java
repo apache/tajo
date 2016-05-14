@@ -20,8 +20,9 @@ package org.apache.tajo.datum;
 
 import com.google.common.primitives.Booleans;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
+
+import static org.apache.tajo.type.Type.Bool;
 
 public class BooleanDatum extends Datum {
   @Expose private final boolean val;
@@ -57,17 +58,17 @@ public class BooleanDatum extends Datum {
   };
 
   private BooleanDatum(boolean val) {
-    super(TajoDataTypes.Type.BOOLEAN);
+    super(Bool);
     this.val = val;
   }
 
   protected BooleanDatum(byte byteVal) {
-    super(TajoDataTypes.Type.BOOLEAN);
+    super(Bool);
     this.val = byteVal == TRUE_INT;
   }
 
   protected BooleanDatum(int byteVal) {
-    super(TajoDataTypes.Type.BOOLEAN);
+    super(Bool);
     this.val = byteVal == TRUE_INT;
   }
 
@@ -157,7 +158,7 @@ public class BooleanDatum extends Datum {
 
   // Datum Comparator
   public BooleanDatum equalsTo(Datum datum) {
-    switch(datum.type()) {
+    switch(datum.kind()) {
     case BOOLEAN: return DatumFactory.createBool(this.val == ((BooleanDatum)datum).val);
     default:
       throw new InvalidOperationException(datum.type());
@@ -166,7 +167,7 @@ public class BooleanDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case BOOLEAN:
       return Booleans.compare(val, datum.asBool());
     default:

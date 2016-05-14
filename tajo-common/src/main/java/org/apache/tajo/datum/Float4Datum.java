@@ -20,8 +20,8 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.MurmurHash;
 import org.apache.tajo.util.NumberUtil;
@@ -29,17 +29,19 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.nio.ByteBuffer;
 
+import static org.apache.tajo.type.Type.Float4;
+
 public class Float4Datum extends NumericDatum {
   private static final int size = 4;
   @Expose final float val;
 
 	public Float4Datum(float val) {
-    super(TajoDataTypes.Type.FLOAT4);
+    super(Float4);
 		this.val = val;
 	}
 
   public Float4Datum(byte[] bytes) {
-    super(TajoDataTypes.Type.FLOAT4);
+    super(Float4);
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     this.val = bb.getFloat();
   }
@@ -122,7 +124,7 @@ public class Float4Datum extends NumericDatum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INT2:
         return DatumFactory.createBool(val == datum.asInt2());
       case INT4:
@@ -136,13 +138,13 @@ public class Float4Datum extends NumericDatum {
       case NULL_TYPE:
         return datum;
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException(datum.type);
     }
   }
 
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INT2: {
         short another = datum.asInt2();
         if (val < another) {
@@ -196,13 +198,13 @@ public class Float4Datum extends NumericDatum {
       case NULL_TYPE:
         return -1;
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException(datum.type);
     }
   }
 
   @Override
   public Datum plus(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       return DatumFactory.createFloat4(val + datum.asInt2());
     case INT4:
@@ -220,13 +222,13 @@ public class Float4Datum extends NumericDatum {
     case NULL_TYPE:
       return datum;
     default:
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException(datum.type);
     }
   }
 
   @Override
   public Datum minus(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       return DatumFactory.createFloat4(val - datum.asInt2());
     case INT4:
@@ -244,13 +246,13 @@ public class Float4Datum extends NumericDatum {
     case NULL_TYPE:
       return datum;
     default:
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException(datum.type);
     }
   }
 
   @Override
   public Datum multiply(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       return DatumFactory.createFloat4(val * datum.asInt2());
     case INT4:
@@ -273,7 +275,7 @@ public class Float4Datum extends NumericDatum {
 
   @Override
   public Datum divide(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       short paramValueI2 = datum.asInt2();
       if (!validateDivideZero(paramValueI2)) {
@@ -307,13 +309,13 @@ public class Float4Datum extends NumericDatum {
     case NULL_TYPE:
       return datum;
     default:
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException(datum.type);
     }
   }
 
   @Override
   public Datum modular(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INT2:
         short paramValueI2 = datum.asInt2();
         if (!validateDivideZero(paramValueI2)) {
@@ -347,7 +349,7 @@ public class Float4Datum extends NumericDatum {
       case NULL_TYPE:
         return datum;
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException(datum.type);
     }
   }
 

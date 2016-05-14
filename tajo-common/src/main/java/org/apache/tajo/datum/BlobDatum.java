@@ -28,21 +28,21 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.BLOB;
+import static org.apache.tajo.type.Type.Blob;
 
 public class BlobDatum extends Datum {
 	@Expose private final byte [] val;
 	private ByteBuffer bb = null;
 
 	public BlobDatum(byte[] val) {
-    super(BLOB);
+    super(Blob);
 		this.val = val;
 		this.bb = ByteBuffer.wrap(val);	
 		bb.flip();
 	}
 
   public BlobDatum(byte[] val, int offset, int length) {
-    super(BLOB);
+    super(Blob);
     byte[] b = new byte[length];
     System.arraycopy(val, offset, b, 0 , length);
     this.val = b;
@@ -51,7 +51,7 @@ public class BlobDatum extends Datum {
   }
 	
 	public BlobDatum(ByteBuffer val) {
-    super(BLOB);
+    super(Blob);
 		this.val = val.array();
 		this.bb = val.duplicate();
 		bb.flip();
@@ -138,7 +138,7 @@ public class BlobDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case BLOB:
       return DatumFactory.createBool(Arrays.equals(this.val, ((BlobDatum)datum).val));
     case NULL_TYPE:
@@ -150,7 +150,7 @@ public class BlobDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case BLOB:
     	initFromBytes();
     	((BlobDatum)datum).initFromBytes();

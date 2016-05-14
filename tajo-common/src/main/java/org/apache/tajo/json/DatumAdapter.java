@@ -21,6 +21,7 @@ package org.apache.tajo.json;
 import com.google.gson.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.type.TypeStringEncoder;
 
 import java.lang.reflect.Type;
 
@@ -30,9 +31,9 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
 	public Datum deserialize(JsonElement json, Type typeOfT,
 			JsonDeserializationContext context) throws JsonParseException {
 		JsonObject jsonObject = json.getAsJsonObject();
-		String typeName = CommonGsonHelper.getOrDie(jsonObject, "type").getAsString();
-    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(typeName);
-    switch (type) {
+		String typeStr = CommonGsonHelper.getOrDie(jsonObject, "type").getAsString();
+    org.apache.tajo.type.Type type = TypeStringEncoder.decode(typeStr);
+    switch (type.kind()) {
     case DATE:
       return new DateDatum(CommonGsonHelper.getOrDie(jsonObject, "value").getAsInt());
     case TIME:
@@ -46,15 +47,15 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
       return new AnyDatum(deserialize(CommonGsonHelper.getOrDie(jsonObject, "actual"), typeOfT, context));
     default:
       return context.deserialize(CommonGsonHelper.getOrDie(jsonObject, "body"),
-          DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(typeName)));
+          DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(type.kind().name())));
     }
 	}
 
 	@Override
 	public JsonElement serialize(Datum src, Type typeOfSrc, JsonSerializationContext context) {
 		JsonObject jsonObj = new JsonObject();
-		jsonObj.addProperty("type", src.type().name());
-    switch (src.type()) {
+		jsonObj.addProperty("type", TypeStringEncoder.encode(src.type()));
+    switch (src.kind()) {
     case DATE:
       jsonObj.addProperty("value", src.asInt4());
       break;

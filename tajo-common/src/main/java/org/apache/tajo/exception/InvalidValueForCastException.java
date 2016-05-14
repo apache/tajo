@@ -38,6 +38,10 @@ public class InvalidValueForCastException extends TajoException {
     super(Errors.ResultCode.INVALID_VALUE_FOR_CAST, src.name(), target.name());
   }
 
+  public InvalidValueForCastException(Type src, TajoDataTypes.Type target) {
+    super(Errors.ResultCode.INVALID_VALUE_FOR_CAST, src.kind().name(), target.name());
+  }
+
   public InvalidValueForCastException(Type src, Type target) {
     super(Errors.ResultCode.INVALID_VALUE_FOR_CAST, src.kind().name(), target.kind().name());
   }

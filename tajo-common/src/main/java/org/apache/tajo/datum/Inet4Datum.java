@@ -24,19 +24,19 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.type.Type.Inet4;
 
 public class Inet4Datum extends Datum {
   private static final int size = 4;
   @Expose private final int address;
 
   Inet4Datum(int encoded) {
-    super(Type.INET4);
+    super(Inet4);
     this.address = encoded;
   }
 
 	public Inet4Datum(String addr) {
-    super(Type.INET4);
+    super(Inet4);
 		String [] elems = addr.split("\\.");
     address = Integer.parseInt(elems[3]) & 0xFF
         | ((Integer.parseInt(elems[2]) << 8) & 0xFF00)
@@ -45,7 +45,7 @@ public class Inet4Datum extends Datum {
   }
 
 	public Inet4Datum(byte[] addr) {
-    super(Type.INET4);
+    super(Inet4);
 		Preconditions.checkArgument(addr.length == size);
     address = addr[3] & 0xFF
         | ((addr[2] << 8) & 0xFF00)
@@ -54,7 +54,7 @@ public class Inet4Datum extends Datum {
   }
 
   public Inet4Datum(byte[] addr, int offset, int length) {
-    super(Type.INET4);
+    super(Inet4);
     Preconditions.checkArgument(length == size);
     address = addr[offset + 3] & 0xFF
         | ((addr[offset + 2] << 8) & 0xFF00)
@@ -109,7 +109,7 @@ public class Inet4Datum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INET4:
         return DatumFactory.createBool(this.address == ((Inet4Datum) datum).address);
       case NULL_TYPE:
@@ -121,7 +121,7 @@ public class Inet4Datum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INET4:
         byte[] bytes = asByteArray();
         byte[] other = datum.asByteArray();

@@ -19,7 +19,6 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.MurmurHash;
 import org.apache.tajo.util.NumberUtil;
@@ -27,18 +26,20 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.nio.ByteBuffer;
 
+import static org.apache.tajo.type.Type.Int2;
+
 
 public class Int2Datum extends NumericDatum {
   private static final int size = 2;
   @Expose private final short val;
 
 	public Int2Datum(short val) {
-    super(TajoDataTypes.Type.INT2);
+    super(Int2);
 		this.val = val;
 	}
 
   public Int2Datum(byte[] bytes) {
-    super(TajoDataTypes.Type.INT2);
+    super(Int2);
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     this.val = bb.getShort();
   }
@@ -112,7 +113,7 @@ public class Int2Datum extends NumericDatum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       return DatumFactory.createBool(val == datum.asInt2());
     case INT4:
@@ -132,7 +133,7 @@ public class Int2Datum extends NumericDatum {
 
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INT2: {
         short another = datum.asInt2();
         if (val < another) {
@@ -192,7 +193,7 @@ public class Int2Datum extends NumericDatum {
 
   @Override
   public Datum plus(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       return DatumFactory.createInt2((short) (val + datum.asInt2()));
     case INT4:
@@ -216,7 +217,7 @@ public class Int2Datum extends NumericDatum {
 
   @Override
   public Datum minus(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       return DatumFactory.createInt2((short) (val - datum.asInt2()));
     case INT4:
@@ -240,7 +241,7 @@ public class Int2Datum extends NumericDatum {
 
   @Override
   public Datum multiply(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT2:
       return DatumFactory.createInt4(val * datum.asInt2());
     case INT4:
@@ -263,7 +264,7 @@ public class Int2Datum extends NumericDatum {
 
   @Override
   public Datum divide(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INT2:
         short paramValueI2 = datum.asInt2();
         if (!validateDivideZero(paramValueI2)) {
@@ -303,7 +304,7 @@ public class Int2Datum extends NumericDatum {
 
   @Override
   public Datum modular(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INT2:
         short paramValueI2 = datum.asInt2();
         if (!validateDivideZero(paramValueI2)) {

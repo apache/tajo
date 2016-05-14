@@ -28,6 +28,8 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.TimeZone;
 
+import static org.apache.tajo.type.Type.Timestamp;
+
 public class TimestampDatum extends Datum {
   public static final int SIZE = 8;
 
@@ -38,7 +40,7 @@ public class TimestampDatum extends Datum {
    * @param timestamp UTC based Julian time microseconds
    */
   public TimestampDatum(long timestamp) {
-    super(TajoDataTypes.Type.TIMESTAMP);
+    super(Timestamp);
     this.timestamp = timestamp;
   }
 
@@ -169,7 +171,7 @@ public class TimestampDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+    if (datum.kind() == TajoDataTypes.Type.TIMESTAMP) {
       return timestamp == datum.asInt8() ? BooleanDatum.TRUE : BooleanDatum.FALSE;
     } else if (datum.isNull()) {
       return datum;
@@ -180,7 +182,7 @@ public class TimestampDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+    if (datum.kind() == TajoDataTypes.Type.TIMESTAMP) {
       TimestampDatum another = (TimestampDatum) datum;
       return Longs.compare(timestamp, another.timestamp);
     } else if (datum.isNull()) {
@@ -202,7 +204,7 @@ public class TimestampDatum extends Datum {
 
   @Override
   public Datum plus(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INTERVAL:
       IntervalDatum interval = (IntervalDatum) datum;
       TimeMeta tm = asTimeMeta();
@@ -220,7 +222,7 @@ public class TimestampDatum extends Datum {
 
   @Override
   public Datum minus(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INTERVAL:
       IntervalDatum interval = (IntervalDatum) datum;
       TimeMeta tm = asTimeMeta();

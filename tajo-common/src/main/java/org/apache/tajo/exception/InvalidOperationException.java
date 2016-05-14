@@ -18,8 +18,6 @@
 
 package org.apache.tajo.exception;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
-
 public class InvalidOperationException extends RuntimeException {
 	private static final long serialVersionUID = -7689027447969916148L;
 
@@ -32,8 +30,8 @@ public class InvalidOperationException extends RuntimeException {
 	public InvalidOperationException(String message) {
 		super(message);
 	}
-	
-	public InvalidOperationException(Type type) {
-	  super("Cannot compare to " + type + " type datum");
+
+	public InvalidOperationException(org.apache.tajo.type.Type type) {
+		super("Cannot compare to " + type + " type datum");
 	}
 }

@@ -19,12 +19,14 @@ package org.apache.tajo.datum;
 
 import com.google.protobuf.Message;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.type.Protobuf;
 
+@Deprecated
 public class ProtobufDatum extends Datum {
   private final Message value;
 
   public ProtobufDatum(Message message) {
-    super(TajoDataTypes.Type.PROTOBUF);
+    super(new Protobuf(null));
     this.value = message;
   }
 
@@ -44,7 +46,7 @@ public class ProtobufDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.PROTOBUF) {
+    if (datum.kind() == TajoDataTypes.Type.PROTOBUF) {
       return value.equals(((ProtobufDatum)datum).get()) ? 0 : -1;
     } else {
       return -1;

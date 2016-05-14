@@ -66,13 +66,13 @@ public class JsonArrayContains extends ScalarJsonFunction {
 
         if (isFirst) {
           isFirst = false;
-          if (actualParam.type() == TajoDataTypes.Type.INT1 ||
-              actualParam.type() == TajoDataTypes.Type.INT2 ||
-              actualParam.type() == TajoDataTypes.Type.INT4 ||
-              actualParam.type() == TajoDataTypes.Type.INT8) {
+          if (actualParam.kind() == TajoDataTypes.Type.INT1 ||
+              actualParam.kind() == TajoDataTypes.Type.INT2 ||
+              actualParam.kind() == TajoDataTypes.Type.INT4 ||
+              actualParam.kind() == TajoDataTypes.Type.INT8) {
             isLong = true;
-          } else if (actualParam.type() == TajoDataTypes.Type.FLOAT4 ||
-              actualParam.type() == TajoDataTypes.Type.FLOAT8) {
+          } else if (actualParam.kind() == TajoDataTypes.Type.FLOAT4 ||
+              actualParam.kind() == TajoDataTypes.Type.FLOAT8) {
             isDouble = true;
           }
         }

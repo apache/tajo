@@ -24,7 +24,7 @@ import org.apache.tajo.exception.InvalidOperationException;
 
 import java.util.Arrays;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.type.Type.Char;
 
 public class CharDatum extends Datum {
   @Expose private final int size;
@@ -32,7 +32,7 @@ public class CharDatum extends Datum {
   private String chars = null;
 
 	public CharDatum(byte val) {
-    super(Type.CHAR);
+    super(Char(1));
     this.size = 1;
     bytes = new byte[size];
     bytes[0] = val;
@@ -43,7 +43,7 @@ public class CharDatum extends Datum {
   }
 
   public CharDatum(byte [] bytes) {
-    super(Type.CHAR);
+    super(Char(1));
     this.bytes = bytes;
     this.size = bytes.length;
   }
@@ -131,7 +131,7 @@ public class CharDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case CHAR:
       case VARCHAR:
       case TEXT:
@@ -147,7 +147,7 @@ public class CharDatum extends Datum {
   
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case CHAR:
       case TEXT:
         return UnsignedBytes.lexicographicalComparator().compare(bytes, datum.asByteArray());

@@ -20,16 +20,17 @@ package org.apache.tajo.datum;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.MurmurHash;
 import org.apache.tajo.util.StringUtils;
 
 import java.nio.charset.Charset;
 import java.util.Comparator;
+
+import static org.apache.tajo.type.Type.Text;
 
 public class TextDatum extends Datum {
   public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
@@ -42,7 +43,7 @@ public class TextDatum extends Datum {
   public static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 
   public TextDatum(byte[] bytes) {
-    super(TajoDataTypes.Type.TEXT);
+    super(Text);
     this.bytes = bytes;
   }
 
@@ -112,7 +113,7 @@ public class TextDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case TEXT:
       case CHAR:
       case BLOB:
@@ -138,7 +139,7 @@ public class TextDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case TEXT:
       case CHAR:
       case BLOB:

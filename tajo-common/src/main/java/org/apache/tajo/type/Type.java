@@ -36,6 +36,7 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
 
   // No paramter types
   public static final Any Any = new Any();
+  public static final Bit Bit = new Bit();
   public static final Null Null = new Null();
   public static final Bool Bool = new Bool();
   public static final Int1 Int1 = new Int1();
@@ -95,6 +96,10 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
   @Override
   public String toString() {
     return typeName(kind());
+  }
+
+  public boolean isAny() {
+    return this.kind() == TajoDataTypes.Type.ANY;
   }
 
   public boolean isStruct() {
