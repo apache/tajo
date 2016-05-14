@@ -32,8 +32,6 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
   protected long length;
   protected ImmutableList<String> hostNames;
 
-//  protected Fragment() {}
-
   protected Fragment(String kind,
                      URI uri,
                      String inputSourceId,
@@ -50,7 +48,7 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
     this.hostNames = hostNames == null ? ImmutableList.of() : ImmutableList.copyOf(hostNames);
   }
 
-  public String getKind() {
+  public final String getKind() {
     return kind;
   }
 
@@ -59,7 +57,7 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
    *
    * @return URI of the target table
    */
-  public URI getUri() {
+  public final URI getUri() {
     return uri;
   }
 
@@ -68,24 +66,16 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
    *
    * @return target table name
    */
-  public String getInputSourceId() {
+  public final String getInputSourceId() {
     return this.inputSourceId;
   }
-
-//  /**
-//   * Returns a serialized protocol buffer message object.
-//   *
-//   * @return serialized message
-//   */
-//  @Override
-//  public abstract FragmentProto getProto();
 
   /**
    * Returns a start key of the data range.
    *
    * @return start key
    */
-  public T getStartKey() {
+  public final T getStartKey() {
     return startKey;
   }
 
@@ -94,7 +84,7 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
    *
    * @return end key
    */
-  public T getEndKey() {
+  public final T getEndKey() {
     return endKey;
   }
 
@@ -103,7 +93,7 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
    *
    * @return length of the range
    */
-  public long getLength() {
+  public final long getLength() {
     return length;
   }
 
@@ -112,7 +102,7 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
    *
    * @return host names
    */
-  public ImmutableList<String> getHostNames() {
+  public final ImmutableList<String> getHostNames() {
     return hostNames;
   }
 

@@ -46,24 +46,6 @@ public class HBaseFragment extends Fragment<HBaseFragmentKey> {
     this.last = last;
   }
 
-//  public HBaseFragment(ByteString raw) throws InvalidProtocolBufferException {
-//    HBaseFragmentProto.Builder builder = HBaseFragmentProto.newBuilder();
-//    builder.mergeFrom(raw);
-//    builder.build();
-//    init(builder.build());
-//  }
-
-//  private void init(HBaseFragmentProto proto) {
-//    this.uri = URI.create(proto.getUri());
-//    this.inputSourceId = proto.getTableName();
-//    this.hbaseTableName = proto.getHbaseTableName();
-//    this.startKey = new HBaseFragmentKey(proto.getStartRow().toByteArray());
-//    this.endKey = new HBaseFragmentKey(proto.getStopRow().toByteArray());
-//    this.hostNames = new String[]{proto.getRegionLocation()};
-//    this.length = proto.getLength();
-//    this.last = proto.getLast();
-//  }
-
   @Override
   public boolean isEmpty() {
     return startKey.isEmpty() || endKey.isEmpty();
@@ -107,26 +89,6 @@ public class HBaseFragment extends Fragment<HBaseFragmentKey> {
             ", \"stopRow\": \"" + new String(endKey.bytes) + "\"" +
             ", \"length\": \"" + length + "\"}" ;
   }
-
-//  @Override
-//  public FragmentProto getProto() {
-//    HBaseFragmentProto.Builder builder = HBaseFragmentProto.newBuilder();
-//    builder
-//        .setUri(uri.toString())
-//        .setTableName(inputSourceId)
-//        .setHbaseTableName(hbaseTableName)
-//        .setStartRow(ByteString.copyFrom(startKey.bytes))
-//        .setStopRow(ByteString.copyFrom(endKey.bytes))
-//        .setLast(last)
-//        .setLength(length)
-//        .setRegionLocation(hostNames[0]);
-//
-//    FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
-//    fragmentBuilder.setId(this.inputSourceId);
-//    fragmentBuilder.setContents(builder.buildPartial().toByteString());
-//    fragmentBuilder.setDataFormat(BuiltinFragmentKinds.HBASE);
-//    return fragmentBuilder.build();
-//  }
 
   public boolean isLast() {
     return last;

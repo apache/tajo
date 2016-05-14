@@ -27,13 +27,6 @@ import java.util.List;
 
 public class JdbcFragment extends Fragment<Long> {
 
-//  public JdbcFragment(ByteString raw) throws InvalidProtocolBufferException {
-//    JdbcFragmentProto.Builder builder = JdbcFragmentProto.newBuilder();
-//    builder.mergeFrom(raw);
-//    builder.build();
-//    init(builder.build());
-//  }
-
   // TODO: set start and end keys properly
   public JdbcFragment(String inputSourceId, URI uri) {
     super(BuiltinFragmentKinds.JDBC, uri, inputSourceId, null, null, TajoConstants.UNKNOWN_LENGTH, extractHosts(uri));
@@ -44,12 +37,6 @@ public class JdbcFragment extends Fragment<Long> {
         hostNames.toArray(new String[hostNames.size()]));
   }
 
-//  private void init(JdbcFragmentProto proto) {
-//    this.uri = URI.create(proto.getUri());
-//    this.inputSourceId = proto.getInputSourceId();
-//    this.hostNames = proto.getHostsList().toArray(new String [proto.getHostsCount()]);
-//  }
-
   private static String[] extractHosts(URI uri) {
     return new String[] {ConnectionInfo.fromURI(uri).host};
   }
@@ -58,20 +45,4 @@ public class JdbcFragment extends Fragment<Long> {
   public boolean isEmpty() {
     return false;
   }
-
-//  @Override
-//  public CatalogProtos.FragmentProto getProto() {
-//    JdbcFragmentProto.Builder builder = JdbcFragmentProto.newBuilder();
-//    builder.setInputSourceId(this.inputSourceId);
-//    builder.setUri(this.uri.toASCIIString());
-//    if(hostNames != null) {
-//      builder.addAllHosts(Arrays.asList(hostNames));
-//    }
-//
-//    CatalogProtos.FragmentProto.Builder fragmentBuilder = CatalogProtos.FragmentProto.newBuilder();
-//    fragmentBuilder.setId(this.inputSourceId);
-//    fragmentBuilder.setDataFormat(BuiltinFragmentKinds.JDBC);
-//    fragmentBuilder.setContents(builder.buildPartial().toByteString());
-//    return fragmentBuilder.build();
-//  }
 }

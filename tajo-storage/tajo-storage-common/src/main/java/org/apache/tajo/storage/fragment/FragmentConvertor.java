@@ -33,38 +33,8 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 @ThreadSafe
 public class FragmentConvertor {
-//  /**
-//   * Cache of fragment classes
-//   */
-//  protected static final Map<String, Class<? extends Fragment>> CACHED_FRAGMENT_CLASSES = Maps.newConcurrentMap();
-
-//  /**
-//   * Cache of constructors for each class.
-//   */
-//  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
 
   private static final Map<String, FragmentSerdeHelper> SERDE_HELPER_MAP = Maps.newConcurrentMap();
-
-//  /**
-//   * default parameter for all constructors
-//   */
-//  private static final Class<?>[] DEFAULT_FRAGMENT_PARAMS = { ByteString.class };
-
-//  private static Class<? extends Fragment> getFragmentClass(Configuration conf, String fragmentType) {
-//    fragmentType = fragmentType.toLowerCase();
-//    Class<? extends Fragment> fragmentClass = CACHED_FRAGMENT_CLASSES.get(fragmentType);
-//    if (fragmentClass == null) {
-//      fragmentClass = conf.getClass(
-//          String.format("tajo.storage.fragment.kind.%s", fragmentType), null, Fragment.class);
-//      CACHED_FRAGMENT_CLASSES.put(fragmentType, fragmentClass);
-//    }
-//
-//    if (fragmentClass == null) {
-//      throw new TajoInternalError("No such a fragment for " + fragmentType);
-//    }
-//
-//    return fragmentClass;
-//  }
 
   private static FragmentSerdeHelper getFragmentSerdeHelper(Configuration conf, String fragmentKind) {
     fragmentKind = fragmentKind.toLowerCase();

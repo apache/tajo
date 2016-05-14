@@ -30,13 +30,6 @@ import java.util.Arrays;
 public class FileFragment extends Fragment<Long> {
   private Integer[] diskIds;
 
-//  public FileFragment(ByteString raw) throws InvalidProtocolBufferException {
-//    FileFragmentProto.Builder builder = FileFragmentProto.newBuilder();
-//    builder.mergeFrom(raw);
-//    builder.build();
-//    init(builder.build());
-//  }
-
   public FileFragment(String tableName, Path uri, BlockLocation blockLocation)
       throws IOException {
     this(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null);
@@ -55,30 +48,6 @@ public class FileFragment extends Fragment<Long> {
   public FileFragment(String fragmentId, Path path, long start, long length) {
     this(fragmentId, path, start, length, null, null);
   }
-
-//  private void init(FileFragmentProto proto) {
-//    int[] diskIds = new int[proto.getDiskIdsList().size()];
-//    int i = 0;
-//    for(Integer eachValue: proto.getDiskIdsList()) {
-//      diskIds[i++] = eachValue;
-//    }
-//    List<String> var = proto.getHostsList();
-//    this.set(proto.getId(), new Path(proto.getPath()),
-//        proto.getStartOffset(), proto.getLength(),
-//        var.toArray(new String[var.size()]),
-//        diskIds);
-//  }
-
-//  private void set(String tableName, Path path, long start,
-//      long length, String[] hosts, int[] diskIds) {
-//    this.inputSourceId = tableName;
-//    this.uri = path.toUri();
-//    this.startKey = start;
-//    this.endKey = start + length;
-//    this.length = length;
-//    this.hostNames = hosts;
-//    this.diskIds = diskIds;
-//  }
 
   /**
    * Get the list of Disk Ids
@@ -135,14 +104,4 @@ public class FileFragment extends Fragment<Long> {
     		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
         + getLength() + "}" ;
   }
-
-//  public FragmentProto getProto() {
-//
-//
-//    FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
-//    fragmentBuilder.setId(this.inputSourceId);
-//    fragmentBuilder.setDataFormat(BuiltinFragmentKinds.FILE);
-//    fragmentBuilder.setContents(builder.buildPartial().toByteString());
-//    return fragmentBuilder.build();
-//  }
 }
