@@ -27,6 +27,9 @@ import org.apache.tajo.storage.hbase.HBaseFragment.HBaseFragmentKey;
 
 import java.net.URI;
 
+/**
+ * Fragment for HBase
+ */
 public class HBaseFragment extends Fragment<HBaseFragmentKey> {
   private String hbaseTableName;
   private boolean last;

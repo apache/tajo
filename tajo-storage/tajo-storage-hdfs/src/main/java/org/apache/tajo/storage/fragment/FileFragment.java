@@ -27,8 +27,11 @@ import org.apache.tajo.util.TUtil;
 import java.io.IOException;
 import java.util.Arrays;
 
+/**
+ * Fragment for file systems.
+ */
 public class FileFragment extends Fragment<Long> {
-  private Integer[] diskIds;
+  private Integer[] diskIds; // disk volume ids
 
   public FileFragment(String tableName, Path uri, BlockLocation blockLocation)
       throws IOException {

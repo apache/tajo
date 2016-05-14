@@ -22,6 +22,13 @@ import com.google.common.collect.ImmutableList;
 
 import java.net.URI;
 
+/**
+ * The Fragment is similar to the split in MapReduce.
+ * For distributed processing of a a single large table,
+ * it contains the information of which part of data will be processed by each task.
+ *
+ * @param <T> type of fragment key. It should implement the Comparable interface.
+ */
 public abstract class Fragment<T extends Comparable> implements Comparable<Fragment<T>>, Cloneable {
 
   protected String kind;
@@ -48,30 +55,36 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
     this.hostNames = hostNames == null ? ImmutableList.of() : ImmutableList.copyOf(hostNames);
   }
 
+  /**
+   * Returns the fragment type.
+   *
+   * @return fragment type
+   */
   public final String getKind() {
     return kind;
   }
 
   /**
-   * Returns an URI of the target table.
+   * Returns an unique URI of the input source.
    *
-   * @return URI of the target table
+   * @return URI of the input source
    */
   public final URI getUri() {
     return uri;
   }
 
   /**
-   * Returns the name of the target table.
+   * Returns a unique id of the input source.
    *
-   * @return target table name
+   * @return id of the input source
    */
   public final String getInputSourceId() {
     return this.inputSourceId;
   }
 
   /**
-   * Returns a start key of the data range.
+   * Returns the start key of the data range.
+   * {@link org.apache.tajo.storage.Scanner} will start reading data from the point indicated by this key.
    *
    * @return start key
    */
@@ -80,7 +93,8 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
   }
 
   /**
-   * Returns an end key of the data range.
+   * Returns the end key of the data range.
+   * {@link org.apache.tajo.storage.Scanner} will stop reading data when it reaches the point indicated by this key.
    *
    * @return end key
    */
@@ -89,7 +103,7 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
   }
 
   /**
-   * Returns the length of the data range.
+   * Returns the length of the data range between start key and end key.
    *
    * @return length of the range
    */
@@ -98,7 +112,7 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
   }
 
   /**
-   * Returns host names which has the part of the table specified in this fragment.
+   * Returns host names which have any portion of the data between start key and end key.
    *
    * @return host names
    */
@@ -108,8 +122,9 @@ public abstract class Fragment<T extends Comparable> implements Comparable<Fragm
 
   /**
    * Indicates the fragment is empty or not.
+   * An empty fragment means that there is no data to read.
    *
-   * @return true if the length is 0. Otherwise, false.
+   * @return true if the fragment is empty. Otherwise, false.
    */
   public boolean isEmpty() {
     return length == 0;

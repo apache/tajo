@@ -25,6 +25,9 @@ import org.apache.tajo.storage.fragment.Fragment;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * Fragment for the systems which connects to Tajo via the JDBC interface.
+ */
 public class JdbcFragment extends Fragment<Long> {
 
   // TODO: set start and end keys properly
