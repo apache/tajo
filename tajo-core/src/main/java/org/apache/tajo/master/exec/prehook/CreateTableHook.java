@@ -18,12 +18,12 @@
 
 package org.apache.tajo.master.exec.prehook;
 
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.schema.IdentifierUtil;
 
 public class CreateTableHook implements DistributedQueryHook {
 
@@ -37,8 +37,7 @@ public class CreateTableHook implements DistributedQueryHook {
   public void hook(QueryContext queryContext, LogicalPlan plan) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     CreateTableNode createTableNode = rootNode.getChild();
-    String [] splitted  = CatalogUtil.splitFQTableName(createTableNode.getTableName());
-    String databaseName = splitted[0];
+    String [] splitted  = IdentifierUtil.splitFQTableName(createTableNode.getTableName());
     String tableName = splitted[1];
     queryContext.setOutputTable(tableName);
 

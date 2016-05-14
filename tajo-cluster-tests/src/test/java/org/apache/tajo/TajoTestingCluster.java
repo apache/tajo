@@ -45,10 +45,10 @@ import org.apache.tajo.querymaster.Query;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.TablespaceManager;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.history.QueryHistory;
@@ -63,7 +63,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.UUID;
 
 public class TajoTestingCluster {
@@ -652,8 +651,8 @@ public class TajoTestingCluster {
         fs.mkdirs(rootDir);
       }
       Path tablePath;
-      if (CatalogUtil.isFQTableName(tableName)) {
-        Pair<String, String> name = CatalogUtil.separateQualifierAndName(tableName);
+      if (IdentifierUtil.isFQTableName(tableName)) {
+        Pair<String, String> name = IdentifierUtil.separateQualifierAndName(tableName);
         tablePath = new Path(rootDir, new Path(name.getFirst(), name.getSecond()));
       } else {
         tablePath = new Path(rootDir, tableName);

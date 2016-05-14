@@ -44,6 +44,7 @@ import org.apache.tajo.plan.util.EvalNodeToExprConverter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
@@ -147,7 +148,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
 
     Path [] filteredPaths = null;
     FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
-    String [] splits = CatalogUtil.splitFQTableName(tableName);
+    String [] splits = IdentifierUtil.splitFQTableName(tableName);
     List<PartitionDescProto> partitions = null;
 
     try {

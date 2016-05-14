@@ -20,7 +20,7 @@ JOIN(11)(INNER)
            => in schema: {(3) default.r.r_comment (TEXT), default.r.r_name (TEXT), default.r.r_regionkey (INT4)}
          SCAN(0) on default.nation as n
            => filter: default.n.n_name (TEXT) = MOROCCO
-           => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT) as name, default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+           => target list: default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.n.n_name (TEXT) as name
            => out schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
            => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
    SCAN(5) on default.supplier as s
@@ -58,7 +58,7 @@ Block Id: eb_0000000000000_0000_000002 [LEAF]
 
 SCAN(0) on default.nation as n
   => filter: default.n.n_name (TEXT) = MOROCCO
-  => target list: default.n.n_comment (TEXT), default.n.n_name (TEXT) as name, default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)
+  => target list: default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), default.n.n_name (TEXT) as name
   => out schema: {(4) default.n.n_comment (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4), name (TEXT)}
   => in schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
 

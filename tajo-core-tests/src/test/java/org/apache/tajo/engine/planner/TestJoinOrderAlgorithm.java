@@ -39,6 +39,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -91,19 +92,19 @@ public class TestJoinOrderAlgorithm {
 
     TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     TableDesc people = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(people);
 
     TableDesc student =
         new TableDesc(
-            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "TEXT", new KeyValueSet(),
+            IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, "TEXT", new KeyValueSet(),
             CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(student);
 
     TableDesc score =
         new TableDesc(
-            CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "TEXT", new KeyValueSet(),
+            IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, "TEXT", new KeyValueSet(),
             CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(score);
 
@@ -123,7 +124,7 @@ public class TestJoinOrderAlgorithm {
       fs.create(tablePath);
       largeDept =
           new TableDesc(
-              CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "large_dept"+(i+1)), schema4, largeTableMeta,
+              IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "large_dept"+(i+1)), schema4, largeTableMeta,
               tablePath.toUri());
       largeTableStats = new TableStats();
       largeTableStats.setNumBytes(StorageUnit.PB * (i+1));  //1 PB * i

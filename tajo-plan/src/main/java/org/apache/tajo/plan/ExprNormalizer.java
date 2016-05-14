@@ -20,12 +20,12 @@ package org.apache.tajo.plan;
 
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -339,7 +339,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       return expr;
     }
     // if a column reference is not qualified, it finds and sets the qualified column name.
-    if (!(expr.hasQualifier() && CatalogUtil.isFQTableName(expr.getQualifier()))) {
+    if (!(expr.hasQualifier() && IdentifierUtil.isFQTableName(expr.getQualifier()))) {
       if (!ctx.block.namedExprsMgr.contains(expr.getCanonicalName()) && expr.getType() == OpType.Column) {
         try {
           String normalized =
