@@ -72,7 +72,7 @@ public class StoreIndexExec extends UnaryPhysicalExec {
 
     TajoConf conf = context.getConf();
     Path indexPath = new Path(logicalPlan.getIndexPath().toString(),
-        IndexExecutorUtil.getIndexFileName(scanExec.getFragments()[0]));
+        IndexExecutorUtil.getIndexFileName(conf, scanExec.getFragments()[0]));
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);
     this.comparator = new BaseTupleComparator(keySchema, sortSpecs);

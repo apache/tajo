@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,19 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.physical;
+package org.apache.tajo.storage.fragment;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
+import com.google.protobuf.Message;
+import com.google.protobuf.GeneratedMessage.Builder;
 
-public class IndexExecutorUtil {
+public interface FragmentSerdeHelper<F extends Fragment, P extends Message> {
 
-  public static String getIndexFileName(Configuration conf, FragmentProto fragmentProto) {
-    FileFragment fileFragment = FragmentConvertor.convert(conf, fragmentProto);
-    StringBuilder sb = new StringBuilder();
-    sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
-    return sb.toString();
-  }
+  Builder newBuilder();
+  P serialize(F fragment);
+  F deserialize(P proto);
 }

@@ -20,6 +20,8 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.fragment.BuiltinFragmentKinds;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -34,10 +36,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestFileFragment {
+  private TajoConf conf;
   private Path path;
   
   @Before
   public final void setUp() throws Exception {
+    conf = new TajoConf();
     path = CommonTestingUtil.getTestDir();
   }
 
@@ -45,7 +49,7 @@ public class TestFileFragment {
   public final void testGetAndSetFields() {
     FileFragment fragment1 = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
 
-    assertEquals("table1_1", fragment1.getTableName());
+    assertEquals("table1_1", fragment1.getInputSourceId());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
@@ -55,8 +59,9 @@ public class TestFileFragment {
   public final void testGetProtoAndRestore() {
     FileFragment fragment = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
 
-    FileFragment fragment1 = FragmentConvertor.convert(FileFragment.class, fragment.getProto());
-    assertEquals("table1_1", fragment1.getTableName());
+    FileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.FILE,
+        FragmentConvertor.toFragmentProto(conf, fragment));
+    assertEquals("table1_1", fragment1.getInputSourceId());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
@@ -73,7 +78,7 @@ public class TestFileFragment {
     Arrays.sort(tablets);
 
     for(int i = 0; i < num; i++) {
-      assertEquals("tablet1_"+i, tablets[i].getTableName());
+      assertEquals("tablet1_"+i, tablets[i].getInputSourceId());
     }
   }
 

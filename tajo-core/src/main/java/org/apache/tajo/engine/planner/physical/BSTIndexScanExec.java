@@ -86,7 +86,7 @@ public class BSTIndexScanExec extends ScanExec {
 
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
-    Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(fragment));
+    Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(context.getConf(), fragment));
     this.reader = new BSTIndex(context.getConf()).
         getIndexReader(indexPath, keySchema, comparator);
   }
