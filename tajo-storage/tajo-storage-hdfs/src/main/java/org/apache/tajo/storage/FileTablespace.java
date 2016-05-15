@@ -342,6 +342,8 @@ public class FileTablespace extends Tablespace {
     if (!errors.isEmpty()) {
       throw new InvalidInputException(errors);
     }
+
+    Collections.sort(result);
     LOG.info("Total input paths to process : " + result.size());
     return result;
   }

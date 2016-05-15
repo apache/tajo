@@ -29,9 +29,10 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class PartitionedTableScanNode extends ScanNode {
-  @Expose Path [] inputPaths;
+  @Expose private Path [] inputPaths;
 
   public PartitionedTableScanNode(int pid) {
     super(pid, NodeType.PARTITIONS_SCAN);
@@ -43,15 +44,22 @@ public class PartitionedTableScanNode extends ScanNode {
     setOutSchema(scanNode.getOutSchema());
     this.qual = scanNode.qual;
     this.targets = scanNode.targets;
-    this.inputPaths = inputPaths;
+    setInputPaths(inputPaths);
 
     if (scanNode.hasAlias()) {
       alias = scanNode.alias;
     }
   }
 
+  public void clearInputPaths() {
+    this.inputPaths = null;
+  }
+
   public void setInputPaths(Path [] paths) {
     this.inputPaths = paths;
+    if (this.inputPaths != null) {
+      Arrays.sort(inputPaths);
+    }
   }
 
   public Path [] getInputPaths() {
