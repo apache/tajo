@@ -193,14 +193,10 @@ public class TajoDump {
           writer.write("--\n");
           writer.write(String.format("-- Table Partitions: %s%n", tableName));
           writer.write("--\n");
-          // TODO: This should be improved at TAJO-1891
-//          List<PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
-//          for (PartitionDescProto eachPartitionProto : partitionProtos) {
-//            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
-//          }
-          writer.write(String.format("ALTER TABLE %s REPAIR PARTITION;",
-            IdentifierUtil.denormalizeIdentifier(databaseName) + "." + IdentifierUtil.denormalizeIdentifier(tableName)));
-
+          List<CatalogProtos.PartitionDescProto> partitionProtos = client.getPartitionsOfTable(fqName);
+          for (CatalogProtos.PartitionDescProto eachPartitionProto : partitionProtos) {
+            writer.write(DDLBuilder.buildDDLForAddPartition(table, eachPartitionProto));
+          }
           writer.write("\n\n");
         }
 

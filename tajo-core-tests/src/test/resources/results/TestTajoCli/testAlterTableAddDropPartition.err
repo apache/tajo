@@ -1,0 +1,2 @@
+ERROR: 'key2' column is not a partition key
+ERROR: partition 'key=0.1' does not exist

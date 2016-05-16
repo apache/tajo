@@ -66,6 +66,19 @@ SET PROPERTY
 This statement will allow users to change a table property.
 
 ========================
+ADD PARTITION
+========================
+
+*Synopsis*
+
+.. code-block:: sql
+
+  CREATE INDEX [ name ] ON table_name [ USING method ]
+  ( { column_name | ( expression ) } [ ASC | DESC ] [ NULLS { FIRST | LAST } ] [, ...] )
+  [ WHERE predicate ]
+
+
+========================
  DROP PARTITION
 ========================
 

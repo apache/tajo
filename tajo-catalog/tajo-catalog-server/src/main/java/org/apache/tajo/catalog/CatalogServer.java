@@ -452,11 +452,6 @@ public class CatalogServer extends AbstractService {
         return errInsufficientPrivilege("alter a table in database '" + split[0] + "'");
       }
 
-      // TODO: This should be removed at TAJO-1891
-      if (proto.getAlterTableType() == CatalogProtos.AlterTableType.ADD_PARTITION) {
-        return errFeatureNotImplemented("ADD PARTTIION");
-      }
-
       wlock.lock();
 
       try {

@@ -20,7 +20,6 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.annotation.Nullable;
@@ -116,7 +115,7 @@ public class LogicalNodeDeserializer {
         current = convertUnion(nodeMap, protoNode);
         break;
       case PARTITIONS_SCAN:
-        current = convertPartitionScan(context, evalContext, protoNode);
+        current = convertPartitionedTableScan(context, evalContext, protoNode);
         break;
       case SCAN:
         current = convertScan(context, evalContext, protoNode);
@@ -410,6 +409,13 @@ public class LogicalNodeDeserializer {
     return scan;
   }
 
+  private static PartitionedTableScanNode convertPartitionedTableScan(OverridableConf context, EvalContext evalContext,
+                                                      PlanProto.LogicalNode protoNode) {
+    PartitionedTableScanNode partitionedTableScan = new PartitionedTableScanNode(protoNode.getNodeId());
+    fillScanNode(context, evalContext, protoNode, partitionedTableScan);
+    return partitionedTableScan;
+  }
+
   private static void fillScanNode(OverridableConf context, EvalContext evalContext, PlanProto.LogicalNode protoNode,
                                    ScanNode scan) {
     PlanProto.ScanNode scanProto = protoNode.getScan();
@@ -450,20 +456,6 @@ public class LogicalNodeDeserializer {
         TUtil.stringToURI(indexScanSpec.getIndexPath()));
 
     return indexScan;
-  }
-
-  private static PartitionedTableScanNode convertPartitionScan(OverridableConf context, EvalContext evalContext,
-                                                               PlanProto.LogicalNode protoNode) {
-    PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getNodeId());
-    fillScanNode(context, evalContext, protoNode, partitionedScan);
-
-    PlanProto.PartitionScanSpec partitionScanProto = protoNode.getPartitionScan();
-    Path [] paths = new Path[partitionScanProto.getPathsCount()];
-    for (int i = 0; i < partitionScanProto.getPathsCount(); i++) {
-      paths[i] = new Path(partitionScanProto.getPaths(i));
-    }
-    partitionedScan.setInputPaths(paths);
-    return partitionedScan;
   }
 
   private static TableSubQueryNode convertTableSubQuery(OverridableConf context, EvalContext evalContext,
