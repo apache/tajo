@@ -59,7 +59,6 @@ public class TestDelimitedTextFile {
         .add("col7", Type.FLOAT8)
         .add("col8", Type.TEXT)
         .add("col9", Type.BLOB)
-        .add("col10", Type.INET4)
         .build();
 
     baseTuple = new VTuple(new Datum[] {
@@ -72,7 +71,6 @@ public class TestDelimitedTextFile {
         DatumFactory.createFloat8(271.9d),            // 6
         DatumFactory.createText("hyunsik"),           // 7
         DatumFactory.createBlob("hyunsik".getBytes()),// 8
-        DatumFactory.createInet4("192.168.0.1"),      // 9
     });
   }
 
@@ -120,7 +118,7 @@ public class TestDelimitedTextFile {
     Tuple tuple;
     int i = 0;
     while ((tuple = scanner.next()) != null) {
-      assertEquals("(f,hyunsik\",NULL,NULL,NULL,NULL,0.0,\"hyunsik,hyunsik,NULL)", tuple.toString());
+      assertEquals("(f,hyunsik\",NULL,NULL,NULL,NULL,0.0,\"hyunsik,hyunsik)", tuple.toString());
       i++;
     }
     assertEquals(1, i);

@@ -97,15 +97,14 @@ public class BenchmarkSort {
         new Column("col3", Type.DATE),
         new Column("col4", Type.TIMESTAMP),
         new Column("col5", Type.TIME),
-        new Column("col6", Type.INET4),
-        new Column("col7", Type.FLOAT4),
-        new Column("col8", Type.FLOAT8),
+        new Column("col6", Type.FLOAT4),
+        new Column("col7", Type.FLOAT8),
+        new Column("col8", Type.INT8),
         new Column("col9", Type.INT8),
         new Column("col10", Type.INT8),
         new Column("col11", Type.INT8),
         new Column("col12", Type.INT8),
         new Column("col13", Type.INT8),
-        new Column("col14", Type.INT8),
     }).build();
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
@@ -131,7 +130,6 @@ public class BenchmarkSort {
             NullDatum.get(),
             NullDatum.get(),
             NullDatum.get(),
-            NullDatum.get(),
             NullDatum.get()
         });
       } else {
@@ -142,7 +140,6 @@ public class BenchmarkSort {
             DatumFactory.createDate(Math.abs(rnd.nextInt())),
             DatumFactory.createTimestamp(Math.abs(rnd.nextLong())),
             DatumFactory.createTime(Math.abs(rnd.nextLong())),
-            DatumFactory.createInet4(rnd.nextInt()),
             DatumFactory.createFloat4(rnd.nextFloat()),
             DatumFactory.createFloat8(rnd.nextDouble()),
             DatumFactory.createInt8(rnd.nextLong()),

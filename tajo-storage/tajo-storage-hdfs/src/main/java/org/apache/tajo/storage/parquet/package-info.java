@@ -75,10 +75,6 @@
  *     <td>BLOB</td>
  *     <td>BINARY</td>
  *   </tr>
- *   <tr>
- *     <td>INET4</td>
- *     <td>BINARY</td>
- *   </tr>
  * </table>
  *
  * <p>

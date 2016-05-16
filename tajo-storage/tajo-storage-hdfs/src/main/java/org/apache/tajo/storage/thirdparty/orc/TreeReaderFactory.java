@@ -378,60 +378,6 @@ public class TreeReaderFactory {
     }
   }
 
-  public static class InetTreeReader extends DatumTreeReader {
-    protected IntegerReader reader = null;
-
-    InetTreeReader(int columnId) throws IOException {
-      this(columnId, null, null, null);
-    }
-
-    protected InetTreeReader(int columnId, InStream present, InStream data,
-                             OrcProto.ColumnEncoding encoding)
-        throws IOException {
-      super(columnId, present);
-      if (data != null && encoding != null) {
-        checkEncoding(encoding);
-        this.reader = createIntegerReader(encoding.getKind(), data, true, false);
-      }
-    }
-
-    @Override
-    void checkEncoding(OrcProto.ColumnEncoding encoding) throws IOException {
-      if ((encoding.getKind() != OrcProto.ColumnEncoding.Kind.DIRECT) &&
-          (encoding.getKind() != OrcProto.ColumnEncoding.Kind.DIRECT_V2)) {
-        throw new IOException("Unknown encoding " + encoding + " in column " +
-            columnId);
-      }
-    }
-
-    @Override
-    void startStripe(Map<org.apache.orc.impl.StreamName, InStream> streams,
-                     OrcProto.StripeFooter stripeFooter
-    ) throws IOException {
-      super.startStripe(streams, stripeFooter);
-      org.apache.orc.impl.StreamName name = new org.apache.orc.impl.StreamName(columnId,
-          OrcProto.Stream.Kind.DATA);
-      reader = createIntegerReader(stripeFooter.getColumnsList().get(columnId).getKind(),
-          streams.get(name), true, false);
-    }
-
-    @Override
-    void seek(PositionProvider[] index) throws IOException {
-      seek(index[columnId]);
-    }
-
-    @Override
-    Datum next() throws IOException {
-      super.next();
-      return valuePresent ? DatumFactory.createInet4((int) reader.next()) : NullDatum.get();
-    }
-
-    @Override
-    void skipRows(long items) throws IOException {
-      reader.skip(countNonNulls(items));
-    }
-  }
-
   public static class IntTreeReader extends DatumTreeReader {
     protected IntegerReader reader = null;
 
@@ -1541,8 +1487,6 @@ public class TreeReaderFactory {
         return new TimestampTreeReader(timeZone, orcColumnId, skipCorrupt);
       case DATE:
         return new DateTreeReader(orcColumnId);
-      case INET4:
-        return new InetTreeReader(orcColumnId);
 //      case STRUCT:
 //        return new StructTreeReader(columnId, treeReaderSchema, included, skipCorrupt);
       default:

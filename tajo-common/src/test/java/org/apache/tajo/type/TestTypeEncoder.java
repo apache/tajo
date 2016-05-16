@@ -34,7 +34,6 @@ import static org.apache.tajo.type.Type.Bool;
 import static org.apache.tajo.type.Type.Char;
 import static org.apache.tajo.type.Type.Float4;
 import static org.apache.tajo.type.Type.Float8;
-import static org.apache.tajo.type.Type.Inet4;
 import static org.apache.tajo.type.Type.Int1;
 import static org.apache.tajo.type.Type.Int2;
 import static org.apache.tajo.type.Type.Int4;
@@ -68,7 +67,6 @@ public abstract class TestTypeEncoder {
     assertSerialize(Float8);
     assertSerialize(Text);
     assertSerialize(Blob);
-    assertSerialize(Inet4);
   }
 
   @Test

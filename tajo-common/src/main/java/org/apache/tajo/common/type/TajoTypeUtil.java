@@ -175,7 +175,6 @@ public class TajoTypeUtil {
       case DATE:
       case TIME:
       case TIMESTAMP:
-      case INET4:
       case VARCHAR:
       case CHAR:
       case TEXT: return false;

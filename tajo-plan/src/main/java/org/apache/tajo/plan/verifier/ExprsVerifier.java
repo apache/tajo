@@ -74,10 +74,6 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
       return true;
     }
 
-    if (checkNetworkType(dataType1) && checkNetworkType(dataType2)) {
-      return true;
-    }
-
     return false;
   }
 
@@ -176,10 +172,6 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     if (!(checkNumericType(leftDataType) && checkNumericType(rightDataType))) {
       state.addVerification(new UndefinedOperatorException(evalNode.toString()));
     }
-  }
-
-  private static boolean checkNetworkType(org.apache.tajo.type.Type dataType) {
-    return dataType.kind() == INET4 || dataType.kind() == INET6;
   }
 
   private static boolean checkIntType(org.apache.tajo.type.Type dataType) {

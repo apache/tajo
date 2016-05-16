@@ -365,6 +365,9 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
+    TAJO-2130: Remove inet4 data type.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1997: Registering UDF, it needs to check duplication.
     (Contributed by Jongyoung Park. Committed by jihoon)
 

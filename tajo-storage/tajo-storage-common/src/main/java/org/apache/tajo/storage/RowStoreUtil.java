@@ -149,11 +149,6 @@ public class RowStoreUtil {
             tuple.put(i, DatumFactory.createBlob(_bytes));
             break;
 
-          case INET4:
-            byte [] _ipv4 = new byte[4];
-            bb.get(_ipv4);
-            tuple.put(i, DatumFactory.createInet4(_ipv4));
-            break;
           default:
             throw new TajoRuntimeException(
                 new UnsupportedException("data type '" + type.getType().name() + "'"));
@@ -249,13 +244,6 @@ public class RowStoreUtil {
           bb.putInt(bytes.length);
           bb.put(bytes);
           break;
-        case INET4:
-          byte[] ipBytes = tuple.getBytes(i);
-          bb.put(ipBytes);
-          break;
-        case INET6:
-          bb.put(tuple.getBytes(i));
-          break;
         default:
           throw new TajoRuntimeException(
               new UnsupportedException("data type '" + col.getDataType().getType().name() + "'"));
@@ -313,10 +301,6 @@ public class RowStoreUtil {
         case TEXT:
         case BLOB:
           size += (4 + tuple.getBytes(i).length);
-          break;
-        case INET4:
-        case INET6:
-          size += tuple.getBytes(i).length;
           break;
         default:
           throw new TajoRuntimeException(
