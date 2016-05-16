@@ -312,35 +312,38 @@ public abstract class TajoResultSetBase implements ResultSet {
     }
   }
 
+  /**
+   * This method uses the given calendar to construct an appropriate millisecond
+   * value for the time if the underlying database does not store timezone information.
+   */
   private Date getDate(Tuple tuple, Calendar cal, int index) throws SQLException {
     if (handleNull(tuple, index)) return null;
 
-    TimeMeta tm;
     TimeZone tz = cal == null ? TimeZone.getDefault() : cal.getTimeZone();
+    long javaTime;
+
     switch (tuple.type(index)) {
-    case DATE:
-      tm = tuple.asDatum(index).asTimeMeta();
-      if (TimeZone.getDefault().equals(tz)) {
-        return toDate(tm, null);
-      } else {
-        DateTimeUtil.toUTCTimezone(tm, tz);
-        return toDate(tm, TimeZone.getDefault());
-      }
-    case TIMESTAMP:
-      //FIXME
-      return new Date(DateTimeUtil.convertTimeZone(getTimestamp(tuple, index).getTime(), timezone, tz));
-      //return toDate(tuple.asDatum(index).asTimeMeta(), timezone);
-    case TEXT:
-      tm = DatumFactory.createDate(tuple.asDatum(index)).asTimeMeta();
-      if (TimeZone.getDefault().equals(tz)) {
-        return toDate(tm, null);
-      } else {
-        DateTimeUtil.toUTCTimezone(tm, tz);
-        return toDate(tm, TimeZone.getDefault());
-      }
+    case DATE: {
+      TimeMeta tm = tuple.asDatum(index).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toDate(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
+    case TIMESTAMP: {
+      Date date = DateTimeUtil.convertToDate(getTimestamp(tuple, index), timezone);
+      javaTime = DateTimeUtil.convertTimeZone(date.getTime(), timezone, tz);
+      break;
+    }
+    case TEXT: {
+      TimeMeta  tm = DatumFactory.createDate(tuple.asDatum(index)).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toDate(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
     default:
       throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "date");
     }
+
+    // remove time part
+    return DateTimeUtil.convertToDate(javaTime, TimeZone.getDefault());
   }
 
   private Date toDate(TimeMeta tm, TimeZone tz) {
@@ -383,35 +386,37 @@ public abstract class TajoResultSetBase implements ResultSet {
     }
   }
 
+  /**
+   * This method uses the given calendar to construct an appropriate millisecond
+   * value for the time if the underlying database does not store timezone information.
+   */
   private Time getTime(Tuple tuple, Calendar cal, int index) throws SQLException {
     if (handleNull(tuple, index)) return null;
 
-    TimeMeta tm;
     TimeZone tz = cal == null ? TimeZone.getDefault() : cal.getTimeZone();
+    long javaTime;
 
     switch (tuple.type(index)) {
     case DATE:
-    case TIME:
-      tm = tuple.asDatum(index).asTimeMeta();
-      if (TimeZone.getDefault().equals(tz)) {
-        return toTime(tm, null);
-      } else {
-        DateTimeUtil.toUTCTimezone(tm, tz);
-        return toTime(tm, TimeZone.getDefault());
-      }
-    case TIMESTAMP:
-      return toTime(tuple.asDatum(index).asTimeMeta(), timezone);
-    case TEXT:
-      tm = DatumFactory.createTime(tuple.asDatum(index)).asTimeMeta();
-      if (TimeZone.getDefault().equals(tz)) {
-        return toTime(tm, null);
-      } else {
-        DateTimeUtil.toUTCTimezone(tm, tz);
-        return toTime(tm, TimeZone.getDefault());
-      }
+    case TIME: {
+      TimeMeta tm = tuple.asDatum(index).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toTime(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
+    case TIMESTAMP: {
+      return DateTimeUtil.convertToTime(getTimestamp(tuple, index), timezone);
+    }
+    case TEXT: {
+      TimeMeta tm = DatumFactory.createTime(tuple.asDatum(index)).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toTime(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
     default:
       throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "time");
     }
+
+    // remove date part
+    return DateTimeUtil.convertToTime(javaTime, TimeZone.getDefault());
   }
 
   private Time toTime(TimeMeta tm, TimeZone tz) {
@@ -452,13 +457,16 @@ public abstract class TajoResultSetBase implements ResultSet {
       return toTimestamp(tuple.asDatum(index).asTimeMeta(), timezone);
     case TEXT:
       tm = DatumFactory.createTimestamp(tuple.asDatum(index), timezone).asTimeMeta();
-      DateTimeUtil.toUTCTimezone(tm, timezone);
       return toTimestamp(tm, timezone);
     default:
       throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "timestamp");
     }
   }
 
+  /**
+   * This method uses the given calendar to construct an appropriate millisecond
+   * value for the time if the underlying database does not store timezone information.
+   */
   private Timestamp getTimestamp(Tuple tuple, Calendar cal, int index) throws SQLException {
     if (handleNull(tuple, index)) return null;
 
@@ -475,7 +483,6 @@ public abstract class TajoResultSetBase implements ResultSet {
       return toTimestamp(tuple.asDatum(index).asTimeMeta(), timezone);
     case TEXT:
       tm = DatumFactory.createTimestamp(tuple.asDatum(index), tz).asTimeMeta();
-      DateTimeUtil.toUTCTimezone(tm, tz);
       return toTimestamp(tm, null);
     default:
       throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "timestamp");

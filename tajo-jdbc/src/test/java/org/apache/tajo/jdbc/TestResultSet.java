@@ -212,33 +212,26 @@ public class TestResultSet {
 
       assertTrue(res.next());
 
-      Date date = res.getDate(1);
-      assertNotNull(date);
-      assertEquals(Date.valueOf("2014-01-01"), date);
+      assertEquals(Date.valueOf("2014-01-01"), res.getDate(1));
       assertEquals(Timestamp.valueOf("2014-01-01 00:00:00"), res.getTimestamp(1));
+      assertEquals(Time.valueOf("00:00:00"), res.getTime(1));
+      assertEquals(res.getDate(1), res.getDate("col1"));
 
-      date = res.getDate("col1");
-      assertNotNull(date);
-      assertEquals(Date.valueOf("2014-01-01"), date);
+      try {
+        // Does not support
+        fail(res.getDate(2).toString());
+        fail(res.getTimestamp(2).toString());
+      } catch (TajoSQLException e) {
+      }
+      assertEquals(Time.valueOf("01:00:00"), res.getTime(2));
+      assertEquals(res.getTime(2), res.getTime("col2"));
 
-      Time time = res.getTime(2);
-      assertNotNull(time);
-      assertEquals(Time.valueOf("01:00:00"), time);
-
-      time = res.getTime("col2");
-      assertNotNull(time);
-      assertEquals(Time.valueOf("01:00:00"), time);
-
-      Timestamp timestamp = res.getTimestamp(3);
-      assertNotNull(timestamp);
-      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00"), timestamp);
-
-      timestamp = res.getTimestamp("col3");
-      assertNotNull(timestamp);
-      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00"), timestamp);
+      assertEquals(Date.valueOf("2014-01-01"), res.getDate(3));
+      assertEquals(Time.valueOf("01:00:00"), res.getTime(3));
+      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00.0"), res.getTimestamp(3));
+      assertEquals(res.getTimestamp(3), res.getTimestamp("col3"));
 
       // assert with timezone
-
       //Current timezone + 1 hour
       TimeZone tz = TimeZone.getDefault();
       tz.setRawOffset(tz.getRawOffset() + (int) TimeUnit.HOURS.toMillis(1));
@@ -246,36 +239,24 @@ public class TestResultSet {
       Calendar cal = Calendar.getInstance(tz);
       assertEquals(tz.getRawOffset(), cal.getTimeZone().getRawOffset());
 
-      assertEquals("2013-12-31", res.getDate(1, cal).toString());
-      assertEquals("23:00:00", res.getTime(1, cal).toString());
-      assertEquals("2013-12-31 23:00:00.0", res.getTimestamp(1, cal).toString());
-
-      assertEquals("2013-12-31", res.getDate("col1", cal).toString());
-      assertEquals("23:00:00", res.getTime("col1", cal).toString());
-      assertEquals("2013-12-31 23:00:00.0", res.getTimestamp("col1", cal).toString());
+      assertEquals(Date.valueOf("2013-12-31"), res.getDate(1, cal));
+      assertEquals(Time.valueOf("23:00:00"), res.getTime(1, cal));
+      assertEquals(Timestamp.valueOf("2013-12-31 23:00:00.0"), res.getTimestamp(1, cal));
+      assertEquals(res.getDate(1, cal), res.getDate("col1", cal));
 
       try {
+        // Does not support
         fail(res.getDate(2, cal).toString());
         fail(res.getTimestamp(2, cal).toString());
       } catch (TajoSQLException e) {
       }
-      assertEquals("00:00:00", res.getTime(2, cal).toString());
+      assertEquals(Time.valueOf("00:00:00"), res.getTime(2, cal));
+      assertEquals(res.getTime(2, cal), res.getTime("col2", cal));
 
-      try {
-        fail(res.getDate("col2", cal).toString());
-        fail(res.getTimestamp("col2", cal).toString());
-      } catch (TajoSQLException e) {
-      }
-      assertEquals("00:00:00", res.getTime("col2", cal).toString());
-
-      assertEquals("2013-12-31", res.getDate(3, cal).toString());
-      assertEquals("01:00:00", res.getTime(3, cal).toString());
-      assertEquals("2014-01-01 01:00:00.0", res.getTimestamp(3, cal).toString());
-
-      assertEquals("2013-12-31", res.getDate("col3", cal).toString());
-      assertEquals("01:00:00", res.getTime("col3", cal).toString());
-      assertEquals("2014-01-01 01:00:00.0", res.getTimestamp("col3", cal).toString());
-
+      assertEquals(Date.valueOf("2013-12-31"), res.getDate(3, cal));
+      assertEquals(Time.valueOf("01:00:00"), res.getTime(3, cal));
+      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00.0"), res.getTimestamp(3, cal));
+      assertEquals(res.getTimestamp(3, cal), res.getTimestamp("col3", cal));
     } finally {
       if (res != null) {
         res.close();
