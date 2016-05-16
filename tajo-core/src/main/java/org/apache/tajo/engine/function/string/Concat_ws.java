@@ -19,6 +19,8 @@
 package org.apache.tajo.engine.function.string;
 
 import com.google.gson.annotations.Expose;
+
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -60,7 +62,7 @@ public class Concat_ws extends GeneralFunction {
       return NullDatum.get();
     }
 
-    String separator = params.getText(0);
+    String separator = StringEscapeUtils.unescapeJava(params.getText(0));
 
     StringBuilder result = new StringBuilder();
 
