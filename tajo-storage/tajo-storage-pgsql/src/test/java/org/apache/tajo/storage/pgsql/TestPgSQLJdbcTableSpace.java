@@ -74,7 +74,7 @@ public class TestPgSQLJdbcTableSpace {
     Tablespace space = TablespaceManager.getByName("pgsql_cluster");
     MetadataProvider provider = space.getMetadataProvider();
     TableDesc table = provider.getTableDesc(null, "lineitem");
-    List<Fragment> fragments = space.getSplits("lineitem", table, null);
+    List<Fragment> fragments = space.getSplits("lineitem", table, false, null);
     assertNotNull(fragments);
     assertEquals(1, fragments.size());
   }

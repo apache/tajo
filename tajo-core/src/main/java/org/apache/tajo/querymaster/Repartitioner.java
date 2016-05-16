@@ -19,7 +19,6 @@
 package org.apache.tajo.querymaster;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -54,11 +53,15 @@ import org.apache.tajo.pullserver.PullServerConstants;
 import org.apache.tajo.pullserver.PullServerUtil.PullServerRequestURIBuilder;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.SplitUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -120,8 +123,9 @@ public class Repartitioner {
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
-        Tablespace space = TablespaceManager.get(tableDesc.getUri());
-        List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc, null);
+        List<Fragment> fileFragments = SplitUtil.getSplits(
+            TablespaceManager.get(tableDesc.getUri()), scans[i], tableDesc, false);
+
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
         } else {
@@ -385,27 +389,16 @@ public class Repartitioner {
       //If there are more than one data files, that files should be added to fragments or partition path
 
       for (ScanNode eachScan: broadcastScans) {
+        // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
+        // plain tables.
+        if (eachScan.getType() != NodeType.PARTITIONS_SCAN) {
+          TableDesc tableDesc = masterContext.getTableDesc(eachScan);
 
-        Path[] partitionScanPaths = null;
-        TableDesc tableDesc = masterContext.getTableDesc(eachScan);
-        Tablespace space = TablespaceManager.get(tableDesc.getUri());
-
-        if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
-
-          PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
-          partitionScanPaths = partitionScan.getInputPaths();
-          // set null to inputPaths in getFragmentsFromPartitionedTable()
-          getFragmentsFromPartitionedTable((FileTablespace) space, eachScan, tableDesc);
-          partitionScan.setInputPaths(partitionScanPaths);
-
-        } else {
-
-          Collection<Fragment> scanFragments =
-              space.getSplits(eachScan.getCanonicalName(), tableDesc, eachScan.getQual());
+          Collection<Fragment> scanFragments = SplitUtil.getSplits(
+              TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc, false);
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
-
         }
       }
     }
@@ -468,24 +461,6 @@ public class Repartitioner {
     return mergedHashEntries;
   }
 
-  /**
-   * It creates a number of fragments for all partitions.
-   */
-  public static List<Fragment> getFragmentsFromPartitionedTable(Tablespace tsHandler,
-                                                                          ScanNode scan,
-                                                                          TableDesc table) throws IOException {
-    Preconditions.checkArgument(tsHandler instanceof FileTablespace, "tsHandler must be FileTablespace");
-    if (!(scan instanceof PartitionedTableScanNode)) {
-      throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
-    }
-    List<Fragment> fragments = Lists.newArrayList();
-    PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
-    fragments.addAll(((FileTablespace) tsHandler).getSplits(
-        scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getInputPaths()));
-    partitionsScan.setInputPaths(null);
-    return fragments;
-  }
-
   private static void scheduleLeafTasksWithBroadcastTable(TaskSchedulerContext schedulerContext, Stage stage,
                                                           int baseScanId, Fragment[] fragments)
       throws IOException, TajoException {
@@ -513,30 +488,15 @@ public class Repartitioner {
       ScanNode scan = scans[i];
       TableDesc desc = stage.getContext().getTableDesc(scan);
 
-      Collection<Fragment> scanFragments;
-      Path[] partitionScanPaths = null;
-
-
-      Tablespace space = TablespaceManager.get(desc.getUri());
-
-      if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scan;
-        partitionScanPaths = partitionScan.getInputPaths();
-        // set null to inputPaths in getFragmentsFromPartitionedTable()
-        scanFragments = getFragmentsFromPartitionedTable(space, scan, desc);
-      } else {
-        scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan.getQual());
-      }
+      Collection<Fragment> scanFragments = SplitUtil.getSplits(TablespaceManager.get(desc.getUri()), scan, desc, false);
 
       if (scanFragments != null) {
         if (i == baseScanId) {
           baseFragments = scanFragments;
         } else {
-          if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-            PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
-            // PhisicalPlanner make PartitionMergeScanExec when table is boradcast table and inputpaths is not empty
-            partitionScan.setInputPaths(partitionScanPaths);
-          } else {
+          // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
+          // plain tables.
+          if (scan.getType() != NodeType.PARTITIONS_SCAN) {
             broadcastFragments.addAll(scanFragments);
           }
         }
