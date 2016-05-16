@@ -18,17 +18,26 @@
 
 package org.apache.tajo.schema;
 
+import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes.IdentifierProto;
 import org.apache.tajo.schema.IdentifierPolicy.IdentifierCase;
 
 import java.util.Objects;
 
+import static org.apache.tajo.schema.IdentifierPolicy.DefaultPolicy;
+
 /**
- * Identifier Element
+ * Represents an identifier part
  */
-public class Identifier {
+public class Identifier implements ProtoObject<IdentifierProto> {
   private String name;
   private boolean quoted;
 
+  /**
+   * Identifier constructor
+   * @param name Identifier part string
+   * @param quoted quoted or not
+   */
   private Identifier(String name, boolean quoted) {
     this.name = name;
     this.quoted = quoted;
@@ -42,7 +51,12 @@ public class Identifier {
     return new Identifier(name, quoted);
   }
 
-  public String displayString(IdentifierPolicy policy) {
+  /**
+   * Raw string for an identifier, which is equivalent to an identifier directly used in SQL statements.
+   * @param policy IdentifierPolicy
+   * @return Raw string
+   */
+  public String raw(IdentifierPolicy policy) {
     StringBuilder sb = new StringBuilder();
     if (quoted) {
       appendByCase(sb, policy.storesQuotedIdentifierAs());
@@ -56,11 +70,11 @@ public class Identifier {
   }
 
   /**
-   * Raw string of an identifier
-   * @param policy Identifier Policy
-   * @return raw string
+   * Interned string of an identifier
+   * @param policy IdentifierPolicy
+   * @return interned string
    */
-  public String raw(IdentifierPolicy policy) {
+  public String interned(IdentifierPolicy policy) {
     StringBuilder sb = new StringBuilder();
     if (quoted) {
       appendByCase(sb, policy.storesQuotedIdentifierAs());
@@ -87,7 +101,7 @@ public class Identifier {
 
   @Override
   public String toString() {
-    return displayString(IdentifierPolicy.DefaultPolicy());
+    return raw(DefaultPolicy());
   }
 
   public int hashCode() {
@@ -101,9 +115,21 @@ public class Identifier {
 
     if (obj instanceof Identifier) {
       Identifier other = (Identifier) obj;
-      return other.name == other.name && quoted == other.quoted;
+      return name.equals(other.name) && quoted == other.quoted;
     }
 
     return false;
+  }
+
+  @Override
+  public IdentifierProto getProto() {
+    return IdentifierProto.newBuilder()
+        .setName(name)
+        .setQuoted(quoted)
+        .build();
+  }
+
+  public static Identifier fromProto(IdentifierProto proto) {
+    return new Identifier(proto.getName(), proto.getQuoted());
   }
 }

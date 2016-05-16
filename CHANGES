@@ -4,6 +4,8 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1686: Allow Tajo to use Hive UDF. (jihoon)
+
     TAJO-2122: PullServer as an Auxiliary service of Yarn. (jihoon)
 
     TAJO-2109: Implement Radix sort. (jihoon)
@@ -11,6 +13,8 @@ Release 0.12.0 - unreleased
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-2129: Apply new type implementation to Schema and Catalog. (hyunsik)
 
     TAJO-2071: Supporting DATE type in Parquet format. 
     (Jongyoung Park via hyunsik)

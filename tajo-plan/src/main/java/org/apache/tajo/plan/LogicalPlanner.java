@@ -21,10 +21,9 @@ package org.apache.tajo.plan;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.OverridableConf;
@@ -49,6 +48,10 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.Field;
+import org.apache.tajo.schema.IdentifierUtil;
+import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeFactory;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -62,12 +65,12 @@ import static org.apache.tajo.algebra.CreateTable.PartitionType;
 import static org.apache.tajo.plan.ExprNormalizer.ExprNormalizedResult;
 import static org.apache.tajo.plan.LogicalPlan.BlockType;
 import static org.apache.tajo.plan.verifier.SyntaxErrorUtil.makeSyntaxError;
+import static org.apache.tajo.type.Type.*;
 
 /**
  * This class creates a logical plan from a nested tajo algebra expression ({@link org.apache.tajo.algebra})
  */
 public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContext, LogicalNode> {
-  private static Log LOG = LogFactory.getLog(LogicalPlanner.class);
   private final CatalogService catalog;
   private final StorageService storage;
 
@@ -460,20 +463,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    */
   private EvalExprNode buildPlanForNoneFromStatement(PlanContext context, Stack<Expr> stack, Projection projection)
       throws TajoException {
-    LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
 
-    int finalTargetNum = projection.getNamedExprs().size();
     List<Target> targets = new ArrayList<>();
 
-    for (int i = 0; i < finalTargetNum; i++) {
-      NamedExpr namedExpr = projection.getNamedExprs().get(i);
-      EvalNode evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.RELS_ONLY);
-      if (namedExpr.hasAlias()) {
-        targets.add(new Target(evalNode, namedExpr.getAlias()));
-      } else {
-        targets.add(new Target(evalNode, context.plan.generateUniqueColumnName(namedExpr.getExpr())));
-      }
+    for (NamedExpr namedExpr: projection.getNamedExprs()) {
+      Expr expr = namedExpr.getExpr();
+      EvalNode evalNode = exprAnnotator.createEvalNode(context, expr, NameResolvingMode.RELS_ONLY);
+
+      String alias = namedExpr.hasAlias() ? namedExpr.getAlias() : context.plan.generateUniqueColumnName(expr);
+      targets.add(new Target(evalNode, alias));
     }
     EvalExprNode evalExprNode = context.queryBlock.getNodeFromExpr(projection);
     evalExprNode.setTargets(targets);
@@ -1472,7 +1471,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // make table subquery node which has set operation as its subquery
     TableSubQueryNode setOpTableSubQueryNode = context.plan.createNode(TableSubQueryNode.class);
-    setOpTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+    setOpTableSubQueryNode.init(IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
         context.generateUniqueSubQueryName()), setOperationNode);
     setTargetOfTableSubQuery(context, currentBlock, setOpTableSubQueryNode);
     currentBlock.registerNode(setOpTableSubQueryNode);
@@ -1623,9 +1622,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Get and set a target table
     String databaseName;
     String tableName;
-    if (CatalogUtil.isFQTableName(expr.getTableName())) {
-      databaseName = CatalogUtil.extractQualifier(expr.getTableName());
-      tableName = CatalogUtil.extractSimpleName(expr.getTableName());
+    if (IdentifierUtil.isFQTableName(expr.getTableName())) {
+      databaseName = IdentifierUtil.extractQualifier(expr.getTableName());
+      tableName = IdentifierUtil.extractSimpleName(expr.getTableName());
     } else {
       databaseName = context.queryContext.get(SessionVars.CURRENT_DATABASE);
       tableName = expr.getTableName();
@@ -1843,8 +1842,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     throws TajoException {
     String parentTableName = expr.getLikeParentTableName();
 
-    if (CatalogUtil.isFQTableName(parentTableName) == false) {
-      parentTableName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+    if (IdentifierUtil.isFQTableName(parentTableName) == false) {
+      parentTableName = IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
           parentTableName);
     }
     TableDesc baseTable = catalog.getTableDesc(parentTableName);
@@ -1874,11 +1873,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     createTableNode.setIfNotExists(expr.isIfNotExists());
 
     // Set a table name to be created.
-    if (CatalogUtil.isFQTableName(expr.getTableName())) {
+    if (IdentifierUtil.isFQTableName(expr.getTableName())) {
       createTableNode.setTableName(expr.getTableName());
     } else {
       createTableNode.setTableName(
-          CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getTableName()));
+          IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), expr.getTableName()));
     }
     // This is CREATE TABLE <tablename> LIKE <parentTable>
     if(expr.getLikeParentTableName() != null) {
@@ -1933,8 +1932,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // If the table schema is defined
       // ex) CREATE TABLE tbl(col1 type, col2 type) AS SELECT ...
       if (expr.hasTableElements()) {
-        createTableNode.setOutSchema(convertTableElementsSchema(expr.getTableElements()));
-        createTableNode.setTableSchema(convertTableElementsSchema(expr.getTableElements()));
+        createTableNode.setOutSchema(SchemaBuilder.builder()
+            .addAll2(convertTableElementsSchema(expr.getTableElements()))
+            .build());
+
+        createTableNode.setTableSchema(SchemaBuilder.builder()
+            .addAll2(convertTableElementsSchema(expr.getTableElements()))
+            .build());
       } else {
         // if no table definition, the select clause's output schema will be used.
         // ex) CREATE TABLE tbl AS SELECT ...
@@ -2001,11 +2005,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     } else {
 
       String tableName = createTable.getTableName();
-      String databaseName = CatalogUtil.isFQTableName(tableName) ?
-          CatalogUtil.extractQualifier(tableName) : context.queryContext.get(SessionVars.CURRENT_DATABASE);
+      String databaseName = IdentifierUtil.isFQTableName(tableName) ?
+          IdentifierUtil.extractQualifier(tableName) : context.queryContext.get(SessionVars.CURRENT_DATABASE);
 
       return storage.getTableURI(
-          createTable.getTableSpaceName(), databaseName, CatalogUtil.extractSimpleName(tableName));
+          createTable.getTableSpaceName(), databaseName, IdentifierUtil.extractSimpleName(tableName));
     }
   }
 
@@ -2047,13 +2051,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param elements to be transformed
    * @return schema transformed from table definition elements
    */
-  private static Schema convertTableElementsSchema(ColumnDefinition[] elements) {
-    return SchemaBuilder.builder().addAll(elements, new Function<ColumnDefinition, Column>() {
-      @Override
-      public Column apply(@Nullable ColumnDefinition input) {
-        return convertColumn(input);
-      }
-    }).build();
+  private static Collection<Field> convertTableElementsSchema(ColumnDefinition[] elements) {
+    ImmutableList.Builder<Field> list = ImmutableList.builder();
+    for (ColumnDefinition colDef : elements) {
+      list.add(FieldConverter.convert(convertColumn(colDef)));
+    }
+    return list.build();
   }
 
   /**
@@ -2100,40 +2103,50 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
 
-  public static TypeDesc convertDataType(DataTypeExpr dataType) {
+  public static Type convertDataType(DataTypeExpr dataType) {
     TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(dataType.getTypeName());
 
-    TajoDataTypes.DataType.Builder builder = TajoDataTypes.DataType.newBuilder();
-    builder.setType(type);
-
-    if (dataType.hasLengthOrPrecision()) {
-      builder.setLength(dataType.getLengthOrPrecision());
-    } else {
-      if (type == TajoDataTypes.Type.CHAR) {
-        builder.setLength(1);
+    if (type == TajoDataTypes.Type.CHAR || type == TajoDataTypes.Type.NCHAR) {
+      if (dataType.hasLengthOrPrecision()) {
+        return Char(dataType.getLengthOrPrecision());
+      } else {
+        // Default length is 1. It's because of compatibility with the legacy code.
+        return Char(1);
       }
-    }
-
-    TypeDesc typeDesc;
-    if (type == TajoDataTypes.Type.RECORD) {
-      Schema nestedRecordSchema = convertTableElementsSchema(dataType.getNestedRecordTypes());
-      typeDesc = new TypeDesc(nestedRecordSchema);
+    } else if (type == TajoDataTypes.Type.VARCHAR || type == TajoDataTypes.Type.NVARCHAR) {
+      if (dataType.hasLengthOrPrecision()) {
+        return Char(dataType.getLengthOrPrecision());
+      } else {
+        // Default length is 1. It's because of compatibility with the legacy code.
+        return Varchar(1);
+      }
+    } else if (type == TajoDataTypes.Type.ARRAY) {
+      return Array(convertDataType(dataType.getElementType()));
+    } else if (type == TajoDataTypes.Type.RECORD) {
+      return Record(convertTableElementsSchema(dataType.getNestedRecordTypes()));
+    } else if (type == TajoDataTypes.Type.MAP) {
+      return Map(convertDataType(dataType.getKeyType()), convertDataType(dataType.getValueType()));
+    } else if (type == TajoDataTypes.Type.NUMERIC) {
+      if (dataType.hasLengthOrPrecision() && dataType.hasScale()) {
+        return Numeric(dataType.getLengthOrPrecision(), dataType.getScale());
+      } else if (dataType.hasLengthOrPrecision()) {
+        return Numeric(dataType.getLengthOrPrecision());
+      } else {
+        return Numeric();
+      }
     } else {
-      typeDesc = new TypeDesc(builder.build());
+      return TypeFactory.create(type);
     }
-
-    return typeDesc;
   }
-
 
   @Override
   public LogicalNode visitDropTable(PlanContext context, Stack<Expr> stack, DropTable dropTable) {
     DropTableNode dropTableNode = context.queryBlock.getNodeFromExpr(dropTable);
     String qualified;
-    if (CatalogUtil.isFQTableName(dropTable.getTableName())) {
+    if (IdentifierUtil.isFQTableName(dropTable.getTableName())) {
       qualified = dropTable.getTableName();
     } else {
-      qualified = CatalogUtil.buildFQName(
+      qualified = IdentifierUtil.buildFQName(
           context.queryContext.get(SessionVars.CURRENT_DATABASE), dropTable.getTableName());
     }
     dropTableNode.init(qualified, dropTable.isIfExists(), dropTable.isPurge());
@@ -2193,11 +2206,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     QueryBlock block = context.queryBlock;
     CreateIndexNode createIndexNode = block.getNodeFromExpr(createIndex);
-    if (CatalogUtil.isFQTableName(createIndex.getIndexName())) {
+    if (IdentifierUtil.isFQTableName(createIndex.getIndexName())) {
       createIndexNode.setIndexName(createIndex.getIndexName());
     } else {
       createIndexNode.setIndexName(
-          CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
+          IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
     }
     createIndexNode.setUnique(createIndex.isUnique());
     Sort.SortSpec[] sortSpecs = createIndex.getSortSpecs();

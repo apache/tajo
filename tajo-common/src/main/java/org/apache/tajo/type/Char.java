@@ -18,47 +18,16 @@
 
 package org.apache.tajo.type;
 
-import org.apache.tajo.common.TajoDataTypes;
+import com.google.common.collect.ImmutableList;
 
-import java.util.Objects;
+import static org.apache.tajo.common.TajoDataTypes.Type.CHAR;
 
-public class Char extends Type {
-  private final int length;
-
+public class Char extends ValueParamterizedType {
   public Char(int length) {
-    this.length = length;
+    super(CHAR, ImmutableList.of(length));
   }
 
   public int length() {
-    return length;
-  }
-
-  @Override
-  public boolean hasParam() {
-    return true;
-  }
-
-  @Override
-  public TajoDataTypes.Type baseType() {
-    return TajoDataTypes.Type.CHAR;
-  }
-
-  @Override
-  public String toString() {
-    return "char(" + length + ")";
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(baseType(), length);
-  }
-
-  @Override
-  public boolean equals(Object object) {
-    if (object instanceof Char) {
-      return length == ((Char) object).length;
-    }
-
-    return false;
+    return params.get(0);
   }
 }

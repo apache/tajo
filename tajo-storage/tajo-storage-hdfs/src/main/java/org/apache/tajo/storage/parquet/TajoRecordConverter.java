@@ -20,6 +20,12 @@ package org.apache.tajo.storage.parquet;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
+import org.apache.parquet.io.api.Binary;
+import org.apache.parquet.io.api.Converter;
+import org.apache.parquet.io.api.GroupConverter;
+import org.apache.parquet.io.api.PrimitiveConverter;
+import org.apache.parquet.schema.GroupType;
+import org.apache.parquet.schema.Type;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -27,13 +33,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.parquet.io.api.Binary;
-import org.apache.parquet.io.api.Converter;
-import org.apache.parquet.io.api.GroupConverter;
-import org.apache.parquet.io.api.PrimitiveConverter;
-import org.apache.parquet.schema.GroupType;
-import org.apache.parquet.schema.Type;
-import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.DateTimeConstants;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -337,7 +337,7 @@ public class TajoRecordConverter extends GroupConverter {
     @Override
     final public void addInt(int value) {
       // Parquet DATE type is based on Unix Epoch(Jan 1, 1970).
-      parent.add(DatumFactory.createDate(value + DateTimeUtil.DAYS_FROM_JULIAN_TO_EPOCH));
+      parent.add(DatumFactory.createDate(value + DateTimeConstants.UNIX_EPOCH_JDATE));
     }
   }
 

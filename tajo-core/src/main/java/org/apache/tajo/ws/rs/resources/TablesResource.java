@@ -21,10 +21,10 @@ package org.apache.tajo.ws.rs.resources;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.ws.rs.*;
 
 import javax.ws.rs.*;
@@ -174,8 +174,8 @@ public class TablesResource {
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
-      if (CatalogUtil.isFQTableName(tableName)) {
-        tableName = CatalogUtil.extractSimpleName(tableName);
+      if (IdentifierUtil.isFQTableName(tableName)) {
+        tableName = IdentifierUtil.extractSimpleName(tableName);
       }
       
       CatalogService catalogService = masterContext.getCatalog();
@@ -239,8 +239,8 @@ public class TablesResource {
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
-      if (CatalogUtil.isFQTableName(tableName)) {
-        tableName = CatalogUtil.extractSimpleName(tableName);
+      if (IdentifierUtil.isFQTableName(tableName)) {
+        tableName = IdentifierUtil.extractSimpleName(tableName);
       }
       
       CatalogService catalogService = masterContext.getCatalog();
@@ -249,7 +249,7 @@ public class TablesResource {
         return Response.status(Status.NOT_FOUND).build();
       }
       
-      String canonicalTableName = CatalogUtil.getCanonicalTableName(databaseName, tableName);
+      String canonicalTableName = IdentifierUtil.getCanonicalTableName(databaseName, tableName);
 
       try {
         catalogService.dropTable(canonicalTableName);

@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.JavaResourceUtil;
 import org.junit.Test;
@@ -123,7 +124,7 @@ public class TestDDLBuilder {
     };
 
     for (String columnName : tobeUnquoted) {
-      assertFalse(CatalogUtil.isShouldBeQuoted(columnName));
+      assertFalse(IdentifierUtil.isShouldBeQuoted(columnName));
     }
 
     String [] quoted = {
@@ -137,7 +138,7 @@ public class TestDDLBuilder {
     };
 
     for (String columnName : quoted) {
-      assertTrue(CatalogUtil.isShouldBeQuoted(columnName));
+      assertTrue(IdentifierUtil.isShouldBeQuoted(columnName));
     }
   }
 }

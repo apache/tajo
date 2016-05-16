@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Function;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 
@@ -36,11 +37,11 @@ public class DDLBuilder {
     StringBuilder sb = new StringBuilder();
 
     sb.append("--\n")
-      .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
+      .append("-- Name: ").append(IdentifierUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
       .append(" Storage: ").append(desc.getMeta().getDataFormat());
     sb.append("\n-- Path: ").append(desc.getUri());
     sb.append("\n--\n");
-    sb.append("CREATE EXTERNAL TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
+    sb.append("CREATE EXTERNAL TABLE ").append(IdentifierUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());
     buildUsingClause(sb, desc.getMeta());
     buildWithClause(sb, desc.getMeta());
@@ -59,10 +60,10 @@ public class DDLBuilder {
     StringBuilder sb = new StringBuilder();
 
     sb.append("--\n")
-        .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
+        .append("-- Name: ").append(IdentifierUtil.denormalizeIdentifier(desc.getName())).append("; Type: TABLE;")
         .append(" Storage: ").append(desc.getMeta().getDataFormat());
     sb.append("\n--\n");
-    sb.append("CREATE TABLE ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
+    sb.append("CREATE TABLE ").append(IdentifierUtil.denormalizeIdentifier(desc.getName()));
     buildSchema(sb, desc.getSchema());
     buildUsingClause(sb, desc.getMeta());
     buildWithClause(sb, desc.getMeta());
@@ -79,11 +80,11 @@ public class DDLBuilder {
     StringBuilder sb = new StringBuilder();
 
     sb.append("--\n")
-        .append("-- Name: ").append(CatalogUtil.denormalizeIdentifier(desc.getName())).append("; Type: INDEX;")
+        .append("-- Name: ").append(IdentifierUtil.denormalizeIdentifier(desc.getName())).append("; Type: INDEX;")
         .append(" Index Method: ").append(desc.getIndexMethod());
     sb.append("\n--\n");
-    sb.append("CREATE INDEX ").append(CatalogUtil.denormalizeIdentifier(desc.getName()));
-    sb.append(" on ").append(CatalogUtil.denormalizeIdentifier(desc.getTableName())).append(" ( ");
+    sb.append("CREATE INDEX ").append(IdentifierUtil.denormalizeIdentifier(desc.getName()));
+    sb.append(" on ").append(IdentifierUtil.denormalizeIdentifier(desc.getTableName())).append(" ( ");
 
     for (SortSpec sortSpec : desc.getKeySortSpecs()) {
       sb.append(sortSpec.getSortKey().getQualifiedName()).append(" ");
@@ -108,7 +109,7 @@ public class DDLBuilder {
         sb.append(", ");
       }
 
-      sb.append(CatalogUtil.denormalizeIdentifier(column.getSimpleName())).append(" ");
+      sb.append(IdentifierUtil.denormalizeIdentifier(column.getSimpleName())).append(" ");
       TypeDesc typeDesc = column.getTypeDesc();
       sb.append(typeDesc);
     }
@@ -177,7 +178,7 @@ public class DDLBuilder {
    */
   public static String buildDDLForAddPartition(TableDesc table, PartitionDescProto partition) {
     StringBuilder sb = new StringBuilder();
-    sb.append("ALTER TABLE ").append(CatalogUtil.denormalizeIdentifier(table.getName()))
+    sb.append("ALTER TABLE ").append(IdentifierUtil.denormalizeIdentifier(table.getName()))
       .append(" ADD IF NOT EXISTS PARTITION (");
 
 
