@@ -1,1 +1,0 @@
-select t1.*,t2.* from table1 as t1, table2 as t2 where t1.addr = t2.addr order by t1.id, t1.name,t2. name;

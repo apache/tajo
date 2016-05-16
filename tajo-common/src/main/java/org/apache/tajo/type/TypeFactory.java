@@ -70,8 +70,6 @@ public class TypeFactory {
       return Type.Text;
     case BLOB:
       return Type.Blob;
-    case INET4:
-      return Type.Inet4;
     case RECORD:
       // for better exception
       throw new TajoRuntimeException(new NotImplementedException("record projection"));
@@ -156,7 +154,6 @@ public class TypeFactory {
     case TIMESTAMP: return Type.Timestamp;
     case INTERVAL: return Type.Interval;
     case BLOB: return Type.Blob;
-    case INET4: return Type.Inet4;
 
     case ARRAY: {
       Assert.assertCondition(typeParams.size() == 1,

@@ -1071,9 +1071,6 @@ public class ExternalSortExec extends SortExec {
       case INT4:
         compare = Ints.compare(tuple1.getInt4(index), tuple2.getInt4(index));
         break;
-      case INET4:
-        compare = UnsignedInts.compare(tuple1.getInt4(index), tuple2.getInt4(index));
-        break;
       case TIME:
       case TIMESTAMP:
       case INT8:

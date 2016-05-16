@@ -845,40 +845,6 @@ public class TestUniformRangePartition {
   }
 
   @Test
-  public void testIncrementOfInet4() {
-    Schema schema = SchemaBuilder.builder()
-        .add("l_orderkey", Type.INET4)
-        .add("l_linenumber", Type.INET4)
-        .add("final", Type.INET4)
-        .build();
-
-    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
-
-    VTuple s = new VTuple(3);
-    s.put(0, DatumFactory.createInet4("127.0.1.1"));
-    s.put(1, DatumFactory.createInet4("127.0.0.1"));
-    s.put(2, DatumFactory.createInet4("128.0.0.253"));
-    VTuple e = new VTuple(3);
-    e.put(0, DatumFactory.createInet4("127.0.1.4")); // 4
-    e.put(1, DatumFactory.createInet4("127.0.0.2")); // 2
-    e.put(2, DatumFactory.createInet4("128.0.0.255")); //x3 = 24
-
-    TupleRange expected = new TupleRange(sortSpecs, s, e);
-
-    UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
-    assertEquals(24, partitioner.getTotalCardinality().longValue());
-
-    Tuple beforeOverflow = partitioner.increment(s, BigInteger.valueOf(5), 2);
-    assertTrue("127.0.1.1".equals(beforeOverflow.getText(0)));
-    assertTrue("127.0.0.2".equals(beforeOverflow.getText(1)));
-    assertTrue("128.0.0.255".equals(beforeOverflow.getText(2)));
-    Tuple overflow = partitioner.increment(beforeOverflow, BigInteger.valueOf(1), 2);
-    assertTrue("127.0.1.2".equals(overflow.getText(0)));
-    assertTrue("127.0.0.1".equals(overflow.getText(1)));
-    assertTrue("128.0.0.253".equals(overflow.getText(2)));
-  }
-
-  @Test
   public void testPartition() {
     Schema schema = SchemaBuilder.builder()
         .add("l_returnflag", Type.TEXT)
@@ -1124,35 +1090,6 @@ public class TestUniformRangePartition {
         = new UniformRangePartition(expected, sortSpecs, true);
     TupleRange [] ranges = partitioner.partition(10);
 
-
-    TupleRange prev = null;
-    for (TupleRange r : ranges) {
-      if (prev != null) {
-        assertTrue(prev.compareTo(r) < 0);
-      }
-      prev = r;
-    }
-  }
-
-  @Test
-  public void testPartitionWithINET4() {
-    Schema schema = SchemaBuilder.builder()
-        .add("l_returnflag", Type.INET4)
-        .add("l_linestatus", Type.INET4)
-        .build();
-
-    SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
-
-    VTuple s = new VTuple(2);
-    s.put(0, DatumFactory.createInet4("127.0.1.10"));
-    s.put(1, DatumFactory.createInet4("127.0.2.10"));
-    VTuple e = new VTuple(2);
-    e.put(0, DatumFactory.createInet4("127.0.1.20"));
-    e.put(1, DatumFactory.createInet4("127.0.2.20"));
-    TupleRange expected = new TupleRange(sortSpecs, s, e);
-    RangePartitionAlgorithm partitioner
-        = new UniformRangePartition(expected, sortSpecs, true);
-    TupleRange [] ranges = partitioner.partition(10);
 
     TupleRange prev = null;
     for (TupleRange r : ranges) {

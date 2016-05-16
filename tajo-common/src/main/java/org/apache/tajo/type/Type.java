@@ -50,7 +50,6 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
   public static final Interval Interval = new Interval();
   public static final Text Text = new Text();
   public static final Blob Blob = new Blob();
-  public static final Inet4 Inet4 = new Inet4();
 
   protected TajoDataTypes.Type kind;
 

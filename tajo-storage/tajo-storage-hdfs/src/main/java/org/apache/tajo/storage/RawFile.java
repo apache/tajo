@@ -343,10 +343,6 @@ public class RawFile {
           break;
         }
 
-        case INET4:
-          outTuple.put(i, DatumFactory.createInet4(buffer.getInt()));
-          break;
-
         case DATE: {
           int val = buffer.getInt();
           if (val < Integer.MIN_VALUE + 1) {

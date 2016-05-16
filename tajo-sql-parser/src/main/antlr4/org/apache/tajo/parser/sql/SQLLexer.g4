@@ -381,8 +381,6 @@ VARBINARY : V A R B I N A R Y;
 BLOB : B L O B;
 BYTEA : B Y T E A; // alias for BLOB
 
-INET4 : I N E T '4';
-
 // complex types
 ARRAY : A R R A Y;
 MAP : M A P;

@@ -391,7 +391,6 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       case INT2:
       case INT4:
       case DATE:
-      case INET4:
         methodName = "getInt4";
         returnType = int.class;
         paramTypes = new Class [] {int.class};

@@ -93,8 +93,6 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
         break;
       }
       case BLOB:
-      case INET4:
-      case INET6:
         bytes = tuple.getBytes(index);
         length = bytes.length;
         out.write(bytes, 0, length);
@@ -163,9 +161,6 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
             bytes, offset, length);
         break;
       }
-      case INET4:
-        datum = DatumFactory.createInet4(bytes, offset, length);
-        break;
       case BLOB:
         datum = DatumFactory.createBlob(bytes, offset, length);
         break;
