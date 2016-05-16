@@ -127,7 +127,7 @@ public class TestFileSystems {
     appender.close();
     FileStatus fileStatus = fs.getFileStatus(path);
 
-    List<Fragment> splits = sm.getSplits("table", meta, schema, path);
+    List<Fragment> splits = sm.getSplits("table", meta, schema, false, path);
     int splitSize = (int) Math.ceil(fileStatus.getLen() / (double) fileStatus.getBlockSize());
     assertEquals(splitSize, splits.size());
 

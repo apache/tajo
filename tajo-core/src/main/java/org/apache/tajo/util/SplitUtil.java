@@ -44,21 +44,26 @@ public class SplitUtil {
    *
    * Also, we can ensure FileTableSpace if the type of table is a partitioned table.
    *
-   * @param tablespace
-   * @param scan
-   * @param tableDesc
-   * @return
+   * @param tablespace tablespace handler
+   * @param scan scan node
+   * @param tableDesc table desc of scan node
+   * @param requireSort if set, the result fragments will be sorted with their paths.
+   *                    Only set when a query type is the simple query.
+   * @return a list of fragments for input table
    * @throws IOException
    * @throws TajoException
    */
-  public static List<Fragment> getSplits(Tablespace tablespace, ScanNode scan, TableDesc tableDesc)
+  public static List<Fragment> getSplits(Tablespace tablespace,
+                                         ScanNode scan,
+                                         TableDesc tableDesc,
+                                         boolean requireSort)
       throws IOException, TajoException {
     List<Fragment> fragments;
     if (tableDesc.hasPartition()) {
       // TODO: Partition tables should also be handled by tablespace.
-      fragments = SplitUtil.getFragmentsFromPartitionedTable(tablespace, scan, tableDesc);
+      fragments = SplitUtil.getFragmentsFromPartitionedTable(tablespace, scan, tableDesc, requireSort);
     } else {
-      fragments = tablespace.getSplits(scan.getCanonicalName(), tableDesc, scan.getQual());
+      fragments = tablespace.getSplits(scan.getCanonicalName(), tableDesc, requireSort, scan.getQual());
     }
 
     return fragments;
@@ -69,7 +74,8 @@ public class SplitUtil {
    */
   private static List<Fragment> getFragmentsFromPartitionedTable(Tablespace tsHandler,
                                                                  ScanNode scan,
-                                                                 TableDesc table) throws IOException {
+                                                                 TableDesc table,
+                                                                 boolean requireSort) throws IOException {
     Preconditions.checkArgument(tsHandler instanceof FileTablespace, "tsHandler must be FileTablespace");
     if (!(scan instanceof PartitionedTableScanNode)) {
       throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
@@ -77,7 +83,7 @@ public class SplitUtil {
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
     fragments.addAll(((FileTablespace) tsHandler).getSplits(
-        scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getInputPaths()));
+        scan.getCanonicalName(), table.getMeta(), table.getSchema(), requireSort, partitionsScan.getInputPaths()));
     return fragments;
   }
 

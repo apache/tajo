@@ -1184,7 +1184,7 @@ public class Stage implements EventHandler<StageEvent> {
       TableDesc table = stage.context.getTableDesc(scan);
 
       Collection<Fragment> fragments = SplitUtil.getSplits(
-          TablespaceManager.get(scan.getTableDesc().getUri()), scan, table);
+          TablespaceManager.get(scan.getTableDesc().getUri()), scan, table, false);
       SplitUtil.preparePartitionScanPlanForSchedule(scan);
       Stage.scheduleFragments(stage, fragments);
 

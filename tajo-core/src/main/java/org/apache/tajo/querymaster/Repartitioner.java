@@ -124,7 +124,7 @@ public class Repartitioner {
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
         List<Fragment> fileFragments = SplitUtil.getSplits(
-            TablespaceManager.get(tableDesc.getUri()), scans[i], tableDesc);
+            TablespaceManager.get(tableDesc.getUri()), scans[i], tableDesc, false);
 
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
@@ -395,7 +395,7 @@ public class Repartitioner {
           TableDesc tableDesc = masterContext.getTableDesc(eachScan);
 
           Collection<Fragment> scanFragments = SplitUtil.getSplits(
-              TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc);
+              TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc, false);
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
@@ -488,7 +488,7 @@ public class Repartitioner {
       ScanNode scan = scans[i];
       TableDesc desc = stage.getContext().getTableDesc(scan);
 
-      Collection<Fragment> scanFragments = SplitUtil.getSplits(TablespaceManager.get(desc.getUri()), scan, desc);
+      Collection<Fragment> scanFragments = SplitUtil.getSplits(TablespaceManager.get(desc.getUri()), scan, desc, false);
 
       if (scanFragments != null) {
         if (i == baseScanId) {

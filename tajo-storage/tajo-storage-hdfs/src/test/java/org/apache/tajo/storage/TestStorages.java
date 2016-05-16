@@ -269,7 +269,7 @@ public class TestStorages {
       assertEquals(0, fileStatus.getLen());
     }
 
-    List<Fragment> splits = sm.getSplits("testZeroRows", meta, schema, testDir);
+    List<Fragment> splits = sm.getSplits("testZeroRows", meta, schema, false, testDir);
     int tupleCnt = 0;
     for (Fragment fragment : splits) {
       Scanner scanner = sm.getScanner(meta, schema, fragment, schema);

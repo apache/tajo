@@ -104,7 +104,8 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private void initSeqScanExec() throws IOException, TajoException {
     Tablespace tablespace = TablespaceManager.get(tableDesc.getUri());
 
-    List<Fragment> fragments = Lists.newArrayList(SplitUtil.getSplits(tablespace, scanNode, tableDesc));
+    List<Fragment> fragments = Lists.newArrayList(
+        SplitUtil.getSplits(tablespace, scanNode, scanNode.getTableDesc(), true));
 
     if (!fragments.isEmpty()) {
       FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[fragments.size()]));
