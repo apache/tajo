@@ -244,10 +244,6 @@ public class SchemaUtil {
         return 4;
       case FLOAT8:
         return 8;
-      case INET4:
-        return 4;
-      case INET6:
-        return 16;
       case TEXT:
         return 256;
       case BLOB:

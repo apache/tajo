@@ -326,8 +326,6 @@ public class TestCreateTable extends QueryTestCaseBase {
     assertTableExists(createdNames.get(0));
     createdNames = executeDDL("table1_ddl.sql", "table1", "float8");
     assertTableExists(createdNames.get(0));
-    createdNames = executeDDL("table1_ddl.sql", "table1", "inet4");
-    assertTableExists(createdNames.get(0));
     createdNames = executeDDL("table1_ddl.sql", "table1", "int");
     assertTableExists(createdNames.get(0));
     createdNames = executeDDL("table1_ddl.sql", "table1", "int1");

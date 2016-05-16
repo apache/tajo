@@ -739,8 +739,6 @@ public class CatalogUtil {
 
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INTERVAL, Type.DATE, Type.TIMESTAMP);
     TUtil.putToNestedMap(CASTING_DIRECTION_MAP, Type.INTERVAL, Type.DATE, Direction.RHS);
-
-    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INET4, Type.INET4, Type.INET4);
   }
 
   // table default properties

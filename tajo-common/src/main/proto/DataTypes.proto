@@ -67,9 +67,6 @@ enum Type {
   UDT = 62; // user-defined function
   PROTOBUF = 63; // protocol buffer type
 
-  INET4 = 91;
-  INET6 = 92;
-
   // array types
   BOOLEAN_ARRAY = 101;
   INT1_ARRAY = 102;

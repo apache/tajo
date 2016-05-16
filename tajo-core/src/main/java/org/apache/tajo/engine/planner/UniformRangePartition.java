@@ -328,25 +328,6 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
           }
         }
       }
-      case INET4: {
-        int candidateIntVal;
-        byte[] candidateBytesVal = new byte[4];
-        if (sortSpecs[colId].isAscending()) {
-          candidateIntVal = incDecimal.intValue() + tuple.getInt4(i);
-          if (candidateIntVal - incDecimal.intValue() != tuple.getInt4(i)) {
-            return true;
-          }
-          Bytes.putInt(candidateBytesVal, 0, candidateIntVal);
-          return Bytes.compareTo(mergedRange.getEnd().getBytes(colId), candidateBytesVal) < 0;
-        } else {
-          candidateIntVal = tuple.getInt4(i) - incDecimal.intValue();
-          if (candidateIntVal + incDecimal.intValue() != tuple.getInt4(i)) {
-            return true;
-          }
-          Bytes.putInt(candidateBytesVal, 0, candidateIntVal);
-          return Bytes.compareTo(candidateBytesVal, mergedRange.getEnd().getBytes(colId)) < 0;
-        }
-      }
     }
     return overflow;
   }
@@ -376,8 +357,7 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
       }
       case TIME:
       case TIMESTAMP:
-      case INT8:
-      case INET4: {
+      case INT8: {
         long candidate = last.getInt8(colId) + inc;
         long end = mergedRange.getEnd().getInt8(colId);
         reminder = candidate - end;
@@ -664,26 +644,6 @@ public class UniformRangePartition extends RangePartitionAlgorithm {
               end.put(i, DatumFactory.createTimestampDatumWithJavaMillis(last.getInt8(i) + incs[i].longValue()));
             } else {
               end.put(i, DatumFactory.createTimestampDatumWithJavaMillis(last.getInt8(i) - incs[i].longValue()));
-            }
-          }
-          break;
-        case INET4:
-          byte[] ipBytes;
-          if (overflowFlag[i]) {
-            ipBytes = mergedRange.getStart().getBytes(i);
-            assert ipBytes.length == 4;
-            end.put(i, DatumFactory.createInet4(ipBytes));
-          } else {
-            if (sortSpecs[i].isAscending()) {
-              int lastVal = last.getInt4(i) + incs[i].intValue();
-              ipBytes = new byte[4];
-              Bytes.putInt(ipBytes, 0, lastVal);
-              end.put(i, DatumFactory.createInet4(ipBytes));
-            } else {
-              int lastVal = last.getInt4(i) - incs[i].intValue();
-              ipBytes = new byte[4];
-              Bytes.putInt(ipBytes, 0, lastVal);
-              end.put(i, DatumFactory.createInet4(ipBytes));
             }
           }
           break;

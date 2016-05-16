@@ -37,7 +37,6 @@ import org.apache.orc.OrcProto.RowIndexEntry;
 import org.apache.orc.OrcUtils;
 import org.apache.orc.impl.*;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.storage.Tuple;
@@ -964,7 +963,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
       super.write(datum);
       if (datum != null && datum.isNotNull()) {
         long val;
-        if (datum instanceof Int4Datum || datum instanceof Inet4Datum) {
+        if (datum instanceof Int4Datum) {
           val = datum.asInt4();
         } else if (datum instanceof Int8Datum) {
           val = datum.asInt8();

@@ -70,8 +70,6 @@ public class DataTypeUtil {
     putAcceptableType(DATE, DATE);
 
     putAcceptableType(TEXT, TEXT);
-
-    putAcceptableType(INET4, INET4);
   }
 
   public static boolean isUpperCastable(TajoDataTypes.Type define, TajoDataTypes.Type given) {
