@@ -43,4 +43,35 @@ public class GeoIPUtil {
   public static String getCountryCode(String host) {
     return lookup.getCountry(host).getCode();
   }
+
+  /** Converts long(or int) value to country code.
+   *  In case of IPv4, only 4 bytes of long type variable are used.
+   *
+   *  @param host ip address as long(int) type by network byte order(big endian)
+   */
+  public static String getCountryCode(long host) {
+    return lookup.getCountry(host).getCode();
+  }
+
+  /** Converts binary(byte array) to country code.
+   *  In case of IPv4, it is 4 bytes length.
+   *
+   *  @param host ip address as byte array type by network byte order(big endian)
+   */
+  public static String getCountryCode(byte [] host) {
+    return lookup.getCountry(bytesToLong(host)).getCode();
+  }
+
+  // It's from geoip-api code.
+  private static long bytesToLong(byte[] address) {
+    long ipnum = 0;
+    for (int i = 0; i < 4; ++i) {
+      long y = address[i];
+      if (y < 0) {
+        y += 256;
+      }
+      ipnum += y << ((3 - i) * 8);
+    }
+    return ipnum;
+  }
 }
