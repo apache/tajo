@@ -28,10 +28,7 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -52,7 +49,6 @@ import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -1195,8 +1191,12 @@ public class Stage implements EventHandler<StageEvent> {
       //
       // Also, we can ensure FileTableSpace if the type of ScanNode is PARTITIONS_SCAN.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+        CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+        TajoConf conf = stage.getContext().getQueryContext().getConf();
+
         // After calling this method, partition paths are removed from the physical plan.
-        fragments = Repartitioner.getFragmentsFromPartitionedTable((FileTablespace) tablespace, scan, table);
+        fragments = Repartitioner.getFragmentsFromPartitionedTable((FileTablespace) tablespace, scan, table, catalog,
+          conf);
       } else {
         fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan.getQual());
       }
