@@ -371,6 +371,11 @@ public class DateTimeUtil {
     }
   }
 
+  public static long convertTimeZone(long javaTime, TimeZone from, TimeZone to) {
+    int offset = from.getOffset(javaTime) - to.getOffset(javaTime);
+    return javaTime + offset;
+  }
+
   public static Time toJavaTime(TimeMeta tm, @Nullable TimeZone tz) {
     if (tz != null) {
       DateTimeUtil.toUserTimezone(tm, tz);
