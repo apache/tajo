@@ -273,6 +273,9 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2157: EvalNodeSerializer/Deserializer should use new Type 
+    implementation. (hyunsik)
+
     TAJO-2145: Error codes based on errno.h need prefix. 
     (Jongyoung Park via hyunsik)
 

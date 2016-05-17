@@ -384,8 +384,8 @@ public class DatumFactory {
     return new AnyDatum(val);
   }
 
-  public static Datum cast(Datum operandDatum, DataType target, @Nullable TimeZone tz) {
-    switch (target.getType()) {
+  public static Datum cast(Datum operandDatum, org.apache.tajo.type.Type target, @Nullable TimeZone tz) {
+    switch (target.kind()) {
     case BOOLEAN:
       return DatumFactory.createBool(operandDatum.asBool());
     case CHAR:
@@ -426,7 +426,7 @@ public class DatumFactory {
     case ANY:
       return DatumFactory.createAny(operandDatum);
     default:
-      throw new TajoRuntimeException(new InvalidValueForCastException(operandDatum.type(), target.getType()));
+      throw new TajoRuntimeException(new InvalidValueForCastException(operandDatum.type(), target.kind()));
     }
   }
 }
