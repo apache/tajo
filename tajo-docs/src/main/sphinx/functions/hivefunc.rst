@@ -46,7 +46,7 @@ Parameter type / Return type
 ============================
 
 Hive uses *Writable* type of Hadoop in functions, but Tajo uses its internal *Datum* type.
-Because Tajo doesn't support pluggable type system yet, only some Writable types are supported currently.
+Because Tajo doesn't support a kind of pluggable type system yet, only some Writable types are supported currently by internal converting.
 They are listed below.
 
 ==================== =========
