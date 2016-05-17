@@ -18,23 +18,16 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.Bytes;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class TestBytesDatum {
 
-  @Test
-  public final void testType() {
-    Datum d = DatumFactory.createBlob("12345".getBytes());
-    assertEquals(Type.BLOB, d.type());
-  }
-  
   @Test
   public final void testAsChars() {
     Datum d = DatumFactory.createBlob("12345".getBytes());
@@ -45,14 +38,6 @@ public class TestBytesDatum {
   public final void testSize() {
     Datum d = DatumFactory.createBlob("12345".getBytes());
     assertEquals(5, d.size());
-  }
-  
-  @Test
-  public final void testJson() {
-	  Datum d = DatumFactory.createBlob("12345".getBytes());
-	  String json = d.toJson();
-	  Datum fromJson = CommonGsonHelper.fromJson(json, Datum.class);
-	  assertTrue(d.equalsTo(fromJson).asBool());
   }
 
   @Test

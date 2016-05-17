@@ -18,9 +18,9 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.type.Type;
 import org.junit.Test;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.junit.Assert.*;
 
 public class TestCharDatum {
@@ -28,7 +28,7 @@ public class TestCharDatum {
 	@Test
 	public final void testType() {
 		Datum d = DatumFactory.createChar((char) 1);
-		assertEquals(Type.CHAR, d.type());
+		assertEquals(Type.Char(1), d.type());
 	}
 
 	@Test

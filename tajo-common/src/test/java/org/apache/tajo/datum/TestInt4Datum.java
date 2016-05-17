@@ -19,19 +19,10 @@
 package org.apache.tajo.datum;
 
 import org.junit.Test;
-import org.apache.tajo.common.TajoDataTypes;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestInt4Datum {
-
-  @Test
-  public final void testType() {
-    Datum d = DatumFactory.createInt4(1);
-    assertEquals(TajoDataTypes.Type.INT4, d.type());
-  }
 
   @Test
   public final void testAsInt() {

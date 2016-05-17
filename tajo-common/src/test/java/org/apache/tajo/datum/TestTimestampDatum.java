@@ -18,7 +18,6 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
@@ -44,12 +43,6 @@ public class TestTimestampDatum {
     calendar.setTimeInMillis(javatime);
     unixtime = (int) (javatime / 1000);
   }
-
-	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
-    assertEquals(Type.TIMESTAMP, d.type());
-	}
 
 	@Test(expected = TajoRuntimeException.class)
 	public final void testAsInt4() {

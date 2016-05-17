@@ -28,12 +28,6 @@ import static org.junit.Assert.assertTrue;
 public class TestFloat8Datum {
 
 	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createFloat8(1d);
-		assertEquals(Type.FLOAT8, d.type());
-	}
-
-	@Test
 	public final void testAsInt4() {
 		Datum d = DatumFactory.createFloat8(5d);
 		assertEquals(5,d.asInt4());

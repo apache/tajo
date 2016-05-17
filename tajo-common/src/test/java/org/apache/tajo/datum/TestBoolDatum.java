@@ -18,19 +18,12 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class TestBoolDatum {
-
-  @Test
-  public final void testType() {
-    Datum d = DatumFactory.createBool(true);
-    assertEquals(Type.BOOLEAN, d.type());
-  }
 
   @Test
   public final void testAsBool() {

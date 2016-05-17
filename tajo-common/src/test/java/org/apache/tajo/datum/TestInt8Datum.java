@@ -19,19 +19,10 @@
 package org.apache.tajo.datum;
 
 import org.junit.Test;
-import org.apache.tajo.common.TajoDataTypes.Type;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestInt8Datum {
-
-	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createInt8(1l);
-		assertEquals(d.type(), Type.INT8);
-	}
 
 	@Test
 	public final void testAsInt() {
