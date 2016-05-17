@@ -147,8 +147,6 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
         break;
       case PROTOBUF:
       case BLOB:
-      case INET4:
-      case INET6:
         recordConsumer.addBinary(Binary.fromByteArray(tuple.getBytes(index)));
         break;
       default:

@@ -23,7 +23,6 @@ import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 import org.apache.hadoop.io.Writable;
 import org.apache.tajo.datum.DateDatum;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -82,15 +81,6 @@ public class TestWritableTypeConverter {
       WritableTypeConverter.convertWritableToTajoType(DummyWritable.class);
     } catch (Exception e) {
       assertEquals(UnsupportedDataTypeException.class, e.getClass());
-    }
-
-    try {
-      WritableTypeConverter.convertDatum2Writable(new Inet4Datum("11.11.11.11"));
-    } catch (Exception e) {
-      assertEquals(TajoRuntimeException.class, e.getClass());
-
-      TajoRuntimeException runtimeException = (TajoRuntimeException)e;
-      assertEquals(NotImplementedException.class, runtimeException.getCause().getClass());
     }
   }
 }

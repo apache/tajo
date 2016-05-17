@@ -20,26 +20,29 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionSignatureProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.TableSubQueryNode;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
+import org.apache.tajo.type.TypeProtobufEncoder;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.tajo.function.FunctionUtil.buildSimpleFunctionSignature;
 
@@ -87,7 +90,7 @@ public class EvalNodeDeserializer {
           current = new IsNullEval(unaryProto.getNegative(), child);
           break;
         case CAST:
-          current = new CastEval(context, child, unaryProto.getCastingType());
+          current = new CastEval(context, child, TypeProtobufEncoder.decode(unaryProto.getCastingType()));
           break;
         case SIGNED:
           current = new SignedEval(unaryProto.getNegative(), child);

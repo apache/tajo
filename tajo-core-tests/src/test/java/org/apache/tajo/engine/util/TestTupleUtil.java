@@ -67,7 +67,6 @@ public class TestTupleUtil {
         .add("col7", Type.FLOAT8)
         .add("col8", Type.TEXT)
         .add("col9", Type.BLOB)
-        .add("col10", Type.INET4)
         .build();
     //schema.addColumn("col11", DataType.IPv6);
     
@@ -81,7 +80,6 @@ public class TestTupleUtil {
         DatumFactory.createFloat8(271.9f),
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
-        DatumFactory.createInet4("192.168.0.1")
     });
 
     RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);

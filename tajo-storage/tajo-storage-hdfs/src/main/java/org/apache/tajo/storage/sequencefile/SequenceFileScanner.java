@@ -307,7 +307,6 @@ public class SequenceFileScanner extends FileScanner {
         break;
       case BLOB:
       case PROTOBUF:
-      case INET4:
       case CHAR:
       case TEXT:
         elementOffset = 1;

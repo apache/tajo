@@ -162,7 +162,6 @@ public class RadixSort {
       case FLOAT8:
         return true;
       case DATE:
-      case INET4:
         return false;
       default:
         throw new TajoInternalError(new UnsupportedException(type.name()));
@@ -884,8 +883,6 @@ public class RadixSort {
       case INT8:
       case FLOAT8:
         return 8;
-      case INET4:
-        return 4;
       case DATE:
         return 4;
       case TIME:

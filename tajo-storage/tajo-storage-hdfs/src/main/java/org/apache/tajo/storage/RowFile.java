@@ -265,13 +265,6 @@ public class RowFile {
               tuple.put(i, datum);
               break;
 
-            case INET4 :
-              byte[] ipv4 = new byte[4];
-              buffer.get(ipv4, 0, 4);
-              datum = DatumFactory.createInet4(ipv4);
-              tuple.put(i, datum);
-              break;
-
             default:
               break;
           }
@@ -436,12 +429,6 @@ public class RowFile {
               byte [] bytes = t.getBytes(i);
               buffer.putShort((short)bytes.length);
               buffer.put(bytes);
-              break;
-            case INET4:
-              buffer.put(t.getBytes(i));
-              break;
-            case INET6:
-              buffer.put(t.getBytes(i));
               break;
             case NULL_TYPE:
               nullFlags.set(i);

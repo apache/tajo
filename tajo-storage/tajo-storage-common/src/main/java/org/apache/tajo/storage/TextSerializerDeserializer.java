@@ -92,7 +92,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case INT8:
       case FLOAT4:
       case FLOAT8:
-      case INET4:
       case DATE:
       case INTERVAL:
         bytes = tuple.getTextBytes(index);
@@ -104,7 +103,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         length = bytes.length;
         out.write(bytes);
         break;
-      case INET6:
       case BLOB:
         bytes = Base64.encodeBase64(tuple.getBytes(index), false);
         length = bytes.length;
@@ -201,10 +199,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         }
         break;
       }
-      case INET4:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInet4(new String(bytes, offset, length));
-        break;
       case BLOB: {
         if (isNull(bytes, offset, length, nullCharacters)) {
           datum = NullDatum.get();

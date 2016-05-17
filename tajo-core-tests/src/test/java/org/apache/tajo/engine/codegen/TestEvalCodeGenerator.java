@@ -109,11 +109,6 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testComparison() throws TajoException {
-    Schema inetSchema = SchemaBuilder.builder()
-        .add("addr1", TajoDataTypes.Type.INET4)
-        .add("addr2", TajoDataTypes.Type.INET4)
-        .build();
-
     testSimpleEval("select (1 > null AND false)", new String[] {"f"}); // unknown - false -> false
     testSimpleEval("select (1::int8 > null) is null", new String[] {"t"});
 
@@ -129,9 +124,6 @@ public class TestEvalCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col5 from table1;", new String [] {"f"});
-
-    testEval(inetSchema, "table1", "192.168.0.1,192.168.0.1", "select addr1 = addr2 from table1;", new String[]{"t"});
-    testEval(inetSchema, "table1", "192.168.0.1,192.168.0.2", "select addr1 = addr2 from table1;", new String[]{"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col2 from table1;", new String [] {"t"});

@@ -441,7 +441,6 @@ predefined_type
   | datetime_type
   | bit_type
   | binary_type
-  | network_type
   | complex_type
   ;
 
@@ -532,10 +531,6 @@ binary_type
   : BINARY type_length?
   | BINARY VARYING type_length?
   | VARBINARY type_length?
-  ;
-
-network_type
-  : INET4
   ;
 
 complex_type

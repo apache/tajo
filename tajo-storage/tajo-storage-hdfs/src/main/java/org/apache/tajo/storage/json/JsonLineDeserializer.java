@@ -194,14 +194,6 @@ public class JsonLineDeserializer extends TextLineDeserializer {
       output.put(fieldIndex, DatumFactory.createBlob(Base64.decodeBase64((String) jsonObject)));
       break;    
     }
-    case INET4:
-      String inetStr = object.getAsString(fieldName);
-      if (inetStr != null) {
-        output.put(fieldIndex, DatumFactory.createInet4(inetStr));
-      } else {
-        output.put(fieldIndex, NullDatum.get());
-      }
-      break;
 
     case RECORD:
       JSONObject nestedObject = (JSONObject) object.get(fieldName);

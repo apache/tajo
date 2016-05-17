@@ -557,6 +557,7 @@ public class HBaseTablespace extends Tablespace {
   @Override
   public List<Fragment> getSplits(String inputSourceId,
                                   TableDesc table,
+                                  boolean requireSorted,
                                   @Nullable EvalNode filterCondition) throws IOException, TajoException {
     return (List<Fragment>) (List) getRawSplits(inputSourceId, table, filterCondition);
   }
