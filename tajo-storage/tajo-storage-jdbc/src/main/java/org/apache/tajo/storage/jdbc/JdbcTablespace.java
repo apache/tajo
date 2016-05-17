@@ -122,6 +122,7 @@ public abstract class JdbcTablespace extends Tablespace {
   @Override
   public List<Fragment> getSplits(String inputSourceId,
                                   TableDesc tableDesc,
+                                  boolean requireSorted,
                                   @Nullable EvalNode filterCondition) throws IOException {
     return Lists.newArrayList((Fragment)new JdbcFragment(inputSourceId, tableDesc.getUri().toASCIIString()));
   }

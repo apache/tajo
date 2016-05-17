@@ -56,7 +56,6 @@ public class TestSchemaConverter {
       "  optional binary mytext (UTF8);\n" +
       "  optional binary myblob;\n" +
       // NULL_TYPE fields are not encoded.
-      "  optional binary myinet4;\n" +
       "  optional binary myprotobuf;\n" +
       "}\n";
 
@@ -72,7 +71,6 @@ public class TestSchemaConverter {
         .add(new Column("mytext", Type.TEXT))
         .add(new Column("myblob", Type.BLOB))
         .add(new Column("mynull", Type.NULL_TYPE))
-        .add(new Column("myinet4", Type.INET4))
         .add(new Column("myprotobuf", Type.PROTOBUF))
         .build();
   }

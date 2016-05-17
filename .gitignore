@@ -17,3 +17,6 @@ atlassian-ide-plugin.xml
 
 # Patch files
 *.patch
+
+# Antlr files
+*.tokens

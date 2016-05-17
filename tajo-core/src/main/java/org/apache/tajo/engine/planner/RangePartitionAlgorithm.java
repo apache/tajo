@@ -171,13 +171,6 @@ public abstract class RangePartitionAlgorithm {
           columnCard = BigInteger.valueOf(start.getInt4(i) - end.getInt4(i));
         }
         break;
-      case INET4:
-        if (isAscending) {
-          columnCard = BigInteger.valueOf(end.getInt4(i) - start.getInt4(i));
-        } else {
-          columnCard = BigInteger.valueOf(start.getInt4(i) - end.getInt4(i));
-        }
-        break;
       default:
         throw new UnsupportedOperationException(dataType + " is not supported yet");
     }

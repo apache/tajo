@@ -187,10 +187,6 @@ public class TajoSchemaConverter {
       case BLOB:
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY);
-      case INET4:
-      case INET6:
-        return primitive(column.getSimpleName(),
-                         PrimitiveTypeName.BINARY);
       default:
         throw new RuntimeException("Cannot convert Tajo type: " + type);
     }

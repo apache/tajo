@@ -163,7 +163,7 @@ class TajoGeneratorAdapter {
 
   public static boolean isJVMInternalInt(org.apache.tajo.type.Type type) {
     final TajoDataTypes.Type baseType = type.kind();
-    return baseType == BOOLEAN || baseType == INT1 || baseType == INT2 || baseType == INT4 || baseType== INET4;
+    return baseType == BOOLEAN || baseType == INT1 || baseType == INT2 || baseType == INT4;
   }
 
   public static int getWordSize(org.apache.tajo.type.Type type) {
@@ -289,7 +289,6 @@ class TajoGeneratorAdapter {
     case INT1:
     case INT2:
     case INT4:
-    case INET4:
       methodvisitor.visitVarInsn(Opcodes.ILOAD, idx);
       break;
     case INT8:
@@ -715,11 +714,6 @@ class TajoGeneratorAdapter {
       returnType = null;
       paramTypes = null;
       break;
-    case INET4:
-      convertMethod = "createInet4";
-      returnType = Inet4Datum.class;
-      paramTypes = new Class[] {int.class};
-      break;
     default:
       throw new RuntimeException("Unsupported type: " + type);
     }
@@ -902,7 +896,6 @@ class TajoGeneratorAdapter {
     case INT1:
     case INT2:
     case INT4:
-    case INET4:
       methodvisitor.visitVarInsn(Opcodes.ISTORE, varId);
       break;
     case TIME:
