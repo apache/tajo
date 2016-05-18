@@ -395,16 +395,12 @@ public class Repartitioner {
       TajoConf conf = stage.getContext().getQueryContext().getConf();
 
       for (ScanNode eachScan: broadcastScans) {
-        // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
-        // plain tables.
-        if (eachScan.getType() != NodeType.PARTITIONS_SCAN) {
-          TableDesc tableDesc = masterContext.getTableDesc(eachScan);
+        TableDesc tableDesc = masterContext.getTableDesc(eachScan);
 
-          Collection<Fragment> scanFragments = SplitUtil.getSplits(
-              TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc, false, catalog, conf);
-          if (scanFragments != null) {
-            rightFragments.addAll(scanFragments);
-          }
+        Collection<Fragment> scanFragments = SplitUtil.getSplits(
+            TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc, false, catalog, conf);
+        if (scanFragments != null) {
+          rightFragments.addAll(scanFragments);
         }
       }
     }
@@ -505,11 +501,7 @@ public class Repartitioner {
         if (i == baseScanId) {
           baseFragments = scanFragments;
         } else {
-          // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
-          // plain tables.
-          if (scan.getType() != NodeType.PARTITIONS_SCAN) {
-            broadcastFragments.addAll(scanFragments);
-          }
+          broadcastFragments.addAll(scanFragments);
         }
       }
     }

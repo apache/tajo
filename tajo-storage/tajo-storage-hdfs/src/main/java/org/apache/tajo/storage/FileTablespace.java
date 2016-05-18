@@ -666,7 +666,7 @@ public class FileTablespace extends Tablespace {
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
       } else {
-        files.addAll(listStatus(requireSort));
+        files.addAll(listStatus(requireSort, p));
       }
 
       for (FileStatus file : files) {

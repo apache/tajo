@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.BuiltinFragmentKinds;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -30,9 +31,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.SortedSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TestPartitionFileFragment {
@@ -62,7 +65,7 @@ public class TestPartitionFileFragment {
     PartitionFileFragment fragment = new PartitionFileFragment("table1_1", new Path(path, "table0/col1=1"), 0,
       500, "col1=1");
 
-    PartitionFileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.FILE,
+    PartitionFileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.PARTIION_FILE,
       FragmentConvertor.toFragmentProto(conf, fragment));
 
     assertEquals("table1_1", fragment1.getInputSourceId());
@@ -77,14 +80,14 @@ public class TestPartitionFileFragment {
     final int num = 10;
     PartitionFileFragment[] tablets = new PartitionFileFragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new PartitionFileFragment("tablet0", new Path(path, "tablet0/col1=" + i), i * 500, (i+1) * 500
-      , "col1=" + i);
+      tablets[i] = new PartitionFileFragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500
+      , "/col1=0/col2=0");
     }
 
     Arrays.sort(tablets);
 
-    for (int i = 0; i < num; i++) {
-      assertEquals("col1=" + (num - i - 1), tablets[i].getPartitionKeys());
+    for(int i = 0; i < num; i++) {
+      assertEquals("tablet1_"+i, tablets[i].getInputSourceId());
     }
   }
 
@@ -98,9 +101,7 @@ public class TestPartitionFileFragment {
     }
 
     SortedSet sortedSet = Sets.newTreeSet();
-    for (PartitionFileFragment frag : tablets) {
-      sortedSet.add(frag);
-    }
+    Collections.addAll(sortedSet, tablets);
     assertEquals(num, sortedSet.size());
   }
 }

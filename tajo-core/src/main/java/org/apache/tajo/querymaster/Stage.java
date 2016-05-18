@@ -1185,7 +1185,6 @@ public class Stage implements EventHandler<StageEvent> {
 
       Collection<Fragment> fragments = SplitUtil.getSplits(
           TablespaceManager.get(scan.getTableDesc().getUri()), scan, table, false, catalog, conf);
-      SplitUtil.preparePartitionScanPlanForSchedule(scan);
       Stage.scheduleFragments(stage, fragments);
 
       // The number of leaf tasks should be the number of fragments.

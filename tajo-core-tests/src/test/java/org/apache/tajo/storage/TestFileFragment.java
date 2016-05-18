@@ -74,7 +74,8 @@ public class TestFileFragment {
     for (int i = num - 1; i >= 0; i--) {
       tablets[i] = new FileFragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500);
     }
-    
+
+
     Arrays.sort(tablets);
 
     for(int i = 0; i < num; i++) {

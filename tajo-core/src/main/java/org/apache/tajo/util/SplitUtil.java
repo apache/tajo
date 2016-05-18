@@ -66,7 +66,6 @@ public class SplitUtil {
       throws IOException, TajoException {
     List<Fragment> fragments;
     if (tableDesc.hasPartition()) {
-      // TODO: Partition tables should also be handled by tablespace.
       fragments = SplitUtil.getFragmentsFromPartitionedTable(tablespace, scan, tableDesc, requireSort, catalog, conf);
     } else {
       fragments = tablespace.getSplits(scan.getCanonicalName(), tableDesc, requireSort, scan.getQual());
@@ -101,22 +100,5 @@ public class SplitUtil {
 
     return fragments;
 
-  }
-
-  /**
-   * Clear input paths of {@link PartitionedTableScanNode}.
-   * This is to avoid unnecessary transmission of a lot of partition table paths to workers.
-   * So, this method should be invoked before {@link org.apache.tajo.querymaster.Stage#scheduleFragment(Stage, Fragment)}
-   * unless the scan is broadcasted.
-   *
-   * @param scanNode scan node
-   */
-  public static void preparePartitionScanPlanForSchedule(ScanNode scanNode) {
-    if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-      // TODO: The partition input paths don't have to be kept in a logical node at all.
-      //       This should be improved by implementing a specialized fragment for partition tables.
-      PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scanNode;
-      partitionScan.init(scanNode);
-    }
   }
 }

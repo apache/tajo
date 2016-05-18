@@ -36,25 +36,34 @@ import java.util.List;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 public class PartitionFileFragment extends FileFragment {
-
-  @Expose private String partitionKeys; // required
+  private String partitionKeys;
 
   public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation,
     String partitionKeys) throws IOException {
     super(tableName, uri, blockLocation);
-    this.partitionKeys = partitionKeys;
+    init(partitionKeys);
   }
   public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
     String partitionKeys) {
     super(tableName, uri, start, length, hosts);
-    this.partitionKeys = partitionKeys;
+    init(partitionKeys);
+  }
+
+  public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
+                               Integer[] diskIds, String partitionKeys) {
+    super(tableName, uri, start, length, hosts, diskIds);
+    init(partitionKeys);
   }
 
   public PartitionFileFragment(String fragmentId, Path path, long start, long length, String partitionKeys) {
     super(fragmentId, path, start, length);
-    this.partitionKeys = partitionKeys;
+    init(partitionKeys);
   }
 
+  private void init(String partitionKeys) {
+    this.partitionKeys = partitionKeys;
+    this.kind = BuiltinFragmentKinds.PARTIION_FILE;
+  }
   public String getPartitionKeys() {
     return partitionKeys;
   }
