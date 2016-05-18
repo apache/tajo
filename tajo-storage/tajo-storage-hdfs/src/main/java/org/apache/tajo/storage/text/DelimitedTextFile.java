@@ -291,7 +291,7 @@ public class DelimitedTextFile {
       }
 
       startOffset = this.fragment.getStartKey();
-      endOffset = startOffset + fragment.getLength();
+      endOffset = this.fragment.getEndKey();
 
       errorTorrenceMaxNum =
           Integer.parseInt(meta.getProperty(TEXT_ERROR_TOLERANCE_MAXNUM, DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM));
