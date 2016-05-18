@@ -453,8 +453,8 @@ public class FileTablespace extends Tablespace {
   /**
    * Get Disk Ids by Volume Bytes
    */
-  private int[] getDiskIds(VolumeId[] volumeIds) {
-    int[] diskIds = new int[volumeIds.length];
+  private Integer[] getDiskIds(VolumeId[] volumeIds) {
+    Integer[] diskIds = new Integer[volumeIds.length];
     for (int i = 0; i < volumeIds.length; i++) {
       int diskId = -1;
       if (volumeIds[i] != null && volumeIds[i].hashCode() > 0) {

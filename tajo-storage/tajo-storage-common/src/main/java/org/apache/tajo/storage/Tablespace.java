@@ -244,6 +244,21 @@ public abstract class Tablespace {
   }
 
   /**
+   * Returns Scanner instance.
+   *
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @param target The output schema
+   * @return Scanner instance
+   * @throws IOException
+   */
+  public synchronized SeekableScanner getSeekableScanner(TableMeta meta, Schema schema, Fragment fragment,
+                                                         Schema target) throws IOException {
+    return (SeekableScanner)this.getScanner(meta, schema, fragment, target);
+  }
+
+  /**
    * Returns Appender instance.
    * @param queryContext Query property.
    * @param taskAttemptId Task id.

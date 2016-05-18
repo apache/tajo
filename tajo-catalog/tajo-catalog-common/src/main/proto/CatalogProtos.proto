@@ -75,7 +75,7 @@ message SchemaProto {
 
 message FragmentProto {
   required string id = 1;
-  required string data_format = 2;
+  required string kind = 2;
   required bytes contents = 3;
 }
 

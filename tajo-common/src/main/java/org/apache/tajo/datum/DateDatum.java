@@ -35,7 +35,7 @@ import static org.apache.tajo.type.Type.Date;
 public class DateDatum extends Datum {
   public static final int SIZE = 4;
 
-  // Dates are stored in UTC.
+  // Dates are stored by local time.
   private int jdate;
 
   public DateDatum(int value) {

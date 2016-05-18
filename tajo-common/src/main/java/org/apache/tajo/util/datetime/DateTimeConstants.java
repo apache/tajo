@@ -76,6 +76,16 @@ public class DateTimeConstants {
 
   /** == DateTimeUtil.toJulianDate(JULIAN_MAXYEAR, 1, 1) */
   public static final int JULIAN_MAX = 2147483494;
+
+  // This is an implementation copied from PGStatement in pgsql jdbc
+  // We can't use Long.MAX_VALUE or Long.MIN_VALUE for java.sql.date
+  // because this would break the 'normalization contract' of the
+  // java.sql.Date API.
+  // The follow values are the nearest MAX/MIN values with hour,
+  // minute, second, millisecond set to 0 - this is used for
+  // -infinity / infinity representation in Java
+  public static final long DATE_POSITIVE_INFINITY = 9223372036825200000l;
+  public static final long DATE_NEGATIVE_INFINITY = -9223372036832400000l;
   
   /** the first ISO day of week */
   public static final int MONDAY = 1;
