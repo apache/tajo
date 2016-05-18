@@ -94,7 +94,7 @@ public class NodeStatusUpdater extends AbstractService implements EventHandler<N
         NodeResources.createResource(systemConf.getIntVar(TajoConf.ConfVars.TASK_RESOURCE_MINIMUM_MEMORY)));
 
     // if resource changed over than 30%, send reports
-    float queueingRate = systemConf.getFloatVar(TajoConf.ConfVars.WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE);
+    float queueingRate = systemConf.getFloatVar(TajoConf.ConfVars.WORKER_HEARTBEAT_QUEUE_LIMIT_RATE);
     this.queueingThreshold = Math.max((int) Math.floor(maxContainer * queueingRate), 1);
     LOG.info("Queueing threshold:" + queueingThreshold);
 

@@ -293,7 +293,7 @@ public class GlobalEngine extends AbstractService {
       }
     }
 
-    postLogicalPlanVerifier.verify(queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD), state, plan);
+    postLogicalPlanVerifier.verify(queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_LIMIT), state, plan);
     if (!state.verified()) {
       for (Throwable error : state.getErrors()) {
         throw error;

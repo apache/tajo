@@ -32,11 +32,11 @@ Also, ``\unset key`` will unset the session variable named *key*.
 
 Currently, tajo provides the following session variables.
 
-.. describe:: BROADCAST_NON_CROSS_JOIN_THRESHOLD
+.. describe:: BROADCAST_NON_CROSS_JOIN_LIMIT
 
-A threshold for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this threshold.
+A limit for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this limit.
 
-  * Configuration name: :ref:`tajo.dist-query.broadcast.non-cross-join.threshold-kb`
+  * Configuration name: :ref:`tajo.dist-query.broadcast.non-cross-join.limit-kb`
   * Property value: Integer
   * Unit: KB
   * Default value: 5120
@@ -44,13 +44,13 @@ A threshold for non-cross joins. When a non-cross join query is executed with th
 
 .. code-block:: sh
 
-  \set BROADCAST_NON_CROSS_JOIN_THRESHOLD 5120
+  \set BROADCAST_NON_CROSS_JOIN_LIMIT 5120
 
-.. describe:: BROADCAST_CROSS_JOIN_THRESHOLD
+.. describe:: BROADCAST_CROSS_JOIN_LIMIT
 
-A threshold for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this threshold.
+A limit for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this limit.
 
-  * Configuration name: :ref:`tajo.dist-query.broadcast.cross-join.threshold-kb`
+  * Configuration name: :ref:`tajo.dist-query.broadcast.cross-join.limit-kb`
   * Property value: Integer
   * Unit: KB
   * Default value: 1024
@@ -58,7 +58,7 @@ A threshold for cross joins. When a cross join query is executed, the whole size
 
 .. code-block:: sh
 
-  \set BROADCAST_CROSS_JOIN_THRESHOLD 1024
+  \set BROADCAST_CROSS_JOIN_LIMIT 1024
 
 .. warning::
   In Tajo, the broadcast join is only the way to perform cross joins. Since the cross join is a very expensive operation, this value need to be tuned carefully.
@@ -99,7 +99,7 @@ This value provides the criterion to decide the algorithm to perform a join in a
 If the input data is smaller than this value, join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Configuration name: :ref:`tajo.executor.join.common.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.join.common.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -111,7 +111,7 @@ Otherwise, the sort-merge join is used.
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
 .. describe:: INNER_HASH_JOIN_SIZE_LIMIT
@@ -120,7 +120,7 @@ This value provides the criterion to decide the algorithm to perform an inner jo
 If the input data is smaller than this value, the inner join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Configuration name: :ref:`tajo.executor.join.inner.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.join.inner.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -132,7 +132,7 @@ Otherwise, the sort-merge join is used.
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
 .. describe:: OUTER_HASH_JOIN_SIZE_LIMIT
@@ -141,7 +141,7 @@ This value provides the criterion to decide the algorithm to perform an outer jo
 If the input data is smaller than this value, the outer join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Configuration name: :ref:`tajo.executor.join.outer.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.join.outer.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -153,7 +153,7 @@ Otherwise, the sort-merge join is used.
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
 .. describe:: JOIN_HASH_TABLE_SIZE
@@ -186,7 +186,7 @@ As a result, it determines the degree of the parallel processing of the sort que
 
 .. describe:: EXTSORT_BUFFER_SIZE
 
-A threshold to choose the sort algorithm. If the input data is larger than this threshold, the external sort algorithm is used.
+A limit to choose the sort algorithm. If the input data is larger than this limit, the external sort algorithm is used.
 
   * Configuration name: :ref:`tajo.executor.external-sort.buffer-mb`
   * Property value: Integer
@@ -261,7 +261,7 @@ This value provides the criterion to decide the algorithm to perform an aggregat
 If the input data is smaller than this value, the aggregation is performed with the in-memory hash aggregation.
 Otherwise, the sort-based aggregation is used.
 
-  * Configuration name: :ref:`tajo.executor.groupby.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.groupby.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -273,7 +273,7 @@ Otherwise, the sort-based aggregation is used.
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
 .. describe:: AGG_HASH_TABLE_SIZE
