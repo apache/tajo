@@ -651,8 +651,8 @@ public class FileTablespace extends Tablespace {
    * @return the list of PartitionFileFragment
    * @throws IOException
    */
-  public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, String[] partitionKeys,
-                                           Path... inputs) throws IOException {
+  public List<Fragment> getPartitionSplits(String tableName, TableMeta meta, Schema schema, boolean requireSort,
+                                           String[] partitionKeys, Path... inputs) throws IOException {
     long startTime = System.currentTimeMillis();
 
     // generate splits'
@@ -666,7 +666,7 @@ public class FileTablespace extends Tablespace {
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
       } else {
-        files.addAll(listStatus(p));
+        files.addAll(listStatus(requireSort));
       }
 
       for (FileStatus file : files) {

@@ -20,11 +20,15 @@ package org.apache.tajo.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.partition.PartitionPruningHandle;
+import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.Tablespace;
@@ -56,12 +60,14 @@ public class SplitUtil {
   public static List<Fragment> getSplits(Tablespace tablespace,
                                          ScanNode scan,
                                          TableDesc tableDesc,
-                                         boolean requireSort)
+                                         boolean requireSort,
+                                         CatalogService catalog,
+                                         TajoConf conf)
       throws IOException, TajoException {
     List<Fragment> fragments;
     if (tableDesc.hasPartition()) {
       // TODO: Partition tables should also be handled by tablespace.
-      fragments = SplitUtil.getFragmentsFromPartitionedTable(tablespace, scan, tableDesc, requireSort);
+      fragments = SplitUtil.getFragmentsFromPartitionedTable(tablespace, scan, tableDesc, requireSort, catalog, conf);
     } else {
       fragments = tablespace.getSplits(scan.getCanonicalName(), tableDesc, requireSort, scan.getQual());
     }
@@ -75,16 +81,26 @@ public class SplitUtil {
   private static List<Fragment> getFragmentsFromPartitionedTable(Tablespace tsHandler,
                                                                  ScanNode scan,
                                                                  TableDesc table,
-                                                                 boolean requireSort) throws IOException {
+                                                                 boolean requireSort,
+                                                                 CatalogService catalog,
+                                                                 TajoConf conf) throws IOException, TajoException {
     Preconditions.checkArgument(tsHandler instanceof FileTablespace, "tsHandler must be FileTablespace");
     if (!(scan instanceof PartitionedTableScanNode)) {
       throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
     }
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
-    fragments.addAll(((FileTablespace) tsHandler).getSplits(
-        scan.getCanonicalName(), table.getMeta(), table.getSchema(), requireSort, partitionsScan.getInputPaths()));
+    partitionsScan.init(scan);
+    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
+    rewriter.setCatalog(catalog);
+    PartitionPruningHandle pruningHandle = rewriter.getPartitionPruningHandle(conf, partitionsScan);
+
+    FileTablespace tablespace = (FileTablespace) tsHandler;
+    fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
+      , requireSort, pruningHandle.getPartitionKeys(), pruningHandle.getPartitionPaths()));
+
     return fragments;
+
   }
 
   /**
@@ -100,7 +116,7 @@ public class SplitUtil {
       // TODO: The partition input paths don't have to be kept in a logical node at all.
       //       This should be improved by implementing a specialized fragment for partition tables.
       PartitionedTableScanNode partitionScan = (PartitionedTableScanNode) scanNode;
-      partitionScan.clearInputPaths();
+      partitionScan.init(scanNode);
     }
   }
 }
