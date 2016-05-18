@@ -4,7 +4,7 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
-    TAJO-1686: Allow Tajo to use Hive UDF. (jihoon)
+    TAJO-1686: Allow Tajo to use Hive UDF. (Jongyoung Park via jihoon)
 
     TAJO-2122: PullServer as an Auxiliary service of Yarn. (jihoon)
 
@@ -13,6 +13,8 @@ Release 0.12.0 - unreleased
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-2146: Fragment interface cleanup. (jihoon)
 
     TAJO-2129: Apply new type implementation to Schema and Catalog. (hyunsik)
 

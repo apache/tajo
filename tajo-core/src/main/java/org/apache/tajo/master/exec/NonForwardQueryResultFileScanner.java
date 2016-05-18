@@ -112,7 +112,9 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
         SplitUtil.getSplits(tablespace, scanNode, scanNode.getTableDesc(), true, catalog, tajoConf));
 
     if (!fragments.isEmpty()) {
-      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[fragments.size()]));
+      FragmentProto[] fragmentProtos =
+          FragmentConvertor.toFragmentProtoArray(tajoConf, fragments.toArray(new Fragment[fragments.size()]));
+
       this.taskContext = new TaskAttemptContext(
           new QueryContext(tajoConf), null,
           new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0),

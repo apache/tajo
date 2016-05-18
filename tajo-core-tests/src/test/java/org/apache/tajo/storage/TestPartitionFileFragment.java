@@ -20,6 +20,8 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.fragment.BuiltinFragmentKinds;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.fragment.PartitionFileFragment;
@@ -34,10 +36,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestPartitionFileFragment {
+  private TajoConf conf;
   private Path path;
   
   @Before
   public final void setUp() throws Exception {
+    conf = new TajoConf();
     path = CommonTestingUtil.getTestDir();
   }
 
@@ -46,7 +50,7 @@ public class TestPartitionFileFragment {
     PartitionFileFragment fragment1 = new PartitionFileFragment("table1_1", new Path(path, "table0/col1=1"),
       0, 500, "col1=1");
 
-    assertEquals("table1_1", fragment1.getTableName());
+    assertEquals("table1_1", fragment1.getInputSourceId());
     assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
     assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());
@@ -58,8 +62,10 @@ public class TestPartitionFileFragment {
     PartitionFileFragment fragment = new PartitionFileFragment("table1_1", new Path(path, "table0/col1=1"), 0,
       500, "col1=1");
 
-    PartitionFileFragment fragment1 = FragmentConvertor.convert(PartitionFileFragment.class, fragment.getProto());
-    assertEquals("table1_1", fragment1.getTableName());
+    PartitionFileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.FILE,
+      FragmentConvertor.toFragmentProto(conf, fragment));
+
+    assertEquals("table1_1", fragment1.getInputSourceId());
     assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
     assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());

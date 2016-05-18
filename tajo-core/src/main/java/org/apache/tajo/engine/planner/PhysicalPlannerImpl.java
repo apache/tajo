@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
@@ -43,10 +44,13 @@ import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.DistinctAgg
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
+import org.apache.tajo.plan.serder.PlanProto.SortEnforce;
 import org.apache.tajo.plan.serder.PlanProto.SortedInputEnforce;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.FileTablespace;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.unit.StorageUnit;
@@ -57,6 +61,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
 
@@ -1195,3 +1200,4 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 }
+

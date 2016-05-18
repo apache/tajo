@@ -35,23 +35,15 @@ import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class PartitionFileFragment extends FileFragment implements Cloneable {
+public class PartitionFileFragment extends FileFragment {
 
   @Expose private String partitionKeys; // required
-
-  public PartitionFileFragment(ByteString raw) throws InvalidProtocolBufferException {
-    super(raw);
-    PartitionFileFragmentProto.Builder builder = PartitionFileFragmentProto.newBuilder();
-    builder.mergeFrom(raw);
-    this.partitionKeys = builder.build().getPartitionKeys();
-  }
 
   public PartitionFileFragment(String tableName, Path uri, BlockLocation blockLocation,
     String partitionKeys) throws IOException {
     super(tableName, uri, blockLocation);
     this.partitionKeys = partitionKeys;
   }
-
   public PartitionFileFragment(String tableName, Path uri, long start, long length, String[] hosts,
     String partitionKeys) {
     super(tableName, uri, start, length, hosts);
@@ -72,56 +64,36 @@ public class PartitionFileFragment extends FileFragment implements Cloneable {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (o instanceof PartitionFileFragment) {
+      PartitionFileFragment t = (PartitionFileFragment) o;
+      if (getPath().equals(t.getPath())
+        && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
+        && TUtil.checkEquals(t.getLength(), this.getLength())
+        && getPartitionKeys().equals(t.getPartitionKeys())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public int hashCode() {
-    return Objects.hashCode(getTableName(), getPath(), getStartKey(), getLength(), getPartitionKeys());
+    return Objects.hashCode(inputSourceId, uri, startKey, endKey, length, getDiskIds(), hostNames, partitionKeys);
   }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
     PartitionFileFragment frag = (PartitionFileFragment) super.clone();
-    frag.setTableName(getTableName());
-    frag.setPath(getPath());
-    frag.setDiskIds(getDiskIds());
-    frag.setHosts(getHosts());
     frag.setPartitionKeys(getPartitionKeys());
-
     return frag;
   }
 
   @Override
   public String toString() {
-    return "\"fragment\": {\"id\": \""+ getTableName() +"\", \"path\": "
-    		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
-        + getLength() + "\", \"partitionKeys\":" + getPartitionKeys() + "}" ;
+    return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": "
+      +getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
+      + getLength() + "\", \"partitionKeys\":" + getPartitionKeys() + "}" ;
   }
 
-  @Override
-  public FragmentProto getProto() {
-    PartitionFileFragmentProto.Builder builder = PartitionFileFragmentProto.newBuilder();
-    builder.setId(getTableName());
-    builder.setStartOffset(this.startOffset);
-    builder.setLength(this.length);
-    builder.setPath(getPath().toString());
-    if(getDiskIds() != null) {
-      List<Integer> idList = new ArrayList<>();
-      for(int eachId: getDiskIds()) {
-        idList.add(eachId);
-      }
-      builder.addAllDiskIds(idList);
-    }
-
-    if (getHosts() != null) {
-      builder.addAllHosts(Arrays.asList(getHosts()));
-    }
-
-    if (partitionKeys != null) {
-      builder.setPartitionKeys(this.partitionKeys);
-    }
-
-    FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
-    fragmentBuilder.setId(getTableName());
-    fragmentBuilder.setDataFormat(BuiltinStorages.TEXT);
-    fragmentBuilder.setContents(builder.buildPartial().toByteString());
-    return fragmentBuilder.build();
-  }
 }
