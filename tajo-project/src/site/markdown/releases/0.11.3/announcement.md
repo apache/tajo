@@ -16,25 +16,24 @@
   limitations under the License.
 -->
 
-# Apache Tajo™ 0.11.2 Release Announcement
+# Apache Tajo™ 0.11.3 Release Announcement
 
-The Apache Tajo team is pleased to announce the release of Apache Tajo™ 0.11.2!
+The Apache Tajo team is pleased to announce the release of Apache Tajo™ 0.11.3!
 Apache Tajo™ is a big data warehouse system on various data sources. It provides distributed and scalable SQL analytical processing on Apache Hadoop™.
 
 The release is available for immediate download:
 
  * http://tajo.apache.org/downloads.html 
 
-This is a minor release, and we resolved 30 issues, including bug fixes, minor features, and performance improvements.
+This is a minor release. In this release, we fixed 5 bugs, and temporarily disabled the 'NOT IN' predicate.
 
 ### Some of Highlights
- * Fix incorrect result of join involving an empty table. (TAJO-2077)
- * Fix wrong parsing of date time literal with Timezone. (TAJO-2119)
- * Fix wrong partition pruning with BETWEEN constant folding. (TAJO-2093)
- * Fix ORC table support stored in Hive metastore. (TAJO-2102)
- * Upgrade parquet-mr to 1.8.1. (TAJO-2073)
- * Improve null hanlding in UDFs. (TAJO-2089)
+ * Fix incorrect DateTime and remove hard coded tests (TAJO-2110)
+ * Fix invalid sort result when sort key columns contain non-ascii values. (TAJO-2077)
+ * Fix invalid join result when join key columns contain nulls. (TAJO-2135)
+ * Fix an empty reason and stacktrace of TajoInternalError (TAJO-2140)
+ * Fix race condition in task history writer (TAJO-2143)
 
 For a complete list of new features and fixed problems, please see the release notes:
 
- * http://tajo.apache.org/releases/0.11.2/relnotes.html
+ * http://tajo.apache.org/releases/0.11.3/relnotes.html
