@@ -20,13 +20,12 @@ package org.apache.tajo.storage.fragment;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.exception.TajoInternalError;
 
-import java.io.IOException;
-import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 
@@ -34,69 +33,47 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 @ThreadSafe
 public class FragmentConvertor {
-  /**
-   * Cache of fragment classes
-   */
-  protected static final Map<String, Class<? extends Fragment>> CACHED_FRAGMENT_CLASSES = Maps.newConcurrentMap();
-  /**
-   * Cache of constructors for each class.
-   */
-  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
-  /**
-   * default parameter for all constructors
-   */
-  private static final Class<?>[] DEFAULT_FRAGMENT_PARAMS = { ByteString.class };
 
-  public static Class<? extends Fragment> getFragmentClass(Configuration conf, String dataFormat) {
-    Class<? extends Fragment> fragmentClass = CACHED_FRAGMENT_CLASSES.get(dataFormat.toLowerCase());
-    if (fragmentClass == null) {
-      fragmentClass = conf.getClass(
-          String.format("tajo.storage.fragment.%s.class", dataFormat.toLowerCase()), null, Fragment.class);
-      CACHED_FRAGMENT_CLASSES.put(dataFormat.toLowerCase(), fragmentClass);
+  private static final Map<String, FragmentSerdeHelper> SERDE_HELPER_MAP = Maps.newConcurrentMap();
+
+  private static FragmentSerdeHelper getFragmentSerdeHelper(Configuration conf, String fragmentKind) {
+    fragmentKind = fragmentKind.toLowerCase();
+    FragmentSerdeHelper helper = SERDE_HELPER_MAP.get(fragmentKind);
+    if (helper == null) {
+      Class<? extends FragmentSerdeHelper> helperClass = conf.getClass(
+          String.format("tajo.storage.fragment.serde-helper.%s", fragmentKind), null, FragmentSerdeHelper.class);
+      try {
+        helper = helperClass.getConstructor(null).newInstance();
+      } catch (InstantiationException
+          | IllegalAccessException
+          | InvocationTargetException
+          | NoSuchMethodException e) {
+        throw new TajoInternalError(e);
+      }
+      SERDE_HELPER_MAP.put(fragmentKind, helper);
     }
 
-    if (fragmentClass == null) {
-      throw new TajoInternalError("No such a fragment for " + dataFormat.toLowerCase());
+    if (helper == null) {
+      throw new TajoInternalError("No such a serde helper for " + fragmentKind);
     }
 
-    return fragmentClass;
+    return helper;
   }
 
-  public static <T extends Fragment> T convert(Class<T> clazz, FragmentProto fragment) {
-    T result;
+  public static <T extends Fragment> T convert(Configuration conf, String fragmentKind, FragmentProto fragment) {
+    FragmentSerdeHelper helper = getFragmentSerdeHelper(conf, fragmentKind);
     try {
-      Constructor<T> constructor = (Constructor<T>) CONSTRUCTOR_CACHE.get(clazz);
-      if (constructor == null) {
-        constructor = clazz.getDeclaredConstructor(DEFAULT_FRAGMENT_PARAMS);
-        constructor.setAccessible(true);
-        CONSTRUCTOR_CACHE.put(clazz, constructor);
-      }
-      result = constructor.newInstance(new Object[]{fragment.getContents()});
-    } catch (Throwable e) {
+      return (T) helper.deserialize(
+          helper.newBuilder()
+              .mergeFrom(fragment.getContents())
+              .build());
+    } catch (InvalidProtocolBufferException e) {
       throw new TajoInternalError(e);
     }
-
-    return result;
   }
 
   public static <T extends Fragment> T convert(Configuration conf, FragmentProto fragment) {
-    Class<T> fragmentClass = (Class<T>) getFragmentClass(conf, fragment.getDataFormat().toLowerCase());
-    if (fragmentClass == null) {
-      throw new TajoInternalError("No such a fragment class for " + fragment.getDataFormat());
-    }
-    return convert(fragmentClass, fragment);
-  }
-
-  public static <T extends Fragment> List<T> convert(Class<T> clazz, FragmentProto...fragments)
-      throws IOException {
-    List<T> list = Lists.newArrayList();
-    if (fragments == null) {
-      return list;
-    }
-    for (FragmentProto proto : fragments) {
-      list.add(convert(clazz, proto));
-    }
-    return list;
+    return convert(conf, fragment.getKind(), fragment);
   }
 
   public static <T extends Fragment> List<T> convert(Configuration conf, FragmentProto...fragments) {
@@ -105,24 +82,32 @@ public class FragmentConvertor {
       return list;
     }
     for (FragmentProto proto : fragments) {
-      list.add((T) convert(conf, proto));
+      list.add(convert(conf, proto));
     }
     return list;
   }
 
-  public static List<FragmentProto> toFragmentProtoList(Fragment... fragments) {
+  public static FragmentProto toFragmentProto(Configuration conf, Fragment fragment) {
+    FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
+    fragmentBuilder.setId(fragment.getInputSourceId());
+    fragmentBuilder.setKind(fragment.getKind());
+    fragmentBuilder.setContents(getFragmentSerdeHelper(conf, fragment.getKind()).serialize(fragment).toByteString());
+    return fragmentBuilder.build();
+  }
+
+  public static List<FragmentProto> toFragmentProtoList(Configuration conf, Fragment... fragments) {
     List<FragmentProto> list = Lists.newArrayList();
     if (fragments == null) {
       return list;
     }
     for (Fragment fragment : fragments) {
-      list.add(fragment.getProto());
+      list.add(toFragmentProto(conf, fragment));
     }
     return list;
   }
 
-  public static FragmentProto [] toFragmentProtoArray(Fragment... fragments) {
-    List<FragmentProto> list = toFragmentProtoList(fragments);
+  public static FragmentProto [] toFragmentProtoArray(Configuration conf, Fragment... fragments) {
+    List<FragmentProto> list = toFragmentProtoList(conf, fragments);
     return list.toArray(new FragmentProto[list.size()]);
   }
 }

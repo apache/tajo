@@ -258,7 +258,7 @@ public abstract class JdbcScanner implements Scanner {
   private ResultSetIterator executeQueryAndGetIter() {
     try {
       LOG.info("Generated SQL: " + generatedSql);
-      Connection conn = DriverManager.getConnection(fragment.uri, connProperties);
+      Connection conn = DriverManager.getConnection(fragment.getUri().toASCIIString(), connProperties);
       Statement statement = conn.createStatement();
       ResultSet resultset = statement.executeQuery(generatedSql);
       return new ResultSetIterator((resultset));

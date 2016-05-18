@@ -92,7 +92,7 @@ public class RawFile {
       fis = new FileInputStream(file);
       channel = fis.getChannel();
       filePosition = startOffset = fragment.getStartKey();
-      endOffset = fragment.getStartKey() + fragment.getLength();
+      endOffset = fragment.getEndKey();
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("RawFileScanner open:" + fragment + "," + channel.position() + ", file size :" + channel.size()
