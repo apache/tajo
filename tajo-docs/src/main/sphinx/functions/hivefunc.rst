@@ -9,12 +9,12 @@ Configuration
 *************
 
 Only thing to do is registering path to a directory for jar files containing your hive functions.
-You can do this by set ``tajo.function.hive.code-dir`` in ``tajo-site.xml`` like the following.
+You can do this by set ``tajo.function.hive.jar-dir`` in ``tajo-site.xml`` like the following.
 
 .. code-block:: xml
 
   <property>
-    <name>tajo.function.hive.code-dir</name>
+    <name>tajo.function.hive.jar-dir</name>
     <value>/path/to/hive/function/jar</value>
   </property>
 
@@ -38,15 +38,14 @@ Tajo reads hive functions override ``org.apache.hadoop.hive.ql.exec.UDF`` class.
 ``@Description`` annotation. If it doesn't exist, Tajo uses full qualified class name as function name. For example,
 it can be like this : ``select com_example_hive_udf_myupper('abcd')``, so it is recommended to use Description annotation.
 
-And if some function conflict occurs, it may throw ``AmbiguousFunctionException``. This conflict means about function signature,
-not only about function name.
+Additionally if some function signature duplicate occurs, it may throw ``AmbiguousFunctionException``.
 
 ============================
 Parameter type / Return type
 ============================
 
 Hive uses *Writable* type of Hadoop in functions, but Tajo uses its internal *Datum* type.
-Because Tajo doesn't support a kind of pluggable type system yet, only some Writable types are supported currently by internal converting.
+So only some Writable types are supported currently by internal converting.
 They are listed below.
 
 ==================== =========
