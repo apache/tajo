@@ -401,7 +401,7 @@ message EvalNodeTree {
 message EvalNode {
   required int32 id = 1;
   required EvalType type = 2;
-  required DataType data_type = 3;
+  required TypeProto data_type = 3;
 
   optional UnaryEval unary = 4; // NOT
   optional BinaryEval binary = 5;
@@ -420,7 +420,7 @@ message EvalNode {
 
 message UnaryEval {
   required int32 child_id = 1;
-  optional DataType castingType = 2;
+  optional TypeProto castingType = 2;
   optional bool negative = 3;
 }
 

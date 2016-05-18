@@ -149,6 +149,10 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
+
+    TAJO-2151: Fix broken CI. (jihoon)
+
     TAJO-2158: The concat_ws function can't support a tab separator.
     (Byunghwa Yun via jihoon)
 
@@ -270,6 +274,9 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2157: EvalNodeSerializer/Deserializer should use new Type 
+    implementation. (hyunsik)
 
     TAJO-2145: Error codes based on errno.h need prefix. 
     (Jongyoung Park via hyunsik)

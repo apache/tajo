@@ -19,7 +19,6 @@
 package org.apache.tajo.querymaster;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,7 +31,6 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
@@ -43,11 +41,11 @@ import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanRewriteUtil;
 import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
-import org.apache.tajo.plan.partition.PartitionPruningHandle;
-import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -55,11 +53,15 @@ import org.apache.tajo.pullserver.PullServerConstants;
 import org.apache.tajo.pullserver.PullServerUtil.PullServerRequestURIBuilder;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.querymaster.Task.PullHost;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.SplitUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -121,8 +123,9 @@ public class Repartitioner {
         // if table has no data, tablespace will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
-        Tablespace space = TablespaceManager.get(tableDesc.getUri());
-        List<Fragment> fileFragments = space.getSplits(scans[i].getCanonicalName(), tableDesc, null);
+        List<Fragment> fileFragments = SplitUtil.getSplits(
+            TablespaceManager.get(tableDesc.getUri()), scans[i], tableDesc, false);
+
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
         } else {
@@ -384,21 +387,18 @@ public class Repartitioner {
     if (broadcastFragments != null) {
       //In this phase a ScanNode has a single fragment.
       //If there are more than one data files, that files should be added to fragments or partition path
+
       for (ScanNode eachScan: broadcastScans) {
-        TableDesc tableDesc = masterContext.getTableDesc(eachScan);
-        Tablespace space = TablespaceManager.get(tableDesc.getUri());
-        Collection<Fragment> scanFragments = null;
+        // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
+        // plain tables.
+        if (eachScan.getType() != NodeType.PARTITIONS_SCAN) {
+          TableDesc tableDesc = masterContext.getTableDesc(eachScan);
 
-        if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
-          CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
-          TajoConf conf = stage.getContext().getQueryContext().getConf();
-          scanFragments = getFragmentsFromPartitionedTable(space, eachScan, tableDesc, catalog, conf);
-        } else {
-          scanFragments = space.getSplits(eachScan.getCanonicalName(), tableDesc, eachScan.getQual());
-        }
-
-        if (scanFragments != null) {
-          rightFragments.addAll(scanFragments);
+          Collection<Fragment> scanFragments = SplitUtil.getSplits(
+              TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc, false);
+          if (scanFragments != null) {
+            rightFragments.addAll(scanFragments);
+          }
         }
       }
     }
@@ -461,29 +461,6 @@ public class Repartitioner {
     return mergedHashEntries;
   }
 
-  /**
-   * It creates a number of fragments for all partitions.
-   */
-  public static List<Fragment> getFragmentsFromPartitionedTable(Tablespace tsHandler,
-    ScanNode scan, TableDesc table, CatalogService catalog, TajoConf conf) throws IOException, TajoException {
-    Preconditions.checkArgument(tsHandler instanceof FileTablespace, "tsHandler must be FileTablespace");
-    if (!(scan instanceof PartitionedTableScanNode)) {
-      throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
-    }
-    List<Fragment> fragments = Lists.newArrayList();
-    PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
-    partitionsScan.init(scan);
-    PartitionedTableRewriter rewriter = new PartitionedTableRewriter();
-    rewriter.setCatalog(catalog);
-    PartitionPruningHandle pruningHandle = rewriter.getPartitionPruningHandle(conf, partitionsScan);
-
-    FileTablespace tablespace = (FileTablespace) tsHandler;
-    fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
-      , pruningHandle.getPartitionKeys(), pruningHandle.getPartitionPaths()));
-
-    return fragments;
-  }
-
   private static void scheduleLeafTasksWithBroadcastTable(TaskSchedulerContext schedulerContext, Stage stage,
                                                           int baseScanId, Fragment[] fragments)
       throws IOException, TajoException {
@@ -502,31 +479,26 @@ public class Repartitioner {
     // Broadcast table
     //  all fragments or paths assigned every Large table's scan task.
     //  -> PARTITIONS_SCAN
-    //     . add all PartitionFileFragments to broadcastFragments
+    //     . add all partition paths to node's inputPaths variable
     //  -> SCAN
-    //     . add all FileFragments to broadcastFragments
+    //     . add all fragments to broadcastFragments
     Collection<Fragment> baseFragments = null;
     List<Fragment> broadcastFragments = new ArrayList<>();
     for (int i = 0; i < scans.length; i++) {
       ScanNode scan = scans[i];
       TableDesc desc = stage.getContext().getTableDesc(scan);
 
-      Collection<Fragment> scanFragments;
-
-      Tablespace space = TablespaceManager.get(desc.getUri());
-      if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-        CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
-        TajoConf conf = stage.getContext().getQueryContext().getConf();
-        scanFragments = getFragmentsFromPartitionedTable(space, scan, desc, catalog, conf);
-      } else {
-        scanFragments = space.getSplits(scan.getCanonicalName(), desc, scan.getQual());
-      }
+      Collection<Fragment> scanFragments = SplitUtil.getSplits(TablespaceManager.get(desc.getUri()), scan, desc, false);
 
       if (scanFragments != null) {
         if (i == baseScanId) {
           baseFragments = scanFragments;
         } else {
-          broadcastFragments.addAll(scanFragments);
+          // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
+          // plain tables.
+          if (scan.getType() != NodeType.PARTITIONS_SCAN) {
+            broadcastFragments.addAll(scanFragments);
+          }
         }
       }
     }

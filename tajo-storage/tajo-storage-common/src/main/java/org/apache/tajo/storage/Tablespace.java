@@ -124,14 +124,17 @@ public abstract class Tablespace {
   /**
    * Returns the splits that will serve as input for the scan tasks. The
    * number of splits matches the number of regions in a table.
+   *
    * @param inputSourceId Input source identifier, which can be either relation name or execution block id
    * @param tableDesc The table description for the target data.
+   * @param requireSort The result fragments will be sorted with their paths.
    * @param filterCondition filter condition which can prune splits if possible
    * @return The list of input fragments.
    * @throws java.io.IOException
    */
   public abstract List<Fragment> getSplits(String inputSourceId,
                                            TableDesc tableDesc,
+                                           boolean requireSort,
                                            @Nullable EvalNode filterCondition) throws IOException, TajoException;
 
   /**

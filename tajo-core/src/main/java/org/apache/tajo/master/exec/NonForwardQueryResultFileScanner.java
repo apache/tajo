@@ -24,31 +24,35 @@ import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.TajoProtos.CodecType;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.physical.PartitionMergeScanExec;
 import org.apache.tajo.engine.planner.physical.ScanExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.io.AsyncTaskService;
+import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.querymaster.Repartitioner;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
+import org.apache.tajo.storage.Tablespace;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.SplitUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -78,12 +82,10 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   final private Optional<CodecType> codecType;
   private MemoryRowBlock rowBlock;
   private Future<MemoryRowBlock> nextFetch;
-  private CatalogService catalog;
 
   public NonForwardQueryResultFileScanner(AsyncTaskService asyncTaskService,
                                           TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
-                                          int maxRow, Optional<CodecType> codecType,
-                                          CatalogService catalog) throws IOException {
+                                          int maxRow, Optional<CodecType> codecType) throws IOException {
     this.asyncTaskService = asyncTaskService;
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
@@ -93,7 +95,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.maxRow = maxRow;
     this.rowEncoder = RowStoreUtil.createEncoder(scanNode.getOutSchema());
     this.codecType = codecType;
-    this.catalog = catalog;
   }
 
   public void init() throws IOException, TajoException {
@@ -103,14 +104,8 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private void initSeqScanExec() throws IOException, TajoException {
     Tablespace tablespace = TablespaceManager.get(tableDesc.getUri());
 
-    List<Fragment> fragments = Lists.newArrayList();
-    if (tableDesc.hasPartition()) {
-      FileTablespace fileTablespace = TUtil.checkTypeAndGet(tablespace, FileTablespace.class);
-      fragments.addAll(Repartitioner.getFragmentsFromPartitionedTable(fileTablespace, scanNode, tableDesc
-        , catalog, tajoConf));
-    } else {
-      fragments.addAll(tablespace.getSplits(tableDesc.getName(), tableDesc, scanNode.getQual()));
-    }
+    List<Fragment> fragments = Lists.newArrayList(
+        SplitUtil.getSplits(tablespace, scanNode, scanNode.getTableDesc(), true));
 
     if (!fragments.isEmpty()) {
       FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[fragments.size()]));
