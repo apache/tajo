@@ -30,6 +30,8 @@ import javax.annotation.Nullable;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -43,6 +45,13 @@ public class DateTimeUtil {
 
   /** maximum possible number of fields in a date * string */
   private static int MAXDATEFIELDS = 25;
+
+  private static final TimeZone defaultTz = TimeZone.getDefault();
+
+  /**
+   * Number of milliseconds in one day.
+   */
+  public static final int ONEDAY = 24 * 3600 * 1000;
 
   public static boolean isJulianCalendar(int year, int month, int day) {
     return year <= 1752 && month <= 9 && day < 14;
@@ -362,11 +371,16 @@ public class DateTimeUtil {
     long javaTime = DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm));
 
     if (tz != null) {
-      int offset = tz.getOffset(javaTime) - TimeZone.getDefault().getOffset(javaTime);
+      int offset = tz.getOffset(javaTime) - defaultTz.getOffset(javaTime);
       return new Timestamp(javaTime + offset);
     } else {
       return new Timestamp(javaTime);
     }
+  }
+
+  public static long convertTimeZone(long javaTime, TimeZone from, TimeZone to) {
+    int offset = from.getOffset(javaTime) - to.getOffset(javaTime);
+    return javaTime + offset;
   }
 
   public static Time toJavaTime(TimeMeta tm, @Nullable TimeZone tz) {
@@ -381,6 +395,107 @@ public class DateTimeUtil {
       DateTimeUtil.toUserTimezone(tm, tz);
     }
     return new Date(tm.years - 1900, tm.monthOfYear - 1 , tm.dayOfMonth);
+  }
+
+  /**
+   * Extracts the date part from a timestamp.
+   *
+   * @param timestamp The timestamp from which to extract the date.
+   * @param tz The time zone of the date.
+   * @return The extracted date.
+   */
+  public static Date convertToDate(Timestamp timestamp, TimeZone tz) {
+    return convertToDate(timestamp.getTime(), tz);
+  }
+
+  private static boolean isSimpleTimeZone(String id) {
+    return id.startsWith("GMT") || id.startsWith("UTC");
+  }
+
+  /**
+   * Extracts the date part from a timestamp.
+   *
+   * @param millis The java time
+   * @param tz The time zone of the date.
+   * @return The extracted date.
+   */
+  public static Date convertToDate(long millis, TimeZone tz) {
+    if (tz == null) {
+      tz = defaultTz;
+    }
+    if (isSimpleTimeZone(tz.getID())) {
+      // Truncate to 00:00 of the day.
+      // Suppose the input date is 7 Jan 15:40 GMT+02:00 (that is 13:40 UTC)
+      // We want it to become 7 Jan 00:00 GMT+02:00
+      // 1) Make sure millis becomes 15:40 in UTC, so add offset
+      int offset = tz.getRawOffset();
+      millis += offset;
+      // 2) Truncate hours, minutes, etc. Day is always 86400 seconds, no matter what leap seconds
+      // are
+      millis = millis / ONEDAY * ONEDAY;
+      // 2) Now millis is 7 Jan 00:00 UTC, however we need that in GMT+02:00, so subtract some
+      // offset
+      millis -= offset;
+      // Now we have brand-new 7 Jan 00:00 GMT+02:00
+      return new Date(millis);
+    }
+    Calendar cal = new GregorianCalendar();
+    cal.setTimeZone(tz);
+    cal.setTimeInMillis(millis);
+    cal.set(Calendar.HOUR_OF_DAY, 0);
+    cal.set(Calendar.MINUTE, 0);
+    cal.set(Calendar.SECOND, 0);
+    cal.set(Calendar.MILLISECOND, 0);
+    return new Date(cal.getTimeInMillis());
+  }
+
+  /**
+   * Extracts the time part from a timestamp.
+   *
+   * @param timestamp The timestamp from which to extract the time.
+   * @param tz The time zone of the time.
+   * @return The extracted time.
+   */
+  public static Time convertToTime(Timestamp timestamp, TimeZone tz) {
+    return convertToTime(timestamp.getTime(), tz);
+  }
+
+  /**
+   * Extracts the time part from a timestamp.
+   *
+   * @param millis The java time
+   * @param tz The time zone of the time.
+   * @return The extracted time.
+   */
+  public static Time convertToTime(long millis, TimeZone tz) {
+    if (tz == null) {
+      tz = defaultTz;
+    }
+    if (isSimpleTimeZone(tz.getID())) {
+      // Leave just time part of the day.
+      // Suppose the input date is 2015 7 Jan 15:40 GMT+02:00 (that is 13:40 UTC)
+      // We want it to become 1970 1 Jan 15:40 GMT+02:00
+      // 1) Make sure millis becomes 15:40 in UTC, so add offset
+      int offset = tz.getRawOffset();
+      millis += offset;
+      // 2) Truncate year, month, day. Day is always 86400 seconds, no matter what leap seconds are
+      millis = millis % ONEDAY;
+      // 2) Now millis is 1970 1 Jan 15:40 UTC, however we need that in GMT+02:00, so subtract some
+      // offset
+      millis -= offset;
+      // Now we have brand-new 1970 1 Jan 15:40 GMT+02:00
+      return new Time(millis);
+    }
+
+    Calendar cal = new GregorianCalendar();
+    cal.setTimeZone(tz);
+    cal.setTimeInMillis(millis);
+    cal.set(Calendar.ERA, GregorianCalendar.AD);
+    cal.set(Calendar.YEAR, 1970);
+    cal.set(Calendar.MONTH, 0);
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+
+    return new Time(cal.getTimeInMillis());
   }
 
   /**

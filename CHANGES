@@ -149,6 +149,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
+
     TAJO-2151: Fix broken CI. (jihoon)
 
     TAJO-2158: The concat_ws function can't support a tab separator.
