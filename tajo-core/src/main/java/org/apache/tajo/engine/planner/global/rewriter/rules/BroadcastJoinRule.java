@@ -78,9 +78,9 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   @Override
   public boolean isEligible(OverridableConf queryContext, MasterPlan plan) {
-    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD) *
+    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_LIMIT) *
         StorageUnit.KB;
-    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD) *
+    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_LIMIT) *
         StorageUnit.KB;
     boolean broadcastJoinEnabled = queryContext.getBool(SessionVars.TEST_BROADCAST_JOIN_ENABLED);
     if (broadcastJoinEnabled &&
@@ -97,9 +97,9 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
   @Override
   public MasterPlan rewrite(OverridableConf queryContext, MasterPlan plan) throws TajoException {
-    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_THRESHOLD) *
+    long thresholdForNonCrossJoin = queryContext.getLong(SessionVars.BROADCAST_NON_CROSS_JOIN_LIMIT) *
         StorageUnit.KB;
-    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_THRESHOLD) *
+    long thresholdForCrossJoin = queryContext.getLong(SessionVars.BROADCAST_CROSS_JOIN_LIMIT) *
         StorageUnit.KB;
     plan.accept(new Context(thresholdForNonCrossJoin, thresholdForCrossJoin), plan.getRoot().getId(), planBuilder);
     plan.accept(null, plan.getRoot().getId(), planFinalizer);

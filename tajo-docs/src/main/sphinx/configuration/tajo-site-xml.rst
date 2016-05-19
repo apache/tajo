@@ -27,13 +27,13 @@ A flag to enable or disable the use of broadcast join.
     <value>true</value>
   </property>
 
-.. _tajo.dist-query.broadcast.non-cross-join.threshold-kb:
+.. _tajo.dist-query.broadcast.non-cross-join.limit-kb:
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-`tajo.dist-query.broadcast.non-cross-join.threshold-kb`
+`tajo.dist-query.broadcast.non-cross-join.limit-kb`
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A threshold for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this threshold.
+A limit for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this limit.
 
   * Property value type: Integer
   * Unit: KB
@@ -43,17 +43,17 @@ A threshold for non-cross joins. When a non-cross join query is executed with th
 .. code-block:: xml
 
   <property>
-    <name>tajo.dist-query.broadcast.non-cross-join.threshold-kb</name>
+    <name>tajo.dist-query.broadcast.non-cross-join.limit-kb</name>
     <value>5120</value>
   </property>
 
-.. _tajo.dist-query.broadcast.cross-join.threshold-kb:
+.. _tajo.dist-query.broadcast.cross-join.limit-kb:
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-`tajo.dist-query.broadcast.cross-join.threshold-kb`
+`tajo.dist-query.broadcast.cross-join.limit-kb`
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-A threshold for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this threshold.
+A limit for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this limit.
 
   * Property value type: Integer
   * Unit: KB
@@ -63,7 +63,7 @@ A threshold for cross joins. When a cross join query is executed, the whole size
 .. code-block:: xml
 
   <property>
-    <name>tajo.dist-query.broadcast.cross-join.threshold-kb</name>
+    <name>tajo.dist-query.broadcast.cross-join.limit-kb</name>
     <value>1024</value>
   </property>
 
@@ -112,10 +112,10 @@ this value indicates the output size of each task at the first stage, which dete
     <value>128</value>
   </property>
 
-.. _tajo.executor.join.common.in-memory-hash-threshold-mb:
+.. _tajo.executor.join.common.in-memory-hash-limit-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
-`tajo.executor.join.common.in-memory-hash-threshold-mb`
+`tajo.executor.join.common.in-memory-hash-limit-mb`
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This value provides the criterion to decide the algorithm to perform a join in a task.
@@ -130,19 +130,19 @@ Otherwise, the sort-merge join is used.
 .. code-block:: xml
 
   <property>
-    <name>tajo.executor.join.common.in-memory-hash-threshold-mb</name>
+    <name>tajo.executor.join.common.in-memory-hash-limit-mb</name>
     <value>64</value>
   </property>
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
-.. _tajo.executor.join.inner.in-memory-hash-threshold-mb:
+.. _tajo.executor.join.inner.in-memory-hash-limit-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
-`tajo.executor.join.inner.in-memory-hash-threshold-mb`
+`tajo.executor.join.inner.in-memory-hash-limit-mb`
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This value provides the criterion to decide the algorithm to perform an inner join in a task.
@@ -157,19 +157,19 @@ Otherwise, the sort-merge join is used.
 .. code-block:: xml
 
   <property>
-    <name>tajo.executor.join.inner.in-memory-hash-threshold-mb</name>
+    <name>tajo.executor.join.inner.in-memory-hash-limit-mb</name>
     <value>64</value>
   </property>
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
-.. _tajo.executor.join.outer.in-memory-hash-threshold-mb:
+.. _tajo.executor.join.outer.in-memory-hash-limit-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
-`tajo.executor.join.outer.in-memory-hash-threshold-mb`
+`tajo.executor.join.outer.in-memory-hash-limit-mb`
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This value provides the criterion to decide the algorithm to perform an outer join in a task.
@@ -184,13 +184,13 @@ Otherwise, the sort-merge join is used.
 .. code-block:: xml
 
   <property>
-    <name>tajo.executor.join.outer.in-memory-hash-threshold-mb</name>
+    <name>tajo.executor.join.outer.in-memory-hash-limit-mb</name>
     <value>64</value>
   </property>
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
 .. _tajo.executor.join.hash-table.size:
@@ -243,7 +243,7 @@ As a result, it determines the degree of the parallel processing of the sort que
 `tajo.executor.external-sort.buffer-mb`
 """"""""""""""""""""""""""""""""""""""""
 
-A threshold to choose the sort algorithm. If the input data is larger than this threshold, the external sort algorithm is used.
+A limit to choose the sort algorithm. If the input data is larger than this limit, the external sort algorithm is used.
 
   * Property value type: Integer
   * Unit: MB
@@ -342,10 +342,10 @@ As a result, it determines the degree of the parallel processing of the aggregat
     <value>64</value>
   </property>
 
-.. _tajo.executor.groupby.in-memory-hash-threshold-mb:
+.. _tajo.executor.groupby.in-memory-hash-limit-mb:
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
-`tajo.executor.groupby.in-memory-hash-threshold-mb`
+`tajo.executor.groupby.in-memory-hash-limit-mb`
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 This value provides the criterion to decide the algorithm to perform an aggregation in a task.
@@ -360,13 +360,13 @@ Otherwise, the sort-based aggregation is used.
 .. code-block:: xml
 
   <property>
-    <name>tajo.executor.groupby.in-memory-hash-threshold-mb</name>
+    <name>tajo.executor.groupby.in-memory-hash-limit-mb</name>
     <value>64</value>
   </property>
 
 .. warning::
   This value is the size of the input stored on file systems. So, when the input data is loaded into JVM heap,
-  its actual size is usually much larger than the configured value, which means that too large threshold can cause unexpected OutOfMemory errors.
+  its actual size is usually much larger than the configured value, which means that too large limit can cause unexpected OutOfMemory errors.
   This value should be tuned carefully.
 
 .. _tajo.executor.aggregate.hash-table.size:

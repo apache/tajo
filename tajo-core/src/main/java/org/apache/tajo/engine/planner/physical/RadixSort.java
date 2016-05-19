@@ -122,7 +122,7 @@ public class RadixSort {
                                        Comparator<UnSafeTuple> comp) {
     UnSafeTuple[] in = list.toArray(new UnSafeTuple[list.size()]);
     RadixSortContext context = new RadixSortContext(in, schema, sortSpecs, comp,
-        queryContext.getInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT));
+        queryContext.getInt(SessionVars.TEST_TIM_SORT_LIMIT_FOR_RADIX_SORT));
 
     long before = System.currentTimeMillis();
     recursiveCallForNextKey(context, 0, context.in.length, 0);

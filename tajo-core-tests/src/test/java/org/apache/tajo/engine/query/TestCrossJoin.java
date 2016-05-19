@@ -120,23 +120,23 @@ public class TestCrossJoin extends TestJoinQuery {
   @Test (expected = TooLargeInputForCrossJoinException.class)
   public final void testCrossJoinOfOneLargeTableAndJoin() throws Exception {
     try {
-      executeString("SET SESSION BROADCAST_CROSS_JOIN_THRESHOLD to 2").close();
+      executeString("SET SESSION BROADCAST_CROSS_JOIN_LIMIT to 2").close();
       executeString("select * from nation cross join region left outer join lineitem on r_regionkey = l_orderkey " +
           "inner join supplier on l_suppkey = s_suppkey");
     } finally {
-      executeString("SET SESSION BROADCAST_CROSS_JOIN_THRESHOLD to "
-          + ORIGINAL_BROADCAST_CROSS_JOIN_THRESHOLD).close();
+      executeString("SET SESSION BROADCAST_CROSS_JOIN_LIMIT to "
+          + ORIGINAL_BROADCAST_CROSS_JOIN_LIMIT).close();
     }
   }
 
   @Test (expected = TooLargeInputForCrossJoinException.class)
   public final void testCrossJoinOfTwoLargeTables() throws Exception {
     try {
-      executeString("SET SESSION BROADCAST_CROSS_JOIN_THRESHOLD 2").close();
+      executeString("SET SESSION BROADCAST_CROSS_JOIN_LIMIT 2").close();
       executeString("select * from nation n1 cross join nation n2");
     } finally {
-      executeString("SET SESSION BROADCAST_CROSS_JOIN_THRESHOLD "
-          + ORIGINAL_BROADCAST_CROSS_JOIN_THRESHOLD).close();
+      executeString("SET SESSION BROADCAST_CROSS_JOIN_LIMIT "
+          + ORIGINAL_BROADCAST_CROSS_JOIN_LIMIT).close();
     }
   }
 

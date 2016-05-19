@@ -52,52 +52,52 @@ import static org.junit.Assert.assertTrue;
 public class TestJoinQuery extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestJoinQuery.class);
   private static int reference = 0;
-  protected static long ORIGINAL_BROADCAST_CROSS_JOIN_THRESHOLD = 1024 * 1024;
+  protected static long ORIGINAL_BROADCAST_CROSS_JOIN_LIMIT = 1024 * 1024;
 
   public TestJoinQuery(String joinOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME, joinOption);
 
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "true");
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT.varname,
         "" + 5);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT.varname,
         1024 * 1024 + "");
 
     testingCluster.setAllTajoDaemonConfValue(
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.defaultVal);
 
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$JOIN_HASH_TABLE_SIZE.keyname(), "100");
 
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT.varname,
+        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT.defaultVal);
 
     if (joinOption.indexOf("NoBroadcast") >= 0) {
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT.varname,
           1024 * 1024 + "");
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
     }
 
     if (joinOption.indexOf("Hash") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
-          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(256));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname, String.valueOf(256));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname,
           String.valueOf(256));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT.varname,
           String.valueOf(256));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT.varname,
           1024 * 1024 + "");
     }
     if (joinOption.indexOf("Sort") >= 0) {
       testingCluster.setAllTajoDaemonConfValue(
-          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname, String.valueOf(1));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
+          ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname, String.valueOf(1));
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname,
           String.valueOf(0));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT.varname,
           String.valueOf(0));
-      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT.varname,
           1024 * 1024 + "");
     }
   }
@@ -121,19 +121,19 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public static void classTearDown() throws SQLException {
     testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
         ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
-        ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT.varname,
+        ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT.varname,
         1024 * 1024 + "");
 
     testingCluster.setAllTajoDaemonConfValue(
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.defaultVal);
 
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.defaultVal);
-    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
-        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.varname,
+        ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT.defaultVal);
+    testingCluster.setAllTajoDaemonConfValue(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT.varname,
+        ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT.defaultVal);
 
     if (--reference == 0) {
       dropCommonTables();

@@ -93,9 +93,9 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
 
     try {
       testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "true");
-      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT.varname,
           "" + (5 * 1024));
-      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT.varname,
           1024 * 1024 + "");
 
       runSimpleTests();
@@ -103,9 +103,9 @@ public class TestPgSQLQueryTests extends QueryTestCaseBase {
     } finally {
       testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
           TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
-      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.varname,
-          TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD.defaultVal);
-      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD.varname,
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT.varname,
+          TajoConf.ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT.varname,
           1024 * 1024 + "");
     }
   }

@@ -63,7 +63,7 @@ public class TestRadixSort {
 
   static {
     queryContext = new QueryContext(new TajoConf());
-    queryContext.setInt(SessionVars.TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT, 0);
+    queryContext.setInt(SessionVars.TEST_TIM_SORT_LIMIT_FOR_RADIX_SORT, 0);
 
     schema = SchemaBuilder.builder().addAll(new Column[]{
         new Column("col0", Type.INT8),
