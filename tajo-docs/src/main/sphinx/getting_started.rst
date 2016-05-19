@@ -8,7 +8,7 @@ In this section, we explain setup of a standalone Tajo instance. It will run aga
 Prerequisites
 ======================
 
- * Hadoop 2.3.0 or higher (up to 2.6.0)
+ * Hadoop 2.3.0 or higher
  * Java 1.7 or higher
  * Protocol buffer 2.5.0
 
