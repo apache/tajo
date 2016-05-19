@@ -113,7 +113,7 @@ public class TestFileFragment {
     FileFragment fragment = new FileFragment("table1_1", new Path(path, "table0/col1=1"), 0,
       500, "col1=1");
 
-    FileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.PARTIION_FILE,
+    FileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.FILE,
       FragmentConvertor.toFragmentProto(conf, fragment));
 
     assertEquals("table1_1", fragment1.getInputSourceId());

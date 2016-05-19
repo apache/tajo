@@ -20,7 +20,6 @@ package org.apache.tajo.storage.fragment;
 
 public class BuiltinFragmentKinds {
   public static final String FILE = "FILE";
-  public static final String PARTIION_FILE = "PARTITION_FILE";
   public static final String HBASE = "HBASE";
   public static final String JDBC = "JDBC";
 }

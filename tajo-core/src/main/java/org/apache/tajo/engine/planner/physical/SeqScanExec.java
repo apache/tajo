@@ -99,9 +99,9 @@ public class SeqScanExec extends ScanExec {
     if (fragments != null && fragments.length > 0) {
       List<FileFragment> fileFragments = FragmentConvertor.convert(context.getConf(), fragments);
 
-      // Get a partition key value from a given path
-      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
-              columnPartitionSchema, fileFragments.get(0).getPath(), false);
+      // Get tuple from first partition fragment using parition keys
+      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionKeys(columnPartitionSchema,
+        fileFragments.get(0).getPartitionKeys().get());
     }
 
     // Targets or search conditions may contain column references.
