@@ -47,10 +47,6 @@
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
-    <name>tajo.storage.fragment.kind.partition_file</name>
-    <value>org.apache.tajo.storage.fragment.PartitionFileFragment</value>
-  </property>
-  <property>
     <name>tajo.storage.fragment.kind.hbase</name>
     <value>org.apache.tajo.storage.hbase.HBaseFragment</value>
   </property>
@@ -61,10 +57,6 @@
   <property>
     <name>tajo.storage.fragment.serde.file</name>
     <value>org.apache.tajo.storage.fragment.FileFragmentSerde</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.serde.partition_file</name>
-    <value>org.apache.tajo.storage.fragment.PartitionFileFragmentSerde</value>
   </property>
   <property>
     <name>tajo.storage.fragment.serde.hbase</name>
