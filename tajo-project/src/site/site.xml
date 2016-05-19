@@ -76,13 +76,13 @@ function ga_event_load() {
         var dn_jdbc_0_11_3 = document.getElementById('tajo-jdbc-0.11.3');
 
         addListener(dn_src_0_11_3, 'click', function() {
-        ga('send', 'event', 'tajo-0.11.2-src', 'click', 'tajo-0.11.3-src');
+        ga('send', 'event', 'tajo-0.11.3-src', 'click', 'tajo-0.11.3-src');
         });
         addListener(dn_bin_0_11_3, 'click', function() {
-        ga('send', 'event', 'tajo-0.11.2-bin', 'click', 'tajo-0.11.3-bin');
+        ga('send', 'event', 'tajo-0.11.3-bin', 'click', 'tajo-0.11.3-bin');
         });
         addListener(dn_jdbc_0_11_3, 'click', function() {
-        ga('send', 'event', 'tajo-jdbc-0.11.2', 'click', 'tajo-jdbc-0.11.3');
+        ga('send', 'event', 'tajo-jdbc-0.11.3', 'click', 'tajo-jdbc-0.11.3');
         });
 
 
@@ -91,13 +91,13 @@ function ga_event_load() {
         var dn_jdbc_0_11_2 = document.getElementById('tajo-jdbc-0.11.2');
 
         addListener(dn_src_0_11_2, 'click', function() {
-          ga('send', 'event', 'tajo-0.11.2-src', 'click', 'tajo-0.11.1-src');
+          ga('send', 'event', 'tajo-0.11.2-src', 'click', 'tajo-0.11.2-src');
         });
         addListener(dn_bin_0_11_2, 'click', function() {
-          ga('send', 'event', 'tajo-0.11.2-bin', 'click', 'tajo-0.11.1-bin');
+          ga('send', 'event', 'tajo-0.11.2-bin', 'click', 'tajo-0.11.2-bin');
         });
         addListener(dn_jdbc_0_11_2, 'click', function() {
-          ga('send', 'event', 'tajo-jdbc-0.11.2', 'click', 'tajo-jdbc-0.11.1');
+          ga('send', 'event', 'tajo-jdbc-0.11.2', 'click', 'tajo-jdbc-0.11.2');
         });
 
 
