@@ -97,13 +97,6 @@ public class GlobalPlanRewriteUtil {
   public static long getTableVolume(ScanNode scanNode) {
     if (scanNode.getTableDesc().hasStats()) {
       long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
-        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-          scanBytes = 0L;
-        }
-      }
-
       return scanBytes;
     } else {
       return -1;
@@ -117,6 +110,7 @@ public class GlobalPlanRewriteUtil {
 
     if (node instanceof RelationNode) {
       switch (node.getType()) {
+        case PARTITIONS_SCAN:
         case SCAN:
           ScanNode scanNode = (ScanNode) node;
           if (scanNode.getTableDesc().getStats() == null) {
@@ -125,20 +119,6 @@ public class GlobalPlanRewriteUtil {
             return Long.MAX_VALUE;
           } else {
             return scanNode.getTableDesc().getStats().getNumBytes();
-          }
-        case PARTITIONS_SCAN:
-          PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) node;
-          if (pScanNode.getTableDesc().getStats() == null) {
-            // TODO - this case means that data is not located in HDFS. So, we need additional
-            // broadcast method.
-            return Long.MAX_VALUE;
-          } else {
-            // if there is no selected partition
-            if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-              return 0;
-            } else {
-              return pScanNode.getTableDesc().getStats().getNumBytes();
-            }
           }
         case TABLE_SUBQUERY:
           return computeDescendentVolume(((TableSubQueryNode) node).getSubQuery());

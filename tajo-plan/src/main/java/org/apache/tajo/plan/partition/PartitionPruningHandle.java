@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,11 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.fragment;
+package org.apache.tajo.plan.partition;
 
-public class BuiltinFragmentKinds {
-  public static final String FILE = "FILE";
-  public static final String PARTIION_FILE = "PARTITION_FILE";
-  public static final String HBASE = "HBASE";
-  public static final String JDBC = "JDBC";
+import org.apache.hadoop.fs.Path;
+
+/**
+ * This includes result informs of partition pruning.
+ *
+ */
+public class PartitionPruningHandle {
+  private Path[] partitionPaths;
+  private String[] partitionKeys;
+  private long totalVolume;
+
+  public PartitionPruningHandle(Path[] partitionPaths, String[] partitionKeys, long totalVolume) {
+    this.partitionPaths = partitionPaths;
+    this.partitionKeys = partitionKeys;
+    this.totalVolume = totalVolume;
+  }
+
+  public Path[] getPartitionPaths() {
+    return partitionPaths;
+  }
+
+  public String[] getPartitionKeys() {
+    return partitionKeys;
+  }
+
+  public long getTotalVolume() {
+    return totalVolume;
+  }
 }

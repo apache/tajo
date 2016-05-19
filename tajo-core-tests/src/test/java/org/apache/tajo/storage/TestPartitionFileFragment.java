@@ -20,10 +20,12 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.BuiltinFragmentKinds;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.fragment.PartitionFileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,9 +35,10 @@ import java.util.Collections;
 import java.util.SortedSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class TestFileFragment {
+public class TestPartitionFileFragment {
   private TajoConf conf;
   private Path path;
   
@@ -47,22 +50,27 @@ public class TestFileFragment {
 
   @Test
   public final void testGetAndSetFields() {
-    FileFragment fragment1 = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
+    PartitionFileFragment fragment1 = new PartitionFileFragment("table1_1", new Path(path, "table0/col1=1"),
+      0, 500, "col1=1");
 
     assertEquals("table1_1", fragment1.getInputSourceId());
-    assertEquals(new Path(path, "table0"), fragment1.getPath());
+    assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
   }
 
   @Test
   public final void testGetProtoAndRestore() {
-    FileFragment fragment = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
+    PartitionFileFragment fragment = new PartitionFileFragment("table1_1", new Path(path, "table0/col1=1"), 0,
+      500, "col1=1");
 
-    FileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.FILE,
-        FragmentConvertor.toFragmentProto(conf, fragment));
+    PartitionFileFragment fragment1 = FragmentConvertor.convert(conf, BuiltinFragmentKinds.PARTIION_FILE,
+      FragmentConvertor.toFragmentProto(conf, fragment));
+
     assertEquals("table1_1", fragment1.getInputSourceId());
-    assertEquals(new Path(path, "table0"), fragment1.getPath());
+    assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
   }
@@ -70,11 +78,11 @@ public class TestFileFragment {
   @Test
   public final void testCompareTo() {
     final int num = 10;
-    FileFragment[] tablets = new FileFragment[num];
+    PartitionFileFragment[] tablets = new PartitionFileFragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new FileFragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500);
+      tablets[i] = new PartitionFileFragment("tablet1_"+i, new Path(path, "tablet0"), i * 500, (i+1) * 500
+      , "/col1=0/col2=0");
     }
-
 
     Arrays.sort(tablets);
 
@@ -86,9 +94,10 @@ public class TestFileFragment {
   @Test
   public final void testCompareTo2() {
     final int num = 1860;
-    FileFragment[] tablets = new FileFragment[num];
+    PartitionFileFragment[] tablets = new PartitionFileFragment[num];
     for (int i = num - 1; i >= 0; i--) {
-      tablets[i] = new FileFragment("tablet1_"+i, new Path(path, "tablet0"), (long)i * 6553500, (long)(i+1) * 6553500);
+      tablets[i] = new PartitionFileFragment("tablet1", new Path(path, "tablet/col1=" +i), (long)i * 6553500,
+        (long) (i+1) * 6553500, "col1=" + i);
     }
 
     SortedSet sortedSet = Sets.newTreeSet();

@@ -28,10 +28,7 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
@@ -1183,9 +1180,11 @@ public class Stage implements EventHandler<StageEvent> {
       ScanNode scan = scans[0];
       TableDesc table = stage.context.getTableDesc(scan);
 
+      CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+      TajoConf conf = stage.getContext().getQueryContext().getConf();
+
       Collection<Fragment> fragments = SplitUtil.getSplits(
-          TablespaceManager.get(scan.getTableDesc().getUri()), scan, table, false);
-      SplitUtil.preparePartitionScanPlanForSchedule(scan);
+          TablespaceManager.get(scan.getTableDesc().getUri()), scan, table, false, catalog, conf);
       Stage.scheduleFragments(stage, fragments);
 
       // The number of leaf tasks should be the number of fragments.

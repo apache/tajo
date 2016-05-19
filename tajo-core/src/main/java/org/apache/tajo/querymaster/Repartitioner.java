@@ -31,6 +31,7 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
@@ -92,13 +93,23 @@ public class Repartitioner {
       throws IOException, TajoException {
     ExecutionBlock execBlock = stage.getBlock();
     QueryMasterTask.QueryMasterTaskContext masterContext = stage.getContext();
+    CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+    TajoConf conf = stage.getContext().getQueryContext().getConf();
 
     ScanNode[] scans = execBlock.getScanNodes();
+    ScanNode[] clonedScans = new ScanNode[scans.length];
     Fragment[] fragments = new Fragment[scans.length];
     long[] stats = new long[scans.length];
 
     // initialize variables from the child operators
     for (int i = 0; i < scans.length; i++) {
+      // Clone ScanNode to reuse scan filter in broadcast join phase.
+      try {
+        clonedScans[i] = (ScanNode) scans[i].clone();
+      } catch (CloneNotSupportedException e) {
+        throw new RuntimeException(e);
+      }
+
       TableDesc tableDesc = masterContext.getTableDesc(scans[i]);
 
       if (tableDesc == null) { // if it is a real table stored on storage
@@ -124,7 +135,7 @@ public class Repartitioner {
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
         List<Fragment> fileFragments = SplitUtil.getSplits(
-            TablespaceManager.get(tableDesc.getUri()), scans[i], tableDesc, false);
+            TablespaceManager.get(tableDesc.getUri()), scans[i], tableDesc, false, catalog, conf);
 
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
@@ -243,7 +254,7 @@ public class Repartitioner {
         int baseScanIdx = largeScanIndexList.isEmpty() ? maxStatsScanIdx : largeScanIndexList.get(0);
         LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, base_table=%s, base_volume=%d",
             scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
-        scheduleLeafTasksWithBroadcastTable(schedulerContext, stage, baseScanIdx, fragments);
+        scheduleLeafTasksWithBroadcastTable(schedulerContext, stage, baseScanIdx, clonedScans);
       } else {
         if (largeScanIndexList.size() > 2) {
           throw new IOException("Symmetric Repartition Join should have two scan node, but " + nonLeafScanNames);
@@ -388,17 +399,16 @@ public class Repartitioner {
       //In this phase a ScanNode has a single fragment.
       //If there are more than one data files, that files should be added to fragments or partition path
 
-      for (ScanNode eachScan: broadcastScans) {
-        // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
-        // plain tables.
-        if (eachScan.getType() != NodeType.PARTITIONS_SCAN) {
-          TableDesc tableDesc = masterContext.getTableDesc(eachScan);
+      CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+      TajoConf conf = stage.getContext().getQueryContext().getConf();
 
-          Collection<Fragment> scanFragments = SplitUtil.getSplits(
-              TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc, false);
-          if (scanFragments != null) {
-            rightFragments.addAll(scanFragments);
-          }
+      for (ScanNode eachScan: broadcastScans) {
+        TableDesc tableDesc = masterContext.getTableDesc(eachScan);
+
+        Collection<Fragment> scanFragments = SplitUtil.getSplits(
+            TablespaceManager.get(tableDesc.getUri()), eachScan, tableDesc, false, catalog, conf);
+        if (scanFragments != null) {
+          rightFragments.addAll(scanFragments);
         }
       }
     }
@@ -462,7 +472,7 @@ public class Repartitioner {
   }
 
   private static void scheduleLeafTasksWithBroadcastTable(TaskSchedulerContext schedulerContext, Stage stage,
-                                                          int baseScanId, Fragment[] fragments)
+                                                      int baseScanId, ScanNode[] clonedScans)
       throws IOException, TajoException {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode[] scans = execBlock.getScanNodes();
@@ -484,21 +494,25 @@ public class Repartitioner {
     //     . add all fragments to broadcastFragments
     Collection<Fragment> baseFragments = null;
     List<Fragment> broadcastFragments = new ArrayList<>();
+
+    CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+    TajoConf conf = stage.getContext().getQueryContext().getConf();
+
     for (int i = 0; i < scans.length; i++) {
       ScanNode scan = scans[i];
       TableDesc desc = stage.getContext().getTableDesc(scan);
+      if (scans[i].getType() == NodeType.PARTITIONS_SCAN && clonedScans[i].hasQual()) {
+        scans[i].setQual(clonedScans[i].getQual());
+      }
 
-      Collection<Fragment> scanFragments = SplitUtil.getSplits(TablespaceManager.get(desc.getUri()), scan, desc, false);
+      Collection<Fragment> scanFragments = SplitUtil.getSplits(TablespaceManager.get(desc.getUri()), scan, desc, false
+        , catalog, conf);
 
       if (scanFragments != null) {
         if (i == baseScanId) {
           baseFragments = scanFragments;
         } else {
-          // TODO: This is a workaround to broadcast partitioned tables, and should be improved to be consistent with
-          // plain tables.
-          if (scan.getType() != NodeType.PARTITIONS_SCAN) {
-            broadcastFragments.addAll(scanFragments);
-          }
+          broadcastFragments.addAll(scanFragments);
         }
       }
     }

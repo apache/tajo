@@ -896,12 +896,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public PhysicalExec createScanPlan(TaskAttemptContext ctx, ScanNode scanNode, Stack<LogicalNode> node)
       throws IOException {
+    FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
     // check if an input is sorted in the same order to the subsequence sort operator.
     if (checkIfSortEquivalance(ctx, scanNode, node)) {
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (fragments == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
       return new ExternalSortExec(ctx, (SortNode) node.peek(), scanNode, fragments);
     } else {
       Enforcer enforcer = ctx.getEnforcer();
@@ -915,31 +915,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         }
       }
 
-      if (scanNode instanceof PartitionedTableScanNode
-          && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
-          ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
-
-        if (broadcastFlag) {
-          PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<Fragment> fileFragments = new ArrayList<>();
-
-          FileTablespace space = TablespaceManager.get(scanNode.getTableDesc().getUri());
-          for (Path path : partitionedTableScanNode.getInputPaths()) {
-            fileFragments.addAll(Arrays.asList(space.split(scanNode.getCanonicalName(), path)));
-          }
-
-          FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(conf, fileFragments.toArray(new Fragment[fileFragments.size()]));
-
-          ctx.addFragments(scanNode.getCanonicalName(), fragments);
-          return new PartitionMergeScanExec(ctx, scanNode, fragments);
-        }
+      if (scanNode.getTableDesc().hasPartition() && broadcastFlag && fragments != null) {
+        ctx.addFragments(scanNode.getCanonicalName(), fragments);
+        return new PartitionMergeScanExec(ctx, scanNode, fragments);
       }
 
-      if (ctx.getTable(scanNode.getCanonicalName()) == null) {
+      if (fragments == null) {
         return new SeqScanExec(ctx, scanNode, null);
       }
-      FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
+
       return new SeqScanExec(ctx, scanNode, fragments);
     }
   }
@@ -1216,3 +1200,4 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 }
+
