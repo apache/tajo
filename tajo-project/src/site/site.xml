@@ -200,7 +200,7 @@ window.onload = ga_event_load;
 
     <menu name="Documentation">
       <item name="Devel" href="http://tajo.apache.org/docs/devel/index.html" />
-      <item name="Current (0.11.1)" href="http://tajo.apache.org/docs/current/index.html" />
+      <item name="Current (0.11.3)" href="http://tajo.apache.org/docs/current/index.html" />
     </menu>
 
     <menu name="Contributes">
