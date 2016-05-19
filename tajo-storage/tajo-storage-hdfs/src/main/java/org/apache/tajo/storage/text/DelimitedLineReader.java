@@ -88,7 +88,7 @@ public class DelimitedLineReader implements Closeable {
     }
 
     pos = startOffset = fragment.getStartKey();
-    end = startOffset + fragment.getLength();
+    end = fragment.getEndKey();
 
     if (codec != null) {
       fis = fs.open(fragment.getPath());

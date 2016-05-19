@@ -22,7 +22,9 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
+import org.apache.tajo.error.Errors;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
@@ -277,26 +279,71 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public Date getDate(int fieldId) throws SQLException {
-    return getDate(cur, null, fieldId - 1);
+    return getDate(cur, fieldId - 1);
   }
 
   @Override
   public Date getDate(String name) throws SQLException {
-    return getDate(cur, null, findColumn(name));
+    return getDate(cur, findColumn(name));
   }
 
   @Override
   public Date getDate(int fieldId, Calendar x) throws SQLException {
-    return getDate(cur, x.getTimeZone(), fieldId - 1);
+    return getDate(cur, x, fieldId - 1);
   }
 
   @Override
   public Date getDate(String name, Calendar x) throws SQLException {
-    return getDate(cur, x.getTimeZone(), findColumn(name));
+    return getDate(cur, x, findColumn(name));
   }
 
-  private Date getDate(Tuple tuple, TimeZone tz, int index) throws SQLException {
-    return handleNull(tuple, index) ? null : toDate(tuple.asDatum(index).asTimeMeta(), tz);
+  private Date getDate(Tuple tuple, int index) throws SQLException {
+    if (handleNull(tuple, index)) return null;
+
+    switch (tuple.type(index)) {
+    case DATE:
+      return toDate(tuple.asDatum(index).asTimeMeta(), null);
+    case TIMESTAMP:
+      return toDate(tuple.asDatum(index).asTimeMeta(), timezone);
+    case TEXT:
+      return toDate(DatumFactory.createDate(tuple.asDatum(index)).asTimeMeta(), null);
+    default:
+      throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "date");
+    }
+  }
+
+  /**
+   * This method uses the given calendar to construct an appropriate millisecond
+   * value for the time if the underlying database does not store timezone information.
+   */
+  private Date getDate(Tuple tuple, Calendar cal, int index) throws SQLException {
+    if (handleNull(tuple, index)) return null;
+
+    TimeZone tz = cal == null ? TimeZone.getDefault() : cal.getTimeZone();
+    long javaTime;
+
+    switch (tuple.type(index)) {
+    case DATE: {
+      TimeMeta tm = tuple.asDatum(index).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toDate(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
+    case TIMESTAMP: {
+      Date date = DateTimeUtil.convertToDate(getTimestamp(tuple, index), timezone);
+      javaTime = DateTimeUtil.convertTimeZone(date.getTime(), timezone, tz);
+      break;
+    }
+    case TEXT: {
+      TimeMeta  tm = DatumFactory.createDate(tuple.asDatum(index)).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toDate(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
+    default:
+      throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "date");
+    }
+
+    // remove time part
+    return DateTimeUtil.convertToDate(javaTime, TimeZone.getDefault());
   }
 
   private Date toDate(TimeMeta tm, TimeZone tz) {
@@ -305,26 +352,71 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public Time getTime(int fieldId) throws SQLException {
-    return getTime(cur, null, fieldId - 1);
+    return getTime(cur, fieldId - 1);
   }
 
   @Override
   public Time getTime(String name) throws SQLException {
-    return getTime(cur, null, findColumn(name));
+    return getTime(cur, findColumn(name));
   }
 
   @Override
   public Time getTime(int fieldId, Calendar x) throws SQLException {
-    return getTime(cur, x.getTimeZone(), fieldId - 1);
+    return getTime(cur, x, fieldId - 1);
   }
 
   @Override
   public Time getTime(String name, Calendar x) throws SQLException {
-    return getTime(cur, x.getTimeZone(), findColumn(name));
+    return getTime(cur, x, findColumn(name));
   }
 
-  private Time getTime(Tuple tuple, TimeZone tz, int index) throws SQLException {
-    return handleNull(tuple, index) ? null : toTime(tuple.asDatum(index).asTimeMeta(), tz);
+  private Time getTime(Tuple tuple, int index) throws SQLException {
+    if (handleNull(tuple, index)) return null;
+
+    switch (tuple.type(index)) {
+    case DATE:
+    case TIME:
+      return toTime(tuple.asDatum(index).asTimeMeta(), null);
+    case TIMESTAMP:
+      return toTime(tuple.asDatum(index).asTimeMeta(), timezone);
+    case TEXT:
+      return toTime(DatumFactory.createTime(tuple.asDatum(index)).asTimeMeta(), null);
+    default:
+      throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "time");
+    }
+  }
+
+  /**
+   * This method uses the given calendar to construct an appropriate millisecond
+   * value for the time if the underlying database does not store timezone information.
+   */
+  private Time getTime(Tuple tuple, Calendar cal, int index) throws SQLException {
+    if (handleNull(tuple, index)) return null;
+
+    TimeZone tz = cal == null ? TimeZone.getDefault() : cal.getTimeZone();
+    long javaTime;
+
+    switch (tuple.type(index)) {
+    case DATE:
+    case TIME: {
+      TimeMeta tm = tuple.asDatum(index).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toTime(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
+    case TIMESTAMP: {
+      return DateTimeUtil.convertToTime(getTimestamp(tuple, index), timezone);
+    }
+    case TEXT: {
+      TimeMeta tm = DatumFactory.createTime(tuple.asDatum(index)).asTimeMeta();
+      javaTime = DateTimeUtil.convertTimeZone(toTime(tm, null).getTime(), TimeZone.getDefault(), tz);
+      break;
+    }
+    default:
+      throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "time");
+    }
+
+    // remove date part
+    return DateTimeUtil.convertToTime(javaTime, TimeZone.getDefault());
   }
 
   private Time toTime(TimeMeta tm, TimeZone tz) {
@@ -333,26 +425,68 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public Timestamp getTimestamp(int fieldId) throws SQLException {
-    return getTimestamp(cur, null, fieldId - 1);
+    return getTimestamp(cur, fieldId - 1);
   }
 
   @Override
   public Timestamp getTimestamp(String name) throws SQLException {
-    return getTimestamp(cur, null, findColumn(name));
+    return getTimestamp(cur, findColumn(name));
   }
 
   @Override
   public Timestamp getTimestamp(int fieldId, Calendar x) throws SQLException {
-    return getTimestamp(cur, x.getTimeZone(), fieldId - 1);
+    return getTimestamp(cur, x, fieldId - 1);
   }
 
   @Override
   public Timestamp getTimestamp(String name, Calendar x) throws SQLException {
-    return getTimestamp(cur, x.getTimeZone(), findColumn(name));
+    return getTimestamp(cur, x, findColumn(name));
   }
 
-  private Timestamp getTimestamp(Tuple tuple, TimeZone tz, int index) throws SQLException {
-    return handleNull(tuple, index) ? null : toTimestamp(tuple.asDatum(index).asTimeMeta(), tz);
+  private Timestamp getTimestamp(Tuple tuple, int index) throws SQLException {
+    if (handleNull(tuple, index)) return null;
+
+    TimeMeta tm;
+    switch (tuple.type(index)) {
+    case DATE:
+    case TIME:
+      tm = tuple.asDatum(index).asTimeMeta();
+      DateTimeUtil.toUTCTimezone(tm, timezone);
+      return toTimestamp(tm, timezone);
+    case TIMESTAMP:
+      return toTimestamp(tuple.asDatum(index).asTimeMeta(), timezone);
+    case TEXT:
+      tm = DatumFactory.createTimestamp(tuple.asDatum(index), timezone).asTimeMeta();
+      return toTimestamp(tm, timezone);
+    default:
+      throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "timestamp");
+    }
+  }
+
+  /**
+   * This method uses the given calendar to construct an appropriate millisecond
+   * value for the time if the underlying database does not store timezone information.
+   */
+  private Timestamp getTimestamp(Tuple tuple, Calendar cal, int index) throws SQLException {
+    if (handleNull(tuple, index)) return null;
+
+    TimeMeta tm;
+    TimeZone tz = cal == null ? TimeZone.getDefault() : cal.getTimeZone();
+
+    switch (tuple.type(index)) {
+    case DATE:
+    case TIME:
+      tm = tuple.asDatum(index).asTimeMeta();
+      DateTimeUtil.toUTCTimezone(tm, tz);
+      return toTimestamp(tm, null);
+    case TIMESTAMP:
+      return toTimestamp(tuple.asDatum(index).asTimeMeta(), timezone);
+    case TEXT:
+      tm = DatumFactory.createTimestamp(tuple.asDatum(index), tz).asTimeMeta();
+      return toTimestamp(tm, null);
+    default:
+      throw new TajoSQLException(Errors.ResultCode.INVALID_VALUE_FOR_CAST, tuple.type(index).name(), "timestamp");
+    }
   }
 
   private Timestamp toTimestamp(TimeMeta tm, TimeZone tz) {

@@ -525,10 +525,10 @@ public class HBaseTablespace extends Tablespace {
 
           if (fragmentMap.containsKey(regionStartKey)) {
             final HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
-            if (Bytes.compareTo(fragmentStart, prevFragment.getStartRow()) < 0) {
+            if (Bytes.compareTo(fragmentStart, prevFragment.getStartKey().getBytes()) < 0) {
               prevFragment.setStartRow(fragmentStart);
             }
-            if (Bytes.compareTo(fragmentStop, prevFragment.getStopRow()) > 0) {
+            if (Bytes.compareTo(fragmentStop, prevFragment.getEndKey().getBytes()) > 0) {
               prevFragment.setStopRow(fragmentStop);
             }
           } else {
@@ -557,6 +557,7 @@ public class HBaseTablespace extends Tablespace {
   @Override
   public List<Fragment> getSplits(String inputSourceId,
                                   TableDesc table,
+                                  boolean requireSorted,
                                   @Nullable EvalNode filterCondition) throws IOException, TajoException {
     return (List<Fragment>) (List) getRawSplits(inputSourceId, table, filterCondition);
   }

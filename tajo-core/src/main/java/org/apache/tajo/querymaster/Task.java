@@ -20,6 +20,7 @@ package org.apache.tajo.querymaster;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -281,7 +282,7 @@ public class Task implements EventHandler<TaskEvent> {
         fragmentList.add(fragment.toString());
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
-        fragmentList.add("ERROR: " + eachFragment.getDataFormat() + "," + eachFragment.getId() + ": " + e.getMessage());
+        fragmentList.add("ERROR: " + eachFragment.getKind() + "," + eachFragment.getId() + ": " + e.getMessage());
       }
     }
     taskHistory.setFragments(fragmentList.toArray(new String[fragmentList.size()]));
@@ -330,25 +331,25 @@ public class Task implements EventHandler<TaskEvent> {
 	}
 
   private void addDataLocation(Fragment fragment) {
-    String[] hosts = fragment.getHosts();
-    int[] diskIds = null;
+    ImmutableList<String> hosts = fragment.getHostNames();
+    Integer[] diskIds = null;
     if (fragment instanceof FileFragment) {
       diskIds = ((FileFragment)fragment).getDiskIds();
     }
-    for (int i = 0; i < hosts.length; i++) {
-      dataLocations.add(new DataLocation(hosts[i], diskIds == null ? DataLocation.UNKNOWN_VOLUME_ID : diskIds[i]));
+    for (int i = 0; i < hosts.size(); i++) {
+      dataLocations.add(new DataLocation(hosts.get(i), diskIds == null ? DataLocation.UNKNOWN_VOLUME_ID : diskIds[i]));
     }
   }
 
   public void addFragment(Fragment fragment, boolean useDataLocation) {
     Set<FragmentProto> fragmentProtos;
-    if (fragMap.containsKey(fragment.getTableName())) {
-      fragmentProtos = fragMap.get(fragment.getTableName());
+    if (fragMap.containsKey(fragment.getInputSourceId())) {
+      fragmentProtos = fragMap.get(fragment.getInputSourceId());
     } else {
       fragmentProtos = new HashSet<>();
-      fragMap.put(fragment.getTableName(), fragmentProtos);
+      fragMap.put(fragment.getInputSourceId(), fragmentProtos);
     }
-    fragmentProtos.add(fragment.getProto());
+    fragmentProtos.add(FragmentConvertor.toFragmentProto(systemConf, fragment));
     if (useDataLocation) {
       addDataLocation(fragment);
     }

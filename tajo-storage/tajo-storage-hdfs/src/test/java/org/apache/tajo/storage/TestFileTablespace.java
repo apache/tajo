@@ -156,17 +156,17 @@ public class TestFileTablespace {
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
-      splits.addAll(space.getSplits("data", meta, schema, partitions.toArray(new Path[partitions.size()])));
+      splits.addAll(space.getSplits("data", meta, schema, false, partitions.toArray(new Path[partitions.size()])));
       assertEquals(testCount, splits.size());
       // -1 is unknown volumeId
-      assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
+      assertEquals(DataLocation.UNKNOWN_VOLUME_ID, ((FileFragment)splits.get(0)).getDiskIds()[0].intValue());
 
       splits.clear();
-      splits.addAll(space.getSplits("data", meta, schema,
+      splits.addAll(space.getSplits("data", meta, schema, false,
           partitions.subList(0, partitions.size() / 2).toArray(new Path[partitions.size() / 2])));
       assertEquals(testCount / 2, splits.size());
-      assertEquals(1, splits.get(0).getHosts().length);
-      assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
+      assertEquals(1, splits.get(0).getHostNames().size());
+      assertEquals(DataLocation.UNKNOWN_VOLUME_ID, ((FileFragment)splits.get(0)).getDiskIds()[0].intValue());
 
       fs.close();
     } finally {
@@ -212,7 +212,7 @@ public class TestFileTablespace {
 
       List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
-      splits.addAll(space.getSplits("data", meta, schema, partitions.toArray(new Path[partitions.size()])));
+      splits.addAll(space.getSplits("data", meta, schema, false, partitions.toArray(new Path[partitions.size()])));
       assertEquals(0, splits.size());
 
       fs.close();
@@ -256,12 +256,12 @@ public class TestFileTablespace {
       TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       List<Fragment> splits = Lists.newArrayList();
-      splits.addAll(sm.getSplits("data", meta, schema, tablePath));
+      splits.addAll(sm.getSplits("data", meta, schema, false, tablePath));
 
       assertEquals(testCount, splits.size());
-      assertEquals(2, splits.get(0).getHosts().length);
+      assertEquals(2, splits.get(0).getHostNames().size());
       assertEquals(2, ((FileFragment)splits.get(0)).getDiskIds().length);
-      assertNotEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
+      assertNotEquals(DataLocation.UNKNOWN_VOLUME_ID, ((FileFragment)splits.get(0)).getDiskIds()[0].intValue());
 
       fs.close();
     } finally {

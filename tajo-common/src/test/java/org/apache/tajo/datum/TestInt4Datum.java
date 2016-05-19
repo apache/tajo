@@ -18,12 +18,10 @@
 
 package org.apache.tajo.datum;
 
-import org.junit.Test;
 import org.apache.tajo.common.TajoDataTypes;
+import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestInt4Datum {
 

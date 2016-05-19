@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -30,13 +29,11 @@ import org.apache.tajo.type.Type;
 
 import java.util.TimeZone;
 
-import static org.apache.tajo.common.TajoDataTypes.DataType;
-
 public class CastEval extends UnaryEval implements Cloneable {
-  @Expose private DataType target;
+  @Expose private Type target;
   private TimeZone timezone;
 
-  public CastEval(OverridableConf context, EvalNode operand, DataType target) {
+  public CastEval(OverridableConf context, EvalNode operand, Type target) {
     super(EvalType.CAST, operand);
     this.target = target;
   }
@@ -47,12 +44,12 @@ public class CastEval extends UnaryEval implements Cloneable {
 
   @Override
   public Type getValueType() {
-    return TypeConverter.convert(target);
+    return target;
   }
 
   @Override
   public String getName() {
-    return target.getType().name();
+    return target.toString();
   }
 
   @Override
@@ -76,7 +73,7 @@ public class CastEval extends UnaryEval implements Cloneable {
   }
 
   public String toString() {
-    return "CAST (" + child + " AS " + target.getType() + ")";
+    return "CAST (" + child + " AS " + target + ")";
   }
 
   @Override
