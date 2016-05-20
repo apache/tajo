@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.s3;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.util.stream.Stream;
@@ -33,6 +34,8 @@ import com.amazonaws.internal.StaticCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.iterable.S3Objects;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.primitives.Ints;
@@ -40,6 +43,8 @@ import io.airlift.units.Duration;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.FileTablespace;
@@ -54,6 +59,7 @@ public class S3TableSpace extends FileTablespace {
   private final static Log LOG = LogFactory.getLog(S3TableSpace.class);
 
   private AmazonS3 s3;
+  private int maxKeys;
 
   public S3TableSpace(String spaceName, URI uri, JSONObject config) {
     super(spaceName, uri, config);
@@ -63,6 +69,7 @@ public class S3TableSpace extends FileTablespace {
   public void init(TajoConf tajoConf) throws IOException {
     super.init(tajoConf);
 
+    maxKeys = conf.getInt(MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
     int maxErrorRetries = conf.getInt(MAX_ERROR_RETRIES, DEFAULT_MAX_ERROR_RETRIES);
     boolean sslEnabled = conf.getBoolean(SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
 
@@ -120,15 +127,65 @@ public class S3TableSpace extends FileTablespace {
   @Override
   public long calculateSize(Path path) throws IOException {
     String key = keyFromPath(path);
-    if (!key.isEmpty()) {
-      key += "/";
+
+    final FileStatus fileStatus =  fs.getFileStatus(path);
+    long totalBucketSize = 0L;
+
+    if (fileStatus.isDirectory()) {
+      if (!key.isEmpty()) {
+        key = key + "/";
+      }
+
+      ListObjectsRequest request = new ListObjectsRequest();
+      request.setBucketName(uri.getHost());
+      request.setPrefix(key);
+      request.setMaxKeys(maxKeys);
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("listStatus: doing listObjects for directory " + key);
+      }
+
+      ObjectListing objects = s3.listObjects(request);
+
+      while (true) {
+        for (S3ObjectSummary summary : objects.getObjectSummaries()) {
+          Path keyPath = keyToPath(summary.getKey()).makeQualified(uri, fs.getWorkingDirectory());
+
+          // Skip over keys that are ourselves and old S3N _$folder$ files
+          if (keyPath.equals(path) || summary.getKey().endsWith(S3N_FOLDER_SUFFIX)) {
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("Ignoring: " + keyPath);
+            }
+            continue;
+          }
+
+          if (!objectRepresentsDirectory(summary.getKey(), summary.getSize())) {
+            totalBucketSize += summary.getSize();
+          }
+        }
+
+        if (objects.isTruncated()) {
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("listStatus: list truncated - getting next batch");
+          }
+          objects = s3.listNextBatchOfObjects(objects);
+        } else {
+          break;
+        }
+      }
+    } else {
+      return fileStatus.getLen();
     }
 
-    Iterable<S3ObjectSummary> objectSummaries = S3Objects.withPrefix(s3, uri.getHost(), key);
-    Stream<S3ObjectSummary> objectStream = StreamSupport.stream(objectSummaries.spliterator(), false);
-    long totalBucketSize = objectStream.mapToLong(object -> object.getSize()).sum();
-    objectStream.close();
     return totalBucketSize;
+  }
+
+  private boolean objectRepresentsDirectory(final String name, final long size) {
+    return !name.isEmpty() && name.charAt(name.length() - 1) == '/' && size == 0L;
+  }
+
+  private Path keyToPath(String key) {
+    return new Path("/" + key);
   }
 
   private String keyFromPath(Path path)

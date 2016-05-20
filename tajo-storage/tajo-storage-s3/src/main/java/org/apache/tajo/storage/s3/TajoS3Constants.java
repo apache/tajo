@@ -51,4 +51,11 @@ public class TajoS3Constants {
   // number of simultaneous connections to s3
   public static final String MAXIMUM_CONNECTIONS = "fs.s3a.connection.maximum";
   public static final int DEFAULT_MAXIMUM_CONNECTIONS = 15;
+
+  // number of records to get while paging through a directory listing
+  public static final String MAX_PAGING_KEYS = "fs.s3a.paging.maximum";
+  public static final int DEFAULT_MAX_PAGING_KEYS = 5000;
+
+  public static final String S3N_FOLDER_SUFFIX = "_$folder$";
+
 }
