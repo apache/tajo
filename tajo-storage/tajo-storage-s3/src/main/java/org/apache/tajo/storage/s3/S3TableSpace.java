@@ -48,14 +48,12 @@ import net.minidev.json.JSONObject;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.nullToEmpty;
+import static org.apache.tajo.storage.s3.TajoS3Constants.*;
 
 public class S3TableSpace extends FileTablespace {
   private final static Log LOG = LogFactory.getLog(S3TableSpace.class);
 
   private AmazonS3 s3;
-  private boolean useInstanceCredentials;
-  //use a custom endpoint?
-  public static final String ENDPOINT = "fs.s3a.endpoint";
 
   public S3TableSpace(String spaceName, URI uri, JSONObject config) {
     super(spaceName, uri, config);
@@ -65,20 +63,18 @@ public class S3TableSpace extends FileTablespace {
   public void init(TajoConf tajoConf) throws IOException {
     super.init(tajoConf);
 
-    int maxErrorRetries = conf.getIntVar(TajoConf.ConfVars.S3_MAX_ERROR_RETRIES);
-    boolean sslEnabled = conf.getBoolVar(TajoConf.ConfVars.S3_SSL_ENABLED);
+    int maxErrorRetries = conf.getInt(MAX_ERROR_RETRIES, DEFAULT_MAX_ERROR_RETRIES);
+    boolean sslEnabled = conf.getBoolean(SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
 
-    Duration connectTimeout = Duration.valueOf(conf.getVar(TajoConf.ConfVars.S3_CONNECT_TIMEOUT));
-    Duration socketTimeout = Duration.valueOf(conf.getVar(TajoConf.ConfVars.S3_SOCKET_TIMEOUT));
-    int maxConnections = conf.getIntVar(TajoConf.ConfVars.S3_MAX_CONNECTIONS);
-
-    this.useInstanceCredentials = conf.getBoolVar(TajoConf.ConfVars.S3_USE_INSTANCE_CREDENTIALS);
+    int connectTimeout = conf.getInt(ESTABLISH_TIMEOUT, DEFAULT_ESTABLISH_TIMEOUT);
+    int socketTimeout = conf.getInt(SOCKET_TIMEOUT, DEFAULT_SOCKET_TIMEOUT);
+    int maxConnections = conf.getInt(MAXIMUM_CONNECTIONS, DEFAULT_MAXIMUM_CONNECTIONS);
 
     ClientConfiguration configuration = new ClientConfiguration()
       .withMaxErrorRetry(maxErrorRetries)
       .withProtocol(sslEnabled ? Protocol.HTTPS : Protocol.HTTP)
-      .withConnectionTimeout(Ints.checkedCast(connectTimeout.toMillis()))
-      .withSocketTimeout(Ints.checkedCast(socketTimeout.toMillis()))
+      .withConnectionTimeout(connectTimeout)
+      .withSocketTimeout(socketTimeout)
       .withMaxConnections(maxConnections);
 
     this.s3 = createAmazonS3Client(uri, conf, configuration);
@@ -112,11 +108,7 @@ public class S3TableSpace extends FileTablespace {
     } catch (IllegalArgumentException ignored) {
     }
 
-    if (useInstanceCredentials) {
-      return new InstanceProfileCredentialsProvider();
-    }
-
-    throw new RuntimeException("S3 credentials not configured");
+    return new InstanceProfileCredentialsProvider();
   }
 
   private static AWSCredentials getAwsCredentials(URI uri, Configuration conf) {

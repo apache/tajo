@@ -24,6 +24,9 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 
+import static org.apache.tajo.storage.s3.TajoS3Constants.ACCESS_KEY;
+import static org.apache.tajo.storage.s3.TajoS3Constants.SECRET_KEY;
+
 /**
  * <p>
  * Extracts AWS credentials from the filesystem URI or configuration. (borrowed from hadoop-aws package)
@@ -57,9 +60,10 @@ public class TajoS3Credentials {
     }
 
     String scheme = uri.getScheme();
-    String accessKeyProperty = String.format("fs.%s.awsAccessKeyId", scheme);
-    String secretAccessKeyProperty =
-      String.format("fs.%s.awsSecretAccessKey", scheme);
+    String accessKeyProperty = scheme.startsWith("s3a") ? ACCESS_KEY : String.format("fs.%s.awsAccessKeyId", scheme);
+    String secretAccessKeyProperty = scheme.startsWith("s3a") ? SECRET_KEY : String.format("fs.%s.awsSecretAccessKey",
+      scheme);
+
     if (accessKey == null) {
       accessKey = conf.getTrimmed(accessKeyProperty);
     }
