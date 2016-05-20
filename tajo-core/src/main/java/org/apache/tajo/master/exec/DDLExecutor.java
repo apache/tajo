@@ -20,6 +20,7 @@ package org.apache.tajo.master.exec;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -511,8 +512,8 @@ public class DDLExecutor {
 
         long numBytes = 0L;
         if (fs.exists(partitionPath)) {
-          FileTablespace fileTablespace = TablespaceManager.get(partitionPath.toUri());
-          numBytes = fileTablespace.calculateSize(partitionPath);
+          ContentSummary summary = fs.getContentSummary(partitionPath);
+          numBytes = summary.getLength();
         }
 
         catalog.alterTable(CatalogUtil.addOrDropPartition(qualifiedName, alterTable.getPartitionColumns(),
@@ -623,7 +624,6 @@ public class DDLExecutor {
     }
 
     // Find missing partitions from CatalogStore
-    Tablespace tablespace = TablespaceManager.get(tableDesc.getUri());
     List<PartitionDescProto> targetPartitions = new ArrayList<>();
     for(Path filteredPath : filteredPaths) {
 
@@ -632,7 +632,7 @@ public class DDLExecutor {
 
       // if there is partition column in the path
       if (startIdx > -1) {
-        PartitionDescProto targetPartition = getPartitionDesc(tablespace, tablePath, filteredPath);
+        PartitionDescProto targetPartition = getPartitionDesc(tablePath, filteredPath, fs);
         if (!existingPartitionNames.contains(targetPartition.getPartitionName())) {
           if (LOG.isDebugEnabled()) {
             LOG.debug("Partitions not in CatalogStore:" + targetPartition.getPartitionName());
@@ -658,8 +658,7 @@ public class DDLExecutor {
     LOG.info("Total added partitions to CatalogStore: " + targetPartitions.size());
   }
 
-  private PartitionDescProto getPartitionDesc(Tablespace tablespace, Path tablePath, Path partitionPath)
-    throws IOException {
+  private PartitionDescProto getPartitionDesc(Path tablePath, Path partitionPath, FileSystem fs) throws IOException {
     String partitionName = StringUtils.unescapePathName(partitionPath.toString());
 
     int startIndex = partitionName.indexOf(tablePath.toString()) + tablePath.toString().length();
@@ -681,8 +680,9 @@ public class DDLExecutor {
     }
 
     builder.setPath(partitionPath.toString());
-    FileTablespace fileTablespace = TablespaceManager.get(partitionPath.toUri());
-    builder.setNumBytes(fileTablespace.calculateSize(partitionPath));
+
+    ContentSummary contentSummary = fs.getContentSummary(partitionPath);
+    builder.setNumBytes(contentSummary.getLength());
 
     return builder.build();
   }
