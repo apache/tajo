@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.BIT;
 
 public class Bit extends Type {
-  public Bit() {
+  Bit() {
     super(BIT);
   }
 }

@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.BLOB;
 
 public class Blob extends Type {
-  public Blob() {
+  Blob() {
     super(BLOB);
   }
 }

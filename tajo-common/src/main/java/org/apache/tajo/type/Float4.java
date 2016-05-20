@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT4;
 
 public class Float4 extends Type {
-  public Float4() {
+  Float4() {
     super(FLOAT4);
   }
 }

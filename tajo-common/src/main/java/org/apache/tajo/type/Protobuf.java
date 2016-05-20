@@ -23,7 +23,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.PROTOBUF;
 public class Protobuf extends Type {
   private String msgName;
 
-  public Protobuf(String msgName) {
+  Protobuf(String msgName) {
     super(PROTOBUF);
     this.msgName = msgName;
   }
