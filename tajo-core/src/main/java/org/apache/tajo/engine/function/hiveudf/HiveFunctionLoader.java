@@ -50,7 +50,7 @@ public class HiveFunctionLoader {
 
   public static Optional<List<FunctionDesc>> loadHiveUDFs(TajoConf conf) {
     ArrayList<FunctionDesc> funcList = new ArrayList<>();
-    String udfdir = conf.getVar(TajoConf.ConfVars.HIVE_UDF_DIR);
+    String udfdir = conf.getVar(TajoConf.ConfVars.HIVE_UDF_JAR_DIR);
 
     try {
       // Currently Hive udf jar must be on local filesystem
