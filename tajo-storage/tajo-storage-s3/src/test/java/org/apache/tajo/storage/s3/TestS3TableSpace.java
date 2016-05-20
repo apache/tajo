@@ -71,42 +71,13 @@ public class TestS3TableSpace {
     assertEquals(S3_URI, TablespaceManager.get(S3_URI).getUri().toASCIIString());
   }
 
-  @Test
-  public void testInstanceCredentialsEnabled() throws Exception {
-    assertTrue((TablespaceManager.getByName(SPACENAME)) instanceof S3TableSpace);
-    S3TableSpace tableSpace = TablespaceManager.getByName(SPACENAME);
-
-    assertNotNull(tableSpace.getAmazonS3Client());
-    assertTrue((tableSpace.getAmazonS3Client()) instanceof AmazonS3Client);
-
-    assertTrue(getAwsCredentialsProvider(tableSpace.getAmazonS3Client())
-      instanceof InstanceProfileCredentialsProvider);
-  }
-
-  private AWSCredentialsProvider getAwsCredentialsProvider(AmazonS3 s3) {
-    return getFieldValue(s3, "awsCredentialsProvider", AWSCredentialsProvider.class);
-  }
-
-  @SuppressWarnings("unchecked")
-  private <T> T getFieldValue(Object instance, String name, Class<T> type) {
-    try {
-      Field field = instance.getClass().getDeclaredField(name);
-      checkArgument(field.getType() == type, "expected %s but found %s", type, field.getType());
-      field.setAccessible(true);
-      return (T) field.get(instance);
-    }
-    catch (ReflectiveOperationException e) {
-      throw Throwables.propagate(e);
-    }
-  }
-
   @Test(expected = AmazonClientException.class)
   public void testCalculateSize() throws Exception {
+    Path path = new Path(S3_URI, "/test");
     assertTrue((TablespaceManager.getByName(SPACENAME)) instanceof S3TableSpace);
-    S3TableSpace tableSpace = TablespaceManager.getByName(SPACENAME);
+    S3TableSpace tableSpace = TablespaceManager.get(path.toUri());
 
     assertNotNull(tableSpace.getAmazonS3Client());
-    assertTrue((tableSpace.getAmazonS3Client()) instanceof AmazonS3Client);
     tableSpace.calculateSize(new Path("s3n://test-bucket/test"));
   }
 }
