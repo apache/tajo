@@ -17,8 +17,6 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-
-import org.apache.tajo.storage.mongodb.ConnectionInfo;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

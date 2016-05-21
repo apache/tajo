@@ -27,4 +27,11 @@ public class ConnectionInfo {
     public void setMongoDbUrl(String mongoDbUrl) {
         this.mongoDbUrl = mongoDbUrl;
     }
+
+    public static ConnectionInfo fromUrl(String url)
+    {
+        ConnectionInfo connectionInfo = new ConnectionInfo();
+        connectionInfo.setMongoDbUrl(url);
+        return connectionInfo;
+    }
 }
