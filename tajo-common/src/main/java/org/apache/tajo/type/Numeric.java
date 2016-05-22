@@ -20,10 +20,12 @@ package org.apache.tajo.type;
 
 import com.google.common.collect.ImmutableList;
 
+import static org.apache.tajo.common.TajoDataTypes.Type.NUMERIC;
+
 public class Numeric extends ValueParamterizedType {
 
   Numeric(int precision, int scale) {
-    super(Numeric, ImmutableList.of(precision, scale));
+    super(NUMERIC, ImmutableList.of(precision, scale));
   }
 
   public int precision() {
