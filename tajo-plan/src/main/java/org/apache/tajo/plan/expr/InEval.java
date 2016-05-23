@@ -26,14 +26,13 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 public class InEval extends BinaryEval {
-  private static final TajoDataTypes.DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
-
   @Expose private boolean not;
   Set<Datum> values;
 
@@ -47,8 +46,8 @@ public class InEval extends BinaryEval {
   }
 
   @Override
-  public TajoDataTypes.DataType getValueType() {
-    return RES_TYPE;
+  public Type getValueType() {
+    return Type.Bool;
   }
 
   @Override

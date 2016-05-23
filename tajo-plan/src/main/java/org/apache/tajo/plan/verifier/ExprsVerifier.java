@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.verifier;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.error.Errors;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
@@ -29,8 +30,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import java.util.Set;
 import java.util.Stack;
 
-import static org.apache.tajo.common.TajoDataTypes.DataType;
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 /**
  * It verifies one predicate or expression with the semantic and data type checks as follows:
@@ -61,7 +61,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
   /**
    * It checks the compatibility of two data types.
    */
-  private static boolean isCompatibleType(DataType dataType1, DataType dataType2) {
+  private static boolean isCompatibleType(org.apache.tajo.type.Type dataType1, org.apache.tajo.type.Type dataType2) {
     if (checkNumericType(dataType1) && checkNumericType(dataType2)) {
       return true;
     }
@@ -74,10 +74,6 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
       return true;
     }
 
-    if (checkNetworkType(dataType1) && checkNetworkType(dataType2)) {
-      return true;
-    }
-
     return false;
   }
 
@@ -85,9 +81,7 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
    * It checks both expressions in a comparison operator are compatible to each other.
    */
   private static void verifyComparisonOperator(VerificationState state, BinaryEval expr) {
-    DataType leftType = expr.getLeftExpr().getValueType();
-    DataType rightType = expr.getRightExpr().getValueType();
-    if (!isCompatibleType(leftType, rightType)) {
+    if (!isCompatibleType(expr.getLeftExpr().getValueType(), expr.getRightExpr().getValueType())) {
       state.addVerification(new UndefinedOperatorException(expr.toString()));
     }
   }
@@ -145,32 +139,33 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     EvalNode leftExpr = evalNode.getLeftExpr();
     EvalNode rightExpr = evalNode.getRightExpr();
 
-    DataType leftDataType = leftExpr.getValueType();
-    DataType rightDataType = rightExpr.getValueType();
+    org.apache.tajo.type.Type leftDataType = leftExpr.getValueType();
+    org.apache.tajo.type.Type rightDataType = rightExpr.getValueType();
 
-    Type leftType = leftDataType.getType();
-    Type rightType = rightDataType.getType();
+    TajoDataTypes.Type leftType = leftDataType.kind();
+    TajoDataTypes.Type rightType = rightDataType.kind();
 
-    if (leftType == Type.DATE &&
+    if (leftType == DATE &&
           (checkIntType(rightDataType) ||
-              rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME)) {
+              rightType == DATE || rightType == INTERVAL || rightType == TIME)) {
       return;
     }
 
-    if (leftType == Type.INTERVAL &&
+    if (leftType == INTERVAL &&
         (checkNumericType(rightDataType) ||
-            rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME ||
-            rightType == Type.TIMESTAMP)) {
+            rightType == DATE || rightType == INTERVAL || rightType == TIME ||
+            rightType == TIMESTAMP)) {
       return;
     }
 
-    if (leftType == Type.TIME &&
-        (rightType == Type.DATE || rightType == Type.INTERVAL || rightType == Type.TIME)) {
+    if (leftType == TIME &&
+        (rightType == DATE || rightType == INTERVAL || rightType == TIME ||
+            rightType == TIMESTAMP)) {
       return;
     }
 
-    if (leftType == Type.TIMESTAMP &&
-        (rightType == Type.TIMESTAMP || rightType == Type.INTERVAL || rightType == Type.TIME)) {
+    if (leftType == TIMESTAMP &&
+        (rightType == TIMESTAMP || rightType == INTERVAL || rightType == TajoDataTypes.Type.TIME)) {
       return;
     }
 
@@ -179,29 +174,25 @@ public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalN
     }
   }
 
-  private static boolean checkNetworkType(DataType dataType) {
-    return dataType.getType() == Type.INET4 || dataType.getType() == Type.INET6;
+  private static boolean checkIntType(org.apache.tajo.type.Type dataType) {
+    int typeNumber = dataType.kind().getNumber();
+    return INT1.getNumber() < typeNumber && typeNumber <= INT8.getNumber();
   }
 
-  private static boolean checkIntType(DataType dataType) {
-    int typeNumber = dataType.getType().getNumber();
-    return Type.INT1.getNumber() < typeNumber && typeNumber <= Type.INT8.getNumber();
+  private static boolean checkNumericType(org.apache.tajo.type.Type dataType) {
+    int typeNumber = dataType.kind().getNumber();
+    return INT1.getNumber() <= typeNumber && typeNumber <= NUMERIC.getNumber();
   }
 
-  private static boolean checkNumericType(DataType dataType) {
-    int typeNumber = dataType.getType().getNumber();
-    return Type.INT1.getNumber() <= typeNumber && typeNumber <= Type.NUMERIC.getNumber();
+  private static boolean checkTextData(org.apache.tajo.type.Type dataType) {
+    int typeNumber = dataType.kind().getNumber();
+    return CHAR.getNumber() <= typeNumber && typeNumber <= TEXT.getNumber();
   }
 
-  private static boolean checkTextData(DataType dataType) {
-    int typeNumber = dataType.getType().getNumber();
-    return Type.CHAR.getNumber() <= typeNumber && typeNumber <= Type.TEXT.getNumber();
-  }
-
-  private static boolean checkDateTime(DataType dataType) {
-    int typeNumber = dataType.getType().getNumber();
-    return (Type.DATE.getNumber() <= typeNumber && typeNumber <= Type.INTERVAL.getNumber()) ||
-        (Type.TIMEZ.getNumber() <= typeNumber && typeNumber <= Type.TIMESTAMPZ.getNumber());
+  private static boolean checkDateTime(org.apache.tajo.type.Type dataType) {
+    int typeNumber = dataType.kind().getNumber();
+    return (DATE.getNumber() <= typeNumber && typeNumber <= INTERVAL.getNumber()) ||
+        (TIMEZ.getNumber() <= typeNumber && typeNumber <= TIMESTAMPZ.getNumber());
   }
 
   @Override

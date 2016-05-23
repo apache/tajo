@@ -21,8 +21,10 @@ package org.apache.tajo.plan.serder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.json.FunctionAdapter;
+import org.apache.tajo.catalog.json.SchemaAdapter;
 import org.apache.tajo.catalog.json.TableMetaAdapter;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
@@ -45,8 +47,8 @@ public class PlanGsonHelper {
   private PlanGsonHelper() {
   }
 	
-	private static Map<Type, GsonSerDerAdapter> registerAdapters() {
-    Map<Type, GsonSerDerAdapter> adapters = new HashMap<>();
+	public static Map<Type, GsonSerDerAdapter<?>> registerAdapters() {
+    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
     adapters.put(Path.class, new PathSerializer());
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(LogicalNode.class, new LogicalNodeAdapter());
@@ -58,6 +60,8 @@ public class PlanGsonHelper {
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
     adapters.put(TimeZone.class, new TimeZoneGsonSerdeAdapter());
+    adapters.put(org.apache.tajo.type.Type.class, new TypeAdapter());
+    adapters.put(Schema.class, new SchemaAdapter());
 
     return adapters;
 	}

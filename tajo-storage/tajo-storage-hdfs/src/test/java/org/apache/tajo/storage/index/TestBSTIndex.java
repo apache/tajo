@@ -21,6 +21,7 @@ package org.apache.tajo.storage.index;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -35,6 +36,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -60,20 +62,21 @@ public class TestBSTIndex {
     this.dataFormat = type;
     conf = new TajoConf();
     conf.setVar(TajoConf.ConfVars.ROOT_DIR, TEST_PATH);
-    schema = new Schema();
-    schema.addColumn(new Column("int", Type.INT4));
-    schema.addColumn(new Column("long", Type.INT8));
-    schema.addColumn(new Column("double", Type.FLOAT8));
-    schema.addColumn(new Column("float", Type.FLOAT4));
-    schema.addColumn(new Column("string", Type.TEXT));
+    schema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .add(new Column("float", Type.FLOAT4))
+        .add(new Column("string", Type.TEXT))
+        .build();
   }
 
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"RAW"},
-        {"TEXT"}
+        {BuiltinStorages.RAW},
+        {BuiltinStorages.TEXT}
     });
   }
 
@@ -85,7 +88,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -111,9 +114,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -125,7 +129,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -149,7 +153,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + dataFormat + ".idx"), keySchema, comp);
     reader.init();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
@@ -176,7 +180,7 @@ public class TestBSTIndex {
 
   @Test
   public void testBuildIndexWithAppender() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testBuildIndexWithAppender_" + dataFormat);
     FileAppender appender = (FileAppender) ((FileTablespace) TablespaceManager.getLocalFs())
@@ -187,9 +191,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -229,7 +234,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.init();
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
@@ -256,7 +261,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindOmittedValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = StorageUtil.concatPath(testDir, "testFindOmittedValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(meta, schema, tablePath);
@@ -280,9 +285,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -293,7 +299,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -327,7 +333,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindNextKeyValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -353,9 +359,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -366,7 +373,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -390,7 +397,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.init();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple result;
@@ -420,7 +427,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyOmittedValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindNextKeyOmittedValue_" + dataFormat);
     Appender appender = (((FileTablespace) TablespaceManager.getLocalFs()))
@@ -446,9 +453,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -459,7 +467,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -483,7 +491,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.init();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple result;
@@ -502,7 +510,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindMinValue() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindMinValue" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -529,9 +537,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
     BSTIndex bst = new BSTIndex(conf);
@@ -541,7 +550,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -567,7 +576,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.init();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     tuple.put(0, DatumFactory.createInt8(0));
@@ -588,7 +597,7 @@ public class TestBSTIndex {
 
   @Test
   public void testMinMax() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testMinMax_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -614,9 +623,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -627,7 +637,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -694,7 +704,7 @@ public class TestBSTIndex {
 
   @Test
   public void testConcurrentAccess() throws IOException, InterruptedException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testConcurrentAccess_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -721,9 +731,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -734,7 +745,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -776,7 +787,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValueDescOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindValueDescOrder_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -803,9 +814,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), false, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), false, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -817,7 +829,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -843,7 +855,7 @@ public class TestBSTIndex {
         keySchema, comp);
     reader.init();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     for (int i = (TUPLE_NUM - 1); i > 0; i--) {
@@ -870,7 +882,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindNextKeyValueDescOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindNextKeyValueDescOrder_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs()).getAppender(meta, schema, tablePath);
@@ -896,9 +908,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("int"), false, false);
     sortKeys[1] = new SortSpec(schema.getColumn("long"), false, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("int", Type.INT4));
-    keySchema.addColumn(new Column("long", Type.INT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("int", Type.INT4))
+        .add(new Column("long", Type.INT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -909,7 +922,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -938,7 +951,7 @@ public class TestBSTIndex {
     assertEquals(comp, reader.getComparator());
 
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple result;
@@ -968,7 +981,7 @@ public class TestBSTIndex {
 
   @Test
   public void testFindValueASCOrder() throws IOException {
-    meta = CatalogUtil.newTableMeta(dataFormat);
+    meta = CatalogUtil.newTableMeta(dataFormat, conf);
 
     Path tablePath = new Path(testDir, "testFindValue_" + dataFormat);
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
@@ -996,9 +1009,10 @@ public class TestBSTIndex {
     sortKeys[0] = new SortSpec(schema.getColumn("long"), true, false);
     sortKeys[1] = new SortSpec(schema.getColumn("double"), true, false);
 
-    Schema keySchema = new Schema();
-    keySchema.addColumn(new Column("long", Type.INT8));
-    keySchema.addColumn(new Column("double", Type.FLOAT8));
+    Schema keySchema = SchemaBuilder.builder()
+        .add(new Column("long", Type.INT8))
+        .add(new Column("double", Type.FLOAT8))
+        .build();
 
     BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
@@ -1010,7 +1024,7 @@ public class TestBSTIndex {
     creater.init();
 
     SeekableScanner scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     Tuple keyTuple;
@@ -1034,7 +1048,7 @@ public class TestBSTIndex {
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + dataFormat + ".idx"), keySchema, comp);
     reader.init();
     scanner = OldStorageManager.getStorageManager(conf, meta.getDataFormat()).
-        getSeekableScanner(meta, schema, tablet.getProto(), schema);
+        getSeekableScanner(meta, schema, tablet, schema);
     scanner.init();
 
     for (int i = 0; i < TUPLE_NUM - 1; i++) {

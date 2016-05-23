@@ -25,11 +25,11 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.validation.ConstraintViolation;
 
 import java.util.Collection;
@@ -148,10 +148,10 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
   private boolean assertRelationExistence(Context context, String tableName) {
     String qualifiedName;
 
-    if (CatalogUtil.isFQTableName(tableName)) {
+    if (IdentifierUtil.isFQTableName(tableName)) {
       qualifiedName = tableName;
     } else {
-      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), tableName);
+      qualifiedName = IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), tableName);
     }
 
     if (!catalog.existsTable(qualifiedName)) {
@@ -171,10 +171,10 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
   private static String guessTableName(Context context, String givenName) {
     String qualifiedName;
-    if (CatalogUtil.isFQTableName(givenName)) {
+    if (IdentifierUtil.isFQTableName(givenName)) {
       qualifiedName = givenName;
     } else {
-      qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), givenName);
+      qualifiedName = IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), givenName);
     }
 
     return qualifiedName;
@@ -327,8 +327,8 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
         } else {
           if (expr.hasTableName()) {
             String qualifiedName = expr.getTableName();
-            if (TajoConstants.EMPTY_STRING.equals(CatalogUtil.extractQualifier(expr.getTableName()))) {
-              qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+            if (TajoConstants.EMPTY_STRING.equals(IdentifierUtil.extractQualifier(expr.getTableName()))) {
+              qualifiedName = IdentifierUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
                   expr.getTableName());
             }
 

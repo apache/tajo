@@ -21,12 +21,12 @@
  */
 package org.apache.tajo.jdbc;
 
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.type.TajoTypeUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -53,8 +53,8 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
   @Override
   public String getCatalogName(int column) throws SQLException {
     Column c = schema.getColumn(column - 1);
-    if (CatalogUtil.isFQColumnName(c.getQualifiedName())) {
-      return CatalogUtil.splitFQTableName(c.getQualifier())[0];
+    if (IdentifierUtil.isFQColumnName(c.getQualifiedName())) {
+      return IdentifierUtil.splitFQTableName(c.getQualifier())[0];
     }
     return "";
   }

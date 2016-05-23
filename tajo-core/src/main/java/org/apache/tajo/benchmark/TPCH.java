@@ -19,24 +19,23 @@
 package org.apache.tajo.benchmark;
 
 import com.google.common.collect.Maps;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.storage.StorageConstants;
 
 import java.io.IOException;
 import java.util.Map;
 
 public class TPCH extends BenchmarkSet {
-  private final Log LOG = LogFactory.getLog(TPCH.class);
   private final String BENCHMARK_DIR = "benchmark/tpch";
 
   public static final String LINEITEM = "lineitem";
@@ -69,117 +68,125 @@ public class TPCH extends BenchmarkSet {
 
   @Override
   public void loadSchemas() {
-    Schema lineitem = new Schema()
-        .addColumn("l_orderkey", Type.INT4) // 0
-        .addColumn("l_partkey", Type.INT4) // 1
-        .addColumn("l_suppkey", Type.INT4) // 2
-        .addColumn("l_linenumber", Type.INT4) // 3
-        .addColumn("l_quantity", Type.FLOAT8) // 4
-        .addColumn("l_extendedprice", Type.FLOAT8) // 5
-        .addColumn("l_discount", Type.FLOAT8) // 6
-        .addColumn("l_tax", Type.FLOAT8) // 7
+    schemas.put(LINEITEM, SchemaBuilder.builder()
+        .add("l_orderkey", Type.INT4) // 0
+        .add("l_partkey", Type.INT4) // 1
+        .add("l_suppkey", Type.INT4) // 2
+        .add("l_linenumber", Type.INT4) // 3
+        .add("l_quantity", Type.FLOAT8) // 4
+        .add("l_extendedprice", Type.FLOAT8) // 5
+        .add("l_discount", Type.FLOAT8) // 6
+        .add("l_tax", Type.FLOAT8) // 7
             // TODO - This is temporal solution. 8 and 9 are actually Char type.
-        .addColumn("l_returnflag", Type.TEXT) // 8
-        .addColumn("l_linestatus", Type.TEXT) // 9
+        .add("l_returnflag", Type.TEXT) // 8
+        .add("l_linestatus", Type.TEXT) // 9
             // TODO - This is temporal solution. 10,11, and 12 are actually Date type.
-        .addColumn("l_shipdate", Type.TEXT) // 10
-        .addColumn("l_commitdate", Type.TEXT) // 11
-        .addColumn("l_receiptdate", Type.TEXT) // 12
-        .addColumn("l_shipinstruct", Type.TEXT) // 13
-        .addColumn("l_shipmode", Type.TEXT) // 14
-        .addColumn("l_comment", Type.TEXT); // 15
-    schemas.put(LINEITEM, lineitem);
+        .add("l_shipdate", Type.TEXT) // 10
+        .add("l_commitdate", Type.TEXT) // 11
+        .add("l_receiptdate", Type.TEXT) // 12
+        .add("l_shipinstruct", Type.TEXT) // 13
+        .add("l_shipmode", Type.TEXT) // 14
+        .add("l_comment", Type.TEXT) // 15
+        .build());
 
-    Schema customer = new Schema()
-        .addColumn("c_custkey", Type.INT4) // 0
-        .addColumn("c_name", Type.TEXT) // 1
-        .addColumn("c_address", Type.TEXT) // 2
-        .addColumn("c_nationkey", Type.INT4) // 3
-        .addColumn("c_phone", Type.TEXT) // 4
-        .addColumn("c_acctbal", Type.FLOAT8) // 5
-        .addColumn("c_mktsegment", Type.TEXT) // 6
-        .addColumn("c_comment", Type.TEXT); // 7
-    schemas.put(CUSTOMER, customer);
+    schemas.put(CUSTOMER, SchemaBuilder.builder()
+        .add("c_custkey", Type.INT4) // 0
+        .add("c_name", Type.TEXT) // 1
+        .add("c_address", Type.TEXT) // 2
+        .add("c_nationkey", Type.INT4) // 3
+        .add("c_phone", Type.TEXT) // 4
+        .add("c_acctbal", Type.FLOAT8) // 5
+        .add("c_mktsegment", Type.TEXT) // 6
+        .add("c_comment", Type.TEXT) // 7
+        .build());
 
-    Schema customerParts = new Schema()
-        .addColumn("c_custkey", Type.INT4) // 0
-        .addColumn("c_name", Type.TEXT) // 1
-        .addColumn("c_address", Type.TEXT) // 2
-        .addColumn("c_phone", Type.TEXT) // 3
-        .addColumn("c_acctbal", Type.FLOAT8) // 4
-        .addColumn("c_mktsegment", Type.TEXT) // 5
-        .addColumn("c_comment", Type.TEXT); // 6
-    schemas.put(CUSTOMER_PARTS, customerParts);
 
-    Schema nation = new Schema()
-        .addColumn("n_nationkey", Type.INT4) // 0
-        .addColumn("n_name", Type.TEXT) // 1
-        .addColumn("n_regionkey", Type.INT4) // 2
-        .addColumn("n_comment", Type.TEXT); // 3
-    schemas.put(NATION, nation);
+    schemas.put(CUSTOMER_PARTS, SchemaBuilder.builder()
+        .add("c_custkey", Type.INT4) // 0
+        .add("c_name", Type.TEXT) // 1
+        .add("c_address", Type.TEXT) // 2
+        .add("c_phone", Type.TEXT) // 3
+        .add("c_acctbal", Type.FLOAT8) // 4
+        .add("c_mktsegment", Type.TEXT) // 5
+        .add("c_comment", Type.TEXT) // 6
+        .build());
 
-    Schema part = new Schema()
-        .addColumn("p_partkey", Type.INT4) // 0
-        .addColumn("p_name", Type.TEXT) // 1
-        .addColumn("p_mfgr", Type.TEXT) // 2
-        .addColumn("p_brand", Type.TEXT) // 3
-        .addColumn("p_type", Type.TEXT) // 4
-        .addColumn("p_size", Type.INT4) // 5
-        .addColumn("p_container", Type.TEXT) // 6
-        .addColumn("p_retailprice", Type.FLOAT8) // 7
-        .addColumn("p_comment", Type.TEXT); // 8
-    schemas.put(PART, part);
 
-    Schema region = new Schema()
-        .addColumn("r_regionkey", Type.INT4) // 0
-        .addColumn("r_name", Type.TEXT) // 1
-        .addColumn("r_comment", Type.TEXT); // 2
-    schemas.put(REGION, region);
+    schemas.put(NATION, SchemaBuilder.builder()
+        .add("n_nationkey", Type.INT4) // 0
+        .add("n_name", Type.TEXT) // 1
+        .add("n_regionkey", Type.INT4) // 2
+        .add("n_comment", Type.TEXT) // 3
+        .build());
 
-    Schema orders = new Schema()
-        .addColumn("o_orderkey", Type.INT4) // 0
-        .addColumn("o_custkey", Type.INT4) // 1
-        .addColumn("o_orderstatus", Type.TEXT) // 2
-        .addColumn("o_totalprice", Type.FLOAT8) // 3
-            // TODO - This is temporal solution. o_orderdate is actually Date type.
-        .addColumn("o_orderdate", Type.TEXT) // 4
-        .addColumn("o_orderpriority", Type.TEXT) // 5
-        .addColumn("o_clerk", Type.TEXT) // 6
-        .addColumn("o_shippriority", Type.INT4) // 7
-        .addColumn("o_comment", Type.TEXT); // 8
+
+    schemas.put(PART, SchemaBuilder.builder()
+        .add("p_partkey", Type.INT4) // 0
+        .add("p_name", Type.TEXT) // 1
+        .add("p_mfgr", Type.TEXT) // 2
+        .add("p_brand", Type.TEXT) // 3
+        .add("p_type", Type.TEXT) // 4
+        .add("p_size", Type.INT4) // 5
+        .add("p_container", Type.TEXT) // 6
+        .add("p_retailprice", Type.FLOAT8) // 7
+        .add("p_comment", Type.TEXT) // 8
+        .build());
+
+
+    schemas.put(REGION, SchemaBuilder.builder()
+        .add("r_regionkey", Type.INT4) // 0
+        .add("r_name", Type.TEXT) // 1
+        .add("r_comment", Type.TEXT) // 2
+        .build());
+
+
+    Schema orders = SchemaBuilder.builder()
+        .add("o_orderkey", Type.INT4) // 0
+        .add("o_custkey", Type.INT4) // 1
+        .add("o_orderstatus", Type.TEXT) // 2
+        .add("o_totalprice", Type.FLOAT8) // 3
+        // TODO - This is temporal solution. o_orderdate is actually Date type.
+        .add("o_orderdate", Type.TEXT) // 4
+        .add("o_orderpriority", Type.TEXT) // 5
+        .add("o_clerk", Type.TEXT) // 6
+        .add("o_shippriority", Type.INT4) // 7
+        .add("o_comment", Type.TEXT) // 8
+        .build();
     schemas.put(ORDERS, orders);
     schemas.put(EMPTY_ORDERS, orders);
 
 
-    Schema partsupp = new Schema()
-        .addColumn("ps_partkey", Type.INT4) // 0
-        .addColumn("ps_suppkey", Type.INT4) // 1
-        .addColumn("ps_availqty", Type.INT4) // 2
-        .addColumn("ps_supplycost", Type.FLOAT8) // 3
-        .addColumn("ps_comment", Type.TEXT); // 4
-    schemas.put(PARTSUPP, partsupp);
+    schemas.put(PARTSUPP, SchemaBuilder.builder()
+        .add("ps_partkey", Type.INT4) // 0
+        .add("ps_suppkey", Type.INT4) // 1
+        .add("ps_availqty", Type.INT4) // 2
+        .add("ps_supplycost", Type.FLOAT8) // 3
+        .add("ps_comment", Type.TEXT) // 4
+        .build());
 
-    Schema supplier = new Schema()
-        .addColumn("s_suppkey", Type.INT4) // 0
-        .addColumn("s_name", Type.TEXT) // 1
-        .addColumn("s_address", Type.TEXT) // 2
-        .addColumn("s_nationkey", Type.INT4) // 3
-        .addColumn("s_phone", Type.TEXT) // 4
-        .addColumn("s_acctbal", Type.FLOAT8) // 5
-        .addColumn("s_comment", Type.TEXT); // 6
-    schemas.put(SUPPLIER, supplier);
+
+    schemas.put(SUPPLIER, SchemaBuilder.builder()
+        .add("s_suppkey", Type.INT4) // 0
+        .add("s_name", Type.TEXT) // 1
+        .add("s_address", Type.TEXT) // 2
+        .add("s_nationkey", Type.INT4) // 3
+        .add("s_phone", Type.TEXT) // 4
+        .add("s_acctbal", Type.FLOAT8) // 5
+        .add("s_comment", Type.TEXT) // 6
+        .build());
   }
 
   public void loadOutSchema() {
-    Schema q2 = new Schema()
-        .addColumn("s_acctbal", Type.FLOAT8)
-        .addColumn("s_name", Type.TEXT)
-        .addColumn("n_name", Type.TEXT)
-        .addColumn("p_partkey", Type.INT4)
-        .addColumn("p_mfgr", Type.TEXT)
-        .addColumn("s_address", Type.TEXT)
-        .addColumn("s_phone", Type.TEXT)
-        .addColumn("s_comment", Type.TEXT);
+    Schema q2 = SchemaBuilder.builder()
+        .add("s_acctbal", Type.FLOAT8)
+        .add("s_name", Type.TEXT)
+        .add("n_name", Type.TEXT)
+        .add("p_partkey", Type.INT4)
+        .add("p_mfgr", Type.TEXT)
+        .add("s_address", Type.TEXT)
+        .add("s_phone", Type.TEXT)
+        .add("s_comment", Type.TEXT)
+        .build();
     outSchemas.put("q2", q2);
   }
 
@@ -202,13 +209,12 @@ public class TPCH extends BenchmarkSet {
   }
 
   public void loadTable(String tableName) throws TajoException {
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
-    meta.putProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, new TajoConf());
 
     PartitionMethodDesc partitionMethodDesc = null;
     if (tableName.equals(CUSTOMER_PARTS)) {
-      Schema expressionSchema = new Schema();
-      expressionSchema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
+      Schema expressionSchema = SchemaBuilder.builder()
+      .add("c_nationkey", TajoDataTypes.Type.INT4).build();
       partitionMethodDesc = new PartitionMethodDesc(
           tajo.getCurrentDatabase(),
           CUSTOMER_PARTS,

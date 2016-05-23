@@ -19,10 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -30,7 +27,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
@@ -38,11 +34,13 @@ import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -81,12 +79,13 @@ public class TestSortExec {
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
     sm = TablespaceManager.getLocalFs();
 
-    Schema schema = new Schema();
-    schema.addColumn("managerid", Type.INT4);
-    schema.addColumn("empid", Type.INT4);
-    schema.addColumn("deptname", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("managerid", Type.INT4)
+        .add("empid", Type.INT4)
+        .add("deptname", Type.TEXT)
+        .build();
 
-    employeeMeta = CatalogUtil.newTableMeta("TEXT");
+    employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
 
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
@@ -106,7 +105,7 @@ public class TestSortExec {
     appender.close();
 
     TableDesc desc = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
         tablePath.toUri());
     catalog.createTable(desc);
 
@@ -156,8 +155,7 @@ public class TestSortExec {
    * Later it should be moved TestUniformPartitions.
    */
   public void testTAJO_946() {
-    Schema schema = new Schema();
-    schema.addColumn("l_orderkey", Type.INT8);
+    Schema schema = SchemaBuilder.builder().add("l_orderkey", Type.INT8).build();
     SortSpec [] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
     VTuple s = new VTuple(1);

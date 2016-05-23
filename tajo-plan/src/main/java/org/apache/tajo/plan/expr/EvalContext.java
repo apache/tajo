@@ -23,9 +23,11 @@ import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class EvalContext {
   private final Map<EvalNode, TajoScriptEngine> scriptEngineMap = new HashMap<>();
+  private TimeZone timeZone;
 
   public void addScriptEngine(EvalNode evalNode, TajoScriptEngine scriptExecutor) {
     this.scriptEngineMap.put(evalNode, scriptExecutor);
@@ -42,5 +44,17 @@ public class EvalContext {
 
   public Collection<TajoScriptEngine> getAllScriptEngines() {
     return this.scriptEngineMap.values();
+  }
+
+  public TimeZone getTimeZone() {
+    return timeZone;
+  }
+
+  public void setTimeZone(TimeZone timeZone) {
+    this.timeZone = timeZone;
+  }
+
+  public boolean hasTimeZone() {
+    return timeZone != null;
   }
 }

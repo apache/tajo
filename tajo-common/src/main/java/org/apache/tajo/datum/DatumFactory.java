@@ -66,8 +66,6 @@ public class DatumFactory {
         return BitDatum.class;
       case BLOB:
         return BlobDatum.class;
-      case INET4:
-        return Inet4Datum.class;
       case ANY:
         return AnyDatum.class;
       case NULL_TYPE:
@@ -106,8 +104,6 @@ public class DatumFactory {
       return createInterval(value);
     case BLOB:
       return createBlob(value);
-    case INET4:
-      return createInet4(value);
     default:
       throw new TajoRuntimeException(new UnsupportedDataTypeException(dataType.toString()));
     }
@@ -142,8 +138,6 @@ public class DatumFactory {
       return createBit(bytes[0]);
     case BLOB:
       return createBlob(bytes);
-    case INET4:
-      return createInet4(bytes);
     case PROTOBUF:
       try {
         return ProtobufDatumFactory.createDatum(dataType, bytes);
@@ -283,18 +277,12 @@ public class DatumFactory {
     return new TimeDatum(DateTimeUtil.toJulianTime(timeStr));
   }
 
-  public static TimeDatum createTime(String timeStr, TimeZone tz) {
-    TimeMeta tm = DateTimeUtil.decodeDateTime(timeStr);
-    DateTimeUtil.toUTCTimezone(tm, tz);
-    return new TimeDatum(DateTimeUtil.toTime(tm));
-  }
-
-  public static TimestampDatum createTimestmpDatumWithJavaMillis(long millis) {
+  public static TimestampDatum createTimestampDatumWithJavaMillis(long millis) {
     return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));
   }
 
-  public static TimestampDatum createTimestmpDatumWithUnixTime(int unixTime) {
-    return createTimestmpDatumWithJavaMillis(unixTime * 1000L);
+  public static TimestampDatum createTimestampDatumWithUnixTime(int unixTime) {
+    return createTimestampDatumWithJavaMillis(unixTime * 1000L);
   }
 
   public static TimestampDatum createTimestamp(String datetimeStr) {
@@ -321,7 +309,7 @@ public class DatumFactory {
   }
 
   public static DateDatum createDate(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT4:
       return new DateDatum(datum.asInt4());
     case INT8:
@@ -335,17 +323,14 @@ public class DatumFactory {
     }
   }
 
-  public static TimeDatum createTime(Datum datum, @Nullable TimeZone tz) {
-    switch (datum.type()) {
+  public static TimeDatum createTime(Datum datum) {
+    switch (datum.kind()) {
     case INT8:
       return new TimeDatum(datum.asInt8());
     case CHAR:
     case VARCHAR:
     case TEXT:
       TimeMeta tm = DateTimeFormat.parseDateTime(datum.asChars(), "HH24:MI:SS.MS");
-      if (tz != null) {
-        DateTimeUtil.toUTCTimezone(tm, tz);
-      }
       return new TimeDatum(DateTimeUtil.toTime(tm));
     case TIME:
       return (TimeDatum) datum;
@@ -355,13 +340,20 @@ public class DatumFactory {
   }
 
   public static TimestampDatum createTimestamp(Datum datum, @Nullable TimeZone tz) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case CHAR:
       case VARCHAR:
       case TEXT:
         return parseTimestamp(datum.asChars(), tz);
       case TIMESTAMP:
         return (TimestampDatum) datum;
+      case DATE: {
+        TimeMeta tm = datum.asTimeMeta();
+        if (tz != null) {
+          DateTimeUtil.toUTCTimezone(tm, tz);
+        }
+        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+      }
       default:
         throw new TajoRuntimeException(new InvalidValueForCastException(datum.type(), Type.TIMESTAMP));
     }
@@ -388,28 +380,12 @@ public class DatumFactory {
     return new BlobDatum(Base64.encodeBase64(plainString.getBytes()));
   }
 
-  public static Inet4Datum createInet4(int encoded) {
-    return new Inet4Datum(encoded);
-  }
-
-  public static Inet4Datum createInet4(byte[] val) {
-    return new Inet4Datum(val);
-  }
-
-  public static Inet4Datum createInet4(byte[] val, int offset, int length) {
-    return new Inet4Datum(val, offset, length);
-  }
-
-  public static Inet4Datum createInet4(String val) {
-    return new Inet4Datum(val);
-  }
-
   public static AnyDatum createAny(Datum val) {
     return new AnyDatum(val);
   }
 
-  public static Datum cast(Datum operandDatum, DataType target, @Nullable TimeZone tz) {
-    switch (target.getType()) {
+  public static Datum cast(Datum operandDatum, org.apache.tajo.type.Type target, @Nullable TimeZone tz) {
+    switch (target.kind()) {
     case BOOLEAN:
       return DatumFactory.createBool(operandDatum.asBool());
     case CHAR:
@@ -427,7 +403,7 @@ public class DatumFactory {
       return DatumFactory.createFloat8(operandDatum.asFloat8());
     case VARCHAR:
     case TEXT:
-      switch (operandDatum.type()) {
+      switch (operandDatum.kind()) {
         case TIMESTAMP: {
           TimestampDatum timestampDatum = (TimestampDatum)operandDatum;
           if (tz != null) {
@@ -436,31 +412,21 @@ public class DatumFactory {
             return DatumFactory.createText(timestampDatum.asChars());
           }
         }
-        case TIME: {
-          TimeDatum timeDatum = (TimeDatum)operandDatum;
-          if (tz != null) {
-            return DatumFactory.createText(TimeDatum.asChars(operandDatum.asTimeMeta(), tz, false));
-          } else {
-            return DatumFactory.createText(timeDatum.asChars());
-          }
-        }
         default:
           return DatumFactory.createText(operandDatum.asTextBytes());
       }
     case DATE:
       return DatumFactory.createDate(operandDatum);
     case TIME:
-      return DatumFactory.createTime(operandDatum, tz);
+      return DatumFactory.createTime(operandDatum);
     case TIMESTAMP:
       return DatumFactory.createTimestamp(operandDatum, tz);
     case BLOB:
       return DatumFactory.createBlob(operandDatum.asByteArray());
-    case INET4:
-      return DatumFactory.createInet4(operandDatum.asByteArray());
     case ANY:
       return DatumFactory.createAny(operandDatum);
     default:
-      throw new TajoRuntimeException(new InvalidValueForCastException(operandDatum.type(), target.getType()));
+      throw new TajoRuntimeException(new InvalidValueForCastException(operandDatum.type(), target.kind()));
     }
   }
 }

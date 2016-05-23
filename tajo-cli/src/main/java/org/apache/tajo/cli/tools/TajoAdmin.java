@@ -124,19 +124,15 @@ public class TajoAdmin {
     }
 
     // if there is no "-h" option,
+    InetSocketAddress address = tajoConf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
+        TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+
     if(hostName == null) {
-      if (tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        // it checks if the client service address is given in configuration and distributed mode.
-        // if so, it sets entryAddr.
-        hostName = tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[0];
-      }
+      hostName = address.getHostName();
     }
+
     if (port == null) {
-      if (tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        // it checks if the client service address is given in configuration and distributed mode.
-        // if so, it sets entryAddr.
-        port = Integer.parseInt(tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
-      }
+      port = address.getPort();
     }
 
     if (cmdType == 0) {
@@ -149,7 +145,7 @@ public class TajoAdmin {
       System.err.println("ERROR: cannot find valid Tajo server address");
       return;
     } else if (hostName != null && port != null) {
-      tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
+      tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.getHostPortString(hostName, port));
       tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     } else if (hostName == null && port == null) {
       tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
@@ -344,16 +340,13 @@ public class TajoAdmin {
 
   private void writeWorkerInfo(Writer writer, List<WorkerResourceInfo> workers) throws ParseException,
       IOException, ServiceException, SQLException {
-    String fmtWorkerLine = "%1$-25s %2$-5s %3$-5s %4$-10s %5$-10s %6$-12s %7$-10s%n";
+    String fmtWorkerLine = "%1$-25s %2$-5s %3$-5s %4$-10s %5$-12s %6$-10s%n";
     String line = String.format(fmtWorkerLine,
-        "Worker", "Port", "Tasks",
-        "Mem", "Disk",
-        "Cpu", "Status");
+        "Worker", "Port", "Tasks", "Mem", "Cpu", "Status");
     writer.write(line);
     line = String.format(fmtWorkerLine,
         DASHLINE_LEN25, DASHLINE_LEN5, DASHLINE_LEN5,
-        DASHLINE_LEN10, DASHLINE_LEN10,
-        DASHLINE_LEN12, DASHLINE_LEN10);
+        DASHLINE_LEN10, DASHLINE_LEN12, DASHLINE_LEN10);
     writer.write(line);
 
     for (WorkerResourceInfo worker : workers) {
@@ -361,14 +354,12 @@ public class TajoAdmin {
       String workerHost = String.format("%s:%d", connInfo.getHost(), connInfo.getPeerRpcPort());
       String mem = String.format("%d/%d", worker.getAvailableResource().getMemory(),
           worker.getTotalResource().getMemory());
-      String disk = String.format("%d/%d", worker.getAvailableResource().getDisks(),
-          worker.getTotalResource().getDisks());
       String cpu = String.format("%d/%d", worker.getAvailableResource().getVirtualCores(),
           worker.getTotalResource().getVirtualCores());
       line = String.format(fmtWorkerLine, workerHost,
           connInfo.getPullServerPort(),
           worker.getNumRunningTasks(),
-          mem, disk, cpu, worker.getWorkerStatus());
+          mem, cpu, worker.getWorkerStatus());
       writer.write(line);
     }
     writer.write("\n\n");
@@ -437,8 +428,7 @@ public class TajoAdmin {
       }
       writer.write("\n");
     } else {
-      String confMasterServiceAddr = tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
-      InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
+      InetSocketAddress masterAddress = tajoConf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
       writer.write(masterAddress.getHostName());
       writer.write("\n");
     }

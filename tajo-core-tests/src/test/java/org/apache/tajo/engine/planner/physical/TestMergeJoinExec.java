@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -28,12 +29,12 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.JoinNode;
@@ -78,13 +79,14 @@ public class TestMergeJoinExec {
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
 
-    Schema employeeSchema = new Schema();
-    employeeSchema.addColumn("managerid", Type.INT4);
-    employeeSchema.addColumn("empid", Type.INT4);
-    employeeSchema.addColumn("memid", Type.INT4);
-    employeeSchema.addColumn("deptname", Type.TEXT);
+    Schema employeeSchema = SchemaBuilder.builder()
+        .add("managerid", Type.INT4)
+        .add("empid", Type.INT4)
+        .add("memid", Type.INT4)
+        .add("deptname", Type.TEXT)
+        .build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, employeeSchema, employeePath);
@@ -108,12 +110,14 @@ public class TestMergeJoinExec {
     employee = CatalogUtil.newTableDesc("default.employee", employeeSchema, employeeMeta, employeePath);
     catalog.createTable(employee);
 
-    Schema peopleSchema = new Schema();
-    peopleSchema.addColumn("empid", Type.INT4);
-    peopleSchema.addColumn("fk_memid", Type.INT4);
-    peopleSchema.addColumn("name", Type.TEXT);
-    peopleSchema.addColumn("age", Type.INT4);
-    TableMeta peopleMeta = CatalogUtil.newTableMeta("TEXT");
+    Schema peopleSchema = SchemaBuilder.builder()
+        .add("empid", Type.INT4)
+        .add("fk_memid", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .build();
+
+    TableMeta peopleMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     Path peoplePath = new Path(testDir, "people.csv");
     appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(peopleMeta, peopleSchema, peoplePath);

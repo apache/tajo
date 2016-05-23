@@ -18,6 +18,9 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.function.FunctionUtil;
 import org.apache.tajo.cli.tsql.TajoCli;
@@ -122,5 +125,11 @@ public class DescFunctionCommand extends TajoShellCommand {
     return "show function description";
   }
 
-
+  @Override
+  public ArgumentCompleter getArgumentCompleter() {
+    return new ArgumentCompleter(
+        new StringsCompleter(getCommand()),
+        new FunctionNameCompleter(),
+        NullCompleter.INSTANCE);
+  }
 }

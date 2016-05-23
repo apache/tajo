@@ -18,10 +18,10 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoTestingCluster;
+import com.google.common.base.Preconditions;
+import io.netty.buffer.Unpooled;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.cli.tsql.InvalidStatementException;
@@ -33,7 +33,7 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
@@ -53,19 +53,21 @@ import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
-import org.apache.tajo.storage.LazyTuple;
+import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.text.CSVLineSerDe;
+import org.apache.tajo.storage.text.TextLineDeserializer;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,7 +88,7 @@ public class ExprTestBase {
   private static LogicalPlanVerifier annotatedPlanVerifier;
 
   public static String getUserTimeZoneDisplay(TimeZone tz) {
-    return DateTimeUtil.getTimeZoneDisplayTime(tz);
+    return DateTimeUtil.getDisplayTimeZoneOffset(tz, false);
   }
 
   public ExprTestBase() {
@@ -102,7 +104,14 @@ public class ExprTestBase {
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.loadBuiltinFunctions();
     List<FunctionDesc> list = new ArrayList<>(map.values());
-    list.addAll(FunctionLoader.loadUserDefinedFunctions(conf));
+    list.addAll(FunctionLoader.loadUserDefinedFunctions(conf).orElse(new ArrayList<>()));
+
+    // load Hive UDFs
+    URL hiveUDFURL = ClassLoader.getSystemResource("hiveudf");
+    Preconditions.checkNotNull(hiveUDFURL, "hive udf directory is absent.");
+    conf.set(TajoConf.ConfVars.HIVE_UDF_JAR_DIR.varname, hiveUDFURL.toString().substring("file:".length()));
+    list.addAll(HiveFunctionLoader.loadHiveUDFs(conf).orElse(new ArrayList<>()));
+
     for (FunctionDesc funcDesc : list) {
       cat.createFunction(funcDesc);
     }
@@ -119,14 +128,12 @@ public class ExprTestBase {
     cluster.shutdownCatalogCluster();
   }
 
-  private static void assertJsonSerDer(EvalNode expr) {
-    String json = CoreGsonHelper.toJson(expr, EvalNode.class);
-    EvalNode fromJson = CoreGsonHelper.fromJson(json, EvalNode.class);
-    assertEquals(expr, fromJson);
-  }
-
   public TajoConf getConf() {
     return new TajoConf(conf);
+  }
+
+  protected TajoTestingCluster getCluster() {
+    return cluster;
   }
 
   /**
@@ -175,9 +182,6 @@ public class ExprTestBase {
       }
     }
     for (Target t : targets) {
-      assertJsonSerDer(t.getEvalTree());
-    }
-    for (Target t : targets) {
       assertEvalTreeProtoSerDer(context, t.getEvalTree());
     }
     return targets;
@@ -204,20 +208,20 @@ public class ExprTestBase {
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
       throws TajoException {
-    testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
+    testEval(null, schema, tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null, csvTuple, query,
         expected, ',', true);
   }
 
   public void testEval(OverridableConf context, Schema schema, String tableName, String csvTuple, String query,
                        String [] expected)
       throws TajoException {
-    testEval(context, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
+    testEval(context, schema, tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null, csvTuple,
         query, expected, ',', true);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query,
                        String [] expected, char delimiter, boolean condition) throws TajoException {
-    testEval(null, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
+    testEval(null, schema, tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null, csvTuple,
         query, expected, delimiter, condition);
   }
 
@@ -227,53 +231,47 @@ public class ExprTestBase {
     if (context == null) {
       queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     } else {
-      queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+      queryContext = LocalTajoTestingUtility.createDummyContext(context.getConf());
       queryContext.putAll(context);
     }
+
+    VTuple vtuple  = null;
+    String qualifiedTableName =
+        IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME,
+            tableName != null ? IdentifierUtil.normalizeIdentifier(tableName) : null);
+    Schema inputSchema = null;
+
+
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, queryContext.getConf());
+    meta.putProperty(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava(delimiter+""));
+    meta.putProperty(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\\NULL"));
 
     String timezoneId = queryContext.get(SessionVars.TIMEZONE);
     TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
 
-    LazyTuple lazyTuple;
-    VTuple vtuple  = null;
-    String qualifiedTableName =
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME,
-            tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null);
-    Schema inputSchema = null;
     if (schema != null) {
       inputSchema = SchemaUtil.clone(schema);
       inputSchema.setQualifier(qualifiedTableName);
 
-      int targetIdx [] = new int[inputSchema.size()];
-      for (int i = 0; i < targetIdx.length; i++) {
-        targetIdx[i] = i;
-      }
-
-      byte[][] tokens = BytesUtils.splitPreserveAllTokens(
-          csvTuple.getBytes(), delimiter, targetIdx, inputSchema.size());
-      lazyTuple = new LazyTuple(inputSchema, tokens,0);
-      vtuple = new VTuple(inputSchema.size());
-      for (int i = 0; i < inputSchema.size(); i++) {
-
-        // If null value occurs, null datum is manually inserted to an input tuple.
-        boolean nullDatum;
-        Datum datum = lazyTuple.get(i);
-        nullDatum = (datum instanceof TextDatum || datum instanceof CharDatum);
-        nullDatum = nullDatum &&
-            datum.asChars().equals("") || datum.asChars().equals(queryContext.get(SessionVars.NULL_CHAR));
-        nullDatum |= datum.isNull();
-
-        if (nullDatum) {
-          vtuple.put(i, NullDatum.get());
-        } else {
-          vtuple.put(i, lazyTuple.get(i));
-        }
-      }
       try {
-        cat.createTable(new TableDesc(qualifiedTableName, inputSchema,"TEXT",
-            new KeyValueSet(), CommonTestingUtil.getTestDir().toUri()));
+        cat.createTable(CatalogUtil.newTableDesc(
+            qualifiedTableName, inputSchema, meta, CommonTestingUtil.getTestDir()));
       } catch (IOException e) {
         throw new TajoInternalError(e);
+      }
+
+      CSVLineSerDe serDe = new CSVLineSerDe();
+      TextLineDeserializer deserializer = serDe.createDeserializer(inputSchema, meta, inputSchema.toArray());
+      deserializer.init();
+
+      vtuple = new VTuple(inputSchema.size());
+
+      try {
+        deserializer.deserialize(Unpooled.wrappedBuffer(csvTuple.getBytes()), vtuple);
+      } catch (Exception e) {
+        throw new TajoInternalError(e);
+      } finally {
+        deserializer.release();
       }
     }
 
@@ -281,6 +279,7 @@ public class ExprTestBase {
 
     TajoClassLoader classLoader = new TajoClassLoader();
     EvalContext evalContext = new EvalContext();
+    evalContext.setTimeZone(timeZone);
 
     try {
       if (needPythonFileCopy()) {
@@ -316,8 +315,6 @@ public class ExprTestBase {
         String outTupleAsChars;
         if (outTuple.type(i) == Type.TIMESTAMP) {
           outTupleAsChars = TimestampDatum.asChars(outTuple.getTimeDate(i), timeZone, false);
-        } else if (outTuple.type(i) == Type.TIME) {
-          outTupleAsChars = TimeDatum.asChars(outTuple.getTimeDate(i), timeZone, false);
         } else {
           outTupleAsChars = outTuple.asDatum(i).toString();
         }

@@ -23,9 +23,8 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -261,15 +260,12 @@ public class TestWindowQuery extends QueryTestCaseBase {
 
   @Test
   public final void testFirstValueTime() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
-    Schema schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("time", TajoDataTypes.Type.TIME)
+        .build();
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
-    TajoTestingCluster.createTable("firstvaluetime", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "firstvaluetime", schema, data, 1);
 
     try {
       ResultSet res = executeString(
@@ -296,15 +292,12 @@ public class TestWindowQuery extends QueryTestCaseBase {
 
   @Test
   public final void testLastValueTime() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
-    Schema schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("time", TajoDataTypes.Type.TIME)
+        .build();
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
-    TajoTestingCluster.createTable("lastvaluetime", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "lastvaluetime", schema, data, 1);
 
     try {
       ResultSet res = executeString(
@@ -331,15 +324,12 @@ public class TestWindowQuery extends QueryTestCaseBase {
 
   @Test
   public final void testLagTime() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
-    Schema schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("time", TajoDataTypes.Type.TIME)
+        .build();
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
-    TajoTestingCluster.createTable("lagtime", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "lagtime", schema, data, 1);
 
     try {
       ResultSet res = executeString(
@@ -380,15 +370,12 @@ public class TestWindowQuery extends QueryTestCaseBase {
 
   @Test
   public final void testLeadTime() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
-    Schema schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("time", TajoDataTypes.Type.TIME)
+        .build();
     String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
-    TajoTestingCluster.createTable("leadtime", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "leadtime", schema, data, 1);
 
     try {
       ResultSet res = executeString(
@@ -436,16 +423,13 @@ public class TestWindowQuery extends QueryTestCaseBase {
 
   @Test
   public final void testMultipleWindow() throws Exception {
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
-    Schema schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("time", TajoDataTypes.Type.TIME);
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("time", TajoDataTypes.Type.TIME)
+        .add("name", TajoDataTypes.Type.TEXT)
+        .build();
     String[] data = new String[]{ "1|12:11:12|abc", "2|10:11:13|def", "2|05:42:41|ghi" };
-    TajoTestingCluster.createTable("multiwindow", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "multiwindow", schema, data, 1);
 
     try {
       ResultSet res = executeString(

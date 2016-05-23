@@ -19,11 +19,11 @@
 package org.apache.tajo.datum;
 
 
-import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.type.Type;
 
 public abstract class NumericDatum extends Datum {
 
-  public NumericDatum(TajoDataTypes.Type type) {
+  public NumericDatum(Type type) {
     super(type);
   }
 

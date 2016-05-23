@@ -52,8 +52,6 @@ public class WorkerResponse {
   private WorkerResponse(NodeResource total, NodeResource available, int numRunningTasks, int numQueryMasterTasks) {
     this.cpuCoreSlots = total.getVirtualCores();
     this.memoryMB = total.getMemory();
-    this.diskSlots = total.getDisks();
-    this.usedDiskSlots = available.getDisks();
     this.usedMemoryMB = available.getMemory();
     this.usedCpuCoreSlots = available.getVirtualCores();
     this.numRunningTasks = numRunningTasks;

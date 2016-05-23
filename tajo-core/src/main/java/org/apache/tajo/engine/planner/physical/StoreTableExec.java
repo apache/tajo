@@ -66,7 +66,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
     if (plan.hasOptions()) {
       meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
     } else {
-      meta = CatalogUtil.newTableMeta(plan.getStorageType());
+      meta = CatalogUtil.newTableMeta(plan.getStorageType(), context.getConf());
     }
 
     PhysicalPlanUtil.setNullCharIfNecessary(context.getQueryContext(), plan, meta);

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.util.datetime;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.exception.ValueOutOfRangeException;
@@ -26,6 +27,11 @@ import org.apache.tajo.util.datetime.DateTimeConstants.DateToken;
 import org.apache.tajo.util.datetime.DateTimeConstants.TokenField;
 
 import javax.annotation.Nullable;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -40,7 +46,12 @@ public class DateTimeUtil {
   /** maximum possible number of fields in a date * string */
   private static int MAXDATEFIELDS = 25;
 
-  public final static int DAYS_FROM_JULIAN_TO_EPOCH = 2440588;
+  private static final TimeZone defaultTz = TimeZone.getDefault();
+
+  /**
+   * Number of milliseconds in one day.
+   */
+  public static final int ONEDAY = 24 * 3600 * 1000;
 
   public static boolean isJulianCalendar(int year, int month, int day) {
     return year <= 1752 && month <= 9 && day < 14;
@@ -304,12 +315,12 @@ public class DateTimeUtil {
 
   /**
    * Converts julian timestamp to java timestamp.
-   * @param timestamp
-   * @return
+   * @param timestamp julian time in millisecond
+   * @return java time in millisecond
    */
   public static long julianTimeToJavaTime(long timestamp) {
     double totalSecs = (double)timestamp / (double)DateTimeConstants.MSECS_PER_SEC;
-    return (long)(Math.round(totalSecs + DateTimeConstants.SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME * 1000.0));
+    return Math.round(totalSecs + DateTimeConstants.SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME * 1000.0);
   }
 
   /**
@@ -354,6 +365,137 @@ public class DateTimeUtil {
 
   public static long toJavaTime(int hour, int min, int sec, int fsec) {
     return toTime(hour, min, sec, fsec)/DateTimeConstants.MSECS_PER_SEC;
+  }
+
+  public static Timestamp toJavaTimestamp(TimeMeta tm, @Nullable TimeZone tz) {
+    long javaTime = DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(tm));
+
+    if (tz != null) {
+      int offset = tz.getOffset(javaTime) - defaultTz.getOffset(javaTime);
+      return new Timestamp(javaTime + offset);
+    } else {
+      return new Timestamp(javaTime);
+    }
+  }
+
+  public static long convertTimeZone(long javaTime, TimeZone from, TimeZone to) {
+    int offset = from.getOffset(javaTime) - to.getOffset(javaTime);
+    return javaTime + offset;
+  }
+
+  public static Time toJavaTime(TimeMeta tm, @Nullable TimeZone tz) {
+    if (tz != null) {
+      DateTimeUtil.toUserTimezone(tm, tz);
+    }
+    return new Time(tm.hours, tm.minutes, tm.secs);
+  }
+
+  public static Date toJavaDate(TimeMeta tm, @Nullable TimeZone tz) {
+    if (tz != null) {
+      DateTimeUtil.toUserTimezone(tm, tz);
+    }
+    return new Date(tm.years - 1900, tm.monthOfYear - 1 , tm.dayOfMonth);
+  }
+
+  /**
+   * Extracts the date part from a timestamp.
+   *
+   * @param timestamp The timestamp from which to extract the date.
+   * @param tz The time zone of the date.
+   * @return The extracted date.
+   */
+  public static Date convertToDate(Timestamp timestamp, TimeZone tz) {
+    return convertToDate(timestamp.getTime(), tz);
+  }
+
+  private static boolean isSimpleTimeZone(String id) {
+    return id.startsWith("GMT") || id.startsWith("UTC");
+  }
+
+  /**
+   * Extracts the date part from a timestamp.
+   *
+   * @param millis The java time
+   * @param tz The time zone of the date.
+   * @return The extracted date.
+   */
+  public static Date convertToDate(long millis, TimeZone tz) {
+    if (tz == null) {
+      tz = defaultTz;
+    }
+    if (isSimpleTimeZone(tz.getID())) {
+      // Truncate to 00:00 of the day.
+      // Suppose the input date is 7 Jan 15:40 GMT+02:00 (that is 13:40 UTC)
+      // We want it to become 7 Jan 00:00 GMT+02:00
+      // 1) Make sure millis becomes 15:40 in UTC, so add offset
+      int offset = tz.getRawOffset();
+      millis += offset;
+      // 2) Truncate hours, minutes, etc. Day is always 86400 seconds, no matter what leap seconds
+      // are
+      millis = millis / ONEDAY * ONEDAY;
+      // 2) Now millis is 7 Jan 00:00 UTC, however we need that in GMT+02:00, so subtract some
+      // offset
+      millis -= offset;
+      // Now we have brand-new 7 Jan 00:00 GMT+02:00
+      return new Date(millis);
+    }
+    Calendar cal = new GregorianCalendar();
+    cal.setTimeZone(tz);
+    cal.setTimeInMillis(millis);
+    cal.set(Calendar.HOUR_OF_DAY, 0);
+    cal.set(Calendar.MINUTE, 0);
+    cal.set(Calendar.SECOND, 0);
+    cal.set(Calendar.MILLISECOND, 0);
+    return new Date(cal.getTimeInMillis());
+  }
+
+  /**
+   * Extracts the time part from a timestamp.
+   *
+   * @param timestamp The timestamp from which to extract the time.
+   * @param tz The time zone of the time.
+   * @return The extracted time.
+   */
+  public static Time convertToTime(Timestamp timestamp, TimeZone tz) {
+    return convertToTime(timestamp.getTime(), tz);
+  }
+
+  /**
+   * Extracts the time part from a timestamp.
+   *
+   * @param millis The java time
+   * @param tz The time zone of the time.
+   * @return The extracted time.
+   */
+  public static Time convertToTime(long millis, TimeZone tz) {
+    if (tz == null) {
+      tz = defaultTz;
+    }
+    if (isSimpleTimeZone(tz.getID())) {
+      // Leave just time part of the day.
+      // Suppose the input date is 2015 7 Jan 15:40 GMT+02:00 (that is 13:40 UTC)
+      // We want it to become 1970 1 Jan 15:40 GMT+02:00
+      // 1) Make sure millis becomes 15:40 in UTC, so add offset
+      int offset = tz.getRawOffset();
+      millis += offset;
+      // 2) Truncate year, month, day. Day is always 86400 seconds, no matter what leap seconds are
+      millis = millis % ONEDAY;
+      // 2) Now millis is 1970 1 Jan 15:40 UTC, however we need that in GMT+02:00, so subtract some
+      // offset
+      millis -= offset;
+      // Now we have brand-new 1970 1 Jan 15:40 GMT+02:00
+      return new Time(millis);
+    }
+
+    Calendar cal = new GregorianCalendar();
+    cal.setTimeZone(tz);
+    cal.setTimeInMillis(millis);
+    cal.set(Calendar.ERA, GregorianCalendar.AD);
+    cal.set(Calendar.YEAR, 1970);
+    cal.set(Calendar.MONTH, 0);
+    cal.set(Calendar.DAY_OF_MONTH, 1);
+
+    return new Time(cal.getTimeInMillis());
   }
 
   /**
@@ -1891,7 +2033,7 @@ public class DateTimeUtil {
 
         appendSecondsToEncodeOutput(sb, tm.secs, tm.fsecs, 6, true);
         if (tm.timeZone != 0 && tm.timeZone != Integer.MAX_VALUE) {
-          sb.append(getTimeZoneDisplayTime(tm.timeZone));
+          sb.append(getDisplayTimeZoneOffset(tm.timeZone));
         }
         if (tm.years <= 0) {
           sb.append(" BC");
@@ -1938,7 +2080,7 @@ public class DateTimeUtil {
         sb.append(String.format("%02d:%02d:", tm.hours, tm.minutes));
         appendSecondsToEncodeOutput(sb, tm.secs, tm.fsecs, 6, true);
         if (tm.timeZone != 0 && tm.timeZone != Integer.MAX_VALUE) {
-          sb.append(getTimeZoneDisplayTime(tm.timeZone));
+          sb.append(getDisplayTimeZoneOffset(tm.timeZone));
         }
         break;
     }
@@ -2077,18 +2219,19 @@ public class DateTimeUtil {
   }
 
   public static void toUserTimezone(TimeMeta tm, TimeZone timeZone) {
-    tm.plusMillis(timeZone.getRawOffset());
+    tm.convertToLocalTime(timeZone);
   }
 
   public static void toUTCTimezone(TimeMeta tm, TimeZone timeZone) {
-    tm.plusMillis(0 - timeZone.getRawOffset());
+    tm.convertToUTC(timeZone);
   }
 
-  public static String getTimeZoneDisplayTime(TimeZone timeZone) {
-    return getTimeZoneDisplayTime(timeZone.getRawOffset() / 1000);
+  @VisibleForTesting
+  public static String getDisplayTimeZoneOffset(TimeZone timeZone, boolean dst) {
+    return getDisplayTimeZoneOffset((timeZone.getRawOffset() + (dst ? timeZone.getDSTSavings() : 0)) / 1000);
   }
 
-  public static String getTimeZoneDisplayTime(int totalSecs) {
+  public static String getDisplayTimeZoneOffset(int totalSecs) {
     if (totalSecs == 0) {
       return "";
     }
@@ -2107,43 +2250,28 @@ public class DateTimeUtil {
   }
 
   public static long getDay(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         0, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getHour(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         dateTime.hours, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getMinute(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         dateTime.hours, dateTime.minutes, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getSecond(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth,
         dateTime.hours, dateTime.minutes, dateTime.secs, 0)) * DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getMonth(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, 1, 0, 0, 0, 0)) *
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, 1, 0, 0, 0, 0)) *
         DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static long getDayOfWeek(TimeMeta dateTime, int weekday) {    
@@ -2153,22 +2281,17 @@ public class DateTimeUtil {
     
     int week = date2isoweek(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth);
     int jday = isoweek2j(dateTime.years, week);
-    long usecs = 0;
-    
+
     jday += (weekday - 1);
     
     jday -=  DateTimeConstants.POSTGRES_EPOCH_JDATE;
-    usecs = julianTimeToJavaTime(toJulianTimestamp(jday, 0, 0, 0, 0)) *
-        DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
+
+    return julianTimeToJavaTime(toJulianTimestamp(jday, 0, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
   }
 
   public static long getYear(TimeMeta dateTime) {
-    long usecs = 0;
-    
-    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, 1, 1, 0, 0, 0, 0)) *
+    return julianTimeToJavaTime(toJulianTimestamp(dateTime.years, 1, 1, 0, 0, 0, 0)) *
         DateTimeConstants.USECS_PER_MSEC;
-    return usecs;
   }
 
   public static TimeMeta getUTCDateTime(Int8Datum int8Datum){

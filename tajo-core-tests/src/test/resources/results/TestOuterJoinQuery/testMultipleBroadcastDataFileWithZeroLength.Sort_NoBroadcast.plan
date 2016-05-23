@@ -1,7 +1,7 @@
 explain
 -------------------------------
 SELECTION(3)
-  => Search Cond: default.b.n_nationkey (INT4) IS NULL
+  => Search Cond: default.b.n_nationkey (INT4) = 100
    JOIN(6)(LEFT_OUTER)
      => Join Cond: default.a.c_nationkey (INT4) = default.b.n_nationkey (INT4)
      => target list: default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)
@@ -66,7 +66,7 @@ Block Id: eb_0000000000000_0000_000003 [ROOT]
 [q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.b.n_nationkey (INT4), num=32)
 
 SELECTION(3)
-  => Search Cond: default.b.n_nationkey (INT4) IS NULL
+  => Search Cond: default.b.n_nationkey (INT4) = 100
    JOIN(6)(LEFT_OUTER)
      => Join Cond: default.a.c_nationkey (INT4) = default.b.n_nationkey (INT4)
      => target list: default.a.c_acctbal (FLOAT8), default.a.c_address (TEXT), default.a.c_comment (TEXT), default.a.c_custkey (INT4), default.a.c_mktsegment (TEXT), default.a.c_name (TEXT), default.a.c_nationkey (INT4), default.a.c_phone (TEXT), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)

@@ -49,6 +49,6 @@ public class ToTimestampInt extends GeneralFunction {
     if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
-    return DatumFactory.createTimestmpDatumWithUnixTime(params.getInt4(0));
+    return DatumFactory.createTimestampDatumWithUnixTime(params.getInt4(0));
   }
 }

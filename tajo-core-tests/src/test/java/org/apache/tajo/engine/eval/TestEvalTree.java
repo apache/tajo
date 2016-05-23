@@ -18,20 +18,19 @@
 
 package org.apache.tajo.engine.eval;
 
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeFactory;
 import org.junit.Test;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
+import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 import static org.junit.Assert.*;
 
 public class TestEvalTree extends ExprTestBase {
@@ -42,9 +41,10 @@ public class TestEvalTree extends ExprTestBase {
     FieldEval e2 = new FieldEval("table1.score", CatalogUtil.newSimpleDataType(INT4)); // it indicates
     assertCloneEqual(e2);
 
-    Schema schema1 = new Schema();
-    schema1.addColumn("table1.id", INT4);
-    schema1.addColumn("table1.score", INT4);
+    Schema schema1 = SchemaBuilder.builder()
+        .add("table1.id", INT4)
+        .add("table1.score", INT4)
+        .build();
     
     BinaryEval expr = new BinaryEval(EvalType.PLUS, e1, e2);
     expr.bind(null, schema1);
@@ -91,8 +91,8 @@ public class TestEvalTree extends ExprTestBase {
     }
 
     @Override
-    public DataType getValueType() {
-      return CatalogUtil.newSimpleDataType(BOOLEAN);
+    public Type getValueType() {
+      return Type.Bool;
     }
 
     @Override
@@ -139,8 +139,8 @@ public class TestEvalTree extends ExprTestBase {
     }
 
     @Override
-    public DataType getValueType() {
-      return CatalogUtil.newSimpleDataType(BOOLEAN);
+    public Type getValueType() {
+      return Type.Bool;
     }
 
     @Override
@@ -289,16 +289,16 @@ public class TestEvalTree extends ExprTestBase {
     e1 = new ConstEval(DatumFactory.createInt4(9));
     e2 = new ConstEval(DatumFactory.createInt4(34));
     BinaryEval expr = new BinaryEval(EvalType.PLUS, e1, e2);
-    assertEquals(CatalogUtil.newSimpleDataType(INT4), expr.getValueType());
+    assertEquals(Type.Int4, expr.getValueType());
 
     expr = new BinaryEval(EvalType.LTH, e1, e2);
     assertTrue(expr.bind(null, null).eval(null).asBool());
-    assertEquals(CatalogUtil.newSimpleDataType(BOOLEAN), expr.getValueType());
+    assertEquals(Type.Bool, expr.getValueType());
 
     e1 = new ConstEval(DatumFactory.createFloat8(9.3));
     e2 = new ConstEval(DatumFactory.createFloat8(34.2));
     expr = new BinaryEval(EvalType.PLUS, e1, e2);
-    assertEquals(CatalogUtil.newSimpleDataType(FLOAT8), expr.getValueType());
+    assertEquals(Type.Float8, expr.getValueType());
   }
   
   @Test
@@ -332,42 +332,6 @@ public class TestEvalTree extends ExprTestBase {
     
     assertTrue(compExpr1.equals(compExpr2));
   }
-  
-  @Test
-  public final void testJson() throws CloneNotSupportedException {
-    ConstEval e1;
-    ConstEval e2;
-
-    // 29 > (34 + 5) + (5 + 34)
-    e1 = new ConstEval(DatumFactory.createInt4(34));
-    e2 = new ConstEval(DatumFactory.createInt4(5));
-    assertCloneEqual(e1); 
-    
-    BinaryEval plus1 = new BinaryEval(EvalType.PLUS, e1, e2);
-    assertCloneEqual(plus1);
-    BinaryEval plus2 = new BinaryEval(EvalType.PLUS, e2, e1);
-    assertCloneEqual(plus2);
-    BinaryEval plus3 = new BinaryEval(EvalType.PLUS, plus2, plus1);
-    assertCloneEqual(plus3);
-    
-    ConstEval e3 = new ConstEval(DatumFactory.createInt4(29));
-    BinaryEval gth = new BinaryEval(EvalType.GTH, e3, plus3);
-    assertCloneEqual(gth);
-    
-    String json = gth.toJson();
-    BinaryEval eval = (BinaryEval) CoreGsonHelper.fromJson(json, EvalNode.class);
-    assertCloneEqual(eval);
-    
-    assertEquals(gth.getType(), eval.getType());
-    assertEquals(e3.getType(), eval.getLeftExpr().getType());
-    assertEquals(plus3.getType(), eval.getRightExpr().getType());
-    assertEquals(plus3.getLeftExpr(), ((BinaryEval)eval.getRightExpr()).getLeftExpr());
-    assertEquals(plus3.getRightExpr(), ((BinaryEval) eval.getRightExpr()).getRightExpr());
-    assertEquals(plus2.getLeftExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getLeftExpr()).getLeftExpr());
-    assertEquals(plus2.getRightExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getLeftExpr()).getRightExpr());
-    assertEquals(plus1.getLeftExpr(), ((BinaryEval) ((BinaryEval) eval.getRightExpr()).getRightExpr()).getLeftExpr());
-    assertEquals(plus1.getRightExpr(), ((BinaryEval) ((BinaryEval) eval.getRightExpr()).getRightExpr()).getRightExpr());
-  }
 
   @Test
   public final void testBindCheck() {
@@ -395,7 +359,7 @@ public class TestEvalTree extends ExprTestBase {
       assertEquals(caseWhenEval.bind(null, null).eval(null).asInt4(), 1);
     }
 
-    Schema schema = new Schema(new Column[]{new Column("test", TajoDataTypes.Type.INT4)});
+    Schema schema = SchemaBuilder.builder().addAll(new Column[]{new Column("test", TajoDataTypes.Type.INT4)}).build();
     Tuple tuple = new VTuple(new Datum[]{DatumFactory.createText("aaa")});
     RegexPredicateEval regexEval = new RegexPredicateEval(false, new FieldEval("test",
         CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4)), new ConstEval(DatumFactory.createText("a*")), false);
@@ -418,6 +382,7 @@ public class TestEvalTree extends ExprTestBase {
   private void assertCloneEqual(EvalNode eval) throws CloneNotSupportedException {
     EvalNode copy = (EvalNode) eval.clone();
     assertEquals(eval, copy);
+    assertEquals(eval.hashCode(), copy.hashCode());
     assertFalse(eval == copy);
   }
 }

@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -32,7 +33,6 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,7 +72,7 @@ public class TestMergeScanner {
     this.dataFormat = dataFormat;
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
         {"TEXT"},
@@ -98,15 +98,15 @@ public class TestMergeScanner {
 
   @Test
   public void testMultipleFiles() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("file", Type.TEXT);
-    schema.addColumn("name", Type.TEXT);
-    schema.addColumn("age", Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("file", Type.TEXT)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT8)
+        .build();
 
-    KeyValueSet options = new KeyValueSet();
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, options);
-    meta.setPropertySet(CatalogUtil.newDefaultProperty(dataFormat));
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
+
     if (dataFormat.equalsIgnoreCase("AVRO")) {
       meta.putProperty(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MULTIPLE_FILES_AVRO_SCHEMA);
     }
@@ -160,9 +160,10 @@ public class TestMergeScanner {
     fragment[0] = new FileFragment("tablet1", table1Path, 0, status1.getLen());
     fragment[1] = new FileFragment("tablet1", table2Path, 0, status2.getLen());
 
-    Schema targetSchema = new Schema();
-    targetSchema.addColumn(schema.getColumn(0));
-    targetSchema.addColumn(schema.getColumn(2));
+    Schema targetSchema = SchemaBuilder.builder()
+        .add(schema.getColumn(0))
+        .add(schema.getColumn(2))
+        .build();
 
     Scanner scanner = new MergeScanner(conf, schema, meta, Arrays.asList(fragment), targetSchema);
     assertEquals(isProjectableStorage(meta.getDataFormat()), scanner.isProjectable());

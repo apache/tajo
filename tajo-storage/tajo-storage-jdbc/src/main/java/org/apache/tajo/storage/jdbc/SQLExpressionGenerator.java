@@ -19,13 +19,13 @@
 package org.apache.tajo.storage.jdbc;
 
 import com.google.common.base.Function;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.schema.IdentifierUtil;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.StringUtils;
 
 import java.sql.DatabaseMetaData;
@@ -144,13 +144,13 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
   protected EvalNode visitField(Context context, FieldEval field, Stack<EvalNode> stack) {
     // strip the database name
     String tableName;
-    if (CatalogUtil.isSimpleIdentifier(field.getQualifier())) {
+    if (IdentifierUtil.isSimpleIdentifier(field.getQualifier())) {
       tableName = field.getQualifier();
     } else {
-      tableName = CatalogUtil.extractSimpleName(field.getQualifier());
+      tableName = IdentifierUtil.extractSimpleName(field.getQualifier());
     }
 
-    context.append(CatalogUtil.buildFQName(tableName, field.getColumnName()));
+    context.append(IdentifierUtil.buildFQName(tableName, field.getColumnName()));
     return field;
   }
 
@@ -229,7 +229,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
    * @param d Datum
    */
   public String convertDatumToSQLLiteral(Datum d) {
-    switch (d.type()) {
+    switch (d.kind()) {
     case BOOLEAN:
       return d.asBool() ? "TRUE" : "FALSE";
 
@@ -260,7 +260,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
       return "NULL";
 
     default:
-      throw new TajoRuntimeException(new UnsupportedDataTypeException(d.type().name()));
+      throw new TajoRuntimeException(new UnsupportedDataTypeException(d.type().toString()));
     }
   }
 
@@ -270,8 +270,8 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
    * @param dataType Tajo DataType
    * @return SQL DataType
    */
-  public String convertTajoTypeToSQLType(DataType dataType) {
-    switch (dataType.getType()) {
+  public String convertTajoTypeToSQLType(Type dataType) {
+    switch (dataType.kind()) {
     case INT1:
       return "TINYINT";
     case INT2:
@@ -285,7 +285,7 @@ public class SQLExpressionGenerator extends SimpleEvalNodeVisitor<SQLExpressionG
     case FLOAT8:
       return "DOUBLE";
     default:
-      return dataType.getType().name();
+      return dataType.kind().name();
     }
   }
 

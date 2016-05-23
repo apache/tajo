@@ -18,7 +18,10 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
 import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.Pair;
@@ -93,7 +96,7 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, Tupl
       }
       Tuple leftTuple = leftChild.next();
       if (leftTuple == null) {
-      // if no more tuples in left tuples, a join is completed.
+        // if no more tuples in left tuples, a join is completed.
         // in this stage we can begin outputing tuples from the right operand (which were before in tupleSlots) null padded on the left side
         frameTuple.setLeft(NullTuple.create(leftNumCols));
         iterator = getUnmatchedRight();
@@ -102,17 +105,17 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, Tupl
       }
       frameTuple.setLeft(leftTuple);
 
-      if (leftFiltered(leftTuple)) {
-        iterator = nullTupleList.iterator();
-        continue;
-      }
       // getting corresponding right
       Pair<Boolean, TupleList> hashed = tupleSlots.get(leftKeyExtractor.project(leftTuple));
       if (hashed == null) {
-        iterator = nullTupleList.iterator();
+        if (leftFiltered(leftTuple)) {
+          iterator = null;
+        } else {
+          iterator = nullTupleList.iterator();
+        }
         continue;
       }
-      Iterator<Tuple> rightTuples = rightFiltered(hashed.getSecond());
+      Iterator<Tuple> rightTuples = joinQualFiltered(leftTuple, rightFiltered(hashed.getSecond()));
       if (!rightTuples.hasNext()) {
         iterator = nullTupleList.iterator();
         continue;
@@ -122,6 +125,19 @@ public class HashFullOuterJoinExec extends CommonHashJoinExec<Pair<Boolean, Tupl
     }
 
     return null;
+  }
+
+  private Iterator<Tuple> joinQualFiltered(Tuple leftTuple, Iterator<Tuple> rightTuples) {
+    final FrameTuple frameTuple = new FrameTuple();
+    frameTuple.setLeft(leftTuple);
+
+    return Iterators.filter(rightTuples, new Predicate<Tuple>() {
+      @Override
+      public boolean apply(Tuple input) {
+        frameTuple.setRight(input);
+        return joinQual.eval(frameTuple).isTrue();
+      }
+    });
   }
 
   @Override

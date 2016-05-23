@@ -24,6 +24,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
@@ -101,9 +102,9 @@ public class TestCreateTable extends QueryTestCaseBase {
                                               final String newTableName,
                                               String createTableStmt) throws Exception {
     // create one table
-    executeString("CREATE DATABASE " + CatalogUtil.denormalizeIdentifier(databaseName)).close();
-    getClient().existDatabase(CatalogUtil.denormalizeIdentifier(databaseName));
-    final String oldFQTableName = CatalogUtil.buildFQName(databaseName, originalTableName);
+    executeString("CREATE DATABASE " + IdentifierUtil.denormalizeIdentifier(databaseName)).close();
+    getClient().existDatabase(IdentifierUtil.denormalizeIdentifier(databaseName));
+    final String oldFQTableName = IdentifierUtil.buildFQName(databaseName, originalTableName);
 
     ResultSet res = executeString(createTableStmt);
     res.close();
@@ -119,11 +120,11 @@ public class TestCreateTable extends QueryTestCaseBase {
         new Path(oldTableDesc.getUri()));
 
     // Rename
-    client.executeQuery("ALTER TABLE " + CatalogUtil.denormalizeIdentifier(oldFQTableName)
-        + " RENAME to " + CatalogUtil.denormalizeIdentifier(newTableName));
+    client.executeQuery("ALTER TABLE " + IdentifierUtil.denormalizeIdentifier(oldFQTableName)
+        + " RENAME to " + IdentifierUtil.denormalizeIdentifier(newTableName));
 
     // checking the existence of the new table directory and validating the path
-    final String newFQTableName = CatalogUtil.buildFQName(databaseName, newTableName);
+    final String newFQTableName = IdentifierUtil.buildFQName(databaseName, newTableName);
     TableDesc newTableDesc = client.getTableDesc(newFQTableName);
     assertTrue(fs.exists(new Path(newTableDesc.getUri())));
     assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, newTableName), new Path(newTableDesc.getUri()));
@@ -324,8 +325,6 @@ public class TestCreateTable extends QueryTestCaseBase {
     createdNames = executeDDL("table1_ddl.sql", "table1", "float4");
     assertTableExists(createdNames.get(0));
     createdNames = executeDDL("table1_ddl.sql", "table1", "float8");
-    assertTableExists(createdNames.get(0));
-    createdNames = executeDDL("table1_ddl.sql", "table1", "inet4");
     assertTableExists(createdNames.get(0));
     createdNames = executeDDL("table1_ddl.sql", "table1", "int");
     assertTableExists(createdNames.get(0));
@@ -677,5 +676,19 @@ public class TestCreateTable extends QueryTestCaseBase {
 
     executeString("drop table d10.schemaless").close();
     executeString("drop database d10").close();
+  }
+
+  @Test
+  public final void testComplexType1() throws Exception {
+    try {
+      executeString("CREATE DATABASE D11;").close();
+
+      assertTableNotExists("d11.complex_type1");
+      executeQuery().close();
+      assertTableExists("d11.complex_type1");
+    } finally {
+      executeString("DROP TABLE IF EXISTS D11.complex_type1");
+      executeString("DROP DATABASE IF EXISTS D11").close();
+    }
   }
 }

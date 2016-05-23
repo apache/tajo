@@ -60,6 +60,7 @@ import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.memory.MemoryBlock;
@@ -73,6 +74,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.TimeZone;
 
 import static org.apache.tajo.exception.ReturnStateUtil.OK;
 import static org.apache.tajo.exception.ReturnStateUtil.errUndefinedDatabase;
@@ -218,8 +220,8 @@ public class QueryExecutor {
       explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
     }
 
-    Schema schema = new Schema();
-    schema.addColumn("explain", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("explain", TajoDataTypes.Type.TEXT).build();
 
     SerializedResultSet.Builder serializedResBuilder = SerializedResultSet.newBuilder();
     MemoryRowBlock rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(schema));
@@ -327,6 +329,11 @@ public class QueryExecutor {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     EvalContext evalContext = new EvalContext();
+
+    //Non From query should be session's time zone. e,g, select to_char(now(), 'yyyy-MM-dd')
+    String timezoneId = queryContext.get(SessionVars.TIMEZONE);
+    evalContext.setTimeZone(TimeZone.getTimeZone(timezoneId));
+
     List<Target> targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new TajoInternalError("no targets");
@@ -589,15 +596,15 @@ public class QueryExecutor {
       throws DuplicateIndexException {
 
     String databaseName, simpleIndexName, qualifiedIndexName;
-    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
-      String[] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+    if (IdentifierUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String[] splits = IdentifierUtil.splitFQTableName(createIndexNode.getIndexName());
       databaseName = splits[0];
       simpleIndexName = splits[1];
       qualifiedIndexName = createIndexNode.getIndexName();
     } else {
       databaseName = queryContext.getCurrentDatabase();
       simpleIndexName = createIndexNode.getIndexName();
-      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+      qualifiedIndexName = IdentifierUtil.buildFQName(databaseName, simpleIndexName);
     }
 
     if (catalog.existIndexByName(databaseName, simpleIndexName)) {

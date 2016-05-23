@@ -25,6 +25,7 @@ import org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName;
 import org.apache.parquet.schema.Type;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes;
 
 import java.util.ArrayList;
@@ -64,7 +65,7 @@ public class TajoSchemaConverter {
     }
     Column[] columnsArray = new Column[columns.size()];
     columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaBuilder.builder().addAll(columnsArray).build();
   }
 
   private Column convertField(final Type fieldType) {
@@ -176,14 +177,14 @@ public class TajoSchemaConverter {
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY,
                          OriginalType.UTF8);
+      case DATE:
+        return primitive(column.getSimpleName(),
+                        PrimitiveTypeName.INT32,
+                        OriginalType.DATE);
       case PROTOBUF:
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY);
       case BLOB:
-        return primitive(column.getSimpleName(),
-                         PrimitiveTypeName.BINARY);
-      case INET4:
-      case INET6:
         return primitive(column.getSimpleName(),
                          PrimitiveTypeName.BINARY);
       default:

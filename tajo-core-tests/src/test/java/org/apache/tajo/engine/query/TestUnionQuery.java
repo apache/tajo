@@ -64,7 +64,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnionAll1() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 8L);
+    verifyResultStats(existing, 14L);
   }
 
   /**
@@ -74,7 +74,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnionAll2() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 10L);
+    verifyResultStats(existing, 16L);
   }
 
   /**
@@ -124,7 +124,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnionAll7() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 10L);
+    verifyResultStats(existing, 16L);
   }
 
   @Test
@@ -171,7 +171,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // test filter pushdown
     // with stage in union query
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 5L);
+    verifyResultStats(existing, 8L);
   }
 
   @Test
@@ -180,7 +180,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // test filter pushdown
     // with group by stage in union query
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 7L);
+    verifyResultStats(existing, 9L);
   }
 
   @Test
@@ -208,7 +208,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnion1() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 5L);
+    verifyResultStats(existing, 6L);
   }
 
   /**
@@ -218,7 +218,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnion2() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 3L);
+    verifyResultStats(existing, 4L);
   }
 
   /**
@@ -268,7 +268,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnion7() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 3L);
+    verifyResultStats(existing, 4L);
   }
 
   @Test
@@ -315,7 +315,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // test filter pushdown
     // with stage in union query
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 5L);
+    verifyResultStats(existing, 6L);
   }
 
   @Test
@@ -324,7 +324,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
     // test filter pushdown
     // with group by stage in union query
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 7L);
+    verifyResultStats(existing, 8L);
   }
 
   @Test
@@ -349,7 +349,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnionAllWithSameAliasNames() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 10L);
+    verifyResultStats(existing, 16L);
   }
 
   @Test
@@ -370,7 +370,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public final void testUnionWithSameAliasNames() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 3L);
+    verifyResultStats(existing, 4L);
   }
 
   @Test
@@ -416,7 +416,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnionWithCrossJoin() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 40L);
+    verifyResultStats(existing, 112L);
   }
 
   @Test
@@ -424,7 +424,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testThreeJoinInUnion() throws Exception {
     // https://issues.apache.org/jira/browse/TAJO-881
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 30L);
+    verifyResultStats(existing, 33L);
   }
 
   @Test
@@ -445,7 +445,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @SimpleTest
   public void testTajo1368Case2() throws Exception {
     Optional<TajoResultSetBase[]> existing = runSimpleTests();
-    verifyResultStats(existing, 10L);
+    verifyResultStats(existing, 16L);
   }
 
   @Test

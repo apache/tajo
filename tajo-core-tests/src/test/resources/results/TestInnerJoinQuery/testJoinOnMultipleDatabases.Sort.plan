@@ -8,23 +8,23 @@ SORT(6)
      => out schema: {(8) default.nation.n_name (TEXT), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT)}
      => in schema: {(10) default.nation.n_name (TEXT), default.partsupp.ps_suppkey (INT4), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
       JOIN(15)(INNER)
-        => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+        => Join Cond: joins.supplier_.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
         => target list: default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
         => out schema: {(7) default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-        => in schema: {(9) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-         SCAN(4) on default.region
-           => target list: default.region.r_regionkey (INT4)
-           => out schema: {(1) default.region.r_regionkey (INT4)}
-           => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+        => in schema: {(9) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+         SCAN(1) on joins.supplier_
+           => target list: joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
+           => out schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+           => in schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
          JOIN(14)(INNER)
-           => Join Cond: joins.supplier_.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
-           => target list: default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
-           => out schema: {(8) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-           => in schema: {(10) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-            SCAN(1) on joins.supplier_
-              => target list: joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
-              => out schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-              => in schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+           => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+           => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
+           => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
+           => in schema: {(4) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4)}
+            SCAN(4) on default.region
+              => target list: default.region.r_regionkey (INT4)
+              => out schema: {(1) default.region.r_regionkey (INT4)}
+              => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
             SCAN(3) on default.nation
               => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
               => out schema: {(3) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
@@ -79,23 +79,23 @@ SORT(26)
      => out schema: {(8) default.nation.n_name (TEXT), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT)}
      => in schema: {(10) default.nation.n_name (TEXT), default.partsupp.ps_suppkey (INT4), joins.part_.p_mfgr (TEXT), joins.part_.p_partkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
       JOIN(15)(INNER)
-        => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+        => Join Cond: joins.supplier_.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
         => target list: default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
         => out schema: {(7) default.nation.n_name (TEXT), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-        => in schema: {(9) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-         SCAN(4) on default.region
-           => target list: default.region.r_regionkey (INT4)
-           => out schema: {(1) default.region.r_regionkey (INT4)}
-           => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
+        => in schema: {(9) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+         SCAN(1) on joins.supplier_
+           => target list: joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
+           => out schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+           => in schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
          JOIN(14)(INNER)
-           => Join Cond: joins.supplier_.s_nationkey (INT4) = default.nation.n_nationkey (INT4)
-           => target list: default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
-           => out schema: {(8) default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-           => in schema: {(10) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-            SCAN(1) on joins.supplier_
-              => target list: joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)
-              => out schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
-              => in schema: {(7) joins.supplier_.s_acctbal (FLOAT8), joins.supplier_.s_address (TEXT), joins.supplier_.s_comment (TEXT), joins.supplier_.s_name (TEXT), joins.supplier_.s_nationkey (INT4), joins.supplier_.s_phone (TEXT), joins.supplier_.s_suppkey (INT4)}
+           => Join Cond: default.nation.n_regionkey (INT4) = default.region.r_regionkey (INT4)
+           => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)
+           => out schema: {(2) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4)}
+           => in schema: {(4) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4), default.region.r_regionkey (INT4)}
+            SCAN(4) on default.region
+              => target list: default.region.r_regionkey (INT4)
+              => out schema: {(1) default.region.r_regionkey (INT4)}
+              => in schema: {(3) default.region.r_comment (TEXT), default.region.r_name (TEXT), default.region.r_regionkey (INT4)}
             SCAN(3) on default.nation
               => target list: default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
               => out schema: {(3) default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}

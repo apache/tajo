@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.common.collect.Sets;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -31,9 +32,9 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.Target;
@@ -43,6 +44,7 @@ import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -97,14 +99,15 @@ public class TestEvalTreeUtil {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
-    Schema schema = new Schema();
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
-    schema.addColumn("score", TajoDataTypes.Type.INT4);
-    schema.addColumn("age", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("name", TajoDataTypes.Type.TEXT)
+        .add("score", TajoDataTypes.Type.INT4)
+        .add("age", TajoDataTypes.Type.INT4)
+        .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, util.getConfiguration());
     TableDesc desc = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
         CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(desc);
 

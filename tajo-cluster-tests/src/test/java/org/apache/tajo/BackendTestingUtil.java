@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -35,10 +36,11 @@ public class BackendTestingUtil {
   public final static TableMeta mockupMeta;
 
   static {
-    mockupSchema = new Schema();
-    mockupSchema.addColumn("deptname", Type.TEXT);
-    mockupSchema.addColumn("score", Type.INT4);
-    mockupMeta = CatalogUtil.newTableMeta("TEXT");
+    mockupSchema = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("score", Type.INT4)
+        .build();
+    mockupMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, new TajoConf());
   }
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)

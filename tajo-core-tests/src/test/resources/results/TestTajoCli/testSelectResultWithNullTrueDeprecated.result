@@ -1,4 +1,3 @@
-Warning: deprecated to directly use config key in TajoConf.ConfVars. Please execute '\help set'.
 c_custkey,  o_orderkey,  o_orderstatus
 -------------------------------
 1,  1,  O
@@ -6,4 +5,10 @@ c_custkey,  o_orderkey,  o_orderstatus
 3,  3,  F
 4,  testnull,  testnull
 5,  testnull,  testnull
-(5 rows, , 127 B selected)
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+testnull,  testnull,  testnull
+(11 rows, , 223 B selected)

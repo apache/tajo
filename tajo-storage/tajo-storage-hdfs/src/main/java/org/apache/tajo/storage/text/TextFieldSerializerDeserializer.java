@@ -20,9 +20,9 @@ package org.apache.tajo.storage.text;
 
 import com.google.protobuf.Message;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -32,6 +32,7 @@ import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.NumberUtil;
@@ -47,14 +48,13 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
   private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
 
-  private final boolean hasTimezone;
-  private final TimeZone timezone;
+  private final TimeZone tableTimezone;
 
   private Schema schema;
 
   public TextFieldSerializerDeserializer(TableMeta meta) {
-    hasTimezone = meta.containsProperty(StorageConstants.TIMEZONE);
-    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+    tableTimezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
+        StorageUtil.TAJO_CONF.getSystemTimezone().getID()));
   }
 
   private static boolean isNull(ByteBuf val, ByteBuf nullBytes) {
@@ -62,7 +62,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   }
 
   private static boolean isNullText(ByteBuf val, ByteBuf nullBytes) {
-    return val.readableBytes() > 0 && nullBytes.equals(val);
+    return val.readableBytes() > 0 && ByteBufUtil.equals(nullBytes, val);
   }
 
   @Override
@@ -115,7 +115,6 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
       case INT8:
       case FLOAT4:
       case FLOAT8:
-      case INET4:
       case DATE:
       case INTERVAL:
         bytes = tuple.getTextBytes(columnIndex);
@@ -123,24 +122,18 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         out.write(bytes);
         break;
       case TIME:
-        if (hasTimezone) {
-          bytes = TimeDatum.asChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
-        } else {
-          bytes = tuple.getTextBytes(columnIndex);
-        }
+        bytes = tuple.getTextBytes(columnIndex);
         length = bytes.length;
         out.write(bytes);
         break;
       case TIMESTAMP:
-        if (hasTimezone) {
-          bytes = TimestampDatum.asChars(tuple.getTimeDate(columnIndex), timezone, false).getBytes(Bytes.UTF8_CHARSET);
-        } else {
-          bytes = tuple.getTextBytes(columnIndex);
-        }
+        // UTC to table timezone
+        bytes = TimestampDatum.asChars(
+            tuple.getTimeDate(columnIndex), tableTimezone, false).getBytes(Bytes.UTF8_CHARSET);
+
         length = bytes.length;
         out.write(bytes);
         break;
-      case INET6:
       case BLOB:
         bytes = Base64.encodeBase64(tuple.getBytes(columnIndex), false);
         length = bytes.length;
@@ -216,22 +209,13 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
               decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case TIME:
-          if (hasTimezone) {
-            datum = DatumFactory.createTime(
-                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString(), timezone);
-          } else {
-            datum = DatumFactory.createTime(
-                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
-          }
+          datum = DatumFactory.createTime(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case TIMESTAMP:
-          if (hasTimezone) {
-            datum = DatumFactory.createTimestamp(
-                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString(), timezone);
-          } else {
-            datum = DatumFactory.createTimestamp(
-                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
-          }
+          // Convert to UTC by table timezone
+          datum = DatumFactory.createTimestamp(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString(), tableTimezone);
           break;
         case INTERVAL:
           datum = DatumFactory.createInterval(
@@ -251,10 +235,6 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           }
           break;
         }
-        case INET4:
-          datum = DatumFactory.createInet4(
-              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
-          break;
         case BLOB: {
           byte[] bytes = new byte[buf.readableBytes()];
           buf.readBytes(bytes);

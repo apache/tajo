@@ -26,7 +26,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.SQLExceptionUtil;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedTablespaceException;
+import org.apache.tajo.exception.UnsupportedDataTypeException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 
@@ -194,7 +198,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
         final String qualifier = resultForColumns.getString("TABLE_NAME");
         final String columnName = resultForColumns.getString("COLUMN_NAME");
         final TypeDesc type = convertDataType(resultForColumns);
-        final Column c = new Column(CatalogUtil.buildFQName(databaseName, qualifier, columnName), type);
+        final Column c = new Column(IdentifierUtil.buildFQName(databaseName, qualifier, columnName), type);
 
         columns.add(new Pair<>(ordinalPos, c));
       }
@@ -208,12 +212,12 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       });
 
       // transform the pair list into collection for columns
-      final Schema schema = new Schema(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
+      final Schema schema = SchemaBuilder.builder().addAll(Collections2.transform(columns, new Function<Pair<Integer,Column>, Column>() {
         @Override
         public Column apply(@Nullable Pair<Integer, Column> columnPair) {
           return columnPair.getSecond();
         }
-      }));
+      })).build();
 
 
       // fill the table stats
@@ -221,7 +225,7 @@ public abstract class JdbcMetadataProviderBase implements MetadataProvider {
       stats.setNumRows(-1); // unknown
 
       final TableDesc table = new TableDesc(
-          CatalogUtil.buildFQName(databaseName, name),
+          IdentifierUtil.buildFQName(databaseName, name),
           schema,
           new TableMeta("rowstore", new KeyValueSet()),
           space.getTableUri(databaseName, name)

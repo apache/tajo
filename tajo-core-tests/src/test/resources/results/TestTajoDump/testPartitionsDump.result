@@ -12,7 +12,7 @@ CREATE DATABASE IF NOT EXISTS "TestTajoDump";
 --
 -- Name: "TestTajoDump"."TableName3"; Type: TABLE; Storage: TEXT
 --
-CREATE TABLE "TestTajoDump"."TableName3" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN(col3 INT4, col4 INT4);
+CREATE TABLE "TestTajoDump"."TableName3" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|', 'text.null'='\\N', 'timezone'='${table.timezone}') PARTITION BY COLUMN(col3 INT4, col4 INT4);
 
 --
 -- Table Partitions: TableName3
@@ -24,7 +24,7 @@ ALTER TABLE "TestTajoDump"."TableName3" REPAIR PARTITION;
 --
 -- Name: "TestTajoDump"."TableName4"; Type: TABLE; Storage: TEXT
 --
-CREATE TABLE "TestTajoDump"."TableName4" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|') PARTITION BY COLUMN(col3 TEXT, col4 DATE);
+CREATE TABLE "TestTajoDump"."TableName4" (col1 INT4, col2 INT4) USING TEXT WITH ('text.delimiter'='|', 'text.null'='\\N', 'timezone'='${table.timezone}') PARTITION BY COLUMN(col3 TEXT, col4 DATE);
 
 --
 -- Table Partitions: TableName4

@@ -5,3 +5,4 @@ c_custkey,o_orderkey,cnt
 3,3,1
 4,null,1
 5,null,1
+null,null,3

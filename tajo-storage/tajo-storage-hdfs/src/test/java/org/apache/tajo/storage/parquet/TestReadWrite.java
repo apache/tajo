@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -55,7 +56,6 @@ public class TestReadWrite {
   private Schema createAllTypesSchema() {
     List<Column> columns = new ArrayList<>();
     columns.add(new Column("myboolean", Type.BOOLEAN));
-    columns.add(new Column("mybit", Type.BIT));
     columns.add(new Column("mychar", Type.CHAR));
     columns.add(new Column("myint2", Type.INT2));
     columns.add(new Column("myint4", Type.INT4));
@@ -67,7 +67,7 @@ public class TestReadWrite {
     columns.add(new Column("mynull", Type.NULL_TYPE));
     Column[] columnsArray = new Column[columns.size()];
     columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaBuilder.builder().addAll(columnsArray).build();
   }
 
   @Test
@@ -76,16 +76,15 @@ public class TestReadWrite {
     Schema schema = createAllTypesSchema();
     Tuple tuple = new VTuple(schema.size());
     tuple.put(0, DatumFactory.createBool(true));
-    tuple.put(1, DatumFactory.createBit((byte)128));
-    tuple.put(2, DatumFactory.createChar('t'));
-    tuple.put(3, DatumFactory.createInt2((short)2048));
-    tuple.put(4, DatumFactory.createInt4(4096));
-    tuple.put(5, DatumFactory.createInt8(8192L));
-    tuple.put(6, DatumFactory.createFloat4(0.2f));
-    tuple.put(7, DatumFactory.createFloat8(4.1));
-    tuple.put(8, DatumFactory.createText(HELLO));
-    tuple.put(9, DatumFactory.createBlob(HELLO.getBytes(Charsets.UTF_8)));
-    tuple.put(10, NullDatum.get());
+    tuple.put(1, DatumFactory.createChar('t'));
+    tuple.put(2, DatumFactory.createInt2((short)2048));
+    tuple.put(3, DatumFactory.createInt4(4096));
+    tuple.put(4, DatumFactory.createInt8(8192L));
+    tuple.put(5, DatumFactory.createFloat4(0.2f));
+    tuple.put(6, DatumFactory.createFloat8(4.1));
+    tuple.put(7, DatumFactory.createText(HELLO));
+    tuple.put(8, DatumFactory.createBlob(HELLO.getBytes(Charsets.UTF_8)));
+    tuple.put(9, NullDatum.get());
 
     TajoParquetWriter writer = new TajoParquetWriter(file, schema);
     writer.write(tuple);
@@ -96,15 +95,14 @@ public class TestReadWrite {
 
     assertNotNull(tuple);
     assertEquals(true, tuple.getBool(0));
-    assertEquals((byte)128, tuple.getByte(1));
-    assertTrue(String.valueOf('t').equals(String.valueOf(tuple.getChar(2))));
-    assertEquals((short)2048, tuple.getInt2(3));
-    assertEquals(4096, tuple.getInt4(4));
-    assertEquals(8192L, tuple.getInt8(5));
-    assertEquals(new Float(0.2f), new Float(tuple.getFloat4(6)));
-    assertEquals(new Double(4.1), new Double(tuple.getFloat8(7)));
-    assertTrue(HELLO.equals(tuple.getText(8)));
-    assertArrayEquals(HELLO.getBytes(Charsets.UTF_8), tuple.getBytes(9));
-    assertTrue(tuple.isBlankOrNull(10));
+    assertTrue(String.valueOf('t').equals(String.valueOf(tuple.getChar(1))));
+    assertEquals((short)2048, tuple.getInt2(2));
+    assertEquals(4096, tuple.getInt4(3));
+    assertEquals(8192L, tuple.getInt8(4));
+    assertEquals(new Float(0.2f), new Float(tuple.getFloat4(5)));
+    assertEquals(new Double(4.1), new Double(tuple.getFloat8(6)));
+    assertTrue(HELLO.equals(tuple.getText(7)));
+    assertArrayEquals(HELLO.getBytes(Charsets.UTF_8), tuple.getBytes(8));
+    assertTrue(tuple.isBlankOrNull(9));
   }
 }

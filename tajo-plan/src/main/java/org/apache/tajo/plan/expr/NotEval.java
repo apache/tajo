@@ -18,23 +18,19 @@
 
 package org.apache.tajo.plan.expr;
 
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public class NotEval extends UnaryEval implements Cloneable {
-  private static final DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
-
   public NotEval(EvalNode child) {
     super(EvalType.NOT, child);
   }
 
   @Override
-  public DataType getValueType() {
-    return RES_TYPE;
+  public Type getValueType() {
+    return Type.Bool;
   }
 
   @Override

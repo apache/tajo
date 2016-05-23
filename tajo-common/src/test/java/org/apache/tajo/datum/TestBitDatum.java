@@ -18,21 +18,13 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.NumberUtil;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestBitDatum {
-
-	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createBit((byte) 1);
-		assertEquals(Type.BIT, d.type());
-	}
 
 	@Test
 	public final void testAsInt() {

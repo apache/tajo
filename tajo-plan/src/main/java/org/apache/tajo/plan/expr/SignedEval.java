@@ -20,10 +20,10 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NumericDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public class SignedEval extends UnaryEval implements Cloneable {
   @Expose private boolean negative;
@@ -38,7 +38,7 @@ public class SignedEval extends UnaryEval implements Cloneable {
   }
 
   @Override
-  public DataType getValueType() {
+  public Type getValueType() {
     return child.getValueType();
   }
 
@@ -51,9 +51,9 @@ public class SignedEval extends UnaryEval implements Cloneable {
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
-    NumericDatum result = child.eval(tuple);
-    if (negative) {
-      return result.inverseSign();
+    Datum result = child.eval(tuple);
+    if (result.isNotNull() && negative) {
+      return ((NumericDatum)result).inverseSign();
     }
     return result;
   }

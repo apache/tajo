@@ -21,27 +21,29 @@ package org.apache.tajo.engine.eval;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.exception.UndefinedFunctionException;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.junit.Test;
 
 import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testQuotedIdentifiers() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("컬럼1", TEXT);
-    schema.addColumn("컬럼2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("컬럼1", TEXT)
+        .add("컬럼2", TEXT).build();
     testEval(schema, "테이블1", "123,234", "select \"컬럼1\"::float, cast (\"컬럼2\" as float4) as a from \"테이블1\"",
         new String[]{"123.0", "234.0"});
     testEval(schema,
@@ -91,17 +93,24 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select cast (123.0 as double)", new String[] {"123.0"});
   }
 
+  private static final Schema TestSchema1;
+
+  static {
+    TestSchema1 = SchemaBuilder.builder()
+        .add("col0", INT1)
+        .add("col1", INT2)
+        .add("col2", INT4)
+        .add("col3", INT8)
+        .add("col4", FLOAT4)
+        .add("col5", FLOAT8)
+        .add("col6", TEXT)
+        .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .build();
+  }
+
   @Test
   public void testExplicitCast() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", INT1);
-    schema.addColumn("col1", INT2);
-    schema.addColumn("col2", INT4);
-    schema.addColumn("col3", INT8);
-    schema.addColumn("col4", FLOAT4);
-    schema.addColumn("col5", FLOAT8);
-    schema.addColumn("col6", TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    Schema schema = TestSchema1;
 
     testSimpleEval("select cast (1 as char)", new String[]{"1"});
     testSimpleEval("select cast (119 as char)", new String[] {"1"});
@@ -173,15 +182,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt1() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    Schema schema = TestSchema1;
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col0 from table1;", new String [] {"0"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0 + col1 from table1;", new String [] {"1"});
@@ -275,15 +276,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt2() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    Schema schema = TestSchema1;
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col0 from table1;", new String [] {"1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col1 + col1 from table1;", new String [] {"2"});
@@ -377,15 +370,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt4() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    Schema schema = TestSchema1;
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col0 from table1;", new String [] {"2"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col2 + col1 from table1;", new String [] {"3"});
@@ -480,15 +465,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForInt8() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    Schema schema = TestSchema1;
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col0 from table1;", new String[]{"3"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col3 + col1 from table1;", new String [] {"4"});
@@ -587,15 +564,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForFloat4() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    Schema schema = TestSchema1;
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col0 from table1;", new String [] {"4.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col4 + col1 from table1;", new String [] {"5.1"});
@@ -706,15 +675,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testImplicitCastForFloat8() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
+    Schema schema = TestSchema1;
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col0 from table1;", new String [] {"5.1"});
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col5 + col1 from table1;", new String [] {"6.1"});
@@ -826,17 +787,7 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testSigned() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
-
+    Schema schema = TestSchema1;
 
     // sign test
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7,t", "select +col1 from table1;", new String [] {"1"});
@@ -859,7 +810,7 @@ public class TestSQLExpression extends ExprTestBase {
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
     int unixtime = 1389071574; // (int) (System.currentTimeMillis() / 1000);
-    TimestampDatum expected = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+    TimestampDatum expected = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
     testSimpleEval(context, String.format("select to_timestamp(CAST(split_part('%d.999', '.', 1) as INT8));", unixtime),
         new String[] {TimestampDatum.asChars(expected.asTimeMeta(), tz, false)});
   }
@@ -867,12 +818,11 @@ public class TestSQLExpression extends ExprTestBase {
   @Test
   public void testCastFromTable() throws TajoException {
     QueryContext queryContext = new QueryContext(getConf());
-    queryContext.put(SessionVars.TIMEZONE, "GMT-6");
-    TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
 
     testEval(queryContext, schema,
         "table1",
@@ -882,16 +832,12 @@ public class TestSQLExpression extends ExprTestBase {
     testEval(queryContext, schema, "table1", "123,234", "select col1::float, col2::float from table1",
         new String[]{"123.0", "234.0"});
 
-    TimestampDatum timestamp = DatumFactory.createTimestamp("1980-04-01 01:50:01" +
-        DateTimeUtil.getTimeZoneDisplayTime(tz));
-
     testEval(queryContext, schema, "table1", "1980-04-01 01:50:01,234",
         "select col1::timestamp as t1, col2::float from table1 where t1 = '1980-04-01 01:50:01'::timestamp",
-        new String[]{TimestampDatum.asChars(timestamp.asTimeMeta(), tz, false), "234.0"}
+        new String[]{"1980-04-01 01:50:01", "234.0"}
     );
 
-    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{
-        TimestampDatum.asChars(timestamp.asTimeMeta(), tz, false)});
+    testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{"1980-04-01 01:50:01"});
     testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String[]{"1980-04-01 01:50:01"});
 
     testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String[]{"100000"});
@@ -902,9 +848,10 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select true", new String[] {"t"});
     testSimpleEval("select false", new String[]{"f"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
     testEval(schema, "table1", "123,234", "select col1, col2 from table1 where true", new String[]{"123", "234"});
   }
 
@@ -997,5 +944,82 @@ public class TestSQLExpression extends ExprTestBase {
     testSimpleEval("select (false OR true)", new String[] {"t"}); // false - true -> true
     testSimpleEval("select (false OR 1 > null) is null", new String[] {"t"}); // false - unknown -> unknown
     testSimpleEval("select (false OR false)", new String[] {"f"}); // false - false -> false
+  }
+
+  @Test
+  public void testInvalidOperation() throws TajoException {
+    testEvalException("select '1980-09-04'::date + '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
+    testEvalException("select '1980-09-04 00:10:10'::timestamp + '1980-09-04'::date", InvalidOperationException.class);
+
+    testEvalException("select time '00:00' + time '02:00'", InvalidOperationException.class);
+    testEvalException("select time '00:00' - '1980-09-04'::date", InvalidOperationException.class);
+    testEvalException("select time '00:00' - '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
+    testEvalException("select interval '1 day' - '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
+
+    //TODO this operation should be allowed after timestamptz added
+    testEvalException("select date '1980-09-04' < timestamp '1980-09-04 00:00:01'", InvalidOperationException.class);
+    testEvalException("select date '1980-09-04' > timestamp '1980-09-04 00:00:01'", InvalidOperationException.class);
+    testEvalException("select date '1980-09-04' = timestamp '1980-09-04 00:00:01'", InvalidOperationException.class);
+    testEvalException("select '1980-09-04 00:10:10'::timestamp - '1980-09-04'::date", InvalidOperationException.class);
+    testEvalException("select '1980-09-04'::date - '1980-09-04 00:10:10'::timestamp", InvalidOperationException.class);
+  }
+
+  @Test
+  public void testArithmeticOperandForDateTime() throws TajoException {
+    Schema schema = SchemaBuilder.builder()
+        .add("col0", TIME)
+        .add("col1", DATE)
+        .add("col2", TIMESTAMP)
+        .build();
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 + col1 from table1;", new String[]{"1980-09-04 01:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 + col2 from table1;", new String[]{"1980-09-04 02:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 + interval '1 hour' from table1;", new String[]{"02:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select interval '1 hour' + col0 from table1;", new String[]{"02:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 + interval '1 day' from table1;", new String[]{"1980-09-05 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select interval '1 day' + col1 from table1;", new String[]{"1980-09-05 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 + col0 from table1;", new String[]{"1980-09-04 01:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 + (interval '1 day' + interval '1 hour') from table1;", new String[]{"1980-09-05 02:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select (interval '1 day' + interval '1 hour') + col2 from table1;", new String[]{"1980-09-05 02:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 + col0 from table1;", new String[]{"1980-09-04 02:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 - col0 from table1;", new String[]{"00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 - col1 from table1;", new String[]{"0"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 - col2 from table1;", new String[]{"00:00:00"});
+
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col0 - interval '1 hour' from table1;", new String[]{"00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 - interval '1 day' from table1;", new String[]{"1980-09-03 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col1 - col0 from table1;", new String[]{"1980-09-03 23:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 - (interval '1 day' + interval '1 hour') from table1;", new String[]{"1980-09-03 00:00:00"});
+    testEval(schema, "table1", "01:00:00,1980-09-04,1980-09-04 01:00:00",
+        "select col2 - col0 from table1;", new String[]{"1980-09-04 00:00:00"});
+  }
+
+  private <T extends Throwable> void testEvalException(String query, Class<T> clazz) {
+    try {
+      testSimpleEval(query, new String[]{""});
+      fail(query);
+    } catch (Throwable e) {
+      assertEquals(e.getMessage(), clazz, e.getClass());
+    }
   }
 }

@@ -22,6 +22,7 @@ import org.apache.hadoop.hive.metastore.IMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.metastore.api.StorageDescriptor;
 import org.apache.hadoop.hive.ql.io.RCFileInputFormat;
+import org.apache.hadoop.hive.ql.io.orc.OrcSerde;
 import org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
@@ -38,6 +39,8 @@ import org.apache.tajo.exception.LMDNoMatchedDatatypeException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnknownDataFormatException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeStringEncoder;
 import org.apache.thrift.TException;
 
 public class HiveCatalogUtil {
@@ -81,10 +84,10 @@ public class HiveCatalogUtil {
     }
   }
 
-  public static String getHiveFieldType(TajoDataTypes.DataType dataType) throws LMDNoMatchedDatatypeException {
-    Preconditions.checkNotNull(dataType);
+  public static String getHiveFieldType(Type type) throws LMDNoMatchedDatatypeException {
+    Preconditions.checkNotNull(type);
 
-    switch (dataType.getType()) {
+    switch (type.kind()) {
     case CHAR: return serdeConstants.CHAR_TYPE_NAME;
     case BOOLEAN: return serdeConstants.BOOLEAN_TYPE_NAME;
     case INT1: return serdeConstants.TINYINT_TYPE_NAME;
@@ -103,7 +106,7 @@ public class HiveCatalogUtil {
     case DATE: return serdeConstants.DATE_TYPE_NAME;
     case TIMESTAMP: return serdeConstants.TIMESTAMP_TYPE_NAME;
     default:
-      throw new LMDNoMatchedDatatypeException(dataType.getType().name());
+      throw new LMDNoMatchedDatatypeException(TypeStringEncoder.encode(type));
     }
   }
 
@@ -137,6 +140,8 @@ public class HiveCatalogUtil {
       return BuiltinStorages.PARQUET;
     } else if (AvroSerDe.class.getName().equals(serde)) {
       return BuiltinStorages.AVRO;
+    } else if (OrcSerde.class.getName().equals(serde)) {
+      return BuiltinStorages.ORC;
     } else {
       throw new TajoRuntimeException(new UnknownDataFormatException(inputFormat));
     }

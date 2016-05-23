@@ -21,14 +21,10 @@ package org.apache.tajo.storage;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Inet4Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
-import org.apache.tajo.exception.NotImplementedException;
-import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.net.InetAddress;
 import java.util.Arrays;
 
 public class VTuple implements Tuple, Cloneable {
@@ -94,7 +90,7 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public TajoDataTypes.Type type(int fieldId) {
-    return values[fieldId].type();
+    return values[fieldId].kind();
   }
 
   @Override
@@ -175,22 +171,6 @@ public class VTuple implements Tuple, Cloneable {
   @Override
   public double getFloat8(int fieldId) {
     return values[fieldId].asFloat8();
-  }
-
-  public Inet4Datum getIPv4(int fieldId) {
-    return (Inet4Datum) values[fieldId];
-  }
-
-  public byte [] getIPv4Bytes(int fieldId) {
-    return values[fieldId].asByteArray();
-  }
-
-  public InetAddress getIPv6(int fieldId) {
-    throw new TajoRuntimeException(new NotImplementedException());
-  }
-
-  public byte[] getIPv6Bytes(int fieldId) {
-    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override

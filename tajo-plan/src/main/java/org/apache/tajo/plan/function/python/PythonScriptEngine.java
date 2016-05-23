@@ -23,6 +23,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -32,7 +33,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.FunctionSupplement;
-import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.function.UDFInvocationDesc;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.PythonAggFunctionInvoke.PythonAggFunctionContext;
 import org.apache.tajo.plan.function.stream.*;
@@ -40,6 +41,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.TUtil;
 
 import java.io.*;
 import java.net.URI;
@@ -90,8 +92,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
           TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
           signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
               returnType, createParamTypes(scalarFuncInfo.paramNum));
-          PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
-          invocation.setPython(invocationDesc);
+          UDFInvocationDesc invocationDesc = new UDFInvocationDesc(CatalogProtos.UDFtype.PYTHON, scalarFuncInfo.funcName, path.getPath(), true);
+          invocation.setUDF(invocationDesc);
           functionDescs.add(new FunctionDesc(signature, invocation, supplement));
         } else {
           AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
@@ -99,9 +101,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
             TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
             signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
                 returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
-            PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
+            UDFInvocationDesc invocationDesc = new UDFInvocationDesc(CatalogProtos.UDFtype.PYTHON, aggFuncInfo.className, path.getPath(), false);
 
-            invocation.setPythonAggregation(invocationDesc);
+            invocation.setUDF(invocationDesc);
             functionDescs.add(new FunctionDesc(signature, invocation, supplement));
           }
         }
@@ -269,7 +271,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     FUNCTION_TYPE,
   }
 
-  private Configuration systemConf;
+  private TajoConf systemConf;
 
   private Process process; // Handle to the external execution of python functions
 
@@ -281,23 +283,23 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private InputStream stderr; // stderr of the process
 
   private final FunctionSignature functionSignature;
-  private final PythonInvocationDesc invocationDesc;
+  private final UDFInvocationDesc invocationDesc;
   private Schema inSchema;
   private Schema outSchema;
   private int[] projectionCols;
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
-  private final TableMeta pipeMeta = CatalogUtil.newTableMeta("TEXT");
+  private TableMeta pipeMeta;
 
   private final Tuple EMPTY_INPUT = new VTuple(0);
-  private final Schema EMPTY_SCHEMA = new Schema();
+  private final Schema EMPTY_SCHEMA = SchemaBuilder.builder().build();
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
-    invocationDesc = functionDesc.getInvocation().getPython();
+    invocationDesc = functionDesc.getInvocation().getUDF();
     setSchema();
   }
 
@@ -306,15 +308,16 @@ public class PythonScriptEngine extends TajoScriptEngine {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
-    invocationDesc = functionDesc.getInvocation().getPython();
+    invocationDesc = functionDesc.getInvocation().getUDF();
     this.firstPhase = firstPhase;
     this.lastPhase = lastPhase;
     setSchema();
   }
 
   @Override
-  public void start(Configuration systemConf) throws IOException {
-    this.systemConf = systemConf;
+  public void start(Configuration conf) throws IOException {
+    this.systemConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
+    this.pipeMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, systemConf);
     startUdfController();
     setStreams();
     createInputHandlers();
@@ -388,27 +391,31 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private void setSchema() {
     if (invocationDesc.isScalarFunction()) {
       TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-      inSchema = new Schema();
+      SchemaBuilder inSchemaBuilder = SchemaBuilder.builder();
       for (int i = 0; i < paramTypes.length; i++) {
-        inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+        inSchemaBuilder.add(new Column("in_" + i, paramTypes[i]));
       }
-      outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+      inSchema = inSchemaBuilder.build();
+      outSchema = SchemaBuilder.builder()
+          .addAll(new Column[]{new Column("out", functionSignature.getReturnType())})
+          .build();
     } else {
       // UDAF
       if (firstPhase) {
         // first phase
         TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-        inSchema = new Schema();
+        SchemaBuilder inSchemaBuilder = SchemaBuilder.builder();
         for (int i = 0; i < paramTypes.length; i++) {
-          inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+          inSchemaBuilder.add(new Column("in_" + i, paramTypes[i]));
         }
-        outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        inSchema = inSchemaBuilder.build();
+        outSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
       } else if (lastPhase) {
-        inSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
-        outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+        inSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
+        outSchema = SchemaBuilder.builder().add(new Column("out", functionSignature.getReturnType())).build();
       } else {
         // intermediate phase
-        inSchema = outSchema = new Schema(new Column[]{new Column("json", TajoDataTypes.Type.TEXT)});
+        inSchema = outSchema = SchemaBuilder.builder().add(new Column("json", TajoDataTypes.Type.TEXT)).build();
       }
     }
     projectionCols = new int[outSchema.size()];

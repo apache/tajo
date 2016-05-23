@@ -26,13 +26,12 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.v2.exception.ClientUnableToConnectException;
-import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
@@ -298,7 +297,7 @@ public class QueryClientImpl implements QueryClient {
 
     GetQueryResultResponse response = getResultResponse(queryId);
 
-    TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
+    TableDesc tableDesc = new TableDesc(response.getTableDesc());
     return new FetchResultSet(this, tableDesc.getLogicalSchema(), queryId, defaultFetchRows);
   }
 
@@ -374,7 +373,7 @@ public class QueryClientImpl implements QueryClient {
     if(response.hasResultSet()) {
       SerializedResultSet resultSet = response.getResultSet();
       return new TajoMemoryResultSet(queryId,
-          new Schema(resultSet.getSchema()),
+          SchemaFactory.newV1(resultSet.getSchema()),
           resultSet, getClientSideSessionVars());
     } else {
       return TajoClientUtil.createNullResultSet(queryId);

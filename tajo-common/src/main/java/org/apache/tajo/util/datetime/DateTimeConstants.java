@@ -55,18 +55,18 @@ public class DateTimeConstants {
 
   /** avoid floating-point computation */
   public static final int SECS_PER_YEAR	= 36525 * 864;
-  public static final int SECS_PER_DAY = 86400;
+  public static final int SECS_PER_DAY = 86_400;
   public static final int SECS_PER_HOUR	= 3600;
   public static final int SECS_PER_MINUTE = 60;
   public static final int MINS_PER_HOUR	= 60;
 
-  public static final long MSECS_PER_DAY = 86400000L;
+  public static final long MSECS_PER_DAY = 86_400_000L;
   public static final long MSECS_PER_SEC = 1000L;
 
-  public static final long USECS_PER_DAY = 86400000000L;
-  public static final long USECS_PER_HOUR	= 3600000000L;
-  public static final long USECS_PER_MINUTE = 60000000L;
-  public static final long USECS_PER_SEC = 1000000L;
+  public static final long USECS_PER_DAY = 86_400_000_000L;
+  public static final long USECS_PER_HOUR	= 3_600_000_000L;
+  public static final long USECS_PER_MINUTE = 60_000_000L;
+  public static final long USECS_PER_SEC = 1_000_000L;
   public static final long USECS_PER_MSEC = 1000L;
 
   public static final int JULIAN_MINYEAR = -4713;
@@ -76,6 +76,16 @@ public class DateTimeConstants {
 
   /** == DateTimeUtil.toJulianDate(JULIAN_MAXYEAR, 1, 1) */
   public static final int JULIAN_MAX = 2147483494;
+
+  // This is an implementation copied from PGStatement in pgsql jdbc
+  // We can't use Long.MAX_VALUE or Long.MIN_VALUE for java.sql.date
+  // because this would break the 'normalization contract' of the
+  // java.sql.Date API.
+  // The follow values are the nearest MAX/MIN values with hour,
+  // minute, second, millisecond set to 0 - this is used for
+  // -infinity / infinity representation in Java
+  public static final long DATE_POSITIVE_INFINITY = 9223372036825200000l;
+  public static final long DATE_NEGATIVE_INFINITY = -9223372036832400000l;
   
   /** the first ISO day of week */
   public static final int MONDAY = 1;
@@ -100,11 +110,11 @@ public class DateTimeConstants {
 
   // Julian-date equivalents of Day 0 in Unix and Postgres reckoning
   /** == DateTimeUtil.toJulianDate(1970, 1, 1) */
-  public static final int UNIX_EPOCH_JDATE =     2440588;
+  public static final int UNIX_EPOCH_JDATE =     2_440_588;
   /** == DateTimeUtil.toJulianDate(2000, 1, 1) */
-  public static final int POSTGRES_EPOCH_JDATE = 2451545;
+  public static final int POSTGRES_EPOCH_JDATE = 2_451_545;
   /** == (POSTGRES_EPOCH_JDATE * SECS_PER_DAY) - (UNIX_EPOCH_JDATE * SECS_PER_DAY); */
-  public static final long SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME = 946684800;
+  public static final long SECS_DIFFERENCE_BETWEEN_JULIAN_AND_UNIXTIME = 946_684_800;
 
   public static final int MAX_TZDISP_HOUR	=	15;	/* maximum allowed hour part */
   public static final int TZDISP_LIMIT =	((MAX_TZDISP_HOUR + 1) * SECS_PER_HOUR);

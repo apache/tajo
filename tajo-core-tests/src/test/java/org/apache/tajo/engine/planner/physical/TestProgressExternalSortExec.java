@@ -37,6 +37,7 @@ import org.apache.tajo.parser.sql.SQLAnalyzer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.unit.StorageUnit;
@@ -80,12 +81,13 @@ public class TestProgressExternalSortExec {
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
 
-    Schema schema = new Schema();
-    schema.addColumn("managerid", TajoDataTypes.Type.INT4);
-    schema.addColumn("empid", TajoDataTypes.Type.INT4);
-    schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("managerid", TajoDataTypes.Type.INT4)
+        .add("empid", TajoDataTypes.Type.INT4)
+        .add("deptname", TajoDataTypes.Type.TEXT)
+        .build();
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(BuiltinStorages.RAW, conf);
     Path employeePath = new Path(testDir, "employee.raw");
     Appender appender = ((FileTablespace) TablespaceManager.getLocalFs())
         .getAppender(employeeMeta, schema, employeePath);
@@ -105,7 +107,7 @@ public class TestProgressExternalSortExec {
 
     testDataStats = appender.getStats();
     employee = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
         employeePath.toUri());
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();
@@ -172,13 +174,11 @@ public class TestProgressExternalSortExec {
     while ((tuple = exec.next()) != null) {
       if (cnt == 0) {
         initProgress = exec.getProgress();
-        System.out.println(initProgress);
         assertTrue(initProgress > 0.5f && initProgress < 1.0f);
       }
 
       if (cnt == testDataStats.getNumRows() / 2) {
         float progress = exec.getProgress();
-        System.out.println(progress);
         assertTrue(progress > initProgress);
       }
       curVal = tuple;

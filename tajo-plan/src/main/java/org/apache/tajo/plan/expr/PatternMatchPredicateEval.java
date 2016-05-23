@@ -19,21 +19,17 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public abstract class PatternMatchPredicateEval extends BinaryEval {
-  private static final DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
-
   @Expose protected boolean not;
   @Expose protected String pattern;
   @Expose protected boolean caseInsensitive;
@@ -64,8 +60,8 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   }
 
   @Override
-  public DataType getValueType() {
-    return RES_TYPE;
+  public Type getValueType() {
+    return Type.Bool;
   }
 
   @Override

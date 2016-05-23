@@ -20,6 +20,7 @@ package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.Test;
 
@@ -64,12 +65,11 @@ public class TestIntervalDatum {
 
     // date '2001-09-28' + integer '7'	==> date '2001-10-05'
     Datum datum = DatumFactory.createDate(2001, 9, 28);
-    Datum[] datums = new Datum[]{new Int2Datum((short) 7), new Int4Datum(7), new Int8Datum(7),
-          new Float4Datum(7.0f), new Float8Datum(7.0f)};
+    Datum[] datums = new Datum[]{new Int2Datum((short) 7), new Int4Datum(7), new Int8Datum(7)};
 
     for (int i = 0; i < datums.length; i++) {
       Datum result = datum.plus(datums[i]);
-      assertEquals(TajoDataTypes.Type.DATE, result.type());
+      assertEquals(Type.Date, result.type());
       assertEquals("date '2001-09-28' + " + datums[i].asChars() + "(" + i + " th test)", "2001-10-05", result.asChars());
     }
 
@@ -77,38 +77,38 @@ public class TestIntervalDatum {
     // date '2001-09-28' + interval '1 hour'	==> timestamp '2001-09-28 01:00:00'
     datum = DatumFactory.createDate(2001, 9, 28);
     Datum result = datum.plus(new IntervalDatum(60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-28 01:00:00", result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-28 01:00:00", null), result);
 
     // interval '1 hour' +  date '2001-09-28'	==> timestamp '2001-09-28 01:00:00'
     datum = new IntervalDatum(60 * 60 * 1000);
     result = datum.plus(DatumFactory.createDate(2001, 9, 28));
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-28 01:00:00", result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-28 01:00:00", null), result);
 
     // date '2001-09-28' + time '03:00' ==> timestamp '2001-09-28 03:00:00'
     datum = DatumFactory.createDate(2001, 9, 28);
     TimeDatum time = new TimeDatum(DateTimeUtil.toTime(3, 0, 0, 0));
     result = datum.plus(time);
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-28 03:00:00", result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-28 03:00:00", null), result);
 
     // interval '1 day' + interval '1 hour'	interval '1 day 01:00:00'
     datum = new IntervalDatum(IntervalDatum.DAY_MILLIS);
     result = datum.plus(new IntervalDatum(0, 1 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.INTERVAL, result.type());
+    assertEquals(Type.Interval, result.type());
     assertEquals("1 day 01:00:00", result.asChars());
 
     // timestamp '2001-09-28 01:00' + interval '23 hours'	==> timestamp '2001-09-29 00:00:00'
     datum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(2001, 9, 28, 1, 0, 0, 0));
     result = datum.plus(new IntervalDatum(23 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-29 00:00:00", result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-29 00:00:00", null), result);
 
     // time '01:00' + interval '3 hours' ==> time '04:00:00'
     datum = new TimeDatum(DateTimeUtil.toTime(1, 0, 0, 0));
     result = datum.plus(new IntervalDatum(3 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.TIME, result.type());
+    assertEquals(Type.Time, result.type());
     assertEquals(new TimeDatum(DateTimeUtil.toTime(4, 0, 0, 0)), result);
 
     // - interval '23 hours' ==> interval '-23:00:00'
@@ -117,59 +117,59 @@ public class TestIntervalDatum {
     // date '2001-10-01' - date '2001-09-28' ==>	integer '3'
     datum = DatumFactory.createDate(2001, 10, 1);
     result = datum.minus(DatumFactory.createDate(2001, 9, 28));
-    assertEquals(TajoDataTypes.Type.INT4, result.type());
+    assertEquals(Type.Int4, result.type());
     assertEquals(new Int4Datum(3), result);
 
     // date '2001-10-01' - integer '7' ==>	date '2001-09-24'
     datum = DatumFactory.createDate(2001, 10, 1);
     for (Datum eachDatum : datums) {
       Datum result2 = datum.minus(eachDatum);
-      assertEquals(TajoDataTypes.Type.DATE, result2.type());
+      assertEquals(Type.Date, result2.type());
       assertEquals(DatumFactory.createDate(2001, 9, 24), result2);
     }
 
     // date '2001-09-28' - interval '1 hour' ==> timestamp '2001-09-27 23:00:00'
     datum = DatumFactory.createDate(2001, 9, 28);
     result = datum.minus(new IntervalDatum(1 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-27 23:00:00", result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-27 23:00:00", null), result);
 
     // date '2001-09-28' - interval '1 day 1 hour' ==> timestamp '2001-09-26 23:00:00'
     // In this case all datums are UTC
     datum = DatumFactory.createDate(2001, 9, 28);
     result = datum.minus(new IntervalDatum(IntervalDatum.DAY_MILLIS + 1 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-26 23:00:00",  result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-26 23:00:00", null),  result);
 
     // time '05:00' - time '03:00' ==>	interval '02:00:00'
     datum = new TimeDatum(DateTimeUtil.toTime(5, 0, 0, 0));
     result = datum.minus(new TimeDatum(DateTimeUtil.toTime(3, 0, 0, 0)));
-    assertEquals(TajoDataTypes.Type.INTERVAL, result.type());
+    assertEquals(Type.Interval, result.type());
     assertEquals(new IntervalDatum(2 * 60 * 60 * 1000), result);
 
     // time '05:00' - interval '2 hours' ==>	time '03:00:00'
     datum = new TimeDatum(DateTimeUtil.toTime(5, 0, 0, 0));
     result = datum.minus(new IntervalDatum(2 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.TIME, result.type());
+    assertEquals(Type.Time, result.type());
     assertEquals(new TimeDatum(DateTimeUtil.toTime(3, 0, 0, 0)), result);
 
     // timestamp '2001-09-28 23:00' - interval '23 hours' ==>	timestamp '2001-09-28 00:00:00'
     // In this case all datums are UTC
     datum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(2001, 9, 28, 23, 0, 0, 0));
     result = datum.minus(new IntervalDatum(23 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-28 00:00:00", result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-28 00:00:00", null), result);
 
     // interval '1 day' - interval '1 hour'	==> interval '1 day -01:00:00'
     datum = new IntervalDatum(IntervalDatum.DAY_MILLIS);
     result = datum.minus(new IntervalDatum(1 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.INTERVAL, result.type());
+    assertEquals(Type.Interval, result.type());
     assertEquals(new IntervalDatum(23 * 60 * 60 * 1000), result);
 
     // timestamp '2001-09-29 03:00' - timestamp '2001-09-27 12:00' ==>	interval '1 day 15:00:00'
     datum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(2001, 9, 29, 3, 0, 0, 0));
     result = datum.minus(new TimestampDatum(DateTimeUtil.toJulianTimestamp(2001, 9, 27, 12, 0, 0, 0)));
-    assertEquals(TajoDataTypes.Type.INTERVAL, result.type());
+    assertEquals(Type.Interval, result.type());
     assertEquals(new IntervalDatum(IntervalDatum.DAY_MILLIS + 15 * 60 * 60 * 1000), result);
 
     // 900 * interval '1 second' ==> interval '00:15:00'
@@ -179,31 +179,31 @@ public class TestIntervalDatum {
     datum = new IntervalDatum(1000);
     for (Datum aDatum900 : datum900) {
       Datum result2 = datum.multiply(aDatum900);
-      assertEquals(TajoDataTypes.Type.INTERVAL, result2.type());
+      assertEquals(Type.Interval, result2.type());
       assertEquals(new IntervalDatum(15 * 60 * 1000), result2);
 
       result2 = aDatum900.multiply(datum);
-      assertEquals(TajoDataTypes.Type.INTERVAL, result2.type());
+      assertEquals(Type.Interval, result2.type());
       assertEquals(new IntervalDatum(15 * 60 * 1000), result2);
     }
 
     // double precision '3.5' * interval '1 hour'	==> interval '03:30:00'
     datum = new Float8Datum(3.5f);
     result = datum.multiply(new IntervalDatum(1 * 60 * 60 * 1000));
-    assertEquals(TajoDataTypes.Type.INTERVAL, result.type());
+    assertEquals(Type.Interval, result.type());
     assertEquals(new IntervalDatum(3 * 60 * 60 * 1000 + 30 * 60 * 1000), result);
 
     // interval '1 hour' / double precision '1.5' ==>	interval '00:40:00'
     datum = new IntervalDatum(1 * 60 * 60 * 1000);
     result = datum.divide(new Float8Datum(1.5f));
-    assertEquals(TajoDataTypes.Type.INTERVAL, result.type());
+    assertEquals(Type.Interval, result.type());
     assertEquals(new IntervalDatum(40 * 60 * 1000), result);
 
     // timestamp '2001-08-31 01:00:00' + interval '1 mons' ==> timestamp 2001-09-30 01:00:00
     // In this case all datums are UTC
     datum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(2001, 8, 31, 1, 0, 0, 0));
     result = datum.plus(new IntervalDatum(1, 0));
-    assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-30 01:00:00", result.asChars());
+    assertEquals(Type.Timestamp, result.type());
+    assertEquals(DatumFactory.parseTimestamp("2001-09-30 01:00:00", null), result);
   }
 }

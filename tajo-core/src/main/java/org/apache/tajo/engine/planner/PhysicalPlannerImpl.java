@@ -251,7 +251,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   }
 
   @VisibleForTesting
-  public long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) throws IOException {
+  public static long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) {
     long size = 0;
     for (String tableId : tableIds) {
       FragmentProto[] fragmentProtos = ctx.getTables(tableId);
@@ -484,21 +484,23 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     }
   }
 
-  private PhysicalExec createBestLeftOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
-                                                   PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
-    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
-    long rightTableVolume = estimateSizeRecursive(context, rightLineage);
-    boolean hashJoin;
+  private static boolean isHashOuterJoinFeasible(TaskAttemptContext context, LogicalNode innerRelation) {
+    String [] rightLineage = PlannerUtil.getRelationLineage(innerRelation);
+    long estimatedVolume = estimateSizeRecursive(context, rightLineage);
 
     QueryContext queryContext = context.getQueryContext();
 
     if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = rightTableVolume <=  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
+      return estimatedVolume <=  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     } else {
-      hashJoin = rightTableVolume <=  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
+      return estimatedVolume <=  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
     }
+  }
 
-    if (hashJoin) {
+  private PhysicalExec createBestLeftOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
+                                                   PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
+
+    if (isHashOuterJoinFeasible(context, plan.getRightChild())) {
       // we can implement left outer join using hash join, using the right operand as the build relation
       LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
@@ -514,19 +516,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     //if the left operand is small enough => implement it as a left outer hash join with exchanged operators (note:
     // blocking, but merge join is blocking as well)
-    String [] outerLineage4 = PlannerUtil.getRelationLineage(plan.getLeftChild());
-    long leftTableVolume = estimateSizeRecursive(context, outerLineage4);
-    boolean hashJoin;
-
-    QueryContext queryContext = context.getQueryContext();
-
-    if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = leftTableVolume <=  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT) * StorageUnit.MB;
-    } else {
-      hashJoin = leftTableVolume <=  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT)* StorageUnit.MB;
-    }
-
-    if (hashJoin){
+    if (isHashOuterJoinFeasible(context, plan.getLeftChild())){
       LOG.info("Right Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
     } else {
@@ -649,12 +639,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   private PhysicalExec createBestFullOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                    PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
-    String [] leftLineage = PlannerUtil.getRelationLineage(plan.getLeftChild());
-    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
-    long outerSize2 = estimateSizeRecursive(context, leftLineage);
-    long innerSize2 = estimateSizeRecursive(context, rightLineage);
-    final long threshold = 1048576 * 128;
-    if (outerSize2 < threshold || innerSize2 < threshold) {
+    // The inner relation is always expected to be smaller than the outer relation.
+    // (See GreedyHeuristicJoinOrderAlgorithm:::swapLeftAndRightIfNecessary().
+    // Thus, we need to evaluate only that the right table is able to be loaded or not.
+    if (isHashOuterJoinFeasible(context, plan.getRightChild())) {
       return createFullOuterHashJoinPlan(context, plan, leftExec, rightExec);
     } else {
       return createFullOuterMergeJoinPlan(context, plan, leftExec, rightExec);
@@ -676,6 +664,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return new HashLeftSemiJoinExec(context, plan, leftExec, rightExec);
 
         default:
+          // TODO: implement sort-based semi join operator
           LOG.error("Invalid Left Semi Join Algorithm Enforcer: " + algorithm.name());
           LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.IN_MEMORY_HASH_JOIN.name());
           return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
@@ -701,6 +690,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return new HashLeftSemiJoinExec(context, plan, rightExec, leftExec);
 
         default:
+          // TODO: implement sort-based semi join operator
           LOG.error("Invalid Left Semi Join Algorithm Enforcer: " + algorithm.name());
           LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.IN_MEMORY_HASH_JOIN.name());
           return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
@@ -726,6 +716,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return new HashLeftAntiJoinExec(context, plan, leftExec, rightExec);
 
         default:
+          // TODO: implement sort-based anti join operator
           LOG.error("Invalid Left Semi Join Algorithm Enforcer: " + algorithm.name());
           LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.IN_MEMORY_HASH_JOIN.name());
           return new HashLeftAntiJoinExec(context, plan, leftExec, rightExec);
@@ -751,6 +742,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return new HashLeftSemiJoinExec(context, plan, rightExec, leftExec);
 
         default:
+          // TODO: implement sort-based anti join operator
           LOG.error("Invalid Left Semi Join Algorithm Enforcer: " + algorithm.name());
           LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.IN_MEMORY_HASH_JOIN.name());
           return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
@@ -931,13 +923,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
           List<Fragment> fileFragments = new ArrayList<>();
 
-          FileTablespace space = (FileTablespace) TablespaceManager.get(scanNode.getTableDesc().getUri());
+          FileTablespace space = TablespaceManager.get(scanNode.getTableDesc().getUri());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
             fileFragments.addAll(Arrays.asList(space.split(scanNode.getCanonicalName(), path)));
           }
 
           FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
+                FragmentConvertor.toFragmentProtoArray(conf, fileFragments.toArray(new Fragment[fileFragments.size()]));
 
           ctx.addFragments(scanNode.getCanonicalName(), fragments);
           return new PartitionMergeScanExec(ctx, scanNode, fragments);

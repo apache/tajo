@@ -19,19 +19,12 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public class IsNullEval extends UnaryEval {
-  // it's just a hack to emulate a binary expression
-  private final static ConstEval DUMMY_EVAL = new ConstEval(DatumFactory.createBool(true));
-  private static final DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
-
   // persistent variables
   @Expose private boolean isNot;
 
@@ -41,8 +34,8 @@ public class IsNullEval extends UnaryEval {
   }
 
   @Override
-  public DataType getValueType() {
-    return RES_TYPE;
+  public Type getValueType() {
+    return Type.Bool;
   }
 
   @Override

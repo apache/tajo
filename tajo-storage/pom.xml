@@ -40,6 +40,7 @@
     <module>tajo-storage-jdbc</module>
     <module>tajo-storage-pgsql</module>
     <module>tajo-storage-s3</module>
+    <module>tajo-storage-mongodb</module>
   </modules>
 
   <build>

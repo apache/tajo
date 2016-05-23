@@ -31,6 +31,7 @@ import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.Pair;
@@ -57,7 +58,7 @@ public class CreateTableExecutor {
     if (createTable.hasOptions()) {
       meta = CatalogUtil.newTableMeta(createTable.getStorageType(), createTable.getOptions());
     } else {
-      meta = CatalogUtil.newTableMeta(createTable.getStorageType());
+      meta = CatalogUtil.newTableMeta(createTable.getStorageType(), queryContext.getConf());
     }
 
     if(PlannerUtil.isFileStorageType(createTable.getStorageType()) && createTable.isExternal()){
@@ -89,7 +90,7 @@ public class CreateTableExecutor {
     Pair<String, String> separatedNames = getQualifiedName(queryContext.getCurrentDatabase(), tableName);
     String databaseName = separatedNames.getFirst();
     String simpleTableName = separatedNames.getSecond();
-    String qualifiedName = CatalogUtil.buildFQName(databaseName, simpleTableName);
+    String qualifiedName = IdentifierUtil.buildFQName(databaseName, simpleTableName);
 
     // Check if the table to be created already exists
     boolean exists = catalog.existsTable(databaseName, simpleTableName);
@@ -125,8 +126,8 @@ public class CreateTableExecutor {
   }
 
   private Pair<String, String> getQualifiedName(String currentDatabase, String tableName) {
-    if (CatalogUtil.isFQTableName(tableName)) {
-      String [] splitted = CatalogUtil.splitFQTableName(tableName);
+    if (IdentifierUtil.isFQTableName(tableName)) {
+      String [] splitted = IdentifierUtil.splitFQTableName(tableName);
       return new Pair<>(splitted[0], splitted[1]);
     } else {
       return new Pair<>(currentDatabase, tableName);

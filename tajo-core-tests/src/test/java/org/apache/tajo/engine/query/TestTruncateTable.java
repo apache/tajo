@@ -44,7 +44,7 @@ public class TestTruncateTable extends QueryTestCaseBase {
       while (res.next()) {
         numRows++;
       }
-      assertEquals(5, numRows);
+      assertEquals(8, numRows);
       res.close();
 
       executeString("truncate table truncate_table1");
@@ -58,7 +58,7 @@ public class TestTruncateTable extends QueryTestCaseBase {
       assertEquals(0, numRows);
       res.close();
     } finally {
-      executeString("DROP TABLE truncate_table1 PURGE");
+      executeString("DROP TABLE truncate_table1");
     }
   }
 
@@ -90,7 +90,7 @@ public class TestTruncateTable extends QueryTestCaseBase {
       assertEquals(4, numRows);
       res.close();
     } finally {
-      executeString("DROP TABLE truncate_table2 PURGE");
+      executeString("DROP TABLE truncate_table2");
     }
   }
 }

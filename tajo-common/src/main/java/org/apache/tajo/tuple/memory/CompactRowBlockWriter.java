@@ -406,16 +406,6 @@ public class CompactRowBlockWriter implements RowWriter {
   }
 
   @Override
-  public void putInet4(int val) {
-    ensureSize(SizeOf.SIZE_OF_INT);
-    long addr = currentAddr();
-
-    PlatformDependent.putInt(addr, val);
-    curFieldIdx++;
-    forwardField(SizeOf.SIZE_OF_INT);
-  }
-
-  @Override
   public void putProtoDatum(ProtobufDatum val) {
     putBlob(val.asByteArray());
   }

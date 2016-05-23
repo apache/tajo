@@ -23,23 +23,20 @@ package org.apache.tajo.jdbc;
 
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.*;
+import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.TajoProtos.CodecType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.tuple.memory.MemoryBlock;
 import org.apache.tajo.tuple.memory.MemoryRowBlock;
 import org.apache.tajo.util.CompressionUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,6 +47,7 @@ import java.nio.ByteBuffer;
 import java.sql.*;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
@@ -69,10 +67,12 @@ public class TestResultSet {
     conf = util.getConfiguration();
     sm = TablespaceManager.getDefault();
 
-    scoreSchema = new Schema();
-    scoreSchema.addColumn("deptname", Type.TEXT);
-    scoreSchema.addColumn("score", Type.INT4);
-    scoreMeta = CatalogUtil.newTableMeta("TEXT");
+    scoreSchema = SchemaBuilder.builder()
+        .add("deptname", Type.TEXT)
+        .add("score", Type.INT4)
+        .build();
+
+    scoreMeta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
     rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scoreSchema));
     TableStats stats = new TableStats();
 
@@ -100,7 +100,7 @@ public class TestResultSet {
     stats.setAvgRows(tupleNum);
     stats.setNumBlocks(1000);
     stats.setNumShuffleOutputs(100);
-    desc = new TableDesc(CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score"),
+    desc = new TableDesc(IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score"),
         scoreSchema, scoreMeta, p.toUri());
     desc.setStats(stats);
     assertEquals(tupleNum, rowBlock.rows());
@@ -197,71 +197,66 @@ public class TestResultSet {
       String query = "select col1, col2, col3 from " + tableName;
 
       String [] table = new String[] {tableName};
-      Schema schema = new Schema();
-      schema.addColumn("col1", Type.DATE);
-      schema.addColumn("col2", Type.TIME);
-      schema.addColumn("col3", Type.TIMESTAMP);
+      Schema schema = SchemaBuilder.builder()
+          .add("col1", Type.DATE)
+          .add("col2", Type.TIME)
+          .add("col3", Type.TIMESTAMP)
+          .build();
       Schema [] schemas = new Schema[] {schema};
       String [] data = {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"
       };
-      KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
       res = TajoTestingCluster
-          .run(table, schemas, tableOptions, new String[][]{data}, query, client);
+          .run(table, schemas, new String[][]{data}, query, client);
 
       assertTrue(res.next());
 
-      Date date = res.getDate(1);
-      assertNotNull(date);
-      assertEquals(Date.valueOf("2014-01-01"), date);
+      assertEquals(Date.valueOf("2014-01-01"), res.getDate(1));
+      assertEquals(Timestamp.valueOf("2014-01-01 00:00:00"), res.getTimestamp(1));
+      assertEquals(Time.valueOf("00:00:00"), res.getTime(1));
+      assertEquals(res.getDate(1), res.getDate("col1"));
 
-      date = res.getDate("col1");
-      assertNotNull(date);
-      assertEquals(Date.valueOf("2014-01-01"), date);
+      try {
+        // Does not support
+        fail(res.getDate(2).toString());
+        fail(res.getTimestamp(2).toString());
+      } catch (TajoSQLException e) {
+      }
+      assertEquals(Time.valueOf("01:00:00"), res.getTime(2));
+      assertEquals(res.getTime(2), res.getTime("col2"));
 
-      Time time = res.getTime(2);
-      assertNotNull(time);
-      assertEquals(Time.valueOf("01:00:00"), time);
-
-      time = res.getTime("col2");
-      assertNotNull(time);
-      assertEquals(Time.valueOf("01:00:00"), time);
-
-      Timestamp timestamp = res.getTimestamp(3);
-      assertNotNull(timestamp);
-      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00"), timestamp);
-
-      timestamp = res.getTimestamp("col3");
-      assertNotNull(timestamp);
-      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00"), timestamp);
+      assertEquals(Date.valueOf("2014-01-01"), res.getDate(3));
+      assertEquals(Time.valueOf("01:00:00"), res.getTime(3));
+      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00.0"), res.getTimestamp(3));
+      assertEquals(res.getTimestamp(3), res.getTimestamp("col3"));
 
       // assert with timezone
-      Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT+9"));
-      date = res.getDate(1, cal);
-      assertNotNull(date);
-      assertEquals("2014-01-01", date.toString());
+      //Current timezone + 1 hour
+      TimeZone tz = TimeZone.getDefault();
+      tz.setRawOffset(tz.getRawOffset() + (int) TimeUnit.HOURS.toMillis(1));
 
-      date = res.getDate("col1", cal);
-      assertNotNull(date);
-      assertEquals("2014-01-01", date.toString());
+      Calendar cal = Calendar.getInstance(tz);
+      assertEquals(tz.getRawOffset(), cal.getTimeZone().getRawOffset());
 
-      time = res.getTime(2, cal);
-      assertNotNull(time);
-      assertEquals("10:00:00", time.toString());
+      assertEquals(Date.valueOf("2013-12-31"), res.getDate(1, cal));
+      assertEquals(Time.valueOf("23:00:00"), res.getTime(1, cal));
+      assertEquals(Timestamp.valueOf("2013-12-31 23:00:00.0"), res.getTimestamp(1, cal));
+      assertEquals(res.getDate(1, cal), res.getDate("col1", cal));
 
-      time = res.getTime("col2", cal);
-      assertNotNull(time);
-      assertEquals("10:00:00", time.toString());
+      try {
+        // Does not support
+        fail(res.getDate(2, cal).toString());
+        fail(res.getTimestamp(2, cal).toString());
+      } catch (TajoSQLException e) {
+      }
+      assertEquals(Time.valueOf("00:00:00"), res.getTime(2, cal));
+      assertEquals(res.getTime(2, cal), res.getTime("col2", cal));
 
-      timestamp = res.getTimestamp(3, cal);
-      assertNotNull(timestamp);
-      assertEquals("2014-01-01 10:00:00.0", timestamp.toString());
-
-      timestamp = res.getTimestamp("col3", cal);
-      assertNotNull(timestamp);
-      assertEquals("2014-01-01 10:00:00.0", timestamp.toString());
+      assertEquals(Date.valueOf("2013-12-31"), res.getDate(3, cal));
+      assertEquals(Time.valueOf("01:00:00"), res.getTime(3, cal));
+      assertEquals(Timestamp.valueOf("2014-01-01 01:00:00.0"), res.getTimestamp(3, cal));
+      assertEquals(res.getTimestamp(3, cal), res.getTimestamp("col3", cal));
     } finally {
       if (res != null) {
         res.close();

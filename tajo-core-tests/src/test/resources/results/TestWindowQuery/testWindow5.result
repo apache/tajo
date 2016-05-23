@@ -5,3 +5,6 @@ l_orderkey,?windowfunction,l_discount,?windowfunction_1
 2,0.0,0.0,38.0
 3,0.16,0.06,94.0
 3,0.16,0.1,94.0
+null,null,null,null
+null,null,null,null
+null,null,null,null

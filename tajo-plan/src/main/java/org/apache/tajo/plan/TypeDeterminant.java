@@ -25,18 +25,20 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.function.FunctionUtil;
 import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.type.Type;
 
 import java.util.Stack;
 
+import static org.apache.tajo.catalog.TypeConverter.convert;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
 import static org.apache.tajo.common.TajoDataTypes.Type.NULL_TYPE;
@@ -58,14 +60,14 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   public DataType visitUnaryOperator(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, UnaryOperator expr)
       throws TajoException {
     stack.push(expr);
-    DataType dataType = null;
+    DataType dataType;
     switch (expr.getType()) {
     case IsNullPredicate:
     case ExistsPredicate:
       dataType = BOOL_TYPE;
       break;
     case Cast:
-      dataType = LogicalPlanner.convertDataType(((CastExpr)expr).getTarget()).getDataType();
+      dataType = convert(LogicalPlanner.convertDataType(((CastExpr)expr).getTarget())).getDataType();
       break;
     default:
       dataType = visit(ctx, stack, expr.getChild());
@@ -81,24 +83,24 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     DataType lhsType = visit(ctx, stack, expr.getLeft());
     DataType rhsType = visit(ctx, stack, expr.getRight());
     stack.pop();
-    return computeBinaryType(expr.getType(), lhsType, rhsType);
+    return convert(computeBinaryType(expr.getType(), convert(lhsType), convert(rhsType))).getDataType();
   }
 
-  public DataType computeBinaryType(OpType type, DataType lhsDataType, DataType rhsDataType) throws TajoException {
+  public Type computeBinaryType(OpType type, Type lhsDataType, Type rhsDataType) throws TajoException {
     Preconditions.checkNotNull(type);
     Preconditions.checkNotNull(lhsDataType);
     Preconditions.checkNotNull(rhsDataType);
 
     if(OpType.isLogicalType(type) || OpType.isComparisonType(type)) {
-      return BOOL_TYPE;
+      return Type.Bool;
     } else if (OpType.isArithmeticType(type)) {
       return DataTypeUtil.determineType(lhsDataType, rhsDataType);
     } else if (type == OpType.Concatenate) {
-      return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT);
+      return Type.Text;
     } else if (type == OpType.InPredicate) {
-      return BOOL_TYPE;
+      return Type.Bool;
     } else if (type == OpType.LikePredicate || type == OpType.SimilarToPredicate || type == OpType.Regexp) {
-      return BOOL_TYPE;
+      return Type.Bool;
     } else {
       throw new TajoInternalError(type.name() + "is not binary type");
     }
@@ -276,7 +278,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   @Override
   public DataType visitDataType(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DataTypeExpr expr)
       throws TajoException {
-    return LogicalPlanner.convertDataType(expr).getDataType();
+    return convert(LogicalPlanner.convertDataType(expr)).getDataType();
   }
 
   @Override

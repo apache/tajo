@@ -29,7 +29,6 @@ import org.apache.tajo.worker.event.TaskManagerEvent;
 
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeoutException;
 
 public class MockTaskManager extends TaskManager {
 
@@ -61,7 +60,7 @@ public class MockTaskManager extends TaskManager {
           .setQueryContext(new QueryContext(new TajoConf()).getProto())
           .setQueryOutputPath("testpath")
           .setShuffleType(PlanProto.ShuffleType.HASH_SHUFFLE);
-      return new MockExecutionBlock(getWorkerContext(), builder.build());
+      return new MockExecutionBlockContext(getWorkerContext(), builder.build());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

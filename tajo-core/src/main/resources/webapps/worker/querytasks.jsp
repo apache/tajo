@@ -173,7 +173,9 @@
   <table border="1" width="100%" class="border_table">
     <tr><td align='right' width='180px'>Status:</td><td><%=stage.getState()%></td></tr>
     <tr><td align='right'>Started:</td><td><%=df.format(stage.getStartTime())%> ~ <%=stage.getFinishTime() == 0 ? "-" : df.format(stage.getFinishTime())%></td></tr>
-    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=stage.getTaskScheduler().getHostLocalAssigned()%>, Rack Local Tasks: <%=stage.getTaskScheduler().getRackLocalAssigned()%>)</td></tr>
+    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=stage.getTaskScheduler().getHostLocalAssigned()%>,
+      Rack Local Tasks: <%=stage.getTaskScheduler().getRackLocalAssigned()%>,
+      Canceled Attempt: <%=stage.getTaskScheduler().getCancellation() %>)</td></tr>
     <tr><td align='right'>Progress:</td><td><%=JSPUtil.percentFormat((float) (totalProgress / numTasks))%>%</td></tr>
     <tr><td align='right'># Shuffles:</td><td><%=numShuffles%></td></tr>
     <tr><td align='right'>Input Bytes:</td><td><%=FileUtil.humanReadableByteCount(totalInputBytes, false) + " (" + nf.format(totalInputBytes) + " B)"%></td></tr>

@@ -26,7 +26,7 @@
 
  <property>
   <name>tajo.rootdir</name>
-  <value>hdfs://namenode_hostname:port/path</value>
+  <value>hdfs://nameservice/path</value>
   <description>Base directory including system directories.</description>
 </property>
 
@@ -39,7 +39,7 @@
 <property>
   <name>tajo.master.client-rpc.address</name>
   <value>hostname:26002</value>
-  <description>TajoMaster binding address between master and clients.</description>
+  <description>TajoMaster binding address between master and remote clients.</description>
 </property>
 
 <property>
@@ -71,9 +71,9 @@
 </property>
 
 <property>
-  <name>tajo.worker.resource.disks</name>
+  <name>tajo.worker.resource.disk.parallel-execution.num</name>
   <value>2</value>
-  <description>Available disk capacity (usually number of disks)</description>
+  <description>Number of scan concurrency per disk</description>
 </property>
 
 <property>

@@ -36,10 +36,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.File;
@@ -95,8 +95,7 @@ public class LocalTajoTestingUtility {
 
   public void setup(String[] names,
                     String[] tablepaths,
-                    Schema[] schemas,
-                    KeyValueSet option) throws Exception {
+                    Schema[] schemas) throws Exception {
     LOG.info("===================================================");
     LOG.info("Starting Test Cluster.");
     LOG.info("===================================================");
@@ -115,14 +114,14 @@ public class LocalTajoTestingUtility {
       fs.mkdirs(tablePath);
       Path dfsPath = new Path(tablePath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
-      TableMeta meta = CatalogUtil.newTableMeta("TEXT", option);
+      TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, conf);
 
       // Add fake table statistic data to tables.
       // It gives more various situations to unit tests.
       TableStats stats = new TableStats();
       stats.setNumBytes(TPCH.tableVolumes.get(names[i]));
       TableDesc tableDesc = new TableDesc(
-          CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, names[i]), schemas[i], meta,
+          IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, names[i]), schemas[i], meta,
           tablePath.toUri());
       tableDesc.setStats(stats);
       util.getMaster().getCatalog().createTable(tableDesc);

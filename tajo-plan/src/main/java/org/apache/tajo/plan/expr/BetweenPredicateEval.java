@@ -19,17 +19,14 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public class BetweenPredicateEval extends EvalNode implements Cloneable {
-  private static final TajoDataTypes.DataType RES_TYPE = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
   @Expose private boolean not;
   @Expose private boolean symmetric;
   @Expose private EvalNode predicand;
@@ -194,8 +191,8 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public TajoDataTypes.DataType getValueType() {
-    return RES_TYPE;
+  public Type getValueType() {
+    return Type.Bool;
   }
 
   @Override

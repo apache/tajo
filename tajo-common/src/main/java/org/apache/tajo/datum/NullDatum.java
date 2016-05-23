@@ -18,25 +18,27 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.TajoRuntimeException;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.type.Type.Bool;
+import static org.apache.tajo.type.Type.Null;
 
 public class NullDatum extends Datum {
   private static NullDatum instance;
-  public static final String DEFAULT_TEXT = "";
+  public static final String DEFAULT_TEXT = "\\\\N";
   private static final byte [] EMPTY_BYTES = new byte[0];
   private static final DataType NULL_DATA_TYPE;
 
   static {
     instance = new NullDatum();
-    NULL_DATA_TYPE = DataType.newBuilder().setType(Type.NULL_TYPE).build();
+    NULL_DATA_TYPE = DataType.newBuilder().setType(TajoDataTypes.Type.NULL_TYPE).build();
   }
 
   private NullDatum() {
-    super(Type.NULL_TYPE);
+    super(Null);
   }
 
   public static NullDatum get() {
@@ -59,7 +61,7 @@ public class NullDatum extends Datum {
 
   @Override
   public boolean asBool() {
-    throw new TajoRuntimeException(new InvalidValueForCastException(Type.NULL_TYPE, Type.BOOLEAN));
+    throw new TajoRuntimeException(new InvalidValueForCastException(type, Bool));
   }
 
   @Override
@@ -119,7 +121,7 @@ public class NullDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == Type.NULL_TYPE) {
+    if (datum.type().isNull()) {
       return 0;
     } else {
       return 1;

@@ -94,7 +94,7 @@ public class SimpleScheduler extends AbstractQueryScheduler {
     NodeResource resource = NodeResources.createResource(0);
     NodeResource totalResource = NodeResources.createResource(0);
     for (NodeStatus nodeStatus : getRMContext().getNodes().values()) {
-      NodeResources.addTo(resource, nodeStatus.getAvailableResource());
+      NodeResources.addTo(resource, nodeStatus.getReservedResource());
       NodeResources.addTo(totalResource, nodeStatus.getTotalResourceCapability());
 
     }
@@ -229,9 +229,9 @@ public class SimpleScheduler extends AbstractQueryScheduler {
           LOG.warn("Can't find the node. id :" + workerId);
           continue;
         } else {
-          if (NodeResources.fitsIn(capacity, nodeStatus.getAvailableResource())) {
+          if (NodeResources.fitsIn(capacity, nodeStatus.getReservedResource())) {
             NodeResources.subtractFrom(getClusterResource(), capacity);
-            NodeResources.subtractFrom(nodeStatus.getAvailableResource(), capacity);
+            NodeResources.subtractFrom(nodeStatus.getReservedResource(), capacity);
             allocatedResources++;
             resourceBuilder.setResource(capacity.getProto());
             resourceBuilder.setWorkerId(workerId);

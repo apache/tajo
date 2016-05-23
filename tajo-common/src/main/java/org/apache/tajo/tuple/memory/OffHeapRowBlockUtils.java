@@ -121,9 +121,6 @@ public class OffHeapRowBlockUtils {
     case INT4:
       compare = Ints.compare(tuple1.getInt4(index), tuple2.getInt4(index));
       break;
-    case INET4:
-      compare = UnsignedInts.compare(tuple1.getInt4(index), tuple2.getInt4(index));
-      break;
     case TIME:
     case TIMESTAMP:
     case INT8:
@@ -213,9 +210,6 @@ public class OffHeapRowBlockUtils {
           break;
         case PROTOBUF:
           writer.putProtoDatum((ProtobufDatum) tuple.getProtobufDatum(colIdx));
-          break;
-        case INET4:
-          writer.putInet4(tuple.getInt4(colIdx));
           break;
         case NULL_TYPE:
           writer.skipField();

@@ -52,17 +52,14 @@ public class QueryMasterManagerService extends CompositeService
 
   private AsyncRpcServer rpcServer;
   private InetSocketAddress bindAddr;
-  private String addr;
-  private int port;
 
   private QueryMaster queryMaster;
 
   private TajoWorker.WorkerContext workerContext;
 
-  public QueryMasterManagerService(TajoWorker.WorkerContext workerContext, int port) {
+  public QueryMasterManagerService(TajoWorker.WorkerContext workerContext) {
     super(QueryMasterManagerService.class.getName());
     this.workerContext = workerContext;
-    this.port = port;
   }
 
   public QueryMaster getQueryMaster() {
@@ -74,8 +71,7 @@ public class QueryMasterManagerService extends CompositeService
 
     TajoConf tajoConf = TUtil.checkTypeAndGet(conf, TajoConf.class);
     // Setup RPC server
-    InetSocketAddress initIsa =
-        new InetSocketAddress("0.0.0.0", port);
+    InetSocketAddress initIsa = tajoConf.getSocketAddrVar(TajoConf.ConfVars.WORKER_QM_RPC_ADDRESS);
     if (initIsa.getAddress() == null) {
       throw new IllegalArgumentException("Failed resolve of " + initIsa);
     }
@@ -85,17 +81,13 @@ public class QueryMasterManagerService extends CompositeService
     this.rpcServer.start();
 
     this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
-    this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
 
-    this.port = bindAddr.getPort();
-
-    queryMaster = new QueryMaster(workerContext);
+    this.queryMaster = new QueryMaster(workerContext);
     addService(queryMaster);
     // Get the master address
-    LOG.info("QueryMasterManagerService is bind to " + addr);
-    tajoConf.setVar(TajoConf.ConfVars.WORKER_QM_RPC_ADDRESS, addr);
-
-    super.serviceInit(conf);
+    LOG.info("QueryMasterManagerService is bind to " + bindAddr);
+    tajoConf.setVar(TajoConf.ConfVars.WORKER_QM_RPC_ADDRESS, NetUtils.getHostPortString(bindAddr));
+    super.serviceInit(tajoConf);
   }
 
   @Override

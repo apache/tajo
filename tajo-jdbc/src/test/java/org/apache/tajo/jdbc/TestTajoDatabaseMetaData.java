@@ -21,8 +21,8 @@ package org.apache.tajo.jdbc;
 import com.google.common.collect.Sets;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.type.TajoTypeUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -260,9 +260,9 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
   private static String getTestColName(String dbName, String tableName, int i) {
     if (i % 2 == 1) {
-      return CatalogUtil.denormalizeIdentifier(dbName + "_" + tableName + "_col") + " int";
+      return IdentifierUtil.denormalizeIdentifier(dbName + "_" + tableName + "_col") + " int";
     } else {
-      return CatalogUtil.denormalizeIdentifier(dbName + "_" + tableName + "_COL") + " int";
+      return IdentifierUtil.denormalizeIdentifier(dbName + "_" + tableName + "_COL") + " int";
     }
   }
 
@@ -293,7 +293,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
           TUtil.putToNestedList(tables, dbName, tableName);
 
-          executeString("CREATE TABLE " + dbName + "." + CatalogUtil.denormalizeIdentifier(tableName) +
+          executeString("CREATE TABLE " + dbName + "." + IdentifierUtil.denormalizeIdentifier(tableName) +
               " (" + getTestColName(dbName, tableName, 1) +
               ") PARTITION BY COLUMN (" + getTestColName(dbName, tableName, 2) + ")").close();
           assertTableExists(dbName + "." + tableName);
@@ -308,7 +308,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
           TUtil.putToNestedList(tables, dbName, tableName);
 
-          executeString("CREATE TABLE " + dbName + "." + CatalogUtil.denormalizeIdentifier(tableName) +
+          executeString("CREATE TABLE " + dbName + "." + IdentifierUtil.denormalizeIdentifier(tableName) +
               " (" + getTestColName(dbName, tableName, 1) +
               ") PARTITION BY COLUMN (" + getTestColName(dbName, tableName, 2) + ")").close();
           assertTableExists(dbName + "." + tableName);

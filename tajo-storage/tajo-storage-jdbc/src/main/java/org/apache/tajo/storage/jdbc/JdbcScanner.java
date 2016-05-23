@@ -36,6 +36,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -231,11 +232,13 @@ public abstract class JdbcScanner implements Scanner {
           tuple.put(column_idx, DatumFactory.createDate(1900 + date.getYear(), 1 + date.getMonth(), date.getDate()));
           break;
         case TIME:
-          tuple.put(column_idx, new TimeDatum(resultSet.getTime(resultIdx).getTime() * 1000));
+          final Time time = resultSet.getTime(resultIdx);
+          tuple.put(column_idx, new TimeDatum(
+              DateTimeUtil.toTime(time.getHours(), time.getMinutes(), time.getSeconds(), 0)));
           break;
         case TIMESTAMP:
           tuple.put(column_idx,
-              DatumFactory.createTimestmpDatumWithJavaMillis(resultSet.getTimestamp(resultIdx).getTime()));
+              DatumFactory.createTimestampDatumWithJavaMillis(resultSet.getTimestamp(resultIdx).getTime()));
           break;
         case BINARY:
         case VARBINARY:
@@ -255,7 +258,7 @@ public abstract class JdbcScanner implements Scanner {
   private ResultSetIterator executeQueryAndGetIter() {
     try {
       LOG.info("Generated SQL: " + generatedSql);
-      Connection conn = DriverManager.getConnection(fragment.uri, connProperties);
+      Connection conn = DriverManager.getConnection(fragment.getUri().toASCIIString(), connProperties);
       Statement statement = conn.createStatement();
       ResultSet resultset = statement.executeQuery(generatedSql);
       return new ResultSetIterator((resultset));

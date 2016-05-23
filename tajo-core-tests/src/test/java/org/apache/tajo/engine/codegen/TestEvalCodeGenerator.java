@@ -21,6 +21,7 @@ package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
@@ -29,18 +30,20 @@ import org.junit.Test;
 
 public class TestEvalCodeGenerator extends ExprTestBase {
   private static Schema schema;
+
   static {
-    schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("nullable", TajoDataTypes.Type.NULL_TYPE);
+    schema = SchemaBuilder.builder()
+        .add("col0", TajoDataTypes.Type.INT1)
+        .add("col1", TajoDataTypes.Type.INT2)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT8)
+        .add("col4", TajoDataTypes.Type.FLOAT4)
+        .add("col5", TajoDataTypes.Type.FLOAT8)
+        .add("col6", TajoDataTypes.Type.TEXT)
+        .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .add("col8", TajoDataTypes.Type.BOOLEAN)
+        .add("nullable", TajoDataTypes.Type.NULL_TYPE)
+        .build();
   }
 
   @Test
@@ -65,50 +68,47 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testNullHandling() throws TajoException {
-    schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 1));
-    schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col9", TajoDataTypes.Type.BOOLEAN);
-    schema.addColumn("nullable", TajoDataTypes.Type.NULL_TYPE);
+    schema = SchemaBuilder.builder()
+        .add("col0", TajoDataTypes.Type.INT1)
+        .add("col1", TajoDataTypes.Type.INT2)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT8)
+        .add("col4", TajoDataTypes.Type.FLOAT4)
+        .add("col5", TajoDataTypes.Type.FLOAT8)
+        .add("col6", TajoDataTypes.Type.TEXT)
+        .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 1))
+        .add("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .add("col9", TajoDataTypes.Type.BOOLEAN)
+        .add("nullable", TajoDataTypes.Type.NULL_TYPE)
+        .build();
 
-    testEval(schema, "table1", ",1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,,3,4.5,6.5,F6,abc,abc,t,", "select col2 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,,4.5,6.5,F6,abc,abc,t,", "select col3 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,,6.5,F6,abc,abc,t,", "select col4 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,,F6,abc,abc,t,", "select col5 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,,abc,abc,t,", "select col6 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is null from table1;", new String[]{"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is null from table1;", new String [] {"t"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,,", "select col9 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "\\NULL,1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,\\NULL,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,\\NULL,3,4.5,6.5,F6,abc,abc,t,", "select col2 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,\\NULL,4.5,6.5,F6,abc,abc,t,", "select col3 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,\\NULL,6.5,F6,abc,abc,t,", "select col4 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,\\NULL,F6,abc,abc,t,", "select col5 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,\\NULL,abc,abc,t,", "select col6 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,\\NULL,abc,t,", "select col7 is null from table1;", new String[]{"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,\\NULL,t,", "select col8 is null from table1;", new String [] {"t"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,\\NULL,", "select col9 is null from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,t,", "select nullable is null from table1;", new String [] {"t"});
 
-    testEval(schema, "table1", ",1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,,3,4.5,6.5,F6,abc,abc,t,", "select col2 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,,4.5,6.5,F6,abc,abc,t,", "select col3 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,,6.5,F6,abc,abc,t,", "select col4 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,,F6,abc,abc,t,", "select col5 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,,abc,abc,t,", "select col6 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,,abc,t,", "select col7 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,,t,", "select col8 is not null from table1;", new String [] {"f"});
-    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,,", "select col9 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "\\NULL,1,2,3,4.5,6.5,F6,abc,abc,t", "select col0 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,\\NULL,2,3,4.5,6.5,F6,abc,abc,t,", "select col1 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,\\NULL,3,4.5,6.5,F6,abc,abc,t,", "select col2 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,\\NULL,4.5,6.5,F6,abc,abc,t,", "select col3 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,\\NULL,6.5,F6,abc,abc,t,", "select col4 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,\\NULL,F6,abc,abc,t,", "select col5 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,\\NULL,abc,abc,t,", "select col6 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,\\NULL,abc,t,", "select col7 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,\\NULL,t,", "select col8 is not null from table1;", new String [] {"f"});
+    testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,\\NULL,", "select col9 is not null from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5,F6,abc,abc,t,", "select nullable is not null from table1;", new String [] {"f"});
   }
 
   @Test
   public void testComparison() throws TajoException {
-    Schema inetSchema = new Schema();
-    inetSchema.addColumn("addr1", TajoDataTypes.Type.INET4);
-    inetSchema.addColumn("addr2", TajoDataTypes.Type.INET4);
-
     testSimpleEval("select (1 > null AND false)", new String[] {"f"}); // unknown - false -> false
     testSimpleEval("select (1::int8 > null) is null", new String[] {"t"});
 
@@ -124,9 +124,6 @@ public class TestEvalCodeGenerator extends ExprTestBase {
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col3 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col4 from table1;", new String [] {"f"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 1 = col5 from table1;", new String [] {"f"});
-
-    testEval(inetSchema, "table1", "192.168.0.1,192.168.0.1", "select addr1 = addr2 from table1;", new String[]{"t"});
-    testEval(inetSchema, "table1", "192.168.0.1,192.168.0.2", "select addr1 = addr2 from table1;", new String[]{"f"});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col1 from table1;", new String [] {"t"});
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 3 <> col2 from table1;", new String [] {"t"});
@@ -161,9 +158,10 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testBetweenAsymmetric() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .build();
     testEval(schema, "table1", "0,", "select col1 between 1 and 3 from table1", new String[]{"f"});
     testEval(schema, "table1", "1,", "select col1 between 1 and 3 from table1", new String[]{"t"});
     testEval(schema, "table1", "2,", "select col1 between 1 and 3 from table1", new String[]{"t"});
@@ -195,9 +193,10 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testBetweenSymmetric() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .build();
     testEval(schema, "table1", "0,", "select col1 between symmetric 1 and 3 from table1", new String[]{"f"});
     testEval(schema, "table1", "1,", "select col1 between symmetric 1 and 3 from table1", new String[]{"t"});
     testEval(schema, "table1", "2,", "select col1 between symmetric 1 and 3 from table1", new String[]{"t"});
@@ -230,16 +229,16 @@ public class TestEvalCodeGenerator extends ExprTestBase {
 
   @Test
   public void testUnary() throws TajoException {
-    schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col8", TajoDataTypes.Type.BOOLEAN);
+    schema = SchemaBuilder.builder()
+    .add("col0", TajoDataTypes.Type.INT1)
+    .add("col1", TajoDataTypes.Type.INT2)
+    .add("col2", TajoDataTypes.Type.INT4)
+    .add("col3", TajoDataTypes.Type.INT8)
+    .add("col4", TajoDataTypes.Type.FLOAT4)
+    .add("col5", TajoDataTypes.Type.FLOAT8)
+    .add("col6", TajoDataTypes.Type.TEXT)
+    .add("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+    .add("col8", TajoDataTypes.Type.BOOLEAN).build();
 
 
     // sign test
@@ -302,9 +301,10 @@ public class TestEvalCodeGenerator extends ExprTestBase {
     testSimpleEval("select length('123456') as col1 ", new String[]{"6"});
 
     testEval(schema, "table1", "0,1,2,3,4.5,6.5", "select 'abc' || 'bbc'", new String [] {"abcbbc"});
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.TEXT)
+        .add("col2", TajoDataTypes.Type.TEXT)
+        .build();
     testEval(schema, "table1", " trim, abc", "select ltrim(col1) || ltrim(col2) from table1",
         new String[]{"trimabc"});
   }

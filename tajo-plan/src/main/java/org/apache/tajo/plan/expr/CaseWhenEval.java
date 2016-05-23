@@ -20,11 +20,6 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
-
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.json.GsonObject;
@@ -68,10 +63,10 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   }
 
   @Override
-  public DataType getValueType() {
+  public org.apache.tajo.type.Type getValueType() {
     // Find not null type
     for (IfThenEval eachWhen: whens) {
-      if (eachWhen.getResult().getValueType().getType() != Type.NULL_TYPE) {
+      if (!eachWhen.getResult().getValueType().isNull()) {
         return eachWhen.getResult().getValueType();
       }
     }
@@ -80,7 +75,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       return elseResult.getValueType();
     }
 
-    return NullDatum.getDataType();
+    return org.apache.tajo.type.Type.Null;
   }
 
   @Override
@@ -202,8 +197,8 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     }
 
     @Override
-    public DataType getValueType() {
-      return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.BOOLEAN);
+    public org.apache.tajo.type.Type getValueType() {
+      return org.apache.tajo.type.Type.Bool;
     }
 
     @Override

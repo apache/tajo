@@ -116,7 +116,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
       if (entry.getKey().getType() == EvalType.CONST) {
         ConstEval constEval = (ConstEval) entry.getKey();
 
-        if (constEval.getValueType().getType() == TajoDataTypes.Type.INTERVAL) {
+        if (constEval.getValueType().kind() == TajoDataTypes.Type.INTERVAL) {
           IntervalDatum datum = (IntervalDatum) constEval.getValue();
 
           final String internalName = TajoGeneratorAdapter.getInternalName(IntervalDatum.class);
@@ -141,7 +141,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
         initMethod.visitTypeInsn(Opcodes.NEW, internalName);
         consAdapter.dup();
         emitCreateEval(consAdapter, initMethod, inEval.getLeftExpr());
-        emitRowConstantEval(consAdapter, initMethod, (RowConstantEval) inEval.getRightExpr());
+        emitRowConstantEval(consAdapter, initMethod, inEval.getRightExpr());
         consAdapter.push(inEval.isNot());
         consAdapter.invokeSpecial(InEval.class, "<init>", void.class,
             new Class [] {EvalNode.class, RowConstantEval.class, boolean.class});

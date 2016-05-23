@@ -26,23 +26,27 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.schema.IdentifierUtil;
+import org.apache.tajo.type.Type;
+import org.apache.tajo.type.TypeProtobufEncoder;
 
 /**
  * Describes a column. It is an immutable object.
  */
+@Deprecated
 public class Column implements ProtoObject<ColumnProto>, GsonObject {
 	@Expose protected String name;
-	@Expose protected TypeDesc typeDesc;
+  @Expose protected Type type;
 
   /**
    * Column Constructor
    *
    * @param name field name
-   * @param typeDesc Type description
+   * @param type Type description
    */
-  public Column(String name, TypeDesc typeDesc) {
+  public Column(String name, TypeDesc type) {
     this.name = name;
-    this.typeDesc = typeDesc;
+    this.type = TypeConverter.convert(type);
   }
 
   /**
@@ -66,16 +70,16 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
   /**
    *
    * @param name Column name
-   * @param type Data Type
-   * @param typeLength The length of type
+   * @param type Type
    */
-  public Column(String name, TajoDataTypes.Type type, int typeLength) {
-    this(name, CatalogUtil.newDataTypeWithLen(type, typeLength));
+  public Column(String name, Type type) {
+    this.name = name;
+    this.type = type;
   }
 
 	public Column(ColumnProto proto) {
     name = proto.getName();
-    typeDesc = new TypeDesc(proto.getDataType());
+    type = TypeProtobufEncoder.decode(proto.getType());
 	}
 
   /**
@@ -83,7 +87,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return True if a column includes a table name. Otherwise, it returns False.
    */
   public boolean hasQualifier() {
-    return name.split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP).length > 1;
+    return name.split(IdentifierUtil.IDENTIFIER_DELIMITER_REGEXP).length > 1;
   }
 
   /**
@@ -99,7 +103,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return The qualifier
    */
   public String getQualifier() {
-    return CatalogUtil.extractQualifier(name);
+    return IdentifierUtil.extractQualifier(name);
   }
 
   /**
@@ -107,7 +111,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return The simple name without qualifications
    */
   public String getSimpleName() {
-    return CatalogUtil.extractSimpleName(name);
+    return IdentifierUtil.extractSimpleName(name);
   }
 
   /**
@@ -116,7 +120,14 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return TypeDesc
    */
   public TypeDesc getTypeDesc() {
-    return this.typeDesc;
+    return TypeConverter.convert(this.type);
+  }
+
+  /**
+   * @return Type which includes domain type and scale.
+   */
+  public Type getType() {
+    return this.type;
   }
 
   /**
@@ -124,21 +135,20 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return DataType which includes domain type and scale.
    */
 	public DataType getDataType() {
-		return this.typeDesc.dataType;
+		return TypeConverter.convert(this.type).getDataType();
 	}
 	
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Column) {
 			Column another = (Column)o;
-			return name.equals(another.name) && typeDesc.equals(another.typeDesc);
+			return name.equals(another.name) && type.equals(another.type);
     }
 		return false;
 	}
 	
   public int hashCode() {
-    return Objects.hashCode(name, typeDesc);
-
+    return Objects.hashCode(name, type);
   }
 
   /**
@@ -150,13 +160,13 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
     builder
         .setName(this.name)
-        .setDataType(this.typeDesc.getDataType());
+        .setType(this.type.getProto());
     return builder.build();
 	}
 	
 	public String toString() {
     StringBuilder sb = new StringBuilder(getQualifiedName());
-    sb.append(" (").append(typeDesc.toString()).append(")");
+    sb.append(" (").append(type.toString()).append(")");
 	  return sb.toString();
 	}
 

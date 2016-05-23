@@ -31,7 +31,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.InvalidStatementException;
 import org.apache.tajo.cli.tsql.ParsedResult;
@@ -53,13 +52,11 @@ import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestName;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
@@ -224,7 +221,7 @@ public class QueryTestCaseBase {
   @AfterClass
   public static void tearDownClass() throws Exception {
     for (String tableName : createdTableGlobalSet) {
-      client.updateQuery("DROP TABLE IF EXISTS " + CatalogUtil.denormalizeIdentifier(tableName));
+      client.updateQuery("DROP TABLE IF EXISTS " + IdentifierUtil.denormalizeIdentifier(tableName));
     }
     createdTableGlobalSet.clear();
 
@@ -265,6 +262,11 @@ public class QueryTestCaseBase {
         name.getMethodName()));
   }
 
+  @After
+  public void clear() {
+    getClient().unsetSessionVariables(Lists.newArrayList(SessionVars.TIMEZONE.name()));
+  }
+
   public QueryTestCaseBase() {
     // hive 0.12 does not support quoted identifier.
     // So, we use lower case database names when Tajo uses HiveCatalogStore.
@@ -301,7 +303,7 @@ public class QueryTestCaseBase {
     try {
       // if the current database is "default", we don't need create it because it is already prepated at startup time.
       if (!currentDatabase.equals(TajoConstants.DEFAULT_DATABASE_NAME)) {
-        client.updateQuery("CREATE DATABASE IF NOT EXISTS " + CatalogUtil.denormalizeIdentifier(currentDatabase));
+        client.updateQuery("CREATE DATABASE IF NOT EXISTS " + IdentifierUtil.denormalizeIdentifier(currentDatabase));
       }
       client.selectDatabase(currentDatabase);
       currentResultFS = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
@@ -680,7 +682,8 @@ public class QueryTestCaseBase {
     String methodName = name.getMethodName();
     // In the case of parameter execution name's pattern is methodName[0]
     if (methodName.endsWith("]")) {
-      methodName = methodName.substring(0, methodName.length() - 3);
+      int index = methodName.indexOf('[');
+      methodName = methodName.substring(0, index);
     }
     return methodName;
   }
@@ -1044,10 +1047,10 @@ public class QueryTestCaseBase {
         DropTable dropTable = (DropTable) expr;
         String tableName = dropTable.getTableName();
         assertTrue("table '" + tableName + "' existence check",
-            client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
+            client.existTable(IdentifierUtil.buildFQName(currentDatabase, tableName)));
         assertTrue("table drop is failed.", client.updateQuery(parsedResult.getHistoryStatement()));
         assertFalse("table '" + tableName + "' dropped check",
-            client.existTable(CatalogUtil.buildFQName(currentDatabase, tableName)));
+            client.existTable(IdentifierUtil.buildFQName(currentDatabase, tableName)));
         if (isLocalTable) {
           createdTableGlobalSet.remove(tableName);
         }

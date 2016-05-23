@@ -23,7 +23,7 @@ import org.apache.tajo.NamedTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -157,7 +157,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   @Test
   public final void testCasebyCase1() throws Exception {
     // Left outer join with a small table and a large partition table which not matched any partition path.
-    String tableName = CatalogUtil.normalizeIdentifier("largePartitionedTable");
+    String tableName = IdentifierUtil.normalizeIdentifier("largePartitionedTable");
     executeString(
         "create table " + tableName + " (l_partkey int4, l_suppkey int4, l_linenumber int4, \n" +
             "l_quantity float8, l_extendedprice float8, l_discount float8, l_tax float8, \n" +
@@ -170,7 +170,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
           " select l_partkey, l_suppkey, l_linenumber, \n" +
           " l_quantity, l_extendedprice, l_discount, l_tax, \n" +
           " l_returnflag, l_linestatus, l_shipdate, l_commitdate, \n" +
-          " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem");
+          " l_receiptdate, l_shipinstruct, l_shipmode, l_comment, l_orderkey from lineitem").close();
 
       ResultSet res = executeString(
           "select a.l_orderkey as key1, b.l_orderkey as key2 from lineitem as a " +
@@ -184,7 +184,10 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
           "1,null\n" +
           "2,null\n" +
           "3,null\n" +
-          "3,null\n";
+          "3,null\n" +
+          "null,null\n" +
+          "null,null\n" +
+          "null,null\n";
       assertEquals(expected, resultSetToString(res));
       cleanupQuery(res);
     } finally {
@@ -195,7 +198,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
   // TODO: This test should be reverted after resolving TAJO-1600
 //  @Test
   public final void testBroadcastMultiColumnPartitionTable() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testBroadcastMultiColumnPartitionTable");
+    String tableName = IdentifierUtil.normalizeIdentifier("testBroadcastMultiColumnPartitionTable");
     ResultSet res = testBase.execute(
         "create table " + tableName + " (col1 int4, col2 float4) partition by column(col3 text, col4 text) ");
     res.close();
@@ -223,7 +226,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
 
   @Test
   public final void testSelfJoin() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("paritioned_nation");
+    String tableName = IdentifierUtil.normalizeIdentifier("paritioned_nation");
     ResultSet res = executeString(
         "create table " + tableName + " (n_name text,"
             + "  n_comment text, n_regionkey int8) USING text "
@@ -281,7 +284,7 @@ public class TestJoinOnPartitionedTables extends TestJoinQuery {
       Because of the where condition[where a.o_orderdate='1995-02-21 and a.o_orderstatus in ('F')],
         orders_partition table aliased a is small and broadcast target.
     */
-    String tableName = CatalogUtil.normalizeIdentifier("partitioned_orders");
+    String tableName = IdentifierUtil.normalizeIdentifier("partitioned_orders");
     ResultSet res = executeString(
         "create table " + tableName + " (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,\n" +
             "o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING TEXT WITH ('text.delimiter'='|')\n" +

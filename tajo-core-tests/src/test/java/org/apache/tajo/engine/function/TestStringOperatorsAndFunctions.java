@@ -21,6 +21,7 @@ package org.apache.tajo.engine.function;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
@@ -40,10 +41,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
   public void testConcatenateOnExpressions() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", INT4);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", INT4)
+        .add("col3", FLOAT8)
+        .build();
 
     testSimpleEval("select (1+3) || 2 as col1 ", new String[]{"42"});
 
@@ -61,9 +63,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
   public void testLTrim() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
 
     testSimpleEval("select ltrim(' trim') ", new String[]{"trim"});
     testSimpleEval("select ltrim('xxtrim', 'xx') ", new String[]{"trim"});
@@ -82,9 +85,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
   public void testRTrim() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
 
     testSimpleEval("select rtrim('trim ') ", new String[]{"trim"});
     testSimpleEval("select rtrim('trimxx', 'xx') ", new String[]{"trim"});
@@ -103,9 +107,10 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
 
   @Test
   public void testTrim() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
 
     testSimpleEval("select trim(' trim ') ", new String[]{"trim"});
     testSimpleEval("select btrim('xxtrimxx', 'xx') ", new String[]{"trim"});
@@ -131,19 +136,20 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select regexp_replace('abcdef', null, '--') as col1 ", new String[]{NullDatum.get().toString()});
     testSimpleEval("select regexp_replace('abcdef','bc', null) as col1 ", new String[]{NullDatum.get().toString()});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
 
     // find matches and replace from column values
     testEval(schema, "table1", "------,(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{"ab--ab"});
 
     // null test from a table
-    testEval(schema, "table1", ",(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
+    testEval(schema, "table1", "\\NULL,(^--|--$),ab", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{NullDatum.get().toString()});
-    testEval(schema, "table1", "------,(^--|--$),", "select regexp_replace(col1, col2, col3) as str from table1",
+    testEval(schema, "table1", "------,(^--|--$),\\NULL", "select regexp_replace(col1, col2, col3) as str from table1",
         new String[]{NullDatum.get().toString()});
   }
 
@@ -164,13 +170,14 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select left('abcdef',-5) as col1 ", new String[]{"a"});
     testSimpleEval("select left('abcdef',-6) as col1 ", new String[]{""});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", INT4);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", INT4)
+        .add("col3", TEXT)
+        .build();
 
     // for null tests
-    testEval(schema, "table1", ",1,ghi", "select left(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,1,ghi", "select left(col1,1) is null from table1", new String[]{"t"});
     testEval(schema, "table1", "abc,,ghi", "select left(col1,col2) is null from table1", new String[]{"t"});
 
     testEval(schema, "table1", "abc,1,ghi", "select left(col1,1) || left(col3,3) from table1", new String[]{"aghi"});
@@ -193,14 +200,15 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select right('abcdef',-5) as col1 ", new String[]{"f"});
     testSimpleEval("select right('abcdef',-6) as col1 ", new String[]{""});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", INT4);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", INT4)
+        .add("col3", TEXT)
+        .build();
 
     // for null tests
-    testEval(schema, "table1", ",1,ghi", "select right(col1,1) is null from table1", new String[]{"t"});
-    testEval(schema, "table1", "abc,,ghi", "select right(col1,col2) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,1,ghi", "select right(col1,1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "abc,\\NULL,ghi", "select right(col1,col2) is null from table1", new String[]{"t"});
 
     testEval(schema, "table1", "abc,1,ghi", "select right(col1,1) || right(col3,3) from table1", new String[]{"cghi"});
   }
@@ -210,10 +218,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select reverse('abcdef') as col1 ", new String[]{"fedcba"});
     testSimpleEval("select reverse('가') as col1 ", new String[]{"가"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "abc,efg,3.14", "select reverse(col1) || reverse(col2) from table1",
         new String[]{"cbagfe"});
   }
@@ -224,10 +233,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select repeat('가',3) as col1 ", new String[]{"가가가"});
     testSimpleEval("select repeat('a',2) as col1 ", new String[]{"aa"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "abc,efg,3.14", "select repeat(col1,2) from table1", new String[]{"abcabc"});
   }
 
@@ -236,10 +246,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testUpper() throws TajoException {
     testSimpleEval("select upper('abcdef') as col1 ", new String[]{"ABCDEF"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "abc,efg,3.14", "select upper(col1), upper(col2) from table1",
         new String[]{"ABC", "EFG"});
     testEval(schema, "table1", "abc,efg,3.14", "select upper(col1) || upper(col2) from table1", new String[]{"ABCEFG"});
@@ -249,10 +260,12 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testLower() throws TajoException {
     testSimpleEval("select lower('ABCdEF') as col1 ", new String[]{"abcdef"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
+
     testEval(schema, "table1", "ABC,DEF,3.14", "select lower(col1), lower(col2) from table1",
         new String[]{"abc", "def"});
     testEval(schema, "table1", "ABC,DEF,3.14", "select lower(col1) || lower(col2) from table1", new String[]{"abcdef"});
@@ -262,10 +275,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testCharLength() throws TajoException {
     testSimpleEval("select char_length('123456') as col1 ", new String[]{"6"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "ABC,DEF,3.14", "select character_length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
@@ -274,10 +288,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testLength() throws TajoException {
     testSimpleEval("select length('123456') as col1 ", new String[]{"6"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "ABC,DEF,3.14", "select length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
@@ -287,10 +302,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select md5('1') as col1 ", new String[]{"c4ca4238a0b923820dcc509a6f75849b"});
     testSimpleEval("select md5('tajo') as col1 ", new String[]{"742721b3a79f71a9491681b8e8a7ce85"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "abc,efg,3.14", "select md5(col1) from table1",
         new String[]{"900150983cd24fb0d6963f7d28e17f72"});
   }
@@ -316,10 +332,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select to_hex(1234) as col1 ", new String[]{"4d2"});
     testSimpleEval("select to_hex(1023456788888888) as col1 ", new String[]{"3a2d41a583d38"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", ",abcdef,3.14", "select to_hex(10) from table1",
         new String[]{"a"});
   }
@@ -330,10 +347,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select to_bin(10) as col1 ", new String[]{"1010"});
     testSimpleEval("select to_bin(1234) as col1 ", new String[]{"10011010010"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", ",abcdef,3.14", "select to_bin(20) from table1",
         new String[]{"10100"});
   }
@@ -344,10 +362,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select octet_length('1') as col1 ", new String[]{"1"});
     testSimpleEval("select octet_length('가') as col1 ", new String[]{"3"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "ABC,DEF,3.14", "select octet_length(lower(col1) || lower(col2)) from table1",
         new String[]{"6"});
   }
@@ -360,14 +379,15 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select split_part('1386577650.123', '.', 3) is null", new String[]{"t"});
 
     // null handling tests
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "t1", ",.,1", "select split_part(col1, col2, col3::int) is null from t1", new String[]{"t"});
     testEval(schema, "t1", "1386577650.123,,1", "select split_part(col1, col2, col3::int) from t1",
         new String[]{"1386577650.123"});
-    testEval(schema, "t1", "1386577650.123,.,", "select split_part(col1, col2, col3::int) is null from t1",
+    testEval(schema, "t1", "1386577650.123,.,\\NULL", "select split_part(col1, col2, col3::int) is null from t1",
         new String[]{"t"});
   }
 
@@ -389,10 +409,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select substr('abcdef', -1, 3) as col1 ", new String[]{"a"});
     testSimpleEval("select substr('abcdef', -1, 1) as col1 ", new String[]{""});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", ",abcdef,3.14", "select substr(lower(col2), 2, 3) from table1",
         new String[]{"bcd"});
   }
@@ -432,28 +453,30 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select locate('abcdef', 'a', -1) as col1 ", new String[]{"0"});
     testSimpleEval("select locate('abcdef', 'a', -5) as col1 ", new String[]{"0"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd') from table1", new String[]{"3"});
     testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 1) from table1", new String[]{"3"});
     testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'cd', 4) from table1", new String[]{"0"});
     testEval(schema, "table1", ",abcdef,3.14", "select locate(col2, 'xy') from table1", new String[]{"0"});
     // null string
-    testEval(schema, "table1", ",abcdef,3.14", "select locate(col1, 'cd') is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,abcdef,3.14", "select locate(col1, 'cd') is null from table1", new String[]{"t"});
     // nul substring
-    testEval(schema, "table1", ",abcdef,3.14", "select locate('cd', col1) is null from table1", new String[]{"t"});
+    testEval(schema, "table1", "\\NULL,abcdef,3.14", "select locate('cd', col1) is null from table1", new String[]{"t"});
   }
 
   @Test
   public void testBitLength() throws TajoException {
     testSimpleEval("select bit_length('123456') as col1 ", new String[]{"48"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "ABC,DEF,3.14", "select bit_length(lower(col1) || lower(col2)) from table1",
         new String[]{"48"});
   }
@@ -466,10 +489,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select strpos('일이삼사오육','삼사') as col1 ", new String[]{"3"});
     testSimpleEval("select strpos('일이삼사오육','일이삼') as col1 ", new String[]{"1"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "ABCDEF,HIJKLMN,3.14", "select strpos(lower(col1) || lower(col2), 'fh') from table1",
         new String[]{"6"});
   }
@@ -482,10 +506,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select strposb('일이삼사오육','삼사') as col1 ", new String[]{"7"});    //utf8 1 korean word = 3 chars
     testSimpleEval("select strposb('일이삼사오육','삼사일') as col1 ", new String[]{"0"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    schema.addColumn("col3", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .add("col3", TEXT)
+        .build();
     testEval(schema, "table1", "ABCDEF,HIJKLMN,3.14", "select strposb(lower(col1) || lower(col2), 'fh') from table1",
         new String[]{"6"});
   }
@@ -500,8 +525,9 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
   public void testAscii() throws TajoException {
     testSimpleEval("select ascii('abc') as col1 ", new String[]{"97"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .build();
     testEval(schema, "table1", "abc", "select ascii(col1) from table1",
             new String[]{"97"});
     testEval(schema, "table1", "12", "select ascii(col1) from table1",
@@ -516,8 +542,8 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select chr(50) as col1 ", new String[]{"2"});
     testSimpleEval("select chr(64) as col1 ", new String[]{"@"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", INT4).build();
     testEval(schema, "table1", "65", "select chr(col1) from table1", new String[]{"A"});
     testEval(schema, "table1", "66", "select chr(col1) from table1", new String[]{"B"});
     testEval(schema, "table1", "52512", "select chr(col1) from table1", new String[]{"촠"});
@@ -587,12 +613,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select find_in_set('딸기','사과,배,옥수수,감자,딸기,수박') as col1 ", new String[]{"5"});
 
     // null test
-    Schema schema = new Schema();
-    schema.addColumn("col1", TEXT);
-    schema.addColumn("col2", TEXT);
-    testEval(schema, "table1", "|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from table1",
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TEXT)
+        .add("col2", TEXT)
+        .build();
+    testEval(schema, "table1", "\\NULL|crt,c,cr,c,def", "select find_in_set(col1, col2) is null from table1",
         new String[]{"t"}, '|', true);
-    testEval(schema, "table1", "cr|", "select find_in_set(col1, col2) is null from table1",
+    testEval(schema, "table1", "cr|\\NULL", "select find_in_set(col1, col2) is null from table1",
         new String[]{"t"}, '|', true);
   }
 
@@ -612,5 +639,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select concat_ws(',', '22', null) ", new String[]{"22"});
     testSimpleEval("select concat_ws(',', '22', '33', '33') ", new String[]{"22,33,33"});
     testSimpleEval("select concat_ws(',', null, '22') ", new String[]{"22"});
+
+    testSimpleEval("select concat_ws('\t', '333', '22') ", new String[]{"333\t22"});
+    testSimpleEval("select concat_ws('\t', '한글', '22') ", new String[]{"한글\t22"});
+    testSimpleEval("select concat_ws('\t', '22', null) ", new String[]{"22"});
+    testSimpleEval("select concat_ws('\t', '22', '33', '33') ", new String[]{"22\t33\t33"});
+    testSimpleEval("select concat_ws('\t', null, '22') ", new String[]{"22"});
   }
 }

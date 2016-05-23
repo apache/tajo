@@ -40,6 +40,8 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
   private Tuple prevLeftTuple = null;
   private Tuple prevRightTuple = null;
 
+  private Tuple preservedTuple = null;
+
   private TupleList leftTupleSlots;
   private TupleList rightTupleSlots;
 
@@ -67,6 +69,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
     final int INITIAL_TUPLE_SLOT = context.getQueryContext().getInt(SessionVars.JOIN_HASH_TABLE_SIZE);
     this.leftTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
     this.rightTupleSlots = new TupleList(INITIAL_TUPLE_SLOT);
+
     SortSpec[][] sortSpecs = new SortSpec[2][];
     sortSpecs[0] = leftSortKey;
     sortSpecs[1] = rightSortKey;
@@ -90,6 +93,12 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
     Tuple outTuple;
 
     while (!context.isStopped()) {
+      if (preservedTuple != null) {
+        outTuple = preservedTuple;
+        preservedTuple = null;
+        return outTuple;
+      }
+
       boolean newRound = false;
       if((posRightTupleSlots == -1) && (posLeftTupleSlots == -1)) {
         newRound = true;
@@ -98,7 +107,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
         newRound = true;
       }
 
-      if(newRound == true){
+      if(newRound){
 
         if (end) {
 
@@ -113,7 +122,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
           // right side and a right-padded tuple should be built for all remaining
           // left side
 
-          if (initRightDone == false) {
+          if (!initRightDone) {
             // maybe the left operand was empty => the right one didn't have the chance to initialize
             rightTuple = rightChild.next();
             initRightDone = true;
@@ -173,7 +182,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
         ////////////////////////////////////////////////////////////////////////
         // advance alternatively on each side until a match is found
         int cmp;
-        while (!end && ((cmp = joincomparator.compare(leftTuple, rightTuple)) != 0)) {
+        if (!end && ((cmp = joincomparator.compare(leftTuple, rightTuple)) != 0)) {
 
           if (cmp > 0) {
 
@@ -205,9 +214,32 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
 
             return outTuple;
 
-          } // if (cmp < 0)
-        } //while
+          }
+        }
 
+        // Check null values
+        Tuple leftKey = leftKeyExtractor.project(leftTuple);
+        boolean containNull = false;
+        for (int i = 0; i < leftKey.size(); i++) {
+          if (leftKey.isBlankOrNull(i)) {
+            containNull = true;
+            break;
+          }
+        }
+
+        if (containNull) {
+          frameTuple.set(leftTuple, rightNullTuple);
+          outTuple = projector.eval(frameTuple);
+          frameTuple.set(leftNullTuple, rightTuple);
+          preservedTuple = new VTuple(projector.eval(frameTuple));
+          leftTuple = leftChild.next();
+          rightTuple = rightChild.next();
+
+          if (leftTuple == null || rightTuple == null) {
+            end = true;
+          }
+          return outTuple;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // SLOTS POPULATION STAGE
@@ -228,8 +260,7 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
               endLeft = true;
             }
 
-
-          } while ((endLeft != true) && (tupleComparator[0].compare(prevLeftTuple, leftTuple) == 0));
+          } while ((!endLeft) && (tupleComparator[0].compare(prevLeftTuple, leftTuple) == 0));
           posLeftTupleSlots = 0;
 
           prevRightTuple.put(rightTuple.getValues());
@@ -240,10 +271,10 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
               endRight = true;
             }
 
-          } while ((endRight != true) && (tupleComparator[1].compare(prevRightTuple, rightTuple) == 0) );
+          } while ((!endRight) && (tupleComparator[1].compare(prevRightTuple, rightTuple) == 0) );
           posRightTupleSlots = 0;
 
-          if ((endLeft == true) || (endRight == true)) {
+          if ((endLeft) || (endRight)) {
             end = true;
             endInPopulationStage = true;
           }
@@ -262,12 +293,12 @@ public class MergeFullOuterJoinExec extends CommonJoinExec {
       if(!end || (end && endInPopulationStage)){
         if(posLeftTupleSlots == 0){
           leftNext = leftTupleSlots.get(posLeftTupleSlots);
-          posLeftTupleSlots = posLeftTupleSlots + 1;
+          posLeftTupleSlots++;
         }
 
         if(posRightTupleSlots <= (rightTupleSlots.size() -1)) {
           Tuple aTuple = rightTupleSlots.get(posRightTupleSlots);
-          posRightTupleSlots = posRightTupleSlots + 1;
+          posRightTupleSlots++;
           frameTuple.set(leftNext, aTuple);
           joinQual.eval(frameTuple);
           return projector.eval(frameTuple);

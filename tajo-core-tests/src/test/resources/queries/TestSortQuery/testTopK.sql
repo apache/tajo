@@ -1,1 +1,1 @@
-select l_orderkey, l_linenumber from lineitem order by l_orderkey desc limit 3;
+select l_orderkey, l_linenumber from lineitem order by l_orderkey desc, l_linenumber asc limit 5;

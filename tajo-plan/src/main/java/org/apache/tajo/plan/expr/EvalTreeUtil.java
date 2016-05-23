@@ -18,21 +18,22 @@
 
 package org.apache.tajo.plan.expr;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
 import org.apache.tajo.algebra.NamedExpr;
 import org.apache.tajo.algebra.OpType;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.util.ExprFinder;
+import org.apache.tajo.schema.IdentifierUtil;
 
 import java.util.*;
 
@@ -142,16 +143,15 @@ public class EvalTreeUtil {
     node.postOrder(finder);
     return finder.getColumnRefs();
   }
-  
+
   public static Schema getSchemaByTargets(Schema inputSchema, List<Target> targets) {
-    Schema schema = new Schema();
-    for (Target target : targets) {
-      schema.addColumn(
-          target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
-          getDomainByExpr(inputSchema, target.getEvalTree()));
-    }
-    
-    return schema;
+    return SchemaBuilder.builder().addAll(targets, new Function<Target, Column>() {
+      @Override
+      public Column apply(@javax.annotation.Nullable Target target) {
+        return new Column(target.hasAlias() ? target.getAlias() : target.getEvalTree().getName(),
+            getDomainByExpr(inputSchema, target.getEvalTree()));
+      }
+    }).build();
   }
 
   public static String columnsToStr(Collection<Column> columns) {
@@ -181,7 +181,7 @@ public class EvalTreeUtil {
     case DIVIDE:
     case CONST:
     case FUNCTION:
-        return expr.getValueType();
+        return TypeConverter.convert(expr.getValueType()).getDataType();
 
     case FIELD:
       FieldEval fieldEval = (FieldEval) expr;
@@ -242,6 +242,56 @@ public class EvalTreeUtil {
   public static boolean containColumnRef(EvalNode expr, Column target) {
     Set<Column> exprSet = findUniqueColumns(expr);
     return exprSet.contains(target);
+  }
+
+  /**
+   * It separates a singular CNF-formed join condition into a join condition, a left join filter, and
+   * right join filter.
+   *
+   * @param joinQual the original join condition
+   * @param leftSchema Left table schema
+   * @param rightSchema Left table schema
+   * @return Three element EvalNodes, 0 - join condition, 1 - left join filter, 2 - right join filter.
+   */
+  public static EvalNode[] extractJoinConditions(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+    List<EvalNode> joinQuals = Lists.newArrayList();
+    List<EvalNode> leftFilters = Lists.newArrayList();
+    List<EvalNode> rightFilters = Lists.newArrayList();
+    for (EvalNode eachQual : AlgebraicUtil.toConjunctiveNormalFormArray(joinQual)) {
+      if (!(eachQual instanceof BinaryEval)) {
+        continue; // todo 'between', etc.
+      }
+      BinaryEval binaryEval = (BinaryEval)eachQual;
+      LinkedHashSet<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
+      LinkedHashSet<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
+      boolean leftInLeft = leftSchema.containsAny(leftColumns);
+      boolean rightInLeft = leftSchema.containsAny(rightColumns);
+      boolean leftInRight = rightSchema.containsAny(leftColumns);
+      boolean rightInRight = rightSchema.containsAny(rightColumns);
+
+      boolean columnsFromLeft = leftInLeft || rightInLeft;
+      boolean columnsFromRight = leftInRight || rightInRight;
+      if (!columnsFromLeft && !columnsFromRight) {
+        continue; // todo constant expression : this should be done in logical phase
+      }
+      if (columnsFromLeft ^ columnsFromRight) {
+        if (columnsFromLeft) {
+          leftFilters.add(eachQual);
+        } else {
+          rightFilters.add(eachQual);
+        }
+        continue;
+      }
+      if ((leftInLeft && rightInLeft) || (leftInRight && rightInRight)) {
+        continue; // todo not allowed yet : this should be checked in logical phase
+      }
+      joinQuals.add(eachQual);
+    }
+    return new EvalNode[] {
+        joinQuals.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(joinQuals),
+        leftFilters.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(leftFilters),
+        rightFilters.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(rightFilters)
+    };
   }
 
   /**
@@ -344,14 +394,14 @@ public class EvalTreeUtil {
 
   private static boolean isJoinQualWithOnlyColumns(@Nullable LogicalPlan.QueryBlock block,
                                                    Column left, Column right) {
-    String leftQualifier = CatalogUtil.extractQualifier(left.getQualifiedName());
-    String rightQualifier = CatalogUtil.extractQualifier(right.getQualifiedName());
+    String leftQualifier = IdentifierUtil.extractQualifier(left.getQualifiedName());
+    String rightQualifier = IdentifierUtil.extractQualifier(right.getQualifiedName());
 
     // if block is given, it will track an original expression of each term in order to decide whether
     // this expression is a join condition, or not.
     if (block != null) {
-      boolean leftQualified = CatalogUtil.isFQColumnName(left.getQualifiedName());
-      boolean rightQualified = CatalogUtil.isFQColumnName(right.getQualifiedName());
+      boolean leftQualified = IdentifierUtil.isFQColumnName(left.getQualifiedName());
+      boolean rightQualified = IdentifierUtil.isFQColumnName(right.getQualifiedName());
 
       if (!leftQualified) { // if left one is aliased name
 
@@ -361,7 +411,7 @@ public class EvalTreeUtil {
 
         // ensure there is only one column of an original expression
         if (foundColumns.size() == 1) {
-          leftQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+          leftQualifier = IdentifierUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
         }
       }
       if (!rightQualified) { // if right one is aliased name
@@ -372,7 +422,7 @@ public class EvalTreeUtil {
 
         // ensure there is only one column of an original expression
         if (foundColumns.size() == 1) {
-          rightQualifier = CatalogUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
+          rightQualifier = IdentifierUtil.extractQualifier(foundColumns.iterator().next().getCanonicalName());
         }
       }
     }

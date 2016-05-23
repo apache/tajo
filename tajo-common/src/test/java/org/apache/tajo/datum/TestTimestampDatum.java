@@ -18,7 +18,7 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -44,35 +44,29 @@ public class TestTimestampDatum {
     unixtime = (int) (javatime / 1000);
   }
 
-	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
-    assertEquals(Type.TIMESTAMP, d.type());
-	}
-
 	@Test(expected = TajoRuntimeException.class)
 	public final void testAsInt4() {
-    Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+    Datum d = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
     d.asInt4();
 	}
 
   @Test
 	public final void testAsInt8() {
-    Datum d = DatumFactory.createTimestmpDatumWithJavaMillis(unixtime * 1000);
+    Datum d = DatumFactory.createTimestampDatumWithJavaMillis(unixtime * 1000);
     long javaTime = unixtime * 1000;
     assertEquals(DateTimeUtil.javaTimeToJulianTime(javaTime), d.asInt8());
 	}
 
   @Test(expected = TajoRuntimeException.class)
 	public final void testAsFloat4() {
-    Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+    Datum d = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
     d.asFloat4();
 	}
 
   @Test(expected = TajoRuntimeException.class)
 	public final void testAsFloat8() {
     int instance = 1386577582;
-    Datum d = DatumFactory.createTimestmpDatumWithUnixTime(instance);
+    Datum d = DatumFactory.createTimestampDatumWithUnixTime(instance);
     d.asFloat8();
 	}
 
@@ -91,12 +85,12 @@ public class TestTimestampDatum {
   public void testAsText2() {
     // TAJO-1366
     TimestampDatum datum = DatumFactory.createTimestamp("Mon Nov 03 00:03:00 +0000 2014");
-    assertEquals("2014-11-03 00:03:00", datum.asChars());
+    assertEquals("2014-11-03 00:03:00", TimestampDatum.asChars(datum.asTimeMeta(), TimeZone.getTimeZone("+0000"), true));
   }
 
 	@Test
   public final void testSize() {
-    Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+    Datum d = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
     assertEquals(TimestampDatum.SIZE, d.asByteArray().length);
   }
 
@@ -111,7 +105,7 @@ public class TestTimestampDatum {
 
   @Test
   public final void testToJson() {
-    Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+    Datum d = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
     Datum copy = CommonGsonHelper.fromJson(d.toJson(), Datum.class);
     assertEquals(d, copy);
   }
@@ -119,7 +113,7 @@ public class TestTimestampDatum {
   @Test
   public final void testTimeZone() {
     TimestampDatum datum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(2014, 5, 1, 15, 20, 30, 0));
-    assertEquals("2014-05-01 15:20:30", datum.asChars());
+    assertEquals("2014-05-01 15:20:30", TimestampDatum.asChars(datum.asTimeMeta(), TimeZone.getTimeZone("GMT"), true));
     assertEquals("2014-05-02 00:20:30+09", TimestampDatum.asChars(datum.asTimeMeta(), TimeZone.getTimeZone("GMT+9"), true));
   }
 
@@ -167,12 +161,12 @@ public class TestTimestampDatum {
       assertEquals(uTime, DateTimeUtil.julianTimeToEpoch(julianTimestamp));
       assertEquals(jTime, DateTimeUtil.julianTimeToJavaTime(julianTimestamp));
 
-      TimestampDatum datum3 = DatumFactory.createTimestmpDatumWithJavaMillis(jTime);
+      TimestampDatum datum3 = DatumFactory.createTimestampDatumWithJavaMillis(jTime);
       assertEquals(cal.get(Calendar.YEAR), datum3.getYear());
       assertEquals(cal.get(Calendar.MONTH) + 1, datum3.getMonthOfYear());
       assertEquals(cal.get(Calendar.DAY_OF_MONTH), datum3.getDayOfMonth());
 
-      datum3 = DatumFactory.createTimestmpDatumWithUnixTime(uTime);
+      datum3 = DatumFactory.createTimestampDatumWithUnixTime(uTime);
       assertEquals(cal.get(Calendar.YEAR), datum3.getYear());
       assertEquals(cal.get(Calendar.MONTH) + 1, datum3.getMonthOfYear());
       assertEquals(cal.get(Calendar.DAY_OF_MONTH), datum3.getDayOfMonth());
@@ -181,7 +175,7 @@ public class TestTimestampDatum {
 
   @Test
   public final void testNull() {
-   Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);
+   Datum d = DatumFactory.createTimestampDatumWithUnixTime(unixtime);
    assertEquals(Boolean.FALSE,d.equals(DatumFactory.createNullDatum()));
    assertEquals(DatumFactory.createNullDatum(),d.equalsTo(DatumFactory.createNullDatum()));
    assertEquals(-1,d.compareTo(DatumFactory.createNullDatum()));
@@ -194,9 +188,20 @@ public class TestTimestampDatum {
     
     assertThat(theday.compareTo(thedaybefore) > 0, is(true));
     assertThat(thedaybefore.compareTo(theday) > 0, is(false));
-    
-    DateDatum date = DatumFactory.createDate("2014-11-12");
-    
-    assertThat(theday.compareTo(date) > 0, is(true));
+  }
+
+  @Test
+  public void testEqualsTo() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+
+    assertTrue(theday.equalsTo(theday).asBool());
+    assertEquals(NullDatum.get(), theday.equalsTo(NullDatum.get()));
+  }
+
+  @Test(expected = InvalidOperationException.class)
+  public void testEqualsToInvalidCase() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+
+    theday.equalsTo(new Int4Datum(123));
   }
 }

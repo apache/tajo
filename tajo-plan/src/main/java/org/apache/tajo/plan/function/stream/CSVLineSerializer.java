@@ -20,7 +20,6 @@ package org.apache.tajo.plan.function.stream;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.AnyDatum;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.TajoRuntimeException;
@@ -59,7 +58,7 @@ public class CSVLineSerializer extends TextLineSerializer {
     for (int i = 0; i < input.size(); i++) {
       Datum datum = input.asDatum(i);
       String typeStr;
-      if (datum.type() == TajoDataTypes.Type.ANY) {
+      if (datum.type().isAny()) {
         typeStr = getTypeString(((AnyDatum)datum).getActual());
       } else {
         typeStr = getTypeString(datum);
@@ -76,19 +75,6 @@ public class CSVLineSerializer extends TextLineSerializer {
     }
 
     return writtenBytes;
-  }
-
-  private int serializeDatum(OutputStream out, Datum datum, TajoDataTypes.DataType dataType) throws IOException {
-    String typeStr;
-    if (datum.type() == TajoDataTypes.Type.ANY) {
-      typeStr = getTypeString(((AnyDatum)datum).getActual());
-    } else {
-      typeStr = getTypeString(datum);
-    }
-    out.write(typeStr.getBytes());
-    out.write(PARAM_DELIM.getBytes());
-
-    return serde.serialize(out, datum, dataType, nullChars);
   }
 
   @Override
@@ -114,7 +100,7 @@ public class CSVLineSerializer extends TextLineSerializer {
   }
 
   public static String getTypeString(Datum val) {
-    switch (val.type()) {
+    switch (val.kind()) {
       case NULL_TYPE:
         return "-";
       case BOOLEAN:
@@ -139,11 +125,9 @@ public class CSVLineSerializer extends TextLineSerializer {
       case TIMESTAMP:
         return "T";
       case BLOB:
-      case INET4:
-      case INET6:
         return "A";
       default:
-        throw new TajoRuntimeException(new UnsupportedException("data type '" + val.type().name() + "'"));
+        throw new TajoRuntimeException(new UnsupportedException("data type '" + val.type() + "'"));
     }
   }
 }

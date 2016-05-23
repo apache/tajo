@@ -23,6 +23,7 @@ import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.util.StringUtils;
 
@@ -68,7 +69,7 @@ public class DataChannel {
     this.transmitType = proto.getTransmitType();
     this.shuffleType = proto.getShuffleType();
     if (proto.hasSchema()) {
-      this.setSchema(new Schema(proto.getSchema()));
+      this.setSchema(SchemaFactory.newV1(proto.getSchema()));
     }
     if (proto.getShuffleKeysCount() > 0) {
       shuffleKeys = new Column[proto.getShuffleKeysCount()];

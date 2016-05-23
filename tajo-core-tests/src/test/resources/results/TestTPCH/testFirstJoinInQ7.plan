@@ -11,12 +11,12 @@ UNION(8)
         => in schema: {(4) c_nationkey (INT4), cust_nation (TEXT), s_nationkey (INT4), supp_nation (TEXT)}
          SCAN(4) on default.nation as n1
            => filter: default.n1.n_name (TEXT) = GERMANY
-           => target list: default.n1.n_name (TEXT) as supp_nation, default.n1.n_nationkey (INT4) as s_nationkey
+           => target list: default.n1.n_nationkey (INT4) as s_nationkey, default.n1.n_name (TEXT) as supp_nation
            => out schema: {(2) s_nationkey (INT4), supp_nation (TEXT)}
            => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
          SCAN(5) on default.nation as n2
            => filter: default.n2.n_name (TEXT) = FRANCE
-           => target list: default.n2.n_name (TEXT) as cust_nation, default.n2.n_nationkey (INT4) as c_nationkey
+           => target list: default.n2.n_nationkey (INT4) as c_nationkey, default.n2.n_name (TEXT) as cust_nation
            => out schema: {(2) c_nationkey (INT4), cust_nation (TEXT)}
            => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
    PROJECTION(3)
@@ -29,12 +29,12 @@ UNION(8)
         => in schema: {(4) c_nationkey (INT4), cust_nation (TEXT), s_nationkey (INT4), supp_nation (TEXT)}
          SCAN(0) on default.nation as n1
            => filter: default.n1.n_name (TEXT) = FRANCE
-           => target list: default.n1.n_name (TEXT) as supp_nation, default.n1.n_nationkey (INT4) as s_nationkey
+           => target list: default.n1.n_nationkey (INT4) as s_nationkey, default.n1.n_name (TEXT) as supp_nation
            => out schema: {(2) s_nationkey (INT4), supp_nation (TEXT)}
            => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
          SCAN(1) on default.nation as n2
            => filter: default.n2.n_name (TEXT) = GERMANY
-           => target list: default.n2.n_name (TEXT) as cust_nation, default.n2.n_nationkey (INT4) as c_nationkey
+           => target list: default.n2.n_nationkey (INT4) as c_nationkey, default.n2.n_name (TEXT) as cust_nation
            => out schema: {(2) c_nationkey (INT4), cust_nation (TEXT)}
            => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
 explain
@@ -70,7 +70,7 @@ Block Id: eb_0000000000000_0000_000001 [LEAF]
 
 SCAN(1) on default.nation as n2
   => filter: default.n2.n_name (TEXT) = GERMANY
-  => target list: default.n2.n_name (TEXT) as cust_nation, default.n2.n_nationkey (INT4) as c_nationkey
+  => target list: default.n2.n_nationkey (INT4) as c_nationkey, default.n2.n_name (TEXT) as cust_nation
   => out schema: {(2) c_nationkey (INT4), cust_nation (TEXT)}
   => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
 
@@ -83,7 +83,7 @@ Block Id: eb_0000000000000_0000_000002 [LEAF]
 
 SCAN(0) on default.nation as n1
   => filter: default.n1.n_name (TEXT) = FRANCE
-  => target list: default.n1.n_name (TEXT) as supp_nation, default.n1.n_nationkey (INT4) as s_nationkey
+  => target list: default.n1.n_nationkey (INT4) as s_nationkey, default.n1.n_name (TEXT) as supp_nation
   => out schema: {(2) s_nationkey (INT4), supp_nation (TEXT)}
   => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
 
@@ -96,7 +96,7 @@ Block Id: eb_0000000000000_0000_000004 [LEAF]
 
 SCAN(5) on default.nation as n2
   => filter: default.n2.n_name (TEXT) = FRANCE
-  => target list: default.n2.n_name (TEXT) as cust_nation, default.n2.n_nationkey (INT4) as c_nationkey
+  => target list: default.n2.n_nationkey (INT4) as c_nationkey, default.n2.n_name (TEXT) as cust_nation
   => out schema: {(2) c_nationkey (INT4), cust_nation (TEXT)}
   => in schema: {(4) default.n2.n_comment (TEXT), default.n2.n_name (TEXT), default.n2.n_nationkey (INT4), default.n2.n_regionkey (INT4)}
 
@@ -109,7 +109,7 @@ Block Id: eb_0000000000000_0000_000005 [LEAF]
 
 SCAN(4) on default.nation as n1
   => filter: default.n1.n_name (TEXT) = GERMANY
-  => target list: default.n1.n_name (TEXT) as supp_nation, default.n1.n_nationkey (INT4) as s_nationkey
+  => target list: default.n1.n_nationkey (INT4) as s_nationkey, default.n1.n_name (TEXT) as supp_nation
   => out schema: {(2) s_nationkey (INT4), supp_nation (TEXT)}
   => in schema: {(4) default.n1.n_comment (TEXT), default.n1.n_name (TEXT), default.n1.n_nationkey (INT4), default.n1.n_regionkey (INT4)}
 

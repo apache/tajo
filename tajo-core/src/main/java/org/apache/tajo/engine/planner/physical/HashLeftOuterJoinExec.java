@@ -18,8 +18,6 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -30,7 +28,6 @@ import java.util.List;
 
 public class HashLeftOuterJoinExec extends HashJoinExec {
 
-  private static final Log LOG = LogFactory.getLog(HashLeftOuterJoinExec.class);
   private final List<Tuple> nullTupleList;
 
   public HashLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,

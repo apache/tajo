@@ -19,20 +19,19 @@
 package org.apache.tajo;
 
 import com.google.common.collect.Maps;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Map;
 
-import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
+import static org.apache.tajo.type.Type.*;
 
 public class DataTypeUtil {
 
-  public static final Map<Type, Map<Type, Boolean>> FUNCTION_ACCEPTABLE_PARAM_MAP = Maps.newHashMap();
+  public static final Map<TajoDataTypes.Type, Map<TajoDataTypes.Type, Boolean>> FUNCTION_ACCEPTABLE_PARAM_MAP = Maps.newHashMap();
 
-  private static void putAcceptableType(Type given, Type define) {
+  private static void putAcceptableType(TajoDataTypes.Type given, TajoDataTypes.Type define) {
     TUtil.putToNestedMap(FUNCTION_ACCEPTABLE_PARAM_MAP, given, define, true);
   }
 
@@ -71,12 +70,10 @@ public class DataTypeUtil {
     putAcceptableType(DATE, DATE);
 
     putAcceptableType(TEXT, TEXT);
-
-    putAcceptableType(INET4, INET4);
   }
 
-  public static boolean isUpperCastable(Type define, Type given) {
-    if (given == define) {
+  public static boolean isUpperCastable(TajoDataTypes.Type define, TajoDataTypes.Type given) {
+    if (given.equals(define)) {
       return true;
     }
 
@@ -86,92 +83,94 @@ public class DataTypeUtil {
   /**
    * This is verified by ExprsVerifier.checkArithmeticOperand().
    */
-  public static TajoDataTypes.DataType determineType(TajoDataTypes.DataType left, TajoDataTypes.DataType right) {
-    switch (left.getType()) {
+  public static org.apache.tajo.type.Type determineType(org.apache.tajo.type.Type left,
+                                                        org.apache.tajo.type.Type right) {
+    TajoDataTypes.Type rhsBaseType = right.kind();
+    switch (left.kind()) {
 
     case INT1:
     case INT2:
     case INT4: {
-      switch(right.getType()) {
+      switch(rhsBaseType) {
       case INT1:
       case INT2:
-      case INT4: return CatalogUtil.newSimpleDataType(Type.INT4);
-      case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
-      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.DATE);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      case INT4: return Int4;
+      case INT8: return Int8;
+      case FLOAT4: return Float4;
+      case FLOAT8: return Float8;
+      case DATE: return Date;
+      case INTERVAL: return Interval;
       }
     }
 
     case INT8: {
-      switch(right.getType()) {
+      switch(rhsBaseType) {
       case INT1:
       case INT2:
       case INT4:
-      case INT8: return CatalogUtil.newSimpleDataType(Type.INT8);
-      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.DATE);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      case INT8: return Int8;
+      case FLOAT4: return Float4;
+      case FLOAT8: return Float8;
+      case DATE: return Date;
+      case INTERVAL: return Interval;
       }
     }
 
     case FLOAT4: {
-      switch(right.getType()) {
+      switch(rhsBaseType) {
       case INT1:
       case INT2:
-      case INT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case INT8: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT4: return CatalogUtil.newSimpleDataType(Type.FLOAT4);
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      case INT4: return Float4;
+      case INT8: return Float4;
+      case FLOAT4: return Float4;
+      case FLOAT8: return Float8;
+      case INTERVAL: return Interval;
       }
     }
 
     case FLOAT8: {
-      switch(right.getType()) {
+      switch(rhsBaseType) {
       case INT1:
       case INT2:
       case INT4:
       case INT8:
       case FLOAT4:
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      case FLOAT8: return Float8;
+      case INTERVAL: return Interval;
       }
     }
 
     case DATE: {
-      switch(right.getType()) {
+      switch(rhsBaseType) {
       case INT2:
       case INT4:
-      case INT8: return CatalogUtil.newSimpleDataType(Type.DATE);
+      case INT8: return Date;
       case INTERVAL:
-      case TIME: return CatalogUtil.newSimpleDataType(Type.TIMESTAMP);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.INT4);
+      case TIME: return Timestamp;
+      case DATE: return Int4;
       }
     }
 
     case TIME: {
-      switch(right.getType()) {
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.TIME);
-      case TIME: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
-      case DATE: return CatalogUtil.newSimpleDataType(Type.INT4);
+      switch(rhsBaseType) {
+      case INTERVAL: return Time;
+      case TIME: return Interval;
+      case DATE: return Int4;
       }
     }
 
     case TIMESTAMP: {
-      switch (right.getType()) {
-      case INTERVAL: return CatalogUtil.newSimpleDataType(Type.TIMESTAMP);
-      case TIMESTAMP: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      switch (rhsBaseType) {
+      case INTERVAL: return Timestamp;
+      case TIMESTAMP: return Interval;
       }
     }
 
     case INTERVAL: {
-      switch (right.getType()) {
+      switch (rhsBaseType) {
       case INTERVAL:
       case FLOAT4:
-      case FLOAT8: return CatalogUtil.newSimpleDataType(Type.INTERVAL);
+      case FLOAT8: return Interval;
       }
     }
 

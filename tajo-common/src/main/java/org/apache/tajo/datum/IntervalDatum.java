@@ -28,6 +28,8 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.apache.tajo.type.Type.Interval;
+
 public class IntervalDatum extends Datum {
   public static final long MINUTE_MILLIS = 60 * 1000;
   public static final long HOUR_MILLIS = 60 * MINUTE_MILLIS;
@@ -70,13 +72,13 @@ public class IntervalDatum extends Datum {
   }
 
   public IntervalDatum(int months, long milliseconds) {
-    super(TajoDataTypes.Type.INTERVAL);
+    super(Interval);
     this.months = months;
     this.milliseconds = milliseconds;
   }
 
   public IntervalDatum(String intervalStr) {
-    super(TajoDataTypes.Type.INTERVAL);
+    super(Interval);
 
     intervalStr = intervalStr.trim();
     if (intervalStr.isEmpty()) {
@@ -225,7 +227,7 @@ public class IntervalDatum extends Datum {
 
   @Override
   public Datum plus(Datum datum) {
-    switch(datum.type()) {
+    switch(datum.kind()) {
       case INTERVAL:
         IntervalDatum other = (IntervalDatum) datum;
         return new IntervalDatum(months + other.months, milliseconds + other.milliseconds);
@@ -247,23 +249,23 @@ public class IntervalDatum extends Datum {
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " + " + datum.type());
     }
   }
 
   @Override
   public Datum minus(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.INTERVAL) {
+    if (datum.kind() == TajoDataTypes.Type.INTERVAL) {
       IntervalDatum other = (IntervalDatum) datum;
       return new IntervalDatum(months - other.months, milliseconds - other.milliseconds);
     } else {
-      throw new InvalidOperationException(datum.type());
+      throw new InvalidOperationException("operator does not exist: " + type() + " - " + datum.type());
     }
   }
 
   @Override
   public Datum multiply(Datum datum) {
-    switch(datum.type()) {
+    switch(datum.kind()) {
       case INT2:
       case INT4:
       case INT8:
@@ -274,13 +276,13 @@ public class IntervalDatum extends Datum {
         double float8Val = datum.asFloat8();
         return createIntervalDatum((double)months * float8Val, (double) milliseconds * float8Val);
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " * " + datum.type());
     }
   }
 
   @Override
   public Datum divide(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case INT2:
       case INT4:
       case INT8:
@@ -297,7 +299,7 @@ public class IntervalDatum extends Datum {
         }
         return createIntervalDatum((double) months / paramValueF8, (double) milliseconds / paramValueF8);
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " / " + datum.type());
     }
   }
 
@@ -380,6 +382,13 @@ public class IntervalDatum extends Datum {
           sb.append(".").append(df2.format(millisecond));
         }
       }
+    } else {
+      sb.append(prefix)
+          .append(df.format(0))
+          .append(":")
+          .append(df.format(0))
+          .append(":")
+          .append(df.format(0));
     }
   }
 
@@ -390,7 +399,7 @@ public class IntervalDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.INTERVAL) {
+    if (datum.kind() == TajoDataTypes.Type.INTERVAL) {
       return Longs.compare(asInt8(), datum.asInt8());
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
@@ -401,12 +410,12 @@ public class IntervalDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.INTERVAL) {
+    if (datum.kind() == TajoDataTypes.Type.INTERVAL) {
       return DatumFactory.createBool(asInt8() == datum.asInt8());
     } else if (datum.isNull()) {
       return datum;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 

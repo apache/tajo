@@ -25,3 +25,6 @@ n_nationkey,n_name,c_custkey,c_nationkey,c_name
 22,RUSSIA,null,null,null
 23,UNITED KINGDOM,null,null,null
 24,UNITED STATES,null,null,null
+null,null,null,null,null
+null,null,null,null,null
+null,null,null,null,null

@@ -20,10 +20,9 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public class ConstEval extends EvalNode implements Comparable<ConstEval>, Cloneable {
 	@Expose Datum datum = null;
@@ -50,8 +49,8 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
   }
 
   @Override
-	public DataType getValueType() {
-    return CatalogUtil.newSimpleDataType(datum.type());
+	public Type getValueType() {
+    return datum.type();
 	}
 
   @Override

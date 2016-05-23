@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.thirdparty.orc;
 
+import org.apache.orc.OrcProto;
+import org.apache.orc.StripeInformation;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;

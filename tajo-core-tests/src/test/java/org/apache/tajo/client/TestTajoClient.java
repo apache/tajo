@@ -29,7 +29,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.annotation.NotThreadSafe;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -43,6 +42,7 @@ import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
 import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
 import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -91,7 +91,7 @@ public class TestTajoClient {
   public final void testCreateAndDropDatabases() throws TajoException {
     int currentNum = client.getAllDatabaseNames().size();
 
-    String prefix = CatalogUtil.normalizeIdentifier("testCreateDatabase_");
+    String prefix = IdentifierUtil.normalizeIdentifier("testCreateDatabase_");
     for (int i = 0; i < 10; i++) {
       // test allDatabaseNames
       assertEquals(currentNum + i, client.getAllDatabaseNames().size());
@@ -123,7 +123,7 @@ public class TestTajoClient {
     int currentNum = client.getAllDatabaseNames().size();
     assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, client.getCurrentDatabase());
 
-    String databaseName = CatalogUtil.normalizeIdentifier("testcurrentdatabase");
+    String databaseName = IdentifierUtil.normalizeIdentifier("testcurrentdatabase");
     client.createDatabase(databaseName);
     assertEquals(currentNum + 1, client.getAllDatabaseNames().size());
     assertEquals(TajoConstants.DEFAULT_DATABASE_NAME, client.getCurrentDatabase());
@@ -153,7 +153,7 @@ public class TestTajoClient {
   @Test
   public final void testDropCurrentDatabase() throws IOException, TajoException, InterruptedException {
     int currentNum = client.getAllDatabaseNames().size();
-    String databaseName = CatalogUtil.normalizeIdentifier("testdropcurrentdatabase");
+    String databaseName = IdentifierUtil.normalizeIdentifier("testdropcurrentdatabase");
     client.createDatabase(databaseName);
     client.selectDatabase(databaseName);
     assertEquals(databaseName, client.getCurrentDatabase());
@@ -227,7 +227,7 @@ public class TestTajoClient {
 
   @Test
   public final void testUpdateQuery() throws IOException, TajoException {
-    final String tableName = CatalogUtil.normalizeIdentifier("testUpdateQuery");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testUpdateQuery");
     Path tablePath = writeTmpTable(tableName);
 
     assertFalse(client.existTable(tableName));
@@ -279,7 +279,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndDropExternalTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropExternalTableByExecuteQuery");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testCreateAndDropExternalTableByExecuteQuery");
 
     Path tablePath = writeTmpTable(tableName);
     assertFalse(client.existTable(tableName));
@@ -299,7 +299,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndPurgeExternalTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndPurgeExternalTableByExecuteQuery");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testCreateAndPurgeExternalTableByExecuteQuery");
 
     Path tablePath = writeTmpTable(tableName);
     assertFalse(client.existTable(tableName));
@@ -319,7 +319,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndDropTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropTableByExecuteQuery");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testCreateAndDropTableByExecuteQuery");
 
     assertFalse(client.existTable(tableName));
 
@@ -340,7 +340,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndPurgeTableByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndPurgeTableByExecuteQuery");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testCreateAndPurgeTableByExecuteQuery");
 
     assertFalse(client.existTable(tableName));
 
@@ -360,7 +360,7 @@ public class TestTajoClient {
 
   @Test
   public final void testDDLByExecuteQuery() throws IOException, TajoException {
-    final String tableName = CatalogUtil.normalizeIdentifier("testDDLByExecuteQuery");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testDDLByExecuteQuery");
     Path tablePath = writeTmpTable(tableName);
 
     assertFalse(client.existTable(tableName));
@@ -393,7 +393,7 @@ public class TestTajoClient {
 
   @Test
   public final void testGetTableDesc() throws IOException, TajoException {
-    final String tableName1 = CatalogUtil.normalizeIdentifier("table3");
+    final String tableName1 = IdentifierUtil.normalizeIdentifier("table3");
     Path tablePath = writeTmpTable(tableName1);
     LOG.error("Full path:" + tablePath.toUri().getRawPath());
     FileSystem fs = tablePath.getFileSystem(conf);
@@ -407,7 +407,7 @@ public class TestTajoClient {
 
     TableDesc desc = client.getTableDesc(tableName1);
     assertNotNull(desc);
-    assertEquals(CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName1), desc.getName());
+    assertEquals(IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName1), desc.getName());
     assertTrue(desc.getStats().getNumBytes() > 0);
   }
 
@@ -572,7 +572,7 @@ public class TestTajoClient {
   @Test
   public final void testCreateAndDropTablePartitionedColumnByExecuteQuery() throws IOException, TajoException {
     TajoConf conf = cluster.getConfiguration();
-    final String tableName = CatalogUtil.normalizeIdentifier("testCreateAndDropTablePartitionedColumnByExecuteQuery");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testCreateAndDropTablePartitionedColumnByExecuteQuery");
 
     assertFalse(client.existTable(tableName));
 
@@ -614,7 +614,7 @@ public class TestTajoClient {
 
   @Test
   public final void testGetFinishedQueryList() throws SQLException, TajoException {
-    final String tableName = CatalogUtil.normalizeIdentifier("testGetFinishedQueryList");
+    final String tableName = IdentifierUtil.normalizeIdentifier("testGetFinishedQueryList");
     String sql = "create table " + tableName + " (deptname text, score int4)";
 
     client.updateQuery(sql);
@@ -675,7 +675,7 @@ public class TestTajoClient {
         count++;
       }
 
-      assertEquals(5, count);
+      assertEquals(8, count);
     } finally {
       client.closeQuery(queryId);
     }
@@ -729,7 +729,13 @@ public class TestTajoClient {
         "2|2|O\n" +
         "3|3|F\n" +
         "4||\\T\n" +
-        "5||\\T\n";
+        "5||\\T\n" +
+        "||\\T\n" +
+        "||\\T\n" +
+        "||\\T\n" +
+        "||\\T\n" +
+        "||\\T\n" +
+        "||\\T\n";
 
     String resultDatas = new String(buf, 0, readBytes);
 
@@ -770,7 +776,7 @@ public class TestTajoClient {
         return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
       }
     });
-    assertEquals(5, taskHistories.get(0).getTotalReadRows());
+    assertEquals(8, taskHistories.get(0).getTotalReadRows());
     assertEquals(1, taskHistories.get(0).getTotalWriteRows());
     assertEquals(1, taskHistories.get(1).getTotalReadRows());
     assertEquals(1, taskHistories.get(1).getTotalWriteRows());

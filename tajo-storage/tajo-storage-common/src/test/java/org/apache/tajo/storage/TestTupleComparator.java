@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.*;
@@ -44,12 +45,13 @@ public class TestTupleComparator {
 
   @Test
   public final void testCompare() {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.INT4);
-    schema.addColumn("col2", Type.INT4);
-    schema.addColumn("col3", Type.INT4);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.INT4)
+        .add("col2", Type.INT4)
+        .add("col3", Type.INT4)
+        .add("col4", Type.INT4)
+        .add("col5", Type.TEXT)
+        .build();
     
     VTuple tuple1 = new VTuple(
         new Datum[] {
@@ -77,9 +79,10 @@ public class TestTupleComparator {
 
   @Test
   public void testNullFirst() throws Exception {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
 
     VTuple tuple1 = new VTuple(2);
     tuple1.put(0, new Int4Datum(1));
@@ -117,9 +120,10 @@ public class TestTupleComparator {
 
   @Test
   public void testNullLast() throws Exception {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
 
     VTuple tuple1 = new VTuple(2);
     tuple1.put(0, new Int4Datum(1));

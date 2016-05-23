@@ -26,7 +26,6 @@ import org.apache.tajo.*;
 import org.apache.tajo.ResourceProtos.ExecutionBlockContextResponse;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.parser.sql.SQLAnalyzer;
@@ -269,7 +268,7 @@ public class TestKillQuery {
       }
     };
 
-    ExecutionBlockContext context = new MockExecutionBlock(workerContext, requestProtoBuilder.build()) {
+    ExecutionBlockContext context = new MockExecutionBlockContext(workerContext, requestProtoBuilder.build()) {
       @Override
       public Path createBaseDir() throws IOException {
         return new Path("test");

@@ -349,13 +349,13 @@ public class GlobalPlanner {
   private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws TajoException {
     FunctionDesc functionDesc = null;
     functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
-        args[0].getValueType());
+        TypeConverter.convert(args[0].getValueType()).getDataType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createCountFunction(EvalNode [] args) throws TajoException {
     FunctionDesc functionDesc = getCatalog().getFunction("count", CatalogProtos.FunctionType.AGGREGATION,
-        args[0].getValueType());
+        TypeConverter.convert(args[0].getValueType()).getDataType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
@@ -367,13 +367,13 @@ public class GlobalPlanner {
 
   private AggregationFunctionCallEval createMaxFunction(EvalNode [] args) throws TajoException {
     FunctionDesc functionDesc = getCatalog().getFunction("max", CatalogProtos.FunctionType.AGGREGATION,
-        args[0].getValueType());
+        TypeConverter.convert(args[0].getValueType()).getDataType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 
   private AggregationFunctionCallEval createMinFunction(EvalNode [] args) throws TajoException {
     FunctionDesc functionDesc = getCatalog().getFunction("min", CatalogProtos.FunctionType.AGGREGATION,
-        args[0].getValueType());
+        TypeConverter.convert(args[0].getValueType()).getDataType());
     return new AggregationFunctionCallEval(functionDesc, args);
   }
 

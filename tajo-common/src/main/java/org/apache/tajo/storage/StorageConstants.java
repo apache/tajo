@@ -89,11 +89,7 @@ public class StorageConstants {
   public static final String DEFAULT_ORC_STRIPE_SIZE = "67108864"; // 64MB
 
   public static final String ORC_COMPRESSION = "orc.compress";
-  public static final String ORC_COMPRESSION_KIND_NONE = "none";
-  public static final String ORC_COMPRESSION_KIND_SNAPPY = "snappy";
-  public static final String ORC_COMPRESSION_KIND_LZO = "lzo";
-  public static final String ORC_COMPRESSION_KIND_ZIP = "zlip";
-  public static final String DEFAULT_ORC_COMPRESSION_KIND = ORC_COMPRESSION_KIND_NONE;
+  public static final String DEFAULT_ORC_COMPRESSION_KIND = "none";
 
   public static final String ORC_BUFFER_SIZE = "orc.buffer.size";
   public static final String DEFAULT_ORC_BUFFER_SIZE = "262144"; // 256KB
@@ -118,6 +114,8 @@ public class StorageConstants {
 
   // Internal storage properties -------------------------------------------------
   public static final String SHUFFLE_TYPE = "shuffle.type";
+
+  public static final String DEFAULT_PARTITION_NAME = "__TAJO_DEFAULT_PARTITION__";
 
   static {
     PARQUET_DEFAULT_BLOCK_SIZE = Integer.toString(DEFAULT_BLOCK_SIZE);

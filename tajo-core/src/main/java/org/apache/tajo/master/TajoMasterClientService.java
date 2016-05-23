@@ -54,6 +54,7 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.*;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -92,14 +93,13 @@ public class TajoMasterClientService extends AbstractService {
   public void serviceStart() throws Exception {
 
     // start the rpc server
-    String confClientServiceAddr = conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
-    InetSocketAddress initIsa = NetUtils.createSocketAddr(confClientServiceAddr);
+    InetSocketAddress initIsa = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
     int workerNum = conf.getIntVar(ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
     server = new BlockingRpcServer(TajoMasterClientProtocol.class, clientHandler, initIsa, workerNum);
     server.start();
 
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());
-    this.conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
+    this.conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.getHostPortString(bindAddress));
     super.serviceStart();
     LOG.info("Instantiated TajoMasterClientService at " + this.bindAddress);
   }
@@ -772,8 +772,8 @@ public class TajoMasterClientService extends AbstractService {
 
         String databaseName;
         String tableName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
@@ -833,8 +833,8 @@ public class TajoMasterClientService extends AbstractService {
 
         String databaseName;
         String tableName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
@@ -876,7 +876,7 @@ public class TajoMasterClientService extends AbstractService {
 
         Schema schema = null;
         if (request.hasSchema()) {
-          schema = new Schema(request.getSchema());
+          schema = SchemaFactory.newV1(request.getSchema());
         }
 
         TableMeta meta = new TableMeta(request.getMeta());
@@ -969,8 +969,8 @@ public class TajoMasterClientService extends AbstractService {
 
         String databaseName;
         String tableName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
@@ -998,8 +998,8 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         String indexName, databaseName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           indexName = splitted[1];
         } else {
@@ -1027,8 +1027,8 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         String indexName, databaseName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           indexName = splitted[1];
         } else {
@@ -1054,8 +1054,8 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         String tableName, databaseName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
@@ -1083,8 +1083,8 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         String tableName, databaseName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
@@ -1109,8 +1109,8 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         String tableName, databaseName;
-        if (CatalogUtil.isFQTableName(request.getTableName())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+        if (IdentifierUtil.isFQTableName(request.getTableName())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getTableName());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
@@ -1140,8 +1140,8 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
 
         String tableName, databaseName;
-        if (CatalogUtil.isFQTableName(request.getTableName())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+        if (IdentifierUtil.isFQTableName(request.getTableName())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getTableName());
           databaseName = splitted[0];
           tableName = splitted[1];
         } else {
@@ -1169,8 +1169,8 @@ public class TajoMasterClientService extends AbstractService {
         QueryContext queryContext = new QueryContext(conf, session);
 
         String indexName, databaseName;
-        if (CatalogUtil.isFQTableName(request.getValue())) {
-          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+        if (IdentifierUtil.isFQTableName(request.getValue())) {
+          String [] splitted = IdentifierUtil.splitFQTableName(request.getValue());
           databaseName = splitted[0];
           indexName = splitted[1];
         } else {

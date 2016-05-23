@@ -20,16 +20,16 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.engine.planner.KeyProjector;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.expr.AlgebraicUtil;
-import org.apache.tajo.plan.expr.BinaryEval;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.NullTuple;
 import org.apache.tajo.storage.Tuple;
@@ -38,7 +38,6 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
 
 
@@ -58,6 +57,17 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
   protected final Schema leftSchema;
   protected final Schema rightSchema;
 
+  protected final KeyProjector leftKeyExtractor;
+  protected final KeyProjector rightKeyExtractor;
+
+  protected final List<Column[]> joinKeyPairs;
+
+  protected final int rightNumCols;
+  protected final int leftNumCols;
+
+  protected final Column[] leftKeyList;
+  protected final Column[] rightKeyList;
+
   protected final FrameTuple frameTuple;
 
   // projection
@@ -70,7 +80,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
     this.leftSchema = outer.getSchema();
     this.rightSchema = inner.getSchema();
     if (plan.hasJoinQual()) {
-      EvalNode[] extracted = extractJoinConditions(plan.getJoinQual(), leftSchema, rightSchema);
+      EvalNode[] extracted = EvalTreeUtil.extractJoinConditions(plan.getJoinQual(), leftSchema, rightSchema);
       joinQual = extracted[0];
       leftJoinFilter = extracted[1];
       rightJoinFilter = extracted[2];
@@ -82,56 +92,46 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
 
     // for join
     this.frameTuple = new FrameTuple();
-  }
 
-  /**
-   * It separates a singular CNF-formed join condition into a join condition, a left join filter, and
-   * right join filter.
-   *
-   * @param joinQual the original join condition
-   * @param leftSchema Left table schema
-   * @param rightSchema Left table schema
-   * @return Three element EvalNodes, 0 - join condition, 1 - left join filter, 2 - right join filter.
-   */
-  private EvalNode[] extractJoinConditions(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
-    List<EvalNode> joinQuals = Lists.newArrayList();
-    List<EvalNode> leftFilters = Lists.newArrayList();
-    List<EvalNode> rightFilters = Lists.newArrayList();
-    for (EvalNode eachQual : AlgebraicUtil.toConjunctiveNormalFormArray(joinQual)) {
-      if (!(eachQual instanceof BinaryEval)) {
-        continue; // todo 'between', etc.
-      }
-      BinaryEval binaryEval = (BinaryEval)eachQual;
-      LinkedHashSet<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
-      LinkedHashSet<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
-      boolean leftInLeft = leftSchema.containsAny(leftColumns);
-      boolean rightInLeft = leftSchema.containsAny(rightColumns);
-      boolean leftInRight = rightSchema.containsAny(leftColumns);
-      boolean rightInRight = rightSchema.containsAny(rightColumns);
+    switch (plan.getJoinType()) {
 
-      boolean columnsFromLeft = leftInLeft || rightInLeft;
-      boolean columnsFromRight = leftInRight || rightInRight;
-      if (!columnsFromLeft && !columnsFromRight) {
-        continue; // todo constant expression : this should be done in logical phase
-      }
-      if (columnsFromLeft ^ columnsFromRight) {
-        if (columnsFromLeft) {
-          leftFilters.add(eachQual);
+      case CROSS:
+        if (hasJoinQual) {
+          throw new TajoInternalError("Cross join cannot evaluate join conditions.");
         } else {
-          rightFilters.add(eachQual);
+          joinKeyPairs = null;
+          rightNumCols = leftNumCols = -1;
+          leftKeyList = rightKeyList = null;
+          leftKeyExtractor = null;
+          rightKeyExtractor = null;
         }
-        continue;
-      }
-      if ((leftInLeft && rightInLeft) || (leftInRight && rightInRight)) {
-        continue; // todo not allowed yet : this should be checked in logical phase
-      }
-      joinQuals.add(eachQual);
+        break;
+
+      case INNER:
+        // Other join types except INNER join can have empty join condition.
+        if (!hasJoinQual) {
+          throw new TajoInternalError("Inner join must have any join conditions.");
+        }
+      default:
+        // HashJoin only can manage equi join key pairs.
+        this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(),
+            inner.getSchema(), false);
+
+        leftKeyList = new Column[joinKeyPairs.size()];
+        rightKeyList = new Column[joinKeyPairs.size()];
+
+        for (int i = 0; i < joinKeyPairs.size(); i++) {
+          leftKeyList[i] = outer.getSchema().getColumn(joinKeyPairs.get(i)[0].getQualifiedName());
+          rightKeyList[i] = inner.getSchema().getColumn(joinKeyPairs.get(i)[1].getQualifiedName());
+        }
+
+        leftNumCols = outer.getSchema().size();
+        rightNumCols = inner.getSchema().size();
+
+        leftKeyExtractor = new KeyProjector(leftSchema, leftKeyList);
+        rightKeyExtractor = new KeyProjector(rightSchema, rightKeyList);
+        break;
     }
-    return new EvalNode[] {
-        joinQuals.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(joinQuals),
-        leftFilters.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(leftFilters),
-        rightFilters.isEmpty() ? null : AlgebraicUtil.createSingletonExprFromCNF(rightFilters)
-    };
   }
 
   public JoinNode getPlan() {
@@ -145,7 +145,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
    * @return True if an input tuple is matched to the left join filter
    */
   protected boolean leftFiltered(Tuple left) {
-    return leftJoinFilter != null && !leftJoinFilter.eval(left).asBool();
+    return leftJoinFilter != null && !leftJoinFilter.eval(left).isTrue();
   }
 
   /**
@@ -155,7 +155,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
    * @return True if an input tuple is matched to the right join filter
    */
   protected boolean rightFiltered(Tuple right) {
-    return rightJoinFilter != null && !rightJoinFilter.eval(right).asBool();
+    return rightJoinFilter != null && !rightJoinFilter.eval(right).isTrue();
   }
 
   /**
@@ -175,7 +175,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
     return Iterators.filter(rightTuples.iterator(), new Predicate<Tuple>() {
       @Override
       public boolean apply(Tuple input) {
-        return rightJoinFilter.eval(input).asBool();
+        return rightJoinFilter.eval(input).isTrue();
       }
     });
   }

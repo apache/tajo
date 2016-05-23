@@ -24,6 +24,7 @@ import org.apache.tajo.client.ClientParameters;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.TimeZone;
 
 class CliClientParamsFactory {
   static Map<String, String> DEFAULT_PARAMS = new HashMap<>();
@@ -35,6 +36,7 @@ class CliClientParamsFactory {
     DEFAULT_PARAMS.put(ClientParameters.RETRY, "3");
     DEFAULT_PARAMS.put(ClientParameters.ROW_FETCH_SIZE, "200");
     DEFAULT_PARAMS.put(ClientParameters.USE_COMPRESSION, "false");
+    DEFAULT_PARAMS.put(ClientParameters.TIMEZONE, TimeZone.getDefault().getID());
   }
 
   public static Properties get(@Nullable Properties connParam) {

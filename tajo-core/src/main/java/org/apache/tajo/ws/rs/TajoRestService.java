@@ -21,28 +21,10 @@ package org.apache.tajo.ws.rs;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.CompositeService;
-import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.json.FunctionAdapter;
-import org.apache.tajo.catalog.json.TableMetaAdapter;
-import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.function.Function;
-import org.apache.tajo.json.ClassNameSerializer;
-import org.apache.tajo.json.DataTypeAdapter;
-import org.apache.tajo.json.DatumAdapter;
-import org.apache.tajo.json.GsonSerDerAdapter;
-import org.apache.tajo.json.PathSerializer;
-import org.apache.tajo.json.TimeZoneGsonSerdeAdapter;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.GeneralFunction;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.serder.EvalNodeAdapter;
-import org.apache.tajo.plan.serder.LogicalNodeAdapter;
+import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.ws.rs.netty.NettyRestServer;
 import org.apache.tajo.ws.rs.netty.NettyRestServerFactory;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
@@ -50,16 +32,12 @@ import org.glassfish.jersey.filter.LoggingFilter;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.ServerProperties;
 
-import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
 
 public class TajoRestService extends CompositeService {
   
-  private final Log LOG = LogFactory.getLog(getClass());
+  private static final Log LOG = LogFactory.getLog(TajoRestService.class);
 
   private MasterContext masterContext;
   private NettyRestServer restServer;
@@ -69,27 +47,10 @@ public class TajoRestService extends CompositeService {
     
     this.masterContext = masterContext;
   }
-  
-  private Map<Type, GsonSerDerAdapter<?>> registerTypeAdapterMap() {
-    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
-    adapters.put(Path.class, new PathSerializer());
-    adapters.put(Class.class, new ClassNameSerializer());
-    adapters.put(LogicalNode.class, new LogicalNodeAdapter());
-    adapters.put(EvalNode.class, new EvalNodeAdapter());
-    adapters.put(TableMeta.class, new TableMetaAdapter());
-    adapters.put(Function.class, new FunctionAdapter());
-    adapters.put(GeneralFunction.class, new FunctionAdapter());
-    adapters.put(AggFunction.class, new FunctionAdapter());
-    adapters.put(Datum.class, new DatumAdapter());
-    adapters.put(DataType.class, new DataTypeAdapter());
-    adapters.put(TimeZone.class, new TimeZoneGsonSerdeAdapter());
-
-    return adapters;
-  }
 
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
-    GsonFeature gsonFeature = new GsonFeature(registerTypeAdapterMap());
+    GsonFeature gsonFeature = new GsonFeature(PlanGsonHelper.registerAdapters());
     
     ClientApplication clientApplication = new ClientApplication(masterContext);
     ResourceConfig resourceConfig = ResourceConfig.forApplication(clientApplication)

@@ -30,4 +30,7 @@ def concat_py(str):
 
 @output_type('int4')
 def add_py(a,b):
-    return a+b
+    if a != None and b != None:
+        return a+b
+    else:
+        return None

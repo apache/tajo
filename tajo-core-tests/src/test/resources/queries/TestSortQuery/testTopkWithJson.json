@@ -19,7 +19,7 @@
     ],
     "Expr": {
         "Num": {
-            "Value": "3",
+            "Value": "5",
             "ValueType": "Unsigned_Integer",
             "OpType": "Literal"
         },
@@ -31,6 +31,14 @@
                         "OpType": "Column"
                     },
                     "IsAsc": false,
+                    "IsNullFirst": false
+                },
+                {
+                    "SortKey": {
+                        "ColumnName": "l_linenumber",
+                        "OpType": "Column"
+                    },
+                    "IsAsc": true,
                     "IsNullFirst": false
                 }
             ],

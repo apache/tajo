@@ -19,16 +19,14 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
-
-import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class RowConstantEval extends ValueSetEval {
   @Expose Datum [] values;
@@ -39,8 +37,8 @@ public class RowConstantEval extends ValueSetEval {
   }
 
   @Override
-  public DataType getValueType() {
-    return CatalogUtil.newSimpleDataType(values[0].type());
+  public Type getValueType() {
+    return values[0].type();
   }
 
   @Override

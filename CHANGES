@@ -4,9 +4,50 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1686: Allow Tajo to use Hive UDF. (Jongyoung Park via jihoon)
+
+    TAJO-2122: PullServer as an Auxiliary service of Yarn. (jihoon)
+
+    TAJO-2109: Implement Radix sort. (jihoon)
+
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-2146: Fragment interface cleanup. (jihoon)
+
+    TAJO-2129: Apply new type implementation to Schema and Catalog. (hyunsik)
+
+    TAJO-2071: Supporting DATE type in Parquet format. 
+    (Jongyoung Park via hyunsik)
+
+    TAJO-2106: Fix minor typo in PostgreSQL Storage Handler documentation.
+    (Byunghoon Lim via jihoon)
+
+    TAJO-2116: Simplify rpc address in default configuration. (jinho)
+
+    TAJO-2126: Allow parallel execution of non-leaf sibling ExecutionBlocks.
+    (jihoon)
+
+    TAJO-2127: Use Type instead of DataType for EvalNode. (hyunsik)
+
+    TAJO-2125: Detect JAVA_HOME on OSX, if JAVA_HOME is not set. (jinho)
+
+    TAJO-2108: Refactor Schema to be immutable. (hyunsik)
+
+    TAJO-2112: Improve disk load, when queries run simultaneously. (jinho)
+
+    TAJO-2104: Implement Identifier which supports quotation information. 
+    (hyunsik)
+
+    TAJO-2099: Implement an Adapter for the legacy Schema. (hyunsik)
+
+    TAJO-2091: Error or progress update should use stderr instead of stdout. 
+    (hyunsik)
+
+    TAJO-2064: Supporting auto-completion in Tsql. (Jongyoung Park via jaehwa)
+
+    TAJO-2043: Implement new data type and schema. (hyunsik)
 
     TAJO-2090: Bump up orc version to 0.141. (hyunsik)
 
@@ -110,6 +151,30 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
+
+    TAJO-2151: Fix broken CI. (jihoon)
+
+    TAJO-2158: The concat_ws function can't support a tab separator.
+    (Byunghwa Yun via jihoon)
+
+    TAJO-2143: Fix race condition in task history writer. (jinho)
+
+    TAJO-2140: TajoInternalError does not contains reason stack trace. (jinho)
+
+    TAJO-2135: Invalid join result when join key columns contain nulls. (jihoon)
+
+    TAJO-2110: Fix incorrect DateTime and remove hard coded tests. (jinho)
+
+    TAJO-2119: Invalid sort result when sort key columns contain non-ascii values. 
+    (jihoon)
+
+    TAJO-2100: Add missing cancellation in defaultTaskScheduler when a worker is 
+    no respond. (jinho)
+
+    TAJO-2092: TestStorages.testNullHandlingTypesWithProjection occasionally fail.
+    (jinho)
+
     TAJO-1793: result row count unmatched for UNION ALL. (jaehwa)
 
     TAJO-2082: Aggregation on a derived table which includes union can cause 
@@ -212,6 +277,21 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2154: Refactor Datum to use new Type implementation. (hyunsik)
+
+    TAJO-2027: Writing Hive UDF integration document. (Jongyoung via hyunsik)
+
+    TAJO-2157: EvalNodeSerializer/Deserializer should use new Type 
+    implementation. (hyunsik)
+
+    TAJO-2145: Error codes based on errno.h need prefix. 
+    (Jongyoung Park via hyunsik)
+
+    TAJO-2117: Add some missing index to MariaDBStore.
+    (Janaka Chathuranga Thilakarathna via jaehwa)
+
+    TAJO-2142: Temporarily disable NOT IN subquery. (jihoon)
+
     TAJO-2088: Change QueryTestCaseBase.runSimpleTests() to return a set of 
     TajoResultSetBase. (jihoon)
 
@@ -300,6 +380,9 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-2130: Remove inet4 data type.
+    (Contributed by Jongyoung Park. Committed by jihoon)
 
     TAJO-1997: Registering UDF, it needs to check duplication.
     (Contributed by Jongyoung Park. Committed by jihoon)

@@ -98,7 +98,7 @@ public class EmptyTuple extends NullTuple {
 
   @Override
   public boolean getBool(int fieldId) {
-    return NullDatum.get().asBool();
+    throw new UnsupportedOperationException();
   }
 
   @Override

@@ -55,6 +55,10 @@ public class TypeDesc {
     }
   }
 
+  public Schema getNestedSchema() {
+    return nestedRecordSchema;
+  }
+
   public int hashCode() {
     return Objects.hashCode(dataType.hashCode(), nestedRecordSchema);
   }

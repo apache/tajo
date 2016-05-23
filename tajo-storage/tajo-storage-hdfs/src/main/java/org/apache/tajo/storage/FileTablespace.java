@@ -40,6 +40,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
@@ -61,7 +62,7 @@ public class FileTablespace extends Tablespace {
       return !name.startsWith("_") && !name.startsWith(".");
     }
   };
-  private final Log LOG = LogFactory.getLog(FileTablespace.class);
+  private static final Log LOG = LogFactory.getLog(FileTablespace.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
@@ -303,10 +304,12 @@ public class FileTablespace extends Tablespace {
    * Subclasses may override to, e.g., select only files matching a regular
    * expression.
    *
+   * @param requireSort if set, result will be sorted by their paths.
+   * @param dirs input dirs
    * @return array of FileStatus objects
    * @throws IOException if zero items.
    */
-  protected List<FileStatus> listStatus(Path... dirs) throws IOException {
+  protected List<FileStatus> listStatus(boolean requireSort, Path... dirs) throws IOException {
     List<FileStatus> result = new ArrayList<>();
     if (dirs.length == 0) {
       throw new IOException("No input paths specified in job");
@@ -340,6 +343,10 @@ public class FileTablespace extends Tablespace {
 
     if (!errors.isEmpty()) {
       throw new InvalidInputException(errors);
+    }
+
+    if (requireSort) {
+      Collections.sort(result);
     }
     LOG.info("Total input paths to process : " + result.size());
     return result;
@@ -446,8 +453,8 @@ public class FileTablespace extends Tablespace {
   /**
    * Get Disk Ids by Volume Bytes
    */
-  private int[] getDiskIds(VolumeId[] volumeIds) {
-    int[] diskIds = new int[volumeIds.length];
+  private Integer[] getDiskIds(VolumeId[] volumeIds) {
+    Integer[] diskIds = new Integer[volumeIds.length];
     for (int i = 0; i < volumeIds.length; i++) {
       int diskId = -1;
       if (volumeIds[i] != null && volumeIds[i].hashCode() > 0) {
@@ -463,7 +470,7 @@ public class FileTablespace extends Tablespace {
    *
    * @throws IOException
    */
-  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
+  public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, boolean requireSort, Path... inputs)
       throws IOException {
     // generate splits'
 
@@ -476,7 +483,7 @@ public class FileTablespace extends Tablespace {
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
       } else {
-        files.addAll(listStatus(p));
+        files.addAll(listStatus(requireSort, p));
       }
 
       int previousSplitSize = splits.size();
@@ -605,14 +612,15 @@ public class FileTablespace extends Tablespace {
   @Override
   public List<Fragment> getSplits(String inputSourceId,
                                   TableDesc table,
+                                  boolean requireSort,
                                   @Nullable EvalNode filterCondition) throws IOException {
-    return getSplits(inputSourceId, table.getMeta(), table.getSchema(), new Path(table.getUri()));
+    return getSplits(inputSourceId, table.getMeta(), table.getSchema(), requireSort, new Path(table.getUri()));
   }
 
   @Override
   public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
     if (!tableDesc.isExternal()) {
-      String [] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
+      String [] splitted = IdentifierUtil.splitFQTableName(tableDesc.getName());
       String databaseName = splitted[0];
       String simpleTableName = splitted[1];
 

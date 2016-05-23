@@ -19,6 +19,9 @@
 package org.apache.tajo.cli.tsql.commands;
 
 import com.google.common.base.Preconditions;
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.exception.TajoException;
 
@@ -65,7 +68,7 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
         );
 
       } catch (TajoException se) {
-        context.getOutput().write(String.format("ERROR: %s%n", se.getMessage()));
+        context.getError().write(String.format("ERROR: %s%n", se.getMessage()));
       }
     }
   }
@@ -78,5 +81,13 @@ public class ConnectDatabaseCommand extends TajoShellCommand {
   @Override
   public String getDescription() {
     return "connect to new database";
+  }
+
+  @Override
+  public ArgumentCompleter getArgumentCompleter() {
+    return new ArgumentCompleter(
+        new StringsCompleter(getCommand()),
+        new DbNameCompleter(),
+        NullCompleter.INSTANCE);
   }
 }

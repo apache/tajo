@@ -20,10 +20,10 @@ package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Maps;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -80,12 +80,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         Map<String, Integer> result = Maps.newHashMap();
         result.put("NO", 3);
         result.put("RF", 2);
+        result.put(null, 3);
 
         assertNotNull(res);
         assertTrue(res.next());
         assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
         assertTrue(res.next());
         assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+        assertTrue(res.next());
+        assertNull(res.getString(1));
+        assertNull(res.getString(2));
+        assertTrue(result.get(null) == res.getInt(3));
         assertFalse(res.next());
 
         ResultSetMetaData rsmd = res.getMetaData();
@@ -333,7 +338,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertEquals(22, numCols);
       int numColumns = 0;
 
-      TableDesc tableDesc = client.getTableDesc(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+      TableDesc tableDesc = client.getTableDesc(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
       assertNotNull(tableDesc);
 
       List<Column> columns = tableDesc.getSchema().getRootColumns();
@@ -380,12 +385,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+            assertTrue(res.next());
+            assertNull(res.getString(1));
+            assertNull(res.getString(2));
+            assertTrue(result.get(null) == res.getInt(3));
             assertFalse(res.next());
 
             ResultSetMetaData rsmd = res.getMetaData();
@@ -438,12 +448,17 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
+            result.put(null, 3);
 
             assertNotNull(res);
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
             assertTrue(res.next());
             assertTrue(result.get(res.getString(1) + res.getString(2)) == res.getInt(3));
+            assertTrue(res.next());
+            assertNull(res.getString(1));
+            assertNull(res.getString(2));
+            assertTrue(result.get(null) == res.getInt(3));
             assertFalse(res.next());
 
             ResultSetMetaData rsmd = res.getMetaData();
@@ -480,7 +495,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
   @Test
   public void testCreateTableWithDateAndTimestamp() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
+    String tableName = IdentifierUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
 
     int result;
     Statement stmt = null;
@@ -597,7 +612,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
 
-        String tableName = CatalogUtil.normalizeIdentifier("testAlterTablePartition");
+        String tableName = IdentifierUtil.normalizeIdentifier("testAlterTablePartition");
         resultSet = executeString(
           "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
         resultSet.close();
@@ -677,6 +692,105 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         statement.close();
       }
       if (conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testTableValueWithTimeZone() throws Exception {
+    String tableName = IdentifierUtil.normalizeIdentifier("testTableValueWithTimeZone");
+
+    Statement stmt = null;
+    ResultSet res = null;
+    Connection conn = null;
+    try {
+      String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=GMT";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+      stmt.executeUpdate("create table " + tableName + " (cdate timestamp)");
+      res = stmt.executeQuery("insert overwrite into " + tableName + " select TIMESTAMP '2016-04-01 00:00:00'");
+      cleanupQuery(res);
+
+      res = stmt.executeQuery("select * from " + tableName);
+      assertTrue(res.next());
+      assertEquals("2016-04-01 00:00:00", res.getString(1));
+      cleanupQuery(res);
+      stmt.close();
+      conn.close();
+
+
+      // set time zone ('Asia/Tokyo' offset +9)
+      connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=Asia/Tokyo";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+
+      res = stmt.executeQuery("select * from " + tableName);
+      assertTrue(res.next());
+      assertEquals("2016-04-01 09:00:00", res.getString(1));
+    } finally {
+      cleanupQuery(res);
+      if (stmt != null) {
+        stmt.close();
+      }
+
+      if(conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testNonFromQueryWithTimeZone() throws Exception {
+    Statement stmt = null;
+    ResultSet res = null;
+    Connection conn = null;
+    try {
+      String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=GMT";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+
+      res = stmt.executeQuery("select TIMESTAMP '2016-04-01 00:00:00'");
+      assertTrue(res.next());
+      assertEquals("2016-04-01 00:00:00", res.getString(1));
+      cleanupQuery(res);
+      stmt.close();
+      conn.close();
+
+      // set different timezone
+      connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+      connUri = connUri + "?timezone=Asia/Tokyo";
+
+      conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+      res = stmt.executeQuery("select TIMESTAMP '2016-04-01 00:00:00'");
+      assertTrue(res.next());
+      assertEquals("2016-04-01 00:00:00", res.getString(1));
+    } finally {
+      cleanupQuery(res);
+      if (stmt != null) {
+        stmt.close();
+      }
+
+      if(conn != null) {
         conn.close();
       }
     }

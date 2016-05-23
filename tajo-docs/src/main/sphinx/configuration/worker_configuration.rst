@@ -44,7 +44,7 @@ Worker Resources
 
 Each worker can execute multiple tasks simultaneously.
 
-In Tajo, users can specify the number of cpu cores, the total size of memory and the number of disks for each worker. Available resources affect how many tasks are executed simultaneously.
+In Tajo, users can specify the number of cpu cores, the total size of memory for each worker. Available resources affect how many tasks are executed simultaneously.
 CPU cores are a unit for expressing CPU parallelism, the unit for memory is megabytes and the unit for disks is the number of disk
 
 In order to specify the resource capacity of each worker, you should add the following configs to ``tajo-site.xml`` :
@@ -54,7 +54,6 @@ In order to specify the resource capacity of each worker, you should add the fol
 ===================================  =============   ======================   =================================
   tajo.worker.resource.cpu-cores       Integer         available cpu-cores      the number of cpu cores
   tajo.worker.resource.memory-mb       Integer         available jvm heap       memory size (MB)
-  tajo.worker.resource.disks           Integer         2                        the number of disks
   tajo.task.resource.min.memory-mb     Integer         1000                     minimum allocatable memory per task
   tajo.qm.resource.min.memory-mb       Integer         500                      minimum allocatable memory per query
 ===================================  =============   ======================   =================================
@@ -66,14 +65,14 @@ In order to specify the resource capacity of each worker, you should add the fol
 
 .. note::
 
-  If ``tajo.worker.resource.dfs-dir-aware`` is set to ``true`` in ``tajo-site.xml``, the worker will aware of and use the number of HDFS datanode's data dirs in the node.
-  In other words, ``tajo.worker.resource.disks`` is ignored.
+  If ``dfs.datanode.hdfs-blocks-metadata.enabled`` is set to ``true`` in ``hdfs-site.xml``, Tajo worker will do better task scheduling by considering disks load.
+  The config ``tajo.worker.resource.disk.parallel-execution.num`` determines the number of scan concurrency per disk on HDFS datanode. Usually SATA DISK case, we recommend ``2`` per disk.
 
 ------------
- Example
+ Examples
 ------------
 
-Assume that you want to give 15GB Jvm heap, 2GB memory per task, 4 disks, and 12 cores on each worker. The example configuration is as follows:
+Assume that you want to give 15GB Jvm heap, 2GB memory per task, 2 SSD disks, and 12 cores on each worker. The example configuration is as follows:
 
 ``tajo-env.sh``
 
@@ -95,20 +94,20 @@ Assume that you want to give 15GB Jvm heap, 2GB memory per task, 4 disks, and 12
     <name>tajo.task.resource.min.memory-mb</name>
     <value>2000</value>
   </property>
-  
+
   <property>
-    <name>tajo.worker.resource.disks</name>
-    <value>4</value>
+    <name>tajo.worker.resource.disk.parallel-execution.num</name>
+    <value>6</value>
   </property>
 
-
 * Example with HDFS
+Assume that you want to give 64GB Jvm heap, 4GB memory per task, 12 SAS disks, and 24 cores on each worker with HDFS. The example configuration is as follows:
 
 ``tajo-env.sh``
 
 .. code-block:: bash
 
-  export TAJO_WORKER_HEAPSIZE=15000
+  export TAJO_WORKER_HEAPSIZE=64000
 
 
 ``tajo-site.xml``
@@ -117,11 +116,20 @@ Assume that you want to give 15GB Jvm heap, 2GB memory per task, 4 disks, and 12
 
    <property>
     <name>tajo.task.resource.min.memory-mb</name>
-    <value>2000</value>
+    <value>4000</value>
   </property>
 
   <property>
-    <name>tajo.worker.resource.dfs-dir-aware</name>
+    <name>tajo.worker.resource.disk.parallel-execution.num</name>
+    <value>2</value>
+  </property>
+
+``hdfs-site.xml``
+
+.. code-block:: xml
+
+  <property>
+    <name>dfs.datanode.hdfs-blocks-metadata.enabled</name>
     <value>true</value>
   </property>
 
@@ -142,9 +150,4 @@ Assume that you want to give 15GB Jvm heap, 2GB memory per task, 4 disks, and 12
    <property>
     <name>tajo.task.resource.min.memory-mb</name>
     <value>2000</value>
-  </property>
-
-  <property>
-    <name>tajo.worker.resource.disk.parallel-execution.num</name>
-    <value>4</value>
   </property>

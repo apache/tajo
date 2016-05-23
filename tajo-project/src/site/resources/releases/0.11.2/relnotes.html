@@ -1,0 +1,74 @@
+<html>
+<head>
+<title>Release Notes - Tajo - Version 0.11.2</title>
+</head>
+
+<body>
+<h1>Release Notes - Tajo - Version 0.11.2</h1>
+                                
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-858'>TAJO-858</a>] -         Support for hadoop kerberos authentication in Tajo
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1793'>TAJO-1793</a>] -         result row count unmatched for UNION ALL 
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2077'>TAJO-2077</a>] -         Join condition causes incorrect result, when a table has an empty row file
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2080'>TAJO-2080</a>] -         ArrayIndexOutOfBoundsException when performing aggregation on an union block
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2081'>TAJO-2081</a>] -         Incorrect task locality on single node
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2082'>TAJO-2082</a>] -         Aggregation on a derived table which includes union can cause incorrect result
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2085'>TAJO-2085</a>] -         Add parseDateTime method with TimeZone in DateTimeFormat class
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2092'>TAJO-2092</a>] -         TestStorages.testNullHandlingTypesWithProjection occasionally fail
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2093'>TAJO-2093</a>] -         Partition Pruning doesn&#39;t handle Constant folding occasionally for BETWEEN clause.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2095'>TAJO-2095</a>] -         HiveCatalogStore::existIndexesByTable should not throw UnsupportedOperationException.
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2100'>TAJO-2100</a>] -         Add missing cancellation in defaultTaskScheduler when a worker is no respond
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2102'>TAJO-2102</a>] -         Migrate to Apache Orc from Presto&#39;s one
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2107'>TAJO-2107</a>] -         TIMESTAMP type equalsTo() problem
+</li>
+</ul>
+                        
+<h2>        Improvement
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2073'>TAJO-2073</a>] -         Upgrade parquet-mr to 1.8.1
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2089'>TAJO-2089</a>] -         Improve null handling in UDF
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2091'>TAJO-2091</a>] -         Error or progress update should use stderr instead of stdout
+</li>
+</ul>
+                                                                    
+<h2>        Task
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-1939'>TAJO-1939</a>] -         Implement PgSQLTablespace::getTableVolume() method
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2017'>TAJO-2017</a>] -         Replace manual array copy with Collection
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2070'>TAJO-2070</a>] -         Remove unnecessarily version property in maven pom
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2074'>TAJO-2074</a>] -         Upgrade hadoop and netty
+</li>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2088'>TAJO-2088</a>] -         Change QueryTestCaseBase.runSimpleTests() to return a set of TajoResultSetBase
+</li>
+</ul>
+        
+<h2>        Test
+</h2>
+<ul>
+<li>[<a href='https://issues.apache.org/jira/browse/TAJO-2076'>TAJO-2076</a>] -         Add backward compatibility testing with hadoop on travis
+</li>
+</ul>
+                
+</body>
+</html>

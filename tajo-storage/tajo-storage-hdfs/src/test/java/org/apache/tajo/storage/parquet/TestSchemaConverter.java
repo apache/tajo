@@ -22,11 +22,9 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.MessageTypeParser;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -49,7 +47,6 @@ public class TestSchemaConverter {
   private static final String CONVERTED_ALL_PARQUET_SCHEMA =
       "message table_schema {\n" +
       "  optional boolean myboolean;\n" +
-      "  optional int32 mybit;\n" +
       "  optional binary mychar (UTF8);\n" +
       "  optional int32 myint2;\n" +
       "  optional int32 myint4;\n" +
@@ -59,43 +56,36 @@ public class TestSchemaConverter {
       "  optional binary mytext (UTF8);\n" +
       "  optional binary myblob;\n" +
       // NULL_TYPE fields are not encoded.
-      "  optional binary myinet4;\n" +
       "  optional binary myprotobuf;\n" +
       "}\n";
 
   private Schema createAllTypesSchema() {
-    List<Column> columns = new ArrayList<>();
-    columns.add(new Column("myboolean", Type.BOOLEAN));
-    columns.add(new Column("mybit", Type.BIT));
-    columns.add(new Column("mychar", Type.CHAR));
-    columns.add(new Column("myint2", Type.INT2));
-    columns.add(new Column("myint4", Type.INT4));
-    columns.add(new Column("myint8", Type.INT8));
-    columns.add(new Column("myfloat4", Type.FLOAT4));
-    columns.add(new Column("myfloat8", Type.FLOAT8));
-    columns.add(new Column("mytext", Type.TEXT));
-    columns.add(new Column("myblob", Type.BLOB));
-    columns.add(new Column("mynull", Type.NULL_TYPE));
-    columns.add(new Column("myinet4", Type.INET4));
-    columns.add(new Column("myprotobuf", Type.PROTOBUF));
-    Column[] columnsArray = new Column[columns.size()];
-    columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaBuilder.builder()
+        .add(new Column("myboolean", Type.BOOLEAN))
+        .add(new Column("mychar", Type.CHAR))
+        .add(new Column("myint2", Type.INT2))
+        .add(new Column("myint4", Type.INT4))
+        .add(new Column("myint8", Type.INT8))
+        .add(new Column("myfloat4", Type.FLOAT4))
+        .add(new Column("myfloat8", Type.FLOAT8))
+        .add(new Column("mytext", Type.TEXT))
+        .add(new Column("myblob", Type.BLOB))
+        .add(new Column("mynull", Type.NULL_TYPE))
+        .add(new Column("myprotobuf", Type.PROTOBUF))
+        .build();
   }
 
   private Schema createAllTypesConvertedSchema() {
-    List<Column> columns = new ArrayList<>();
-    columns.add(new Column("myboolean", Type.BOOLEAN));
-    columns.add(new Column("myint", Type.INT4));
-    columns.add(new Column("mylong", Type.INT8));
-    columns.add(new Column("myfloat", Type.FLOAT4));
-    columns.add(new Column("mydouble", Type.FLOAT8));
-    columns.add(new Column("mybytes", Type.BLOB));
-    columns.add(new Column("mystring", Type.TEXT));
-    columns.add(new Column("myfixed", Type.BLOB));
-    Column[] columnsArray = new Column[columns.size()];
-    columnsArray = columns.toArray(columnsArray);
-    return new Schema(columnsArray);
+    return SchemaBuilder.builder()
+        .add(new Column("myboolean", Type.BOOLEAN))
+        .add(new Column("myint", Type.INT4))
+        .add(new Column("mylong", Type.INT8))
+        .add(new Column("myfloat", Type.FLOAT4))
+        .add(new Column("mydouble", Type.FLOAT8))
+        .add(new Column("mybytes", Type.BLOB))
+        .add(new Column("mystring", Type.TEXT))
+        .add(new Column("myfixed", Type.BLOB))
+        .build();
   }
 
   private void testTajoToParquetConversion(

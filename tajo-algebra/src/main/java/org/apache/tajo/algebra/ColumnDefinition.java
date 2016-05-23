@@ -24,11 +24,6 @@ public  class ColumnDefinition extends DataTypeExpr {
   @Expose @SerializedName("ColumnDefName")
   String columnName;
 
-  public ColumnDefinition(String columnName, String dataType) {
-    super(dataType);
-    this.columnName = columnName;
-  }
-
   public ColumnDefinition(String columnName, DataTypeExpr dataType) {
     super(dataType.getTypeName());
 
@@ -42,14 +37,16 @@ public  class ColumnDefinition extends DataTypeExpr {
       }
     }
 
-    // nested records
     if (dataType.isRecordType()) {
       this.recordType = dataType.recordType;
     }
 
-    // map type
     if (dataType.isMapType()) {
       this.mapType = dataType.mapType;
+    }
+
+    if (dataType.isArrayType()) {
+      this.arrayType = dataType.arrayType;
     }
   }
 

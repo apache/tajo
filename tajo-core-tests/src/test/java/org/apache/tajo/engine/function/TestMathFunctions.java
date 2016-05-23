@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
@@ -37,23 +38,25 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select round(-5.5) as col1 ", new String[]{"-6"});
     testSimpleEval("select round(-5.6) as col1 ", new String[]{"-6"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.4", "select round(col1 + col2 + col3) from table1",
         new String[]{"2"});
 
-    Schema schema2 = new Schema();
-    schema2.addColumn("col1", INT4);
-    schema2.addColumn("col2", INT8);
-    schema2.addColumn("col3", FLOAT4);
-    schema2.addColumn("col4", FLOAT8);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", INT4)
+        .add("col2", INT8)
+        .add("col3", FLOAT4)
+        .add("col4", FLOAT8)
+        .build();
 
     testEval(schema2, "table1", "9,9,9.5,9.5",
         "select round(col1), round (col2), round(col3), round(col4) from table1",
-        new String [] {"9", "9", "10", "10"});
+        new String[]{"9", "9", "10", "10"});
   }
 
   @Test
@@ -65,10 +68,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select floor(-5.1) as col1 ", new String[]{"-6"});
     testSimpleEval("select floor(-5.6) as col1 ", new String[]{"-6"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.4", "select floor(col1 + col2 + col3) from table1",
         new String[]{"1"});
@@ -84,10 +88,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select ceil(-5.1) as col1 ", new String[]{"-5"});
     testSimpleEval("select ceil(-5.6) as col1 ", new String[]{"-5"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select ceil(col1 + col2 + col3) from table1",
         new String[]{"2"});
@@ -103,10 +108,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select ceiling(-5.1) as col1 ", new String[]{"-5"});
     testSimpleEval("select ceiling(-5.6) as col1 ", new String[]{"-5"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select ceiling(col1 + col2 + col3) from table1",
         new String[]{"2"});
@@ -119,10 +125,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select sin(1.2) as col1 ", new String[]{"0.9320390859672263"});
     testSimpleEval("select sin(-0.5) as col1 ", new String[]{"-0.479425538604203"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select sin(col1 + col2 + col3) from table1",
         new String[]{"0.963558185417193"});
@@ -136,10 +143,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select cos(1.2) as col1 ", new String[]{"0.3623577544766736"});
     testSimpleEval("select cos(-0.5) as col1 ", new String[]{"0.8775825618903728"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select cos(col1 + col2 + col3) from table1",
         new String[]{"0.26749882862458735"});
@@ -152,10 +160,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select tan(0.8) as col1 ", new String[]{"1.0296385570503641"});
     testSimpleEval("select tan(-0.5) as col1 ", new String[]{"-0.5463024898437905"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select tan(col1 - col2 - col3) from table1",
         new String[]{"0.8422883804630795"});
@@ -168,10 +177,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select asin(0.8) as col1 ", new String[]{"0.9272952180016123"});
     testSimpleEval("select asin(-0.5) as col1 ", new String[]{"-0.5235987755982989"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select asin(col1 - col2 - col3) from table1",
         new String[]{"0.7753974966107532"});
@@ -184,10 +194,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select acos(0.8) as col1 ", new String[]{"0.6435011087932843"});
     testSimpleEval("select acos(-0.5) as col1 ", new String[]{"2.0943951023931957"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select acos(col1 - col2 - col3) from table1",
         new String[]{"0.7953988301841435"});
@@ -200,10 +211,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select atan(1.2) as col1 ", new String[]{"0.8760580505981934"});
     testSimpleEval("select atan(-0.5) as col1 ", new String[]{"-0.4636476090008061"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select atan(col1 + col2 + col3) from table1",
         new String[]{"0.9151007005533605"});
@@ -217,10 +229,11 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select atan2(-0.5, 0.3) as col1 ", new String[]{"-1.0303768265243125"});
     testSimpleEval("select atan2(-0.2, -1.3) as col1 ", new String[]{"-2.988943325194528"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select atan2(col1 + col2, col3) from table1",
         new String[]{"1.4876550949064553"});
@@ -233,12 +246,13 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select mod(200000000000,2) as col1 ", new String[]{"0"});
     testSimpleEval("select mod(2,200000000000) as col1 ", new String[]{"2"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", INT8);
-    schema.addColumn("col2", INT8);
-    schema.addColumn("col3", INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", INT8)
+        .add("col2", INT8)
+        .add("col3", INT8)
+        .build();
 
-    testEval(schema, "table1", "9,2,3", "select mod(col1 + col2, col3) from table1", 
+    testEval(schema, "table1", "9,2,3", "select mod(col1 + col2, col3) from table1",
         new String[]{"2"});
   }
 
@@ -249,12 +263,13 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select div(200000000000,2) as col1 ", new String[]{"100000000000"});
     testSimpleEval("select div(2,200000000000) as col1 ", new String[]{"0"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", INT8);
-    schema.addColumn("col2", INT8);
-    schema.addColumn("col3", INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", INT8)
+        .add("col2", INT8)
+        .add("col3", INT8)
+        .build();
 
-    testEval(schema, "table1", "9,2,3", "select div(col1 + col2, col3) from table1", 
+    testEval(schema, "table1", "9,2,3", "select div(col1 + col2, col3) from table1",
         new String[]{"3"});
   }
 
@@ -265,19 +280,21 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select sign(0.3) as col1 ", new String[]{"1.0"});
 
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
-    schema.addColumn("col2", FLOAT4);
-    schema.addColumn("col3", FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .add("col2", FLOAT4)
+        .add("col3", FLOAT4)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select sign(col1 + col2 + col3) from table1",
         new String[]{"1.0"});
 
 
-    Schema schema2 = new Schema();
-    schema2.addColumn("col1", FLOAT8);
-    schema2.addColumn("col2", FLOAT8);
-    schema2.addColumn("col3", FLOAT8);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema2, "table1", "1.0, 0.2, 0.1", "select sign(col1 + col2 + col3) from table1",
         new String[]{"1.0"});
@@ -290,19 +307,21 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select sqrt(8.0) as col1 ", new String[]{"2.8284271247461903"});
 
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
-    schema.addColumn("col2", FLOAT4);
-    schema.addColumn("col3", FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .add("col2", FLOAT4)
+        .add("col3", FLOAT4)
+        .build();
 
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select sqrt(col1 + col2 + col3) from table1",
         new String[]{"1.1401754564651765"});
 
 
-    Schema schema2 = new Schema();
-    schema2.addColumn("col1", FLOAT8);
-    schema2.addColumn("col2", FLOAT8);
-    schema2.addColumn("col3", FLOAT8);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema2, "table1", "1.0, 0.2, 0.1", "select sqrt(col1 + col2 + col3) from table1",
         new String[]{"1.140175425099138"});
@@ -315,14 +334,16 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select exp(1.2) as col1 ", new String[]{String.valueOf(Math.exp(1.2d))});
 
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .build();
 
     testEval(schema, "table1", "1.123", "select exp(col1) from table1",
         new String[]{String.valueOf(Math.exp(1.123f))});
 
-    Schema schema2 = new Schema();
-    schema2.addColumn("col1", FLOAT8);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .build();
 
     testEval(schema2, "table1", "1.123", "select exp(col1) from table1",
         new String[]{String.valueOf(Math.exp(1.123d))});
@@ -338,14 +359,16 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select abs(2.0) as col1 ", new String[]{"2.0"});
     testSimpleEval("select abs(-2.0) as col1 ", new String[]{"2.0"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
-    schema.addColumn("col2", FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .add("col2", FLOAT4)
+        .build();
     testEval(schema, "table1", "0.39,-0.39", "select abs(col1), abs(col2) from table1", new String[]{"0.39", "0.39"});
 
-    Schema schema2 = new Schema();
-    schema2.addColumn("col1", FLOAT8);
-    schema2.addColumn("col2", FLOAT8);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .build();
     testEval(schema2, "table1", "0.033312347,-0.033312347", "select abs(col1), abs(col2) from table1",
         new String[]{"0.033312347", "0.033312347"});
   }
@@ -357,17 +380,19 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select cbrt(8.0) as col1 ", new String[]{"2.0"});
 
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
-    schema.addColumn("col2", FLOAT4);
-    schema.addColumn("col3", FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .add("col2", FLOAT4)
+        .add("col3", FLOAT4)
+        .build();
     testEval(schema, "table1", "1.0, 0.2, 0.1", "select cbrt(col1 + col2 + col3) from table1",
         new String[]{"1.0913929030771317"});
 
-    Schema schema2 = new Schema();
-    schema2.addColumn("col1", FLOAT8);
-    schema2.addColumn("col2", FLOAT8);
-    schema2.addColumn("col3", FLOAT8);
+    Schema schema2 = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
     testEval(schema2, "table1", "1.0, 0.2, 0.1", "select cbrt(col1 + col2 + col3) from table1",
         new String[]{"1.091392883061106"});
   }
@@ -379,14 +404,15 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select degrees(2.7) as col1 ", new String[]{String.valueOf(Math.toDegrees(2.7))});
     testSimpleEval("select degrees(-0.8) as col1 ", new String[]{String.valueOf(Math.toDegrees(-0.8))});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "0.8,2.7,-0.8", "select degrees(col1), degrees(col2), degrees(col3) from table1",
         new String[]{
-            String.valueOf(Math.toDegrees((float)0.8)),
+            String.valueOf(Math.toDegrees((float) 0.8)),
             String.valueOf(Math.toDegrees(2.7)),
             String.valueOf(Math.toDegrees(-0.8))
         });
@@ -400,11 +426,12 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select pow(null,3.1) as col1 ", new String[]{NullDatum.get().toString()});
     testSimpleEval("select pow(20.1,null) as col1 ", new String[]{NullDatum.get().toString()});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", INT4);
-    schema.addColumn("col4", INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .add("col2", FLOAT8)
+        .add("col3", INT4)
+        .add("col4", INT8)
+        .build();
 
     testEval(schema, "table1", "0.4,2.7,3,2", "select pow(col1, col2), pow(col3, col4) from table1",
         new String[]{
@@ -420,14 +447,15 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select radians(2.7) as col1 ", new String[]{String.valueOf(Math.toRadians(2.7))});
     testSimpleEval("select radians(-0.8) as col1 ", new String[]{String.valueOf(Math.toRadians(-0.8))});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT4);
-    schema.addColumn("col2", FLOAT8);
-    schema.addColumn("col3", FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT4)
+        .add("col2", FLOAT8)
+        .add("col3", FLOAT8)
+        .build();
 
     testEval(schema, "table1", "0.8,2.7,-0.8", "select radians(col1), radians(col2), radians(col3) from table1",
         new String[]{
-            String.valueOf(Math.toRadians((float)0.8)),
+            String.valueOf(Math.toRadians((float) 0.8)),
             String.valueOf(Math.toRadians(2.7)),
             String.valueOf(Math.toRadians(-0.8))
         });
@@ -462,9 +490,10 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select round(1234567890.1234567,3) ", new String[]{"1.234567890123E9"});
     testSimpleEval("select round(1234567890.1234567,5) ", new String[]{"1.23456789012346E9"});
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", FLOAT8);
-    schema.addColumn("col2", INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", FLOAT8)
+        .add("col2", INT4)
+        .build();
 
     testEval(schema, "table1", ",", "select round(col1, col2) from table1", new String[]{NullDatum.get().toString()});
   }

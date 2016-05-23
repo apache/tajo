@@ -27,6 +27,7 @@ import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.VersionInfo;
 
 import java.sql.*;
@@ -110,7 +111,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getIdentifierQuoteString() throws SQLException {
-    return CatalogConstants.IDENTIFIER_QUOTE_STRING;
+    return IdentifierUtil.IDENTIFIER_QUOTE_STRING;
   }
 
   @Override
@@ -167,7 +168,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getCatalogSeparator() throws SQLException {
-    return CatalogConstants.IDENTIFIER_DELIMITER;
+    return IdentifierUtil.IDENTIFIER_DELIMITER;
   }
 
   @Override
@@ -182,7 +183,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxColumnNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -217,7 +218,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxCursorNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -227,17 +228,17 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxSchemaNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
   public int getMaxProcedureNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
   public int getMaxCatalogNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -262,7 +263,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxTableNameLength() throws SQLException {
-    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
+    return IdentifierUtil.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
@@ -503,7 +504,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         for (String table: tables) {
           if (table.matches(regtableNamePattern)) {
             TableDesc tableDesc = conn.getCatalogAdminClient().getTableDesc(
-                CatalogUtil.buildFQName(databaseName, table));
+                IdentifierUtil.buildFQName(databaseName, table));
             int pos = 0;
 
             for (Column column: tableDesc.getLogicalSchema().getRootColumns()) {
@@ -605,21 +606,22 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
         , new ArrayList<MetaDataTuple>());
   }
 
-  private final static Schema importedExportedSchema = new Schema()
-      .addColumn("PKTABLE_CAT", Type.VARCHAR)   // 0
-      .addColumn("PKTABLE_SCHEM", Type.VARCHAR) // 1
-      .addColumn("PKTABLE_NAME", Type.VARCHAR)  // 2
-      .addColumn("PKCOLUMN_NAME", Type.VARCHAR) // 3
-      .addColumn("FKTABLE_CAT", Type.VARCHAR)   // 4
-      .addColumn("FKTABLE_SCHEM", Type.VARCHAR) // 5
-      .addColumn("FKTABLE_NAME", Type.VARCHAR)  // 6
-      .addColumn("FKCOLUMN_NAME", Type.VARCHAR) // 7
-      .addColumn("KEY_SEQ", Type.INT2)          // 8
-      .addColumn("UPDATE_RULE", Type.INT2)      // 9
-      .addColumn("DELETE_RULE", Type.INT2)      // 10
-      .addColumn("FK_NAME", Type.VARCHAR)       // 11
-      .addColumn("PK_NAME", Type.VARCHAR)       // 12
-      .addColumn("DEFERRABILITY", Type.INT2);   // 13
+  private final static Schema importedExportedSchema = SchemaBuilder.builder()
+      .add("PKTABLE_CAT", Type.VARCHAR)   // 0
+      .add("PKTABLE_SCHEM", Type.VARCHAR) // 1
+      .add("PKTABLE_NAME", Type.VARCHAR)  // 2
+      .add("PKCOLUMN_NAME", Type.VARCHAR) // 3
+      .add("FKTABLE_CAT", Type.VARCHAR)   // 4
+      .add("FKTABLE_SCHEM", Type.VARCHAR) // 5
+      .add("FKTABLE_NAME", Type.VARCHAR)  // 6
+      .add("FKCOLUMN_NAME", Type.VARCHAR) // 7
+      .add("KEY_SEQ", Type.INT2)          // 8
+      .add("UPDATE_RULE", Type.INT2)      // 9
+      .add("DELETE_RULE", Type.INT2)      // 10
+      .add("FK_NAME", Type.VARCHAR)       // 11
+      .add("PK_NAME", Type.VARCHAR)       // 12
+      .add("DEFERRABILITY", Type.INT2)    // 13
+      .build();
 
   @Override
   public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {

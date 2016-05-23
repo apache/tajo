@@ -18,38 +18,52 @@
 
 package org.apache.tajo.plan.expr;
 
-import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.FieldConverter;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TypeConverter;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.schema.Field;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
+
+import static org.apache.tajo.schema.Field.Field;
+import static org.apache.tajo.schema.QualifiedIdentifier.$;
 
 public class FieldEval extends EvalNode implements Cloneable {
-	@Expose private Column column;
-	@Expose	private int fieldId = -1;
+	private Field field;
+	private int fieldId = -1;
 	
-	public FieldEval(String columnName, DataType domain) {
+	public FieldEval(String columnName, DataType type) {
 		super(EvalType.FIELD);
-		this.column = new Column(columnName, domain);
+		this.field = Field($(columnName), TypeConverter.convert(type));
 	}
+
+  public FieldEval(String columnName, Type type) {
+    super(EvalType.FIELD);
+    this.field = Field($(columnName), type);
+  }
 	
-	public FieldEval(Column column) {
+	public FieldEval(Column field) {
 	  super(EvalType.FIELD);
-	  this.column = column;
+	  this.field = FieldConverter.convert(field);
 	}
 
   @Override
   public EvalNode bind(EvalContext evalContext, Schema schema) {
     super.bind(evalContext, schema);
     // TODO - column namespace should be improved to simplify name handling and resolving.
-    if (column.hasQualifier()) {
-      fieldId = schema.getColumnId(column.getQualifiedName());
-    } else {
-      fieldId = schema.getColumnIdByName(column.getSimpleName());
+
+    fieldId = schema.getColumnId(field.name().interned());
+
+    if (fieldId == -1) { // fallback
+      fieldId = schema.getColumnIdByName(field.name().interned());
     }
+
     if (fieldId == -1) {
-      throw new IllegalStateException("No Such Column Reference: " + column + ", schema: " + schema);
+      throw new IllegalStateException("No Such Column Reference: " + field + ", schema: " + schema);
     }
     return this;
   }
@@ -62,8 +76,8 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 
   @Override
-	public DataType getValueType() {
-		return column.getDataType();
+	public Type getValueType() {
+		return field.type();
 	}
 
   @Override
@@ -77,48 +91,47 @@ public class FieldEval extends EvalNode implements Cloneable {
   }
 
   public Column getColumnRef() {
-    return column;
+    return FieldConverter.convert(field);
   }
 	
 	public String getQualifier() {
-	  return column.getQualifier();
+	  return IdentifierUtil.extractQualifier(field.name().interned());
 	}
 	
 	public String getColumnName() {
-	  return column.getSimpleName();
+    return IdentifierUtil.extractSimpleName(field.name().interned());
 	}
 	
 	public void replaceColumnRef(String columnName) {
-	  this.column = new Column(columnName, this.column.getDataType());
+	  this.field = Field(columnName, this.field.type());
 	}
 
 	@Override
 	public String getName() {
-		return this.column.getQualifiedName();
+		return this.field.name().interned();
 	}
 
 	public String toString() {
-	  return this.column.toString();
+	  return this.field.toString();
 	}
 	
   public boolean equals(Object obj) {
-    if (obj instanceof FieldEval) {
-      FieldEval other = (FieldEval) obj;
-      
-      return column.equals(other.column);      
+    if (this == obj) {
+      return true;
     }
-    return false;
+
+    return obj instanceof FieldEval && field.equals(((FieldEval) obj).field);
   }
   
   @Override
   public int hashCode() {
-    return column.hashCode();
+    return field.hashCode();
   }
   
   @Override
   public Object clone() throws CloneNotSupportedException {
     FieldEval eval = (FieldEval) super.clone();
-    eval.column = this.column;
+    eval.field = this.field;
     eval.fieldId = fieldId;
     
     return eval;

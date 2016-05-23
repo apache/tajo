@@ -18,7 +18,7 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
@@ -29,12 +29,6 @@ import static org.junit.Assert.assertEquals;
 
 public class TestTimeDatum {
   private static String TIME = "12:34:56";
-
-  @Test
-  public final void testType() {
-    Datum d = DatumFactory.createTime(TIME);
-    assertEquals(Type.TIME, d.type());
-  }
 
   @Test(expected = TajoRuntimeException.class)
   public final void testAsInt4() {
@@ -106,7 +100,7 @@ public class TestTimeDatum {
   @Test
   public final void testTimeDatumFromCreateFromInt8() {
     TimeDatum d = DatumFactory.createTime(TIME);
-    DataType type = DataType.newBuilder().setType(Type.TIME).build();
+    DataType type = DataType.newBuilder().setType(TajoDataTypes.Type.TIME).build();
     TimeDatum copy = (TimeDatum)DatumFactory.createFromInt8(type, d.asInt8());
 
     assertEquals(d, copy);

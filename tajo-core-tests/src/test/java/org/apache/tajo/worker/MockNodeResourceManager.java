@@ -50,7 +50,7 @@ public class MockNodeResourceManager extends NodeResourceManager {
   }
 
   @Override
-  protected void startTask(TaskRequestProto request, NodeResource resource) {
+  protected void startTask(TaskRequestProto request, Allocation resource) {
     if(enableTaskHandlerEvent) {
       super.startTask(request, resource);
     }

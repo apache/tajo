@@ -161,8 +161,6 @@ public class HeapTuple extends ZeroCopyTuple implements Cloneable {
       return DatumFactory.createTime(getInt8(fieldId));
     case INTERVAL:
       return getInterval(fieldId);
-    case INET4:
-      return DatumFactory.createInet4(getInt4(fieldId));
     case PROTOBUF:
       return getProtobufDatum(fieldId);
     case NULL_TYPE:

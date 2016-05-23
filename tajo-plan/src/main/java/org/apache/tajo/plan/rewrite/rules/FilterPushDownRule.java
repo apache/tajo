@@ -42,6 +42,7 @@ import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownConte
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
 
 import java.util.*;
 
@@ -742,9 +743,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         if (partitionColumns != null && !partitionColumns.isEmpty() && node instanceof ScanNode) {
           ScanNode scanNode = (ScanNode)node;
           boolean isPartitionColumn = false;
-          if (CatalogUtil.isFQColumnName(partitionColumns.iterator().next())) {
+          if (IdentifierUtil.isFQColumnName(partitionColumns.iterator().next())) {
             isPartitionColumn = partitionColumns.contains(
-                CatalogUtil.buildFQName(scanNode.getTableName(), c.getSimpleName()));
+                IdentifierUtil.buildFQName(scanNode.getTableName(), c.getSimpleName()));
           } else {
             isPartitionColumn = partitionColumns.contains(c.getSimpleName());
           }
@@ -921,7 +922,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         // Else partition column is a simple name
         boolean isPartitionColumn = false;
         if (hasQualifiedName) {
-          isPartitionColumn = partitionColumns.contains(CatalogUtil.buildFQName(table.getName(), column.getSimpleName()));
+          isPartitionColumn = partitionColumns.contains(IdentifierUtil.buildFQName(table.getName(), column.getSimpleName()));
         } else {
           isPartitionColumn = partitionColumns.contains(column.getSimpleName());
         }
@@ -971,8 +972,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       // Index path can be identified only after filters are pushed into each scan.
       if(context.rewriteRuleContext.getQueryContext().getBool(SessionVars.INDEX_ENABLED)) {
         String databaseName, tableName;
-        databaseName = CatalogUtil.extractQualifier(table.getName());
-        tableName = CatalogUtil.extractSimpleName(table.getName());
+        databaseName = IdentifierUtil.extractQualifier(table.getName());
+        tableName = IdentifierUtil.extractSimpleName(table.getName());
         Set<Predicate> predicates = new HashSet<>();
         for (EvalNode eval : PlannerUtil.getAllEqualEvals(qual)) {
           BinaryEval binaryEval = (BinaryEval) eval;

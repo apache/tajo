@@ -145,7 +145,7 @@ public class MockTaskExecutor extends TaskExecutor {
       }
 
       @Override
-      public List<Fetcher> getFetchers() {
+      public List<AbstractFetcher> getFetchers() {
         return null;
       }
     };

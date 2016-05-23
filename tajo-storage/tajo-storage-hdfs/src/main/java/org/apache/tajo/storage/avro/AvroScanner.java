@@ -51,7 +51,6 @@ import java.util.List;
  * FileScanner for reading Avro files
  */
 public class AvroScanner extends FileScanner {
-  private Schema avroSchema;
   private List<Schema.Field> avroFields;
   private DataFileReader<GenericRecord> dataFileReader;
   private int[] projectionMap;
@@ -82,7 +81,7 @@ public class AvroScanner extends FileScanner {
     prepareProjection(targets);
     outTuple = new VTuple(projectionMap.length);
 
-    avroSchema = AvroUtil.getAvroSchema(meta, conf);
+    Schema avroSchema = AvroUtil.getAvroSchema(meta, conf);
     avroFields = avroSchema.getFields();
 
     DatumReader<GenericRecord> datumReader = new GenericDatumReader<>(avroSchema);
@@ -141,15 +140,13 @@ public class AvroScanner extends FileScanner {
     byte[] bytes = new byte[buffer.capacity()];
     buffer.get(bytes, 0, bytes.length);
     switch (tajoType) {
-      case INET4:
-        return DatumFactory.createInet4(bytes);
       case PROTOBUF:
         try {
           ProtobufDatumFactory factory =
               ProtobufDatumFactory.get(dataType.getCode());
           Message.Builder builder = factory.newBuilder();
           builder.mergeFrom(bytes);
-          return factory.createDatum(builder);
+          return ProtobufDatumFactory.createDatum(builder);
         } catch (InvalidProtocolBufferException e) {
           throw new RuntimeException(e);
         }

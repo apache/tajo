@@ -58,6 +58,7 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.util.RpcParameterFactory;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.NodeResourceManager.Allocation;
 import org.apache.tajo.worker.event.NodeResourceDeallocateEvent;
 import org.apache.tajo.worker.event.NodeResourceEvent;
 import org.apache.tajo.worker.event.NodeStatusEvent;
@@ -176,7 +177,8 @@ public class QueryMasterTask extends CompositeService {
     EventHandler handler = getQueryTaskContext().getQueryMasterContext().getWorkerContext().
         getNodeResourceManager().getDispatcher().getEventHandler();
 
-    handler.handle(new NodeResourceDeallocateEvent(allocation, NodeResourceEvent.ResourceType.QUERY_MASTER));
+    handler.handle(new NodeResourceDeallocateEvent(new Allocation(allocation),
+        NodeResourceEvent.ResourceType.QUERY_MASTER));
 
     //flush current node resource
     handler.handle(new NodeStatusEvent(NodeStatusEvent.EventType.FLUSH_REPORTS));

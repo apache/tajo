@@ -120,12 +120,16 @@ public class TaskAttemptContext {
     this.partitionOutputVolume = Maps.newHashMap();
 
     this.partitions = new ArrayList<>();
+
+    // set to system timezone for forwarded query
+    this.evalContext.setTimeZone(queryContext.getConf().getSystemTimezone());
   }
 
   @VisibleForTesting
   public TaskAttemptContext(final QueryContext queryContext, final TaskAttemptId taskAttemptId,
                             final Fragment [] fragments,  final Path workDir) {
-    this(queryContext, null, taskAttemptId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this(queryContext, null, taskAttemptId, FragmentConvertor.toFragmentProtoArray(queryContext.getConf(), fragments),
+        workDir);
   }
 
   public TajoConf getConf() {
@@ -255,12 +259,12 @@ public class TaskAttemptContext {
   public void updateAssignedFragments(String tableId, Fragment[] fragments) {
     fragmentMap.remove(tableId);
     for(Fragment t : fragments) {
-      if (fragmentMap.containsKey(t.getTableName())) {
-        fragmentMap.get(t.getTableName()).add(t.getProto());
+      if (fragmentMap.containsKey(t.getInputSourceId())) {
+        fragmentMap.get(t.getInputSourceId()).add(FragmentConvertor.toFragmentProto(getConf(), t));
       } else {
         List<FragmentProto> frags = new ArrayList<>();
-        frags.add(t.getProto());
-        fragmentMap.put(t.getTableName(), frags);
+        frags.add(FragmentConvertor.toFragmentProto(getConf(), t));
+        fragmentMap.put(t.getInputSourceId(), frags);
       }
     }
   }
@@ -278,7 +282,7 @@ public class TaskAttemptContext {
     List<Path> paths = fragmentToPath(tableFragments);
 
     for (FragmentProto eachFragment: fragments) {
-      FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
+      FileFragment fileFragment = FragmentConvertor.convert(getConf(), eachFragment);
       // If current attempt already has same path, we don't need to add it to fragments.
       if (!paths.contains(fileFragment.getPath())) {
         tableFragments.add(eachFragment);
@@ -294,7 +298,7 @@ public class TaskAttemptContext {
     List<Path> list = new ArrayList<>();
 
     for (FragmentProto proto : tableFragments) {
-      FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);
+      FileFragment fragment = FragmentConvertor.convert(getConf(), proto);
       list.add(fragment.getPath());
     }
 

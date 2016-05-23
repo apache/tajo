@@ -10,6 +10,7 @@ Configuration
     configuration/tajo_master_configuration
     configuration/worker_configuration
     configuration/catalog_configuration
+    configuration/pullserver_configuration
     configuration/ha_configuration
     configuration/service_config_defaults
     configuration/tajo-site-xml

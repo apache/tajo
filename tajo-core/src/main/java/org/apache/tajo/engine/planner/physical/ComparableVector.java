@@ -203,8 +203,7 @@ public class ComparableVector {
           case INT1:
           case INT2: keys[i] = tuple.getInt2(field); break;
           case INT4:
-          case DATE:
-          case INET4: keys[i] = tuple.getInt4(field); break;
+          case DATE: keys[i] = tuple.getInt4(field); break;
           case INT8:
           case TIME:
           case TIMESTAMP: keys[i] = tuple.getInt8(field); break;
@@ -262,8 +261,7 @@ public class ComparableVector {
           case INT1:
           case INT2: if ((Short)keys[i] != tuple.getInt2(field)) return false; continue;
           case INT4:
-          case DATE:
-          case INET4: if ((Integer)keys[i] != tuple.getInt4(field)) return false; continue;
+          case DATE: if ((Integer)keys[i] != tuple.getInt4(field)) return false; continue;
           case INT8:
           case TIME:
           case TIMESTAMP: if ((Long)keys[i] != tuple.getInt8(field)) return false; continue;
@@ -311,7 +309,6 @@ public class ComparableVector {
         case INT2: return DatumFactory.createInt2((Short) keys[i]);
         case INT4: return DatumFactory.createInt4((Integer) keys[i]);
         case DATE: return DatumFactory.createDate((Integer) keys[i]);
-        case INET4: return DatumFactory.createInet4((Integer) keys[i]);
         case INT8: return DatumFactory.createInt8((Long) keys[i]);
         case TIME: return DatumFactory.createTime((Long) keys[i]);
         case TIMESTAMP: return DatumFactory.createTimestamp((Long) keys[i]);
@@ -351,7 +348,6 @@ public class ComparableVector {
       case FLOAT4: return 5;
       case FLOAT8: return 6;
       case TEXT: case CHAR: case BLOB: return 7;
-      case INET4: return 8;
       case NULL_TYPE: return -1;
       default:
         throw new TajoRuntimeException(new UnsupportedException("data type '" + type.name() + "'"));
@@ -383,7 +379,6 @@ public class ComparableVector {
       case TEXT: return TupleType.TEXT;
       case CHAR: return TupleType.CHAR;
       case BLOB: return TupleType.BLOB;
-      case INET4: return TupleType.INET4;
       case NULL_TYPE: return TupleType.NULL_TYPE;
       default: return TupleType.DATUM;
     }
@@ -398,7 +393,7 @@ public class ComparableVector {
   }
 
   private static enum TupleType {
-    NULL_TYPE, BOOLEAN, BIT, INT1, INT2, INT4, DATE, INET4, INT8, TIME, TIMESTAMP,
+    NULL_TYPE, BOOLEAN, BIT, INT1, INT2, INT4, DATE, INT8, TIME, TIMESTAMP,
     FLOAT4, FLOAT8, TEXT, CHAR, BLOB, DATUM
   }
 }

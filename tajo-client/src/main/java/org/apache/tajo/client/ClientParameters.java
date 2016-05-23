@@ -29,4 +29,5 @@ public interface ClientParameters {
   String CONNECT_TIMEOUT = "connectTimeout";
   String SOCKET_TIMEOUT = "socketTimeout";
   String RETRY = "retry";
+  String TIMEZONE = "timezone";
 }

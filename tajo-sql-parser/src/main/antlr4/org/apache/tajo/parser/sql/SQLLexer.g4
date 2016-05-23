@@ -259,7 +259,6 @@ LESS : L E S S;
 LIST : L I S T;
 LOCATION : L O C A T I O N;
 
-MAP : M A P;
 MAX : M A X;
 MAXVALUE : M A X V A L U E;
 MICROSECONDS : M I C R O S E C O N D S;
@@ -288,7 +287,6 @@ QUARTER : Q U A R T E R;
 
 RANGE : R A N G E;
 RANK : R A N K;
-RECORD : R E C O R D;
 REGEXP : R E G E X P;
 RENAME : R E N A M E;
 REPAIR : R E P A I R;
@@ -383,7 +381,10 @@ VARBINARY : V A R B I N A R Y;
 BLOB : B L O B;
 BYTEA : B Y T E A; // alias for BLOB
 
-INET4 : I N E T '4';
+// complex types
+ARRAY : A R R A Y;
+MAP : M A P;
+RECORD : R E C O R D;
 
 // Operators
 Similar_To : '~';

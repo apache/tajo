@@ -26,14 +26,12 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Int4Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.*;
@@ -104,7 +102,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     }
   }
 
-  @Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {"Hash_NoBroadcast"},
@@ -145,61 +143,63 @@ public class TestJoinQuery extends QueryTestCaseBase {
   protected static void createCommonTables() throws Exception {
     LOG.info("Create common tables for join tests");
 
-    KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
-
-    Schema schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("name", TajoDataTypes.Type.TEXT)
+        .build();
     String[] data = new String[]{"1|table11-1", "2|table11-2", "3|table11-3", "4|table11-4", "5|table11-5"};
-    TajoTestingCluster.createTable("jointable11", schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable(conf, "jointable11", schema, data, 2);
 
-    schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("name", TajoDataTypes.Type.TEXT)
+        .build();
     data = new String[]{"1|table12-1", "2|table12-2"};
-    TajoTestingCluster.createTable("jointable12", schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable(conf, "jointable12", schema, data, 2);
 
-    schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("name", TajoDataTypes.Type.TEXT)
+        .build();
     data = new String[]{"2|table13-2", "3|table13-3"};
-    TajoTestingCluster.createTable("jointable13", schema, tableOptions, data);
+    TajoTestingCluster.createTable(conf, "jointable13", schema, data);
 
-    schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("name", TajoDataTypes.Type.TEXT)
+        .build();
     data = new String[]{"1|table14-1", "2|table14-2", "3|table14-3", "4|table14-4"};
-    TajoTestingCluster.createTable("jointable14", schema, tableOptions, data);
+    TajoTestingCluster.createTable(conf, "jointable14", schema, data);
 
-    schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("name", TajoDataTypes.Type.TEXT)
+        .build();
     data = new String[]{};
-    TajoTestingCluster.createTable("jointable15", schema, tableOptions, data);
+    TajoTestingCluster.createTable(conf, "jointable15", schema, data);
 
-    schema = new Schema();
-    schema.addColumn("id", TajoDataTypes.Type.INT4);
-    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema = SchemaBuilder.builder()
+        .add("id", TajoDataTypes.Type.INT4)
+        .add("name", TajoDataTypes.Type.TEXT)
+        .build();
     data = new String[]{"1000000|a", "1000001|b", "2|c", "3|d", "4|e"};
-    TajoTestingCluster.createTable("jointable1", schema, tableOptions, data, 1);
+    TajoTestingCluster.createTable(conf, "jointable1", schema, data, 1);
 
     data = new String[10000];
     for (int i = 0; i < data.length; i++) {
       data[i] = i + "|" + "this is testLeftOuterJoinLeftSideSmallTabletestLeftOuterJoinLeftSideSmallTable" + i;
     }
-    TajoTestingCluster.createTable("jointable_large", schema, tableOptions, data, 2);
+    TajoTestingCluster.createTable(conf, "jointable_large", schema, data, 2);
 
     // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
     // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
     createMultiFile("nation", 2, new TupleCreator() {
       public Tuple createTuple(String[] columnDatas) {
         return new VTuple(new Datum[]{
-            new Int4Datum(Integer.parseInt(columnDatas[0])),
-            new TextDatum(columnDatas[1]),
-            new Int4Datum(Integer.parseInt(columnDatas[2])),
-            new TextDatum(columnDatas[3])
+            columnDatas[0].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[0])),
+            columnDatas[1].equals("") ? NullDatum.get() : new TextDatum(columnDatas[1]),
+            columnDatas[2].equals("") ? NullDatum.get() : new Int4Datum(Integer.parseInt(columnDatas[2])),
+            columnDatas[3].equals("") ? NullDatum.get() : new TextDatum(columnDatas[3])
         });
       }
     });

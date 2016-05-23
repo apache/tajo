@@ -39,12 +39,11 @@ public class TestFrameTuple {
         DatumFactory.createChar('9'),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
+        DatumFactory.createInt8(23L),
         DatumFactory.createFloat4(77.9f),
         DatumFactory.createFloat8(271.9f),
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
-        DatumFactory.createInet4("192.168.0.1")
     });
     
     tuple2 = new VTuple(new Datum[] {
@@ -53,12 +52,11 @@ public class TestFrameTuple {
         DatumFactory.createChar('9'),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
+        DatumFactory.createInt8(23L),
         DatumFactory.createFloat4(77.9f),
         DatumFactory.createFloat8(271.9f),
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
-        DatumFactory.createInet4("192.168.0.1")
     });
   }
 
@@ -69,14 +67,14 @@ public class TestFrameTuple {
   @Test
   public final void testFrameTuple() {
     Tuple frame = new FrameTuple(tuple1, tuple2);
-    assertEquals(22, frame.size());
-    for (int i = 0; i < 22; i++) {
+    assertEquals(20, frame.size());
+    for (int i = 0; i < frame.size(); i++) {
       assertTrue(frame.contains(i));
     }
     
-    assertEquals(23l, frame.getInt8(5));
-    assertEquals(23l, frame.getInt8(16));
-    assertEquals("192.168.0.1", frame.getText(10));
-    assertEquals("192.168.0.1", frame.getText(21));
+    assertEquals(23L, frame.getInt8(5));
+    assertEquals(23L, frame.getInt8(15));
+    assertEquals("hyunsik", frame.getText(8));
+    assertEquals("hyunsik", frame.getText(19));
   }
 }

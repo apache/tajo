@@ -25,7 +25,7 @@
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
-<%@ page import="org.apache.tajo.worker.Fetcher" %>
+<%@ page import="org.apache.tajo.worker.AbstractFetcher" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="org.apache.tajo.worker.Task" %>
 <%@ page import="org.apache.tajo.worker.TaskHistory" %>
@@ -161,7 +161,7 @@
             <th>URI</th>
         </tr>
         <%
-            for (Fetcher eachFetcher : task.getFetchers()) {
+            for (AbstractFetcher eachFetcher : task.getFetchers()) {
         %>
         <tr>
             <td><%=index%>

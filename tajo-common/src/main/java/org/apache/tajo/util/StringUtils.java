@@ -27,6 +27,7 @@ import org.apache.commons.lang.SystemUtils;
 import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.SignalLogger;
+import org.apache.tajo.storage.StorageConstants;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -259,7 +260,7 @@ public class StringUtils {
   public static String escapePathName(String path, String defaultPath) {
     if (path == null || path.length() == 0) {
       if (defaultPath == null) {
-        return "__TAJO_DEFAULT_PARTITION__";
+        return StorageConstants.DEFAULT_PARTITION_NAME;
       } else {
         return defaultPath;
       }

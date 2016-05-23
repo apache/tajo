@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.function;
 
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
@@ -28,8 +29,12 @@ import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.plan.expr.FunctionEval;
 import org.apache.tajo.storage.Tuple;
 
+import java.util.TimeZone;
+
 @Deprecated
 public abstract class GeneralFunction extends Function implements GsonObject {
+  @Expose
+  protected TimeZone timeZone;
   public GeneralFunction(Column[] definedArgs) {
     super(definedArgs);
   }
@@ -42,11 +47,6 @@ public abstract class GeneralFunction extends Function implements GsonObject {
 
   public abstract Datum eval(Tuple params);
 
-	public enum Type {
-	  AGG,
-	  GENERAL
-	}
-
   @Override
   public String toJson() {
     return CatalogGsonHelper.toJson(this, GeneralFunction.class);
@@ -55,5 +55,17 @@ public abstract class GeneralFunction extends Function implements GsonObject {
   @Override
   public CatalogProtos.FunctionType getFunctionType() {
     return CatalogProtos.FunctionType.GENERAL;
+  }
+
+  public void setTimeZone(TimeZone timeZone) {
+    this.timeZone = timeZone;
+  }
+
+  public TimeZone getTimeZone() {
+    return timeZone;
+  }
+
+  public boolean hasTimeZone() {
+    return timeZone != null;
   }
 }

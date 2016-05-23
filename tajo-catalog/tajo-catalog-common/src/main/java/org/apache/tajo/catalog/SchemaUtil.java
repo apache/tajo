@@ -23,9 +23,7 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -42,17 +40,19 @@ public class SchemaUtil {
   // The essential solution would be https://issues.apache.org/jira/browse/TAJO-895.
   static int tmpColumnSeq = 0;
   public static Schema merge(Schema left, Schema right) {
-    Schema merged = new Schema();
+    SchemaBuilder merged = SchemaBuilder.builder();
+    Set<String> nameSet = new HashSet<>();
+
     for(Column col : left.getRootColumns()) {
-      if (!merged.containsByQualifiedName(col.getQualifiedName())) {
-        merged.addColumn(col);
-      }
+      merged.add(col);
+      nameSet.add(col.getQualifiedName());
     }
     for(Column col : right.getRootColumns()) {
-      if (merged.containsByQualifiedName(col.getQualifiedName())) {
-        merged.addColumn("?fake" + (tmpColumnSeq++), col.getDataType());
+      if (nameSet.contains(col.getQualifiedName())) {
+        merged.add("?fake" + (tmpColumnSeq++), col.getDataType());
       } else {
-        merged.addColumn(col);
+        merged.add(col);
+        nameSet.add(col.getQualifiedName());
       }
     }
 
@@ -60,25 +60,28 @@ public class SchemaUtil {
     if (tmpColumnSeq < 0) {
       tmpColumnSeq = 0;
     }
-    return merged;
+    return merged.build();
   }
 
   /**
    * Get common columns to be used as join keys of natural joins.
    */
   public static Schema getNaturalJoinColumns(Schema left, Schema right) {
-    Schema common = new Schema();
+
+    SchemaBuilder common = SchemaBuilder.builder();
+    Set<String> commonNames = new HashSet<>();
     for (Column outer : left.getRootColumns()) {
-      if (!common.containsByName(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {
-        common.addColumn(new Column(outer.getSimpleName(), outer.getDataType()));
+      if (!commonNames.contains(outer.getSimpleName()) && right.containsByName(outer.getSimpleName())) {
+        common.add(new Column(outer.getSimpleName(), outer.getDataType()));
+        commonNames.add(outer.getSimpleName());
       }
     }
     
-    return common;
+    return common.build();
   }
 
   public static Schema getQualifiedLogicalSchema(TableDesc tableDesc, String tableName) {
-    Schema logicalSchema = new Schema(tableDesc.getLogicalSchema());
+    Schema logicalSchema = SchemaBuilder.builder().addAll(tableDesc.getLogicalSchema().getRootColumns()).build();
     if (tableName != null) {
       logicalSchema.setQualifier(tableName);
     }
@@ -182,7 +185,7 @@ public class SchemaUtil {
                                              Column column) {
 
     if (column.getDataType().getType() == Type.RECORD) {
-      for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getRootColumns()) {
+      for (Column nestedColumn : TypeConverter.convert(column.type).nestedRecordSchema.getRootColumns()) {
         List<String> newPath = new ArrayList<>(path);
         newPath.add(column.getQualifiedName());
 
@@ -208,7 +211,7 @@ public class SchemaUtil {
    */
   public static int estimateRowByteSizeWithSchema(Schema schema) {
     int size = 0;
-    for (Column column : schema.fields) {
+    for (Column column : schema.getAllColumns()) {
       size += getColByteSize(column);
     }
     return size;
@@ -241,10 +244,6 @@ public class SchemaUtil {
         return 4;
       case FLOAT8:
         return 8;
-      case INET4:
-        return 4;
-      case INET6:
-        return 16;
       case TEXT:
         return 256;
       case BLOB:

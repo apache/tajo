@@ -31,13 +31,15 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.*;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
-import org.apache.tajo.util.JavaResourceUtil;
-import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
+import org.apache.tajo.type.TypeProtobufEncoder;
+import org.apache.tajo.type.TypeStringEncoder;
+import org.apache.tajo.util.JavaResourceUtil;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
@@ -49,6 +51,8 @@ import java.util.*;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
+import static org.apache.tajo.schema.IdentifierUtil.extractQualifier;
+import static org.apache.tajo.schema.IdentifierUtil.extractSimpleName;
 
 public abstract class AbstractDBStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -756,7 +760,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    String[] splitted = CatalogUtil.splitTableName(table.getTableName());
+    final String[] splitted = IdentifierUtil.splitTableName(table.getTableName());
     if (splitted.length == 1) {
       throw new TajoInternalError(
           "createTable() requires a qualified table name, but it is '" + table.getTableName() + "'");
@@ -811,9 +815,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String colSql =
           "INSERT INTO " + TB_COLUMNS +
-              // 1    2            3                 4                 5          6
-              " (TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH)" +
-              " VALUES(?, ?, ?, ?, ?, ?) ";
+              // 1    2            3                 4
+              " (TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE)" +
+              " VALUES(?, ?, ?, ?) ";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(colSql);
@@ -822,15 +826,12 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(colSql);
       for (int i = 0; i < table.getSchema().getFieldsCount(); i++) {
         ColumnProto col = table.getSchema().getFields(i);
-        TajoDataTypes.DataType dataType = col.getDataType();
+        org.apache.tajo.type.Type type = TypeProtobufEncoder.decode(col.getType());
 
         pstmt.setInt(1, tableId);
-        pstmt.setString(2, CatalogUtil.extractSimpleName(col.getName()));
+        pstmt.setString(2, extractSimpleName(col.getName()));
         pstmt.setInt(3, i);
-        // the default number of nested fields is 0.
-        pstmt.setInt(4, dataType.hasNumNestedFields() ? dataType.getNumNestedFields() : 0);
-        pstmt.setString(5, dataType.getType().name());
-        pstmt.setInt(6, (col.getDataType().hasLength() ? col.getDataType().getLength() : 0));
+        pstmt.setString(4, TypeStringEncoder.encode(type));
         pstmt.addBatch();
         pstmt.clearParameters();
       }
@@ -911,7 +912,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
     ResultSet res = null;
 
-    String[] splitted = CatalogUtil.splitTableName(statsProto.getTableName());
+    String[] splitted = IdentifierUtil.splitTableName(statsProto.getTableName());
     if (splitted.length == 1) {
       throw new IllegalArgumentException("updateTableStats() requires a qualified table name, but it is \""
           + statsProto.getTableName() + "\".");
@@ -978,7 +979,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       DuplicatePartitionException, UndefinedPartitionException, UndefinedColumnException, UndefinedTableException,
       UndefinedPartitionMethodException, AmbiguousTableException {
 
-    String[] splitted = CatalogUtil.splitTableName(alterTableDescProto.getTableName());
+    String[] splitted = IdentifierUtil.splitTableName(alterTableDescProto.getTableName());
     if (splitted.length == 1) {
       throw new IllegalArgumentException("alterTable() requires a qualified table name, but it is \""
           + alterTableDescProto.getTableName() + "\".");
@@ -993,7 +994,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     switch (alterTableDescProto.getAlterTableType()) {
     case RENAME_TABLE:
-      String simpleNewTableName = CatalogUtil.extractSimpleName(alterTableDescProto.getNewTableName());
+      String simpleNewTableName = extractSimpleName(alterTableDescProto.getNewTableName());
       if (existTable(databaseName, simpleNewTableName)) {
         throw new DuplicateTableException(alterTableDescProto.getNewTableName());
       }
@@ -1149,13 +1150,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       throws UndefinedColumnException, AmbiguousTableException {
 
     final String selectColumnSql =
-        "SELECT COLUMN_NAME, DATA_TYPE, TYPE_LENGTH, ORDINAL_POSITION, NESTED_FIELD_NUM from " + TB_COLUMNS +
+        "SELECT COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION from " + TB_COLUMNS +
             " WHERE " + COL_TABLES_PK + " = ?" + " AND COLUMN_NAME = ?" ;
     final String deleteColumnNameSql =
         "DELETE FROM " + TB_COLUMNS + " WHERE TID = ? AND COLUMN_NAME = ?";
     final String insertNewColumnSql =
         "INSERT INTO " + TB_COLUMNS +
-            " (TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?, ?) ";
+            " (TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE) VALUES(?, ?, ?, ?) ";
 
     if (LOG.isDebugEnabled()) {
       LOG.debug(selectColumnSql);
@@ -1172,13 +1173,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       conn.setAutoCommit(false);
 
-      String tableName = CatalogUtil.extractQualifier(alterColumnProto.getOldColumnName());
-      String simpleOldColumnName = CatalogUtil.extractSimpleName(alterColumnProto.getOldColumnName());
-      String simpleNewColumnName = CatalogUtil.extractSimpleName(alterColumnProto.getNewColumnName());
+      String tableName = extractQualifier(alterColumnProto.getOldColumnName());
+      String simpleOldColumnName = extractSimpleName(alterColumnProto.getOldColumnName());
+      String simpleNewColumnName = extractSimpleName(alterColumnProto.getNewColumnName());
 
-      if (!tableName.equals(CatalogUtil.extractQualifier(alterColumnProto.getNewColumnName()))) {
+      if (!tableName.equals(extractQualifier(alterColumnProto.getNewColumnName()))) {
         throw new AmbiguousTableException(
-            tableName + ", " + CatalogUtil.extractQualifier(alterColumnProto.getNewColumnName()));
+            tableName + ", " + extractQualifier(alterColumnProto.getNewColumnName()));
       }
 
       //SELECT COLUMN
@@ -1188,15 +1189,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultSet = pstmt.executeQuery();
 
       CatalogProtos.ColumnProto columnProto = null;
+      String typeStr;
       int ordinalPosition = 0;
-      int nestedFieldNum = 0;
 
       if (resultSet.next()) {
         columnProto = resultToColumnProto(resultSet);
         //NOTE ==> Setting new column Name
         columnProto = columnProto.toBuilder().setName(alterColumnProto.getNewColumnName()).build();
         ordinalPosition = resultSet.getInt("ORDINAL_POSITION");
-        nestedFieldNum = resultSet.getInt("NESTED_FIELD_NUM");
+        typeStr = TypeStringEncoder.encode(TypeProtobufEncoder.decode(columnProto.getType()));
       } else {
         throw new UndefinedColumnException(alterColumnProto.getOldColumnName());
       }
@@ -1217,9 +1218,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, tableId);
       pstmt.setString(2, simpleNewColumnName);
       pstmt.setInt(3, ordinalPosition);
-      pstmt.setInt(4, nestedFieldNum);
-      pstmt.setString(5, columnProto.getDataType().getType().name());
-      pstmt.setInt(6, (columnProto.getDataType().hasLength() ? columnProto.getDataType().getLength() : 0));
+      pstmt.setString(4, typeStr);
       pstmt.executeUpdate();
 
       conn.commit();
@@ -1243,7 +1242,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     final String insertNewColumnSql =
         "INSERT INTO " + TB_COLUMNS +
-            " (TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?, ?) ";
+            " (TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE) VALUES(?, ?, ?, ?) ";
     final String columnCountSql =
         "SELECT MAX(ORDINAL_POSITION) AS POSITION FROM " + TB_COLUMNS + " WHERE TID = ?";
 
@@ -1251,7 +1250,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       pstmt = conn.prepareStatement(existColumnSql);
       pstmt.setInt(1, tableId);
-      pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
+      pstmt.setString(2, extractSimpleName(columnProto.getName()));
       resultSet =  pstmt.executeQuery();
 
       if (resultSet.next()) {
@@ -1271,15 +1270,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.close();
       resultSet = null;
 
-      TajoDataTypes.DataType dataType = columnProto.getDataType();
+      org.apache.tajo.type.Type type = TypeProtobufEncoder.decode(columnProto.getType());
 
       pstmt = conn.prepareStatement(insertNewColumnSql);
       pstmt.setInt(1, tableId);
-      pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
+      pstmt.setString(2, extractSimpleName(columnProto.getName()));
       pstmt.setInt(3, position + 1);
-      pstmt.setInt(4, dataType.hasNumNestedFields() ? dataType.getNumNestedFields() : 0);
-      pstmt.setString(5, dataType.getType().name());
-      pstmt.setInt(6, (columnProto.getDataType().hasLength() ? columnProto.getDataType().getLength() : 0));
+      pstmt.setString(4, TypeStringEncoder.encode(type));
       pstmt.executeUpdate();
 
     } catch (SQLException sqlException) {
@@ -1600,7 +1597,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       int tableId = res.getInt(1);
-      tableBuilder.setTableName(CatalogUtil.buildFQName(databaseName, res.getString(2).trim()));
+      tableBuilder.setTableName(IdentifierUtil.buildFQName(databaseName, res.getString(2).trim()));
       TableType tableType = TableType.valueOf(res.getString(3));
       if (tableType == TableType.EXTERNAL) {
         tableBuilder.setIsExternal(true);
@@ -1618,7 +1615,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         // Geting Column Descriptions
         //////////////////////////////////////////
         CatalogProtos.SchemaProto.Builder schemaBuilder = CatalogProtos.SchemaProto.newBuilder();
-        sql = "SELECT COLUMN_NAME, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH from " + TB_COLUMNS +
+        sql = "SELECT COLUMN_NAME, DATA_TYPE from " + TB_COLUMNS +
             " WHERE " + COL_TABLES_PK + " = ? ORDER BY ORDINAL_POSITION ASC";
 
         if (LOG.isDebugEnabled()) {
@@ -1847,7 +1844,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       String sql =
-              "SELECT TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH FROM " + TB_COLUMNS +
+              "SELECT TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE FROM " + TB_COLUMNS +
                       " ORDER BY TID ASC, ORDINAL_POSITION ASC";
 
       conn = getConnection();
@@ -1860,21 +1857,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         String databaseName = getDatabaseNameOfTable(conn, tid);
         String tableName = getTableName(conn, tid);
         builder.setTid(tid);
-        builder.setName(CatalogUtil.buildFQName(databaseName, tableName, resultSet.getString("COLUMN_NAME")));
-
-        int nestedFieldNum = resultSet.getInt("NESTED_FIELD_NUM");
-
-        Type type = getDataType(resultSet.getString("DATA_TYPE").trim());
-        int typeLength = resultSet.getInt("TYPE_LENGTH");
-
-        if (nestedFieldNum > 0) {
-          builder.setDataType(CatalogUtil.newRecordType(nestedFieldNum));
-        } else if (typeLength > 0) {
-          builder.setDataType(CatalogUtil.newDataTypeWithLen(type, typeLength));
-        } else {
-          builder.setDataType(CatalogUtil.newSimpleDataType(type));
-        }
-        
+        builder.setName(IdentifierUtil.buildFQName(databaseName, tableName, resultSet.getString("COLUMN_NAME")));
+        org.apache.tajo.type.Type type = TypeStringEncoder.decode(resultSet.getString("DATA_TYPE").trim());
+        builder.setType(type.getProto());
         columns.add(builder.build());
       }
     } catch (SQLException se) {
@@ -2484,7 +2469,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     final String databaseName = proto.getTableIdentifier().getDatabaseName();
-    final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
+    final String tableName = extractSimpleName(proto.getTableIdentifier().getTableName());
 
     try {
 
@@ -2529,7 +2514,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         // Since the key columns are always sorted in order of their occurrence position in the relation schema,
         // the concatenated name can be uniquely identified.
         columnNamesBuilder.append(columnSpec.getSortKey().getSimpleName()).append(",");
-        dataTypesBuilder.append(columnSpec.getSortKey().getDataType().getType().name()).append(",");
+        dataTypesBuilder.append(columnSpec.getSortKey().getDataType().getType().name()).append("|");
         ordersBuilder.append(columnSpec.isAscending()).append(",");
         nullOrdersBuilder.append(columnSpec.isNullsFirst()).append(",");
       }
@@ -2576,7 +2561,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(2, indexName);
       ResultSet res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new UndefinedIndexException(CatalogUtil.buildFQName(databaseName, indexName));
+        throw new UndefinedIndexException(IdentifierUtil.buildFQName(databaseName, indexName));
       }
       pstmt.close();
       res.close();
@@ -2676,7 +2661,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       String tableName = getTableName(conn, res.getInt(COL_TABLES_PK));
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-      resultToIndexDescProtoBuilder(CatalogUtil.buildFQName(databaseName, tableName), builder, res);
+      resultToIndexDescProtoBuilder(IdentifierUtil.buildFQName(databaseName, tableName), builder, res);
 
       try {
         builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
@@ -2717,7 +2702,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
-      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames);
+      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(SchemaFactory.newV1(tableDescProto.getSchema()), columnNames);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
       pstmt.setString(3, unifiedName);
@@ -2727,7 +2712,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       }
 
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-      resultToIndexDescProtoBuilder(CatalogUtil.buildFQName(databaseName, tableName), builder, res);
+      resultToIndexDescProtoBuilder(IdentifierUtil.buildFQName(databaseName, tableName), builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
       builder.setTargetRelationSchema(tableDescProto.getSchema());
       proto = builder.build();
@@ -2784,12 +2769,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try (PreparedStatement pstmt = getConnection().prepareStatement(sql)) {
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
-      Schema relationSchema = new Schema(getTable(databaseName, tableName).getSchema());
+      Schema relationSchema = SchemaFactory.newV1(getTable(databaseName, tableName).getSchema());
 
       // Since the column names in the unified name are always sorted
       // in order of occurrence position in the relation schema,
       // they can be uniquely identified.
-      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames);
+      String unifiedName = CatalogUtil.getUnifiedSimpleColumnName(
+          SchemaBuilder.builder().addAll(relationSchema.getRootColumns()).build(), columnNames);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
       pstmt.setString(3, unifiedName);
@@ -2896,14 +2882,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     builder.setIndexPath(res.getString("path"));
     String[] columnNames, dataTypes, orders, nullOrders;
     columnNames = res.getString("column_names").trim().split(",");
-    dataTypes = res.getString("data_types").trim().split(",");
+    dataTypes = res.getString("data_types").trim().split("\\|");
     orders = res.getString("orders").trim().split(",");
     nullOrders = res.getString("null_orders").trim().split(",");
     int columnNum = columnNames.length;
     for (int i = 0; i < columnNum; i++) {
       SortSpecProto.Builder colSpecBuilder = SortSpecProto.newBuilder();
-      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(CatalogUtil.buildFQName(qualifier, columnNames[i]))
-          .setDataType(CatalogUtil.newSimpleDataType(getDataType(dataTypes[i]))).build());
+      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(IdentifierUtil.buildFQName(qualifier, columnNames[i]))
+          .setType(TypeStringEncoder.decode(dataTypes[i]).getProto()).build());
       colSpecBuilder.setAscending(orders[i].equals("true"));
       colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));
       builder.addKeySortSpecs(colSpecBuilder.build());
@@ -2915,20 +2901,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private ColumnProto resultToColumnProto(final ResultSet res) throws SQLException {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
     builder.setName(res.getString("column_name").trim());
-
-    int nestedFieldNum = res.getInt("NESTED_FIELD_NUM");
-
-    Type type = getDataType(res.getString("data_type").trim());
-    int typeLength = res.getInt("type_length");
-
-    if (nestedFieldNum > 0) {
-      builder.setDataType(CatalogUtil.newRecordType(nestedFieldNum));
-    } else if (typeLength > 0) {
-      builder.setDataType(CatalogUtil.newDataTypeWithLen(type, typeLength));
-    } else {
-      builder.setDataType(CatalogUtil.newSimpleDataType(type));
-    }
-
+    org.apache.tajo.type.Type type = TypeStringEncoder.decode(res.getString("data_type").trim());
+    builder.setType(type.getProto());
     return builder.build();
   }
 

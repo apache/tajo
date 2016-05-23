@@ -24,18 +24,9 @@ import io.netty.util.concurrent.GenericFutureListener;
 public class FileCloseListener implements GenericFutureListener<ChannelFuture> {
 
   private FadvisedFileRegion filePart;
-  private String requestUri;
-  private TajoPullServerService pullServerService;
-  private long startTime;
 
-  public FileCloseListener(FadvisedFileRegion filePart,
-                           String requestUri,
-                           long startTime,
-                           TajoPullServerService pullServerService) {
+  public FileCloseListener(FadvisedFileRegion filePart) {
     this.filePart = filePart;
-    this.requestUri = requestUri;
-    this.pullServerService = pullServerService;
-    this.startTime = startTime;
   }
 
   // TODO error handling; distinguish IO/connection failures,
@@ -46,8 +37,5 @@ public class FileCloseListener implements GenericFutureListener<ChannelFuture> {
       filePart.transferSuccessful();
     }
     filePart.deallocate();
-    if (pullServerService != null) {
-      pullServerService.completeFileChunk(filePart, requestUri, startTime);
-    }
   }
 }

@@ -19,11 +19,11 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.exception.TajoException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -84,7 +84,29 @@ public class TestTimezone extends QueryTestCaseBase {
     }
   }
 
-  @Parameterized.Parameters
+  @Test
+  public void testCTASWithTimezone() throws TajoException, SQLException, IOException {
+    executeString(String.format("SET TIME ZONE TO '%s'", timezone)).close();
+    try {
+      executeString("create table test1 (col1 TIMESTAMP)").close();
+      executeString("insert overwrite into test1 select '2015-08-12 14:00:00'::TIMESTAMP").close();
+      try (ResultSet res = executeString("select * from test1")) {
+        assertTrue(res.next());
+        assertEquals("2015-08-12 14:00:00", res.getString(1));
+      }
+
+      executeString("create table test2 as select * from test1").close();
+      try (ResultSet res = executeString("select * from test2")) {
+        assertTrue(res.next());
+        assertEquals("2015-08-12 14:00:00", res.getString(1));
+      }
+    } finally {
+      executeString("drop table test1 purge").close();
+      executeString("drop table test2 purge").close();
+    }
+  }
+
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object []> getParameters() {
     return Arrays.asList(new Object[][]{
         {"GMT"},

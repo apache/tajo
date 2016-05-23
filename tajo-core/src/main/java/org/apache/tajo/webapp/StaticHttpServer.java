@@ -26,7 +26,6 @@ import org.apache.tajo.worker.TajoWorker;
 import org.mortbay.jetty.Connector;
 
 import java.io.IOException;
-import java.net.Inet4Address;
 
 public class StaticHttpServer extends HttpServer {
   private static StaticHttpServer instance = null;
@@ -49,9 +48,11 @@ public class StaticHttpServer extends HttpServer {
     if(instance == null) {
       if(bindAddress == null || bindAddress.compareTo("") == 0) {
         if (containerObject instanceof TajoMaster) {
-          addr = conf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS).split(":")[0];
+          addr = conf.getSocketAddrVar(
+              ConfVars.TAJO_MASTER_INFO_ADDRESS).getHostName();
         } else if (containerObject instanceof TajoWorker) {
-          addr = Inet4Address.getLocalHost().getHostName();
+          addr = conf.getSocketAddrVar(
+              ConfVars.WORKER_INFO_ADDRESS).getHostName();
         }
       }
 

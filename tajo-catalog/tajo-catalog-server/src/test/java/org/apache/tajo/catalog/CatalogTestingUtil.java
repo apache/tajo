@@ -33,6 +33,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.UnsupportedCatalogStore;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
@@ -184,10 +185,10 @@ public class CatalogTestingUtil {
   }
 
   public static void cleanupBaseData(CatalogService catalog) throws Exception {
-    catalog.dropTable(CatalogUtil.buildFQName("TestDatabase1", "testPartition1"));
-    catalog.dropTable(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
-    catalog.dropTable(CatalogUtil.buildFQName("TestDatabase1", "TestTable1"));
-    catalog.dropTable(CatalogUtil.buildFQName("TestDatabase1", "testTable1"));
+    catalog.dropTable(IdentifierUtil.buildFQName("TestDatabase1", "testPartition1"));
+    catalog.dropTable(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    catalog.dropTable(IdentifierUtil.buildFQName("TestDatabase1", "TestTable1"));
+    catalog.dropTable(IdentifierUtil.buildFQName("TestDatabase1", "testTable1"));
 
     catalog.dropDatabase("TestDatabase1");
     catalog.dropDatabase("testDatabase1");
@@ -197,13 +198,14 @@ public class CatalogTestingUtil {
   }
 
   public static TableDesc buildTableDesc(String databaseName, String tableName, String testDir) throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "Column"), Type.BLOB);
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "column"), Type.INT4);
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "cOlumn"), Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add(IdentifierUtil.buildFQName(tableName, "Column"), Type.BLOB)
+        .add(IdentifierUtil.buildFQName(tableName, "column"), Type.INT4)
+        .add(IdentifierUtil.buildFQName(tableName, "cOlumn"), Type.INT8)
+        .build();
     Path path = new Path(testDir + "/" + UUID.randomUUID().toString(), tableName);
     TableDesc desc = new TableDesc(
-        CatalogUtil.buildFQName(databaseName, tableName),
+        IdentifierUtil.buildFQName(databaseName, tableName),
         schema,
         new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
@@ -213,9 +215,10 @@ public class CatalogTestingUtil {
   }
 
   public static TableDesc buildPartitionTableDesc(String databaseName, String tableName, String testDir) throws Exception {
-    Schema partSchema = new Schema();
-    partSchema.addColumn(CatalogUtil.buildFQName(tableName, "DaTe"), Type.TEXT);
-    partSchema.addColumn(CatalogUtil.buildFQName(tableName, "dAtE"), Type.TEXT);
+    Schema partSchema = SchemaBuilder.builder()
+        .add(IdentifierUtil.buildFQName(tableName, "DaTe"), Type.TEXT)
+        .add(IdentifierUtil.buildFQName(tableName, "dAtE"), Type.TEXT)
+        .build();
     PartitionMethodDesc partitionMethodDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
             CatalogProtos.PartitionType.COLUMN, "id,name", partSchema);
@@ -252,7 +255,7 @@ public class CatalogTestingUtil {
     for (int i = 0; i < cols.length; i++) {
       colSpecs[i] = new SortSpec(cols[i], true, false);
     }
-    return new IndexDesc(databaseName, CatalogUtil.extractSimpleName(table.getName()),
+    return new IndexDesc(databaseName, IdentifierUtil.extractSimpleName(table.getName()),
         indexName, new URI("idx_test"), colSpecs,
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, table.getSchema());
   }

@@ -20,7 +20,6 @@ package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
@@ -36,7 +35,6 @@ import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.util.Stack;
 
-import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.getDescription;
 import static org.apache.tajo.plan.expr.FunctionEval.ParamType;
 
@@ -172,7 +170,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       context.emitNullityCheck(ifNull);
 
       SignedEval signed = (SignedEval) unary;
-      switch (signed.getValueType().getType()) {
+      switch (signed.getValueType().kind()) {
       case BOOLEAN:
       case CHAR:
       case INT1:
@@ -322,8 +320,8 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   }
 
   public EvalNode visitCast(EvalCodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
-    DataType  srcType = cast.getOperand().getValueType();
-    DataType targetType = cast.getValueType();
+    org.apache.tajo.type.Type srcType = cast.getOperand().getValueType();
+    org.apache.tajo.type.Type targetType = cast.getValueType();
 
     if (srcType.equals(targetType)) {
       visit(context, cast.getChild(), stack);
@@ -351,7 +349,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
   public EvalNode visitField(EvalCodeGenContext context, FieldEval field, Stack<EvalNode> stack) {
 
-    if (field.getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
+    if (field.getValueType().isNull()) {
       context.pushNullOfThreeValuedLogic();
       context.pushNullFlag(false);
     } else {
@@ -377,7 +375,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       String methodName = null;
       Class returnType = null;
       Class [] paramTypes = null;
-      switch (field.getValueType().getType()) {
+      switch (field.getValueType().kind()) {
       case BOOLEAN:
         methodName = "getByte";
         returnType = byte.class;
@@ -393,7 +391,6 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       case INT2:
       case INT4:
       case DATE:
-      case INET4:
         methodName = "getInt4";
         returnType = int.class;
         paramTypes = new Class [] {int.class};
@@ -480,8 +477,8 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return evalNode;
   }
 
-  public static int store(EvalCodeGenContext context, DataType type, int idx) {
-    switch (type.getType()) {
+  public static int store(EvalCodeGenContext context, org.apache.tajo.type.Type type, int idx) {
+    switch (type.kind()) {
     case NULL_TYPE:
     case BOOLEAN:
     case CHAR:
@@ -536,10 +533,10 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   public EvalNode visitComparisonEval(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
       throws CompilationError {
 
-    DataType lhsType = evalNode.getLeftExpr().getValueType();
-    DataType rhsType = evalNode.getRightExpr().getValueType();
+    org.apache.tajo.type.Type lhsType = evalNode.getLeftExpr().getValueType();
+    org.apache.tajo.type.Type rhsType = evalNode.getRightExpr().getValueType();
 
-    if (lhsType.getType() == TajoDataTypes.Type.NULL_TYPE || rhsType.getType() == TajoDataTypes.Type.NULL_TYPE) {
+    if (lhsType.isNull() || rhsType.isNull()) {
       context.pushNullOfThreeValuedLogic();
       context.pushNullFlag(false);
     } else {
@@ -644,7 +641,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
   @Override
   public EvalNode visitConst(EvalCodeGenContext context, ConstEval constEval, Stack<EvalNode> stack) {
-    switch (constEval.getValueType().getType()) {
+    switch (constEval.getValueType().kind()) {
     case NULL_TYPE:
 
       if (stack.isEmpty()) {
@@ -697,11 +694,10 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       emitGetField(context, context.owner, context.symbols.get(constEval), IntervalDatum.class);
       break;
     default:
-      throw new UnsupportedOperationException(constEval.getValueType().getType().name() +
-          " const type is not supported");
+      throw new UnsupportedOperationException(constEval.getValueType() + " const type is not supported");
     }
 
-    context.pushNullFlag(constEval.getValueType().getType() != TajoDataTypes.Type.NULL_TYPE);
+    context.pushNullFlag(!constEval.getValueType().isNull());
     return constEval;
   }
 
@@ -709,7 +705,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     ParamType[] paramTypes = new ParamType[arguments.length];
     for (int i = 0; i < arguments.length; i++) {
       if (arguments[i].getType() == EvalType.CONST) {
-        if (arguments[i].getValueType().getType() == TajoDataTypes.Type.NULL_TYPE) {
+        if (arguments[i].getValueType().isNull()) {
           paramTypes[i] = ParamType.NULL;
         } else {
           paramTypes[i] = ParamType.CONSTANT;

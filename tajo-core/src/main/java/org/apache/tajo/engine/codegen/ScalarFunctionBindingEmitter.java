@@ -26,6 +26,7 @@ import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FunctionEval;
+import org.apache.tajo.type.Type;
 
 import java.util.Stack;
 
@@ -114,7 +115,7 @@ public class ScalarFunctionBindingEmitter {
     }
   }
 
-  private static void emitFunctionReturnValue(EvalCodeGenContext context, TajoDataTypes.DataType returnType,
+  private static void emitFunctionReturnValue(EvalCodeGenContext context, Type returnType,
                                        StaticMethodInvocationDesc method) {
     if (FunctionUtil.isNullableParam(method.getReturnClass())) {
       Label ifNull = new Label();
@@ -145,7 +146,7 @@ public class ScalarFunctionBindingEmitter {
     context.istore(nullFlagId);
   }
 
-  private static void emitBoxedParameter(EvalCodeGenContext context, TajoDataTypes.DataType dataType) {
+  private static void emitBoxedParameter(EvalCodeGenContext context, Type dataType) {
     Label ifNull = new Label();
     Label afterAll = new Label();
 

@@ -23,6 +23,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.error.Errors.ResultCode;
 import org.apache.tajo.exception.ErrorUtil;
+import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
@@ -80,7 +81,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     sessionsURI = new URI(restServiceURI + "/sessions");
     queriesURI = new URI(restServiceURI + "/queries");
     restClient = ClientBuilder.newBuilder()
-        .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
+        .register(new GsonFeature(PlanGsonHelper.registerAdapters()))
         .register(LoggingFilter.class)
         .property(ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
         .property(ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE, true)
@@ -225,11 +226,12 @@ public class TestQueryResultResource extends QueryTestCaseBase {
       }
     }
 
-    assertEquals(5, tupleList.size());
+    assertEquals(8, tupleList.size());
 
-    for (Tuple aTuple: tupleList) {
-      assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(tupleList.get(i).getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
     }
+    assertEquals(0, tupleList.get(5).getInt4(response.getSchema().getColumnId("l_orderkey")));
   }
 
   @Test
@@ -266,7 +268,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertTrue(eos);
     assertEquals(0, offset);
-    assertEquals(5, count);
+    assertEquals(8, count);
 
 
     DataInputStream queryResultSetInputStream =
@@ -294,11 +296,12 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     }
 
     assertEquals(contentLength, receviedSize);
-    assertEquals(5, tupleList.size());
+    assertEquals(8, tupleList.size());
 
-    for (Tuple aTuple: tupleList) {
-      assertTrue(aTuple.getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
+    for (int i = 0; i < 5; i++) {
+      assertTrue(tupleList.get(i).getInt4(response.getSchema().getColumnId("l_orderkey")) > 0);
     }
+    assertEquals(0, tupleList.get(5).getInt4(response.getSchema().getColumnId("l_orderkey")));
   }
 
   @Test
@@ -335,7 +338,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertTrue(eos);
     assertEquals(0, offset);
-    assertEquals(5, count);
+    assertEquals(8, count);
     assertTrue(length > 0);
 
     DataInputStream queryResultSetInputStream =
@@ -352,7 +355,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     } catch (EOFException eof) {
     }
 
-    assertEquals(5, count);
+    assertEquals(8, count);
   }
 
   @Test
@@ -389,7 +392,7 @@ public class TestQueryResultResource extends QueryTestCaseBase {
 
     assertTrue(eos);
     assertEquals(0, offset);
-    assertEquals(5, count);
+    assertEquals(8, count);
     assertTrue(length > 0);
 
     DataInputStream queryResultSetInputStream =
@@ -406,6 +409,6 @@ public class TestQueryResultResource extends QueryTestCaseBase {
     } catch (EOFException eof) {
     }
 
-    assertEquals(5, count);
+    assertEquals(8, count);
   }
 }

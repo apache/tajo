@@ -36,14 +36,13 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class SeqScanExec extends ScanExec {
@@ -98,7 +97,7 @@ public class SeqScanExec extends ScanExec {
 
     Tuple partitionRow = null;
     if (fragments != null && fragments.length > 0) {
-      List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
+      List<FileFragment> fileFragments = FragmentConvertor.convert(context.getConf(), fragments);
 
       // Get a partition key value from a given path
       partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
@@ -136,36 +135,37 @@ public class SeqScanExec extends ScanExec {
     }
   }
 
-  public Schema getProjectSchema() {
-    Schema projected;
+  public static Schema getProjectSchema(Schema inSchema, Schema outSchema,
+                                        Optional<Collection<Target>> targets,
+                                        Optional<EvalNode> qual) {
+    SchemaBuilder projected = SchemaBuilder.builder();
 
     // in the case where projected column or expression are given
     // the target can be an empty list.
-    if (plan.hasTargets()) {
-      projected = new Schema();
+    if (targets.isPresent()) {
       Set<Column> columnSet = new HashSet<>();
 
-      if (plan.hasQual()) {
-        columnSet.addAll(EvalTreeUtil.findUniqueColumns(qual));
+      if (qual.isPresent()) {
+        columnSet.addAll(EvalTreeUtil.findUniqueColumns(qual.get()));
       }
 
-      for (Target t : plan.getTargets()) {
+      for (Target t : targets.get()) {
         columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
       }
 
       for (Column column : inSchema.getAllColumns()) {
         if (columnSet.contains(column)) {
-          projected.addColumn(column);
+          projected.add(column);
         }
       }
+
+      return projected.build();
 
     } else {
       // no any projected columns, meaning that all columns should be projected.
       // TODO - this implicit rule makes code readability bad. So, we should remove it later
-      projected = outSchema;
+      return outSchema;
     }
-
-    return projected;
   }
 
   private void initScanIterator() {
@@ -187,7 +187,12 @@ public class SeqScanExec extends ScanExec {
       scanIt = new EmptyScanIterator();
 
     } else {
-      Schema projectedFields = getProjectSchema();
+      Schema projectedFields = getProjectSchema(
+          plan.getInSchema(),
+          plan.getOutSchema(),
+          Optional.ofNullable(plan.getTargets()),
+          Optional.ofNullable(plan.getQual())
+      );
       initScanner(projectedFields);
 
       // See Scanner.isProjectable() method. Depending on the result of isProjectable(),

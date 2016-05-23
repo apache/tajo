@@ -60,14 +60,12 @@ enum Type {
   BLOB = 45;
 
   RECORD = 51; // nested structure type
-  MAP    = 52; // map type
+  ARRAY  = 52; // array type
+  MAP    = 53; // map type
 
   ANY = 61; // Any type
   UDT = 62; // user-defined function
   PROTOBUF = 63; // protocol buffer type
-
-  INET4 = 91;
-  INET6 = 92;
 
   // array types
   BOOLEAN_ARRAY = 101;
@@ -113,5 +111,26 @@ message DataType {
    * This field is not set when the element is a primitive type
    */
   optional int32 num_nested_fields = 4;
+}
+
+message TypeProto {
+  repeated TypeElement elements = 1;
+}
+
+message TypeElement {
+ required Type kind = 1;
+ repeated int32 value_params = 2;
+ repeated string string_params = 3;
+ repeated QualifiedIdentifierProto field_names = 4;
+ optional int32 child_num = 5;
+}
+
+message QualifiedIdentifierProto {
+  repeated IdentifierProto names = 1;
+}
+
+message IdentifierProto {
+  required string name = 1;
+  required bool quoted = 2;
 }
 

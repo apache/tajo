@@ -58,6 +58,7 @@ message ExecutionBlockListProto {
 message TaskAllocationProto {
   required TaskRequestProto task_request = 1;
   required NodeResourceProto resource = 2;
+  optional int32 volumeId = 3;
 }
 
 message TaskRequestProto {

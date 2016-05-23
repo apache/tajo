@@ -22,10 +22,11 @@ import com.google.protobuf.ServiceException;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService.BlockingInterface;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.rpc.*;
+import org.apache.tajo.rpc.NettyClientBase;
+import org.apache.tajo.rpc.RpcClientManager;
+import org.apache.tajo.rpc.RpcConstants;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
-import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -37,14 +38,13 @@ import java.util.Properties;
 public class CatalogClient extends AbstractCatalogClient {
   protected NettyClientBase client;
   protected ServiceTracker serviceTracker;
-  protected InetSocketAddress catalogServerAddr;
+
   /**
    * @throws java.io.IOException
    *
    */
   public CatalogClient(final TajoConf conf) throws IOException {
     super(conf);
-    this.catalogServerAddr = NetUtils.createSocketAddr(conf.getVar(ConfVars.CATALOG_ADDRESS));
     this.serviceTracker = ServiceTrackerFactory.get(conf);
   }
 
@@ -55,11 +55,7 @@ public class CatalogClient extends AbstractCatalogClient {
   }
 
   private InetSocketAddress getCatalogServerAddr() {
-    if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      return catalogServerAddr;
-    } else {
-      return serviceTracker.getCatalogAddress();
-    }
+    return serviceTracker.getCatalogAddress();
   }
 
   public synchronized NettyClientBase getCatalogConnection() throws ServiceException {

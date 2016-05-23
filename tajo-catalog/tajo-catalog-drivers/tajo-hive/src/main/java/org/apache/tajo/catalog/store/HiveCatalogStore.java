@@ -38,12 +38,16 @@ import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.hadoop.mapred.TextInputFormat;
+import org.apache.orc.OrcConf;
+import org.apache.parquet.hadoop.ParquetOutputFormat;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.IsNullPredicate;
 import org.apache.tajo.algebra.JsonHelper;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -53,13 +57,13 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.thrift.TException;
-import parquet.hadoop.ParquetOutputFormat;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
 public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
@@ -133,7 +137,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     org.apache.hadoop.hive.ql.metadata.Table table = null;
     Path path = null;
     String dataFormat = null;
-    org.apache.tajo.catalog.Schema schema = null;
+    Schema schema = null;
     KeyValueSet options = null;
     TableStats stats = null;
     PartitionMethodDesc partitions = null;
@@ -147,7 +151,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       path = table.getPath();
 
       // convert HiveCatalogStore field schema into tajo field schema.
-      schema = new org.apache.tajo.catalog.Schema();
+      SchemaBuilder schemaBuilder = SchemaBuilder.builder();
 
       List<FieldSchema> fieldSchemaList = table.getCols();
       boolean isPartitionKey;
@@ -163,12 +167,13 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         }
 
         if (!isPartitionKey) {
-          String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
-              CatalogConstants.IDENTIFIER_DELIMITER + eachField.getName();
+          String fieldName = databaseName + IdentifierUtil.IDENTIFIER_DELIMITER + tableName +
+              IdentifierUtil.IDENTIFIER_DELIMITER + eachField.getName();
           TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(eachField.getType());
-          schema.addColumn(fieldName, dataType);
+          schemaBuilder.add(fieldName, dataType);
         }
       }
+      schema = schemaBuilder.build();
 
       // validate field schema.
       HiveCatalogUtil.validateSchema(table);
@@ -237,15 +242,15 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<FieldSchema> partitionKeys = table.getPartitionKeys();
 
       if (null != partitionKeys) {
-        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+        SchemaBuilder expressionSchema = SchemaBuilder.builder();
         StringBuilder sb = new StringBuilder();
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType());
-            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
-                CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
-            expressionSchema.addColumn(new Column(fieldName, dataType));
+            String fieldName = databaseName + IdentifierUtil.IDENTIFIER_DELIMITER + tableName +
+                IdentifierUtil.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            expressionSchema.add(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
             }
@@ -256,7 +261,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               tableName,
               PartitionType.COLUMN,
               sb.toString(),
-              expressionSchema);
+              expressionSchema.build());
         }
       }
     } catch (Throwable t) {
@@ -275,16 +280,6 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       tableDesc.setPartitionMethod(partitions);
     }
     return tableDesc.getProto();
-  }
-
-
-  private TajoDataTypes.Type getDataType(final String typeStr) {
-    try {
-      return Enum.valueOf(TajoDataTypes.Type.class, typeStr);
-    } catch (IllegalArgumentException iae) {
-      LOG.error("Cannot find a matched type against from '" + typeStr + "'");
-      return null;
-    }
   }
 
   @Override
@@ -428,7 +423,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
     HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     TableDesc tableDesc = new TableDesc(tableDescProto);
-    String[] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
+    String[] splitted = IdentifierUtil.splitFQTableName(tableDesc.getName());
     String databaseName = splitted[0];
     String tableName = splitted[1];
 
@@ -467,7 +462,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
       for (Column eachField : columns) {
         cols.add(new FieldSchema(eachField.getSimpleName(),
-            HiveCatalogUtil.getHiveFieldType(eachField.getDataType()), ""));
+            HiveCatalogUtil.getHiveFieldType(eachField.getType()), ""));
       }
       sd.setCols(cols);
 
@@ -476,7 +471,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         List<FieldSchema> partitionKeys = new ArrayList<>();
         for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           partitionKeys.add(new FieldSchema(eachPartitionKey.getSimpleName(),
-              HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));
+              HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getType()), ""));
         }
         table.setPartitionKeys(partitionKeys);
       }
@@ -564,6 +559,16 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           table.putToParameters(ParquetOutputFormat.COMPRESSION,
               tableDesc.getMeta().getProperty(ParquetOutputFormat.COMPRESSION));
         }
+      } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.ORC)) {
+        StorageFormatDescriptor descriptor = storageFormatFactory.get(IOConstants.ORC);
+        sd.setInputFormat(descriptor.getInputFormat());
+        sd.setOutputFormat(descriptor.getOutputFormat());
+        sd.getSerdeInfo().setSerializationLib(descriptor.getSerde());
+
+        if (tableDesc.getMeta().containsProperty(OrcConf.COMPRESS.getAttribute())) {
+          table.putToParameters(OrcConf.COMPRESS.getAttribute(),
+              tableDesc.getMeta().getProperty(OrcConf.COMPRESS.getAttribute()));
+        }
       } else {
         throw new UnsupportedException(tableDesc.getMeta().getDataFormat() + " in HivecatalogStore");
       }
@@ -602,7 +607,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       throws DuplicateTableException, DuplicateColumnException, DuplicatePartitionException,
       UndefinedPartitionException {
 
-    final String[] split = CatalogUtil.splitFQTableName(alterTableDescProto.getTableName());
+    final String[] split = IdentifierUtil.splitFQTableName(alterTableDescProto.getTableName());
 
     if (split.length == 1) {
       throw new IllegalArgumentException("alterTable() requires a qualified table name, but it is \""
@@ -710,7 +715,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       List<FieldSchema> columns = table.getSd().getCols();
       columns.add(new FieldSchema(columnProto.getName(),
-        HiveCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
+        HiveCatalogUtil.getHiveFieldType(TypeProtobufEncoder.decode(columnProto.getType())), ""));
       client.getHiveClient().alter_table(databaseName, tableName, table);
 
 
@@ -803,15 +808,15 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       List<FieldSchema> partitionKeys = table.getPartitionKeys();
 
       if (partitionKeys != null && partitionKeys.size() > 0) {
-        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
+        SchemaBuilder expressionSchema = SchemaBuilder.builder();
         StringBuilder sb = new StringBuilder();
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
             TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType());
-            String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
-                CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
-            expressionSchema.addColumn(new Column(fieldName, dataType));
+            String fieldName = databaseName + IdentifierUtil.IDENTIFIER_DELIMITER + tableName +
+                IdentifierUtil.IDENTIFIER_DELIMITER + fieldSchema.getName();
+            expressionSchema.add(new Column(fieldName, dataType));
             if (i > 0) {
               sb.append(",");
             }
@@ -822,7 +827,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               tableName,
               PartitionType.COLUMN,
               sb.toString(),
-              expressionSchema);
+              expressionSchema.build());
         }
       } else {
         throw new UndefinedPartitionMethodException(tableName);
@@ -1038,7 +1043,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           if (i > 0) {
             partitionName.append(File.separator);
           }
-          partitionName.append(CatalogUtil.extractSimpleName(parititonColumns.get(i).getName()));
+          partitionName.append(IdentifierUtil.extractSimpleName(parititonColumns.get(i).getName()));
           partitionName.append("=");
           partitionName.append(hivePartition.getValues().get(i));
         }
@@ -1112,76 +1117,62 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public final void addFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final void deleteFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final void existFunction(final FunctionDesc func) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public final List<String> getAllFunctionNames() {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void createIndex(CatalogProtos.IndexDescProto proto) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public void dropIndex(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public CatalogProtos.IndexDescProto getIndexByName(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) {
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public boolean existIndexByName(String databaseName, String indexName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
-  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
-      {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) {
+    return false;
   }
 
   @Override
   public List<String> getAllIndexNamesByTable(String databaseName, String tableName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return Collections.EMPTY_LIST;
   }
 
   @Override
   public boolean existIndexesByTable(String databaseName, String tableName) {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
+    return false;
   }
 
   @Override
@@ -1220,22 +1211,22 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<ColumnProto> getAllColumns() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<DatabaseProto> getAllDatabases() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<IndexDescProto> getAllIndexes() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TablePartitionProto> getAllPartitions() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
@@ -1288,17 +1279,17 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public List<TableOptionProto> getAllTableProperties() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TableStatsProto> getAllTableStats() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override
   public List<TableDescriptorProto> getAllTables() {
-    throw new UnsupportedOperationException();
+    throw new TajoRuntimeException(new UnsupportedException());
   }
 
   @Override

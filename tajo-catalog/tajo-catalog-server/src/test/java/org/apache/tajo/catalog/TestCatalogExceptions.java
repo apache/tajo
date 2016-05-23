@@ -29,6 +29,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.*;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
@@ -115,14 +116,15 @@ public class TestCatalogExceptions {
   public void testCreateTableWithWrongUri() throws Exception {
     // TODO: currently, wrong uri does not occur any exception.
     String tableName = "wrongUri";
-    Schema schema = new Schema();
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "Column"), Type.BLOB);
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "column"), Type.INT4);
-    schema.addColumn(CatalogUtil.buildFQName(tableName, "cOlumn"), Type.INT8);
+    Schema schema = SchemaBuilder.builder()
+        .add(IdentifierUtil.buildFQName(tableName, "Column"), Type.BLOB)
+        .add(IdentifierUtil.buildFQName(tableName, "column"), Type.INT4)
+        .add(IdentifierUtil.buildFQName(tableName, "cOlumn"), Type.INT8)
+        .build();
     Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
     catalog.createTable(
       new TableDesc(
-        CatalogUtil.buildFQName("TestDatabase1", tableName),
+        IdentifierUtil.buildFQName("TestDatabase1", tableName),
         schema,
         new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true));
@@ -136,19 +138,19 @@ public class TestCatalogExceptions {
 
   @Test(expected = UndefinedDatabaseException.class)
   public void dropTableOfUndefinedDatabase() throws Exception {
-    catalog.dropTable(CatalogUtil.buildFQName("undefined", "testPartition1"));
+    catalog.dropTable(IdentifierUtil.buildFQName("undefined", "testPartition1"));
   }
 
   @Test(expected = UndefinedTableException.class)
   public void dropUndefinedTable() throws Exception {
-    catalog.dropTable(CatalogUtil.buildFQName("TestDatabase1", "undefined"));
+    catalog.dropTable(IdentifierUtil.buildFQName("TestDatabase1", "undefined"));
   }
 
   @Test(expected = UndefinedTableException.class)
   public void testUpdateTableStatsOfUndefinedTable() throws Exception {
     catalog.updateTableStats(
       UpdateTableStatsProto.newBuilder().
-        setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined")).
+        setTableName(IdentifierUtil.buildFQName("TestDatabase1", "undefined")).
         setStats(
           TableStatsProto.newBuilder().
             setNumRows(0).
@@ -164,7 +166,7 @@ public class TestCatalogExceptions {
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
@@ -177,7 +179,7 @@ public class TestCatalogExceptions {
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
@@ -187,7 +189,7 @@ public class TestCatalogExceptions {
     partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
@@ -200,7 +202,7 @@ public class TestCatalogExceptions {
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "undefined"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
@@ -214,7 +216,7 @@ public class TestCatalogExceptions {
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
@@ -227,7 +229,7 @@ public class TestCatalogExceptions {
     PartitionDesc partitionDesc = CatalogTestingUtil.buildPartitionDesc(partitionName);
 
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestPartition1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestPartition1"));
     alterTableDesc.setPartitionDesc(partitionDesc);
     alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
     catalog.alterTable(alterTableDesc);
@@ -237,17 +239,17 @@ public class TestCatalogExceptions {
   public void testRenameUndefinedTable() throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setAlterTableType(AlterTableType.RENAME_TABLE);
-    alterTableDesc.setNewTableName(CatalogUtil.buildFQName("TestDatabase1", "renamed_table"));
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined"));
+    alterTableDesc.setNewTableName(IdentifierUtil.buildFQName("TestDatabase1", "renamed_table"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "undefined"));
     catalog.alterTable(alterTableDesc);
   }
 
   @Test(expected = UndefinedTableException.class)
   public void testRenameColumnOfUndefinedTable() throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setColumnName(CatalogUtil.buildFQName("TestDatabase1", "undefined", "AddedCol1"));
-    alterTableDesc.setNewColumnName(CatalogUtil.buildFQName("TestDatabase1", "undefined", "addedcol1"));
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "undefined"));
+    alterTableDesc.setColumnName(IdentifierUtil.buildFQName("TestDatabase1", "undefined", "AddedCol1"));
+    alterTableDesc.setNewColumnName(IdentifierUtil.buildFQName("TestDatabase1", "undefined", "addedcol1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "undefined"));
     alterTableDesc.setAlterTableType(AlterTableType.RENAME_COLUMN);
     catalog.alterTable(alterTableDesc);
   }
@@ -255,9 +257,9 @@ public class TestCatalogExceptions {
   @Test(expected = UndefinedColumnException.class)
   public void testRenameUndefinedColumn() throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setColumnName(CatalogUtil.buildFQName("TestDatabase1", "TestTable1", "undefined"));
-    alterTableDesc.setNewColumnName(CatalogUtil.buildFQName("TestDatabase1", "TestTable1", "undefined"));
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestTable1"));
+    alterTableDesc.setColumnName(IdentifierUtil.buildFQName("TestDatabase1", "TestTable1", "undefined"));
+    alterTableDesc.setNewColumnName(IdentifierUtil.buildFQName("TestDatabase1", "TestTable1", "undefined"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestTable1"));
     alterTableDesc.setAlterTableType(AlterTableType.RENAME_COLUMN);
     catalog.alterTable(alterTableDesc);
   }
@@ -265,9 +267,9 @@ public class TestCatalogExceptions {
   @Test(expected = DuplicateColumnException.class)
   public void testAddDuplicateColumn() throws Exception {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
-    alterTableDesc.setAddColumn(new Column(CatalogUtil.buildFQName("TestDatabase1", "TestTable1", "cOlumn"),
+    alterTableDesc.setAddColumn(new Column(IdentifierUtil.buildFQName("TestDatabase1", "TestTable1", "cOlumn"),
         CatalogUtil.newSimpleDataType(Type.BLOB)));
-    alterTableDesc.setTableName(CatalogUtil.buildFQName("TestDatabase1", "TestTable1"));
+    alterTableDesc.setTableName(IdentifierUtil.buildFQName("TestDatabase1", "TestTable1"));
     alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
     catalog.alterTable(alterTableDesc);
   }

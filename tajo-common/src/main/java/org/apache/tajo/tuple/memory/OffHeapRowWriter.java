@@ -295,11 +295,6 @@ public abstract class OffHeapRowWriter implements RowWriter {
   }
 
   @Override
-  public void putInet4(int val) {
-    putInt4(val);
-  }
-
-  @Override
   public void putProtoDatum(ProtobufDatum val) {
     putBlob(val.asByteArray());
   }

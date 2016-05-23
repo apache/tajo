@@ -5,3 +5,6 @@ c_custkey,const_val,min_name
 3,123,Customer#000000003
 4,123,Customer#000000004
 5,123,Customer#000000005
+null,123,null
+null,123,null
+null,123,null

@@ -44,52 +44,28 @@
 
   <!--- Fragment Class Configurations -->
   <property>
-    <name>tajo.storage.fragment.text.class</name>
+    <name>tajo.storage.fragment.kind.file</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
-    <name>tajo.storage.fragment.json.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.raw.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.draw.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.rcfile.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.row.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.parquet.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.orc.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.sequencefile.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.avro.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.hbase.class</name>
+    <name>tajo.storage.fragment.kind.hbase</name>
     <value>org.apache.tajo.storage.hbase.HBaseFragment</value>
   </property>
   <property>
-    <name>tajo.storage.fragment.jdbc.class</name>
+    <name>tajo.storage.fragment.kind.jdbc</name>
     <value>org.apache.tajo.storage.jdbc.JdbcFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.serde.file</name>
+    <value>org.apache.tajo.storage.fragment.FileFragmentSerde</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.serde.hbase</name>
+    <value>org.apache.tajo.storage.hbase.HBaseFragmentSerde</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.serde.jdbc</name>
+    <value>org.apache.tajo.storage.jdbc.JdbcFragmentSerde</value>
   </property>
 
   <!--- Scanner Handler -->
@@ -130,7 +106,7 @@
 
   <property>
     <name>tajo.storage.scanner-handler.orc.class</name>
-    <value>org.apache.tajo.storage.orc.ORCScanner</value>
+    <value>org.apache.tajo.storage.orc.OrcScanner</value>
   </property>
 
   <property>

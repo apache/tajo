@@ -20,9 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -42,6 +40,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public class BSTIndexScanExec extends ScanExec {
@@ -87,24 +86,25 @@ public class BSTIndexScanExec extends ScanExec {
 
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
 
-    Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(fragment));
+    Path indexPath = new Path(indexPrefix.toString(), IndexExecutorUtil.getIndexFileName(context.getConf(), fragment));
     this.reader = new BSTIndex(context.getConf()).
         getIndexReader(indexPath, keySchema, comparator);
   }
 
   private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, List<Target> targets, EvalNode qual) {
-    Schema mergedSchema = new Schema();
     Set<Column> qualAndTargets = new HashSet<>();
     qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(qual));
     for (Target target : targets) {
       qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree()));
     }
+
+    SchemaBuilder mergedSchema = SchemaBuilder.builder();
     for (Column column : originalSchema.getRootColumns()) {
       if (subSchema.contains(column) || qualAndTargets.contains(column)) {
-        mergedSchema.addColumn(column);
+        mergedSchema.add(column);
       }
     }
-    return mergedSchema;
+    return mergedSchema.build();
   }
 
   @Override
@@ -126,33 +126,12 @@ public class BSTIndexScanExec extends ScanExec {
   public void init() throws IOException {
     reader.init();
 
-    Schema projected;
-
-    // in the case where projected column or expression are given
-    // the target can be an empty list.
-    if (plan.hasTargets()) {
-      projected = new Schema();
-      Set<Column> columnSet = new HashSet<>();
-
-      if (plan.hasQual()) {
-        columnSet.addAll(EvalTreeUtil.findUniqueColumns(qual));
-      }
-
-      for (Target t : plan.getTargets()) {
-        columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
-      }
-
-      for (Column column : inSchema.getAllColumns()) {
-        if (columnSet.contains(column)) {
-          projected.addColumn(column);
-        }
-      }
-
-    } else {
-      // no any projected columns, meaning that all columns should be projected.
-      // TODO - this implicit rule makes code readability bad. So, we should remove it later
-      projected = outSchema;
-    }
+    final Schema projected = SeqScanExec.getProjectSchema(
+        plan.getInSchema(),
+        plan.getOutSchema(),
+        Optional.ofNullable(plan.getTargets()),
+        Optional.ofNullable(plan.getQual())
+    );
 
     initScanner(projected);
     super.init();

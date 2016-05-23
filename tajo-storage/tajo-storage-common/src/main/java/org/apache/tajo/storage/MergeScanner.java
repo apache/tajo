@@ -21,6 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -165,7 +166,7 @@ public class MergeScanner implements Scanner {
 
   @Override
   public void setTarget(Column[] targets) {
-    this.target = new Schema(targets);
+    this.target = SchemaBuilder.builder().addAll(targets).build();
   }
 
   @Override

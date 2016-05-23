@@ -84,6 +84,9 @@ public class TestCaseByCases extends QueryTestCaseBase {
         "1\n" +
         "2\n" +
         "null\n" +
+        "null\n" +
+        "null\n" +
+        "null\n" +
         "null\n";
 
     assertEquals(expected, resultSetToString(res));
@@ -104,7 +107,10 @@ public class TestCaseByCases extends QueryTestCaseBase {
         "null\n" +
         "null\n" +
         "3\n" +
-        "3\n";
+        "3\n" +
+        "null\n" +
+        "null\n" +
+        "null\n";
 
     assertEquals(expected, resultSetToString(res));
     cleanupQuery(res);
@@ -127,6 +133,9 @@ public class TestCaseByCases extends QueryTestCaseBase {
             "null\n" +
             "null\n" +
             "2\n" +
+            "null\n" +
+            "null\n" +
+            "null\n" +
             "null\n" +
             "null\n";
 

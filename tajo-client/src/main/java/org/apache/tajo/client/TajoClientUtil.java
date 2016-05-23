@@ -23,7 +23,8 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.exception.QueryNotFoundException;
 import org.apache.tajo.ipc.ClientProtos;
@@ -76,7 +77,7 @@ public class TajoClientUtil {
   public static ResultSet createResultSet(TajoClient client, QueryId queryId,
                                           ClientProtos.GetQueryResultResponse response, int fetchRows)
       throws IOException {
-    TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
+    TableDesc desc = new TableDesc(response.getTableDesc());
     return new FetchResultSet(client, desc.getLogicalSchema(), queryId, fetchRows);
   }
 
@@ -99,16 +100,16 @@ public class TajoClientUtil {
       // select substr('abc', 1, 2)
       ClientProtos.SerializedResultSet serializedResultSet = response.getResultSet();
       return new TajoMemoryResultSet(new QueryId(response.getQueryId()),
-          new Schema(serializedResultSet.getSchema()),
+          SchemaFactory.newV1(serializedResultSet.getSchema()),
           serializedResultSet,
           client.getClientSideSessionVars());
     }
   }
 
   public static final ResultSet NULL_RESULT_SET =
-      new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, null);
+      new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, SchemaBuilder.empty(), null, null);
 
   public static TajoMemoryResultSet createNullResultSet(QueryId queryId) {
-    return new TajoMemoryResultSet(queryId, new Schema(), null, null);
+    return new TajoMemoryResultSet(queryId, SchemaBuilder.empty(), null, null);
   }
 }

@@ -20,12 +20,13 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.ResourceProtos.FetchProto;
 import org.apache.tajo.TestTajoIds;
+import org.apache.tajo.pullserver.PullServerConstants;
+import org.apache.tajo.pullserver.PullServerUtil.PullServerParams;
 import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Task.IntermediateEntry;
@@ -88,12 +89,11 @@ public class TestRepartitioner {
       assertEquals(1, uris.size());   //In Hash Suffle, Fetcher return only one URI per partition.
 
       URI uri = uris.get(0);
-      final Map<String, List<String>> params =
-          new QueryStringDecoder(uri).parameters();
+      final PullServerParams params = new PullServerParams(uri);
 
       assertEquals(eachEntry.getKey().toString(), params.get("p").get(0));
-      assertEquals("h", params.get("type").get(0));
-      assertEquals("" + sid.getId(), params.get("sid").get(0));
+      assertEquals(PullServerConstants.HASH_SHUFFLE_PARAM_STRING, params.shuffleType());
+      assertEquals("" + sid.getId(), params.ebId());
     }
 
     Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> mergedHashEntries =

@@ -36,16 +36,19 @@ import static org.junit.Assert.assertEquals;
 public class TestTajoCliNegatives extends QueryTestCaseBase {
   private static TajoCli tajoCli;
   private static ByteArrayOutputStream out;
+  private static ByteArrayOutputStream err;
 
   @BeforeClass
   public static void setUp() throws Exception {
     out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(testingCluster.getConfiguration(), new String[]{}, null, System.in, out);
+    err = new ByteArrayOutputStream();
+    tajoCli = new TajoCli(testingCluster.getConfiguration(), new String[]{}, null, System.in, out, err);
   }
 
   @AfterClass
   public static void tearDown() throws IOException {
     out.close();
+    err.close();
     if (tajoCli != null) {
       tajoCli.close();
     }
@@ -54,11 +57,12 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
   @Before
   public void resetConsole() throws IOException {
     out.reset();
+    err.reset();
   }
 
   public void assertMetaCommandFailure(String cmd, String expectedMsg) throws Exception {
     tajoCli.executeMetaCommand(cmd);
-    String consoleResult = new String(out.toByteArray());
+    String consoleResult = new String(err.toByteArray());
     assertEquals(expectedMsg, consoleResult);
   }
 
@@ -67,13 +71,13 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
     String expected = FileUtil.readTextFile(new File(resultFile.toUri()));
 
     tajoCli.executeScript(cmd);
-    String consoleResult = new String(out.toByteArray());
+    String consoleResult = new String(err.toByteArray());
     assertEquals(expected, consoleResult);
   }
 
   public void assertScriptFailure(String cmd, String expectedMsg) throws Exception {
     tajoCli.executeScript(cmd);
-    String consoleResult = new String(out.toByteArray());
+    String consoleResult = new String(err.toByteArray());
     assertEquals(expectedMsg, consoleResult);
   }
 
@@ -120,7 +124,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
       client.updateQuery("CREATE TABLE TestTajoCliNegatives.table12u79 ( name RECORD(last TEXT, first TEXT) )");
 
       assertScriptFailure("select name FROM TestTajoCliNegatives.table12u79",
-          "ERROR: not implemented feature: record field projection\n");
+          "ERROR: not implemented feature: record projection\n");
 
     } finally {
       client.updateQuery("DROP TABLE IF EXISTS TestTajoCliNegatives.table12u79");
@@ -132,9 +136,7 @@ public class TestTajoCliNegatives extends QueryTestCaseBase {
   public void testQueryFailureOfSimpleQuery() throws Exception {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
     assertScriptFailure("select fail(3, l_orderkey, 'testQueryFailureOfSimpleQuery') from default.lineitem" ,
-        "?fail\n" +
-            "-------------------------------\n" +
-            "ERROR: internal error: internal error: internal error: testQueryFailureOfSimpleQuery\n");
+        "ERROR: internal error: internal error: internal error: testQueryFailureOfSimpleQuery\n");
   }
 
   @Test

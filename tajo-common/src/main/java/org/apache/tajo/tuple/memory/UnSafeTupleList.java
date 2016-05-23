@@ -54,6 +54,10 @@ public class UnSafeTupleList extends ArrayList<UnSafeTuple> {
 
   }
 
+  public DataType[] getDataTypes() {
+    return dataTypes;
+  }
+
   @Override
   public boolean add(UnSafeTuple tuple) {
     return addTuple(tuple);

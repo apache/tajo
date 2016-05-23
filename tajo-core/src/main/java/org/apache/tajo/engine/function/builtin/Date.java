@@ -42,7 +42,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
   paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
 )
 public class Date extends GeneralFunction {
-  private final Log LOG = LogFactory.getLog(Date.class);
+  private static final Log LOG = LogFactory.getLog(Date.class);
   private final static String dateFormat = "dd/MM/yyyy HH:mm:ss";
 
   public Date() {
@@ -55,7 +55,7 @@ public class Date extends GeneralFunction {
       return DatumFactory.createInt8(new SimpleDateFormat(dateFormat)
           .parse(params.getText(0)).getTime());
     } catch (ParseException e) {
-      LOG.error(e);
+      LOG.warn(e);
       return null;
     }
   }

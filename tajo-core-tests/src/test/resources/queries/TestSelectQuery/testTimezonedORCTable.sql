@@ -1,2 +1,0 @@
-SET SESSION TIMEZONE = 'GMT+9';
-SELECT * FROM timezoned_orc;

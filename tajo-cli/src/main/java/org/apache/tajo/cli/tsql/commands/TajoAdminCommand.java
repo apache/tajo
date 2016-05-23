@@ -42,7 +42,7 @@ public class TajoAdminCommand extends TajoShellCommand {
 
       admin.runCommand(dfsCommands);
     } catch (Exception e) {
-      context.getOutput().println("ERROR: " + e.getMessage());
+      context.getError().println("ERROR: " + e.getMessage());
     }
   }
 

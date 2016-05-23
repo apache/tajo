@@ -18,22 +18,16 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.type.Type;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
 
 public class TestDateDatum {
   private static String DATE = "1980-04-01";
-
-	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createDate(DATE);
-    assertEquals(Type.DATE, d.type());
-	}
 
   @Test
 	public final void testAsInt4() {
@@ -117,9 +111,5 @@ public class TestDateDatum {
     
     assertThat(theday.compareTo(thedaybefore) > 0, is(true));
     assertThat(thedaybefore.compareTo(theday) > 0, is(false));
-    
-    TimestampDatum timestamp = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
-    
-    assertThat(timestamp.compareTo(theday) > 0, is(true));
   }
 }

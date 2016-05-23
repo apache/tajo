@@ -27,9 +27,11 @@ import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.io.compress.zlib.ZlibFactory;
 import org.apache.hadoop.util.NativeCodeLoader;
+import org.apache.orc.OrcConf;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -42,6 +44,7 @@ import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -61,17 +64,19 @@ public class TestCompressionStorages {
   public TestCompressionStorages(String type) throws IOException {
     this.dataFormat = type;
     conf = new TajoConf();
+    conf.setBoolean("hive.exec.orc.zerocopy", true);
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
   }
 
-  @Parameterized.Parameters
+  @Parameters(name = "{index}: {0}")
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {BuiltinStorages.TEXT},
         {BuiltinStorages.RCFILE},
-        {BuiltinStorages.SEQUENCE_FILE}
+        {BuiltinStorages.SEQUENCE_FILE},
+        {BuiltinStorages.ORC}
     });
   }
 
@@ -109,16 +114,25 @@ public class TestCompressionStorages {
   }
 
   private void storageCompressionTest(String dataFormat, Class<? extends CompressionCodec> codec) throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.FLOAT4);
-    schema.addColumn("name", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("age", Type.FLOAT4)
+        .add("name", Type.TEXT)
+        .build();
 
-    TableMeta meta = CatalogUtil.newTableMeta(dataFormat);
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
     meta.putProperty("compression.codec", codec.getCanonicalName());
     meta.putProperty("compression.type", SequenceFile.CompressionType.BLOCK.name());
     meta.putProperty("rcfile.serde", TextSerializerDeserializer.class.getName());
     meta.putProperty("sequencefile.serde", TextSerializerDeserializer.class.getName());
+
+    if (codec.equals(SnappyCodec.class)) {
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "SNAPPY");
+    } else if (codec.equals(Lz4Codec.class)) {
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "ZLIB");
+    } else {
+      meta.putProperty(OrcConf.COMPRESS.getAttribute(), "NONE");
+    }
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);

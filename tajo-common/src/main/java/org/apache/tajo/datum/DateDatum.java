@@ -21,8 +21,8 @@ package org.apache.tajo.datum;
 import com.google.common.primitives.Ints;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.exception.InvalidValueForCastException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
@@ -30,20 +30,22 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import static org.apache.tajo.type.Type.Date;
+
 public class DateDatum extends Datum {
   public static final int SIZE = 4;
 
-  // Dates are stored in UTC.
+  // Dates are stored by local time.
   private int jdate;
 
   public DateDatum(int value) {
-    super(TajoDataTypes.Type.DATE);
+    super(Date);
 
     jdate = value;
   }
 
   public DateDatum(TimeMeta tm) {
-    super(TajoDataTypes.Type.DATE);
+    super(Date);
     jdate = DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth);
   }
 
@@ -102,40 +104,36 @@ public class DateDatum extends Datum {
 
   @Override
   public Datum plus(Datum datum) {
-    switch(datum.type()) {
-      case INT2:
-      case INT4:
-      case INT8:
-      case FLOAT4:
-      case FLOAT8: {
-        TimeMeta tm = asTimeMeta();
-        tm.plusDays(datum.asInt4());
-        return new DateDatum(tm);
-      }
-      case INTERVAL:
-        IntervalDatum interval = (IntervalDatum) datum;
-        TimeMeta tm = asTimeMeta();
-        tm.plusInterval(interval.months, interval.milliseconds);
-        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-      case TIME: {
-        TimeMeta tm1 = asTimeMeta();
-        TimeMeta tm2 = datum.asTimeMeta();
-        tm1.plusTime(DateTimeUtil.toTime(tm2));
-        return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
-      }
-      default:
-        throw new InvalidOperationException(datum.type());
+    switch (datum.kind()) {
+    case INT2:
+    case INT4:
+    case INT8: {
+      TimeMeta tm = asTimeMeta();
+      tm.plusDays(datum.asInt4());
+      return new DateDatum(tm);
+    }
+    case INTERVAL:
+      IntervalDatum interval = (IntervalDatum) datum;
+      TimeMeta tm = asTimeMeta();
+      tm.plusInterval(interval.months, interval.milliseconds);
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
+    case TIME: {
+      TimeMeta tm1 = asTimeMeta();
+      TimeMeta tm2 = datum.asTimeMeta();
+      tm1.plusTime(DateTimeUtil.toTime(tm2));
+      return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
+    }
+    default:
+      throw new InvalidOperationException("operator does not exist: " + type() + " + " + datum.type());
     }
   }
 
   @Override
   public Datum minus(Datum datum) {
-    switch(datum.type()) {
+    switch(datum.kind()) {
       case INT2:
       case INT4:
-      case INT8:
-      case FLOAT4:
-      case FLOAT8: {
+      case INT8: {
         TimeMeta tm = asTimeMeta();
         tm.plusDays(0 - datum.asInt4());
         return new DateDatum(tm);
@@ -157,7 +155,7 @@ public class DateDatum extends Datum {
         return new Int4Datum(jdate - d.jdate);
       }
       default:
-        throw new InvalidOperationException(datum.type());
+        throw new InvalidOperationException("operator does not exist: " + type() + " - " + datum.type());
     }
   }
 
@@ -202,27 +200,21 @@ public class DateDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == Type.DATE) {
+    if (datum.kind() == Type.DATE) {
       return DatumFactory.createBool(equals(datum));
     } else if (datum.isNull()) {
       return datum;
     } else {
-      throw new InvalidOperationException();
+      throw new InvalidOperationException(datum.type());
     }
   }
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.DATE) {
+    if (datum.kind() == TajoDataTypes.Type.DATE) {
       DateDatum another = (DateDatum) datum;
       return Ints.compare(jdate, another.jdate);
-    } else if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
-      TimestampDatum another = (TimestampDatum) datum;
-      TimeMeta myMeta, otherMeta;
-      myMeta = asTimeMeta();
-      otherMeta = another.asTimeMeta();
-      return myMeta.compareTo(otherMeta);
-    } else if (datum instanceof NullDatum || datum.isNull()) {
+    } else if (datum.isNull()) {
       return -1;
     } else {
       throw new InvalidOperationException(datum.type());

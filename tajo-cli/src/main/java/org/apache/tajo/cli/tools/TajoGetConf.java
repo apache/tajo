@@ -22,10 +22,12 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.sql.SQLException;
 
 public class TajoGetConf {
@@ -92,25 +94,21 @@ public class TajoGetConf {
     }
 
     // if there is no "-h" option,
+    InetSocketAddress address = tajoConf.getSocketAddrVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
+        TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+
     if(hostName == null) {
-      if (tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        // it checks if the client service address is given in configuration and distributed mode.
-        // if so, it sets entryAddr.
-        hostName = tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[0];
-      }
+      hostName = address.getHostName();
     }
+
     if (port == null) {
-      if (tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS) != null) {
-        // it checks if the client service address is given in configuration and distributed mode.
-        // if so, it sets entryAddr.
-        port = Integer.parseInt(tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS).split(":")[1]);
-      }
+      port = address.getPort();
     }
 
     if ((hostName == null) ^ (port == null)) {
       return;
     } else if (hostName != null && port != null) {
-      tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
+      tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, NetUtils.getHostPortString(hostName, port));
     }
 
     processConfKey(writer, param);

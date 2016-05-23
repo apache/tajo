@@ -21,10 +21,11 @@ package org.apache.tajo.catalog.json;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.function.Function;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.json.*;
 
 import java.lang.reflect.Type;
@@ -38,14 +39,16 @@ public class CatalogGsonHelper {
   private CatalogGsonHelper() {
   }
 
-  private static Map<Type, GsonSerDerAdapter> registerAdapters() {
-    Map<Type, GsonSerDerAdapter> adapters = new HashMap<>();
+  private static Map<Type, GsonSerDerAdapter<?>> registerAdapters() {
+    Map<Type, GsonSerDerAdapter<?>> adapters = new HashMap<>();
     adapters.put(Class.class, new ClassNameSerializer());
     adapters.put(Path.class, new PathSerializer());
     adapters.put(TableMeta.class, new TableMetaAdapter());
     adapters.put(Function.class, new FunctionAdapter());
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
+    adapters.put(Schema.class, new SchemaAdapter());
+    adapters.put(org.apache.tajo.type.Type.class, new TypeAdapter());
     return adapters;
   }
 

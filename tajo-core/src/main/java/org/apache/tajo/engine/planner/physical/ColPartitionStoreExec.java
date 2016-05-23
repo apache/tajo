@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
@@ -36,7 +36,10 @@ import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.StoreTableNode;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileTablespace;
+import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -72,7 +75,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     if (this.plan.hasOptions()) {
       meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
     } else {
-      meta = CatalogUtil.newTableMeta(plan.getStorageType());
+      meta = CatalogUtil.newTableMeta(plan.getStorageType(), context.getConf());
     }
 
     PhysicalPlanUtil.setNullCharIfNecessary(context.getQueryContext(), plan, meta);
@@ -87,7 +90,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     if (plan.getType() == NodeType.INSERT && keyNum > 0) {
       Column[] removedPartitionColumns = new Column[this.outSchema.size() - keyNum];
       System.arraycopy(this.outSchema.toArray(), 0, removedPartitionColumns, 0, removedPartitionColumns.length);
-      this.outSchema = new Schema(removedPartitionColumns);
+      this.outSchema = SchemaBuilder.builder().addAll(removedPartitionColumns).build();
     }
 
     keyIds = new int[keyNum];

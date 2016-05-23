@@ -18,10 +18,12 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
+import jline.console.completer.ArgumentCompleter;
+import jline.console.completer.NullCompleter;
+import jline.console.completer.StringsCompleter;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -29,6 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.StringUtils;
 
@@ -58,7 +61,7 @@ public class DescTableCommand extends TajoShellCommand {
       String tableName = tableNameMaker.toString().replace("\"", "");
       TableDesc desc = client.getTableDesc(tableName);
       if (desc == null) {
-        context.getOutput().println("Did not find any relation named \"" + tableName + "\"");
+        context.getError().println("Did not find any relation named \"" + tableName + "\"");
       } else {
         context.getOutput().println(toFormattedString(desc));
         // If there exists any indexes for the table, print index information
@@ -69,7 +72,7 @@ public class DescTableCommand extends TajoShellCommand {
             sb.append("\"").append(index.getIndexName()).append("\" ");
             sb.append(index.getIndexMethod()).append(" (");
             for (SortSpecProto key : index.getKeySortSpecsList()) {
-              sb.append(CatalogUtil.extractSimpleName(key.getColumn().getName()));
+              sb.append(IdentifierUtil.extractSimpleName(key.getColumn().getName()));
               sb.append(key.getAscending() ? " ASC" : " DESC");
               sb.append(key.getNullFirst() ? " NULLS FIRST, " : " NULLS LAST, ");
             }
@@ -81,7 +84,7 @@ public class DescTableCommand extends TajoShellCommand {
     } else if (cmd.length == 1) {
       List<String> tableList = client.getTableList(null);
       if (tableList.size() == 0) {
-        context.getOutput().println("No Relation Found");
+        context.getError().println("No Relation Found");
       }
       for (String table : tableList) {
         context.getOutput().println(table);
@@ -115,7 +118,7 @@ public class DescTableCommand extends TajoShellCommand {
           FileUtil.humanReadableByteCount(desc.getStats().getNumBytes(),
               true)).append("\n");
     }
-    sb.append("Options: \n");
+    sb.append("Options:\n");
     for(Map.Entry<String, String> entry : desc.getMeta().toMap().entrySet()){
 
       /*
@@ -155,5 +158,13 @@ public class DescTableCommand extends TajoShellCommand {
     }
 
     return sb.toString();
+  }
+
+  @Override
+  public ArgumentCompleter getArgumentCompleter() {
+    return new ArgumentCompleter(
+        new StringsCompleter(getCommand()),
+        new TableNameCompleter(),
+        NullCompleter.INSTANCE);
   }
 }

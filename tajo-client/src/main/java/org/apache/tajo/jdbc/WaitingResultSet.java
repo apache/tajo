@@ -20,7 +20,6 @@ package org.apache.tajo.jdbc;
 
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
@@ -64,7 +63,7 @@ public class WaitingResultSet extends FetchResultSet {
       }
 
       ClientProtos.GetQueryResultResponse response = tajoClient.getResultResponse(queryId);
-      TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
+      TableDesc tableDesc = new TableDesc(response.getTableDesc());
       return tableDesc.getLogicalSchema();
     } catch (TajoException e) {
       throw SQLExceptionUtil.toSQLException(e);

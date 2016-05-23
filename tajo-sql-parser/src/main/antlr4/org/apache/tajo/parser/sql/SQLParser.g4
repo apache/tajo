@@ -211,7 +211,7 @@ truncate_table_statement
 
 /*
 ===============================================================================
-  11.21 <data types>
+  11.21 <drop table statement>
 ===============================================================================
 */
 
@@ -441,9 +441,7 @@ predefined_type
   | datetime_type
   | bit_type
   | binary_type
-  | network_type
-  | record_type
-  | map_type
+  | complex_type
   ;
 
 character_string_type
@@ -535,8 +533,14 @@ binary_type
   | VARBINARY type_length?
   ;
 
-network_type
-  : INET4
+complex_type
+  : array_type
+  | record_type
+  | map_type
+  ;
+
+array_type
+  : ARRAY LTH data_type GTH
   ;
 
 record_type
@@ -763,10 +767,6 @@ term
 
 factor
   : (sign)? numeric_primary
-  ;
-
-array
-  : LEFT_PAREN numeric_value_expression (COMMA numeric_value_expression )* RIGHT_PAREN
   ;
 
 numeric_primary

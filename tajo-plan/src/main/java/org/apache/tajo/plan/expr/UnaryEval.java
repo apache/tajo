@@ -21,9 +21,9 @@ package org.apache.tajo.plan.expr;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.type.Type;
 
 public abstract class UnaryEval extends EvalNode implements Cloneable {
   @Expose protected EvalNode child;
@@ -56,7 +56,7 @@ public abstract class UnaryEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public TajoDataTypes.DataType getValueType() {
+  public Type getValueType() {
     return null;
   }
 

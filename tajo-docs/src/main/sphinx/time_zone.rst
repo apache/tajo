@@ -2,7 +2,7 @@
 Time Zone
 ******************
 
-Time zone affects some data types (e.g., ``Timestamp`` and ``Time``) and operations (e.g., ``to_char``). Tables can have different time zones. Internally, Tajo translates all table rows to UTC values and processes them. It becomes easier for Tajo to handle multiple different time zones.
+Time zone affects ``Timestamp`` data type and operations (e.g., ``to_char``). Tables can have different time zones. Internally, Tajo translates all table rows to UTC values and processes them. It becomes easier for Tajo to handle multiple different time zones.
 
 In Tajo, there are some time zong settings.
 
@@ -27,7 +27,7 @@ Table Time Zone
 ==================
 
 In Tajo, a table property ``timezone`` allows users to specify a time zone that the table uses for reading or writing. 
-When each table row are read or written, ```timestamp``` and ```time``` column values are adjusted by a given time zone if it is set.
+When each table row are read or written, ```timestamp``` column values are adjusted by a given time zone if it is set.
 
 You can specify a table time zone as follows:
 

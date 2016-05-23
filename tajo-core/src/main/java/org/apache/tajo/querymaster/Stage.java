@@ -52,7 +52,6 @@ import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.serder.PlanProto.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.plan.serder.PlanProto.EnforceProperty;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -61,13 +60,12 @@ import org.apache.tajo.rpc.AsyncRpcClient;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.storage.FileTablespace;
-import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.RpcParameterFactory;
+import org.apache.tajo.util.SplitUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
@@ -875,8 +873,8 @@ public class Stage implements EventHandler<StageEvent> {
                                   new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
                             } else {
                               if(stage.getSynchronizedState() == StageState.INITED) {
-                                stage.taskScheduler.start();
                                 stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_START));
+                                stage.taskScheduler.start();
                               } else {
                                 /* all tasks are killed before stage are inited */
                                 if (stage.getTotalScheduledObjectsCount() == stage.getCompletedTaskCount()) {
@@ -1185,34 +1183,13 @@ public class Stage implements EventHandler<StageEvent> {
       ScanNode scan = scans[0];
       TableDesc table = stage.context.getTableDesc(scan);
 
-      Collection<Fragment> fragments;
-      Tablespace tablespace = TablespaceManager.get(scan.getTableDesc().getUri());
-
-      // Depending on scanner node's type, it creates fragments. If scan is for
-      // a partitioned table, It will creates lots fragments for all partitions.
-      // Otherwise, it creates at least one fragments for a table, which may
-      // span a number of blocks or possibly consists of a number of files.
-      //
-      // Also, we can ensure FileTableSpace if the type of ScanNode is PARTITIONS_SCAN.
-      if (scan.getType() == NodeType.PARTITIONS_SCAN) {
-        // After calling this method, partition paths are removed from the physical plan.
-        fragments = Repartitioner.getFragmentsFromPartitionedTable((FileTablespace) tablespace, scan, table);
-      } else {
-        fragments = tablespace.getSplits(scan.getCanonicalName(), table, scan.getQual());
-      }
-
+      Collection<Fragment> fragments = SplitUtil.getSplits(
+          TablespaceManager.get(scan.getTableDesc().getUri()), scan, table, false);
+      SplitUtil.preparePartitionScanPlanForSchedule(scan);
       Stage.scheduleFragments(stage, fragments);
-      if (stage.getTaskScheduler() instanceof DefaultTaskScheduler) {
-        //Leaf task of DefaultTaskScheduler should be fragment size
-        // EstimatedTaskNum determined number of initial container
-        stage.schedulerContext.setEstimatedTaskNum(fragments.size());
-      } else {
-        TajoConf conf = stage.context.getConf();
-        stage.schedulerContext.setTaskSize(conf.getIntVar(ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
-        int estimatedTaskNum = (int) Math.ceil((double) table.getStats().getNumBytes() /
-            (double) stage.schedulerContext.getTaskSize());
-        stage.schedulerContext.setEstimatedTaskNum(estimatedTaskNum);
-      }
+
+      // The number of leaf tasks should be the number of fragments.
+      stage.schedulerContext.setEstimatedTaskNum(fragments.size());
     }
   }
 

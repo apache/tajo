@@ -264,9 +264,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       }
 
       if (seq == 0 && nonDistinctAggr != null) {
-        if (!tuple.isBlankOrNull(nonDistinctAggr.inTupleIndex)) {
-          nonDistinctAggr.merge(tuple);
-        }
+        nonDistinctAggr.merge(tuple);
       }
     }
 

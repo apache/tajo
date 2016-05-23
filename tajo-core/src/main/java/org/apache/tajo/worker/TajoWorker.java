@@ -34,9 +34,11 @@ import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.engine.function.hiveudf.HiveFunctionLoader;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.metrics.Node;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.pullserver.PullServerUtil;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.querymaster.QueryMaster;
 import org.apache.tajo.querymaster.QueryMasterManagerService;
@@ -48,7 +50,6 @@ import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
-import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.OldStorageManager;
 import org.apache.tajo.util.*;
@@ -63,8 +64,8 @@ import java.io.Writer;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
@@ -127,24 +128,25 @@ public class TajoWorker extends CompositeService {
     this.workerContext = new TajoWorkerContext();
     this.lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
-    int clientPort = systemConf.getSocketAddrVar(ConfVars.WORKER_CLIENT_RPC_ADDRESS).getPort();
-    int peerRpcPort = systemConf.getSocketAddrVar(ConfVars.WORKER_PEER_RPC_ADDRESS).getPort();
-    int qmManagerPort = systemConf.getSocketAddrVar(ConfVars.WORKER_QM_RPC_ADDRESS).getPort();
-
     dispatcher = new AsyncDispatcher();
     addIfService(dispatcher);
 
-    tajoWorkerManagerService = new TajoWorkerManagerService(workerContext, peerRpcPort);
+    tajoWorkerManagerService = new TajoWorkerManagerService(workerContext);
     addIfService(tajoWorkerManagerService);
 
     // querymaster worker
-    tajoWorkerClientService = new TajoWorkerClientService(workerContext, clientPort);
+    tajoWorkerClientService = new TajoWorkerClientService(workerContext);
     addIfService(tajoWorkerClientService);
 
-    queryMasterManagerService = new QueryMasterManagerService(workerContext, qmManagerPort);
+    queryMasterManagerService = new QueryMasterManagerService(workerContext);
     addIfService(queryMasterManagerService);
 
-    this.taskManager = new TaskManager(dispatcher, workerContext);
+    if (!PullServerUtil.useExternalPullServerService(systemConf)) {
+      pullService = new TajoPullServerService();
+      addIfService(pullService);
+    }
+
+    this.taskManager = new TaskManager(dispatcher, workerContext, pullService);
     addService(taskManager);
 
     this.taskExecutor = new TaskExecutor(workerContext);
@@ -158,21 +160,16 @@ public class TajoWorker extends CompositeService {
     addService(new NodeStatusUpdater(workerContext));
 
     int httpPort = 0;
-    if(!TajoPullServerService.isStandalone()) {
-      pullService = new TajoPullServerService();
-      addIfService(pullService);
-    }
-
     if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {
       httpPort = initWebServer();
     }
 
     super.serviceInit(conf);
 
-    int pullServerPort;
+    int pullServerPort = systemConf.getIntVar(ConfVars.PULLSERVER_PORT);
     if(pullService != null){
       pullServerPort = pullService.getPort();
-    } else {
+    } else if (TajoPullServerService.isStandalone()) {
       pullServerPort = getStandAlonePullServerPort();
     }
 
@@ -200,6 +197,7 @@ public class TajoWorker extends CompositeService {
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
 
     FunctionLoader.loadUserDefinedFunctions(systemConf);
+    HiveFunctionLoader.loadHiveUDFs(systemConf);
 
     PythonScriptEngine.initPythonScriptEngineFiles();
     
@@ -208,7 +206,6 @@ public class TajoWorker extends CompositeService {
 
   private void initWorkerMetrics() {
     workerSystemMetrics = new TajoSystemMetrics(systemConf, Node.class, workerContext.getWorkerName());
-    
     workerSystemMetrics.start();
 
     workerSystemMetrics.register(Node.QueryMaster.RUNNING_QM,
@@ -220,17 +217,20 @@ public class TajoWorker extends CompositeService {
   }
 
   private int initWebServer() {
-    int httpPort = systemConf.getSocketAddrVar(ConfVars.WORKER_INFO_ADDRESS).getPort();
+    InetSocketAddress address = systemConf.getSocketAddrVar(ConfVars.WORKER_INFO_ADDRESS);
     try {
-      webServer = StaticHttpServer.getInstance(this, "worker", null, httpPort,
+      webServer = StaticHttpServer.getInstance(this, "worker", address.getHostName(), address.getPort(),
           true, null, systemConf, null);
       webServer.start();
-      httpPort = webServer.getPort();
-      LOG.info("Worker info server started:" + httpPort);
+
+      systemConf.setVar(TajoConf.ConfVars.WORKER_INFO_ADDRESS, NetUtils.getHostPortString(
+          NetUtils.getConnectAddress(new InetSocketAddress(address.getHostName(), webServer.getPort()))));
+
+      LOG.info("Worker info server started:" + webServer.getPort());
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
     }
-    return httpPort;
+    return webServer.getPort();
   }
 
   private void initCleanupService() throws IOException {
@@ -263,18 +263,6 @@ public class TajoWorker extends CompositeService {
   @Override
   public void serviceStart() throws Exception {
     startJvmPauseMonitor();
-
-    TajoMasterInfo tajoMasterInfo = new TajoMasterInfo();
-
-    if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
-      tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());
-    } else {
-      tajoMasterInfo.setTajoMasterAddress(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
-          .TAJO_MASTER_UMBILICAL_RPC_ADDRESS)));
-      tajoMasterInfo.setWorkerResourceTrackerAddr(NetUtils.createSocketAddr(systemConf.getVar(ConfVars
-          .RESOURCE_TRACKER_RPC_ADDRESS)));
-    }
     connectToCatalog();
 
     if (!systemConf.getBoolVar(ConfVars.$TEST_MODE)) {

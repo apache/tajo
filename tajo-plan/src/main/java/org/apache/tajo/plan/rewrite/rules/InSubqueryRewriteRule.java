@@ -22,7 +22,9 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.Target;
@@ -113,6 +115,9 @@ public class InSubqueryRewriteRule implements LogicalPlanRewriteRule {
 
         // 2. create join
         JoinType joinType = eachIn.isNot() ? JoinType.LEFT_ANTI : JoinType.LEFT_SEMI;
+        if (joinType == JoinType.LEFT_ANTI) {
+          throw new TajoRuntimeException(new NotImplementedException("Not-in subquery"));
+        }
         JoinNode joinNode = new JoinNode(plan.newPID());
         joinNode.init(joinType, baseRelation, subqueryEval.getSubQueryNode());
         joinNode.setJoinQual(buildJoinCondition(leftEval, subqueryEval.getSubQueryNode()));

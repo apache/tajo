@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.partition.PartitionDesc;
@@ -32,6 +33,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedFunctionException;
 import org.apache.tajo.function.Function;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -181,13 +183,14 @@ public class TestCatalog {
   }
 
   private TableDesc createMockupTable(String databaseName, String tableName) throws IOException {
-    schema1 = new Schema();
-    schema1.addColumn(FieldName1, Type.BLOB);
-    schema1.addColumn(FieldName2, Type.INT4);
-    schema1.addColumn(FieldName3, Type.INT8);
+    schema1 = SchemaBuilder.builder()
+        .add(FieldName1, Type.BLOB)
+        .add(FieldName2, Type.INT4)
+        .add(FieldName3, Type.INT8)
+        .build();
     Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
     TableDesc table = new TableDesc(
-        CatalogUtil.buildFQName(databaseName, tableName),
+        IdentifierUtil.buildFQName(databaseName, tableName),
         schema1,
         new TableMeta("TEXT", new KeyValueSet()),
         path.toUri(), true);
@@ -288,7 +291,7 @@ public class TestCatalog {
         Collection<String> tablesForThisDatabase = catalog.getAllTableNames(entry.getKey());
         assertEquals(createdTablesMap.get(entry.getKey()).size(), tablesForThisDatabase.size());
         for (String tableName : tablesForThisDatabase) {
-          assertTrue(createdTablesMap.get(entry.getKey()).contains(CatalogUtil.extractSimpleName(tableName)));
+          assertTrue(createdTablesMap.get(entry.getKey()).contains(IdentifierUtil.extractSimpleName(tableName)));
         }
       }
     }
@@ -299,13 +302,14 @@ public class TestCatalog {
 	
 	@Test
 	public void testGetTable() throws Exception {
-		schema1 = new Schema();
-		schema1.addColumn(FieldName1, Type.BLOB);
-		schema1.addColumn(FieldName2, Type.INT4);
-		schema1.addColumn(FieldName3, Type.INT8);
+    schema1 = SchemaBuilder.builder()
+        .add(FieldName1, Type.BLOB)
+        .add(FieldName2, Type.INT4)
+        .add(FieldName3, Type.INT8)
+        .build();
     Path path = new Path(CommonTestingUtil.getTestDir(), "table1");
     TableDesc meta = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
+        IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
         schema1,
         "TEXT",
         new KeyValueSet(),
@@ -315,7 +319,7 @@ public class TestCatalog {
     catalog.createTable(meta);
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
 
-    catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"));
+    catalog.dropTable(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"));
     assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
 	}
 
@@ -325,7 +329,7 @@ public class TestCatalog {
   private static void assertSchemaEquality(String tableName, Schema schema) throws IOException, TajoException {
     Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
     TableDesc tableDesc = new TableDesc(
-        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
+        IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
         schema,
         "TEXT",
         new KeyValueSet(),
@@ -337,12 +341,12 @@ public class TestCatalog {
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
 
     // change it for the equals test.
-    schema.setQualifier(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+    schema.setQualifier(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
     TableDesc restored = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
     assertEquals(schema, restored.getSchema());
 
     // drop test
-    catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+    catalog.dropTable(IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
     assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
   }
 
@@ -361,26 +365,22 @@ public class TestCatalog {
     //      |- s8
     //  |- s9
 
-    Schema nestedSchema = new Schema();
-    nestedSchema.addColumn("s1", Type.INT8);
+    SchemaBuilder nestedSchema = SchemaBuilder.builder();
+    nestedSchema.add("s1", Type.INT8);
+    nestedSchema.add("s2", Type.INT8);
 
-    nestedSchema.addColumn("s2", Type.INT8);
+    Schema s5 = SchemaBuilder.builder().add("s6", Type.INT8).build();
+    Schema s7 = SchemaBuilder.builder().add("s5", new TypeDesc(s5)).build();
 
-    Schema s5 = new Schema();
-    s5.addColumn("s6", Type.INT8);
+    Schema s3 = SchemaBuilder.builder()
+        .add("s4", Type.INT8)
+        .add("s7", new TypeDesc(s7))
+        .add("s8", Type.INT8).build();
 
-    Schema s7 = new Schema();
-    s7.addColumn("s5", new TypeDesc(s5));
+    nestedSchema.add("s3", new TypeDesc(s3));
+    nestedSchema.add("s9", Type.INT8);
 
-    Schema s3 = new Schema();
-    s3.addColumn("s4", Type.INT8);
-    s3.addColumn("s7", new TypeDesc(s7));
-    s3.addColumn("s8", Type.INT8);
-
-    nestedSchema.addColumn("s3", new TypeDesc(s3));
-    nestedSchema.addColumn("s9", Type.INT8);
-
-    assertSchemaEquality("nested_schema1", nestedSchema);
+    assertSchemaEquality("nested_schema1", nestedSchema.build());
   }
 
   @Test
@@ -398,26 +398,26 @@ public class TestCatalog {
     //      |- s3
     //  |- s4
 
-    Schema nestedSchema = new Schema();
-    nestedSchema.addColumn("s1", Type.INT8);
+    SchemaBuilder nestedSchema = SchemaBuilder.builder();
+    nestedSchema.add("s1", Type.INT8);
+    nestedSchema.add("s2", Type.INT8);
 
-    nestedSchema.addColumn("s2", Type.INT8);
+    Schema s5 = SchemaBuilder.builder()
+        .add("s6", Type.INT8)
+        .build();
 
-    Schema s5 = new Schema();
-    s5.addColumn("s6", Type.INT8);
+    SchemaBuilder s7 = SchemaBuilder.builder();
+    s7.add("s5", new TypeDesc(s5));
 
-    Schema s7 = new Schema();
-    s7.addColumn("s5", new TypeDesc(s5));
+    SchemaBuilder s3 = SchemaBuilder.builder();
+    s3.add("s4", Type.INT8);
+    s3.add("s7", new TypeDesc(s7.build()));
+    s3.add("s8", Type.INT8);
 
-    Schema s3 = new Schema();
-    s3.addColumn("s4", Type.INT8);
-    s3.addColumn("s7", new TypeDesc(s7));
-    s3.addColumn("s8", Type.INT8);
+    nestedSchema.add("s3", new TypeDesc(s3.build()));
+    nestedSchema.add("s9", Type.INT8);
 
-    nestedSchema.addColumn("s3", new TypeDesc(s3));
-    nestedSchema.addColumn("s9", Type.INT8);
-
-    assertSchemaEquality("nested_schema2", nestedSchema);
+    assertSchemaEquality("nested_schema2", nestedSchema.build());
   }
 
   static IndexDesc desc1;
@@ -426,17 +426,18 @@ public class TestCatalog {
   static Schema relationSchema;
 
   public static TableDesc prepareTable() throws IOException {
-    relationSchema = new Schema();
-    relationSchema.addColumn(DEFAULT_DATABASE_NAME + ".indexed.id", Type.INT4)
-        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.name", Type.TEXT)
-        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.age", Type.INT4)
-        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.score", Type.FLOAT8);
+    relationSchema = SchemaBuilder.builder()
+        .add(DEFAULT_DATABASE_NAME + ".indexed.id", Type.INT4)
+        .add(DEFAULT_DATABASE_NAME + ".indexed.name", Type.TEXT)
+        .add(DEFAULT_DATABASE_NAME + ".indexed.age", Type.INT4)
+        .add(DEFAULT_DATABASE_NAME + ".indexed.score", Type.FLOAT8)
+        .build();
 
     String tableName = "indexed";
 
-    TableMeta meta = CatalogUtil.newTableMeta("TEXT");
+    TableMeta meta = CatalogUtil.newTableMeta(BuiltinStorages.TEXT, server.getConf());
     return new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), relationSchema, meta,
+        IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), relationSchema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());
   }
 
@@ -625,20 +626,22 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByHash1() throws Exception {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4)
-        .addColumn("name", Type.TEXT)
-        .addColumn("age", Type.INT4)
-        .addColumn("score", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .add("score", Type.FLOAT8)
+        .build();
 
-    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
 
-    Schema partSchema = new Schema();
-    partSchema.addColumn("id", Type.INT4);
+    Schema partSchema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .build();
 
     PartitionMethodDesc partitionDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
@@ -665,19 +668,21 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByHash2() throws Exception {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4)
-        .addColumn("name", Type.TEXT)
-        .addColumn("age", Type.INT4)
-        .addColumn("score", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .add("score", Type.FLOAT8)
+        .build();
 
-    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
-    partSchema.addColumn("id", Type.INT4);
+    Schema partSchema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .build();
     PartitionMethodDesc partitionDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
             CatalogProtos.PartitionType.HASH, "id", partSchema);
@@ -703,19 +708,21 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByList() throws Exception {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4)
-        .addColumn("name", Type.TEXT)
-        .addColumn("age", Type.INT4)
-        .addColumn("score", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .add("score", Type.FLOAT8)
+        .build();
 
-    String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
-    partSchema.addColumn("id", Type.INT4);
+    Schema partSchema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .build();
     PartitionMethodDesc partitionDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
             CatalogProtos.PartitionType.LIST, "id", partSchema);
@@ -740,19 +747,21 @@ public class TestCatalog {
 
   @Test
   public final void testAddAndDeleteTablePartitionByRange() throws Exception {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4)
-        .addColumn("name", Type.TEXT)
-        .addColumn("age", Type.INT4)
-        .addColumn("score", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .add("score", Type.FLOAT8)
+        .build();
 
-    String tableName = CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
+    String tableName = IdentifierUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "addedtable");
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
-    partSchema.addColumn("id", Type.INT4);
+    Schema partSchema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .build();
     PartitionMethodDesc partitionDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName, CatalogProtos.PartitionType.RANGE,
             "id", partSchema);
@@ -777,21 +786,23 @@ public class TestCatalog {
 
   // TODO: This should be added at TAJO-1891
   public final void testAddAndDeleteTablePartitionByColumn() throws Exception {
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4)
-        .addColumn("name", Type.TEXT)
-        .addColumn("age", Type.INT4)
-        .addColumn("score", Type.FLOAT8);
+    Schema schema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .add("age", Type.INT4)
+        .add("score", Type.FLOAT8)
+        .build();
 
     String simpleTableName = "addedtable";
-    String tableName = CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, simpleTableName);
+    String tableName = IdentifierUtil.buildFQName(DEFAULT_DATABASE_NAME, simpleTableName);
     KeyValueSet opts = new KeyValueSet();
     opts.set("file.delimiter", ",");
     TableMeta meta = CatalogUtil.newTableMeta("TEXT", opts);
 
-    Schema partSchema = new Schema();
-    partSchema.addColumn("id", Type.INT4);
-    partSchema.addColumn("name", Type.TEXT);
+    Schema partSchema = SchemaBuilder.builder()
+        .add("id", Type.INT4)
+        .add("name", Type.TEXT)
+        .build();
 
     PartitionMethodDesc partitionMethodDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
@@ -934,7 +945,7 @@ public class TestCatalog {
 
     catalog.alterTable(alterTableDesc);
 
-    String [] split = CatalogUtil.splitFQTableName(tableName);
+    String [] split = IdentifierUtil.splitFQTableName(tableName);
 
     CatalogProtos.PartitionDescProto resultDesc = catalog.getPartition(split[0], split[1], partitionName);
 

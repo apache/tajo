@@ -1,0 +1,2 @@
+Warning: deprecated to directly use config key in TajoConf.ConfVars. Please execute '\help set'.
+ERROR: relation 'default.lineitem2' does not exist

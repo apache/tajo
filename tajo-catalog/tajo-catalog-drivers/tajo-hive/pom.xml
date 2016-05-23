@@ -33,8 +33,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <parquet.version>1.5.0</parquet.version>
-    <parquet.format.version>2.1.0</parquet.format.version>
   </properties>
 
   <build>
@@ -136,73 +134,29 @@
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
-      <artifactId>hadoop-mapreduce-client-core</artifactId>
-      <version>${hadoop.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-common</artifactId>
       <version>${hadoop.version}</version>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>zookeeper</artifactId>
+          <groupId>org.apache.zookeeper</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.apache.hive</groupId>
-      <artifactId>hive-exec</artifactId>
-      <version>${hive.version}</version>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-mapreduce-client-core</artifactId>
+      <version>${hadoop.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-common</artifactId>
+          <artifactId>hadoop-yarn-common</artifactId>
+          <groupId>org.apache.hadoop</groupId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-contrib</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-hbase-handler</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-metastore</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-serde</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-shims</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-testutils</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.thrift</groupId>
-          <artifactId>libfb303</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.thrift</groupId>
-          <artifactId>libthrift</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.jolbox</groupId>
-          <artifactId>bonecp</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.google.protobuf</groupId>
-          <artifactId>protobuf-java</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.calcite</groupId>
-          <artifactId>calcite-core</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.apache.calcite</groupId>
-          <artifactId>calcite-avatica</artifactId>
+          <artifactId>netty</artifactId>
+          <groupId>io.netty</groupId>
         </exclusion>
       </exclusions>
     </dependency>
@@ -236,51 +190,183 @@
           <groupId>com.jolbox</groupId>
           <artifactId>bonecp</artifactId>
         </exclusion>
+        <exclusion>
+          <artifactId>tephra-hbase-compat-1.0</artifactId>
+          <groupId>co.cask.tephra</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>tephra-core</artifactId>
+          <groupId>co.cask.tephra</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>tephra-api</artifactId>
+          <groupId>co.cask.tephra</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>hbase-client</artifactId>
+          <groupId>org.apache.hbase</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>hadoop-yarn-server-resourcemanager</artifactId>
+          <groupId>org.apache.hadoop</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>antlr-runtime</artifactId>
+          <groupId>org.antlr</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>log4j-slf4j-impl</artifactId>
+          <groupId>org.apache.logging.log4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>zookeeper</artifactId>
+          <groupId>org.apache.zookeeper</groupId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.hive</groupId>
-      <artifactId>hive-cli</artifactId>
+      <artifactId>hive-common</artifactId>
       <version>${hive.version}</version>
       <scope>provided</scope>
       <exclusions>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-common</artifactId>
+          <artifactId>jetty-all</artifactId>
+          <groupId>org.eclipse.jetty.aggregate</groupId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-exec</artifactId>
+          <artifactId>javax.servlet</artifactId>
+          <groupId>org.eclipse.jetty.orbit</groupId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-metastore</artifactId>
+          <artifactId>joda-time</artifactId>
+          <groupId>joda-time</groupId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-serde</artifactId>
+          <artifactId>jackson-databind</artifactId>
+          <groupId>com.fasterxml.jackson.core</groupId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-service</artifactId>
+          <artifactId>metrics-json</artifactId>
+          <groupId>io.dropwizard.metrics</groupId>
         </exclusion>
         <exclusion>
-          <groupId>org.apache.hive</groupId>
-          <artifactId>hive-shims</artifactId>
+          <artifactId>metrics-jvm</artifactId>
+          <groupId>io.dropwizard.metrics</groupId>
         </exclusion>
         <exclusion>
-          <groupId>com.jolbox</groupId>
-          <artifactId>bonecp</artifactId>
+          <artifactId>metrics-core</artifactId>
+          <groupId>io.dropwizard.metrics</groupId>
         </exclusion>
         <exclusion>
-          <groupId>jline</groupId>
-          <artifactId>jline</artifactId>
+          <artifactId>ant</artifactId>
+          <groupId>org.apache.ant</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>json</artifactId>
+          <groupId>org.json</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>log4j-slf4j-impl</artifactId>
+          <groupId>org.apache.logging.log4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>log4j-web</artifactId>
+          <groupId>org.apache.logging.log4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>log4j-1.2-api</artifactId>
+          <groupId>org.apache.logging.log4j</groupId>
         </exclusion>
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>com.twitter</groupId>
-      <artifactId>parquet-hive-bundle</artifactId>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-exec</artifactId>
+      <version>${hive.version}</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>hive-ant</artifactId>
+          <groupId>org.apache.hive</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>hive-llap-tez</artifactId>
+          <groupId>org.apache.hive</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>ST4</artifactId>
+          <groupId>org.antlr</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>ivy</artifactId>
+          <groupId>org.apache.ivy</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>curator-framework</artifactId>
+          <groupId>org.apache.curator</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>apache-curator</artifactId>
+          <groupId>org.apache.curator</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>groovy-all</artifactId>
+          <groupId>org.codehaus.groovy</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>calcite-core</artifactId>
+          <groupId>org.apache.calcite</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>calcite-avatica</artifactId>
+          <groupId>org.apache.calcite</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>stax-api</artifactId>
+          <groupId>stax</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>jline</artifactId>
+          <groupId>jline</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>log4j-1.2-api</artifactId>
+          <groupId>org.apache.logging.log4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>log4j-slf4j-impl</artifactId>
+          <groupId>org.apache.logging.log4j</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>ant</artifactId>
+          <groupId>org.apache.ant</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>zookeeper</artifactId>
+          <groupId>org.apache.zookeeper</groupId>
+        </exclusion>
+        <exclusion>
+          <artifactId>antlr-runtime</artifactId>
+          <groupId>org.antlr</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.hive</groupId>
+      <artifactId>hive-serde</artifactId>
+      <version>${hive.version}</version>
+      <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>opencsv</artifactId>
+          <groupId>net.sf.opencsv</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.parquet</groupId>
+      <artifactId>parquet-hadoop-bundle</artifactId>
       <version>${parquet.version}</version>
     </dependency>
   </dependencies>

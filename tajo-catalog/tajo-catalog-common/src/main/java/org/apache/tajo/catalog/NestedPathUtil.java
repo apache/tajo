@@ -73,7 +73,7 @@ public class NestedPathUtil {
     Column found = null;
 
     if (currentColumn.getDataType().getType() == Type.RECORD) {
-      found = currentColumn.typeDesc.nestedRecordSchema.getColumn(paths[depth]);
+      found = TypeConverter.convert(currentColumn.type).nestedRecordSchema.getColumn(paths[depth]);
     }
 
     if (found != null) {

@@ -21,18 +21,17 @@ package org.apache.tajo.storage.json;
 
 import net.minidev.json.JSONObject;
 import org.apache.commons.net.util.Base64;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.datum.TimeDatum;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerializer;
 
@@ -46,7 +45,6 @@ public class JsonLineSerializer extends TextLineSerializer {
   private final Map<String, Type> types;
   private final String [] projectedPaths;
 
-  private final boolean hasTimezone;
   private final TimeZone timezone;
 
   public JsonLineSerializer(Schema schema, TableMeta meta) {
@@ -55,8 +53,8 @@ public class JsonLineSerializer extends TextLineSerializer {
     projectedPaths = SchemaUtil.convertColumnsToPaths(schema.getAllColumns(), true);
     types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
 
-    hasTimezone = meta.containsProperty(StorageConstants.TIMEZONE);
-    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+    timezone = TimeZone.getTimeZone(meta.getProperty(StorageConstants.TIMEZONE,
+        StorageUtil.TAJO_CONF.getSystemTimezone().getID()));
   }
 
   @Override
@@ -109,25 +107,16 @@ public class JsonLineSerializer extends TextLineSerializer {
       break;
 
     case CHAR:
-    case INET4:
     case DATE:
     case INTERVAL:
       json.put(fieldName, input.asDatum(fieldIndex).asChars());
       break;
 
     case TIMESTAMP:
-      if (hasTimezone) {
-        json.put(fieldName, TimestampDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
-      } else {
-        json.put(fieldName, input.asDatum(fieldIndex).asChars());
-      }
+      json.put(fieldName, TimestampDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
       break;
     case TIME:
-      if (hasTimezone) {
-        json.put(fieldName, TimeDatum.asChars(input.getTimeDate(fieldIndex), timezone, false));
-      } else {
-        json.put(fieldName, input.asDatum(fieldIndex).asChars());
-      }
+      json.put(fieldName, input.asDatum(fieldIndex).asChars());
       break;
 
     case BIT:

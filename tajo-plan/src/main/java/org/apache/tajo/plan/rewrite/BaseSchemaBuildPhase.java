@@ -22,6 +22,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.UndefinedColumnException;
 import org.apache.tajo.plan.*;
@@ -36,8 +37,11 @@ import org.apache.tajo.plan.nameresolver.NameResolver;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.schema.IdentifierUtil;
 
 import java.util.*;
+
+import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 
 /**
  * BaseSchemaBuildPhase builds a basic schema information of tables which have pre-defined schema.
@@ -117,10 +121,10 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       if (asteriskExpr.hasQualifier()) {
         String qualifier;
 
-        if (CatalogUtil.isFQTableName(asteriskExpr.getQualifier())) {
+        if (IdentifierUtil.isFQTableName(asteriskExpr.getQualifier())) {
           qualifier = asteriskExpr.getQualifier();
         } else {
-          qualifier = CatalogUtil.buildFQName(
+          qualifier = IdentifierUtil.buildFQName(
               ctx.getQueryContext().get(SessionVars.CURRENT_DATABASE), asteriskExpr.getQualifier());
         }
 
@@ -138,7 +142,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
         // If we cannot find any relation against a qualified column name
         if (relationOp == null) {
-          throw new UndefinedColumnException(CatalogUtil.buildFQName(qualifier, "*"));
+          throw new UndefinedColumnException(IdentifierUtil.buildFQName(qualifier, "*"));
         }
 
         Schema schema = relationOp.getLogicalSchema();
@@ -257,6 +261,10 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       List<Target> targets = new ArrayList<>();
       for (NamedExpr namedExpr : exprs) {
         TajoDataTypes.DataType dataType = typeDeterminant.determineDataType(context, namedExpr.getExpr());
+
+        if (dataType.getType() == RECORD) {
+          throw new NotImplementedException("record projection");
+        }
 
         if (namedExpr.hasAlias()) {
           targets.add(new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType))));
@@ -403,11 +411,11 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
         throws TajoException {
 
       String actualRelationName;
-      if (CatalogUtil.isFQTableName(relation.getName())) {
+      if (IdentifierUtil.isFQTableName(relation.getName())) {
         actualRelationName = relation.getName();
       } else {
         actualRelationName =
-            CatalogUtil.buildFQName(ctx.getQueryContext().get(SessionVars.CURRENT_DATABASE), relation.getName());
+            IdentifierUtil.buildFQName(ctx.getQueryContext().get(SessionVars.CURRENT_DATABASE), relation.getName());
       }
 
       TableDesc desc = catalog.getTableDesc(actualRelationName);
@@ -439,7 +447,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       // a table subquery should be dealt as a relation.
       TableSubQueryNode node = ctx.getPlan().createNode(TableSubQueryNode.class);
-      node.init(CatalogUtil.buildFQName(ctx.getQueryContext().get(SessionVars.CURRENT_DATABASE), expr.getName()), child);
+      node.init(IdentifierUtil.buildFQName(ctx.getQueryContext().get(SessionVars.CURRENT_DATABASE), expr.getName()), child);
       ctx.getQueryBlock().addRelation(node);
 
       return node;
@@ -458,7 +466,7 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
       // a table subquery should be dealt as a relation.
       TableSubQueryNode node = ctx.getPlan().createNode(TableSubQueryNode.class);
-      node.init(CatalogUtil.buildFQName(ctx.getQueryContext().get(SessionVars.CURRENT_DATABASE),
+      node.init(IdentifierUtil.buildFQName(ctx.getQueryContext().get(SessionVars.CURRENT_DATABASE),
           ctx.generateUniqueSubQueryName()), child);
       ctx.getQueryBlock().addRelation(node);
       if (stack.peek().getType() == OpType.InPredicate) {

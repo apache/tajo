@@ -21,6 +21,7 @@ package org.apache.tajo.storage.text;
 import io.netty.buffer.ByteBuf;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -43,7 +44,7 @@ public abstract class TextLineSerDe {
 
   public static ByteBuf getNullChars(TableMeta meta) {
     byte[] nullCharByteArray;
-    if (meta.getDataFormat().equals("SEQUENCEFILE")) {
+    if (meta.getDataFormat().equals(BuiltinStorages.SEQUENCE_FILE)) {
       nullCharByteArray = getNullCharsAsBytes(meta, StorageConstants.SEQUENCEFILE_NULL, "\\");
     } else {
       nullCharByteArray = getNullCharsAsBytes(meta);
@@ -55,6 +56,13 @@ public abstract class TextLineSerDe {
     return nullChars;
   }
 
+  /**
+   * Returns the bytes of null characters.
+   * The default value is '\\N' as in Hive.
+   *
+   * @param meta table meta
+   * @return a byte array of null characters
+   */
   public static byte [] getNullCharsAsBytes(TableMeta meta) {
     return getNullCharsAsBytes(meta, StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
   }

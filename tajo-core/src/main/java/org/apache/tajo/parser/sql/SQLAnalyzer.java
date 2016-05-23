@@ -1008,16 +1008,6 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitArray(ArrayContext ctx) {
-    int size = ctx.numeric_value_expression().size();
-    Expr[] exprs = new Expr[size];
-    for (int i = 0; i < size; i++) {
-      exprs[i] = visit(ctx.numeric_value_expression(i));
-    }
-    return new ValueListExpr(exprs);
-  }
-
-  @Override
   public Expr visitPattern_matching_predicate(Pattern_matching_predicateContext ctx) {
     Expr predicand = visitChildren(ctx.row_value_predicand());
     Expr pattern = new LiteralValue(stripQuote(ctx.Character_String_Literal().getText()),
@@ -1617,24 +1607,27 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         typeDefinition = new DataTypeExpr(Type.BINARY.name());
       }
 
-
       if (checkIfExist(binaryType.type_length())) {
         typeDefinition.setLengthOrPrecision(Integer.parseInt(binaryType.type_length().NUMBER().getText()));
       }
+    } else if (checkIfExist(predefined_type.complex_type())) {
+      Complex_typeContext complexType = predefined_type.complex_type();
 
-      // inet
-    } else if (checkIfExist(predefined_type.network_type())) {
-      typeDefinition = new DataTypeExpr(Type.INET4.name());
+      if (checkIfExist(complexType.array_type())) {
+        DataTypeExpr elementType = visitData_type(complexType.array_type().data_type());
+        typeDefinition = new DataTypeExpr(new DataTypeExpr.ArrayType(elementType));
 
+      } else if (checkIfExist(complexType.record_type())) {
+        ColumnDefinition[] nestedRecordDefine = getDefinitions(complexType.record_type().table_elements());
+        typeDefinition = new DataTypeExpr(new DataTypeExpr.RecordType(nestedRecordDefine));
 
-    } else if (checkIfExist(predefined_type.record_type())) {
-      ColumnDefinition [] nestedRecordDefine = getDefinitions(predefined_type.record_type().table_elements());
-      typeDefinition = new DataTypeExpr(new DataTypeExpr.RecordType(nestedRecordDefine));
-
-    } else if (checkIfExist(predefined_type.map_type())) {
-      Map_typeContext mapTypeContext = predefined_type.map_type();
-      typeDefinition = new DataTypeExpr(
-          new MapType(visitData_type(mapTypeContext.key_type), visitData_type(mapTypeContext.value_type)));
+      } else if (checkIfExist(complexType.map_type())) {
+        Map_typeContext mapTypeContext = complexType.map_type();
+        typeDefinition = new DataTypeExpr(
+            new MapType(visitData_type(mapTypeContext.key_type), visitData_type(mapTypeContext.value_type)));
+      }
+    } else {
+      throw new TajoInternalError("Reached code points that shouldn't be reached");
     }
 
     return typeDefinition;

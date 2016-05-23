@@ -3,3 +3,4 @@ l_orderkey,quantity,partkey,?count,?max_1,l_returnflag
 1,53.0,1,2,36.0,N
 2,38.0,1,1,38.0,N
 3,94.0,2,2,49.0,R
+null,null,0,0,null,null

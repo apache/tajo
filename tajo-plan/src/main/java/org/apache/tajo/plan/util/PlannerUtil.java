@@ -18,16 +18,14 @@
 
 package org.apache.tajo.plan.util;
 
+import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UndefinedTableException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
@@ -36,6 +34,7 @@ import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 
@@ -565,12 +564,12 @@ public class PlannerUtil {
   }
 
   public static Schema sortSpecsToSchema(SortSpec[] sortSpecs) {
-    Schema schema = new Schema();
-    for (SortSpec spec : sortSpecs) {
-      schema.addColumn(spec.getSortKey());
-    }
-
-    return schema;
+    return SchemaBuilder.builder().addAll(sortSpecs, new Function<SortSpec, Column>() {
+      @Override
+      public Column apply(@javax.annotation.Nullable SortSpec s) {
+        return s.getSortKey();
+      }
+    }).build();
   }
 
   public static SortSpec[][] getSortKeysFromJoinQual(EvalNode joinQual, Schema outer, Schema inner) {
@@ -656,21 +655,26 @@ public class PlannerUtil {
   }
 
   public static Schema targetToSchema(List<Target> targets) {
-    Schema schema = new Schema();
+    SchemaBuilder schema = SchemaBuilder.uniqueNameBuilder();
     for (Target t : targets) {
-      DataType type = t.getEvalTree().getValueType();
+      Type type = t.getEvalTree().getValueType();
+
+      // hack to avoid projecting record type.
+      if (type.isStruct()) {
+        throw new TajoRuntimeException(new NotImplementedException("record projection"));
+      }
+
       String name;
       if (t.hasAlias()) {
         name = t.getAlias();
       } else {
         name = t.getEvalTree().getName();
       }
-      if (!schema.containsByQualifiedName(name)) {
-        schema.addColumn(name, type);
-      }
+
+      schema.add(name, TypeConverter.convert(type));
     }
 
-    return schema;
+    return schema.build();
   }
 
   /**

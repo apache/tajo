@@ -175,16 +175,30 @@ public class HistoryWriter extends AbstractService {
     }
   }
 
-  /* Flushing the buffer */
-  public void flushTaskHistories() {
-    if (historyQueue.size() > 0) {
-      synchronized (writerThread) {
-        writerThread.needTaskFlush.set(true);
-        writerThread.notifyAll();
+  /**
+   *  flush all task histories
+   */
+  public WriterFuture flushTaskHistories() {
+
+    WriterFuture<WriterHolder> future = new WriterFuture<WriterHolder>(null) {
+      public void done(WriterHolder holder) {
+        for(WriterHolder writerHolder : taskWriters.values()) {
+          try {
+            writerHolder.flush();
+          } catch (IOException e) {
+            super.failed(e);
+          }
+
+        }
+        super.done(null);
       }
-    } else {
-      writerThread.flushTaskHistories();
+    };
+
+    historyQueue.add(future);
+    synchronized (writerThread) {
+      writerThread.notifyAll();
     }
+    return future;
   }
 
   public static FileSystem getNonCrcFileSystem(Path path, Configuration conf) throws IOException {
@@ -225,7 +239,6 @@ public class HistoryWriter extends AbstractService {
   }
 
   class WriterThread extends Thread {
-    private AtomicBoolean needTaskFlush = new AtomicBoolean(false);
 
     public void run() {
       LOG.info("HistoryWriter_" + processName + " started.");
@@ -303,7 +316,11 @@ public class HistoryWriter extends AbstractService {
 
       for (WriterFuture<WriterHolder> future : histories) {
         History history = future.getHistory();
-        switch (history.getHistoryType()) {
+
+        if(history == null) {
+          future.done(null);
+        } else {
+          switch (history.getHistoryType()) {
           case TASK:
             try {
               future.done(writeTaskHistory((TaskHistory) history));
@@ -334,12 +351,10 @@ public class HistoryWriter extends AbstractService {
             break;
           default:
             LOG.warn("Wrong history type: " + history.getHistoryType());
+          }
         }
       }
 
-      if(needTaskFlush.getAndSet(false)){
-        flushTaskHistories();
-      }
       return histories;
     }
 

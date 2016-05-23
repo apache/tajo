@@ -23,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaFactory;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
@@ -59,7 +60,7 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
     this(proto.getTableIdentifier().getDatabaseName(),
         proto.getTableIdentifier().getTableName(),
         proto.getPartitionType(), proto.getExpression(),
-        new Schema(proto.getExpressionSchema()));
+        SchemaFactory.newV1(proto.getExpressionSchema()));
   }
 
   public String getTableName() {

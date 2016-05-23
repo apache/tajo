@@ -31,7 +31,6 @@ import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.TimeZone;
 
 // Compatibility with Apache Hive
 @Deprecated
@@ -93,7 +92,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
       case INT8:
       case FLOAT4:
       case FLOAT8:
-      case INET4:
       case DATE:
       case INTERVAL:
         bytes = tuple.getTextBytes(index);
@@ -101,16 +99,10 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         out.write(bytes);
         break;
       case TIME:
-        bytes = TimeDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
+        bytes = tuple.getTextBytes(index);
         length = bytes.length;
         out.write(bytes);
         break;
-      case TIMESTAMP:
-        bytes = TimestampDatum.asChars(tuple.getTimeDate(index), TimeZone.getDefault(), true).getBytes();
-        length = bytes.length;
-        out.write(bytes);
-        break;
-      case INET6:
       case BLOB:
         bytes = Base64.encodeBase64(tuple.getBytes(index), false);
         length = bytes.length;
@@ -185,10 +177,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createTime(new String(bytes, offset, length));
         break;
-      case TIMESTAMP:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createTimestamp(new String(bytes, offset, length));
-        break;
       case INTERVAL:
         datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
             : DatumFactory.createInterval(new String(bytes, offset, length));
@@ -211,10 +199,6 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         }
         break;
       }
-      case INET4:
-        datum = isNull(bytes, offset, length, nullCharacters) ? NullDatum.get()
-            : DatumFactory.createInet4(new String(bytes, offset, length));
-        break;
       case BLOB: {
         if (isNull(bytes, offset, length, nullCharacters)) {
           datum = NullDatum.get();

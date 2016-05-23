@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.tajo.SessionVars.COMPRESSED_RESULT_TRANSFER;
 import static org.apache.tajo.SessionVars.FETCH_ROWNUM;
+import static org.apache.tajo.SessionVars.TIMEZONE;
 import static org.apache.tajo.client.ClientParameterHelper.ActionType.CONNECTION_PARAM;
 import static org.apache.tajo.client.ClientParameterHelper.ActionType.SESSION_UPDATE;
 import static org.apache.tajo.rpc.RpcConstants.CLIENT_CONNECTION_TIMEOUT;
@@ -75,6 +76,7 @@ class ClientParameterHelper {
       }
     });
     PARAMETERS.put(ClientParameters.RETRY, new SimpleConnectionParamAction(RpcConstants.CLIENT_RETRY_NUM));
+    PARAMETERS.put(ClientParameters.TIMEZONE, new SimpleSessionAction(TIMEZONE));
   }
 
   enum ActionType {

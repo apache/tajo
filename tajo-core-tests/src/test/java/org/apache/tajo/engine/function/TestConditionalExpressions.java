@@ -20,11 +20,12 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.UndefinedFunctionException;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.UndefinedFunctionException;
 import org.junit.Test;
 
 import static org.junit.Assert.fail;
@@ -32,16 +33,17 @@ import static org.junit.Assert.fail;
 public class TestConditionalExpressions extends ExprTestBase {
   @Test
   public void testCaseWhens1() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.INT1);
-    schema.addColumn("col2", TajoDataTypes.Type.INT2);
-    schema.addColumn("col3", TajoDataTypes.Type.INT4);
-    schema.addColumn("col4", TajoDataTypes.Type.INT8);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col6", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col7", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
-    schema.addColumn("col9", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT1)
+        .add("col2", TajoDataTypes.Type.INT2)
+        .add("col3", TajoDataTypes.Type.INT4)
+        .add("col4", TajoDataTypes.Type.INT8)
+        .add("col5", TajoDataTypes.Type.FLOAT4)
+        .add("col6", TajoDataTypes.Type.FLOAT8)
+        .add("col7", TajoDataTypes.Type.TEXT)
+        .add("col8", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3))
+        .add("col9", TajoDataTypes.Type.INT4)
+        .build();
 
     testEval(schema, "table1", "1,2,3,4,5.0,6.0,text,abc,",
         "select case when col1 between 1 and 3 then 10 else 100 end from table1;",
@@ -59,24 +61,26 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithNullReturn() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.TEXT);
-    schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.TEXT)
+        .add("col2", TajoDataTypes.Type.TEXT)
+        .build();
 
     testEval(schema, "table1", "str1,str2",
         "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
         new String[]{"str2"});
-    testEval(schema, "table1", ",str2",
+    testEval(schema, "table1", "\\NULL,str2",
         "SELECT CASE WHEN col1 IS NOT NULL THEN col2 ELSE NULL END FROM table1",
         new String[]{NullDatum.get().toString()});
   }
 
   @Test
   public void testCaseWhensWithCommonExpression() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT4)
+        .build();
 
     testEval(schema, "table1", "1,2,3",
         "SELECT CASE WHEN col1 = 1 THEN 1 WHEN col1 = 2 THEN 2 ELSE 3 END FROM table1",
@@ -111,10 +115,11 @@ public class TestConditionalExpressions extends ExprTestBase {
 
   @Test
   public void testCaseWhensWithCommonExpressionAndNull() throws TajoException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", TajoDataTypes.Type.INT4);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", TajoDataTypes.Type.INT4)
+        .add("col2", TajoDataTypes.Type.INT4)
+        .add("col3", TajoDataTypes.Type.INT4)
+        .build();
 
     testEval(schema, "table1", "1,2,3",
         "SELECT CASE col1 WHEN 1 THEN NULL WHEN 2 THEN 2 ELSE 3 END FROM table1",

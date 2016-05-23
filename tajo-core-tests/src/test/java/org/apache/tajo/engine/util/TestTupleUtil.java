@@ -19,15 +19,17 @@
 package org.apache.tajo.engine.util;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -38,8 +40,7 @@ import static org.junit.Assert.*;
 public class TestTupleUtil {
   @Test
   public final void testFixedSizeChar() {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.CHAR, 5);
+    Schema schema = SchemaBuilder.builder().add("col1", CatalogUtil.newDataTypeWithLen(Type.CHAR, 5)).build();
 
     Tuple tuple = new VTuple(1);
     tuple.put(new Datum[] {
@@ -56,23 +57,21 @@ public class TestTupleUtil {
 
   @Test
   public final void testToBytesAndToTuple() {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
+    Schema schema = SchemaBuilder.builder()
+        .add("col1", Type.BOOLEAN)
+        .add("col2", Type.CHAR)
+        .add("col3", Type.INT2)
+        .add("col4", Type.INT4)
+        .add("col5", Type.INT8)
+        .add("col6", Type.FLOAT4)
+        .add("col7", Type.FLOAT8)
+        .add("col8", Type.TEXT)
+        .add("col9", Type.BLOB)
+        .build();
     //schema.addColumn("col11", DataType.IPv6);
     
     Tuple tuple = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar('7'),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -81,7 +80,6 @@ public class TestTupleUtil {
         DatumFactory.createFloat8(271.9f),
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
-        DatumFactory.createInet4("192.168.0.1")
     });
 
     RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
@@ -94,41 +92,38 @@ public class TestTupleUtil {
 
   @Test
   public final void testGetPartitions() {
-    VTuple sTuple = new VTuple(7);
-    VTuple eTuple = new VTuple(7);
+    VTuple sTuple = new VTuple(6);
+    VTuple eTuple = new VTuple(6);
 
-    Schema schema = new Schema();
-
-    schema.addColumn("numByte", Type.BIT);
-    schema.addColumn("numChar", Type.CHAR);
-    schema.addColumn("numShort", Type.INT2);
-    schema.addColumn("numInt", Type.INT4);
-    schema.addColumn("numLong", Type.INT8);
-    schema.addColumn("numFloat", Type.FLOAT4);
-    schema.addColumn("numDouble", Type.FLOAT4);
+    Schema schema = SchemaBuilder.builder()
+        .add("numChar", Type.CHAR)
+        .add("numShort", Type.INT2)
+        .add("numInt", Type.INT4)
+        .add("numLong", Type.INT8)
+        .add("numFloat", Type.FLOAT4)
+        .add("numDouble", Type.FLOAT4)
+        .build();
 
     SortSpec[] sortSpecs = PlannerUtil.schemaToSortSpecs(schema);
 
-    sTuple.put(0, DatumFactory.createBit((byte) 44));
-    sTuple.put(1, DatumFactory.createChar('a'));
-    sTuple.put(2, DatumFactory.createInt2((short) 10));
-    sTuple.put(3, DatumFactory.createInt4(5));
-    sTuple.put(4, DatumFactory.createInt8(100));
-    sTuple.put(5, DatumFactory.createFloat4(100));
-    sTuple.put(6, DatumFactory.createFloat8(100));
+    sTuple.put(0, DatumFactory.createChar('a'));
+    sTuple.put(1, DatumFactory.createInt2((short) 10));
+    sTuple.put(2, DatumFactory.createInt4(5));
+    sTuple.put(3, DatumFactory.createInt8(100));
+    sTuple.put(4, DatumFactory.createFloat4(100));
+    sTuple.put(5, DatumFactory.createFloat8(100));
 
-    eTuple.put(0, DatumFactory.createBit((byte) 99));
-    eTuple.put(1, DatumFactory.createChar('p'));
-    eTuple.put(2, DatumFactory.createInt2((short) 70));
-    eTuple.put(3, DatumFactory.createInt4(70));
-    eTuple.put(4, DatumFactory.createInt8(10000));
-    eTuple.put(5, DatumFactory.createFloat4(150));
-    eTuple.put(6, DatumFactory.createFloat8(170));
+    eTuple.put(0, DatumFactory.createChar('p'));
+    eTuple.put(1, DatumFactory.createInt2((short) 70));
+    eTuple.put(2, DatumFactory.createInt4(70));
+    eTuple.put(3, DatumFactory.createInt8(10000));
+    eTuple.put(4, DatumFactory.createFloat4(150));
+    eTuple.put(5, DatumFactory.createFloat8(170));
 
     RangePartitionAlgorithm partitioner = new UniformRangePartition(new TupleRange(sortSpecs, sTuple, eTuple),
         sortSpecs);
-    TupleRange [] ranges = partitioner.partition(5);
-    assertTrue(5 <= ranges.length);
+    TupleRange [] ranges = partitioner.partition(4);
+    assertTrue(4 <= ranges.length);
     BaseTupleComparator comp = new BaseTupleComparator(schema, PlannerUtil.schemaToSortSpecs(schema));
     TupleRange prev = ranges[0];
     for (int i = 1; i < ranges.length; i++) {
@@ -141,9 +136,10 @@ public class TestTupleUtil {
   @Test
   public void testBuildTupleFromPartitionPath() {
 
-    Schema schema = new Schema();
-    schema.addColumn("key1", Type.INT8);
-    schema.addColumn("key2", Type.TEXT);
+    Schema schema = SchemaBuilder.builder()
+        .add("key1", Type.INT8)
+        .add("key2", Type.TEXT)
+        .build();
 
     Path path = new Path("hdfs://tajo/warehouse/partition_test/");
     Tuple tuple = PartitionedTableRewriter.buildTupleFromPartitionPath(schema, path, true);

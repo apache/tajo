@@ -145,7 +145,7 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
 
   @Override
   protected EvalNode visitConst(Object o, ConstEval evalNode, Stack<EvalNode> stack) {
-    exprs.push(convertDatumToExpr(evalNode.getValueType().getType(), evalNode.getValue()));
+    exprs.push(convertDatumToExpr(evalNode.getValueType().kind(), evalNode.getValue()));
     return super.visitConst(o, evalNode, stack);
   }
 
@@ -154,7 +154,7 @@ public class EvalNodeToExprConverter extends SimpleEvalNodeVisitor<Object> {
     Expr[] values = new Expr[evalNode.getValues().length];
     for (int i = 0; i < evalNode.getValues().length; i++) {
       Datum datum = evalNode.getValues()[i];
-      values[i] = convertDatumToExpr(datum.type(), datum);
+      values[i] = convertDatumToExpr(datum.kind(), datum);
     }
     ValueListExpr expr = new ValueListExpr(values);
     exprs.push(expr);

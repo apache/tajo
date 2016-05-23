@@ -170,7 +170,6 @@ public class SequenceFileAppender extends FileAppender {
                 BytesUtils.writeVLong(os, protobufDatum.asByteArray().length);
                 break;
               case CHAR:
-              case INET4:
               case BLOB:
                 BytesUtils.writeVLong(os, tuple.getBytes(j).length);
                 break;

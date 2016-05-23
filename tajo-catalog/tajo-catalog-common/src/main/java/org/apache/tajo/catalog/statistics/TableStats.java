@@ -26,6 +26,7 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.TypeProto;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
@@ -34,6 +35,8 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.apache.tajo.common.TajoDataTypes.Type.PROTOBUF;
 
 public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, GsonObject {
   @Expose private Long numRows = null; // required
@@ -85,11 +88,15 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
 
     this.columnStatses = new ArrayList<>();
     for (CatalogProtos.ColumnStatsProto colProto : proto.getColStatList()) {
-      if (colProto.getColumn().getDataType().getType() == TajoDataTypes.Type.PROTOBUF) {
+      if (peekType(colProto.getColumn().getType()) == PROTOBUF) {
         continue;
       }
       columnStatses.add(new ColumnStats(colProto));
     }
+  }
+
+  private static TajoDataTypes.Type peekType(TypeProto proto) {
+    return proto.getElements(proto.getElementsCount() - 1).getKind();
   }
 
   public Long getNumRows() {

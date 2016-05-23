@@ -18,20 +18,20 @@
 
 package org.apache.tajo.plan.logical;
 
-import java.util.Arrays;
-
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
+
+import java.util.Arrays;
 
 public final class SortNode extends UnaryNode implements Cloneable {
   public enum SortPurpose {
     NORMAL,
     STORAGE_SPECIFIED
   }
+
 	@Expose private SortSpec [] sortKeys;
   @Expose private SortPurpose sortPurpose;
 

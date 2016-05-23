@@ -54,11 +54,6 @@ public class TajoPullServer extends CompositeService {
     start();
   }
 
-  public void start() {
-    super.start();
-
-  }
-
   public static void main(String[] args) throws Exception {
     StringUtils.startupShutdownMessage(TajoPullServerService.PullServer.class, args, LOG);
 

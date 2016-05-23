@@ -83,6 +83,7 @@ The connection parameters that Tajo currently supports are as follows:
  * ``connectTimeout = int (seconds)`` - The timeout value used for socket connect operations. If connecting to the server takes longer than this value, the connection is broken. The timeout is specified in seconds and a value of zero means that it is disabled.
  * ``socketTimeout = int (seconds)`` - The timeout value used for socket read operations. If reading from the server takes longer than this value, the connection is closed. This can be used as both a brute force global query timeout and a method of detecting network problems. The timeout is specified in seconds and a value of zero means that it is disabled.
  * ``retry = int`` - Number of retry operation. Tajo JDBC driver is resilient against some network or connection problems. It determines how many times the connection will retry.
+ * ``timezone = string (timezone id e,g, 'Asia/Tokyo')`` - Each connection has its own client time zone setting.
 
 
 An Example JDBC Client

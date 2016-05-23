@@ -19,10 +19,11 @@ package org.apache.tajo.ws.rs.resources;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.error.Errors.ResultCode;
+import org.apache.tajo.plan.serder.PlanGsonHelper;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.requests.SubmitQueryRequest;
@@ -74,7 +75,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 		queriesURI = new URI(restServiceURI + "/queries");
 		sessionsURI = new URI(restServiceURI + "/sessions");
 		restClient = ClientBuilder.newBuilder()
-        .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
+        .register(new GsonFeature(PlanGsonHelper.registerAdapters()))
         .register(LoggingFilter.class)
         .property(ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
         .property(ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE, true)
@@ -136,7 +137,7 @@ public class TestTablesResource extends QueryTestCaseBase {
 
     boolean tableFound = false;
     for (String table: tableNames) {
-      if (StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(table))) {
+      if (StringUtils.equalsIgnoreCase(tableName, IdentifierUtil.extractSimpleName(table))) {
         tableFound = true;
         break;
       }
@@ -157,7 +158,7 @@ public class TestTablesResource extends QueryTestCaseBase {
         .request().get(new GenericType<>(TableDesc.class));
     
     assertNotNull(selectedTable);
-    assertTrue(StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(selectedTable.getName())));
+    assertTrue(StringUtils.equalsIgnoreCase(tableName, IdentifierUtil.extractSimpleName(selectedTable.getName())));
   }
   
   @Test
@@ -182,7 +183,7 @@ public class TestTablesResource extends QueryTestCaseBase {
         .request().get(new GenericType<>(TableDesc.class));
     
     assertNotNull(selectedTable);
-    assertTrue(StringUtils.equalsIgnoreCase(tableName, CatalogUtil.extractSimpleName(selectedTable.getName())));
+    assertTrue(StringUtils.equalsIgnoreCase(tableName, IdentifierUtil.extractSimpleName(selectedTable.getName())));
     
     Response response = restClient.target(tablesURI)
         .path("/{tableName}").resolveTemplate("tableName", tableName)

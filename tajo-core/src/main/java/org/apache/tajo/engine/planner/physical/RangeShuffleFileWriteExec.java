@@ -64,7 +64,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     if (plan.hasOptions()) {
       this.meta = CatalogUtil.newTableMeta(plan.getStorageType(), plan.getOptions());
     } else {
-      this.meta = CatalogUtil.newTableMeta(plan.getStorageType());
+      this.meta = CatalogUtil.newTableMeta(plan.getStorageType(), context.getConf());
     }
   }
 

@@ -24,6 +24,7 @@ import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.NullScanner;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -82,7 +83,7 @@ public class PgSQLTablespace extends JdbcTablespace {
   @Override
   public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
 
-    String sql = "SELECT pg_table_size('" + CatalogUtil.extractSimpleName(table.getName()) + "')";
+    String sql = "SELECT pg_table_size('" + IdentifierUtil.extractSimpleName(table.getName()) + "')";
 
     try (Statement stmt = conn.createStatement();
          ResultSet rs = stmt.executeQuery(sql)) {

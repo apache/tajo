@@ -1,4 +1,4 @@
 --
 -- Name: db1."TABLE1"; Type: TABLE; Storage: TEXT
 --
-CREATE TABLE db1."TABLE1" (name BLOB, addr TEXT, "FirstName" TEXT, "LastName" TEXT, "with" TEXT) USING TEXT WITH ('compression.codec'='org.apache.hadoop.io.compress.GzipCodec', 'text.delimiter'='|') PARTITION BY COLUMN("BirthYear" INT4);
+CREATE TABLE db1."TABLE1" (name BLOB, addr TEXT, "FirstName" TEXT, "LastName" TEXT, "with" TEXT) USING TEXT WITH ('compression.codec'='org.apache.hadoop.io.compress.GzipCodec', 'text.delimiter'='|', 'text.null'='\\N', 'timezone'='Asia/Seoul') PARTITION BY COLUMN("BirthYear" INT4);

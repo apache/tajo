@@ -27,14 +27,14 @@ public class GsonHelper {
   private final GsonBuilder builder;
   private final Gson gson;
 
-  public GsonHelper(Map<Type, GsonSerDerAdapter> adapters) {
+  public GsonHelper(Map<Type, GsonSerDerAdapter<?>> adapters) {
     builder = new GsonBuilder().excludeFieldsWithoutExposeAnnotation();
     registerAdapters(builder, adapters);
     gson = builder.create();
   }
 
-  public static void registerAdapters(GsonBuilder builder, Map<Type, GsonSerDerAdapter> adapters) {
-    for (Map.Entry<Type, GsonSerDerAdapter> entry : adapters.entrySet()) {
+  public static void registerAdapters(GsonBuilder builder, Map<Type, GsonSerDerAdapter<?>> adapters) {
+    for (Map.Entry<Type, GsonSerDerAdapter<?>> entry : adapters.entrySet()) {
       try {
         builder.registerTypeAdapter(entry.getKey(), entry.getValue());
       } catch (Exception e) {
