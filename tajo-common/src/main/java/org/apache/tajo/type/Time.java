@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.TIME;
 
 public class Time extends Type {
-  public Time() {
+  Time() {
     super(TIME);
   }
 }

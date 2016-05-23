@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableList;
 import static org.apache.tajo.common.TajoDataTypes.Type.MAP;
 
 public class Map extends TypeParamterizedType {
-  public Map(Type keyType, Type valueType) {
+  Map(Type keyType, Type valueType) {
     super(MAP, ImmutableList.of(keyType, valueType));
   }
 

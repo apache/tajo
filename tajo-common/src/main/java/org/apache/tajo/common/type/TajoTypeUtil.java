@@ -182,20 +182,18 @@ public class TajoTypeUtil {
     }
   }
 
-  public static boolean isNumeric(Type type) {
-    return isNumber(type) || isReal(type);
+  public static boolean isNumeric(org.apache.tajo.type.Type type) {
+    return isNumber(type) || isReal(type.kind());
   }
 
-  public static boolean isNumber(Type type) {
+  public static boolean isNumber(org.apache.tajo.type.Type type) {
     return
-        type == Type.INT2 ||
-            type == Type.INT4 ||
-            type == Type.INT8;
+        type.kind() == Type.INT2 ||
+        type.kind() == Type.INT4 ||
+        type.kind() == Type.INT8;
   }
 
   public static boolean isReal(Type type) {
-    return
-        type == Type.FLOAT4||
-            type == Type.FLOAT8;
+    return type == Type.FLOAT4|| type == Type.FLOAT8;
   }
 }

@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableList;
 import static org.apache.tajo.common.TajoDataTypes.Type.CHAR;
 
 public class Char extends ValueParamterizedType {
-  public Char(int length) {
+  Char(int length) {
     super(CHAR, ImmutableList.of(length));
   }
 

@@ -116,7 +116,7 @@ public class LazyTuple implements Tuple, Cloneable {
 
   @Override
   public TajoDataTypes.Type type(int fieldId) {
-    return get(fieldId).type();
+    return get(fieldId).kind();
   }
 
   @Override

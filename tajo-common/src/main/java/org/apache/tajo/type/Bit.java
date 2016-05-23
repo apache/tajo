@@ -16,24 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.datum;
+package org.apache.tajo.type;
 
+import static org.apache.tajo.common.TajoDataTypes.Type.BIT;
 
-import org.apache.tajo.type.Type;
-
-public abstract class NumericDatum extends Datum {
-
-  public NumericDatum(Type type) {
-    super(type);
+public class Bit extends Type {
+  Bit() {
+    super(BIT);
   }
-
-  public abstract Datum plus(Datum datum);
-  
-  public abstract Datum minus(Datum datum);
-  
-  public abstract Datum multiply(Datum datum);
-  
-  public abstract Datum divide(Datum datum);
-  
-  public abstract NumericDatum inverseSign();
 }

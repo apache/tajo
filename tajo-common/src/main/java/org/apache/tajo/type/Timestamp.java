@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.TIMESTAMP;
 
 public class Timestamp extends Type {
-  public Timestamp() {
+  Timestamp() {
     super(TIMESTAMP);
   }
 }

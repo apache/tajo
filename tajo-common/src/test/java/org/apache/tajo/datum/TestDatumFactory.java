@@ -18,8 +18,8 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.type.Type;
 import org.junit.Test;
-import org.apache.tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 
@@ -28,48 +28,48 @@ public class TestDatumFactory {
 	@Test
 	public final void testCreateBit() {
 		Datum d = DatumFactory.createBit((byte) 5);
-		assertEquals(Type.BIT, d.type());
+		assertEquals(Type.Bit, d.type());
 	}
 
 	@Test
 	public final void testCreateInt2() {
 		Datum d = DatumFactory.createInt2((short) 5);
-		assertEquals(Type.INT2, d.type());
+		assertEquals(Type.Int2, d.type());
 	}
 	
 	@Test
 	public final void testCreateInt4() {
 		Datum d = DatumFactory.createInt4(5);
-		assertEquals(Type.INT4, d.type());
+		assertEquals(Type.Int4, d.type());
 	}
 	
 	@Test
 	public final void testCreateInt8() {
 		Datum d = DatumFactory.createInt8((long) 5);
-		assertEquals(Type.INT8, d.type());
+		assertEquals(Type.Int8, d.type());
 	}
 
 	@Test
 	public final void testCreateFloat4() {
 		Datum d = DatumFactory.createFloat4(5.0f);
-		assertEquals(Type.FLOAT4, d.type());
+		assertEquals(Type.Float4, d.type());
 	}
 
 	@Test
 	public final void testCreateFloat8() {
 		Datum d = DatumFactory.createFloat8(5.0d);
-		assertEquals(Type.FLOAT8, d.type());
+		assertEquals(Type.Float8, d.type());
 	}
 
 	@Test
 	public final void testCreateBoolean() {
 		Datum d = DatumFactory.createBool(true);
-		assertEquals(Type.BOOLEAN, d.type());
+		assertEquals(Type.Bool, d.type());
 	}
 
 	@Test
 	public final void testCreateString() {
 		Datum d = DatumFactory.createText("12345a");
-		assertEquals(Type.TEXT, d.type());
+		assertEquals(Type.Text, d.type());
 	}
 }

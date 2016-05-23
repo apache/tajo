@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.ANY;
 
 public class Any extends Type {
-  public Any() {
+  Any() {
     super(ANY);
   }
 }
