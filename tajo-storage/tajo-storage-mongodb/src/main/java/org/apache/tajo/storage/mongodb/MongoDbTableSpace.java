@@ -66,9 +66,11 @@ public class MongoDbTableSpace extends Tablespace {
     }
 
     @Override
-    public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, @Nullable EvalNode filterCondition) throws IOException, TajoException {
+    public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
         return null;
     }
+
+
 
     @Override
     public StorageProperty getProperty() {
