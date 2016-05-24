@@ -146,7 +146,6 @@
                       run cp -r $ROOT/tajo-sql-parser/target/tajo-sql-parser-${project.version}/* .
                       run cp -r $ROOT/tajo-storage/tajo-storage-jdbc/target/tajo-storage-jdbc-${project.version}.jar .
                       run cp -r $ROOT/tajo-storage/tajo-storage-pgsql/target/tajo-storage-pgsql-${project.version}.jar .
-                      run cp -r $ROOT/tajo-storage/tajo-storage-s3/target/tajo-storage-s3-${project.version}.jar .
                       run cp -r $ROOT/tajo-pullserver/target/tajo-pullserver-${project.version}.jar .
                       run cp -r $ROOT/tajo-metrics/target/tajo-metrics-${project.version}.jar .
                       run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}.jar .
@@ -158,9 +157,7 @@
                       run mkdir -p lib
                       run cp -r $ROOT/tajo-storage/tajo-storage-hdfs/target/lib/hive-*.jar lib/
 
-                      run mkdir aws_s3
-                      run cp -r $ROOT/tajo-storage/tajo-storage-s3/target/lib/*.jar aws_s3/
-
+                      run cp -r $ROOT/tajo-storage/tajo-storage-s3/target/lib/*.jar lib/
 
                       run mkdir -p share/jdbc-dist
                       run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}-jar-with-dependencies.jar ./share/jdbc-dist/tajo-jdbc-${project.version}.jar
