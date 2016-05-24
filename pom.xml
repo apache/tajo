@@ -18,453 +18,258 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.apache</groupId>
-    <artifactId>apache</artifactId>
-    <version>15</version>
+    <artifactId>tajo-project</artifactId>
+    <groupId>org.apache.tajo</groupId>
+    <version>0.12.0-SNAPSHOT</version>
+    <relativePath>../tajo-project</relativePath>
   </parent>
-  <groupId>org.apache.tajo</groupId>
-  <artifactId>tajo-main</artifactId>
-  <version>0.12.0-SNAPSHOT</version>
-  <description>Tajo Main</description>
-  <url>http://tajo.apache.org/</url>
-  <name>Tajo Main</name>
-  <packaging>pom</packaging>
-
-  <licenses>
-    <license>
-      <name>The Apache Software License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-    </license>
-  </licenses>
-
-  <organization>
-    <name>The Apache Software Foundation</name>
-    <url>http://www.apache.org/</url>
-  </organization>
-
-  <issueManagement>
-    <system>Jira</system>
-    <url>https://issues.apache.org/jira/browse/TAJO</url>
-  </issueManagement>
-
-  <ciManagement>
-    <system>Jenkins</system>
-    <url>https://builds.apache.org</url>
-  </ciManagement>
-
-  <scm>
-    <url>https://git-wip-us.apache.org/repos/asf/tajo.git</url>
-    <connection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</connection>
-    <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-
-  <repositories>
-    <repository>
-      <id>eclipse-jetty</id>
-      <url>http://repo2.maven.org/maven2/org/eclipse/jetty/jetty-distribution/</url>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
-
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <tajo.root>${basedir}</tajo.root>
-  </properties>
-
-  <modules>
-    <module>tajo-maven-plugins</module>
-    <module>tajo-project</module>
-    <module>tajo-common</module>
-    <module>tajo-algebra</module>
-    <module>tajo-plan</module>
-    <module>tajo-core</module>
-    <module>tajo-rpc</module>
-    <module>tajo-catalog</module>
-    <module>tajo-client</module>
-    <module>tajo-client-example</module>
-    <module>tajo-jdbc</module>
-    <module>tajo-sql-parser</module>
-    <module>tajo-storage</module>
-    <module>tajo-pullserver</module>
-    <module>tajo-yarn</module>
-    <module>tajo-thirdparty/asm</module>
-    <module>tajo-cli</module>
-    <module>tajo-metrics</module>
-    <module>tajo-core-tests</module>
-    <module>tajo-cluster-tests</module>
-    <module>tajo-dist</module>
-  </modules>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>tajo-dist</artifactId>
+  <description>Tajo Distribution</description>
+  <name>Tajo Distribution</name>
+  <packaging>jar</packaging>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.4</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-report-plugin</artifactId>
-          <version>2.19</version>
-          <configuration>
-            <aggregate>true</aggregate>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.3</version>
-          <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
-            <encoding>${project.build.sourceEncoding}</encoding>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.4</version>
-          <configuration>
-            <rules>
-              <requireMavenVersion>
-                <version>[3.0.2,)</version>
-              </requireMavenVersion>
-              <requireJavaVersion>
-                <version>1.8</version>
-              </requireJavaVersion>
-            </rules>
-          </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.3</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.5</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.6</version>
-          <executions>
-            <execution>
-              <phase>validate</phase>
-              <goals>
-                <goal>run</goal>
-              </goals>
-              <configuration>
-                <target>
-                  <echo file="${project.build.directory}/verify-protocbuf.sh">
-                    PROTOC_VERSION=`protoc --version`
-                    if [ "${PROTOC_VERSION}" == "" ]; then
-                    echo
-                    echo "Protocol buffer is not installed or protocol buffer path did not add to your PATH variable."
-                    echo
-                    exit -1
-                    fi
-                    if [ "${PROTOC_VERSION}" != "libprotoc 2.5.0" ]; then
-                    echo
-                    echo "Tajo requires protocol buffer version 2.5.0, another versions is not supported."
-                    echo
-                    exit -1
-                    fi
-                  </echo>
-                  <exec executable="bash" dir="${project.build.directory}" failonerror="true">
-                    <arg line="./verify-protocbuf.sh" />
-                  </exec>
-                </target>
-              </configuration>
-            </execution>
-          </executions>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.rat</groupId>
-          <artifactId>apache-rat-plugin</artifactId>
-          <version>0.8</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-site-plugin</artifactId>
-          <version>3.0</version>
-          <dependencies>
-            <dependency><!-- add support for ssh/scp -->
-              <groupId>org.apache.maven.wagon</groupId>
-              <artifactId>wagon-ssh</artifactId>
-              <version>1.0</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-        <!--This plugin's configuration is used to store Eclipse m2e settings only. 
-          It has no influence on the Maven build itself. -->
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-antrun-plugin</artifactId>
-                    <versionRange>[1.6,)</versionRange>
-                    <goals>
-                      <goal>run</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <versionRange>[2.2,)</versionRange>
-                    <goals>
-                      <goal>testResources</goal>
-                      <goal>resources</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.avro</groupId>
-                    <artifactId>avro-maven-plugin</artifactId>
-                    <versionRange>[1.5.3,)</versionRange>
-                    <goals>
-                      <goal>schema</goal>
-                      <goal>protocol</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.codehaus.mojo.jspc</groupId>
-                    <artifactId>jspc-maven-plugin</artifactId>
-                    <versionRange>[2.0-alpha-3,)</versionRange>
-                    <goals>
-                      <goal>compile</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <versionRange>[2.1,)</versionRange>
-                    <goals>
-                      <goal>copy-dependencies</goal>
-                      <goal>build-classpath</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <versionRange>[1.2,)</versionRange>
-                    <goals>
-                      <goal>exec</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <versionRange>[2.3.1,)</versionRange>
-                    <goals>
-                      <goal>test-jar</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
-
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <inherited>false</inherited>
-        <executions>
-          <execution>
-            <id>clean</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>pre-clean</phase>
-          </execution>
-          <execution>
-            <id>default</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>validate</phase>
-          </execution>
-          <execution>
-            <id>site</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <phase>pre-site</phase>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
-        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
         <configuration>
           <excludes>
-            <exclude>.git/**</exclude>
-            <exclude>.gitignore</exclude>
-            <exclude>.idea/**</exclude>
-            <exclude>.reviewboardrc</exclude>
-            <exclude>CHANGES</exclude>
-            <exclude>tajo-docs/src/main/sphinx/**</exclude>
+            <exclude>src/main/conf/workers</exclude>
+            <exclude>src/main/conf/storage-site.json.template</exclude>
           </excludes>
         </configuration>
       </plugin>
     </plugins>
   </build>
 
-  <profiles>
-    <!-- User Documentation -->
-    <profile>
-      <id>userdocs</id>
-      <modules>
-        <module>tajo-docs</module>
-      </modules>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-    </profile>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-common</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-rpc-protobuf</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-ws-rs</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-catalog-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-core</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage-common</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage-hdfs</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 
+  <profiles>
     <profile>
-      <id>apache-release</id>
+      <id>dist</id>
       <activation>
         <activeByDefault>false</activeByDefault>
+        <property>
+          <name>tar</name>
+        </property>
       </activation>
       <build>
         <plugins>
-          <!--
-           Create a source-release artifact that contains the fully buildable
-                         project directory source structure. This is the artifact which is
-                         the official subject of any release vote.
-          -->
           <plugin>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <dependencies>
-              <dependency>
-                <groupId>org.apache.apache.resources</groupId>
-                <artifactId>apache-source-release-assembly-descriptor</artifactId>
-                <version>1.0.4</version>
-              </dependency>
-            </dependencies>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
             <executions>
               <execution>
-                <id>source-release-assembly</id>
-                <phase>package</phase>
+                <id>dist</id>
+                <phase>prepare-package</phase>
                 <goals>
-                  <goal>single</goal>
+                  <goal>run</goal>
                 </goals>
                 <configuration>
-                  <appendAssemblyId>false</appendAssemblyId>
-                  <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                  <finalName>tajo-${project.version}-src</finalName>
-                  <descriptorRefs>
-                    <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
-                  </descriptorRefs>
-                  <descriptors>
-                    <descriptor>tajo-dist/src/main/resources/assemblies/tajo-src.xml</descriptor>
-                  </descriptors>
-                  <tarLongFileMode>gnu</tarLongFileMode>
+                  <target>
+                    <echo file="${project.build.directory}/dist-layout-stitching.sh">
+                      run() {
+                        echo "\$ ${@}"
+                        "${@}"
+                        res=$?
+                        if [ $res != 0 ]; then
+                          echo
+                          echo "Failed!"
+                          echo
+                          exit $res
+                        fi
+                      }
+
+                      ROOT=`cd ${basedir}/..;pwd`
+                      echo
+                      echo "Current directory `pwd`"
+                      echo
+                      run rm -rf tajo-${project.version}
+                      run mkdir tajo-${project.version}
+                      run cd tajo-${project.version}
+                      run cp -r $ROOT/tajo-common/target/tajo-common-${project.version}/* .
+                      run cp -r $ROOT/tajo-rpc/target/tajo-rpc-${project.version}/* .
+                      run cp -r $ROOT/tajo-algebra/target/tajo-algebra-${project.version}/* .
+                      run cp -r $ROOT/tajo-plan/target/tajo-plan-${project.version}/* .
+                      run cp -r $ROOT/tajo-client/target/tajo-client-${project.version}/* .
+                      run cp -r $ROOT/tajo-client-example/target/tajo-client-example-${project.version}/* .
+                      run cp -r $ROOT/tajo-cli/target/tajo-cli-${project.version}/* .
+                      run cp -r $ROOT/tajo-catalog/target/tajo-catalog-${project.version}/* .
+                      run cp -r $ROOT/tajo-storage/target/tajo-storage-${project.version}/* .
+                      run cp -r $ROOT/tajo-sql-parser/target/tajo-sql-parser-${project.version}/* .
+                      run cp -r $ROOT/tajo-storage/tajo-storage-jdbc/target/tajo-storage-jdbc-${project.version}.jar .
+                      run cp -r $ROOT/tajo-storage/tajo-storage-pgsql/target/tajo-storage-pgsql-${project.version}.jar .
+                      run cp -r $ROOT/tajo-pullserver/target/tajo-pullserver-${project.version}.jar .
+                      run cp -r $ROOT/tajo-metrics/target/tajo-metrics-${project.version}.jar .
+                      run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}.jar .
+                      run cp -r $ROOT/tajo-core/target/lib .
+                      run cp -r ${project.basedir}/src/main/bin .
+                      run cp -r ${project.basedir}/src/main/conf .
+                      run rm -rf lib/tajo-*-${project.version}.jar
+
+                      run mkdir -p lib
+                      run cp -r $ROOT/tajo-storage/tajo-storage-hdfs/target/lib/hive-*.jar lib/
+                      
+                      run mkdir -p share/jdbc-dist
+                      run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}-jar-with-dependencies.jar ./share/jdbc-dist/tajo-jdbc-${project.version}.jar
+
+                      run mkdir -p share/yarn-dist
+                      run cp -r $ROOT/tajo-yarn/target/tajo-yarn-${project.version}-jar-with-dependencies.jar ./share/yarn-dist/tajo-yarn-${project.version}.jar
+
+                      run mkdir -p extlib
+
+                      echo
+                      echo "Tajo dist layout available at: ${project.build.directory}/tajo-${project.version}"
+                      echo
+                    </echo>
+                    <exec executable="sh" dir="${project.build.directory}" failonerror="true">
+                      <arg line="./dist-layout-stitching.sh" />
+                    </exec>
+                    <chmod dir="${project.build.directory}/tajo-${project.version}/bin" perm="ugo+rx" includes="**/*.sh,tajo,tajo-dump,tsql" />
+                  </target>
+                </configuration>
+              </execution>
+              <execution>
+                <id>tar</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target if="tar">
+                    <echo file="${project.build.directory}/dist-tar-stitching.sh">
+                      run() {
+                      echo "\$ ${@}"
+                      "${@}"
+                      res=$?
+                      if [ $res != 0 ]; then
+                      echo
+                      echo "Failed!"
+                      echo
+                      exit $res
+                      fi
+                      }
+
+                      run tar czf tajo-${project.version}.tar.gz tajo-${project.version}
+                      echo
+                      echo "Tajo dist tar available at: ${project.build.directory}/tajo-${project.version}.tar.gz"
+                      echo
+                    </echo>
+                    <exec executable="sh" dir="${project.build.directory}" failonerror="true">
+                      <arg line="./dist-tar-stitching.sh" />
+                    </exec>
+                  </target>
                 </configuration>
               </execution>
             </executions>
           </plugin>
-          <!--
-           We want to deploy the artifact to a staging location for perusal
-          -->
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>visualize</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-yarn-common</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-common</artifactId>
+          <exclusions>
+            <exclusion>
+              <groupId>commons-el</groupId>
+              <artifactId>commons-el</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>tomcat</groupId>
+              <artifactId>jasper-runtime</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>tomcat</groupId>
+              <artifactId>jasper-compiler</artifactId>
+            </exclusion>
+            <exclusion>
+              <groupId>org.mortbay.jetty</groupId>
+              <artifactId>jsp-2.1-jetty</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
           <plugin>
-            <inherited>true</inherited>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-deploy-plugin</artifactId>
-            <configuration>
-              <updateReleaseInfo>true</updateReleaseInfo>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-source-plugin</artifactId>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
             <executions>
               <execution>
-                <id>attach-sources</id>
+                <phase>compile</phase>
                 <goals>
-                  <goal>jar</goal>
+                  <goal>java</goal>
                 </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-javadoc-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-javadocs</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <!--
-           We want to sign the artifact, the POM, and all attached artifacts
-          -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <configuration>
-              <passphrase>${gpg.passphrase}</passphrase>
-              <useAgent>${gpg.useagent}</useAgent>
-            </configuration>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
+                <configuration>
+                  <classpathScope>test</classpathScope>
+                  <mainClass>org.apache.hadoop.yarn.state.VisualizeStateMachine</mainClass>
+                  <arguments>
+                    <argument>Tajo</argument>
+                    <argument>org.apache.tajo.querymaster.Query,
+                      org.apache.tajo.querymaster.Stage,
+                      org.apache.tajo.querymaster.Task,
+                      org.apache.tajo.querymaster.TaskAttempt
+                    </argument>
+                    <argument>Tajo.gv</argument>
+                  </arguments>
+                </configuration>
               </execution>
             </executions>
           </plugin>
