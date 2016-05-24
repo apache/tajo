@@ -36,7 +36,7 @@ Currently, tajo provides the following session variables.
 
 A threshold for non-cross joins. When a non-cross join query is executed with the broadcast join, the whole size of broadcasted tables won't exceed this threshold.
 
-  * Configuration name: :ref:`tajo.dist-query.broadcast.non-cross-join.threshold-kb`
+  * Configuration name: :ref:`tajo.dist-query.broadcast.non-cross-join.limit-kb`
   * Property value: Integer
   * Unit: KB
   * Default value: 5120
@@ -50,7 +50,7 @@ A threshold for non-cross joins. When a non-cross join query is executed with th
 
 A threshold for cross joins. When a cross join query is executed, the whole size of broadcasted tables won't exceed this threshold.
 
-  * Configuration name: :ref:`tajo.dist-query.broadcast.cross-join.threshold-kb`
+  * Configuration name: :ref:`tajo.dist-query.broadcast.cross-join.limit-kb`
   * Property value: Integer
   * Unit: KB
   * Default value: 1024
@@ -99,7 +99,7 @@ This value provides the criterion to decide the algorithm to perform a join in a
 If the input data is smaller than this value, join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Configuration name: :ref:`tajo.executor.join.common.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.join.common.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -120,7 +120,7 @@ This value provides the criterion to decide the algorithm to perform an inner jo
 If the input data is smaller than this value, the inner join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Configuration name: :ref:`tajo.executor.join.inner.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.join.inner.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -141,7 +141,7 @@ This value provides the criterion to decide the algorithm to perform an outer jo
 If the input data is smaller than this value, the outer join is performed with the in-memory hash join.
 Otherwise, the sort-merge join is used.
 
-  * Configuration name: :ref:`tajo.executor.join.outer.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.join.outer.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
@@ -261,7 +261,7 @@ This value provides the criterion to decide the algorithm to perform an aggregat
 If the input data is smaller than this value, the aggregation is performed with the in-memory hash aggregation.
 Otherwise, the sort-based aggregation is used.
 
-  * Configuration name: :ref:`tajo.executor.groupby.in-memory-hash-threshold-mb`
+  * Configuration name: :ref:`tajo.executor.groupby.in-memory-hash-limit-mb`
   * Property value: Integer
   * Unit: MB
   * Default value: 64
