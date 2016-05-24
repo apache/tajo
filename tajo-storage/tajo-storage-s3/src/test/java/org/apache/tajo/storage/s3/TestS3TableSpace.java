@@ -18,12 +18,6 @@
 
 package org.apache.tajo.storage.s3;
 
-import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.google.common.base.Throwables;
 import net.minidev.json.JSONObject;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
@@ -33,10 +27,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static org.junit.Assert.*;
 
 public class TestS3TableSpace {
@@ -52,7 +44,6 @@ public class TestS3TableSpace {
     tajoConf.set("fs.s3a.access.key", "test_access_key_id");
     tajoConf.set("fs.s3a.secret.key", "test_secret_access_key");
     tablespace.init(tajoConf);
-    tablespace.setAmazonS3Client(new MockAmazonS3());
 
     TablespaceManager.addTableSpaceForTest(tablespace);
   }
@@ -71,13 +62,13 @@ public class TestS3TableSpace {
     assertEquals(S3_URI, TablespaceManager.get(S3_URI).getUri().toASCIIString());
   }
 
-  @Test(expected = AmazonClientException.class)
+  @Test
   public void testCalculateSize() throws Exception {
-    Path path = new Path(S3_URI, "/test");
+    Path path = new Path(S3_URI, "test");
     assertTrue((TablespaceManager.getByName(SPACENAME)) instanceof S3TableSpace);
     S3TableSpace tableSpace = TablespaceManager.get(path.toUri());
-
-    assertNotNull(tableSpace.getAmazonS3Client());
-    tableSpace.calculateSize(new Path("s3n://test-bucket/test"));
+    tableSpace.setAmazonS3Client(new MockAmazonS3());
+    long size = tableSpace.calculateSize(path);
+    assertEquals(30L, size);
   }
 }

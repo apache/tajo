@@ -105,6 +105,10 @@ public class MockS3FileSystem extends FileSystem {
 
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
-    return null;
+    if (f.equals(new Path(TestS3TableSpace.S3_URI, "test"))) {
+      return new FileStatus(0, true, 1, 0, 0, f);
+    } else {
+      return null;
+    }
   }
 }

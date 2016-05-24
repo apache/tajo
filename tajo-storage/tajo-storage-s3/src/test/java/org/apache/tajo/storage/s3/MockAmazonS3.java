@@ -86,7 +86,12 @@ public class MockAmazonS3 implements AmazonS3 {
   @Override
   public ObjectListing listObjects(ListObjectsRequest listObjectsRequest)
     throws AmazonClientException {
-    return null;
+    if (listObjectsRequest.getBucketName().equals("tajo-test") && listObjectsRequest.getPrefix().equals("test/")) {
+      MockObjectListing objectListing = new MockObjectListing();
+      return objectListing;
+    } else {
+      return null;
+    }
   }
 
   @Override
