@@ -52,7 +52,7 @@ public class GeoIPInCountryInt extends GeneralFunction {
       return NullDatum.get();
     }
 
-    long addr = params.getInt8(0);
+    int addr = params.getInt4(0);
     String otherCode = params.getText(1);
     String thisCode = GeoIPUtil.getCountryCode(addr);
 

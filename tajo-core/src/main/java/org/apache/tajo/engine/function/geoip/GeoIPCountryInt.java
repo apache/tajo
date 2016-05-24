@@ -48,6 +48,6 @@ public class GeoIPCountryInt extends GeneralFunction {
       return NullDatum.get();
     }
 
-    return new TextDatum(GeoIPUtil.getCountryCode(params.getInt8(0)));
+    return new TextDatum(GeoIPUtil.getCountryCode(params.getInt4(0)));
   }
 }

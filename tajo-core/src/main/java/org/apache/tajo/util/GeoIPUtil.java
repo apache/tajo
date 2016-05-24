@@ -25,6 +25,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 public class GeoIPUtil {
   private static final Log LOG = LogFactory.getLog(GeoIPUtil.class);
@@ -44,13 +46,12 @@ public class GeoIPUtil {
     return lookup.getCountry(host).getCode();
   }
 
-  /** Converts long(or int) value to country code.
-   *  In case of IPv4, only 4 bytes of long type variable are used.
+  /** Converts int value to country code.
    *
-   *  @param host ip address as long(int) type by network byte order(big endian)
+   *  @param host ip address as int type by network byte order(big endian)
    */
-  public static String getCountryCode(long host) {
-    return lookup.getCountry(host).getCode();
+  public static String getCountryCode(int host) {
+      return lookup.getCountry(host).getCode();
   }
 
   /** Converts binary(byte array) to country code.
@@ -59,19 +60,15 @@ public class GeoIPUtil {
    *  @param host ip address as byte array type by network byte order(big endian)
    */
   public static String getCountryCode(byte [] host) {
-    return lookup.getCountry(bytesToLong(host)).getCode();
-  }
+    InetAddress addr;
 
-  // It's from geoip-api code.
-  private static long bytesToLong(byte[] address) {
-    long ipnum = 0;
-    for (int i = 0; i < 4; ++i) {
-      long y = address[i];
-      if (y < 0) {
-        y += 256;
-      }
-      ipnum += y << ((3 - i) * 8);
+    try {
+      addr = InetAddress.getByAddress(host);
+    } catch (UnknownHostException e) {
+      LOG.error("Unknown host: "+host);
+      return "";
     }
-    return ipnum;
+
+    return lookup.getCountry(addr).getCode();
   }
 }
