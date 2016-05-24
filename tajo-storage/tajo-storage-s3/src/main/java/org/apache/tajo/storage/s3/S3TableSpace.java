@@ -195,11 +195,6 @@ public class S3TableSpace extends FileTablespace {
   }
 
   @VisibleForTesting
-  public AmazonS3 getAmazonS3Client() {
-    return s3;
-  }
-
-  @VisibleForTesting
   public void setAmazonS3Client(AmazonS3 s3) {
     this.s3 = s3;
   }
