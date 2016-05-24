@@ -157,8 +157,6 @@
                       run mkdir -p lib
                       run cp -r $ROOT/tajo-storage/tajo-storage-hdfs/target/lib/hive-*.jar lib/
 
-                      run cp -r $ROOT/tajo-storage/tajo-storage-s3/target/lib/*.jar lib/
-
                       run mkdir -p share/jdbc-dist
                       run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}-jar-with-dependencies.jar ./share/jdbc-dist/tajo-jdbc-${project.version}.jar
 
