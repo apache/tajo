@@ -198,8 +198,10 @@ public class TablespaceManager implements StorageService {
       } else {
         throw new RuntimeException(e);
       }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-
+    
     return pair;
   }
 
