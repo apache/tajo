@@ -33,7 +33,7 @@ import java.util.Optional;
  */
 public class FileFragment extends Fragment<Long> {
   private Integer[] diskIds; // disk volume ids
-  private Optional<String> partitionKeys;
+  private String partitionKeys;
 
   public FileFragment(String tableName, Path uri, BlockLocation blockLocation)
       throws IOException {
@@ -50,7 +50,7 @@ public class FileFragment extends Fragment<Long> {
                       String partitionKeys) {
     super(BuiltinFragmentKinds.FILE, uri.toUri(), tableName, start, start + length, length, hosts);
     this.diskIds = diskIds;
-    this.partitionKeys = Optional.ofNullable(partitionKeys);
+    this.partitionKeys = partitionKeys;
   }
 
   // Non splittable
@@ -86,12 +86,12 @@ public class FileFragment extends Fragment<Long> {
     this.diskIds = diskIds;
   }
 
-  public Optional<String> getPartitionKeys() {
+  public String getPartitionKeys() {
     return partitionKeys;
   }
 
   public void setPartitionKeys(String partitionKeys) {
-    this.partitionKeys = Optional.ofNullable(partitionKeys);
+    this.partitionKeys = partitionKeys;
   }
 
   public Path getPath() {
@@ -107,11 +107,11 @@ public class FileFragment extends Fragment<Long> {
     if (o instanceof FileFragment) {
       FileFragment t = (FileFragment) o;
 
-      if (partitionKeys.isPresent()) {
+      if (partitionKeys != null) {
         if (getPath().equals(t.getPath())
           && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
           && TUtil.checkEquals(t.getLength(), this.getLength())
-          && partitionKeys.get().equals(t.getPartitionKeys().get())) {
+          && partitionKeys.equals(t.getPartitionKeys())) {
           return true;
         }
       } else {
@@ -134,18 +134,18 @@ public class FileFragment extends Fragment<Long> {
   public Object clone() throws CloneNotSupportedException {
     FileFragment frag = (FileFragment) super.clone();
     frag.diskIds = diskIds;
-    if (partitionKeys.isPresent()) {
-      frag.setPartitionKeys(partitionKeys.get());
+    if (partitionKeys != null) {
+      frag.setPartitionKeys(partitionKeys);
     }
     return frag;
   }
 
   @Override
   public String toString() {
-    if (partitionKeys.isPresent()) {
+    if (partitionKeys != null) {
       return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": " + getPath()
         + "\", \"start\": " + this.getStartKey() + ",\"length\": " + getLength()
-        + ",\"partitionKeys\": " + getPartitionKeys().get() + "}" ;
+        + ",\"partitionKeys\": " + getPartitionKeys() + "}" ;
     } else {
       return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": "
         +getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "

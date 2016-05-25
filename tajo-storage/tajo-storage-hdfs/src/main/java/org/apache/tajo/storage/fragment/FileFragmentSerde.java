@@ -51,8 +51,8 @@ public class FileFragmentSerde implements FragmentSerde<FileFragment, FileFragme
       builder.addAllHosts(fragment.hostNames);
     }
 
-    if(fragment.getPartitionKeys().isPresent()) {
-      builder.setPartitionKeys(fragment.getPartitionKeys().get());
+    if(fragment.getPartitionKeys() != null) {
+      builder.setPartitionKeys(fragment.getPartitionKeys());
     }
 
     return builder.build();

@@ -103,8 +103,7 @@ public class TestFileFragment {
 
     assertEquals("table1_1", fragment1.getInputSourceId());
     assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
-    assertTrue(fragment1.getPartitionKeys().isPresent());
-    assertEquals("col1=1", fragment1.getPartitionKeys().get());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
   }
@@ -119,8 +118,7 @@ public class TestFileFragment {
 
     assertEquals("table1_1", fragment1.getInputSourceId());
     assertEquals(new Path(path, "table0/col1=1"), fragment1.getPath());
-    assertTrue(fragment1.getPartitionKeys().isPresent());
-    assertEquals("col1=1", fragment1.getPartitionKeys().get());
+    assertEquals("col1=1", fragment1.getPartitionKeys());
     assertTrue(0 == fragment1.getStartKey());
     assertTrue(500 == fragment1.getLength());
   }
