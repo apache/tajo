@@ -18,20 +18,103 @@
 package org.apache.tajo.storage.mongodb;
 
 
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
+
+import com.mongodb.*;
+import org.apache.tajo.exception.TajoInternalError;
+
 public class ConnectionInfo {
-    private String mongoDbUrl;
-    public String getMongoDbUrl() {
-        return mongoDbUrl;
+    MongoClientURI mongoDbURI;
+    String scheme;
+    String host;
+    String dbName;
+    String tableName;
+    String user;
+    String password;
+    int port;
+    Map<String, String> params;
+
+    public static ConnectionInfo fromURI(String originalUri) {
+        return fromURI(URI.create(originalUri));
     }
 
-    public void setMongoDbUrl(String mongoDbUrl) {
-        this.mongoDbUrl = mongoDbUrl;
+    public static ConnectionInfo fromURI(URI originalUri) {
+        final String uriStr = originalUri.toASCIIString();
+        URI uri = originalUri;
+
+        final ConnectionInfo connInfo = new ConnectionInfo();
+        connInfo.scheme = uriStr.substring(0, uriStr.indexOf("://"));
+
+        connInfo.host = uri.getHost();
+        connInfo.port = uri.getPort();
+
+        //Set the db name
+        String path = uri.getPath();
+        if (path != null && !path.isEmpty()) {
+            String [] pathElements = path.substring(1).split("/");
+            if (pathElements.length != 1) {
+                throw new TajoInternalError("Invalid JDBC path: " + path);
+            }
+            connInfo.dbName = pathElements[0];
+        }
+
+        //Convert parms into a Map
+        Map<String, String> params = new HashMap<>();
+        int paramIndex = uriStr.indexOf("?");
+        if (paramIndex > 0) {
+            String parameterPart = uriStr.substring(paramIndex+1, uriStr.length());
+
+            String [] eachParam = parameterPart.split("&");
+
+            for (String each: eachParam) {
+                String [] keyValues = each.split("=");
+                if (keyValues.length != 2) {
+                    throw new TajoInternalError("Invalid URI Parameters: " + parameterPart);
+                }
+                params.put(keyValues[0], keyValues[1]);
+            }
+        }
+
+        if (params.containsKey("table")) {
+            connInfo.tableName = params.remove("table");
+        }
+
+        if (params.containsKey("user")) {
+            connInfo.user = params.remove("user");
+        }
+        if (params.containsKey("password")) {
+            connInfo.password = params.remove("password");
+        }
+
+
+        connInfo.params = params;
+
+        String mongoDbURIStr = "";
+        //mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
+
+        //Generate the URI
+        mongoDbURIStr+=connInfo.scheme;
+        mongoDbURIStr+="://";
+        if(connInfo.user!=null)
+        {
+            mongoDbURIStr+=connInfo.user;
+            if(connInfo.password!=null)
+                mongoDbURIStr+=":"+connInfo.password;
+            mongoDbURIStr+="@";
+        }
+        mongoDbURIStr+=connInfo.host;
+        mongoDbURIStr+=":";
+        mongoDbURIStr+=connInfo.port;
+        mongoDbURIStr+="/";
+        mongoDbURIStr+=connInfo.dbName;
+
+        connInfo.mongoDbURI = new MongoClientURI(mongoDbURIStr);
+
+        return connInfo;
     }
 
-    public static ConnectionInfo fromUrl(String url)
-    {
-        ConnectionInfo connectionInfo = new ConnectionInfo();
-        connectionInfo.setMongoDbUrl(url);
-        return connectionInfo;
-    }
 }
+
+
