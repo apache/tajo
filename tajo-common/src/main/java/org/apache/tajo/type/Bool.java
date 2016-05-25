@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.BOOLEAN;
 
 public class Bool extends Type {
-  public Bool() {
+  Bool() {
     super(BOOLEAN);
   }
 }

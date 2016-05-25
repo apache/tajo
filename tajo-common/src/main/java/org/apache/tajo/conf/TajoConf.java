@@ -304,7 +304,7 @@ public class TajoConf extends Configuration {
     PYTHON_CONTROLLER_LOG_DIR("tajo.function.python.controller.log-dir", ""),
 
     // HIVE UDF
-    HIVE_UDF_DIR("tajo.function.hive.code-dir", "./lib/hiveudf"),
+    HIVE_UDF_JAR_DIR("tajo.function.hive.jar-dir", "./lib/hiveudf"),
 
     // Partition
     PARTITION_DYNAMIC_BULK_INSERT_BATCH_SIZE("tajo.partition.dynamic.bulk-insert.batch-size", 1000),

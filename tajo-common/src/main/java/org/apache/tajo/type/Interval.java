@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.INTERVAL;
 
 public class Interval extends Type {
-  public Interval() {
+  Interval() {
     super(INTERVAL);
   }
 }

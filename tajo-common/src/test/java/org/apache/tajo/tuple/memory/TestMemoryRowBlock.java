@@ -288,7 +288,7 @@ public class TestMemoryRowBlock {
     int count = 0;
     for (VTuple aRowBlock : rowBlock) {
       for (int m = 0; m < schema.length; m++) {
-        if (aRowBlock.contains(m) && aRowBlock.get(m).type() == Type.INT4) {
+        if (aRowBlock.contains(m) && aRowBlock.get(m).kind() == Type.INT4) {
           count++;
         }
       }

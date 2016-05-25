@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.INT8;
 
 public class Int8 extends Type {
-  public Int8() {
+  Int8() {
     super(INT8);
   }
 }
