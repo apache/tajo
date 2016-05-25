@@ -23,12 +23,13 @@ import org.apache.hadoop.hive.serde2.io.DateWritable;
 import org.apache.hadoop.hive.serde2.io.HiveCharWritable;
 import org.apache.hadoop.hive.serde2.io.TimestampWritable;
 import org.apache.hadoop.io.*;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedDataTypeException;
+import org.apache.tajo.type.TypeStringEncoder;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.reflections.ReflectionUtils;
@@ -83,7 +84,7 @@ public class WritableTypeConverter {
   }
 
   public static Writable convertDatum2Writable(Datum value) {
-    switch(value.type()) {
+    switch(value.kind()) {
       case INT1: return new ByteWritable(value.asByte());
       case INT2: return new ShortWritable(value.asInt2());
       case INT4: return new IntWritable(value.asInt4());
@@ -111,7 +112,7 @@ public class WritableTypeConverter {
       case NULL_TYPE: return null;
     }
 
-    throw new TajoRuntimeException(new NotImplementedException(value.type().name()));
+    throw new TajoRuntimeException(new NotImplementedException(TypeStringEncoder.encode(value.type())));
   }
 
   public static Datum convertWritable2Datum(Writable value) throws UnsupportedDataTypeException {

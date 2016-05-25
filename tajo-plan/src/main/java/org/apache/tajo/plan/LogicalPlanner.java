@@ -2132,7 +2132,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } else if (dataType.hasLengthOrPrecision()) {
         return Numeric(dataType.getLengthOrPrecision());
       } else {
-        return Numeric();
+        return Numeric;
       }
     } else {
       return TypeFactory.create(type);

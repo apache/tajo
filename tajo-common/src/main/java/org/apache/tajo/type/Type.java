@@ -34,8 +34,12 @@ import java.util.List;
  */
 public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
 
+  public static int DEFAULT_PRECISION = 0;
+  public static int DEFAULT_SCALE = 0;
+
   // No paramter types
   public static final Any Any = new Any();
+  public static final Bit Bit = new Bit();
   public static final Null Null = new Null();
   public static final Bool Bool = new Bool();
   public static final Int1 Int1 = new Int1();
@@ -44,6 +48,7 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
   public static final Int8 Int8 = new Int8();
   public static final Float4 Float4 = new Float4();
   public static final Float8 Float8 = new Float8();
+  public static final Numeric Numeric = new Numeric(DEFAULT_PRECISION, DEFAULT_SCALE);
   public static final Date Date = new Date();
   public static final Time Time = new Time();
   public static final Timestamp Timestamp = new Timestamp();
@@ -96,18 +101,15 @@ public abstract class Type implements Cloneable, ProtoObject<TypeProto> {
     return typeName(kind());
   }
 
+  public boolean isAny() {
+    return this.kind() == TajoDataTypes.Type.ANY;
+  }
+
   public boolean isStruct() {
     return this.kind() == TajoDataTypes.Type.RECORD;
   }
 
   public boolean isNull() { return this.kind() == TajoDataTypes.Type.NULL_TYPE; }
-
-  public static int DEFAULT_PRECISION = 0;
-  public static int DEFAULT_SCALE = 0;
-
-  public static Numeric Numeric() {
-    return new Numeric(DEFAULT_PRECISION, DEFAULT_SCALE);
-  }
 
   public static Numeric Numeric(int precision) {
     return new Numeric(precision, DEFAULT_SCALE);

@@ -18,18 +18,11 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 public class TestInt2Datum {
-
-	@Test
-	public final void testType() {
-		Datum d = DatumFactory.createInt2((short) 1);
-		assertEquals(d.type(), Type.INT2);
-	}
 
 	@Test
 	public final void testAsInt4() {

@@ -23,7 +23,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.type.Type;
-import org.apache.tajo.type.TypeFactory;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
@@ -39,7 +38,7 @@ public class RowConstantEval extends ValueSetEval {
 
   @Override
   public Type getValueType() {
-    return TypeFactory.create(values[0].type());
+    return values[0].type();
   }
 
   @Override
