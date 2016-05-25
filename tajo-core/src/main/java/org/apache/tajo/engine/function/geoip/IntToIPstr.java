@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.plan.function.GeneralFunction;
@@ -32,16 +33,16 @@ import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 
 @Description(
-    functionName = "ipstr_to_int",
-    description = "Convert an ipv4 address string to INT4 type",
-    example = "> SELECT ipstr_to_int('1.2.3.4');\n"
-        + "16909060",
-    returnType = INT4,
-    paramTypes = {@ParamTypes(paramTypes = {TEXT})}
+    functionName = "int_to_ipstr",
+    description = "Convert an INT4 type value to ipv4 string",
+    example = "> SELECT int_to_ipstr(16909060);\n"
+        + "1.2.3.4",
+    returnType = TEXT,
+    paramTypes = {@ParamTypes(paramTypes = {INT4})}
 )
-public class IPStringToInt extends GeneralFunction {
-  public IPStringToInt() {
-    super(new Column[] { new Column("ipstring", TEXT)});
+public class IntToIPstr extends GeneralFunction {
+  public IntToIPstr() {
+    super(new Column[] { new Column("ip_intvalue", INT4)});
   }
 
   @Override
@@ -50,8 +51,8 @@ public class IPStringToInt extends GeneralFunction {
       return NullDatum.get();
     }
 
-    String ipstr = params.getText(0);
+    int ipaddr = params.getInt4(0);
 
-    return new Int4Datum(GeoIPUtil.ipstr2int(ipstr));
+    return new TextDatum(GeoIPUtil.int2ipstr(ipaddr));
   }
 }
