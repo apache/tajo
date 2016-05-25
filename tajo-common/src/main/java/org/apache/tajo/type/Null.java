@@ -21,7 +21,7 @@ package org.apache.tajo.type;
 import static org.apache.tajo.common.TajoDataTypes.Type.NULL_TYPE;
 
 public class Null extends Type {
-  public Null() {
+  Null() {
     super(NULL_TYPE);
   }
 }

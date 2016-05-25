@@ -4,7 +4,7 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
-    TAJO-1686: Allow Tajo to use Hive UDF. (jihoon)
+    TAJO-1686: Allow Tajo to use Hive UDF. (Jongyoung Park via jihoon)
 
     TAJO-2122: PullServer as an Auxiliary service of Yarn. (jihoon)
 
@@ -13,6 +13,8 @@ Release 0.12.0 - unreleased
     TAJO-1955: Add a feature to strip quotes from CSV file. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-2146: Fragment interface cleanup. (jihoon)
 
     TAJO-2129: Apply new type implementation to Schema and Catalog. (hyunsik)
 
@@ -149,6 +151,13 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
+
+    TAJO-2151: Fix broken CI. (jihoon)
+
+    TAJO-2158: The concat_ws function can't support a tab separator.
+    (Byunghwa Yun via jihoon)
+
     TAJO-2143: Fix race condition in task history writer. (jinho)
 
     TAJO-2140: TajoInternalError does not contains reason stack trace. (jinho)
@@ -267,6 +276,13 @@ Release 0.12.0 - unreleased
     TAJO-1886: Set compilerSourceVM and compilerTargetVM to web.xml. (hyunsik)
 
   TASKS
+
+    TAJO-2154: Refactor Datum to use new Type implementation. (hyunsik)
+
+    TAJO-2027: Writing Hive UDF integration document. (Jongyoung via hyunsik)
+
+    TAJO-2157: EvalNodeSerializer/Deserializer should use new Type 
+    implementation. (hyunsik)
 
     TAJO-2145: Error codes based on errno.h need prefix. 
     (Jongyoung Park via hyunsik)

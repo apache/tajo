@@ -36,10 +36,16 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.Scanner;
+import org.apache.tajo.storage.TablespaceManager;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.BytesUtils;
 
@@ -175,16 +181,16 @@ public class HBaseScanner implements Scanner {
       }
     }
 
-    scan.setStartRow(fragment.getStartRow());
-    if (fragment.isLast() && fragment.getStopRow() != null &&
-        fragment.getStopRow().length > 0) {
+    scan.setStartRow(fragment.getStartKey().getBytes());
+    if (fragment.isLast() && !fragment.getEndKey().isEmpty() &&
+        fragment.getEndKey().getBytes().length > 0) {
       // last and stopRow is not empty
       if (filters == null) {
         filters = new FilterList();
       }
-      filters.addFilter(new InclusiveStopFilter(fragment.getStopRow()));
+      filters.addFilter(new InclusiveStopFilter(fragment.getEndKey().getBytes()));
     } else {
-      scan.setStopRow(fragment.getStopRow());
+      scan.setStopRow(fragment.getEndKey().getBytes());
     }
 
     if (filters != null) {

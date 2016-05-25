@@ -639,5 +639,11 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select concat_ws(',', '22', null) ", new String[]{"22"});
     testSimpleEval("select concat_ws(',', '22', '33', '33') ", new String[]{"22,33,33"});
     testSimpleEval("select concat_ws(',', null, '22') ", new String[]{"22"});
+
+    testSimpleEval("select concat_ws('\t', '333', '22') ", new String[]{"333\t22"});
+    testSimpleEval("select concat_ws('\t', '한글', '22') ", new String[]{"한글\t22"});
+    testSimpleEval("select concat_ws('\t', '22', null) ", new String[]{"22"});
+    testSimpleEval("select concat_ws('\t', '22', '33', '33') ", new String[]{"22\t33\t33"});
+    testSimpleEval("select concat_ws('\t', null, '22') ", new String[]{"22"});
   }
 }

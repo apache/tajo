@@ -24,7 +24,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.NUMERIC;
 
 public class Numeric extends ValueParamterizedType {
 
-  public Numeric(int precision, int scale) {
+  Numeric(int precision, int scale) {
     super(NUMERIC, ImmutableList.of(precision, scale));
   }
 

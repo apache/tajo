@@ -137,7 +137,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         break;
       case ANY:
         AnyDatum anyDatum = (AnyDatum) datum;
-        length = serialize(out, anyDatum.getActual(), CatalogUtil.newSimpleDataType(anyDatum.getActual().type()),
+        length = serialize(out, anyDatum.getActual(), CatalogUtil.newSimpleDataType(anyDatum.getActual().kind()),
             nullChars);
         break;
       default:

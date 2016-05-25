@@ -19,8 +19,8 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.type.Type;
 import org.apache.tajo.util.NumberUtil;
 
 public class BitDatum extends Datum {
@@ -28,7 +28,7 @@ public class BitDatum extends Datum {
   @Expose	final byte val;
 	
 	public BitDatum(byte val) {
-		super(TajoDataTypes.Type.BIT);
+		super(Type.Bit);
 		this.val = val;
 	}
 
@@ -105,7 +105,7 @@ public class BitDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case BIT:
       return DatumFactory.createBool(this.val == (((BitDatum) datum).val));
     case NULL_TYPE:
@@ -117,7 +117,7 @@ public class BitDatum extends Datum {
   
   @Override
   public int compareTo(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case BIT:
       if (val < datum.asByte() ) {
         return -1;

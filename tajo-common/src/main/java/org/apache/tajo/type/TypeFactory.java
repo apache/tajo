@@ -132,7 +132,7 @@ public class TypeFactory {
     case FLOAT8: return Type.Float8;
     case NUMERIC: {
       if (valueParams.size() == 0) {
-        return Numeric.Numeric();
+        return Type.Numeric;
 
       } else {
         for (Object p : valueParams) {

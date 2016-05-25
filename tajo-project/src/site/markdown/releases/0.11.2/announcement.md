@@ -28,9 +28,8 @@ The release is available for immediate download:
 This is a minor release, and we resolved 30 issues, including bug fixes, minor features, and performance improvements.
 
 ### Some of Highlights
- * Support for hadoop kerberos authentication. (TAJO-858)
  * Fix incorrect result of join involving an empty table. (TAJO-2077)
- * Fix wrong parsing of date time literal with Timezone. (TAJO-2085)
+ * Fix wrong parsing of date time literal with Timezone. (TAJO-2119)
  * Fix wrong partition pruning with BETWEEN constant folding. (TAJO-2093)
  * Fix ORC table support stored in Hive metastore. (TAJO-2102)
  * Upgrade parquet-mr to 1.8.1. (TAJO-2073)

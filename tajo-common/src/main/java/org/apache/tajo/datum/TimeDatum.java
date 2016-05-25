@@ -28,12 +28,14 @@ import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import static org.apache.tajo.type.Type.Time;
+
 public class TimeDatum extends Datum {
   public static final int SIZE = 8;
   private final long time;
 
   public TimeDatum(long time) {
-    super(TajoDataTypes.Type.TIME);
+    super(Time);
     this.time = time;
   }
 
@@ -108,7 +110,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public Datum plus(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INTERVAL: {
       IntervalDatum interval = ((IntervalDatum) datum);
       TimeMeta tm = asTimeMeta();
@@ -134,7 +136,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public Datum minus(Datum datum) {
-    switch(datum.type()) {
+    switch(datum.kind()) {
       case INTERVAL:
         IntervalDatum interval = ((IntervalDatum)datum);
         TimeMeta tm = asTimeMeta();
@@ -149,7 +151,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public Datum equalsTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIME) {
+    if (datum.kind() == TajoDataTypes.Type.TIME) {
       return DatumFactory.createBool(time == (((TimeDatum) datum).time));
     } else if (datum.isNull()) {
       return datum;
@@ -160,7 +162,7 @@ public class TimeDatum extends Datum {
 
   @Override
   public int compareTo(Datum datum) {
-    if (datum.type() == TajoDataTypes.Type.TIME) {
+    if (datum.kind() == TajoDataTypes.Type.TIME) {
       TimeDatum another = (TimeDatum)datum;
       return Longs.compare(time, another.time);
     } else if (datum.isNull()) {

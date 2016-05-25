@@ -309,7 +309,7 @@ public class DatumFactory {
   }
 
   public static DateDatum createDate(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT4:
       return new DateDatum(datum.asInt4());
     case INT8:
@@ -324,7 +324,7 @@ public class DatumFactory {
   }
 
   public static TimeDatum createTime(Datum datum) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case INT8:
       return new TimeDatum(datum.asInt8());
     case CHAR:
@@ -340,7 +340,7 @@ public class DatumFactory {
   }
 
   public static TimestampDatum createTimestamp(Datum datum, @Nullable TimeZone tz) {
-    switch (datum.type()) {
+    switch (datum.kind()) {
       case CHAR:
       case VARCHAR:
       case TEXT:
@@ -384,8 +384,8 @@ public class DatumFactory {
     return new AnyDatum(val);
   }
 
-  public static Datum cast(Datum operandDatum, DataType target, @Nullable TimeZone tz) {
-    switch (target.getType()) {
+  public static Datum cast(Datum operandDatum, org.apache.tajo.type.Type target, @Nullable TimeZone tz) {
+    switch (target.kind()) {
     case BOOLEAN:
       return DatumFactory.createBool(operandDatum.asBool());
     case CHAR:
@@ -403,7 +403,7 @@ public class DatumFactory {
       return DatumFactory.createFloat8(operandDatum.asFloat8());
     case VARCHAR:
     case TEXT:
-      switch (operandDatum.type()) {
+      switch (operandDatum.kind()) {
         case TIMESTAMP: {
           TimestampDatum timestampDatum = (TimestampDatum)operandDatum;
           if (tz != null) {
@@ -426,7 +426,7 @@ public class DatumFactory {
     case ANY:
       return DatumFactory.createAny(operandDatum);
     default:
-      throw new TajoRuntimeException(new InvalidValueForCastException(operandDatum.type(), target.getType()));
+      throw new TajoRuntimeException(new InvalidValueForCastException(operandDatum.type(), target.kind()));
     }
   }
 }

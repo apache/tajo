@@ -35,7 +35,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.RECORD;
 public class Record extends Type implements Iterable<Field> {
   private final ImmutableList<Field> fields;
 
-  public Record(Collection<Field> fields) {
+  Record(Collection<Field> fields) {
     super(RECORD);
     this.fields = ImmutableList.copyOf(fields);
   }
