@@ -26,7 +26,6 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Optional;
 
 /**
  * Fragment for file systems.
@@ -87,6 +86,9 @@ public class FileFragment extends Fragment<Long> {
   }
 
   public String getPartitionKeys() {
+    if (partitionKeys == null) {
+      this.partitionKeys = "";
+    }
     return partitionKeys;
   }
 
@@ -106,20 +108,10 @@ public class FileFragment extends Fragment<Long> {
   public boolean equals(Object o) {
     if (o instanceof FileFragment) {
       FileFragment t = (FileFragment) o;
-
-      if (partitionKeys != null) {
-        if (getPath().equals(t.getPath())
-          && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
-          && TUtil.checkEquals(t.getLength(), this.getLength())
-          && partitionKeys.equals(t.getPartitionKeys())) {
-          return true;
-        }
-      } else {
-        if (getPath().equals(t.getPath())
+      if (getPath().equals(t.getPath())
           && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
           && TUtil.checkEquals(t.getLength(), this.getLength())) {
-          return true;
-        }
+        return true;
       }
     }
     return false;
@@ -127,29 +119,21 @@ public class FileFragment extends Fragment<Long> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(inputSourceId, uri, startKey, endKey, length, diskIds, hostNames);
+    return Objects.hashCode(inputSourceId, uri, startKey, endKey, length, diskIds, hostNames, partitionKeys);
   }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
     FileFragment frag = (FileFragment) super.clone();
     frag.diskIds = diskIds;
-    if (partitionKeys != null) {
-      frag.setPartitionKeys(partitionKeys);
-    }
+    frag.partitionKeys = partitionKeys;
     return frag;
   }
 
   @Override
   public String toString() {
-    if (partitionKeys != null) {
-      return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": " + getPath()
-        + "\", \"start\": " + this.getStartKey() + ",\"length\": " + getLength()
-        + ",\"partitionKeys\": " + getPartitionKeys() + "}" ;
-    } else {
-      return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": "
-        +getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
-        + getLength() + "}" ;
-    }
+    return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": " + getPath()
+      + "\", \"start\": " + this.getStartKey() + ",\"length\": " + getLength()
+      + ",\"partitionKeys\": " + getPartitionKeys() + "}" ;
   }
 }
