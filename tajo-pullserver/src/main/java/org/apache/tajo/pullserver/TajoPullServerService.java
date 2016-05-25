@@ -59,6 +59,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.InvalidURLException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NettyUtils;
 import org.apache.tajo.storage.*;
@@ -73,9 +74,7 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 public class TajoPullServerService extends AbstractService {
@@ -115,6 +114,7 @@ public class TajoPullServerService extends AbstractService {
 
   private static LoadingCache<CacheKey, BSTIndexReader> indexReaderCache = null;
   private static int lowCacheHitCheckThreshold;
+  private static ScheduledExecutorService scheduledService;
 
   public static final String SUFFLE_SSL_FILE_BUFFER_SIZE_KEY =
     "tajo.pullserver.ssl.file.buffer.size";
@@ -277,7 +277,7 @@ public class TajoPullServerService extends AbstractService {
 
     indexReaderCache = CacheBuilder.newBuilder()
         .maximumSize(cacheSize)
-        .expireAfterWrite(cacheTimeout, TimeUnit.MINUTES)
+        .expireAfterAccess(cacheTimeout, TimeUnit.SECONDS)
         .removalListener(removalListener)
         .build(
             new CacheLoader<CacheKey, BSTIndexReader>() {
@@ -288,6 +288,9 @@ public class TajoPullServerService extends AbstractService {
             }
         );
     lowCacheHitCheckThreshold = (int) (cacheSize * 0.1f);
+    scheduledService = Executors.newSingleThreadScheduledExecutor();
+    final IndexReaderCloser closer = new IndexReaderCloser();
+    scheduledService.scheduleAtFixedRate(closer, 100, 1000, TimeUnit.MILLISECONDS);
 
     if (STANDALONE) {
       File pullServerPortFile = getPullServerPortFile();
@@ -368,6 +371,7 @@ public class TajoPullServerService extends AbstractService {
 
       localFS.close();
       indexReaderCache.invalidateAll();
+      scheduledService.shutdownNow();
     } catch (Throwable t) {
       LOG.error(t, t);
     } finally {
@@ -575,7 +579,7 @@ public class TajoPullServerService extends AbstractService {
 
           FileChunk chunk;
           try {
-            chunk = getFileChunks(queryId, sid, path, startKey, endKey, last);
+            chunk = getFileChunks(conf, queryId, sid, path, startKey, endKey, last);
           } catch (Throwable t) {
             LOG.error("ERROR Request: " + request.getUri(), t);
             sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
@@ -778,13 +782,37 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
+  private static class IndexReaderCloser implements Runnable {
+
+    @Override
+    public void run() {
+      List<CacheKey> removeKeys = new ArrayList<>();
+      synchronized (indexReaderCache) {
+        for (Entry<CacheKey, BSTIndexReader> entry : waitForRemove.entrySet()) {
+          if (entry.getValue().getReferenceNum() == 0) {
+            try {
+              entry.getValue().close();
+              removeKeys.add(entry.getKey());
+            } catch (IOException e) {
+              throw new TajoInternalError(e);
+            }
+          }
+        }
+        for (CacheKey key : removeKeys) {
+          waitForRemove.remove(key);
+        }
+      }
+    }
+  }
+
   // Temporal space to wait for the completion of all index lookup operations
   private static final ConcurrentHashMap<CacheKey, BSTIndexReader> waitForRemove = new ConcurrentHashMap<>();
 
   // RemovalListener is triggered when an item is removed from the index reader cache.
   // It closes index readers when they are not used anymore.
   // If they are still being used, they are moved to waitForRemove map to wait for other operations' completion.
-  private static final RemovalListener<CacheKey, BSTIndexReader> removalListener = new RemovalListener<CacheKey, BSTIndexReader>() {
+  private static final RemovalListener<CacheKey, BSTIndexReader> removalListener =
+      new RemovalListener<CacheKey, BSTIndexReader>() {
     @Override
     public void onRemoval(RemovalNotification<CacheKey, BSTIndexReader> removal) {
       BSTIndexReader reader = removal.getValue();
@@ -794,21 +822,41 @@ public class TajoPullServerService extends AbstractService {
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
-        waitForRemove.remove(removal.getKey());
       } else {
-        waitForRemove.put(removal.getKey(), reader);
+        // block waitForRemove to be changed while closing
+        synchronized (indexReaderCache) {
+          waitForRemove.put(removal.getKey(), reader);
+        }
       }
     }
   };
 
-  public static FileChunk getFileChunks(String queryId,
+  public static FileChunk getFileChunks(TajoConf conf,
+                                        String queryId,
                                         String ebSeqId,
                                         Path outDir,
                                         String startKey,
                                         String endKey,
                                         boolean last) throws IOException, ExecutionException {
 
-    BSTIndexReader idxReader = indexReaderCache.get(new CacheKey(outDir, queryId, ebSeqId));
+    BSTIndexReader idxReader;
+
+    if (indexReaderCache != null) {
+      CacheKey key = new CacheKey(outDir, queryId, ebSeqId);
+      synchronized (indexReaderCache) {
+        idxReader = waitForRemove.remove(key);
+
+        if (idxReader != null) {
+          // Adding an element to the cache also incurs a removal of an element from the cache.
+          // So, the below line also should be synchronized.
+          indexReaderCache.put(key, idxReader);
+        } else {
+          idxReader = indexReaderCache.get(key);
+        }
+      }
+    } else {
+      idxReader = new BSTIndex(conf).getIndexReader(new Path(outDir, "index"));
+    }
     idxReader.retain();
 
     File data;
