@@ -277,6 +277,10 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2154: Refactor Datum to use new Type implementation. (hyunsik)
+
+    TAJO-2027: Writing Hive UDF integration document. (Jongyoung via hyunsik)
+
     TAJO-2157: EvalNodeSerializer/Deserializer should use new Type 
     implementation. (hyunsik)
 

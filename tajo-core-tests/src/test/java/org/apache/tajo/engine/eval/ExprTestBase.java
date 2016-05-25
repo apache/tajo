@@ -57,11 +57,9 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.text.CSVLineSerDe;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.schema.IdentifierUtil;
-import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
@@ -111,7 +109,7 @@ public class ExprTestBase {
     // load Hive UDFs
     URL hiveUDFURL = ClassLoader.getSystemResource("hiveudf");
     Preconditions.checkNotNull(hiveUDFURL, "hive udf directory is absent.");
-    conf.set(TajoConf.ConfVars.HIVE_UDF_DIR.varname, hiveUDFURL.toString().substring("file:".length()));
+    conf.set(TajoConf.ConfVars.HIVE_UDF_JAR_DIR.varname, hiveUDFURL.toString().substring("file:".length()));
     list.addAll(HiveFunctionLoader.loadHiveUDFs(conf).orElse(new ArrayList<>()));
 
     for (FunctionDesc funcDesc : list) {

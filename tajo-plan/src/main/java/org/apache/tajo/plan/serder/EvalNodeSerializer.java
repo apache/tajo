@@ -364,9 +364,9 @@ public class EvalNodeSerializer
   public static PlanProto.Datum serialize(Datum datum) {
     PlanProto.Datum.Builder builder = PlanProto.Datum.newBuilder();
 
-    builder.setType(datum.type());
+    builder.setType(datum.kind());
 
-    switch (datum.type()) {
+    switch (datum.kind()) {
     case NULL_TYPE:
       break;
     case BOOLEAN:
@@ -409,7 +409,7 @@ public class EvalNodeSerializer
       builder.setActual(serialize(((AnyDatum)datum).getActual()));
       break;
     default:
-      throw new RuntimeException("Unknown data type: " + datum.type().name());
+      throw new RuntimeException("Unknown data type: " + datum.type());
     }
 
     return builder.build();

@@ -18,8 +18,8 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.type.Type;
 import org.junit.Test;
-import org.apache.tajo.common.TajoDataTypes.Type;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -35,35 +35,35 @@ public class TestDatum {
 		x = DatumFactory.createInt4(1);
 		y = DatumFactory.createInt4(2);
 		z = x.plus(y);
-		assertEquals(z.type(), Type.INT4);
+		assertEquals(z.type(), Type.Int4);
 		assertEquals(z.asInt4(),3);
 		z = y.plus(x);
-		assertEquals(z.type(),Type.INT4);
+		assertEquals(z.type(),Type.Int4);
 		assertEquals(z.asInt4(),3);
 		
 		x = DatumFactory.createInt4(1);
 		y = DatumFactory.createInt8(2l);
 		z = x.plus(y);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),3l);
 		z = y.plus(x);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),3l);
 		
 		y = DatumFactory.createFloat4(2.5f);
 		z = x.plus(y);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertTrue(z.asFloat4() == 3.5f);
 		z = y.plus(x);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertEquals(z.asInt4(),3);
 		
 		y = DatumFactory.createFloat8(4.5d);
 		z = x.plus(y);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == 5.5d);
 		z = y.plus(x);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == 5.5d);
 	}
 
@@ -76,34 +76,34 @@ public class TestDatum {
 		x = DatumFactory.createInt4(5);
 		y = DatumFactory.createInt4(2);
 		z = x.minus(y);
-		assertEquals(z.type(),Type.INT4);
+		assertEquals(z.type(),Type.Int4);
 		assertEquals(z.asInt4(),3);
 		z = y.minus(x);
-		assertEquals(z.type(),Type.INT4);
+		assertEquals(z.type(),Type.Int4);
 		assertEquals(z.asInt4(),-3);
 		
 		y = DatumFactory.createInt8(2l);
 		z = x.minus(y);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),3l);
 		z = y.minus(x);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),-3l);
 		
 		y = DatumFactory.createFloat4(2.5f);
 		z = x.minus(y);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertTrue(z.asFloat4() == 2.5f);
 		z = y.minus(x);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertTrue(z.asFloat4() == -2.5f);
 		
 		y = DatumFactory.createFloat8(4.5d);
 		z = x.minus(y);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == 0.5d);
 		z = y.minus(x);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == -0.5d);
 	}
 
@@ -116,34 +116,34 @@ public class TestDatum {
 		x = DatumFactory.createInt4(5);
 		y = DatumFactory.createInt4(2);
 		z = x.multiply(y);
-		assertEquals(z.type(),Type.INT4);
+		assertEquals(z.type(),Type.Int4);
 		assertEquals(z.asInt4(),10);
 		z = y.multiply(x);
-		assertEquals(z.type(),Type.INT4);
+		assertEquals(z.type(),Type.Int4);
 		assertEquals(z.asInt4(),10);
 		
 		y = DatumFactory.createInt8(2l);
 		z = x.multiply(y);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),10l);
 		z = y.multiply(x);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),10l);
 		
 		y = DatumFactory.createFloat4(2.5f);
 		z = x.multiply(y);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertTrue(z.asFloat4() == 12.5f);
 		z = y.multiply(x);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertTrue(z.asFloat4() == 12.5f);
 		
 		y = DatumFactory.createFloat8(4.5d);
 		z = x.multiply(y);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == 22.5d);
 		z = y.multiply(x);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == 22.5d);
 	}
 
@@ -156,34 +156,34 @@ public class TestDatum {
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(3);
 		z = x.divide(y);
-		assertEquals(z.type(), Type.INT4);
+		assertEquals(z.type(), Type.Int4);
 		assertEquals(z.asInt4(),2);
 		z = y.divide(x);
-		assertEquals(z.type(),Type.INT4);
+		assertEquals(z.type(),Type.Int4);
 		assertTrue(z.asInt4() == 0);
 		
 		y = DatumFactory.createInt8(3l);
 		z = x.divide(y);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),2l);
 		z = y.divide(x);
-		assertEquals(z.type(),Type.INT8);
+		assertEquals(z.type(),Type.Int8);
 		assertEquals(z.asInt8(),0l);
 		
 		y = DatumFactory.createFloat4(3f);
 		z = x.divide(y);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertTrue(z.asFloat4() == 2.0f);
 		z = y.divide(x);
-		assertEquals(z.type(),Type.FLOAT4);
+		assertEquals(z.type(),Type.Float4);
 		assertTrue(z.asFloat4() == 0.5f);
 		
 		y = DatumFactory.createFloat8(3d);
 		z = x.divide(y);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == 2.0d);
 		z = y.divide(x);
-		assertEquals(z.type(),Type.FLOAT8);
+		assertEquals(z.type(),Type.Float8);
 		assertTrue(z.asFloat8() == 0.5d);
 	}
 	
@@ -196,28 +196,28 @@ public class TestDatum {
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(3);
 		z = x.equalsTo(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),false);		
 		z = y.equalsTo(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), false);
 		
 		x = DatumFactory.createFloat4(3.27f);
 		y = DatumFactory.createFloat4(3.27f);
 		z = x.equalsTo(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),true);		
 		z = y.equalsTo(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), true);
 		
 		x = DatumFactory.createInt8(123456789012345l);
 		y = DatumFactory.createInt8(123456789012345l);
 		z = x.equalsTo(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),true);		
 		z = y.equalsTo(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), true);
 	}
 	
@@ -230,10 +230,10 @@ public class TestDatum {
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(3);
 		z = x.lessThan(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),false);		
 		z = y.lessThan(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), true);
 	}
 	
@@ -246,19 +246,19 @@ public class TestDatum {
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(3);
 		z = x.lessThanEqual(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),false);		
 		z = y.lessThanEqual(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), true);
 		
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(6);
 		z = x.lessThanEqual(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),true);		
 		z = y.lessThanEqual(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), true);
 	}
 	
@@ -271,19 +271,19 @@ public class TestDatum {
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(3);
 		z = x.greaterThan(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),true);		
 		z = y.greaterThan(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), false);
 		
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(6);
 		z = x.greaterThan(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),false);		
 		z = y.greaterThan(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), false);
 	}
 	
@@ -296,19 +296,19 @@ public class TestDatum {
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(3);
 		z = x.greaterThanEqual(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),true);		
 		z = y.greaterThanEqual(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), false);
 		
 		x = DatumFactory.createInt4(6);
 		y = DatumFactory.createInt4(6);
 		z = x.greaterThanEqual(y);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(),true);		
 		z = y.greaterThanEqual(x);
-		assertEquals(z.type(),Type.BOOLEAN);
+		assertEquals(z.type(),Type.Bool);
 		assertEquals(z.asBool(), true);
 	}
 }

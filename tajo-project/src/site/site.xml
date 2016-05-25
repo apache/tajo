@@ -71,18 +71,33 @@ function addListener(element, type, callback) {
 }
 
 function ga_event_load() {
+        var dn_src_0_11_3 = document.getElementById('tajo-0.11.3-src');
+        var dn_bin_0_11_3 = document.getElementById('tajo-0.11.3-bin');
+        var dn_jdbc_0_11_3 = document.getElementById('tajo-jdbc-0.11.3');
+
+        addListener(dn_src_0_11_3, 'click', function() {
+        ga('send', 'event', 'tajo-0.11.3-src', 'click', 'tajo-0.11.3-src');
+        });
+        addListener(dn_bin_0_11_3, 'click', function() {
+        ga('send', 'event', 'tajo-0.11.3-bin', 'click', 'tajo-0.11.3-bin');
+        });
+        addListener(dn_jdbc_0_11_3, 'click', function() {
+        ga('send', 'event', 'tajo-jdbc-0.11.3', 'click', 'tajo-jdbc-0.11.3');
+        });
+
+
         var dn_src_0_11_2 = document.getElementById('tajo-0.11.2-src');
         var dn_bin_0_11_2 = document.getElementById('tajo-0.11.2-bin');
         var dn_jdbc_0_11_2 = document.getElementById('tajo-jdbc-0.11.2');
 
         addListener(dn_src_0_11_2, 'click', function() {
-          ga('send', 'event', 'tajo-0.11.2-src', 'click', 'tajo-0.11.1-src');
+          ga('send', 'event', 'tajo-0.11.2-src', 'click', 'tajo-0.11.2-src');
         });
         addListener(dn_bin_0_11_2, 'click', function() {
-          ga('send', 'event', 'tajo-0.11.2-bin', 'click', 'tajo-0.11.1-bin');
+          ga('send', 'event', 'tajo-0.11.2-bin', 'click', 'tajo-0.11.2-bin');
         });
         addListener(dn_jdbc_0_11_2, 'click', function() {
-          ga('send', 'event', 'tajo-jdbc-0.11.2', 'click', 'tajo-jdbc-0.11.1');
+          ga('send', 'event', 'tajo-jdbc-0.11.2', 'click', 'tajo-jdbc-0.11.2');
         });
 
 
@@ -185,7 +200,7 @@ window.onload = ga_event_load;
 
     <menu name="Documentation">
       <item name="Devel" href="http://tajo.apache.org/docs/devel/index.html" />
-      <item name="Current (0.11.1)" href="http://tajo.apache.org/docs/current/index.html" />
+      <item name="Current (0.11.3)" href="http://tajo.apache.org/docs/current/index.html" />
     </menu>
 
     <menu name="Contributes">

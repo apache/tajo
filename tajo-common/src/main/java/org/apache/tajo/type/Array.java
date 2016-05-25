@@ -24,7 +24,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type.ARRAY;
 
 public class Array extends TypeParamterizedType {
 
-  public Array(Type elementType) {
+  Array(Type elementType) {
     super(ARRAY, ImmutableList.of(elementType));
   }
 
