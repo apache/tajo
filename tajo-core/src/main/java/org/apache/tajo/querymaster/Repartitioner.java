@@ -275,6 +275,11 @@ public class Repartitioner {
         for (Integer eachIdx : broadcastIndexList) {
           scans[eachIdx].setBroadcastTable(true);
           broadcastScans[index] = scans[eachIdx];
+
+          if (broadcastScans[index].getType() == NodeType.PARTITIONS_SCAN && clonedScans[eachIdx].hasQual()) {
+            broadcastScans[index].setQual(clonedScans[eachIdx].getQual());
+          }
+
           broadcastStats[index] = stats[eachIdx];
           broadcastFragments[index] = fragments[eachIdx];
           index++;
@@ -402,7 +407,8 @@ public class Repartitioner {
       CatalogService catalog = stage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
       TajoConf conf = stage.getContext().getQueryContext().getConf();
 
-      for (ScanNode eachScan: broadcastScans) {
+      for (int i = 0; i < broadcastScans.length; i++) {
+        ScanNode eachScan = broadcastScans[i];
         TableDesc tableDesc = masterContext.getTableDesc(eachScan);
 
         Collection<Fragment> scanFragments = SplitUtil.getSplits(
@@ -472,7 +478,7 @@ public class Repartitioner {
   }
 
   private static void scheduleLeafTasksWithBroadcastTable(TaskSchedulerContext schedulerContext, Stage stage,
-                                                      int baseScanId, ScanNode[] clonedScans)
+                                                          int baseScanId, ScanNode[] clonedScans)
       throws IOException, TajoException {
     ExecutionBlock execBlock = stage.getBlock();
     ScanNode[] scans = execBlock.getScanNodes();

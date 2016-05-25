@@ -26,30 +26,48 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Optional;
 
 /**
  * Fragment for file systems.
  */
 public class FileFragment extends Fragment<Long> {
   private Integer[] diskIds; // disk volume ids
+  private Optional<String> partitionKeys;
 
   public FileFragment(String tableName, Path uri, BlockLocation blockLocation)
       throws IOException {
-    this(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null);
+    this(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null, null);
   }
 
-  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts, Integer[] diskIds) {
+  public FileFragment(String tableName, Path uri, BlockLocation blockLocation, String partitionKeys)
+    throws IOException {
+    this(tableName, uri, blockLocation.getOffset(), blockLocation.getLength(), blockLocation.getHosts(), null,
+      partitionKeys);
+  }
+
+  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts, Integer[] diskIds,
+                      String partitionKeys) {
     super(BuiltinFragmentKinds.FILE, uri.toUri(), tableName, start, start + length, length, hosts);
     this.diskIds = diskIds;
+    this.partitionKeys = Optional.ofNullable(partitionKeys);
   }
 
   // Non splittable
   public FileFragment(String tableName, Path uri, long start, long length, String[] hosts) {
-    this(tableName, uri, start, length, hosts, null);
+    this(tableName, uri, start, length, hosts, null, null);
+  }
+
+  public FileFragment(String tableName, Path uri, long start, long length, String[] hosts, String partitionKeys) {
+    this(tableName, uri, start, length, hosts, null, partitionKeys);
   }
 
   public FileFragment(String fragmentId, Path path, long start, long length) {
-    this(fragmentId, path, start, length, null, null);
+    this(fragmentId, path, start, length, null, null, null);
+  }
+
+  public FileFragment(String fragmentId, Path path, long start, long length, String partitionKeys) {
+    this(fragmentId, path, start, length, null, null, partitionKeys);
   }
 
   /**
@@ -68,6 +86,14 @@ public class FileFragment extends Fragment<Long> {
     this.diskIds = diskIds;
   }
 
+  public Optional<String> getPartitionKeys() {
+    return partitionKeys;
+  }
+
+  public void setPartitionKeys(String partitionKeys) {
+    this.partitionKeys = Optional.ofNullable(partitionKeys);
+  }
+
   public Path getPath() {
     return new Path(uri);
   }
@@ -80,10 +106,20 @@ public class FileFragment extends Fragment<Long> {
   public boolean equals(Object o) {
     if (o instanceof FileFragment) {
       FileFragment t = (FileFragment) o;
-      if (getPath().equals(t.getPath())
+
+      if (partitionKeys.isPresent()) {
+        if (getPath().equals(t.getPath())
+          && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
+          && TUtil.checkEquals(t.getLength(), this.getLength())
+          && partitionKeys.get().equals(t.getPartitionKeys().get())) {
+          return true;
+        }
+      } else {
+        if (getPath().equals(t.getPath())
           && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
           && TUtil.checkEquals(t.getLength(), this.getLength())) {
-        return true;
+          return true;
+        }
       }
     }
     return false;
@@ -98,13 +134,22 @@ public class FileFragment extends Fragment<Long> {
   public Object clone() throws CloneNotSupportedException {
     FileFragment frag = (FileFragment) super.clone();
     frag.diskIds = diskIds;
+    if (partitionKeys.isPresent()) {
+      frag.setPartitionKeys(partitionKeys.get());
+    }
     return frag;
   }
 
   @Override
   public String toString() {
-    return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": "
-    		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
+    if (partitionKeys.isPresent()) {
+      return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": " + getPath()
+        + "\", \"start\": " + this.getStartKey() + ",\"length\": " + getLength()
+        + ",\"partitionKeys\": " + getPartitionKeys().get() + "}" ;
+    } else {
+      return "\"fragment\": {\"id\": \""+ inputSourceId +"\", \"path\": "
+        +getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
         + getLength() + "}" ;
+    }
   }
 }

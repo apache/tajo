@@ -96,7 +96,8 @@ public class PhysicalPlanUtil {
 
     String[] previousPartitionPathNames = null;
     for (FileStatus eachFile: nonZeroLengthFiles) {
-      FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(), null);
+      FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(),
+        null, null);
 
       if (partitionDepth > 0) {
         // finding partition key;
