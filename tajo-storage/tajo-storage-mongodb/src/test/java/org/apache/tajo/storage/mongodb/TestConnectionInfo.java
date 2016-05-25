@@ -39,8 +39,8 @@ public class TestConnectionInfo {
 
         assertEquals(connInfo.mongoDbURI.getURI(),"mongodb://testuser:testpass@localhost:1336/db1");
         assertEquals(connInfo.scheme, "mongodb");
-        asssertEquals(connInfo.host, "localhost");
-            assertEquals(connInfo.port, 1336);
+        assertEquals(connInfo.host, "localhost");
+        assertEquals(connInfo.port, 1336);
         assertEquals(connInfo.dbName, "db1");
         assertEquals(connInfo.user, "testuser");
         assertEquals(connInfo.password, "testpass");
