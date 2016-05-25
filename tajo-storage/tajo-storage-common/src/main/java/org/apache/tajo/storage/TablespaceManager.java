@@ -198,10 +198,12 @@ public class TablespaceManager implements StorageService {
       } else {
         throw new RuntimeException(e);
       }
+    } catch (ClassNotFoundException e) {
+      throw e;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    
+
     return pair;
   }
 
