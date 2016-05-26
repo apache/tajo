@@ -25,12 +25,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.Closeable;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -113,95 +107,4 @@ public class TestColumn {
     Column fromProto = new Column(proto);
     assertEquals(column, fromProto);
   }
-
-	static class TestClose implements Closeable {
-		private boolean closed = false;
-
-		@Override
-		public void close() {
-			closed = true;
-		}
-
-		public boolean isClosed() {
-			return closed;
-		}
-	}
-
-	static final Map<Integer, TestClose> closeList = new ConcurrentHashMap<>();
-	static Random random = new Random(System.currentTimeMillis());
-	static Queue<Integer> keys = new ConcurrentLinkedQueue();
-	static AtomicInteger nextKey = new AtomicInteger(0);
-
-	static class Adder implements Runnable {
-
-		@Override
-		public void run() {
-			try {
-				Thread.sleep(100 + 100 * random.nextInt(10));
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-			int key = nextKey.getAndAdd(1);
-			synchronized (closeList) {
-				closeList.put(key, new TestClose());
-				keys.add(key);
-				System.out.println("Added: " + key);
-			}
-		}
-	}
-
-	static class Remover implements Runnable {
-
-		@Override
-		public void run() {
-			try {
-				Thread.sleep(300);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-			synchronized (closeList) {
-				int key = keys.remove();
-				closeList.remove(key);
-				System.out.println("Removed: " + key);
-			}
-		}
-	}
-
-	static class TestCloser implements Runnable {
-
-		@Override
-		public void run() {
-			List<Integer> removeKeys = new ArrayList<>();
-			synchronized (closeList) {
-				for (Entry<Integer, TestClose> e: closeList.entrySet()) {
-					if (random.nextBoolean()) {
-						e.getValue().close();
-						removeKeys.add(e.getKey());
-					}
-				}
-				for (Integer k : removeKeys) {
-					closeList.remove(k);
-					System.out.println("Closed: " + k);
-				}
-				keys.removeAll(removeKeys);
-			}
-		}
-	}
-
-	@Test
-	public final void testTest() throws InterruptedException {
-		ExecutorService service = Executors.newFixedThreadPool(13);
-		for (int i = 0; i < 10; i++) {
-			service.submit(new Adder());
-		}
-		service.submit(new Remover());
-		service.submit(new Remover());
-		service.submit(new Remover());
-
-		ScheduledExecutorService schedule = Executors.newSingleThreadScheduledExecutor();
-		TestCloser closer = new TestCloser();
-		schedule.scheduleAtFixedRate(closer, 100, 100, TimeUnit.MILLISECONDS);
-
-		service.awaitTermination(10, TimeUnit.SECONDS);
-	}
 }
