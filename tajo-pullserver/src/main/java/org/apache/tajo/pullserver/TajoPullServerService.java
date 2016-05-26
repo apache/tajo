@@ -697,7 +697,6 @@ public class TajoPullServerService extends AbstractService {
       String ebSeqId = Integer.toString(ebId.getId());
       List<CacheKey> removed = new ArrayList<>();
       synchronized (indexReaderCache) {
-        LOG.info("Clear cache: " + indexReaderCache.size());
         for (Entry<CacheKey, BSTIndexReader> e : indexReaderCache.asMap().entrySet()) {
           CacheKey key = e.getKey();
           if (key.queryId.equals(queryId) && key.ebSeqId.equals(ebSeqId)) {
@@ -709,7 +708,6 @@ public class TajoPullServerService extends AbstractService {
       }
       removed.clear();
       synchronized (readerCloseBuffer) {
-        LOG.info("Clear wait list: " + readerCloseBuffer.size());
         for (Entry<CacheKey, BSTIndexReader> e : readerCloseBuffer.entrySet()) {
           CacheKey key = e.getKey();
           if (key.queryId.equals(queryId) && key.ebSeqId.equals(ebSeqId)) {
@@ -835,7 +833,7 @@ public class TajoPullServerService extends AbstractService {
           throw new RuntimeException(e);
         }
       } else {
-        // block readerCloseBuffer to be changed while closing
+        // block changing the buffer while closing index readers in the buffer
         synchronized (indexReaderCache) {
           readerCloseBuffer.put(removal.getKey(), reader);
         }
@@ -859,7 +857,7 @@ public class TajoPullServerService extends AbstractService {
         idxReader = readerCloseBuffer.remove(key);
 
         if (idxReader != null) {
-          // Adding an element to the cache also incurs a removal of an element from the cache.
+          // Adding an element to the cache also can incur a removal of an element from the cache.
           // So, the below line also should be synchronized.
           indexReaderCache.put(key, idxReader);
         } else {
