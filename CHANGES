@@ -151,6 +151,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2163: No error message is showed when query execution failed. (wonjun)
+
     TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
 
     TAJO-2151: Fix broken CI. (jihoon)
