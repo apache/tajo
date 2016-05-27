@@ -106,6 +106,10 @@ public class SequenceFileScanner extends FileScanner {
     }
 
     String delim  = meta.getProperty(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    if (delim == null || delim.isEmpty()) {
+      delim = meta.getProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    }
+
     this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
     this.start = fragment.getStartKey();
