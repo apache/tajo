@@ -49,7 +49,7 @@ public class TestConnectionInfo {
 
     @Test
     public final void testGetConnectionInfoType2() {
-
+        //Create a connection info object
         ConnectionInfo connInfo = ConnectionInfo.fromURI("mongodb://localhost:1336/db1?table=tb1&user=testuser&password=testpass&TZ=GMT+9");
         assertEquals(connInfo.scheme, "mongodb");
         assertEquals(connInfo.host, "localhost");
