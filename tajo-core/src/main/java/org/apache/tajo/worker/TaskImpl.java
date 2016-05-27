@@ -795,7 +795,7 @@ public class TaskImpl implements Task {
             executionBlockContext.getLocalDirAllocator().getLocalPathToRead(outputPath.toString(), conf));
 
         try {
-          FileChunk chunk = TajoPullServerService.getFileChunks(queryId, sid, path, startKey, endKey, last);
+          FileChunk chunk = TajoPullServerService.getFileChunks(conf, queryId, sid, path, startKey, endKey, last);
           chunkList.add(chunk);
         } catch (Throwable t) {
           LOG.error(t.getMessage(), t);

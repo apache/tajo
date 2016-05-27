@@ -1,6 +1,13 @@
 Tajo Change Log 
 
-Release 0.11.3 - unreleased
+Release 0.11.4 - unreleased
+
+  BUG FIXES
+
+    TAJO-2162: Internal error is occured while running query including 'order by'. 
+    (jihoon)
+
+Release 0.11.3 - released
 
   NEW FEATURES
 
