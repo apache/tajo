@@ -86,10 +86,7 @@ public class FileFragment extends Fragment<Long> {
   }
 
   public String getPartitionKeys() {
-    if (partitionKeys == null) {
-      this.partitionKeys = "";
-    }
-    return partitionKeys;
+    return this.partitionKeys;
   }
 
   public void setPartitionKeys(String partitionKeys) {
