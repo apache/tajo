@@ -20,28 +20,28 @@ package org.apache.tajo.engine.function.geoip;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.IPconvertUtil;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
-import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
 @Description(
-    functionName = "ipstr_to_int",
-    description = "Convert an ipv4 address string to INT4 type",
-    example = "> SELECT ipstr_to_int('1.2.3.4');\n"
-        + "16909060",
-    returnType = INT4,
-    paramTypes = {@ParamTypes(paramTypes = {TEXT})}
+    functionName = "bin_to_ipstr",
+    description = "Convert a binary type value to ipv4 string",
+    example = "> SELECT bin_to_ipstr(ipstr_to_blob('1.2.3.4'));\n"
+        + "1.2.3.4",
+    returnType = TEXT,
+    paramTypes = {@ParamTypes(paramTypes = {BLOB}),
+                  @ParamTypes(paramTypes = {BINARY})}
 )
-public class IPstrToInt extends GeneralFunction {
-  public IPstrToInt() {
-    super(new Column[] { new Column("ipstring", TEXT)});
+public class BlobToIPstr extends GeneralFunction {
+  public BlobToIPstr() {
+    super(new Column[] { new Column("ip_binvalue", BLOB)});
   }
 
   @Override
@@ -50,8 +50,8 @@ public class IPstrToInt extends GeneralFunction {
       return NullDatum.get();
     }
 
-    String ipstr = params.getText(0);
+    byte [] byteAddr = params.getBytes(0);
 
-    return new Int4Datum(IPconvertUtil.ipstr2int(ipstr));
+    return new TextDatum(IPconvertUtil.bytes2ipstr(byteAddr));
   }
 }

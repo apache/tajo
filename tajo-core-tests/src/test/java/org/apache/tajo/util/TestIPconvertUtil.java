@@ -21,16 +21,28 @@ package org.apache.tajo.util;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
 
-public class TestGeoIPUtil {
+public class TestIPconvertUtil {
   @Test
-  public void testConvertMethods() {
-    assertEquals(16909060, GeoIPUtil.ipstr2int("1.2.3.4"));
-    assertEquals(134744072, GeoIPUtil.ipstr2int("8.8.8.8"));
-    assertEquals(-1062731699, GeoIPUtil.ipstr2int("192.168.0.77"));
+  public void testIntConvertMethods() {
+    assertEquals(16909060, IPconvertUtil.ipstr2int("1.2.3.4"));
+    assertEquals(-1062731699, IPconvertUtil.ipstr2int("192.168.0.77"));
 
-    assertEquals("1.2.3.4", GeoIPUtil.int2ipstr(16909060));
-    assertEquals("8.8.8.8", GeoIPUtil.int2ipstr(134744072));
-    assertEquals("192.168.0.77", GeoIPUtil.int2ipstr(-1062731699));
+    assertEquals("1.2.3.4", IPconvertUtil.int2ipstr(16909060));
+    assertEquals("192.168.0.77", IPconvertUtil.int2ipstr(-1062731699));
+  }
+
+  @Test
+  public void testBytesConvertMethods() {
+    byte [] addr = new byte[4];
+
+    addr[0] = 1; addr[1] = 2; addr[2] = 3; addr[3] = 4;
+    assertArrayEquals(addr, IPconvertUtil.ipstr2bytes("1.2.3.4"));
+    assertEquals("1.2.3.4", IPconvertUtil.bytes2ipstr(addr));
+
+    addr[0] = (byte)192; addr[1] = (byte)168; addr[2] = 0; addr[3] = 77;
+    assertArrayEquals(addr, IPconvertUtil.ipstr2bytes("192.168.0.77"));
+    assertEquals("192.168.0.77", IPconvertUtil.bytes2ipstr(addr));
   }
 }

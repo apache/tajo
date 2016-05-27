@@ -20,14 +20,13 @@ package org.apache.tajo.engine.function.geoip;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.GeoIPUtil;
+import org.apache.tajo.util.IPconvertUtil;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.INT4;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
@@ -53,6 +52,6 @@ public class IntToIPstr extends GeneralFunction {
 
     int ipaddr = params.getInt4(0);
 
-    return new TextDatum(GeoIPUtil.int2ipstr(ipaddr));
+    return new TextDatum(IPconvertUtil.int2ipstr(ipaddr));
   }
 }

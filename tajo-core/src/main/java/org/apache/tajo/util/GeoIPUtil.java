@@ -27,7 +27,6 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 
 public class GeoIPUtil {
   private static final Log LOG = LogFactory.getLog(GeoIPUtil.class);
@@ -66,41 +65,10 @@ public class GeoIPUtil {
     try {
       addr = InetAddress.getByAddress(host);
     } catch (UnknownHostException e) {
-      LOG.error("Unknown host: "+host);
+      LOG.error("Unknown host: " + IPconvertUtil.bytes2ipstr(host));
       return "";
     }
 
     return lookup.getCountry(addr).getCode();
-  }
-
-  public static int ipstr2int(String host) {
-    String [] ips = host.split("\\.");
-
-    if (ips.length != 4) {
-      LOG.error(host+" is not valid ip string");
-      return 0;
-    }
-
-    Integer [] ipAddr = Arrays.stream(ips).map(Integer::parseInt).toArray(Integer[]::new);
-
-    int address  = ipAddr[3] & 0xFF;
-    address |= ((ipAddr[2] << 8) & 0xFF00);
-    address |= ((ipAddr[1] << 16) & 0xFF0000);
-    address |= ((ipAddr[0] << 24) & 0xFF000000);
-
-    return address;
-  }
-
-  public static String int2ipstr(int addr) {
-    StringBuilder host = new StringBuilder();
-
-    int [] intAddr = new int [4];
-
-    for (int i=3; i>=0; i--) {
-      intAddr[i] = addr & 0xFF;
-      addr >>= 8;
-    }
-
-    return String.format("%d.%d.%d.%d", intAddr[0], intAddr[1], intAddr[2], intAddr[3]);
   }
 }
