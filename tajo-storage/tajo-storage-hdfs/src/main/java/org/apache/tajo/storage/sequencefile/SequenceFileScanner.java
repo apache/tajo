@@ -41,6 +41,7 @@ import org.apache.tajo.storage.text.ByteBufLineReader;
 import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
 
@@ -120,6 +121,11 @@ public class SequenceFileScanner extends FileScanner {
     }
 
     outTuple = new VTuple(targets.length);
+
+    KeyValueSet options = new KeyValueSet();
+    options.set(StorageConstants.TEXT_DELIMITER, delim);
+    meta.setPropertySet(options);
+
     deserializer = DelimitedTextFile.getLineSerde(meta).createDeserializer(schema, meta, targets);
     deserializer.init();
 
