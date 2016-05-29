@@ -184,27 +184,8 @@ public class TablespaceManager implements StorageService {
     JSONObject storageDesc = (JSONObject) entry.getValue();
     String handlerClass = (String) storageDesc.get(KEY_STORAGE_HANDLER);
 
-    Pair<String, Class<? extends Tablespace>> pair = null;
-    try {
-      pair = new Pair<>(
-        storageType, (Class<? extends Tablespace>) Class.forName(handlerClass));
-    } catch (NoClassDefFoundError e) {
-      // If the version of hadoop is less than 2.6.0, hadoop doesn't include aws dependencies because it doesn't provide
-      // S3AFileSystem. In this case, tajo never uses S3Tablespace.
-      if (e.getMessage().equals("com/amazonaws/services/s3/AmazonS3")) {
-        LOG.warn(e);
-        handlerClass = "org.apache.tajo.storage.FileTablespace";
-        pair = new Pair<>(storageType, (Class<? extends Tablespace>) Class.forName(handlerClass));
-      } else {
-        throw new RuntimeException(e);
-      }
-    } catch (ClassNotFoundException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-
-    return pair;
+    return new Pair<>(
+            storageType, (Class<? extends Tablespace>) Class.forName(handlerClass));
   }
 
   private void loadTableSpaces(JSONObject json, boolean override) {
