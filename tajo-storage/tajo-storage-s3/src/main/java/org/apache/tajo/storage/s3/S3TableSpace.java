@@ -40,18 +40,18 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.storage.FileTablespace;
 
 import net.minidev.json.JSONObject;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.nullToEmpty;
 import static org.apache.tajo.storage.s3.TajoS3Constants.*;
 
 public class S3TableSpace extends FileTablespace {
   private final static Log LOG = LogFactory.getLog(S3TableSpace.class);
 
   private AmazonS3 s3;
+  private boolean s3Enabled;
   private int maxKeys;
 
   public S3TableSpace(String spaceName, URI uri, JSONObject config) {
@@ -62,36 +62,47 @@ public class S3TableSpace extends FileTablespace {
   public void init(TajoConf tajoConf) throws IOException {
     super.init(tajoConf);
 
-    maxKeys = conf.getInt(MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
-    int maxErrorRetries = conf.getInt(MAX_ERROR_RETRIES, DEFAULT_MAX_ERROR_RETRIES);
-    boolean sslEnabled = conf.getBoolean(SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
+    try {
+      maxKeys = conf.getInt(MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
+      int maxErrorRetries = conf.getInt(MAX_ERROR_RETRIES, DEFAULT_MAX_ERROR_RETRIES);
+      boolean sslEnabled = conf.getBoolean(SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
 
-    int connectTimeout = conf.getInt(ESTABLISH_TIMEOUT, DEFAULT_ESTABLISH_TIMEOUT);
-    int socketTimeout = conf.getInt(SOCKET_TIMEOUT, DEFAULT_SOCKET_TIMEOUT);
-    int maxConnections = conf.getInt(MAXIMUM_CONNECTIONS, DEFAULT_MAXIMUM_CONNECTIONS);
+      int connectTimeout = conf.getInt(ESTABLISH_TIMEOUT, DEFAULT_ESTABLISH_TIMEOUT);
+      int socketTimeout = conf.getInt(SOCKET_TIMEOUT, DEFAULT_SOCKET_TIMEOUT);
+      int maxConnections = conf.getInt(MAXIMUM_CONNECTIONS, DEFAULT_MAXIMUM_CONNECTIONS);
 
-    ClientConfiguration configuration = new ClientConfiguration()
-      .withMaxErrorRetry(maxErrorRetries)
-      .withProtocol(sslEnabled ? Protocol.HTTPS : Protocol.HTTP)
-      .withConnectionTimeout(connectTimeout)
-      .withSocketTimeout(socketTimeout)
-      .withMaxConnections(maxConnections);
+      ClientConfiguration configuration = new ClientConfiguration()
+        .withMaxErrorRetry(maxErrorRetries)
+        .withProtocol(sslEnabled ? Protocol.HTTPS : Protocol.HTTP)
+        .withConnectionTimeout(connectTimeout)
+        .withSocketTimeout(socketTimeout)
+        .withMaxConnections(maxConnections);
 
-    this.s3 = createAmazonS3Client(uri, conf, configuration);
+      this.s3 = createAmazonS3Client(uri, conf, configuration);
 
-    if (s3 != null) {
-      String endPoint = conf.getTrimmed(ENDPOINT,"");
-      try {
-        if (!endPoint.isEmpty()) {
-          s3.setEndpoint(endPoint);
+      if (s3 != null) {
+        String endPoint = conf.getTrimmed(ENDPOINT,"");
+        try {
+          if (!endPoint.isEmpty()) {
+            s3.setEndpoint(endPoint);
+          }
+        } catch (IllegalArgumentException e) {
+          String msg = "Incorrect endpoint: "  + e.getMessage();
+          LOG.error(msg);
+          throw new IllegalArgumentException(msg, e);
         }
-      } catch (IllegalArgumentException e) {
-        String msg = "Incorrect endpoint: "  + e.getMessage();
-        LOG.error(msg);
-        throw new IllegalArgumentException(msg, e);
+
+        LOG.info("Amazon3Client is initialized.");
       }
 
-      LOG.info("Amazon3Client is initialized.");
+      s3Enabled = true;
+    } catch (NoClassDefFoundError defFoundError) {
+      // If the version of hadoop is less than 2.6.0, hadoop doesn't include aws dependencies because it doesn't provide
+      // S3AFileSystem. In this case, tajo never uses aws s3 api directly.
+      LOG.warn(defFoundError);
+      s3Enabled = false;
+    } catch (Exception e) {
+      throw new TajoInternalError(e);
     }
   }
 
@@ -119,55 +130,60 @@ public class S3TableSpace extends FileTablespace {
 
   @Override
   public long calculateSize(Path path) throws IOException {
-    String key = keyFromPath(path);
-
-    final FileStatus fileStatus =  fs.getFileStatus(path);
     long totalBucketSize = 0L;
 
-    if (fileStatus.isDirectory()) {
-      if (!key.isEmpty()) {
-        key = key + "/";
-      }
+    if (s3Enabled) {
+      String key = pathToKey(path);
 
-      ListObjectsRequest request = new ListObjectsRequest();
-      request.setBucketName(uri.getHost());
-      request.setPrefix(key);
-      request.setMaxKeys(maxKeys);
+      final FileStatus fileStatus =  fs.getFileStatus(path);
 
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("listStatus: doing listObjects for directory " + key);
-      }
+      if (fileStatus.isDirectory()) {
+        if (!key.isEmpty()) {
+          key = key + "/";
+        }
 
-      ObjectListing objects = s3.listObjects(request);
+        ListObjectsRequest request = new ListObjectsRequest();
+        request.setBucketName(uri.getHost());
+        request.setPrefix(key);
+        request.setMaxKeys(maxKeys);
 
-      while (true) {
-        for (S3ObjectSummary summary : objects.getObjectSummaries()) {
-          Path keyPath = keyToPath(summary.getKey()).makeQualified(uri, fs.getWorkingDirectory());
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("listStatus: doing listObjects for directory " + key);
+        }
 
-          // Skip over keys that are ourselves and old S3N _$folder$ files
-          if (keyPath.equals(path) || summary.getKey().endsWith(S3N_FOLDER_SUFFIX)) {
-            if (LOG.isDebugEnabled()) {
-              LOG.debug("Ignoring: " + keyPath);
+        ObjectListing objects = s3.listObjects(request);
+
+        while (true) {
+          for (S3ObjectSummary summary : objects.getObjectSummaries()) {
+            Path keyPath = keyToPath(summary.getKey()).makeQualified(uri, fs.getWorkingDirectory());
+
+            // Skip over keys that are ourselves and old S3N _$folder$ files
+            if (keyPath.equals(path) || summary.getKey().endsWith(S3N_FOLDER_SUFFIX)) {
+              if (LOG.isDebugEnabled()) {
+                LOG.debug("Ignoring: " + keyPath);
+              }
+              continue;
             }
-            continue;
+
+            if (!objectRepresentsDirectory(summary.getKey(), summary.getSize())) {
+              totalBucketSize += summary.getSize();
+            }
           }
 
-          if (!objectRepresentsDirectory(summary.getKey(), summary.getSize())) {
-            totalBucketSize += summary.getSize();
+          if (objects.isTruncated()) {
+            if (LOG.isDebugEnabled()) {
+              LOG.debug("listStatus: list truncated - getting next batch");
+            }
+            objects = s3.listNextBatchOfObjects(objects);
+          } else {
+            break;
           }
         }
-
-        if (objects.isTruncated()) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("listStatus: list truncated - getting next batch");
-          }
-          objects = s3.listNextBatchOfObjects(objects);
-        } else {
-          break;
-        }
+      } else {
+        return fileStatus.getLen();
       }
     } else {
-      return fileStatus.getLen();
+      totalBucketSize = fs.getContentSummary(path).getLength();
     }
 
     return totalBucketSize;
@@ -181,17 +197,18 @@ public class S3TableSpace extends FileTablespace {
     return new Path("/" + key);
   }
 
-  private String keyFromPath(Path path)
-  {
-    checkArgument(path.isAbsolute(), "Path is not absolute: %s", path);
-    String key = nullToEmpty(path.toUri().getPath());
-    if (key.startsWith("/")) {
-      key = key.substring(1);
+  /* Turns a path (relative or otherwise) into an S3 key
+   */
+  private String pathToKey(Path path) {
+    if (!path.isAbsolute()) {
+      path = new Path(fs.getWorkingDirectory(), path);
     }
-    if (key.endsWith("/")) {
-      key = key.substring(0, key.length() - 1);
+
+    if (path.toUri().getScheme() != null && path.toUri().getPath().isEmpty()) {
+      return "";
     }
-    return key;
+
+    return path.toUri().getPath().substring(1);
   }
 
   @VisibleForTesting
