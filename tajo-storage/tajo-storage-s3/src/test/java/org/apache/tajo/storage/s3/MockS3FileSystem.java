@@ -21,6 +21,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.util.Progressable;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.UnsupportedException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -35,7 +37,6 @@ public class MockS3FileSystem extends FileSystem {
     setConf(conf);
     this.uri = URI.create(uri.getScheme() + "://" + uri.getAuthority());
   }
-
 
   /**
    * Return the protocol scheme for the FileSystem.
@@ -60,18 +61,18 @@ public class MockS3FileSystem extends FileSystem {
 
   @Override
   public FSDataInputStream open(Path f, int bufferSize) throws IOException {
-    return null;
+    throw new TajoInternalError(new UnsupportedException());
   }
 
   @Override
   public FSDataOutputStream create(Path f, FsPermission permission, boolean overwrite, int bufferSize,
     short replication, long blockSize, Progressable progress) throws IOException {
-    return null;
+    throw new TajoInternalError(new UnsupportedException());
   }
 
   @Override
   public FSDataOutputStream append(Path f, int bufferSize, Progressable progress) throws IOException {
-    return null;
+    throw new TajoInternalError(new UnsupportedException());
   }
 
   @Override
@@ -95,7 +96,7 @@ public class MockS3FileSystem extends FileSystem {
 
   @Override
   public Path getWorkingDirectory() {
-    return null;
+    return new Path(uri);
   }
 
   @Override
@@ -110,7 +111,7 @@ public class MockS3FileSystem extends FileSystem {
       || f.equals(new Path(TestS3TableSpace.S3A_URI, "test"))) {
       return new FileStatus(0, true, 1, 0, 0, f);
     } else {
-      return null;
+      throw new TajoInternalError(new UnsupportedException());
     }
   }
 }
