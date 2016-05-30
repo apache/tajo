@@ -107,7 +107,6 @@ public class S3TableSpace extends FileTablespace {
         if ((proxyUsername == null) != (proxyPassword == null)) {
           String msg = "Proxy error: " + PROXY_USERNAME + " or " + PROXY_PASSWORD + " set without the other.";
           LOG.error(msg);
-          throw new IllegalArgumentException(msg);
         }
         awsConf.setProxyUsername(proxyUsername);
         awsConf.setProxyPassword(proxyPassword);
@@ -121,7 +120,6 @@ public class S3TableSpace extends FileTablespace {
       } else if (proxyPort >= 0) {
         String msg = "Proxy error: " + PROXY_PORT + " set without " + PROXY_HOST;
         LOG.error(msg);
-        throw new IllegalArgumentException(msg);
       }
 
       s3 = new AmazonS3Client(credentials, awsConf);
@@ -132,16 +130,15 @@ public class S3TableSpace extends FileTablespace {
         } catch (IllegalArgumentException e) {
           String msg = "Incorrect endpoint: "  + e.getMessage();
           LOG.error(msg);
-          throw new IllegalArgumentException(msg, e);
         }
       }
 
       maxKeys = conf.getInt(MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
       s3Enabled = true;
-    } catch (NoClassDefFoundError defFoundError) {
+    } catch (NoClassDefFoundError e) {
       // If the version of hadoop is less than 2.6.0, hadoop doesn't include aws dependencies because it doesn't provide
       // S3AFileSystem. In this case, tajo never uses aws s3 api directly.
-      LOG.warn(defFoundError);
+      LOG.warn(e);
       s3Enabled = false;
     } catch (Exception e) {
       throw new TajoInternalError(e);
