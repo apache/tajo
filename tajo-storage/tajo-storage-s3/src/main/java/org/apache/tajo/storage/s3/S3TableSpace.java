@@ -23,11 +23,7 @@ import java.net.URI;
 
 import com.amazonaws.ClientConfiguration;
 import com.amazonaws.Protocol;
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.auth.InstanceProfileCredentialsProvider;
-import com.amazonaws.internal.StaticCredentialsProvider;
+import com.amazonaws.auth.*;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
@@ -36,7 +32,6 @@ import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.conf.TajoConf;
@@ -63,37 +58,91 @@ public class S3TableSpace extends FileTablespace {
     super.init(tajoConf);
 
     try {
-      maxKeys = conf.getInt(MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
-      int maxErrorRetries = conf.getInt(MAX_ERROR_RETRIES, DEFAULT_MAX_ERROR_RETRIES);
-      boolean sslEnabled = conf.getBoolean(SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
+      // Try to get our credentials or just connect anonymously
+      String accessKey = conf.get(ACCESS_KEY, null);
+      String secretKey = conf.get(SECRET_KEY, null);
 
-      int connectTimeout = conf.getInt(ESTABLISH_TIMEOUT, DEFAULT_ESTABLISH_TIMEOUT);
-      int socketTimeout = conf.getInt(SOCKET_TIMEOUT, DEFAULT_SOCKET_TIMEOUT);
-      int maxConnections = conf.getInt(MAXIMUM_CONNECTIONS, DEFAULT_MAXIMUM_CONNECTIONS);
+      String userInfo = uri.getUserInfo();
+      if (userInfo != null) {
+        int index = userInfo.indexOf(':');
+        if (index != -1) {
+          accessKey = userInfo.substring(0, index);
+          secretKey = userInfo.substring(index + 1);
+        } else {
+          accessKey = userInfo;
+        }
+      }
 
-      ClientConfiguration configuration = new ClientConfiguration()
-        .withMaxErrorRetry(maxErrorRetries)
-        .withProtocol(sslEnabled ? Protocol.HTTPS : Protocol.HTTP)
-        .withConnectionTimeout(connectTimeout)
-        .withSocketTimeout(socketTimeout)
-        .withMaxConnections(maxConnections);
+      AWSCredentialsProviderChain credentials = new AWSCredentialsProviderChain(
+        new BasicAWSCredentialsProvider(accessKey, secretKey),
+        new InstanceProfileCredentialsProvider(),
+        new AnonymousAWSCredentialsProvider()
+      );
 
-      this.s3 = createAmazonS3Client(uri, conf, configuration);
+      ClientConfiguration awsConf = new ClientConfiguration();
+      awsConf.setMaxConnections(conf.getInt(MAXIMUM_CONNECTIONS,
+        DEFAULT_MAXIMUM_CONNECTIONS));
+      boolean secureConnections = conf.getBoolean(SECURE_CONNECTIONS,
+        DEFAULT_SECURE_CONNECTIONS);
+      awsConf.setProtocol(secureConnections ?  Protocol.HTTPS : Protocol.HTTP);
+      awsConf.setMaxErrorRetry(conf.getInt(MAX_ERROR_RETRIES,
+        DEFAULT_MAX_ERROR_RETRIES));
+      awsConf.setConnectionTimeout(conf.getInt(ESTABLISH_TIMEOUT,
+        DEFAULT_ESTABLISH_TIMEOUT));
+      awsConf.setSocketTimeout(conf.getInt(SOCKET_TIMEOUT,
+        DEFAULT_SOCKET_TIMEOUT));
 
-      if (s3 != null) {
-        String endPoint = conf.getTrimmed(ENDPOINT,"");
-        try {
-          if (!endPoint.isEmpty()) {
-            s3.setEndpoint(endPoint);
+      String proxyHost = conf.getTrimmed(PROXY_HOST,"");
+      int proxyPort = conf.getInt(PROXY_PORT, -1);
+      if (!proxyHost.isEmpty()) {
+        awsConf.setProxyHost(proxyHost);
+        if (proxyPort >= 0) {
+          awsConf.setProxyPort(proxyPort);
+        } else {
+          if (secureConnections) {
+            LOG.warn("Proxy host set without port. Using HTTPS default 443");
+            awsConf.setProxyPort(443);
+          } else {
+            LOG.warn("Proxy host set without port. Using HTTP default 80");
+            awsConf.setProxyPort(80);
           }
+        }
+        String proxyUsername = conf.getTrimmed(PROXY_USERNAME);
+        String proxyPassword = conf.getTrimmed(PROXY_PASSWORD);
+        if ((proxyUsername == null) != (proxyPassword == null)) {
+          String msg = "Proxy error: " + PROXY_USERNAME + " or " +
+            PROXY_PASSWORD + " set without the other.";
+          LOG.error(msg);
+          throw new IllegalArgumentException(msg);
+        }
+        awsConf.setProxyUsername(proxyUsername);
+        awsConf.setProxyPassword(proxyPassword);
+        awsConf.setProxyDomain(conf.getTrimmed(PROXY_DOMAIN));
+        awsConf.setProxyWorkstation(conf.getTrimmed(PROXY_WORKSTATION));
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(String.format("Using proxy server %s:%d as user %s with password %s on domain %s as workstation " +
+            "%s", awsConf.getProxyHost(), awsConf.getProxyPort(), awsConf.getProxyUsername(),
+            awsConf.getProxyPassword(), awsConf.getProxyDomain(), awsConf.getProxyWorkstation()));
+        }
+      } else if (proxyPort >= 0) {
+        String msg = "Proxy error: " + PROXY_PORT + " set without " + PROXY_HOST;
+        LOG.error(msg);
+        throw new IllegalArgumentException(msg);
+      }
+
+      s3 = new AmazonS3Client(credentials, awsConf);
+      String endPoint = conf.getTrimmed(ENDPOINT,"");
+      if (!endPoint.isEmpty()) {
+        try {
+          s3.setEndpoint(endPoint);
         } catch (IllegalArgumentException e) {
           String msg = "Incorrect endpoint: "  + e.getMessage();
           LOG.error(msg);
           throw new IllegalArgumentException(msg, e);
         }
-
-        LOG.info("Amazon3Client is initialized.");
       }
+
+      maxKeys = conf.getInt(MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
 
       s3Enabled = true;
     } catch (NoClassDefFoundError defFoundError) {
@@ -104,28 +153,6 @@ public class S3TableSpace extends FileTablespace {
     } catch (Exception e) {
       throw new TajoInternalError(e);
     }
-  }
-
-  private AmazonS3Client createAmazonS3Client(URI uri, Configuration hadoopConfig, ClientConfiguration clientConfig) {
-    AWSCredentialsProvider credentials = getAwsCredentialsProvider(uri, hadoopConfig);
-    AmazonS3Client client = new AmazonS3Client(credentials, clientConfig);
-    return client;
-  }
-
-  private AWSCredentialsProvider getAwsCredentialsProvider(URI uri, Configuration conf) {
-    // first try credentials from URI or static properties
-    try {
-      return new StaticCredentialsProvider(getAwsCredentials(uri, conf));
-    } catch (IllegalArgumentException ignored) {
-    }
-
-    return new InstanceProfileCredentialsProvider();
-  }
-
-  private static AWSCredentials getAwsCredentials(URI uri, Configuration conf) {
-    TajoS3Credentials credentials = new TajoS3Credentials();
-    credentials.initialize(uri, conf);
-    return new BasicAWSCredentials(credentials.getAccessKey(), credentials.getSecretAccessKey());
   }
 
   /**

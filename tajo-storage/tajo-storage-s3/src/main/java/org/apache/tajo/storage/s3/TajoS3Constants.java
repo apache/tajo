@@ -58,4 +58,12 @@ public class TajoS3Constants {
 
   public static final String S3N_FOLDER_SUFFIX = "_$folder$";
 
+  //connect to s3 through a proxy server?
+  public static final String PROXY_HOST = "fs.s3a.proxy.host";
+  public static final String PROXY_PORT = "fs.s3a.proxy.port";
+  public static final String PROXY_USERNAME = "fs.s3a.proxy.username";
+  public static final String PROXY_PASSWORD = "fs.s3a.proxy.password";
+  public static final String PROXY_DOMAIN = "fs.s3a.proxy.domain";
+  public static final String PROXY_WORKSTATION = "fs.s3a.proxy.workstation";
+
 }
