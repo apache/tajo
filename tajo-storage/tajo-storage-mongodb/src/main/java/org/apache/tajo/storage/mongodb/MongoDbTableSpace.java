@@ -46,6 +46,10 @@ import java.util.Optional;
 public class MongoDbTableSpace extends Tablespace {
 
 
+
+    static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, false);
+    static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
+
     public MongoDbTableSpace(String name, URI uri, JSONObject config) {
         super(name, uri, config);
     }
@@ -74,12 +78,12 @@ public class MongoDbTableSpace extends Tablespace {
 
     @Override
     public StorageProperty getProperty() {
-        return null;
+        return STORAGE_PROPERTY;
     }
 
     @Override
     public FormatProperty getFormatProperty(TableMeta meta) {
-        return null;
+        return FORMAT_PROPERTY;
     }
 
     @Override
