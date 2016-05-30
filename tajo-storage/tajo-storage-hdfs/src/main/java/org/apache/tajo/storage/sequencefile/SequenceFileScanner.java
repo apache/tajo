@@ -41,6 +41,7 @@ import org.apache.tajo.storage.text.ByteBufLineReader;
 import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
 
@@ -104,12 +105,15 @@ public class SequenceFileScanner extends FileScanner {
       nullChars = nullCharacters.getBytes();
     }
 
-    String delim  = meta.getProperty(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    if (delim == null || delim.isEmpty()) {
-      delim = meta.getProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    }
-    meta.getPropertySet().set(StorageConstants.TEXT_DELIMITER, delim);
 
+    // Set value of non-deprecated key for CSVLineSerDe::getFieldDelimiter.
+    KeyValueSet keyValueSet = meta.getPropertySet();
+    if (!keyValueSet.containsKey(StorageConstants.TEXT_DELIMITER)
+      && keyValueSet.containsKey(StorageConstants.SEQUENCEFILE_DELIMITER)) {
+      keyValueSet.set(StorageConstants.TEXT_DELIMITER, meta.getProperty(StorageConstants.SEQUENCEFILE_DELIMITER));
+    }
+
+    String delim  = meta.getProperty(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
     this.start = fragment.getStartKey();
