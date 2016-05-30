@@ -106,7 +106,7 @@ public class SequenceFileScanner extends FileScanner {
     }
 
 
-    // Set value of non-deprecated key for CSVLineSerDe::getFieldDelimiter.
+    // Set value of non-deprecated key for compatibility. It will be used at CSVLineSerDe::getFieldDelimiter.
     KeyValueSet keyValueSet = meta.getPropertySet();
     if (!keyValueSet.containsKey(StorageConstants.TEXT_DELIMITER)
       && keyValueSet.containsKey(StorageConstants.SEQUENCEFILE_DELIMITER)) {
