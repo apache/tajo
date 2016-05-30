@@ -24,6 +24,10 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import org.apache.commons.lang.StringUtils;
 
+/**
+ * Borrow from org.apache.hadoop.fs.s3a.BasicAWSCredentialsProvider.
+ *
+ */
 public class BasicAWSCredentialsProvider implements AWSCredentialsProvider {
   private final String accessKey;
   private final String secretKey;
