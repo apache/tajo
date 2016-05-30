@@ -246,6 +246,13 @@ public class FileTablespace extends Tablespace {
     return tablets;
   }
 
+  /**
+   * Calculate the total size of all files in the indicated Path
+   *
+   * @param path to use
+   * @return calculated size
+   * @throws IOException
+   */
   public long calculateSize(Path tablePath) throws IOException {
     FileSystem fs = tablePath.getFileSystem(conf);
     long totalSize = 0;

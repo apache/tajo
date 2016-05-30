@@ -128,6 +128,13 @@ public class S3TableSpace extends FileTablespace {
     return new BasicAWSCredentials(credentials.getAccessKey(), credentials.getSecretAccessKey());
   }
 
+  /**
+   * Calculate the total size of all objects in the indicated bucket
+   *
+   * @param path to use
+   * @return calculated size
+   * @throws IOException
+   */
   @Override
   public long calculateSize(Path path) throws IOException {
     long totalBucketSize = 0L;
