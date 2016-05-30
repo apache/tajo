@@ -41,7 +41,6 @@
     <jetty.version>6.1.26</jetty.version>
     <parquet.version>1.8.1</parquet.version>
     <aws-java-sdk.version>1.7.4</aws-java-sdk.version>
-    <httpclient.version>4.5</httpclient.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
