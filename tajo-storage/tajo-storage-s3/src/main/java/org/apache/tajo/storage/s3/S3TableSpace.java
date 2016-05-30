@@ -80,17 +80,12 @@ public class S3TableSpace extends FileTablespace {
       );
 
       ClientConfiguration awsConf = new ClientConfiguration();
-      awsConf.setMaxConnections(conf.getInt(MAXIMUM_CONNECTIONS,
-        DEFAULT_MAXIMUM_CONNECTIONS));
-      boolean secureConnections = conf.getBoolean(SECURE_CONNECTIONS,
-        DEFAULT_SECURE_CONNECTIONS);
+      awsConf.setMaxConnections(conf.getInt(MAXIMUM_CONNECTIONS, DEFAULT_MAXIMUM_CONNECTIONS));
+      boolean secureConnections = conf.getBoolean(SECURE_CONNECTIONS, DEFAULT_SECURE_CONNECTIONS);
       awsConf.setProtocol(secureConnections ?  Protocol.HTTPS : Protocol.HTTP);
-      awsConf.setMaxErrorRetry(conf.getInt(MAX_ERROR_RETRIES,
-        DEFAULT_MAX_ERROR_RETRIES));
-      awsConf.setConnectionTimeout(conf.getInt(ESTABLISH_TIMEOUT,
-        DEFAULT_ESTABLISH_TIMEOUT));
-      awsConf.setSocketTimeout(conf.getInt(SOCKET_TIMEOUT,
-        DEFAULT_SOCKET_TIMEOUT));
+      awsConf.setMaxErrorRetry(conf.getInt(MAX_ERROR_RETRIES, DEFAULT_MAX_ERROR_RETRIES));
+      awsConf.setConnectionTimeout(conf.getInt(ESTABLISH_TIMEOUT, DEFAULT_ESTABLISH_TIMEOUT));
+      awsConf.setSocketTimeout(conf.getInt(SOCKET_TIMEOUT, DEFAULT_SOCKET_TIMEOUT));
 
       String proxyHost = conf.getTrimmed(PROXY_HOST,"");
       int proxyPort = conf.getInt(PROXY_PORT, -1);
@@ -110,8 +105,7 @@ public class S3TableSpace extends FileTablespace {
         String proxyUsername = conf.getTrimmed(PROXY_USERNAME);
         String proxyPassword = conf.getTrimmed(PROXY_PASSWORD);
         if ((proxyUsername == null) != (proxyPassword == null)) {
-          String msg = "Proxy error: " + PROXY_USERNAME + " or " +
-            PROXY_PASSWORD + " set without the other.";
+          String msg = "Proxy error: " + PROXY_USERNAME + " or " + PROXY_PASSWORD + " set without the other.";
           LOG.error(msg);
           throw new IllegalArgumentException(msg);
         }
@@ -143,7 +137,6 @@ public class S3TableSpace extends FileTablespace {
       }
 
       maxKeys = conf.getInt(MAX_PAGING_KEYS, DEFAULT_MAX_PAGING_KEYS);
-
       s3Enabled = true;
     } catch (NoClassDefFoundError defFoundError) {
       // If the version of hadoop is less than 2.6.0, hadoop doesn't include aws dependencies because it doesn't provide
