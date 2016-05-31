@@ -83,16 +83,33 @@ public class SequenceFileAppender extends FileAppender {
 
     this.fs = path.getFileSystem(conf);
 
-    this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getProperty(StorageConstants.SEQUENCEFILE_DELIMITER,
+    // Set value of non-deprecated key for backward compatibility.
+    if (!meta.containsProperty(StorageConstants.TEXT_DELIMITER)
+      && meta.containsProperty(StorageConstants.SEQUENCEFILE_DELIMITER)) {
+      this.delimiter = StringEscapeUtils.unescapeJava(meta.getProperty(StorageConstants.SEQUENCEFILE_DELIMITER,
         StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
-    this.columnNum = schema.size();
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getProperty(StorageConstants.SEQUENCEFILE_NULL,
+    } else {
+      this.delimiter = StringEscapeUtils.unescapeJava(meta.getProperty(StorageConstants.TEXT_DELIMITER,
+        StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+    }
+
+    String nullCharacters;
+    if (!meta.containsProperty(StorageConstants.TEXT_NULL)
+      && meta.containsProperty(StorageConstants.SEQUENCEFILE_NULL)) {
+      nullCharacters = StringEscapeUtils.unescapeJava(meta.getProperty(StorageConstants.SEQUENCEFILE_NULL,
         NullDatum.DEFAULT_TEXT));
+    } else {
+      nullCharacters = StringEscapeUtils.unescapeJava(meta.getProperty(StorageConstants.TEXT_NULL,
+        NullDatum.DEFAULT_TEXT));
+    }
+
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {
       nullChars = nullCharacters.getBytes();
     }
+
+    this.columnNum = schema.size();
 
     if(this.meta.containsProperty(StorageConstants.COMPRESSION_CODEC)) {
       String codecName = this.meta.getProperty(StorageConstants.COMPRESSION_CODEC);
