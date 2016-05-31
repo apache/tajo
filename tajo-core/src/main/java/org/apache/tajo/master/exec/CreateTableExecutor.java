@@ -101,7 +101,7 @@ public class CreateTableExecutor {
     Tablespace tableSpace = getTablespaceHandler(tableSpaceName, uri);
 
     TableDesc desc;
-    URI tableUri = isExternal ? uri : tableSpace.getTableUri(databaseName, simpleTableName);
+    URI tableUri = isExternal ? uri : tableSpace.getTableUri(meta, databaseName, simpleTableName);
     desc = new TableDesc(qualifiedName, schema, meta, tableUri, isExternal);
 
     if (partitionDesc != null) {

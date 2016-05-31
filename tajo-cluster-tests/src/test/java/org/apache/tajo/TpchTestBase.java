@@ -18,6 +18,7 @@
 
 package org.apache.tajo;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -101,6 +102,17 @@ public class TpchTestBase {
 
   public TajoTestingCluster getTestingCluster() {
     return util.getTestingCluster();
+  }
+
+  public ImmutableList<String> getNames() {
+    return ImmutableList.copyOf(names);
+  }
+
+  public Schema getSchema(String tableName) {
+    if (!nameMap.containsKey(tableName)) {
+      throw new RuntimeException("No such a table name '" + tableName + "'");
+    }
+    return schemas[nameMap.get(tableName)];
   }
 
   public String getPath(String tableName) {

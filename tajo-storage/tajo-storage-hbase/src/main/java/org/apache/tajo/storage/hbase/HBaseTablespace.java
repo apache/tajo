@@ -396,7 +396,7 @@ public class HBaseTablespace extends Tablespace {
   }
 
   @Override
-  public URI getTableUri(String databaseName, String tableName) {
+  public URI getTableUri(TableMeta meta, String databaseName, String tableName) {
     return URI.create(uri.toString() + "/" + tableName);
   }
 

@@ -39,7 +39,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
+    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,ex_http_json</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -56,6 +56,10 @@
     <value>org.apache.tajo.storage.jdbc.JdbcFragment</value>
   </property>
   <property>
+    <name>tajo.storage.fragment.kind.example-http</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpFileFragment</value>
+  </property>
+  <property>
     <name>tajo.storage.fragment.serde.file</name>
     <value>org.apache.tajo.storage.fragment.FileFragmentSerde</value>
   </property>
@@ -66,6 +70,10 @@
   <property>
     <name>tajo.storage.fragment.serde.jdbc</name>
     <value>org.apache.tajo.storage.jdbc.JdbcFragmentSerde</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.serde.example-http</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpFileFragmentSerde</value>
   </property>
 
   <!--- Scanner Handler -->
@@ -123,7 +131,12 @@
     <name>tajo.storage.scanner-handler.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseScanner</value>
   </property>
-  
+
+  <property>
+    <name>tajo.storage.scanner-handler.ex_http_json.class</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpJsonScanner</value>
+  </property>
+
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>

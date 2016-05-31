@@ -99,6 +99,7 @@
     <module>tajo-core-tests</module>
     <module>tajo-cluster-tests</module>
     <module>tajo-dist</module>
+    <module>tajo-tablespace-example</module>
   </modules>
 
   <build>
@@ -144,7 +145,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>2.3</version>
+          <version>2.4.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

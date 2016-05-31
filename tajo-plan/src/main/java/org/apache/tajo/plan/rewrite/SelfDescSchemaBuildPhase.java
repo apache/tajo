@@ -206,6 +206,13 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
 
     @Override
     public LogicalNode visitSort(ProcessorContext ctx, Stack<Expr> stack, Sort expr) throws TajoException {
+      for (Sort.SortSpec sortSpec : expr.getSortSpecs()) {
+        Set<ColumnReferenceExpr> columns = ExprFinder.finds(sortSpec.getKey(), OpType.Column);
+        for (ColumnReferenceExpr col : columns) {
+          TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+        }
+      }
+
       super.visitSort(ctx, stack, expr);
 
       SortNode node = getNodeFromExpr(ctx.planContext.getPlan(), expr);
