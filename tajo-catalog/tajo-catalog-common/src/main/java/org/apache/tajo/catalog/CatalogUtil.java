@@ -53,9 +53,9 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
 
-
   public static String getBackwardCompitableDataFormat(String dataFormat) {
-    switch (dataFormat) {
+    final String upperDataFormat = dataFormat.toUpperCase();
+    switch (upperDataFormat) {
       case "CSV":
       case "TEXTFILE":
         return BuiltinStorages.TEXT;

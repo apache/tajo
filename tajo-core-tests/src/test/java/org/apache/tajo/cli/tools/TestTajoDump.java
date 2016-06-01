@@ -99,7 +99,7 @@ public class TestTajoDump extends QueryTestCaseBase {
         TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
         printWriter.flush();
         printWriter.close();
-        TableMeta meta = client.getTableDesc(getCurrentDatabase() + "\".\"TableName1\"").getMeta();
+        TableMeta meta = client.getTableDesc(getCurrentDatabase() + ".TableName1").getMeta();
 
         assertOutputResult("testDump3.result", new String(bos.toByteArray()),
             new String[]{"${index.path}", "${table.timezone}"},
@@ -139,7 +139,7 @@ public class TestTajoDump extends QueryTestCaseBase {
         printWriter.flush();
         printWriter.close();
 
-        TableMeta meta = client.getTableDesc(getCurrentDatabase() + "\".\"TableName3\"").getMeta();
+        TableMeta meta = client.getTableDesc(getCurrentDatabase() + ".TableName3").getMeta();
 
         assertOutputResult("testPartitionsDump.result", new String(bos.toByteArray()),
             new String[]{"${partition.path1}", "${partition.path2}", "${table.timezone}"},

@@ -294,9 +294,6 @@ public class BaseSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       stack.push(expr);
       LogicalNode child = visit(ctx, stack, expr.getChild());
 
-      for (Sort.SortSpec sortSpec : expr.getSortSpecs()) {
-        NameRefInSelectListNormalizer.normalize(ctx, sortSpec.getKey());
-      }
       stack.pop();
 
       SortNode sortNode = ctx.getPlan().createNode(SortNode.class);

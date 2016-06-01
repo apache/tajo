@@ -281,11 +281,10 @@ public abstract class Tablespace {
     if (appenderClass == null) {
       appenderClass = conf.getClass(
           String.format("tajo.storage.appender-handler.%s.class", handlerName), null, Appender.class);
+      if (appenderClass == null) {
+        throw new IOException("Undefined appender handler for " + meta.getDataFormat());
+      }
       OldStorageManager.APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
-    }
-
-    if (appenderClass == null) {
-      throw new IOException("Unknown Storage Type: " + meta.getDataFormat());
     }
 
     appender = OldStorageManager.newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);

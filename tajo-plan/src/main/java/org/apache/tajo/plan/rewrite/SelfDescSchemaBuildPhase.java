@@ -209,7 +209,10 @@ public class SelfDescSchemaBuildPhase extends LogicalPlanPreprocessPhase {
       for (Sort.SortSpec sortSpec : expr.getSortSpecs()) {
         Set<ColumnReferenceExpr> columns = ExprFinder.finds(sortSpec.getKey(), OpType.Column);
         for (ColumnReferenceExpr col : columns) {
-          TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+          if (!ctx.aliasSet.contains(col.getName())) {
+            NameRefInSelectListNormalizer.normalize(ctx.planContext, col);
+            TUtil.putToNestedList(ctx.projectColumns, col.getQualifier(), col);
+          }
         }
       }
 
