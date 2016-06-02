@@ -43,14 +43,14 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-public class MongoDbTableSpace extends Tablespace {
+public class MongoDBTableSpace extends Tablespace {
 
 
 
     static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, false);
     static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
 
-    public MongoDbTableSpace(String name, URI uri, JSONObject config) {
+    public MongoDBTableSpace(String name, URI uri, JSONObject config) {
         super(name, uri, config);
     }
 

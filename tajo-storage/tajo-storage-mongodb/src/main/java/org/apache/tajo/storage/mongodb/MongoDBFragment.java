@@ -25,9 +25,9 @@ import java.net.URI;
 /**
  * Created by janaka on 5/21/16.
  */
-public class MongoDbFragment extends Fragment<Long> {
+public class MongoDBFragment extends Fragment<Long> {
 
-    protected MongoDbFragment(String kind, URI uri, String inputSourceId, Long startKey, Long endKey, long length, String[] hostNames) {
+    protected MongoDBFragment(String kind, URI uri, String inputSourceId, Long startKey, Long endKey, long length, String[] hostNames) {
         super(kind, uri, inputSourceId, startKey, endKey, length, hostNames);
     }
 

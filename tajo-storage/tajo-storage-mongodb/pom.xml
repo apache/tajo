@@ -215,6 +215,14 @@
             <artifactId>mongodb-driver</artifactId>
             <version>3.2.2</version>
         </dependency>
+
+        <!--For testing-->
+        <dependency>
+            <groupId>de.flapdoodle.embed</groupId>
+            <artifactId>de.flapdoodle.embed.mongo</artifactId>
+            <version>1.50.5</version>
+        </dependency>
+
     </dependencies>
 
     <profiles>

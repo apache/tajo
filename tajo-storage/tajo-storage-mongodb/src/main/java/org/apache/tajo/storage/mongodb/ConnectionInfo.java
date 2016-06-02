@@ -26,7 +26,7 @@ import com.mongodb.*;
 import org.apache.tajo.exception.TajoInternalError;
 
 public class ConnectionInfo {
-    MongoClientURI mongoDbURI;
+    MongoClientURI mongoDBURI;
     String scheme;
     String host;
     String dbName;
@@ -110,7 +110,7 @@ public class ConnectionInfo {
         mongoDbURIStr+="/";
         mongoDbURIStr+=connInfo.dbName;
 
-        connInfo.mongoDbURI = new MongoClientURI(mongoDbURIStr);
+        connInfo.mongoDBURI = new MongoClientURI(mongoDbURIStr);
 
         return connInfo;
     }

@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * Created by janaka on 5/21/16.
  */
-public class MongoDbAppender implements Appender {
+public class MongoDBAppender implements Appender {
     @Override
     public void init() throws IOException {
 

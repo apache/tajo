@@ -26,7 +26,7 @@ import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
-public class MongoDbScanner  implements Scanner {
+public class MongoDBScanner implements Scanner {
     @Override
     public void init() throws IOException {
 
