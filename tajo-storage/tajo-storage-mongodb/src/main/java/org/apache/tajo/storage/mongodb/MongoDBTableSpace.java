@@ -18,7 +18,11 @@
 
 package org.apache.tajo.storage.mongodb;
 
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoDatabase;
 import net.minidev.json.JSONObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
@@ -27,6 +31,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -45,10 +50,24 @@ import java.util.Optional;
 
 public class MongoDBTableSpace extends Tablespace {
 
+    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
 
 
-    static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", false, true, false, false);
-    static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(false, false, false);
+    //Table Space Properties
+    static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
+            false,  //not movable
+            false, // not writable at the moment
+            false,   // Absolute path
+            false); // Meta data will not be provided
+    static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(
+            false, // Insert
+            false, //direct insert
+            false);// result staging
+
+    //Mongo Client object
+    protected  ConnectionInfo connectionInfo;
+    protected MongoClient mongoClient;
+    protected MongoDatabase db;
 
     public MongoDBTableSpace(String name, URI uri, JSONObject config) {
         super(name, uri, config);
@@ -56,7 +75,16 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     protected void storageInit() throws IOException {
-
+        LOG.debug(uri.toASCIIString());
+        try {
+            connectionInfo = ConnectionInfo.fromURI(uri);
+            mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
+            db = mongoClient.getDatabase(connectionInfo.dbName);
+        }
+        catch (Exception e)
+        {
+            throw new TajoInternalError(e);
+        }
     }
 
     @Override

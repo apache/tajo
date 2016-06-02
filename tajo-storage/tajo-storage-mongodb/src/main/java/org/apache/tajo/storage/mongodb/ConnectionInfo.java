@@ -23,9 +23,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.mongodb.*;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.exception.TajoInternalError;
 
 public class ConnectionInfo {
+
+    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
+
     MongoClientURI mongoDBURI;
     String scheme;
     String host;
@@ -110,10 +115,18 @@ public class ConnectionInfo {
         mongoDbURIStr+="/";
         mongoDbURIStr+=connInfo.dbName;
 
+        LOG.info(mongoDbURIStr);
         connInfo.mongoDBURI = new MongoClientURI(mongoDbURIStr);
 
         return connInfo;
     }
+
+    public MongoClientURI getMongoDBURI()
+    {
+        return  mongoDBURI;
+    }
+
+
 
 }
 

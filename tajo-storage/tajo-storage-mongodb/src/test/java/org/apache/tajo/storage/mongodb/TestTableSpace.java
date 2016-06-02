@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,27 +17,10 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.storage.fragment.Fragment;
-
-import java.net.URI;
-import java.util.List;
-
-
-public class MongoDBFragment extends Fragment<Long> {
-
-    protected MongoDBFragment(String kind, URI uri, String inputSourceId, Long startKey, Long endKey, long length, String[] hostNames) {
-        super(kind, uri, inputSourceId, startKey, endKey, length, hostNames);
-    }
-
-
-    public MongoDBFragment(String inputSourceId, URI uri, List<String> hostNames) {
-        super("MONGODB", uri, inputSourceId, null, null, 0, ((String[]) hostNames.toArray()));
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return false;
-    }
+/**
+ * Created by janaka on 6/2/16.
+ */
+public class TestTableSpace {
+    //mongodb://<dbuser>:<dbpassword>@ds017231.mlab.com:17231/tajo_test
 
 }
