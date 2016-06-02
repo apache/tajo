@@ -56,13 +56,13 @@ public class MongoDBTableSpace extends Tablespace {
     //Table Space Properties
     static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
             false,  //not movable
-            false, // not writable at the moment
-            false,   // Absolute path
+            true, // not writable at the moment
+            true,   // Absolute path
             false); // Meta data will not be provided
     static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(
-            false, // Insert
+            true, // Insert
             false, //direct insert
-            false);// result staging
+            true);// result staging
 
     //Mongo Client object
     protected  ConnectionInfo connectionInfo;
@@ -89,7 +89,16 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
-        return 0;
+
+        long count = 0;
+        try{
+            count = db.getCollection(table.getName()).count();
+        }
+        catch (Exception e)
+        {
+            throw new TajoInternalError(e);
+        }
+        return count;
     }
 
     @Override
@@ -157,5 +166,11 @@ public class MongoDBTableSpace extends Tablespace {
     @Override
     public URI getStagingUri(OverridableConf context, String queryId, TableMeta meta) throws IOException {
         return null;
+    }
+
+    @Override
+    public URI getRootUri()
+    {
+        return uri;
     }
 }
