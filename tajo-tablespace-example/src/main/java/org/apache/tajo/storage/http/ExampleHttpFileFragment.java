@@ -21,20 +21,10 @@ package org.apache.tajo.storage.http;
 import org.apache.tajo.storage.fragment.AbstractFileFragment;
 import org.apache.tajo.storage.fragment.BuiltinFragmentKinds;
 
-import java.net.HttpURLConnection;
 import java.net.URI;
 
 public class ExampleHttpFileFragment extends AbstractFileFragment {
-
-  private HttpURLConnection connection;
-
-  /**
-   *
-   * @param uri
-   * @param inputSourceId
-   * @param startKey first byte pos
-   * @param endKey last byte pos
-   */
+  
   public ExampleHttpFileFragment(URI uri,
                                  String inputSourceId,
                                  long startKey,

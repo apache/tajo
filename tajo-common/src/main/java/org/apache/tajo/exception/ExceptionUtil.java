@@ -205,7 +205,7 @@ public class ExceptionUtil {
     // if this runs as an actual cluster instance or a debug mode, it will print all stacktraces.
     // In other cases (i.e., run as a test mode and not debug mode), it will print stacktraces
     // if the query is managed mode.
-    if (TajoConstants.IS_TEST_MODE || TajoConstants.IS_DEBUG_MODE || !ExceptionUtil.isManagedException(t)) {
+    if (!TajoConstants.IS_TEST_MODE || TajoConstants.IS_DEBUG_MODE || !ExceptionUtil.isManagedException(t)) {
       ExceptionUtil.printStackTrace(log, t);
     }
   }

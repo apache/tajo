@@ -20,15 +20,12 @@ package org.apache.tajo.storage.fragment;
 
 import org.apache.hadoop.fs.Path;
 
-import java.io.InputStream;
 import java.net.URI;
 
 /**
  * Abstract fragment implementation for file systems.
  */
 public abstract class AbstractFileFragment extends Fragment<Long> {
-
-  protected InputStream in;
 
   protected AbstractFileFragment(String kind,
                                  URI uri,
