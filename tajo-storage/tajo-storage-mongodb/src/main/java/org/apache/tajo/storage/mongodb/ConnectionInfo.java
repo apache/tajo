@@ -117,7 +117,6 @@ public class ConnectionInfo {
 
         LOG.info(mongoDbURIStr);
         connInfo.mongoDBURI = new MongoClientURI(mongoDbURIStr);
-
         return connInfo;
     }
 

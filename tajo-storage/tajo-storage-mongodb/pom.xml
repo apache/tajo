@@ -337,6 +337,7 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongodb-driver</artifactId>
             <version>3.2.2</version>
+            <scope>provided</scope>
         </dependency>
 
         <!--For testing-->
