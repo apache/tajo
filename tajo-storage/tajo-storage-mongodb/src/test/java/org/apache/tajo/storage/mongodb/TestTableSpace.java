@@ -18,6 +18,7 @@
 package org.apache.tajo.storage.mongodb;
 
 import org.apache.tajo.storage.TablespaceManager;
+import org.junit.After;
 import org.junit.Test;
 
 import java.net.URI;
@@ -56,9 +57,21 @@ public class TestTableSpace {
 
         assertTrue((TablespaceManager.getByName("mongo_cluster")) instanceof MongoDBTableSpace);
         assertEquals("mongo_cluster", (TablespaceManager.getByName("mongo_cluster").getName()));
-        server.stop();
+        assertTrue((TablespaceManager.get(uri.toASCIIString() + "&table=tb1")) instanceof MongoDBTableSpace);
+
+
+        assertEquals(uri.toASCIIString(), TablespaceManager.get(uri).getUri().toASCIIString());
+
+        assertTrue(TablespaceManager.get(uri).getMetadataProvider() instanceof MongoDBMetadataProvider);
     }
 
+
+
+    @After
+    public void clear()
+    {
+        server.stop();
+    }
 
 
 }

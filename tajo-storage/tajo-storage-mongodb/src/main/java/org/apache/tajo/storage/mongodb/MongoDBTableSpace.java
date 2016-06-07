@@ -26,10 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.UnsupportedException;
@@ -58,14 +55,14 @@ public class MongoDBTableSpace extends Tablespace {
             false,  //not movable
             true, // not writable at the moment
             true,   // Absolute path
-            false); // Meta data will not be provided
-    static final FormatProperty  FORMAT_PROPERTY = new FormatProperty(
+            true); // Meta data will  be provided
+    static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
             true, // Insert
             false, //direct insert
             true);// result staging
 
     //Mongo Client object
-    protected  ConnectionInfo connectionInfo;
+    protected ConnectionInfo connectionInfo;
     protected MongoClient mongoClient;
     protected MongoDatabase db;
 
@@ -80,9 +77,7 @@ public class MongoDBTableSpace extends Tablespace {
             connectionInfo = ConnectionInfo.fromURI(uri);
             mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
             db = mongoClient.getDatabase(connectionInfo.dbName);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new TajoInternalError(e);
         }
     }
@@ -91,11 +86,9 @@ public class MongoDBTableSpace extends Tablespace {
     public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
 
         long count = 0;
-        try{
+        try {
             count = db.getCollection(table.getName()).count();
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             throw new TajoInternalError(e);
         }
         return count;
@@ -110,7 +103,6 @@ public class MongoDBTableSpace extends Tablespace {
     public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
         return null;
     }
-
 
 
     @Override
@@ -169,8 +161,13 @@ public class MongoDBTableSpace extends Tablespace {
     }
 
     @Override
-    public URI getRootUri()
-    {
+    public URI getRootUri() {
         return uri;
+    }
+
+
+    //Metadata
+    public MetadataProvider getMetadataProvider() {
+        return new MongoDBMetadataProvider(this, "test_db_MongoDBTableSpace_171");
     }
 }

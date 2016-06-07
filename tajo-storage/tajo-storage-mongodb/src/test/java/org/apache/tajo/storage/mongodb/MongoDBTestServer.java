@@ -133,6 +133,7 @@ public class MongoDBTestServer  {
         MongoDBTableSpace tablespace = new MongoDBTableSpace(spaceName,getURI(),configElements);
         tablespace.init(new TajoConf());
 
+
         TablespaceManager.addTableSpaceForTest(tablespace);
     }
 }
