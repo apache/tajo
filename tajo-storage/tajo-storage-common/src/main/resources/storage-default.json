@@ -31,6 +31,10 @@
     "swift": {
       "handler": "org.apache.tajo.storage.s3.S3TableSpace",
       "default-format": "text"
+    },
+    "mongodb": {
+      "handler": "org.apache.tajo.storage.mongodb.MongoDBTableSpace",
+      "default-format": "text"
     }
   }
 }

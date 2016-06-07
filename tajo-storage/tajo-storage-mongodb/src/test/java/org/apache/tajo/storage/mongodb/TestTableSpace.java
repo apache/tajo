@@ -54,8 +54,8 @@ public class TestTableSpace {
     {
         assertTrue((TablespaceManager.get(uri)) instanceof MongoDBTableSpace);
 
-//        assertTrue((TablespaceManager.getByName("mongodb_cluster")) instanceof MongoDBTableSpace);
-//        assertEquals("mongodb_cluster", (TablespaceManager.getByName("pgsql_cluster").getName()));
+        assertTrue((TablespaceManager.getByName("mongo_cluster")) instanceof MongoDBTableSpace);
+        assertEquals("mongo_cluster", (TablespaceManager.getByName("mongo_cluster").getName()));
         server.stop();
     }
 

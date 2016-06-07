@@ -28,6 +28,9 @@ import de.flapdoodle.embed.mongo.*;
 import de.flapdoodle.embed.mongo.config.*;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
+import net.minidev.json.JSONObject;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.TablespaceManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -40,6 +43,8 @@ public class MongoDBTestServer  {
     private static String host = "localhost";
     private static String dbName;
     private static MongoDBTestServer instance;
+
+    public static final String spaceName = "mongo_cluster";
 
 
     //New
@@ -73,8 +78,8 @@ public class MongoDBTestServer  {
                         build())
                 .build());
         _mongod = _mongodExe.start();
-
         _mongo = new MongoClient(host, port);
+        registerTablespace();
     }
 
     public void stop()
@@ -119,5 +124,15 @@ public class MongoDBTestServer  {
         MongodExecutable mongodExecutable = MongodStarter.getDefaultInstance().prepare(mongoConfigConfig);
         MongodProcess mongod = mongodExecutable.start();
         return mongod;
+    }
+
+    private void registerTablespace() throws IOException {
+        JSONObject configElements = new JSONObject();
+//        configElements.put(JdbcTablespace.CONFIG_KEY_MAPPED_DATABASE, dbName);
+
+        MongoDBTableSpace tablespace = new MongoDBTableSpace(spaceName,getURI(),configElements);
+        tablespace.init(new TajoConf());
+
+        TablespaceManager.addTableSpaceForTest(tablespace);
     }
 }
