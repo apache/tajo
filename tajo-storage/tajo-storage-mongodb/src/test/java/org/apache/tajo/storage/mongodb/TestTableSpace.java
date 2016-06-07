@@ -17,10 +17,31 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import org.apache.tajo.storage.TablespaceManager;
+import org.junit.Test;
+
+import java.net.URI;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created by janaka on 6/2/16.
  */
 public class TestTableSpace {
     //mongodb://<dbuser>:<dbpassword>@ds017231.mlab.com:17231/tajo_test
+    static MongoDBTestServer server = MongoDBTestServer.getInstance();
+    static URI uri = server.getURI();
+
+    @Test
+    public void testTablespaceHandler()
+    {
+
+        assertTrue((TablespaceManager.getByName("mongodb_cluster")) instanceof MongoDBTableSpace);
+        assertEquals("mongodb_cluster", (TablespaceManager.getByName("pgsql_cluster").getName()));
+        server.stop();
+    }
+
+
 
 }
