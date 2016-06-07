@@ -34,13 +34,19 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Date;
 
-public class MongoDBTestServer {
+public class MongoDBTestServer  {
+
     private static int port = 12345;
     private static String host = "localhost";
     private static String dbName;
     private static MongoDBTestServer instance;
 
-    private MongodExecutable mongodExecutable;
+
+    //New
+    private static final MongodStarter starter = MongodStarter.getDefaultInstance();
+    private MongodExecutable _mongodExe;
+    private MongodProcess _mongod;
+    private MongoClient _mongo;
 
 
     public static MongoDBTestServer getInstance()
@@ -58,27 +64,23 @@ public class MongoDBTestServer {
     }
 
     private MongoDBTestServer () throws IOException {
+        _mongodExe = starter.prepare(new MongodConfigBuilder()
+                .version(Version.Main.PRODUCTION)
+                .net(new Net(port, Network.localhostIsIPv6()))
 
-        MongodProcess mongod = startMongod(port);
+                .cmdOptions( new MongoCmdOptionsBuilder().
+                        useStorageEngine("mmapv1").
+                        build())
+                .build());
+        _mongod = _mongodExe.start();
 
-        try {
-            MongosProcess mongos = startMongos(1111, port, host);
-            try {
-                MongoClient mongoClient = new MongoClient(host, port);
-                System.out.println("DB Names: " + mongoClient.getDatabaseNames());
-            } finally {
-                mongos.stop();
-            }
-        } finally {
-            mongod.stop();
-        }
-
-
+        _mongo = new MongoClient(host, port);
     }
 
     public void stop()
     {
-        mongodExecutable.stop();
+        _mongod.stop();
+        _mongodExe.stop();
     }
 
     public URI getURI()
