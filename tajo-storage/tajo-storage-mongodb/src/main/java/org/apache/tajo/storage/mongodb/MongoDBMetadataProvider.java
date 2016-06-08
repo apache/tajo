@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.exception.UndefinedTablespaceException;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.KeyValueSet;
 
 import javax.annotation.Nullable;
@@ -92,10 +93,12 @@ public class MongoDBMetadataProvider implements MetadataProvider {
     public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
 
         TableMeta tbMeta = new TableMeta("rowstore", new KeyValueSet());
-        TableDesc tbDesc = new TableDesc(tableName,
+        TableDesc tbDesc = new TableDesc(
+                IdentifierUtil.buildFQName(mappedDbName, tableName),
                 SchemaBuilder.builder()
-                        .build(),tbMeta,tableSpace.getUri());
-
+                        .build(),
+                tbMeta,
+                tableSpace.getTableUri(null, tableName));
 
         final TableStats stats = new TableStats();
         stats.setNumRows(-1); // unknown

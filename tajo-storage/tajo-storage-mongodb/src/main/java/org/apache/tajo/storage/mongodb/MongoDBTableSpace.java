@@ -117,7 +117,7 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public URI getTableUri(String databaseName, String tableName) {
-        return null;
+        return URI.create(this.getUri()+"&table="+tableName);
     }
 
     @Override

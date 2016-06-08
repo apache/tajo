@@ -24,6 +24,8 @@ import com.mongodb.*;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.util.JSON;
+import com.sun.javadoc.Doc;
 import de.flapdoodle.embed.mongo.*;
 import de.flapdoodle.embed.mongo.config.*;
 import de.flapdoodle.embed.mongo.distribution.Version;
@@ -47,19 +49,20 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class MongoDBTestServer  {
 
     private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
 
 
-    private static int port = 12345;
-    private static String host = "localhost";
-    private static String dbName = "mydbname";
-    private static String mappedDbName = "mapped_mydbname";
+    public static int port = 12345;
+    public static String host = "localhost";
+    public static String dbName = "test_dbname";
+    public static String mappedDbName = "test_mapped_dbname";
     private static MongoDBTestServer instance;
 
-    public static final String spaceName = "mongo_cluster";
+    public static final String spaceName = "test_spacename";
 
 
     //New
@@ -69,7 +72,7 @@ public class MongoDBTestServer  {
     private MongoClient _mongo;
 
     private String[] filenames = {"file1.json","file2.json"};
-    private String[] collectionNames = {"col1","col2"};
+    public String[] collectionNames = {"col1","col2"};
 
 
     public static MongoDBTestServer getInstance()
@@ -159,18 +162,19 @@ public class MongoDBTestServer  {
 
     private void loadData() throws IOException, URISyntaxException {
         MongoDatabase db =  _mongo.getDatabase(dbName);
-        for(int i=0; i<1;i++) {
+        for(int i=0; i<filenames.length;i++) {
 
-                JsonParser parser = new JsonFactory().createParser(new FileReader( getRequestedFile(filenames[i])));
-                DBObject dbo = (DBObject) com.mongodb.util.JSON.parse(parser.getText());
+            db.createCollection(collectionNames[i]);
+            MongoCollection coll = db.getCollection(collectionNames[i]);
 
-                List<DBObject> list = new ArrayList<>();
-                list.add(dbo);
+            String fileContent = new Scanner( getRequestedFile(filenames[i])).useDelimiter("\\Z").next();
 
-                db.createCollection(collectionNames[0]);
-                MongoCollection coll = db.getCollection(collectionNames[0]);
+            Document fileDoc = Document.parse(fileContent);
+//            System.out.println( fileDoc.get("dataList"));
+//            coll.insertMany((List<Document>) fileDoc.get("dataList"));
+           coll.insertOne(fileDoc);
 
-                FindIterable<Document> docs =  coll.find();
+             FindIterable<Document> docs =  coll.find();
 
                 docs.forEach(new Block<Document>() {
                     @Override

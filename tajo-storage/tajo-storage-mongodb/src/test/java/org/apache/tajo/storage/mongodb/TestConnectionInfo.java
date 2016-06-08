@@ -53,4 +53,10 @@ public class TestConnectionInfo {
         assertEquals(1, connInfo.getParams().size());
         assertEquals("GMT+9", connInfo.getParams().get("TZ"));
     }
+
+    @Test
+    public final void testNewStructure()
+    {
+        
+    }
 }

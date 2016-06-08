@@ -66,14 +66,4 @@ public class TestTableSpace {
         //Check if returns the  MetaDataProvider
         assertTrue(TablespaceManager.get(uri).getMetadataProvider() instanceof MongoDBMetadataProvider);
     }
-
-
-
-    @After
-    public void clear()
-    {
-        server.stop();
-    }
-
-
 }
