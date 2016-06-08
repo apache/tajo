@@ -55,13 +55,15 @@ public class TestTableSpace {
     {
         assertTrue((TablespaceManager.get(uri)) instanceof MongoDBTableSpace);
 
-        assertTrue((TablespaceManager.getByName("mongo_cluster")) instanceof MongoDBTableSpace);
-        assertEquals("mongo_cluster", (TablespaceManager.getByName("mongo_cluster").getName()));
+        assertTrue((TablespaceManager.getByName(server.spaceName)) instanceof MongoDBTableSpace);
+        assertEquals(server.spaceName, (TablespaceManager.getByName(server.spaceName).getName()));
         assertTrue((TablespaceManager.get(uri.toASCIIString() + "&table=tb1")) instanceof MongoDBTableSpace);
 
 
+        //Test the URI same
         assertEquals(uri.toASCIIString(), TablespaceManager.get(uri).getUri().toASCIIString());
 
+        //Check if returns the  MetaDataProvider
         assertTrue(TablespaceManager.get(uri).getMetadataProvider() instanceof MongoDBMetadataProvider);
     }
 

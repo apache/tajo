@@ -62,21 +62,42 @@ public class MongoDBTableSpace extends Tablespace {
             true);// result staging
 
     //Mongo Client object
-    protected ConnectionInfo connectionInfo;
+    private ConnectionInfo connectionInfo;
     protected MongoClient mongoClient;
     protected MongoDatabase db;
+    protected String mappedDBName = "MappedDB";
+
+
+    //Config Keys
+    public static final String CONFIG_KEY_MAPPED_DATABASE = "mapped_database";
+    public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
+    public static final String CONFIG_KEY_USERNAME = "user";
+    public static final String CONFIG_KEY_PASSWORD = "password";
 
     public MongoDBTableSpace(String name, URI uri, JSONObject config) {
+
         super(name, uri, config);
+        connectionInfo = ConnectionInfo.fromURI(uri);
+
+        //set Connection Properties
+        if (config.containsKey(CONFIG_KEY_MAPPED_DATABASE)) {
+            mappedDBName = this.config.getAsString(CONFIG_KEY_MAPPED_DATABASE);
+        } else {
+            mappedDBName = getConnectionInfo().getDbName();
+        }
+
+
+
     }
 
     @Override
     protected void storageInit() throws IOException {
-        LOG.debug(uri.toASCIIString());
+       // LOG.info(uri.toASCIIString());
+        //LOG.info("Something"+config.toJSONString());
         try {
             connectionInfo = ConnectionInfo.fromURI(uri);
-            mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
-            db = mongoClient.getDatabase(connectionInfo.dbName);
+            mongoClient = new MongoClient(getConnectionInfo().getMongoDBURI());
+            db = mongoClient.getDatabase(getConnectionInfo().getDbName());
         } catch (Exception e) {
             throw new TajoInternalError(e);
         }
@@ -168,6 +189,10 @@ public class MongoDBTableSpace extends Tablespace {
 
     //Metadata
     public MetadataProvider getMetadataProvider() {
-        return new MongoDBMetadataProvider(this, "test_db_MongoDBTableSpace_171");
+        return new MongoDBMetadataProvider(this, mappedDBName);
+    }
+
+    public ConnectionInfo getConnectionInfo() {
+        return connectionInfo;
     }
 }

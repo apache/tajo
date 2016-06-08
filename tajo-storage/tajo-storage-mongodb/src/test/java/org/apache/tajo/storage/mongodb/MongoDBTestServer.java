@@ -20,28 +20,43 @@ package org.apache.tajo.storage.mongodb;
 /**
  * Created by janaka on 6/7/16.
  */
-import com.mongodb.BasicDBObject;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.MongoClient;
+import com.mongodb.*;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import de.flapdoodle.embed.mongo.*;
 import de.flapdoodle.embed.mongo.config.*;
 import de.flapdoodle.embed.mongo.distribution.Version;
 import de.flapdoodle.embed.process.runtime.Network;
 import net.minidev.json.JSONObject;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.htrace.fasterxml.jackson.core.JsonFactory;
+import org.apache.htrace.fasterxml.jackson.core.JsonParser;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
+import org.bson.Document;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MongoDBTestServer  {
 
+    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
+
+
     private static int port = 12345;
     private static String host = "localhost";
-    private static String dbName;
+    private static String dbName = "mydbname";
+    private static String mappedDbName = "mapped_mydbname";
     private static MongoDBTestServer instance;
 
     public static final String spaceName = "mongo_cluster";
@@ -52,6 +67,9 @@ public class MongoDBTestServer  {
     private MongodExecutable _mongodExe;
     private MongodProcess _mongod;
     private MongoClient _mongo;
+
+    private String[] filenames = {"file1.json","file2.json"};
+    private String[] collectionNames = {"col1","col2"};
 
 
     public static MongoDBTestServer getInstance()
@@ -68,7 +86,7 @@ public class MongoDBTestServer  {
         return instance;
     }
 
-    private MongoDBTestServer () throws IOException {
+    private MongoDBTestServer () throws IOException, URISyntaxException {
         _mongodExe = starter.prepare(new MongodConfigBuilder()
                 .version(Version.Main.PRODUCTION)
                 .net(new Net(port, Network.localhostIsIPv6()))
@@ -80,6 +98,8 @@ public class MongoDBTestServer  {
         _mongod = _mongodExe.start();
         _mongo = new MongoClient(host, port);
         registerTablespace();
+
+        loadData();
     }
 
     public void stop()
@@ -128,12 +148,46 @@ public class MongoDBTestServer  {
 
     private void registerTablespace() throws IOException {
         JSONObject configElements = new JSONObject();
-//        configElements.put(JdbcTablespace.CONFIG_KEY_MAPPED_DATABASE, dbName);
+        configElements.put(MongoDBTableSpace.CONFIG_KEY_MAPPED_DATABASE, mappedDbName);
 
         MongoDBTableSpace tablespace = new MongoDBTableSpace(spaceName,getURI(),configElements);
         tablespace.init(new TajoConf());
 
 
         TablespaceManager.addTableSpaceForTest(tablespace);
+    }
+
+    private void loadData() throws IOException, URISyntaxException {
+        MongoDatabase db =  _mongo.getDatabase(dbName);
+        for(int i=0; i<1;i++) {
+
+                JsonParser parser = new JsonFactory().createParser(new FileReader( getRequestedFile(filenames[i])));
+                DBObject dbo = (DBObject) com.mongodb.util.JSON.parse(parser.getText());
+
+                List<DBObject> list = new ArrayList<>();
+                list.add(dbo);
+
+                db.createCollection(collectionNames[0]);
+                MongoCollection coll = db.getCollection(collectionNames[0]);
+
+                FindIterable<Document> docs =  coll.find();
+
+                docs.forEach(new Block<Document>() {
+                    @Override
+                    public void apply(final Document document) {
+                        LOG.info(document.toJson());
+                    }
+                });
+        }
+    }
+
+    private static File getRequestedFile(String path) throws FileNotFoundException, URISyntaxException {
+
+        URL url = ClassLoader.getSystemResource("datasets/" + path);
+
+        if (url == null) {
+            throw new FileNotFoundException(path);
+        }
+        return new File(url.toURI());
     }
 }

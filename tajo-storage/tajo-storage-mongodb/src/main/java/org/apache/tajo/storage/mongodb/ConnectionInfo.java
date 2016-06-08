@@ -31,15 +31,15 @@ public class ConnectionInfo {
 
     private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
 
-    MongoClientURI mongoDBURI;
-    String scheme;
-    String host;
-    String dbName;
-    String tableName;
-    String user;
-    String password;
-    int port;
-    Map<String, String> params;
+    private MongoClientURI mongoDBURI;
+    private String scheme;
+    private String host;
+    private String dbName;
+    private String tableName;
+    private String user;
+    private String password;
+    private int port;
+    private Map<String, String> params;
 
     public static ConnectionInfo fromURI(String originalUri) {
         return fromURI(URI.create(originalUri));
@@ -100,20 +100,20 @@ public class ConnectionInfo {
         //mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database][?options]]
 
         //Generate the URI
-        mongoDbURIStr+=connInfo.scheme;
+        mongoDbURIStr+= connInfo.getScheme();
         mongoDbURIStr+="://";
-        if(connInfo.user!=null)
+        if(connInfo.getUser() !=null)
         {
-            mongoDbURIStr+=connInfo.user;
-            if(connInfo.password!=null)
-                mongoDbURIStr+=":"+connInfo.password;
+            mongoDbURIStr+= connInfo.getUser();
+            if(connInfo.getPassword() !=null)
+                mongoDbURIStr+=":"+ connInfo.getPassword();
             mongoDbURIStr+="@";
         }
-        mongoDbURIStr+=connInfo.host;
+        mongoDbURIStr+= connInfo.getHost();
         mongoDbURIStr+=":";
-        mongoDbURIStr+=connInfo.port;
+        mongoDbURIStr+= connInfo.getPort();
         mongoDbURIStr+="/";
-        mongoDbURIStr+=connInfo.dbName;
+        mongoDbURIStr+= connInfo.getDbName();
 
         LOG.info(mongoDbURIStr);
         connInfo.mongoDBURI = new MongoClientURI(mongoDbURIStr);
@@ -126,7 +126,37 @@ public class ConnectionInfo {
     }
 
 
+    public String getScheme() {
+        return scheme;
+    }
 
+    public String getHost() {
+        return host;
+    }
+
+    public String getDbName() {
+        return dbName;
+    }
+
+    public String getTableName() {
+        return tableName;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
+    }
 }
 
 
