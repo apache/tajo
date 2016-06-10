@@ -27,12 +27,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.exception.TajoInternalError;
-import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.Tablespace;
@@ -65,7 +64,7 @@ public class MongoDBTableSpace extends Tablespace {
     private ConnectionInfo connectionInfo;
     protected MongoClient mongoClient;
     protected MongoDatabase db;
-    protected String mappedDBName = "MappedDB";
+    protected String mappedDBName;
 
 
     //Config Keys
@@ -92,8 +91,7 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     protected void storageInit() throws IOException {
-       // LOG.info(uri.toASCIIString());
-        //LOG.info("Something"+config.toJSONString());
+        //Todo Extract User Details from Configuration
         try {
             connectionInfo = ConnectionInfo.fromURI(uri);
             mongoClient = new MongoClient(getConnectionInfo().getMongoDBURI());
@@ -153,12 +151,14 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
-
+        if(tableDesc==null)
+            throw new TajoRuntimeException(new NotImplementedException());
+        db.createCollection(tableDesc.getName());
     }
 
     @Override
     public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
-
+            db.getCollection(tableDesc.getName()).drop();
     }
 
     @Override

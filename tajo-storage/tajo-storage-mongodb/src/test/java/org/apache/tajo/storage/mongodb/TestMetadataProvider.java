@@ -79,7 +79,7 @@ public class TestMetadataProvider {
             assertEquals(server.mappedDbName+"." + tableName, table.getName());
             assertEquals(server.getURI() + "&table=" + tableName, table.getUri().toASCIIString());
 
-            System.out.println(tableName+" : "+table.getStats().getNumRows());
+            //To Do Check the stats
         }
 
 
