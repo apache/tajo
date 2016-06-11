@@ -18,6 +18,7 @@
 package org.apache.tajo.storage.mongodb;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.cli.Option;
 import org.apache.commons.collections.bag.SynchronizedSortedBag;
 import org.apache.commons.math.optimization.linear.SimplexSolver;
 import org.apache.tajo.catalog.SchemaBuilder;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
@@ -110,4 +112,20 @@ public class TestMongoDBTableSpace {
         assertFalse(found_after.contains(IdentifierUtil.buildFQName(server.mappedDbName, "Table1")));
 
     }
+
+    @Test
+    public void testTableVolume() throws IOException, TajoException {
+        Tablespace space = TablespaceManager.getByName(server.spaceName);
+        for (String tbl:server.collectionNames) {
+
+           // assertEquals(1,space.getTableVolume(tableDesc, Optional.empty()));
+
+          //  long a = 1;b
+            TableDesc tbdesc = space.getMetadataProvider().getTableDesc(null,tbl);
+            assertEquals("1", tbdesc.getStats().getNumRows().toString());
+            assertEquals(1, space.getTableVolume(tbdesc,Optional.empty()));
+
+        }
+    }
+
 }

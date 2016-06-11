@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.mongodb;
 
+import com.google.common.collect.Lists;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import net.minidev.json.JSONObject;
@@ -120,7 +121,8 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
-        return null;
+        MongoDBFragment mongoDBFragment = new MongoDBFragment(inputSourceId, getUri(),null );
+        return Lists.newArrayList(mongoDBFragment);
     }
 
 
