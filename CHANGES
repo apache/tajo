@@ -4,6 +4,9 @@ Release 0.11.4 - unreleased
 
   BUG FIXES
 
+    TAJO-2163: No error message is showed when query execution failed.
+    (Wonjun Hong via jihoon)
+
     TAJO-2162: Internal error is occured while running query including 'order by'. 
     (jihoon)
 
