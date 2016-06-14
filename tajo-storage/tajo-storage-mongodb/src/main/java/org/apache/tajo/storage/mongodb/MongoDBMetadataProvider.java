@@ -94,7 +94,7 @@ public class MongoDBMetadataProvider implements MetadataProvider {
 
         TableMeta tbMeta = new TableMeta("rowstore", new KeyValueSet());
         TableDesc tbDesc = new TableDesc(
-                tableName,
+                IdentifierUtil.buildFQName(mappedDbName, tableName),
                 SchemaBuilder.builder()
                         .build(),
                 tbMeta,

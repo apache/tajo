@@ -76,7 +76,7 @@ public class TestMetadataProvider {
 
         for (String tableName : server.collectionNames) {
             TableDesc table = provider.getTableDesc(null, tableName);
-            assertEquals(tableName, table.getName());
+            assertEquals(   server.mappedDbName+"."+tableName, table.getName());
             assertEquals(server.getURI() + "&table=" + tableName, table.getUri().toASCIIString());
 
             //ToDo Check the stats

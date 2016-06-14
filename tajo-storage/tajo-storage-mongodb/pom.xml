@@ -46,7 +46,8 @@
                 <artifactId>apache-rat-plugin</artifactId>
                 <configuration>
                     <excludes>
-                        <exclude>src/test/resources/datasets/**</exclude>
+                        <exclude>src/test/resources/dataset/**</exclude>
+                        <exclude>src/test/resources/**</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -191,6 +192,12 @@
             <groupId>org.apache.tajo</groupId>
             <artifactId>tajo-storage-hdfs</artifactId>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tajo</groupId>
+            <artifactId>tajo-cluster-tests</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -345,6 +352,7 @@
             <artifactId>de.flapdoodle.embed.mongo</artifactId>
             <version>1.50.5</version>
         </dependency>
+
 
     </dependencies>
 

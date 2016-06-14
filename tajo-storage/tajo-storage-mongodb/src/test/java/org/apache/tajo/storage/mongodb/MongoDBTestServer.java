@@ -24,8 +24,6 @@ import com.mongodb.*;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.util.JSON;
-import com.sun.javadoc.Doc;
 import de.flapdoodle.embed.mongo.*;
 import de.flapdoodle.embed.mongo.config.*;
 import de.flapdoodle.embed.mongo.distribution.Version;
@@ -33,22 +31,17 @@ import de.flapdoodle.embed.process.runtime.Network;
 import net.minidev.json.JSONObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.htrace.fasterxml.jackson.core.JsonFactory;
-import org.apache.htrace.fasterxml.jackson.core.JsonParser;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
 import org.bson.Document;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 public class MongoDBTestServer  {
@@ -188,7 +181,7 @@ public class MongoDBTestServer  {
 
     private static File getRequestedFile(String path) throws FileNotFoundException, URISyntaxException {
 
-        URL url = ClassLoader.getSystemResource("datasets/" + path);
+        URL url = ClassLoader.getSystemResource("dataset/" + path);
 
         if (url == null) {
             throw new FileNotFoundException(path);

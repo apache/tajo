@@ -1,0 +1,1 @@
+select title, name.first_name from col1;
