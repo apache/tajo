@@ -109,6 +109,7 @@ public class MongoDBTestServer  {
     {
         _mongod.stop();
         _mongodExe.stop();
+        instance = null;
     }
 
     public URI getURI()
