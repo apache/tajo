@@ -37,7 +37,9 @@
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.10.1</tajo.version>
     <hbase.version>0.98.7-hadoop2</hbase.version>
+    <hive.version>1.1.0</hive.version>
     <netty.version>4.0.25.Final</netty.version>
+    <jersey.version>2.6</jersey.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -789,6 +791,21 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-rpc-common</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-rpc-protobuf</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-ws-rs</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-algebra</artifactId>
         <version>${tajo.version}</version>
       </dependency>
@@ -996,6 +1013,11 @@
         <version>2.6</version>
       </dependency>
       <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.10</version>
+      </dependency>
+      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>11.0.2</version>
@@ -1062,6 +1084,21 @@
         <groupId>com.github.stephenc.jcip</groupId>
         <artifactId>jcip-annotations</artifactId>
         <version>1.0-1</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.core</groupId>
+        <artifactId>jersey-common</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.glassfish.jersey.core</groupId>
+        <artifactId>jersey-server</artifactId>
+        <version>${jersey.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>javax.ws.rs</groupId>
+        <artifactId>javax.ws.rs-api</artifactId>
+        <version>2.0.1</version>
       </dependency>
       <dependency>
         <groupId>net.minidev</groupId>

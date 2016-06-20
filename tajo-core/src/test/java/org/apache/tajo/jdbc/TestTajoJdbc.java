@@ -553,10 +553,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     Connection conn = null;
     int result;
 
-    // skip this test if catalog uses HCatalogStore.
-    // It is because HCatalogStore does not support Time data type.
+    // skip this test if catalog uses HiveCatalogStore.
+    // It is because HiveCatalogStore does not support Time data type.
     try {
-      if (!testingCluster.isHCatalogStoreRunning()) {
+      if (!testingCluster.isHiveCatalogStoreRunning()) {
         executeDDL("create_table_with_date_ddl.sql", "table1");
 
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
@@ -604,10 +604,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     int result;
     String errorMessage = null;
 
-    // skip this test if catalog uses HCatalogStore.
-    // It is because HCatalogStore does not support Time data type.
+    // skip this test if catalog uses HiveCatalogStore.
+    // It is because HiveCatalogStore does not support Time data type.
     try {
-      if (!testingCluster.isHCatalogStoreRunning()) {
+      if (!testingCluster.isHiveCatalogStoreRunning()) {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           DEFAULT_DATABASE_NAME);
         conn = DriverManager.getConnection(connUri);

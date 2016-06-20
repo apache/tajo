@@ -352,7 +352,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     CatalogService catalog = cluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "orderkeys"));
     TableDesc orderKeys = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "orderkeys");
-    if (!cluster.isHCatalogStoreRunning()) {
+    if (!cluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, orderKeys.getStats().getNumRows().intValue());
     }
   }
@@ -374,7 +374,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testDatabaseRef() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeString("CREATE DATABASE \"TestSelectQuery\"").close();
       executeString("CREATE TABLE \"TestSelectQuery\".\"LineItem\" AS SELECT * FROM default.lineitem" ).close();
 

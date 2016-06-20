@@ -295,9 +295,6 @@ if [ -d ${HIVE_LIB} ]; then
     CLASSPATH=${CLASSPATH}:$f;
   done
 
-  for f in $HIVE_HOME/hcatalog/share/hcatalog/*hcatalog-core-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
 fi
 
 if [ "${HIVE_JDBC_DRIVER_DIR}" != "" ]; then
@@ -390,15 +387,6 @@ elif [ "$COMMAND" = "worker" ] ; then
 elif [ "$COMMAND" = "pullserver" ] ; then
   CLASS='org.apache.tajo.pullserver.TajoPullServer'
   TAJO_OPTS="$TAJO_OPTS $JAVA_PULLSERVER_HEAP_MAX $TAJO_PULLSERVER_OPTS"
-elif [ "$COMMAND" = "querymaster" ] ; then
-  CLASS='org.apache.tajo.worker.TajoWorker'
-  TAJO_OPTS="$TAJO_OPTS $JAVA_QUERYMASTER_HEAP_MAX $TAJO_QUERYMASTER_OPTS"
-  TAJO_DAEMON_MODE='standby-qm'
-elif [ "$COMMAND" = "taskrunner" ] ; then
-  CLASS='org.apache.tajo.worker.TajoWorker'
-  TAJO_OPTS="$TAJO_OPTS $TAJO_WORKER_OPTS"
-  TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
-  TAJO_DAEMON_MODE='standby-tr'
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='org.apache.tajo.catalog.CatalogServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"

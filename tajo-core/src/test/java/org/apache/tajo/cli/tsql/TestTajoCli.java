@@ -100,7 +100,7 @@ public class TestTajoCli {
   }
 
   private void assertOutputResult(String expectedResultFile, String actual, String[] paramKeys, String[] paramValues)
-      throws Exception {
+    throws Exception {
     FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     Path resultFile = StorageUtil.concatPath(currentResultPath, expectedResultFile);
     assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
@@ -140,7 +140,7 @@ public class TestTajoCli {
   @Test
   public void testParseConf() throws Exception {
     String[] args = new String[]{"--conf", "tajo.cli.print.pause=false",
-        "--conf", "tajo.executor.join.inner.in-memory-table-num=256"};
+      "--conf", "tajo.executor.join.inner.in-memory-table-num=256"};
 
     CommandLineParser parser = new PosixParser();
     CommandLine cmd = parser.parse(TajoCli.options, args);
@@ -186,7 +186,7 @@ public class TestTajoCli {
   public void testConnectDatabase() throws Exception {
     String databaseName;
 
-    if (cluster.isHCatalogStoreRunning()) {
+    if (cluster.isHiveCatalogStoreRunning()) {
       databaseName = "TEST_CONNECTION_DATABASE".toLowerCase();
     } else {
       databaseName = "TEST_CONNECTION_DATABASE";
@@ -208,7 +208,7 @@ public class TestTajoCli {
   @Test
   public void testDescTable() throws Exception {
     String tableName;
-    if (cluster.isHCatalogStoreRunning()) {
+    if (cluster.isHiveCatalogStoreRunning()) {
       tableName = "TEST_DESC_TABLE".toLowerCase();
     } else {
       tableName = "TEST_DESC_TABLE";
@@ -225,24 +225,24 @@ public class TestTajoCli {
     String consoleResult = new String(out.toByteArray());
 
     FileSystem fs = FileSystem.get(testBase.getTestingCluster().getConfiguration());
-    if (!cluster.isHCatalogStoreRunning()) {
+    if (!cluster.isHiveCatalogStoreRunning()) {
       assertOutputResult("testDescTable.result", consoleResult, new String[]{"${table.path}"},
-          new String[]{fs.getUri() + "/tajo/warehouse/default/" + tableName});
+        new String[]{fs.getUri() + "/tajo/warehouse/default/" + tableName});
     }
   }
 
   @Test
   public void testSelectResultWithNullFalse() throws Exception {
     String sql =
-        "select\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey,\n" +
-            "  orders.o_orderstatus \n" +
-            "from\n" +
-            "  orders full outer join customer on c_custkey = o_orderkey\n" +
-            "order by\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey;\n";
+      "select\n" +
+        "  c_custkey,\n" +
+        "  orders.o_orderkey,\n" +
+        "  orders.o_orderstatus \n" +
+        "from\n" +
+        "  orders full outer join customer on c_custkey = o_orderkey\n" +
+        "order by\n" +
+        "  c_custkey,\n" +
+        "  orders.o_orderkey;\n";
 
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
     tajoCli.executeScript(sql);
@@ -253,15 +253,15 @@ public class TestTajoCli {
 
   private void verifySelectResultWithNullTrue() throws Exception {
     String sql =
-        "select\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey,\n" +
-            "  orders.o_orderstatus \n" +
-            "from\n" +
-            "  orders full outer join customer on c_custkey = o_orderkey\n" +
-            "order by\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey;\n";
+      "select\n" +
+        "  c_custkey,\n" +
+        "  orders.o_orderkey,\n" +
+        "  orders.o_orderstatus \n" +
+        "from\n" +
+        "  orders full outer join customer on c_custkey = o_orderkey\n" +
+        "order by\n" +
+        "  c_custkey,\n" +
+        "  orders.o_orderkey;\n";
 
 
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
@@ -291,8 +291,8 @@ public class TestTajoCli {
     assertSessionVar(tajoCli, SessionVars.ON_ERROR_STOP.keyname(), "true");
 
     tajoCli.executeScript("select count(*) from lineitem; " +
-        "select count(*) from lineitem2; " +
-        "select count(*) from orders");
+      "select count(*) from lineitem2; " +
+      "select count(*) from orders");
 
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);
@@ -415,7 +415,7 @@ public class TestTajoCli {
   }
 
   @Test
-     public void testAlterTableAddPartition() throws Exception {
+  public void testAlterTableAddPartition() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
 
     tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");

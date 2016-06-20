@@ -39,7 +39,7 @@ Table of Contents:
    table_partitioning
    index_overview
    backup_and_restore
-   hcatalog_integration
+   hive_integration
    hbase_integration
    swift_integration
    jdbc_driver
