@@ -146,10 +146,12 @@
                       run cp -r $ROOT/tajo-sql-parser/target/tajo-sql-parser-${project.version}/* .
                       run cp -r $ROOT/tajo-storage/tajo-storage-jdbc/target/tajo-storage-jdbc-${project.version}.jar .
                       run cp -r $ROOT/tajo-storage/tajo-storage-pgsql/target/tajo-storage-pgsql-${project.version}.jar .
+                      run cp -r $ROOT/tajo-storage/tajo-storage-s3/target/tajo-storage-s3-${project.version}.jar .
                       run cp -r $ROOT/tajo-pullserver/target/tajo-pullserver-${project.version}.jar .
                       run cp -r $ROOT/tajo-metrics/target/tajo-metrics-${project.version}.jar .
                       run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}.jar .
                       run cp -r $ROOT/tajo-core/target/lib .
+                      run cp -r $ROOT/tajo-storage/tajo-storage-s3/target/lib/* lib/
                       run cp -r ${project.basedir}/src/main/bin .
                       run cp -r ${project.basedir}/src/main/conf .
                       run rm -rf lib/tajo-*-${project.version}.jar

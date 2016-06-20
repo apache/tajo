@@ -232,6 +232,14 @@ public class TajoConf extends Configuration {
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true, Validators.bool()),
 
+    // S3 Configuration --------------------------------------------------
+    S3_MAX_ERROR_RETRIES("tajo.s3.max-error-retries", 50),
+    S3_SSL_ENABLED("tajo.s3.ssl.enabled", true),
+    S3_CONNECT_TIMEOUT("tajo.s3.connect-timeout", "5m"),
+    S3_SOCKET_TIMEOUT("tajo.s3.socket-timeout", "5m"),
+    S3_MAX_CONNECTIONS("tajo.s3.max-connections", 500),
+    S3_USE_INSTANCE_CREDENTIALS("tajo.s3.use-instance-credentials", true),
+
     // RPC --------------------------------------------------------------------
     //  Internal RPC Client
     INTERNAL_RPC_CLIENT_WORKER_THREAD_NUM("tajo.internal.rpc.client.worker-thread-num",
