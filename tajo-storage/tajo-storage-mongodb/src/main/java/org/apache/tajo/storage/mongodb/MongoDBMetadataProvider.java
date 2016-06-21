@@ -92,7 +92,7 @@ public class MongoDBMetadataProvider implements MetadataProvider {
     @Override
     public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
 
-        TableMeta tbMeta = new TableMeta("rowstore", new KeyValueSet());
+        TableMeta tbMeta = new TableMeta("mongodb", new KeyValueSet());
         TableDesc tbDesc = new TableDesc(
                 IdentifierUtil.buildFQName(mappedDbName, tableName),
                 SchemaBuilder.builder()
