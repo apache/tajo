@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import net.minidev.json.JSONObject;
+import org.apache.avro.generic.GenericData;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -33,6 +34,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.storage.FormatProperty;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.Tablespace;
@@ -42,6 +44,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -107,7 +110,8 @@ public class MongoDBTableSpace extends Tablespace {
 
         long count = 0;
         try {
-            count = db.getCollection(table.getName()).count();
+            String[] nameSplited =  IdentifierUtil.splitFQTableName(table.getName());
+            count = db.getCollection(nameSplited[1]).count();
         } catch (Exception e) {
             throw new TajoInternalError(e);
         }
@@ -121,7 +125,9 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
-        MongoDBFragment mongoDBFragment = new MongoDBFragment(inputSourceId, getUri(),null );
+        String[] hosts = new String[1];
+        hosts[0] = getUri().getHost();
+        MongoDBFragment mongoDBFragment = new MongoDBFragment(inputSourceId, getUri(),hosts );
         return Lists.newArrayList(mongoDBFragment);
     }
 
