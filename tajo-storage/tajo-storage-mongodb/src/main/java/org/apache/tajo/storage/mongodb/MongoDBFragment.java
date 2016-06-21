@@ -32,12 +32,25 @@ public class MongoDBFragment extends Fragment<Long> {
 
 
     public MongoDBFragment(String inputSourceId, URI uri, List<String> hostNames) {
-        super("MONGODB", uri, inputSourceId, null, null, 0, ((String[]) hostNames.toArray()));
+
+
+        super("MONGODB", uri, inputSourceId, null, null, 0, toArray(hostNames));
+    }
+
+    public static String[] toArray(List<String> list)
+    {
+        String[] hosts = new String[1];
+        hosts[0] = list.get(0);
+        return hosts;
+    }
+
+    public MongoDBFragment(String inputSourceId, URI uri, String[] hostNames) {
+        super("MONGODB", uri, inputSourceId, null, null, 0, hostNames);
     }
 
     @Override
     public boolean isEmpty() {
-        return false;
+        return true;
     }
 
 }
