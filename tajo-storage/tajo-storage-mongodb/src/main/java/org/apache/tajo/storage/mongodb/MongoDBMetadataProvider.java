@@ -106,6 +106,7 @@ public class MongoDBMetadataProvider implements MetadataProvider {
         //Set the raw count
         stats.setNumRows(db.getCollection(tableName).count());
 
+
         tbDesc.setStats(stats);
         return tbDesc;
     }

@@ -1,1 +1,1 @@
-select title, name.first_name from col1;
+select lol from col1;

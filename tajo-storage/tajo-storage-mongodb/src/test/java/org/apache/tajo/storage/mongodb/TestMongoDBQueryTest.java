@@ -51,7 +51,7 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
 
     @Before
     public void prepareTables() throws TajoException {
-   //     executeString("create table tbl1 (*) tablespace test_spacename using ex_http_json with ('path'='got.json')");
+       // executeString("create table tbl1 (*) tablespace test_spacename using json with ('path'='file1.json')");
      //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
     }
 
@@ -59,7 +59,9 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     @SimpleTest
     @Test
     public void testSelect() throws Exception {
-        runSimpleTests();
+        //runSimpleTests();
+
+        executeString("select title, name.first_name from col1");
     }
 
 
