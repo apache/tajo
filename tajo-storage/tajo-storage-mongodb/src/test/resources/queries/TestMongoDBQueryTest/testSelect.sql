@@ -1,1 +1,1 @@
-select column1 from col1;
+select title from got;

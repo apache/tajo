@@ -100,6 +100,7 @@ public class TestMongoDBTableSpace {
     @Test
     public void testTableVolume() throws IOException, TajoException {
         Tablespace space = TablespaceManager.getByName(server.spaceName);
+        int[] tableSizes = new int[]{4,3};
         for (String tbl:server.collectionNames) {
 
            // assertEquals(1,space.getTableVolume(tableDesc, Optional.empty()));
@@ -112,7 +113,7 @@ public class TestMongoDBTableSpace {
                     null,
                     space.getTableUri(null,null, tbl));
 
-            assertEquals(1, space.getTableVolume(tbDesc,Optional.empty()));
+            assertEquals(4, space.getTableVolume(tbDesc,Optional.empty()));
 
         }
     }

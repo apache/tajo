@@ -34,6 +34,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
 import org.bson.Document;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -42,6 +44,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class MongoDBTestServer  {
@@ -65,7 +69,7 @@ public class MongoDBTestServer  {
     private MongoClient _mongo;
 
     private String[] filenames = {"file1.json","file2.json"};
-    public String[] collectionNames = {"col1","col2"};
+    public String[] collectionNames = {"github","got"};
 
 
     public static MongoDBTestServer getInstance()
@@ -163,10 +167,20 @@ public class MongoDBTestServer  {
 
             String fileContent = new Scanner( getRequestedFile(filenames[i])).useDelimiter("\\Z").next();
 
-            Document fileDoc = Document.parse(fileContent);
-//            System.out.println( fileDoc.get("dataList"));
-//            coll.insertMany((List<Document>) fileDoc.get("dataList"));
-           coll.insertOne(fileDoc);
+            //Document list
+            List<Document> documentList = new ArrayList<Document>();
+            try {
+                JSONArray jsonarray = new JSONArray(fileContent);
+                for (int j = 0; j < jsonarray.length(); j++) {
+                    String jsonStr = jsonarray.getJSONObject(j).toString();
+                    documentList.add(Document.parse(jsonStr));
+                }
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            coll.insertMany(documentList);
 
              FindIterable<Document> docs =  coll.find();
 
