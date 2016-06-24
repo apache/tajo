@@ -20,6 +20,7 @@ package org.apache.tajo.storage.mongodb;
 
 import com.google.common.collect.Lists;
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import net.minidev.json.JSONObject;
 import org.apache.avro.generic.GenericData;
@@ -40,6 +41,7 @@ import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.bson.Document;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -56,13 +58,13 @@ public class MongoDBTableSpace extends Tablespace {
     //Table Space Properties
     static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
             false,  //not movable
-            true,   //writable at the moment
+            false,   //writable at the moment
             true,   // Absolute path
             false); // Meta data will  be provided
     static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
-            true, // Insert
+            false, // Insert
             false, //direct insert
-            true);// result staging
+            false);// result staging
 
     //Mongo Client object
     private ConnectionInfo connectionInfo;
@@ -122,9 +124,8 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
-        String[] hosts = new String[1];
-        hosts[0] = getUri().getHost();
-        MongoDBFragment mongoDBFragment = new MongoDBFragment(inputSourceId, getUri(),hosts );
+        long tableVolume = getTableVolume(tableDesc, Optional.empty());
+        MongoDBFragment mongoDBFragment = new MongoDBFragment(tableDesc.getUri(), inputSourceId, 0, tableVolume );
         return Lists.newArrayList(mongoDBFragment);
     }
 
@@ -158,7 +159,10 @@ public class MongoDBTableSpace extends Tablespace {
     public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
         if(tableDesc==null)
             throw new TajoRuntimeException(new NotImplementedException());
-        db.createCollection(tableDesc.getName());
+        MongoCollection<Document> table = db.getCollection(tableDesc.getName());
+
+        //TODO Handle this here. If empty throw exception or what?
+        boolean ifExist = (table.count()>0)?true:false;
     }
 
     @Override
@@ -168,7 +172,7 @@ public class MongoDBTableSpace extends Tablespace {
 
     @Override
     public void prepareTable(LogicalNode node) throws IOException, TajoException {
-
+        return;
     }
 
     @Override

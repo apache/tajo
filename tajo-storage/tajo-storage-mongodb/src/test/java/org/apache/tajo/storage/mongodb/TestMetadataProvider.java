@@ -33,6 +33,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by janaka on 6/8/16.
  */
+@Ignore
 public class TestMetadataProvider {
     static MongoDBTestServer server = MongoDBTestServer.getInstance();
 
