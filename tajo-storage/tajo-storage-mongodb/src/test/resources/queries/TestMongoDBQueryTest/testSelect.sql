@@ -1,1 +1,1 @@
-select lol from col1;
+select column1 from col1;

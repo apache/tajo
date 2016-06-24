@@ -17,31 +17,71 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import com.mongodb.DBCursor;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import io.netty.util.CharsetUtil;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.json.JsonLineDeserializer;
+import org.apache.tajo.storage.text.TextLineParsingError;
 import org.bson.Document;
 
 import java.io.IOException;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
+import io.netty.util.CharsetUtil;
+
+import java.nio.charset.CharsetEncoder;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MongoDBCollectionReader {
-    private MongoCollection<Document> collection;
     private ConnectionInfo connectionInfo;
-    private JsonLineDeserializer deserializer;
+    private MongoDocumentDeserializer deserializer;
+    private int targetLength;
+    List<Document> documentList;
+    private int currentIndex;
+    private final CharsetEncoder encoder = CharsetUtil.getEncoder(CharsetUtil.UTF_8);
 
-    public MongoDBCollectionReader(ConnectionInfo connectionInfo,JsonLineDeserializer deserializer)
+
+    public MongoDBCollectionReader(ConnectionInfo connectionInfo,MongoDocumentDeserializer deserializer ,int targetLength)
     {
         this.connectionInfo = connectionInfo;
         this.deserializer = deserializer;
+        this.targetLength = targetLength;
     }
 
     public void init() throws IOException
     {
+        currentIndex = 0;
         MongoClient mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
         MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
-        collection = db.getCollection(connectionInfo.getTableName());
+
+        MongoCollection<Document> collection = db.getCollection(connectionInfo.getTableName());
+        documentList =(List<Document>) collection.find().into(
+                new ArrayList<Document>());;
+
+    }
+
+    public Tuple readTuple() throws IOException, TextLineParsingError {
+        if(currentIndex>=documentList.size()) return null;
+
+        Tuple outTuple = new VTuple(targetLength);
+
+        deserializer.deserialize(documentList.get(currentIndex), outTuple);
+        currentIndex++;
+        return outTuple;
+
+    }
+
+    public float getProgress()
+    {
+        return ((float)currentIndex) / documentList.size();
     }
 
 }

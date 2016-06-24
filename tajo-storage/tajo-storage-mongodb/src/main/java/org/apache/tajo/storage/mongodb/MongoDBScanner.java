@@ -49,20 +49,44 @@ import java.util.Properties;
 
 public class MongoDBScanner extends FileScanner {
 
+    MongoDBCollectionReader collectionReader;
 
     public MongoDBScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) {
         super(conf, schema, meta, fragment);
+
     }
 
     @Override
-    public Tuple next() throws IOException {
+    public void init() throws IOException {
 
-        return null;
+
+        if (targets == null) {
+            targets = schema.toArray();
+        }
+
+        reset();
+
+        super.init();
+    }
+
+
+    @Override
+    public Tuple next() throws IOException {
+        try {
+            Tuple t = collectionReader.readTuple();
+            return t;
+        } catch (TextLineParsingError textLineParsingError) {
+            textLineParsingError.printStackTrace();
+            return null;
+        }
     }
 
     @Override
     public void reset() throws IOException {
-        return;
+        MongoDocumentDeserializer deserializer = new MongoDocumentDeserializer(schema,meta,targets);
+        collectionReader = new MongoDBCollectionReader(ConnectionInfo.fromURI(fragment.getUri()),deserializer,targets.length);
+
+        collectionReader.init();
     }
 
     @Override
@@ -89,4 +113,11 @@ public class MongoDBScanner extends FileScanner {
     public boolean isSplittable() {
         return false;
     }
+
+    @Override
+    public float getProgress() {
+        return collectionReader.getProgress();
+    }
+
+
 }
