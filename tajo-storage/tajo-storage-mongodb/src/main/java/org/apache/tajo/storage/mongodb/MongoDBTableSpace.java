@@ -56,9 +56,9 @@ public class MongoDBTableSpace extends Tablespace {
     //Table Space Properties
     static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
             false,  //not movable
-            true, //  writable at the moment
+            true,   //writable at the moment
             true,   // Absolute path
-            true); // Meta data will  be provided
+            false); // Meta data will  be provided
     static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
             true, // Insert
             false, //direct insert
@@ -196,9 +196,9 @@ public class MongoDBTableSpace extends Tablespace {
 
 
     //Metadata
-    public MetadataProvider getMetadataProvider() {
-        return new MongoDBMetadataProvider(this, mappedDBName);
-    }
+//    public MetadataProvider getMetadataProvider() {
+//        return new MongoDBMetadataProvider(this, mappedDBName);
+//    }
 
     public ConnectionInfo getConnectionInfo() {
         return connectionInfo;

@@ -39,6 +39,7 @@ enum DataFormat {
   JSON = 10;
   HBASE = 11;
   SYSTEM = 12;
+  MONGODB = 13;
 }
 
 enum OrderType {

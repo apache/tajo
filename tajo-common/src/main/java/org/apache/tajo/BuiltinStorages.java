@@ -30,4 +30,5 @@ public class BuiltinStorages {
   public static final String SEQUENCE_FILE = "SEQUENCEFILE";
   public static final String AVRO = "AVRO";
   public static final String HBASE = "HBASE";
+  public static final String MONGODB = "MONGODB";
 }
