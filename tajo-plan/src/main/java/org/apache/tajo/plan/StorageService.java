@@ -19,6 +19,7 @@
 package org.apache.tajo.plan;
 
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
 
@@ -39,7 +40,7 @@ public interface StorageService {
    * @param tableName Table name
    * @return Table URI
    */
-  URI getTableURI(@Nullable String spaceName, String databaseName, String tableName);
+  URI getTableURI(@Nullable String spaceName, TableMeta meta, String databaseName, String tableName);
 
   long getTableVolumn(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException;
 }

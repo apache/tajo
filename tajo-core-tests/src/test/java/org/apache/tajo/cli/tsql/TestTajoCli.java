@@ -29,6 +29,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.cli.tsql.commands.TajoShellCommand;
 import org.apache.tajo.client.ClientParameters;
 import org.apache.tajo.client.QueryStatus;
@@ -252,9 +253,10 @@ public class TestTajoCli {
     String consoleResult = new String(out.toByteArray());
 
     if (!cluster.isHiveCatalogStoreRunning()) {
+      TableMeta meta = cluster.getCatalogService().getTableDesc("default", tableName).getMeta();
       assertOutputResult(resultFileName, consoleResult, new String[]{"${table.timezone}", "${table.path}"},
           new String[]{cluster.getConfiguration().getSystemTimezone().getID(),
-              TablespaceManager.getDefault().getTableUri("default", tableName).toString()});
+              TablespaceManager.getDefault().getTableUri(meta, "default", tableName).toString()});
     }
   }
 

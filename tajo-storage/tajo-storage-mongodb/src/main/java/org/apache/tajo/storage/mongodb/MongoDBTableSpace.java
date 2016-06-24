@@ -106,7 +106,7 @@ public class MongoDBTableSpace extends Tablespace {
     }
 
     @Override
-    public long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException {
+    public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
 
         long count = 0;
         try {
@@ -118,10 +118,7 @@ public class MongoDBTableSpace extends Tablespace {
         return count;
     }
 
-    @Override
-    public URI getTableUri(String databaseName, String tableName) {
-        return URI.create(this.getUri()+"&table="+tableName);
-    }
+
 
     @Override
     public List<Fragment> getSplits(String inputSourceId, TableDesc tableDesc, boolean requireSort, @Nullable EvalNode filterCondition) throws IOException, TajoException {
@@ -193,6 +190,24 @@ public class MongoDBTableSpace extends Tablespace {
     public URI getRootUri() {
         return uri;
     }
+
+    @Override
+    public URI getTableUri(TableMeta meta, String databaseName, String tableName) {
+        //ToDo set the TableURI properly
+        return URI.create(this.getUri()+"&table="+tableName);
+    }
+
+    //@Override
+    public URI getTableUri( String databaseName, String tableName) {
+        //ToDo set the TableURI properly
+        return URI.create(this.getUri()+"&table="+tableName);
+    }
+
+//    @Override
+//    public URI getTableUri(String databaseName, String tableName) {
+//        //ToDo set the TableURI properly
+//        return URI.create(this.getUri()+"&table="+tableName);
+//    }
 
 
     //Metadata

@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.exception.UndefinedTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.DataFormat;
 
 public class InfoSchemaMetadataDictionary {
   private static final String DATABASE_NAME = "information_schema";
@@ -129,6 +129,6 @@ public class InfoSchemaMetadataDictionary {
   }
   
   protected String getTablePath() {
-    return DataFormat.SYSTEM.name().toUpperCase();
+    return BuiltinStorages.SYSTEM;
   }
 }

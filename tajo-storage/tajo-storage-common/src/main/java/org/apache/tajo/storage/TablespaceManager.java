@@ -32,6 +32,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.MetadataProvider;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UndefinedTablespaceException;
@@ -430,9 +431,9 @@ public class TablespaceManager implements StorageService {
   }
 
   @Override
-  public URI getTableURI(@Nullable String spaceName, String databaseName, String tableName) {
+  public URI getTableURI(@Nullable String spaceName, TableMeta meta, String databaseName, String tableName) {
     Tablespace space = spaceName == null ? getDefault() : getByName(spaceName);
-    return space.getTableUri(databaseName, tableName);
+    return space.getTableUri(meta, databaseName, tableName);
   }
 
   @Override

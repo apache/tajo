@@ -334,7 +334,11 @@ public class TajoTestingCluster {
   }
 
   public CatalogService getCatalogService() {
-    return new LocalCatalogWrapper(catalogServer);
+    if (catalogServer != null) {
+      return new LocalCatalogWrapper(catalogServer);
+    } else {
+      return tajoMaster.getCatalog();
+    }
   }
 
   public boolean isHiveCatalogStoreRunning() {

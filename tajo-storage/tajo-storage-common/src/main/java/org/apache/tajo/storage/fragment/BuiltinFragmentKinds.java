@@ -22,4 +22,5 @@ public class BuiltinFragmentKinds {
   public static final String FILE = "FILE";
   public static final String HBASE = "HBASE";
   public static final String JDBC = "JDBC";
+  public static final String HTTP = "EXAMPLE-HTTP";
 }

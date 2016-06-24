@@ -31,4 +31,6 @@ public class BuiltinStorages {
   public static final String AVRO = "AVRO";
   public static final String HBASE = "HBASE";
   public static final String MONGODB = "MONGODB";
+  public static final String SYSTEM = "SYSTEM";
+  public static final String EX_HTTP_JSON = "EX_HTTP_JSON";
 }

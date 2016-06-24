@@ -76,7 +76,7 @@ public class TestResultSet {
     rowBlock = new MemoryRowBlock(SchemaUtil.toDataTypes(scoreSchema));
     TableStats stats = new TableStats();
 
-    Path p = new Path(sm.getTableUri("default", "score"));
+    Path p = new Path(sm.getTableUri(scoreMeta, "default", "score"));
     sm.getFileSystem().mkdirs(p);
     Appender appender = sm.getAppender(scoreMeta, scoreSchema, new Path(p, "score"));
     appender.init();

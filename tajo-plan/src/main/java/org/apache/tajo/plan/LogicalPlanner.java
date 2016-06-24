@@ -2009,7 +2009,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           IdentifierUtil.extractQualifier(tableName) : context.queryContext.get(SessionVars.CURRENT_DATABASE);
 
       return storage.getTableURI(
-          createTable.getTableSpaceName(), databaseName, IdentifierUtil.extractSimpleName(tableName));
+          createTable.getTableSpaceName(),
+          new TableMeta(createTable.getStorageType(), new KeyValueSet(createTable.getParams())),
+          databaseName,
+          IdentifierUtil.extractSimpleName(tableName));
     }
   }
 

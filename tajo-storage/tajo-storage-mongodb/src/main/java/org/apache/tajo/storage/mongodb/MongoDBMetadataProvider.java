@@ -98,7 +98,7 @@ public class MongoDBMetadataProvider implements MetadataProvider {
                 SchemaBuilder.builder()
                         .build(),
                 tbMeta,
-                tableSpace.getTableUri(null, tableName));
+                tableSpace.getTableUri(null,null, tableName));
 
         final TableStats stats = new TableStats();
         stats.setNumRows(-1); // unknown

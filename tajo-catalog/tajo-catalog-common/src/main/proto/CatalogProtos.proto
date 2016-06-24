@@ -25,22 +25,6 @@ option java_generate_equals_and_hash = true;
 import "DataTypes.proto";
 import "PrimitiveProtos.proto";
 
-enum DataFormat {
-  MEM = 0;
-  TEXTFILE = 1;
-  RAW = 2;
-  RCFILE = 3;
-  ROWFILE = 4;
-  HCFILE = 5;
-  ORC = 6;
-  PARQUET = 7;
-  SEQUENCEFILE = 8;
-  AVRO = 9;
-  JSON = 10;
-  HBASE = 11;
-  SYSTEM = 12;
-  MONGODB = 13;
-}
 
 enum OrderType {
   ORDER_NONE = 0;
