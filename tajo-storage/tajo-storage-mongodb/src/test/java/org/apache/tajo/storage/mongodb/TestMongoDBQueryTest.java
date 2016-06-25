@@ -20,10 +20,7 @@ package org.apache.tajo.storage.mongodb;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.storage.TablespaceManager;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.net.URI;
 
@@ -51,9 +48,19 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
 
     @Before
     public void prepareTables() throws TajoException {
-        executeString("create table got (*) tablespace test_spacename using mongodb");
-        executeString("create table github (*) tablespace test_spacename using mongodb");
-     //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
+        if(!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+            executeString("create table got (*) tablespace test_spacename using mongodb");
+            executeString("create table github (*) tablespace test_spacename using mongodb");
+            //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
+        }
+    }
+
+    @After
+    public void dropTables() throws TajoException {
+        if(!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+            executeString("drop table got");
+            executeString("drop table github");
+        }
     }
 
 

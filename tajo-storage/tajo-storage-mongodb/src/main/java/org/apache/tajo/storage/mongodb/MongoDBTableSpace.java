@@ -163,10 +163,15 @@ public class MongoDBTableSpace extends Tablespace {
 
         //TODO Handle this here. If empty throw exception or what?
         boolean ifExist = (table.count()>0)?true:false;
+
+        //If meta  data provides. Create a table
+        if(STORAGE_PROPERTY.isMetadataProvided())
+            db.createCollection(tableDesc.getName());
     }
 
     @Override
     public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
+        if(STORAGE_PROPERTY.isMetadataProvided())
             db.getCollection(tableDesc.getName()).drop();
     }
 
@@ -220,10 +225,10 @@ public class MongoDBTableSpace extends Tablespace {
 //    }
 
 
-    //Metadata
-//    public MetadataProvider getMetadataProvider() {
-//        return new MongoDBMetadataProvider(this, mappedDBName);
-//    }
+   // Metadata
+    public MetadataProvider getMetadataProvider() {
+        return new MongoDBMetadataProvider(this, mappedDBName);
+    }
 
     public ConnectionInfo getConnectionInfo() {
         return connectionInfo;

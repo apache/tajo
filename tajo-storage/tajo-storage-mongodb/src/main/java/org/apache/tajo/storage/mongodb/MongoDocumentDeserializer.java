@@ -221,23 +221,23 @@ public class MongoDocumentDeserializer extends TextLineDeserializer {
     }
 
     public void deserialize(Document doc, Tuple output) throws IOException, TextLineParsingError {
-//        String line = doc.to;
-//
-//        JSONObject object;
-//        try {
-//            object = (JSONObject) parser.parse(line);
-//        } catch (ParseException pe) {
-//            throw new TextLineParsingError(line, pe);
-//        } catch (ArrayIndexOutOfBoundsException ae) {
-//            // truncated value
-//            throw new TextLineParsingError(line, ae);
-//        }
+
+        String line = doc.toJson();
+        JSONObject object;
+        try {
+            object = (JSONObject) parser.parse(line);
+        } catch (ParseException pe) {
+            throw new TextLineParsingError(line, pe);
+        } catch (ArrayIndexOutOfBoundsException ae) {
+            // truncated value
+            throw new TextLineParsingError(line, ae);
+        }
 
         for (int i = 0; i < projectedPaths.length; i++) {
-//            String [] paths = projectedPaths[i].split(NestedPathUtil.PATH_DELIMITER);
-//            getValue(object, paths[0], paths, 0, i, output);
+          String [] paths = projectedPaths[i].split(NestedPathUtil.PATH_DELIMITER);
+            getValue(object, paths[0], paths, 0, i, output);
 
-            output.put(i, DatumFactory.createText( doc.get(projectedPaths[i]).toString() ));
+            //output.put(i, DatumFactory.createText( doc.get(projectedPaths[i]).toString() ));
         }
     }
 

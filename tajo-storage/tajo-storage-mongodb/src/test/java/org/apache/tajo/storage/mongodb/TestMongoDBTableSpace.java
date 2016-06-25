@@ -71,7 +71,8 @@ public class TestMongoDBTableSpace {
         space.createTable(null, false);
     }
 
-    @Ignore
+
+    //Todo delete only metadat is provide
     @Test(timeout = 1000)
     public void testCreateTable_and_Purg() throws IOException, TajoException {
         Tablespace space = TablespaceManager.getByName(server.spaceName);
@@ -83,18 +84,21 @@ public class TestMongoDBTableSpace {
                 null,
                 server.getURI());
 
-        space.createTable(tableDesc, false);
+        //Test create and delete if meta data provided
+        if(MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
+            space.createTable(tableDesc, false);
 
-        //Check whether the created table is in the collection
-        final Set<String> found = Sets.newHashSet(space.getMetadataProvider().getTables(null, null));
-        assertTrue(found.contains(IdentifierUtil.buildFQName(server.mappedDbName, "Table1")));
+            //Check whether the created table is in the collection
+            final Set<String> found = Sets.newHashSet(space.getMetadataProvider().getTables(null, null));
+            assertTrue(found.contains(IdentifierUtil.buildFQName(server.mappedDbName, "Table1")));
 
 
-        //Purg the table
-        space.purgeTable(tableDesc);
-        final Set<String> found_after = Sets.newHashSet(space.getMetadataProvider().getTables(null, null));
-        assertFalse(found_after.contains(IdentifierUtil.buildFQName(server.mappedDbName, "Table1")));
+            //Purg the table
+            space.purgeTable(tableDesc);
+            final Set<String> found_after = Sets.newHashSet(space.getMetadataProvider().getTables(null, null));
+            assertFalse(found_after.contains(IdentifierUtil.buildFQName(server.mappedDbName, "Table1")));
 
+        }
     }
 
     @Test

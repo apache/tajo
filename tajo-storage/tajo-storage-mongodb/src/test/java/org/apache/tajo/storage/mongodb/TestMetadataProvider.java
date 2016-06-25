@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by janaka on 6/8/16.
  */
-@Ignore
+
 public class TestMetadataProvider {
     static MongoDBTestServer server = MongoDBTestServer.getInstance();
 
@@ -71,14 +71,14 @@ public class TestMetadataProvider {
         assertEquals(expected, found);
     }
     @Test
-    public void testGetTableDescriptor() throws Exception {
+    public void testGetTableDescription() throws Exception {
         Tablespace tablespace = TablespaceManager.get(server.getURI());
         MetadataProvider provider = tablespace.getMetadataProvider();
 
         for (String tableName : server.collectionNames) {
             TableDesc table = provider.getTableDesc(null, tableName);
             assertEquals(   server.mappedDbName+"."+tableName, table.getName());
-            assertEquals(server.getURI() + "&table=" + tableName, table.getUri().toASCIIString());
+            assertEquals(server.getURI() + "?table=" + tableName, table.getUri().toASCIIString());
 
             //ToDo Check the stats
         }

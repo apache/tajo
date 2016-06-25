@@ -66,6 +66,7 @@ public class MongoDBCollectionReader {
         documentList =(List<Document>) collection.find().into(
                 new ArrayList<Document>());;
 
+        deserializer.init();
     }
 
     public Tuple readTuple() throws IOException, TextLineParsingError {
