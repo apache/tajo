@@ -151,6 +151,8 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2163: No error message is showed when query execution failed. (Wonjun Hong via jihoon)
+
     TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
 
     TAJO-2151: Fix broken CI. (jihoon)
@@ -380,6 +382,8 @@ Release 0.12.0 - unreleased
     Committed by jihoon)
 
   SUB TASKS
+
+    TAJO-2156: Create GeoIP functions taking various types instead of INET4 type. (jongyoung)
 
     TAJO-2130: Remove inet4 data type.
     (Contributed by Jongyoung Park. Committed by jihoon)
