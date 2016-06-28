@@ -30,7 +30,7 @@ import java.util.Arrays;
 /**
  * Fragment for file systems.
  */
-public class FileFragment extends Fragment<Long> {
+public class FileFragment extends AbstractFileFragment {
   private Integer[] diskIds; // disk volume ids
 
   public FileFragment(String tableName, Path uri, BlockLocation blockLocation)

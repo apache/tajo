@@ -350,9 +350,9 @@ public class SequenceFileScanner extends FileScanner {
     if (reader != null)
       reader.close();
 
-    if (tableStats != null) {
-      tableStats.setReadBytes(totalBytes);
-      tableStats.setNumRows(currentIdx);
+    if (inputStats != null) {
+      inputStats.setReadBytes(totalBytes);
+      inputStats.setNumRows(currentIdx);
     }
 
     outTuple = null;

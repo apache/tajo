@@ -435,12 +435,12 @@ public class RawFile {
 
     @Override
     public TableStats getInputStats() {
-      if(tableStats != null){
-        tableStats.setNumRows(recordCount);
-        tableStats.setReadBytes(totalReadBytes); // actual read bytes (scan + rescan * n)
-        tableStats.setNumBytes(fragment.getLength());
+      if(inputStats != null){
+        inputStats.setNumRows(recordCount);
+        inputStats.setReadBytes(totalReadBytes); // actual read bytes (scan + rescan * n)
+        inputStats.setNumBytes(fragment.getLength());
       }
-      return tableStats;
+      return inputStats;
     }
 
     @Override

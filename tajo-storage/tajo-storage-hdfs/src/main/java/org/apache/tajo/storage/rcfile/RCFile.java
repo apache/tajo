@@ -1591,9 +1591,9 @@ public class RCFile {
       currentValue.inited = true;
       readBytes += currentValue.getReadBytes();
 
-      if (tableStats != null) {
-        tableStats.setReadBytes(readBytes);
-        tableStats.setNumRows(passedRowsNum);
+      if (inputStats != null) {
+        inputStats.setReadBytes(readBytes);
+        inputStats.setNumRows(passedRowsNum);
       }
     }
 
@@ -1776,9 +1776,9 @@ public class RCFile {
 
     @Override
     public void close() throws IOException {
-      if (tableStats != null) {
-        tableStats.setReadBytes(readBytes);  //Actual Processed Bytes. (decompressed bytes + header - seek)
-        tableStats.setNumRows(passedRowsNum);
+      if (inputStats != null) {
+        inputStats.setReadBytes(readBytes);  //Actual Processed Bytes. (decompressed bytes + header - seek)
+        inputStats.setNumRows(passedRowsNum);
       }
 
       IOUtils.cleanup(LOG, in, currentValue);

@@ -36,7 +36,7 @@ import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.AbstractFileFragment;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.*;
@@ -57,15 +57,16 @@ public class DelimitedLineReader implements Closeable {
   private boolean eof = true;
   private ByteBufLineReader lineReader;
   private AtomicInteger lineReadBytes = new AtomicInteger();
-  private FileFragment fragment;
+  private AbstractFileFragment fragment;
   private Configuration conf;
   private int bufferSize;
 
-  public DelimitedLineReader(Configuration conf, final FileFragment fragment) throws IOException {
+  public DelimitedLineReader(Configuration conf, final AbstractFileFragment fragment) throws IOException {
     this(conf, fragment, 128 * StorageUnit.KB);
   }
 
-  public DelimitedLineReader(Configuration conf, final FileFragment fragment, int bufferSize) throws IOException {
+  public DelimitedLineReader(Configuration conf, final AbstractFileFragment fragment, int bufferSize)
+      throws IOException {
     this.fragment = fragment;
     this.conf = conf;
     this.factory = new CompressionCodecFactory(conf);
@@ -115,13 +116,13 @@ public class DelimitedLineReader implements Closeable {
         channel.position(startOffset);
         is = inputStream;
         lineReader = new ByteBufLineReader(new LocalFileInputChannel(inputStream),
-            BufferPool.directBuffer((int) Math.min(bufferSize, end)));
+            BufferPool.directBuffer((int) Math.min(bufferSize, fragment.getLength())));
       } else {
         fis = fs.open(fragment.getPath());
         fis.seek(startOffset);
         is = fis;
         lineReader = new ByteBufLineReader(new FSDataInputChannel(fis),
-            BufferPool.directBuffer((int) Math.min(bufferSize, end)));
+            BufferPool.directBuffer((int) Math.min(bufferSize, fragment.getLength())));
       }
     }
     eof = false;
@@ -145,7 +146,7 @@ public class DelimitedLineReader implements Closeable {
     return retVal;
   }
 
-  public long getUnCompressedPosition() throws IOException {
+  public long getUncompressedPosition() throws IOException {
     return pos;
   }
 

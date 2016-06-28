@@ -26,7 +26,10 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -50,44 +53,14 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
 
-
   public static String getBackwardCompitableDataFormat(String dataFormat) {
-    return getDataFormatAsString(asDataFormat(dataFormat));
-  }
-
-  public static String getDataFormatAsString(final DataFormat type) {
-    if (type == DataFormat.TEXTFILE) {
-      return BuiltinStorages.TEXT;
-    } else {
-      return type.name();
-    }
-  }
-
-  public static DataFormat asDataFormat(final String typeStr) {
-    if (typeStr.equalsIgnoreCase("CSV")) {
-      return DataFormat.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.RAW.name())) {
-      return CatalogProtos.DataFormat.RAW;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ROWFILE.name())) {
-      return DataFormat.ROWFILE;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.RCFILE.name())) {
-      return DataFormat.RCFILE;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.ORC.name())) {
-      return CatalogProtos.DataFormat.ORC;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.PARQUET.name())) {
-      return DataFormat.PARQUET;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.SEQUENCEFILE.name())) {
-      return DataFormat.SEQUENCEFILE;
-    } else if (typeStr.equalsIgnoreCase(DataFormat.AVRO.name())) {
-      return CatalogProtos.DataFormat.AVRO;
-    } else if (typeStr.equalsIgnoreCase(BuiltinStorages.TEXT)) {
-      return CatalogProtos.DataFormat.TEXTFILE;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.JSON.name())) {
-      return CatalogProtos.DataFormat.JSON;
-    } else if (typeStr.equalsIgnoreCase(CatalogProtos.DataFormat.HBASE.name())) {
-      return CatalogProtos.DataFormat.HBASE;
-    } else {
-      return null;
+    final String upperDataFormat = dataFormat.toUpperCase();
+    switch (upperDataFormat) {
+      case "CSV":
+      case "TEXTFILE":
+        return BuiltinStorages.TEXT;
+      default:
+        return dataFormat;
     }
   }
 

@@ -99,7 +99,7 @@ public abstract class Tablespace {
     return name + "=" + uri.toString();
   }
 
-  public abstract long getTableVolume(TableDesc table, Optional<EvalNode> filter) throws UnsupportedException;
+  public abstract long getTableVolume(TableDesc table, Optional<EvalNode> filter);
 
   /**
    * if {@link StorageProperty#isArbitraryPathAllowed} is true,
@@ -115,11 +115,12 @@ public abstract class Tablespace {
   /**
    * Get Table URI
    *
+   * @param meta table meta
    * @param databaseName Database name
    * @param tableName Table name
    * @return Table URI
    */
-  public abstract URI getTableUri(String databaseName, String tableName);
+  public abstract URI getTableUri(TableMeta meta, String databaseName, String tableName);
 
   /**
    * Returns the splits that will serve as input for the scan tasks. The
@@ -280,11 +281,10 @@ public abstract class Tablespace {
     if (appenderClass == null) {
       appenderClass = conf.getClass(
           String.format("tajo.storage.appender-handler.%s.class", handlerName), null, Appender.class);
+      if (appenderClass == null) {
+        throw new IOException("Undefined appender handler for " + meta.getDataFormat());
+      }
       OldStorageManager.APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
-    }
-
-    if (appenderClass == null) {
-      throw new IOException("Unknown Storage Type: " + meta.getDataFormat());
     }
 
     appender = OldStorageManager.newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);
