@@ -115,7 +115,13 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
           new QueryContext(tajoConf), null,
           new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0),
           fragmentProtos, null);
-      QueryExecutor.startScriptExecutors(taskContext.getQueryContext(), taskContext.getEvalContext(), scanNode.getTargets());
+
+      if (scanNode.hasTargets()) {
+        QueryExecutor.startScriptExecutors(taskContext.getQueryContext(),
+            taskContext.getEvalContext(),
+            scanNode.getTargets());
+      }
+
       this.scanExec = new PartitionMergeScanExec(taskContext, scanNode, fragmentProtos);
       this.scanExec.init();
     } else {
@@ -156,7 +162,9 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       rowBlock = null;
     }
 
-    QueryExecutor.stopScriptExecutors(taskContext.getEvalContext());
+    if (taskContext != null) {
+      QueryExecutor.stopScriptExecutors(taskContext.getEvalContext());
+    }
 
     //remove temporal final output
     if (!tajoConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
