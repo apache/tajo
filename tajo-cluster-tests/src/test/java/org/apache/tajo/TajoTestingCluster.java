@@ -59,6 +59,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -151,7 +152,10 @@ public class TajoTestingCluster {
     conf.setIntVar(ConfVars.HISTORY_QUERY_CACHE_SIZE, 10);
 
     // Python function path
-    conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
+    URL pythonUdfURL = getClass().getResource("/pyudf");
+    if (pythonUdfURL != null) {
+      conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, pythonUdfURL.toString());
+    }
 
     // Buffer size
     conf.setInt(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE.varname, 1);

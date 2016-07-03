@@ -153,10 +153,14 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2168: NullPointerException occurs when a simple query contains a python udf. 
+    (jihoon)
+
     TAJO-2164: SequenceFile print wrong values with TextSerializerDeserializer.
     (jaehwa)
 
-    TAJO-2163: No error message is showed when query execution failed. (Wonjun Hong via jihoon)
+    TAJO-2163: No error message is showed when query execution failed. 
+    (Wonjun Hong via jihoon)
 
     TAJO-2150: Fix invalid implementation of date time in jdbc. (jinho)
 
