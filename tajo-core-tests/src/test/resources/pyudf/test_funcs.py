@@ -15,6 +15,7 @@
 #  limitations under the License.
 
 from tajo_util import output_type
+from types import StringType
 
 @output_type('int4')
 def return_one():
@@ -34,3 +35,9 @@ def add_py(a,b):
         return a+b
     else:
         return None
+
+def str_len(a):
+    if a is None:
+        return 0
+    else:
+        return len(a)

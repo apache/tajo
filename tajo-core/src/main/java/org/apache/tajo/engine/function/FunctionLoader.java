@@ -105,7 +105,7 @@ public class FunctionLoader {
         try {
           codePath = new Path(codePathStr);
         } catch (IllegalArgumentException e) {
-          LOG.warn(e);
+          LOG.warn("Illegal function path", e);
           continue;
         }
 

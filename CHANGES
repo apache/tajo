@@ -4,6 +4,9 @@ Release 0.11.4 - unreleased
 
   BUG FIXES
 
+    TAJO-2168: NullPointerException occurs when a simple query contains a python udf. 
+    (jihoon)
+
     TAJO-2163: No error message is showed when query execution failed.
     (Wonjun Hong via jihoon)
 

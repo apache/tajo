@@ -29,6 +29,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_AGGREGATION;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_UDA;
 
@@ -146,7 +148,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	
 	@Override
 	public int hashCode() {
-	  return Objects.hashCode(funcDesc, argEvals);
+	  return Objects.hashCode(funcDesc, Arrays.hashCode(argEvals));
 	}
 	
 	@Override
