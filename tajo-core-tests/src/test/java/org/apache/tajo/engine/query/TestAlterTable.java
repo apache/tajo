@@ -24,6 +24,7 @@ import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.schema.IdentifierUtil;
@@ -86,6 +87,20 @@ public class TestAlterTable extends QueryTestCaseBase {
     ResultSet after_res = executeQuery();
     assertResultSet(after_res, "after_set_property_delimiter.result");
     cleanupQuery(after_res);
+  }
+
+  @Test
+  public final void testAlterTableUnSetProperty() throws Exception {
+    executeDDL("table2_ddl.sql", "table2.tbl", "ALTX");
+    String tableName = IdentifierUtil.buildFQName(getCurrentDatabase(), "altx");
+    assertTrue(catalog.existsTable(tableName));
+
+    TableDesc tableDesc = catalog.getTableDesc(tableName);
+    TableMeta tableMeta = tableDesc.getMeta();
+    assertEquals(tableMeta.getPropertySet().size(), 3);
+    assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
+    assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
+    assertEquals(tableMeta.getProperty("text.delimiter"), "\\u002b");
   }
 
   // TODO: This should be added at TAJO-1891
