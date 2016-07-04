@@ -1628,6 +1628,7 @@ alter_table_statement
   | ALTER TABLE table_name ADD (if_not_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
   | ALTER TABLE table_name DROP (if_exists)? PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (PURGE)?
   | ALTER TABLE table_name SET PROPERTY property_list
+  | ALTER TABLE table_name UNSET PROPERTY property_key_list
   | ALTER TABLE table_name REPAIR PARTITION
   ;
 
@@ -1645,4 +1646,12 @@ property_list
 
 property
   : key=Character_String_Literal EQUAL value=Character_String_Literal
+  ;
+
+property_key_list
+  : property_key (COMMA property_key)*
+  ;
+
+property_key
+  : key=Character_String_Literal
   ;
