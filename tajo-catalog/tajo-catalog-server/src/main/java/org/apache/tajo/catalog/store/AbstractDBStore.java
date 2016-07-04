@@ -36,6 +36,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.*;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.util.PartitionFilterAlgebraVisitor;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.type.TypeProtobufEncoder;
 import org.apache.tajo.type.TypeStringEncoder;
@@ -1037,6 +1038,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     case SET_PROPERTY:
       setProperties(tableId, alterTableDescProto.getParams());
       break;
+    case UNSET_PROPERTY:
+      unsetProperties(tableId, alterTableDescProto.getPropertyKeys());
+      break;
     default:
     }
   }
@@ -1093,6 +1097,38 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           pstmt.setInt(1, tableId);
           pstmt.setString(2, entry.getKey());
           pstmt.setString(3, entry.getValue());
+          pstmt.executeUpdate();
+          pstmt.close();
+        }
+      }
+
+      conn.commit();
+    } catch (Throwable sqlException) {
+      throw new TajoInternalError(sqlException);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
+  }
+
+  private void unsetProperties(final int tableId, final PrimitiveProtos.StringListProto propertyKeys) {
+    final String deleteSql = "DELETE FROM " + TB_OPTIONS + " WHERE TID=? AND KEY_=?";
+
+    Connection conn;
+    PreparedStatement pstmt = null;
+
+    Map<String, String> oldProperties = getTableOptions(tableId);
+
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      for (String key : propertyKeys.getValuesList()) {
+        if (oldProperties.containsKey(key)) {
+          // unset property
+          pstmt = conn.prepareStatement(deleteSql);
+
+          pstmt.setInt(1, tableId);
+          pstmt.setString(2, key);
           pstmt.executeUpdate();
           pstmt.close();
         }
