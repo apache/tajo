@@ -42,6 +42,8 @@ public class AlterTableNode extends LogicalNode {
   @Expose
   private KeyValueSet properties = new KeyValueSet();
   @Expose
+  private String[] propertyKeys;
+  @Expose
   private AlterTableOpType alterTableOpType;
   @Expose
   private String[] partitionColumns;
@@ -130,6 +132,14 @@ public class AlterTableNode extends LogicalNode {
     this.properties = properties;
   }
 
+  public String[] getPropertyKeys() {
+    return propertyKeys;
+  }
+
+  public void setPropertyKeys(String[] propertyKeys) {
+    this.propertyKeys = propertyKeys;
+  }
+
   public String[] getPartitionColumns() {
     return partitionColumns;
   }
@@ -186,7 +196,7 @@ public class AlterTableNode extends LogicalNode {
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName, addNewColumn, alterTableOpType, columnName, newColumnName, newTableName,
-      tableName, properties, partitionColumns, partitionValues, location, isPurge, ifNotExists, ifExists);
+      tableName, properties, propertyKeys, partitionColumns, partitionValues, location, isPurge, ifNotExists, ifExists);
   }
 
   @Override
