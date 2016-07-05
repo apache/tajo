@@ -476,6 +476,7 @@ public class DDLExecutor {
     case SET_PROPERTY:
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType
           .SET_PROPERTY));
+      break;
     case UNSET_PROPERTY:
       catalog.alterTable(CatalogUtil.unsetProperty(qualifiedName, alterTable.getPropertyKeys(), AlterTableType
           .UNSET_PROPERTY));
