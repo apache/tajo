@@ -552,6 +552,16 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
+  public static AlterTableDesc unsetProperty(String tableName, String[] propertyKeys, AlterTableType alterTableType) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    for (String key : propertyKeys) {
+      alterTableDesc.addPropertyKey(key);
+    }
+    alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
   /**
    * Converts passed parameters to a AlterTableDesc. This method would be called when adding a partition or dropping
    * a table. This creates AlterTableDesc that is a wrapper class for protocol buffer.
