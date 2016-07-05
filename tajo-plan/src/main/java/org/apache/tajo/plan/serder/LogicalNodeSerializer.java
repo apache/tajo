@@ -41,10 +41,7 @@ import org.apache.tajo.plan.serder.PlanProto.LogicalNodeTree;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.ProtoUtil;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * It serializes a logical plan into a protobuf-based serialized bytes.
@@ -609,10 +606,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       break;
     case UNSET_PROPERTY:
       alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.UNSET_PROPERTY);
-      int i = 0;
-      for (String propertyKey : node.getPropertyKeys()) {
-        alterTableBuilder.setPropertyKeys(i, propertyKey);
-      }
+      alterTableBuilder.setPropertyKeys(ProtoUtil.convertStrings(Arrays.asList(node.getPropertyKeys())));
       break;
     case ADD_PARTITION:
       alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.ADD_PARTITION);

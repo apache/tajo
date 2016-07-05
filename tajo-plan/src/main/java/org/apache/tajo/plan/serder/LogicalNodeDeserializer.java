@@ -34,6 +34,7 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.net.URI;
@@ -625,8 +626,8 @@ public class LogicalNodeDeserializer {
       alterTable.setProperties(new KeyValueSet(alterTableProto.getProperties()));
       break;
     case UNSET_PROPERTY:
-      alterTable.setPropertyKeys(alterTableProto.getPropertyKeysList()
-          .toArray(new String[alterTableProto.getPropertyKeysCount()]));
+      Collection<String> strings = ProtoUtil.convertStrings(alterTableProto.getPropertyKeys());
+      alterTable.setPropertyKeys(strings.toArray(new String[strings.size()]));
       break;
     case ADD_PARTITION:
       alterPartition = alterTableProto.getAlterPartition();
