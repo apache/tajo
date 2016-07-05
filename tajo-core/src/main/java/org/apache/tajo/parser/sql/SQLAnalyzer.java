@@ -1952,7 +1952,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   private List<String> getPropertyKeys(Property_key_listContext ctx) {
     List<String> keys = Lists.newArrayList();
     for (int i = 0; i < ctx.property_key().size(); i++) {
-      keys.add(stripQuote(ctx.property_key().get(i).getText()));
+      keys.add(stripQuote(ctx.property_key(i).key.getText()));
     }
     return keys;
   }
