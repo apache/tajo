@@ -90,9 +90,9 @@ public class TestAlterTable extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testAlterTableUnSetProperty() throws Exception {
-    executeDDL("table2_ddl.sql", "table2.tbl", "ALTX");
-    String tableName = IdentifierUtil.buildFQName(getCurrentDatabase(), "altx");
+  public final void testAlterTableUnsetProperty() throws Exception {
+    executeDDL("table2_ddl.sql", "table2.tbl", "ALTY");
+    String tableName = IdentifierUtil.buildFQName(getCurrentDatabase(), "alty");
     assertTrue(catalog.existsTable(tableName));
 
     TableDesc tableDesc = catalog.getTableDesc(tableName);
@@ -101,6 +101,21 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
     assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
     assertEquals(tableMeta.getProperty("text.delimiter"), "\\u002b");
+
+    executeDDL("alter_table_unset_property_delimiter.sql", null);
+
+    tableDesc = catalog.getTableDesc(tableName);
+    tableMeta = tableDesc.getMeta();
+    assertEquals(tableMeta.getPropertySet().size(), 2);
+    assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
+    assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
+
+    executeDDL("alter_table_unset_property_timezone.sql", null);
+
+    tableDesc = catalog.getTableDesc(tableName);
+    tableMeta = tableDesc.getMeta();
+    assertEquals(tableMeta.getPropertySet().size(), 1);
+    assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
   }
 
   // TODO: This should be added at TAJO-1891
