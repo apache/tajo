@@ -2031,7 +2031,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return AlterTableOpType.DROP_PARTITION;
       case 4098:
         return AlterTableOpType.SET_PROPERTY;
-      case 4160:
+      case 4224:
         return AlterTableOpType.UNSET_PROPERTY;
       default:
         return null;
