@@ -98,8 +98,8 @@ public class TestAlterTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(tableName);
     TableMeta tableMeta = tableDesc.getMeta();
     assertEquals(tableMeta.getPropertySet().size(), 3);
-    assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
-    assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
+    assertNotNull(tableMeta.getProperty("timezone"));
+    assertNotNull(tableMeta.getProperty("text.null"));
     assertEquals(tableMeta.getProperty("text.delimiter"), "\\u002b");
 
     executeDDL("alter_table_unset_property_delimiter.sql", null);
@@ -107,16 +107,16 @@ public class TestAlterTable extends QueryTestCaseBase {
     tableDesc = catalog.getTableDesc(tableName);
     tableMeta = tableDesc.getMeta();
     assertEquals(tableMeta.getPropertySet().size(), 2);
-    assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
-    assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
+    assertNotNull(tableMeta.getProperty("timezone"));
+    assertNotNull(tableMeta.getProperty("text.null"));
 
     executeDDL("alter_table_unset_not_exists_property.sql", null);
 
     tableDesc = catalog.getTableDesc(tableName);
     tableMeta = tableDesc.getMeta();
     assertEquals(tableMeta.getPropertySet().size(), 2);
-    assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
-    assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
+    assertNotNull(tableMeta.getProperty("timezone"));
+    assertNotNull(tableMeta.getProperty("text.null"));
   }
 
   // TODO: This should be added at TAJO-1891
