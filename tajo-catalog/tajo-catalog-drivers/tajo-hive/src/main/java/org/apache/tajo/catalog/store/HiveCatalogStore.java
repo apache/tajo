@@ -210,8 +210,8 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
           }
 
         } else if (BuiltinStorages.SEQUENCE_FILE.equals(dataFormat)) {
-          options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
-          options.set(StorageConstants.SEQUENCEFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+          options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
+          options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava(nullFormat));
           String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
           if (LazyBinarySerDe.class.getName().equals(serde)) {
             options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
@@ -537,7 +537,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         if (StorageConstants.DEFAULT_TEXT_SERDE.equals(serde)) {
           sd.getSerdeInfo().setSerializationLib(LazySimpleSerDe.class.getName());
 
-          String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_DELIMITER,
+          String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.TEXT_DELIMITER,
               StorageConstants.DEFAULT_FIELD_DELIMITER);
 
           // User can use an unicode for filed delimiter such as \u0001, \001.
@@ -549,15 +549,15 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
               StringEscapeUtils.unescapeJava(fieldDelimiter));
           sd.getSerdeInfo().putToParameters(serdeConstants.FIELD_DELIM,
               StringEscapeUtils.unescapeJava(fieldDelimiter));
-          table.getParameters().remove(StorageConstants.SEQUENCEFILE_DELIMITER);
+          table.getParameters().remove(StorageConstants.TEXT_DELIMITER);
         } else {
           sd.getSerdeInfo().setSerializationLib(LazyBinarySerDe.class.getName());
         }
 
-        if (tableDesc.getMeta().containsOption(StorageConstants.SEQUENCEFILE_NULL)) {
+        if (tableDesc.getMeta().containsOption(StorageConstants.TEXT_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
-              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_NULL)));
-          table.getParameters().remove(StorageConstants.SEQUENCEFILE_NULL);
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.TEXT_NULL)));
+          table.getParameters().remove(StorageConstants.TEXT_NULL);
         }
       } else if (tableDesc.getMeta().getDataFormat().equalsIgnoreCase(BuiltinStorages.PARQUET)) {
         StorageFormatDescriptor descriptor = storageFormatFactory.get(IOConstants.PARQUET);

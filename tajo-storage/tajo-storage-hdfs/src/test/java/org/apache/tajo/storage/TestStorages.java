@@ -859,6 +859,142 @@ public class TestStorages {
   }
 
   @Test
+  public void testSequenceFileTextSerializeDeserializeWithDeprecatedProperties() throws IOException {
+    if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.BOOLEAN);
+    schema.addColumn("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7));
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.FLOAT4);
+    schema.addColumn("col7", Type.FLOAT8);
+    schema.addColumn("col8", Type.TEXT);
+    schema.addColumn("col9", Type.BLOB);
+    schema.addColumn("col10", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
+    meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.SEQUENCEFILE_DELIMITER, "\u0001");
+    meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
+
+    Path tablePath = new Path(testDir, "testSequenceFileTextSerializeDeserializeWithDeprecatedProperties.data");
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.enableStats();
+    appender.init();
+
+    QueryId queryid = new QueryId("12345", 5);
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
+
+    VTuple tuple = new VTuple(new Datum[] {
+      DatumFactory.createBool(true),
+      DatumFactory.createChar("jinho"),
+      DatumFactory.createInt2((short) 17),
+      DatumFactory.createInt4(59),
+      DatumFactory.createInt8(23l),
+      DatumFactory.createFloat4(77.9f),
+      DatumFactory.createFloat8(271.9f),
+      DatumFactory.createText("jinho"),
+      DatumFactory.createBlob("hyunsik babo".getBytes()),
+      factory.createDatum(queryid.getProto())
+    });
+    appender.addTuple(tuple);
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
+
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
+    scanner.init();
+
+    assertTrue(scanner instanceof SequenceFileScanner);
+    Writable key = ((SequenceFileScanner) scanner).getKey();
+    assertEquals(key.getClass().getCanonicalName(), LongWritable.class.getCanonicalName());
+
+    Tuple retrieved;
+    while ((retrieved=scanner.next()) != null) {
+      for (int i = 0; i < tuple.size(); i++) {
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
+      }
+    }
+    scanner.close();
+    assertEquals(appender.getStats().getNumBytes().longValue(), scanner.getInputStats().getNumBytes().longValue());
+    assertEquals(appender.getStats().getNumRows().longValue(), scanner.getInputStats().getNumRows().longValue());
+  }
+
+  @Test
+  public void testSequenceFileTextSerializeDeserializeWithNonDeprecatedProperties() throws IOException {
+    if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.BOOLEAN);
+    schema.addColumn("col2", CatalogUtil.newDataTypeWithLen(Type.CHAR, 7));
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.FLOAT4);
+    schema.addColumn("col7", Type.FLOAT8);
+    schema.addColumn("col8", Type.TEXT);
+    schema.addColumn("col9", Type.BLOB);
+    schema.addColumn("col10", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+
+    TableMeta meta = CatalogUtil.newTableMeta(dataFormat, conf);
+    meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+    meta.putOption(StorageConstants.TEXT_DELIMITER, "\u0001");
+    meta.putOption(StorageConstants.TEXT_NULL, "\\");
+
+    Path tablePath = new Path(testDir, "testSequenceFileTextSerializeDeserializeWithNonDeprecatedProperties.data");
+    FileTablespace sm = TablespaceManager.getLocalFs();
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+    appender.enableStats();
+    appender.init();
+
+    QueryId queryid = new QueryId("12345", 5);
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
+
+    VTuple tuple = new VTuple(new Datum[] {
+      DatumFactory.createBool(true),
+      DatumFactory.createChar("jinho"),
+      DatumFactory.createInt2((short) 17),
+      DatumFactory.createInt4(59),
+      DatumFactory.createInt8(23l),
+      DatumFactory.createFloat4(77.9f),
+      DatumFactory.createFloat8(271.9f),
+      DatumFactory.createText("jinho"),
+      DatumFactory.createBlob("hyunsik babo".getBytes()),
+      factory.createDatum(queryid.getProto())
+    });
+    appender.addTuple(tuple);
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
+
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner =  TablespaceManager.getLocalFs().getScanner(meta, schema, fragment, null);
+    scanner.init();
+
+    assertTrue(scanner instanceof SequenceFileScanner);
+    Writable key = ((SequenceFileScanner) scanner).getKey();
+    assertEquals(key.getClass().getCanonicalName(), LongWritable.class.getCanonicalName());
+
+    Tuple retrieved;
+    while ((retrieved=scanner.next()) != null) {
+      for (int i = 0; i < tuple.size(); i++) {
+        assertEquals(tuple.get(i), retrieved.asDatum(i));
+      }
+    }
+    scanner.close();
+    assertEquals(appender.getStats().getNumBytes().longValue(), scanner.getInputStats().getNumBytes().longValue());
+    assertEquals(appender.getStats().getNumRows().longValue(), scanner.getInputStats().getNumRows().longValue());
+  }
+
+  @Test
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
     if(!dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) return;
 

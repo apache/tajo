@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -96,16 +97,34 @@ public class SequenceFileScanner extends FileScanner {
 
     reader = new SequenceFile.Reader(fs, fragment.getPath(), conf);
 
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL,
-        NullDatum.DEFAULT_TEXT));
+    // Set value of non-deprecated key for backward compatibility.
+    TableMeta tableMeta;
+    try {
+      tableMeta = (TableMeta) meta.clone();
+
+      if (!tableMeta.containsOption(StorageConstants.TEXT_DELIMITER)) {
+        tableMeta.getOption(StorageConstants.TEXT_DELIMITER, tableMeta.getOption(StorageConstants
+          .SEQUENCEFILE_DELIMITER));
+      }
+
+      if (!tableMeta.containsOption(StorageConstants.TEXT_NULL) && tableMeta.containsOption(StorageConstants
+        .SEQUENCEFILE_NULL)) {
+        tableMeta.putOption(StorageConstants.TEXT_NULL, tableMeta.getOption(StorageConstants.SEQUENCEFILE_NULL));
+      }
+    } catch (CloneNotSupportedException e) {
+      throw new TajoInternalError(e);
+    }
+
+    String delim  = tableMeta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
+
+    String nullCharacters = StringEscapeUtils.unescapeJava(tableMeta.getOption(StorageConstants.TEXT_NULL, NullDatum
+      .DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {
       nullChars = nullCharacters.getBytes();
     }
-
-    String delim  = meta.getOption(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
     this.start = fragment.getStartKey();
     this.end = start + fragment.getLength();
@@ -120,9 +139,6 @@ public class SequenceFileScanner extends FileScanner {
     }
 
     outTuple = new VTuple(targets.length);
-    deserializer = DelimitedTextFile.getLineSerde(meta).createDeserializer(schema, meta, targets);
-    deserializer.init();
-
     fieldIsNull = new boolean[schema.getRootColumns().size()];
     fieldStart = new int[schema.getRootColumns().size()];
     fieldLength = new int[schema.getRootColumns().size()];
@@ -130,12 +146,17 @@ public class SequenceFileScanner extends FileScanner {
     prepareProjection(targets);
 
     try {
-      String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+      String serdeClass = tableMeta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class
+        .getName());
+
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
       serde.init(schema);
 
       if (serde instanceof BinarySerializerDeserializer) {
         hasBinarySerDe = true;
+      } else {
+        deserializer = DelimitedTextFile.getLineSerde(tableMeta).createDeserializer(schema, tableMeta, targets);
+        deserializer.init();
       }
 
       Class<? extends Writable> keyClass = (Class<? extends Writable>)Class.forName(reader.getKeyClassName());

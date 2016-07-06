@@ -4,6 +4,9 @@ Release 0.11.4 - unreleased
 
   BUG FIXES
 
+    TAJO-2164: SequenceFile print wrong values with TextSerializerDeserializer.
+    (jaehwa)
+
     TAJO-2168: NullPointerException occurs when a simple query contains a python udf. 
     (jihoon)
 

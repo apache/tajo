@@ -36,6 +36,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.PartitionKeyProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -448,6 +449,8 @@ public class TestHiveCatalogStore {
   public void testTableUsingSequenceFileWithTextSerde() throws Exception {
     KeyValueSet options = new KeyValueSet();
     options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
+    options.set(StorageConstants.TEXT_DELIMITER, "\u0001");
+    options.set(StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT);
     TableMeta meta = new TableMeta(BuiltinStorages.SEQUENCE_FILE, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
@@ -474,6 +477,9 @@ public class TestHiveCatalogStore {
     }
 
     assertEquals(StorageConstants.DEFAULT_TEXT_SERDE, table1.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE));
+    assertEquals("\u0001", StringEscapeUtils.unescapeJava(table1.getMeta().getOption(StorageConstants
+      .TEXT_DELIMITER)));
+    assertEquals(NullDatum.DEFAULT_TEXT, table1.getMeta().getOption(StorageConstants.TEXT_NULL));
     store.dropTable(DB_NAME, REGION);
   }
 
