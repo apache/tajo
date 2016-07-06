@@ -4,6 +4,8 @@ Release 0.12.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-2160: Implement string_agg function. (Byunghwa Yun via jinho)
+
     TAJO-2148: Implement an example HTTP tablespace. (jihoon)
 
     TAJO-1686: Allow Tajo to use Hive UDF. (Jongyoung Park via jihoon)
