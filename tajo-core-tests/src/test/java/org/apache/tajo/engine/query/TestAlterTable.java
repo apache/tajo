@@ -110,11 +110,12 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
     assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
 
-    executeDDL("alter_table_unset_property_timezone.sql", null);
+    executeDDL("alter_table_unset_not_exists_property.sql", null);
 
     tableDesc = catalog.getTableDesc(tableName);
     tableMeta = tableDesc.getMeta();
-    assertEquals(tableMeta.getPropertySet().size(), 1);
+    assertEquals(tableMeta.getPropertySet().size(), 2);
+    assertEquals(tableMeta.getProperty("timezone"), "Asia/Seoul");
     assertEquals(tableMeta.getProperty("text.null"), "\\\\N");
   }
 
