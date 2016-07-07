@@ -109,6 +109,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(tableMeta.getPropertySet().size(), 2);
     assertNotNull(tableMeta.getProperty("timezone"));
     assertNotNull(tableMeta.getProperty("text.null"));
+    assertFalse(tableMeta.getPropertySet().containsKey("text.delimiter"));
 
     executeDDL("alter_table_unset_not_exists_property.sql", null);
 
@@ -117,6 +118,7 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertEquals(tableMeta.getPropertySet().size(), 2);
     assertNotNull(tableMeta.getProperty("timezone"));
     assertNotNull(tableMeta.getProperty("text.null"));
+    assertFalse(tableMeta.getPropertySet().containsKey("text.delimiter"));
   }
 
   // TODO: This should be added at TAJO-1891
