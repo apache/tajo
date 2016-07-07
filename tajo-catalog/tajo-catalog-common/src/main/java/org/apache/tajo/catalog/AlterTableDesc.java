@@ -54,7 +54,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   @Expose
   protected KeyValueSet properties;
   @Expose
-  protected Set<String> propertyKeys;
+  protected Set<String> unsetPropertyKeys;
   @Expose
   protected URI newTablePath; // optional
 
@@ -64,7 +64,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
 
   private void init() {
     this.properties = new KeyValueSet();
-    this.propertyKeys = Sets.newHashSet();
+    this.unsetPropertyKeys = Sets.newHashSet();
   }
 
   public String getTableName() {
@@ -131,12 +131,12 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     this.properties.set(key, value);
   }
 
-  public Set<String> getPropertyKeys() {
-    return propertyKeys;
+  public Set<String> getUnsetPropertyKeys() {
+    return unsetPropertyKeys;
   }
 
-  public void addPropertyKey(String key) {
-    this.propertyKeys.add(key);
+  public void setUnsetPropertyKey(Set<String> unsetPropertyKeys) {
+    this.unsetPropertyKeys = unsetPropertyKeys;
   }
 
   public String getProperty(String key) {
@@ -168,7 +168,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     newAlter.addColumn = addColumn;
     newAlter.partitionDesc = partitionDesc;
     newAlter.properties = (KeyValueSet)properties.clone();
-    newAlter.propertyKeys = Sets.newHashSet(propertyKeys);
+    newAlter.unsetPropertyKeys = Sets.newHashSet(unsetPropertyKeys);
     newAlter.newTablePath = URI.create(newTablePath.toString());
     return newAlter;
   }
@@ -200,8 +200,8 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     if (null != this.properties) {
       builder.setParams(properties.getProto());
     }
-    if (null != this.propertyKeys) {
-      builder.setPropertyKeys(ProtoUtil.convertStrings(propertyKeys));
+    if (null != this.unsetPropertyKeys) {
+      builder.setPropertyKeys(ProtoUtil.convertStrings(unsetPropertyKeys));
     }
 
     switch (alterTableType) {

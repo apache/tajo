@@ -1045,9 +1045,7 @@ public class TestCatalog {
   private AlterTableDesc createMockAlterTableUnsetProperty(Set<String> keys) {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName("default.mynewcooltable");
-    for (String key : keys) {
-      alterTableDesc.addPropertyKey(key);
-    }
+    alterTableDesc.setUnsetPropertyKey(keys);
     alterTableDesc.setAlterTableType(AlterTableType.UNSET_PROPERTY);
     return alterTableDesc;
   }
