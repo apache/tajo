@@ -552,13 +552,13 @@ public class CatalogUtil {
     return alterTableDesc;
   }
 
-  public static AlterTableDesc unsetProperty(String tableName, String[] propertyKeys, AlterTableType alterTableType) {
+  public static AlterTableDesc unsetProperty(String tableName, String[] propertyKeys) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     for (String key : propertyKeys) {
       alterTableDesc.addPropertyKey(key);
     }
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.UNSET_PROPERTY);
     return alterTableDesc;
   }
 
