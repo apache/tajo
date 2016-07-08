@@ -366,7 +366,7 @@ public class TestTajoClient {
     assertFalse(client.existTable(tableName));
     String sql =
         "create external table " + tableName + " (deptname text, score int4) "
-            + "using csv location '" + tablePath + "'";
+            + "using text location '" + tablePath + "'";
     client.executeQueryAndGetResult(sql);
     assertTrue(client.existTable(tableName));
   }
