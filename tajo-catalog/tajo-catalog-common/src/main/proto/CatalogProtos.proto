@@ -322,7 +322,7 @@ message AlterTableDescProto {
   optional PartitionDescProto partition_desc = 6;
   optional KeyValueSetProto params = 7;
   optional string new_table_path = 8;
-  optional StringListProto property_keys = 9;
+  optional StringListProto unset_property_keys = 9;
 }
 
 message AlterColumnProto {

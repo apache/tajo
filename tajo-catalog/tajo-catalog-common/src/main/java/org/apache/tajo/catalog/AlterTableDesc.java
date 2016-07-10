@@ -201,7 +201,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
       builder.setParams(properties.getProto());
     }
     if (null != this.unsetPropertyKeys) {
-      builder.setPropertyKeys(ProtoUtil.convertStrings(unsetPropertyKeys));
+      builder.setUnsetPropertyKeys(ProtoUtil.convertStrings(unsetPropertyKeys));
     }
 
     switch (alterTableType) {
