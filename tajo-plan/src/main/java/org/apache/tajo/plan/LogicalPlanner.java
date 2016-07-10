@@ -2170,7 +2170,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     alterTableNode.setProperties(new KeyValueSet(alterTable.getParams()));
     List<String> propertyKeys = alterTable.getUnsetPropertyKeys();
     if (null != propertyKeys) {
-      alterTableNode.setPropertyKeys(propertyKeys.toArray(new String[propertyKeys.size()]));
+      alterTableNode.setUnsetPropertyKeys(propertyKeys.toArray(new String[propertyKeys.size()]));
     }
 
     if (null != alterTable.getAddNewColumn()) {

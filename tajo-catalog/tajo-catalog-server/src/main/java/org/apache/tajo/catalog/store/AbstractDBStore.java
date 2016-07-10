@@ -1039,7 +1039,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       setProperties(tableId, alterTableDescProto.getParams());
       break;
     case UNSET_PROPERTY:
-      unsetProperties(tableId, alterTableDescProto.getPropertyKeys());
+      unsetProperties(tableId, alterTableDescProto.getUnsetPropertyKeys());
       break;
     default:
     }
