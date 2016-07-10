@@ -335,7 +335,7 @@ message AlterTableNode {
   optional AddColumn addColumn = 5;
   optional KeyValueSetProto properties = 6;
   optional AlterPartition alterPartition = 7;
-  optional StringListProto propertyKeys = 8;
+  optional StringListProto unsetPropertyKeys = 8;
 }
 
 message CreateIndexNode {

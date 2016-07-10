@@ -606,7 +606,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
       break;
     case UNSET_PROPERTY:
       alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.UNSET_PROPERTY);
-      alterTableBuilder.setPropertyKeys(ProtoUtil.convertStrings(Arrays.asList(node.getPropertyKeys())));
+      alterTableBuilder.setUnsetPropertyKeys(ProtoUtil.convertStrings(Arrays.asList(node.getPropertyKeys())));
       break;
     case ADD_PARTITION:
       alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.ADD_PARTITION);

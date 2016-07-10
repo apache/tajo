@@ -626,7 +626,7 @@ public class LogicalNodeDeserializer {
       alterTable.setProperties(new KeyValueSet(alterTableProto.getProperties()));
       break;
     case UNSET_PROPERTY:
-      Collection<String> strings = ProtoUtil.convertStrings(alterTableProto.getPropertyKeys());
+      Collection<String> strings = ProtoUtil.convertStrings(alterTableProto.getUnsetPropertyKeys());
       alterTable.setPropertyKeys(strings.toArray(new String[strings.size()]));
       break;
     case ADD_PARTITION:
