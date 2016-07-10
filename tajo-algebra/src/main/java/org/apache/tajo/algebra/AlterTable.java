@@ -44,8 +44,8 @@ public class AlterTable extends Expr {
   private AlterTableOpType alterTableOpType;
   @Expose @SerializedName("TableProperties")
   private Map<String, String> params;
-  @Expose @SerializedName("TablePropertyKeys")
-  private List<String> propertyKeys;
+  @Expose @SerializedName("UnsetPropertyKeys")
+  private List<String> unsetPropertyKeys;
 
   @Expose @SerializedName("Columns")
   ColumnReferenceExpr [] columns;
@@ -140,12 +140,12 @@ public class AlterTable extends Expr {
     this.params = params;
   }
 
-  public List<String> getPropertyKeys() {
-    return propertyKeys;
+  public List<String> getUnsetPropertyKeys() {
+    return unsetPropertyKeys;
   }
 
-  public void setPropertyKeys(List<String> propertyKeys) {
-    this.propertyKeys = propertyKeys;
+  public void setUnsetPropertyKeys(List<String> unsetPropertyKeys) {
+    this.unsetPropertyKeys = unsetPropertyKeys;
   }
 
   public boolean isPurge() {

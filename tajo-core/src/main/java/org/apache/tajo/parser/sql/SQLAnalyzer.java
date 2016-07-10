@@ -1932,7 +1932,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     if (checkIfExist(ctx.property_key_list())) {
-      alterTable.setPropertyKeys(getPropertyKeys(ctx.property_key_list()));
+      alterTable.setUnsetPropertyKeys(getPropertyKeys(ctx.property_key_list()));
     }
 
     alterTable.setAlterTableOpType(determineAlterTableType(ctx));
