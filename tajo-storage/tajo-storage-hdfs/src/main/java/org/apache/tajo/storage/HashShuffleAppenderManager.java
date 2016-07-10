@@ -220,9 +220,7 @@ public class HashShuffleAppenderManager {
   }
 
   public void shutdown() {
-    for (ExecutorService service : executors.values()) {
-      service.shutdownNow();
-    }
+    executors.values().forEach(ExecutorService::shutdownNow);
   }
 
   public static class HashShuffleIntermediate {

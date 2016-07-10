@@ -62,6 +62,7 @@ import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 public class Query implements EventHandler<QueryEvent> {
   private static final Log LOG = LogFactory.getLog(Query.class);
@@ -299,17 +300,8 @@ public class Query implements EventHandler<QueryEvent> {
 
   public QueryHistory getQueryHistory() {
     QueryHistory queryHistory = makeQueryHistory();
-    queryHistory.setStageHistories(makeStageHistories());
+    queryHistory.setStageHistories(getStages().stream().map(Stage::getStageHistory).collect(Collectors.toList()));
     return queryHistory;
-  }
-
-  private List<StageHistory> makeStageHistories() {
-    List<StageHistory> stageHistories = new ArrayList<>();
-    for(Stage eachStage : getStages()) {
-      stageHistories.add(eachStage.getStageHistory());
-    }
-
-    return stageHistories;
   }
 
   private QueryHistory makeQueryHistory() {
@@ -322,11 +314,11 @@ public class Query implements EventHandler<QueryEvent> {
     queryHistory.setDistributedPlan(plan.toString());
 
     List<String[]> sessionVariables = new ArrayList<>();
-    for(Map.Entry<String,String> entry: plan.getContext().getAllKeyValus().entrySet()) {
-      if (SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey()))) {
-        sessionVariables.add(new String[]{entry.getKey(), entry.getValue()});
-      }
-    }
+    plan.getContext().getAllKeyValus().entrySet().stream()
+      .filter(entry -> SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey())))
+      .forEach(entry -> {
+      sessionVariables.add(new String[]{entry.getKey(), entry.getValue()});
+    });
     queryHistory.setSessionVariables(sessionVariables);
 
     return queryHistory;
@@ -341,9 +333,7 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public void clearPartitions() {
-    for(Stage eachStage : getStages()) {
-      eachStage.clearPartitions();
-    }
+    getStages().forEach(Stage::clearPartitions);
   }
 
   public SerializedException getFailureReason() {

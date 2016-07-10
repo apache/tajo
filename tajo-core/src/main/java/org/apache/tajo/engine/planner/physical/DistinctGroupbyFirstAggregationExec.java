@@ -363,9 +363,7 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
     }
 
     public void close() throws IOException {
-      for (TupleSet set : distinctAggrDatas.values()) {
-        set.clear();
-      }
+      distinctAggrDatas.values().forEach(TupleSet::clear);
       distinctAggrDatas.clear();
       distinctAggrDatas = null;
       currentGroupingTuples = null;

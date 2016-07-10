@@ -70,6 +70,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class NonForwardQueryResultSystemScanner implements NonForwardQueryResultScanner {
   
@@ -517,24 +518,19 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getClusterInfo(Schema outSchema) {
     Map<Integer, NodeStatus> workerMap = masterContext.getResourceManager().getNodes();
-    List<Tuple> tuples;
     List<NodeStatus> queryMasterList = new ArrayList<>();
     List<NodeStatus> nodeStatusList = new ArrayList<>();
-    
-    for (NodeStatus aNodeStatus : workerMap.values()) {
+
+    workerMap.values().forEach(aNodeStatus -> {
       queryMasterList.add(aNodeStatus);
       nodeStatusList.add(aNodeStatus);
-    }
-    
-    tuples = new ArrayList<>(queryMasterList.size() + nodeStatusList.size());
-    for (NodeStatus queryMaster: queryMasterList) {
-      tuples.add(getQueryMasterTuple(outSchema, queryMaster));
-    }
-    
-    for (NodeStatus nodeStatus : nodeStatusList) {
-      tuples.add(getWorkerTuple(outSchema, nodeStatus));
-    }
-    
+    });
+
+    List<Tuple> tuples = queryMasterList.stream().map(queryMaster -> getQueryMasterTuple(outSchema, queryMaster))
+      .collect(Collectors.toList());
+
+    nodeStatusList.stream().map(nodeStatus -> getWorkerTuple(outSchema, nodeStatus)).forEach(tuples::add);
+
     return tuples;
   }
 

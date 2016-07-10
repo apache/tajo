@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Path("/queries")
 public class QueryResource {
@@ -172,15 +173,7 @@ public class QueryResource {
     }
     
     private List<QueryInfo> selectQueriesInfoByState(List<QueryInfo> queriesInfo, TajoProtos.QueryState state) {
-      List<QueryInfo> resultQueriesInfo = new ArrayList<>(queriesInfo.size() / 2);
-      
-      for (QueryInfo queryInfo: queriesInfo) {
-        if (state.equals(queryInfo.getQueryState())) {
-          resultQueriesInfo.add(queryInfo);
-        }
-      }
-      
-      return resultQueriesInfo;
+      return queriesInfo.stream().filter(queryInfo -> state.equals(queryInfo.getQueryState())).collect(Collectors.toList());
     }
     
     private List<QueryInfo> selectQueriesInfoByTime(List<QueryInfo> queriesInfo, long startTime, long endTime) {

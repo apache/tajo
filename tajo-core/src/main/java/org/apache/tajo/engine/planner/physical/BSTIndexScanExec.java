@@ -94,16 +94,12 @@ public class BSTIndexScanExec extends ScanExec {
   private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, List<Target> targets, EvalNode qual) {
     Set<Column> qualAndTargets = new HashSet<>();
     qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(qual));
-    for (Target target : targets) {
-      qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree()));
-    }
+    targets.forEach(target -> qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree())));
 
     SchemaBuilder mergedSchema = SchemaBuilder.builder();
-    for (Column column : originalSchema.getRootColumns()) {
-      if (subSchema.contains(column) || qualAndTargets.contains(column)) {
-        mergedSchema.add(column);
-      }
-    }
+    originalSchema.getRootColumns().stream()
+      .filter(column -> subSchema.contains(column) || qualAndTargets.contains(column))
+      .forEach(mergedSchema::add);
     return mergedSchema.build();
   }
 

@@ -1989,9 +1989,7 @@ public class WriterImpl implements Writer, MemoryManager.Callback {
     // serialize the types
     writeTypes(builder, schema);
     // add the stripe information
-    for(OrcProto.StripeInformation stripe: stripes) {
-      builder.addStripes(stripe);
-    }
+    stripes.forEach(builder::addStripes);
     // add the column statistics
     writeFileStatistics(builder, treeWriter);
     // add all of the user metadata

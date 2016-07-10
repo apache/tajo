@@ -51,6 +51,7 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.HASH_SHUFFLE;
 
@@ -225,12 +226,7 @@ public class DistinctGroupbyBuilder {
           distinctNodeBuildInfos.put(groupbyMapKey, buildInfo);
 
           // Grouping columns are GROUP BY clause's column + Distinct column.
-          List<Column> groupingColumns = new ArrayList<>();
-          for (Column eachGroupingColumn: groupbyUniqColumns) {
-            if (!groupingColumns.contains(eachGroupingColumn)) {
-              groupingColumns.add(eachGroupingColumn);
-            }
-          }
+          List<Column> groupingColumns = groupbyUniqColumns.stream().distinct().collect(Collectors.toList());
           distinctGroupbyNode.setGroupingColumns(groupingColumns.toArray(new Column[groupingColumns.size()]));
         }
         buildInfo.addAggFunction(aggFunction);
@@ -243,9 +239,7 @@ public class DistinctGroupbyBuilder {
 
     List<Target> baseGroupByTargets = new ArrayList<>();
     baseGroupByTargets.add(new Target(new FieldEval(new Column("?distinctseq", Type.INT2))));
-    for (Column column : originalGroupingColumns) {
-      baseGroupByTargets.add(new Target(new FieldEval(column)));
-    }
+    originalGroupingColumns.stream().map(column -> new Target(new FieldEval(column))).forEach(baseGroupByTargets::add);
 
     //Add child groupby node for each Distinct clause
     for (DistinctGroupbyNodeBuildInfo buildInfo: distinctNodeBuildInfos.values()) {
@@ -391,11 +385,8 @@ public class DistinctGroupbyBuilder {
 
           // Grouping columns are GROUP BY clause's column + Distinct column.
           List<Column> groupingColumns = new ArrayList<>(originalGroupingColumns);
-          for (Column eachGroupingColumn: groupbyUniqColumns) {
-            if (!groupingColumns.contains(eachGroupingColumn)) {
-              groupingColumns.add(eachGroupingColumn);
-            }
-          }
+          groupbyUniqColumns.stream().filter(eachGroupingColumn ->
+            !groupingColumns.contains(eachGroupingColumn)).forEach(groupingColumns::add);
           distinctGroupbyNode.setGroupingColumns(groupingColumns.toArray(new Column[groupingColumns.size()]));
         }
         buildInfo.addAggFunction(aggFunction);
@@ -431,10 +422,8 @@ public class DistinctGroupbyBuilder {
       // finally this aggregation output tuple's order is GROUP_BY_COL1, COL2, .... + AGG_VALUE, SUM_VALUE, ...
       GroupbyNode otherGroupbyNode = new GroupbyNode(context.getPlan().getLogicalPlan().newPID());
 
-      List<Target> targets = new ArrayList<>();
-      for (Column column : originalGroupingColumns) {
-        targets.add(new Target(new FieldEval(column)));
-      }
+      List<Target> targets = originalGroupingColumns.stream().map(column ->
+        new Target(new FieldEval(column))).collect(Collectors.toList());
       targets.addAll(otherAggregationFunctionTargets);
 
       otherGroupbyNode.setTargets(targets);
@@ -530,13 +519,9 @@ public class DistinctGroupbyBuilder {
         List<Target> oldTargets = secondStageGroupbyNode.getTargets();
         List<Target> secondGroupbyTargets = new ArrayList<>();
         LinkedHashSet<Column> distinctColumns = EvalTreeUtil.findUniqueColumns(secondStageGroupbyNode.getAggFunctions().get(0));
-        List<Column> uniqueDistinctColumn = new ArrayList<>();
         // remove origin group by column from distinctColumns
-        for (Column eachColumn: distinctColumns) {
-          if (!originGroupColumns.contains(eachColumn)) {
-            uniqueDistinctColumn.add(eachColumn);
-          }
-        }
+        List<Column> uniqueDistinctColumn = distinctColumns.stream()
+          .filter(eachColumn -> !originGroupColumns.contains(eachColumn)).collect(Collectors.toList());
         for (int i = 0; i < originGroupColumns.size(); i++) {
           secondGroupbyTargets.add(oldTargets.get(i));
           if (grpIdx > 0) {
@@ -652,9 +637,7 @@ public class DistinctGroupbyBuilder {
     int index = 0;
     for(GroupbyNode eachNode: secondStageDistinctNode.getSubPlans()) {
       eachNode.setInSchema(firstStageDistinctNode.getOutSchema());
-      for (Column column: eachNode.getOutSchema().getRootColumns()) {
-        secondStageInSchema.add(column);
-      }
+      eachNode.getOutSchema().getRootColumns().forEach(secondStageInSchema::add);
     }
     secondStageDistinctNode.setInSchema(secondStageInSchema.build());
 

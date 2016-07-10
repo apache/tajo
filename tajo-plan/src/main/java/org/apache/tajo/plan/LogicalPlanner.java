@@ -735,9 +735,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         }
       }
     }
-    for (String winFuncRef : winFuncRefs) {
-      targets.add(block.namedExprsMgr.getTarget(winFuncRef));
-    }
+    winFuncRefs.stream().map(block.namedExprsMgr::getTarget).forEach(targets::add);
     windowAggNode.setTargets(targets);
     verifyProjectedFields(block, windowAggNode);
 
@@ -1189,9 +1187,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode, isTopMostJoin);
     List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
 
-    for (String newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
-    }
+    newlyEvaluatedExprs.stream().map(newAddedExpr -> block.namedExprsMgr.getTarget(newAddedExpr, true)).forEach(targets::add);
     joinNode.setTargets(targets);
 
     // Determine join conditions
@@ -1285,9 +1281,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     List<Target> targets = new ArrayList<>(PlannerUtil.schemaToTargets(merged));
-    for (String newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
-    }
+    newlyEvaluatedExprs.stream().map(newAddedExpr -> block.namedExprsMgr.getTarget(newAddedExpr, true)).forEach(targets::add);
     join.setTargets(targets);
     return join;
   }
@@ -1425,9 +1419,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // Assume that each unique expr is evaluated once.
     LinkedHashSet<Target> targets = createFieldTargetsFromRelation(block, subQueryNode, newlyEvaluatedExprs);
 
-    for (String newAddedExpr : newlyEvaluatedExprs) {
-      targets.add(block.namedExprsMgr.getTarget(newAddedExpr, true));
-    }
+    newlyEvaluatedExprs.stream().map(newAddedExpr -> block.namedExprsMgr.getTarget(newAddedExpr, true)).forEach(targets::add);
 
     subQueryNode.setTargets(new ArrayList<>(targets));
   }

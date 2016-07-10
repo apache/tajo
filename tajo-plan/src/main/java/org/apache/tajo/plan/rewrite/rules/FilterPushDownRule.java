@@ -45,6 +45,7 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.schema.IdentifierUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This rule tries to push down all filter conditions into logical nodes as lower as possible.
@@ -150,12 +151,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     } else { // if there remain search conditions
 
       // check if it can be evaluated here
-      Set<EvalNode> matched = new HashSet<>();
-      for (EvalNode eachEval : context.pushingDownFilters) {
-        if (LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode)) {
-          matched.add(eachEval);
-        }
-      }
+      Set<EvalNode> matched = context.pushingDownFilters.stream()
+          .filter(eachEval -> LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, selNode)).collect(Collectors.toSet());
 
       // if there are search conditions which can be evaluated here,
       // push down them and remove them from context.pushingDownFilters.
@@ -216,13 +213,11 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     // In this case, this join is the top most one within a query block.
     boolean isTopMostJoin = stack.isEmpty() ? true : stack.peek().getType() != NodeType.JOIN;
 
-    for (EvalNode evalNode : context.pushingDownFilters) {
-      // TODO: currently, non-equi theta join is not supported yet.
-      if (LogicalPlanner.isEvaluatableJoinQual(block, evalNode, joinNode, onPredicates.contains(evalNode),
-          isTopMostJoin)) {
-        matched.add(evalNode);
-      }
-    }
+    // TODO: currently, non-equi theta join is not supported yet.
+    context.pushingDownFilters.stream()
+      .filter(evalNode ->
+        LogicalPlanner.isEvaluatableJoinQual(block, evalNode, joinNode, onPredicates.contains(evalNode), isTopMostJoin))
+      .forEach(matched::add);
 
     EvalNode qual = null;
     if (matched.size() > 1) {
@@ -363,21 +358,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     Set<EvalNode> nonPushableQuals = new HashSet<>();
-    for (EvalNode eachQual : onPredicates) {
-      for (String relName : preservedTableNameSet) {
-        if (isEvalNeedRelation(eachQual, relName)) {
-          nonPushableQuals.add(eachQual);
-        }
-      }
-    }
+    onPredicates.forEach(eachQual ->
+      preservedTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName))
+        .map(relName -> eachQual).forEach(nonPushableQuals::add));
 
-    for (EvalNode eachQual : wherePredicates) {
-      for (String relName : nullSupplyingTableNameSet) {
-        if (isEvalNeedRelation(eachQual, relName)) {
-          nonPushableQuals.add(eachQual);
-        }
-      }
-    }
+    wherePredicates.forEach(eachQual ->
+      nullSupplyingTableNameSet.stream().filter(relName -> isEvalNeedRelation(eachQual, relName))
+        .map(relName -> eachQual).forEach(nonPushableQuals::add));
 
     return nonPushableQuals;
   }
@@ -414,12 +401,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private static List<EvalNode> extractNonEquiThetaJoinQuals(final Set<EvalNode> predicates,
                                                              final LogicalPlan.QueryBlock block,
                                                              final JoinNode joinNode) {
-    List<EvalNode> nonEquiThetaJoinQuals = new ArrayList<>();
-    for (EvalNode eachEval: predicates) {
-      if (isNonEquiThetaJoinQual(block, joinNode, eachEval)) {
-        nonEquiThetaJoinQuals.add(eachEval);
-      }
-    }
+    List<EvalNode> nonEquiThetaJoinQuals = predicates.stream()
+      .filter(eachEval -> isNonEquiThetaJoinQual(block, joinNode, eachEval)).collect(Collectors.toList());
     return nonEquiThetaJoinQuals;
   }
 
@@ -473,11 +456,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         }
 
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(copy);
-        for (Column c : columns) {
-          if (c.hasQualifier()) {
-            EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), c.getSimpleName());
-          }
-        }
+        columns.stream().filter(c -> c.hasQualifier()).forEach(c -> {
+          EvalTreeUtil.changeColumnRef(copy, c.getQualifiedName(), c.getSimpleName());
+        });
 
         transformedMap.put(copy, eval);
       }
@@ -608,9 +589,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     stack.pop();
 
     // find not matched after visiting child
-    for (EvalNode eval: context.pushingDownFilters) {
-      notMatched.add(transformedMap.get(eval));
-    }
+    context.pushingDownFilters.stream().map(transformedMap::get).forEach(notMatched::add);
 
     EvalNode qual = null;
     if (notMatched.size() > 1) {
@@ -647,11 +626,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private Collection<EvalNode> reverseTransform(BiMap<EvalNode, EvalNode> map, Set<EvalNode> remainFilters) {
-    Set<EvalNode> reversed = new HashSet<>();
-    for (EvalNode evalNode : remainFilters) {
-      reversed.add(map.get(evalNode));
-    }
-    return reversed;
+    return remainFilters.stream().map(map::get).collect(Collectors.toSet());
   }
 
   private BiMap<EvalNode, EvalNode> findCanPushdownAndTransform(
@@ -785,12 +760,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                        GroupbyNode groupByNode) throws TajoException {
     // find aggregation column
     Set<Column> groupingColumns = new HashSet<>(Arrays.asList(groupByNode.getGroupingColumns()));
-    Set<String> aggrFunctionOutColumns = new HashSet<>();
-    for (Column column : groupByNode.getOutSchema().getRootColumns()) {
-      if (!groupingColumns.contains(column)) {
-        aggrFunctionOutColumns.add(column.getQualifiedName());
-      }
-    }
+    Set<String> aggrFunctionOutColumns = groupByNode.getOutSchema().getRootColumns().stream()
+        .filter(column -> !groupingColumns.contains(column)).map(Column::getQualifiedName).collect(Collectors.toSet());
 
     List<EvalNode> aggrEvalOrigins = new ArrayList<>();
     List<EvalNode> aggrEvals = new ArrayList<>();
@@ -949,11 +920,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     Map<EvalNode, EvalNode> transformed =
         findCanPushdownAndTransform(context, block, scanNode, null, notMatched, partitionColumns, 0);
 
-    for (EvalNode eval : transformed.keySet()) {
-      if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)) {
-        matched.add(eval);
-      }
-    }
+    transformed.keySet().stream()
+      .filter(eval -> LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)).forEach(matched::add);
 
     EvalNode qual = null;
     if (matched.size() > 1) {
@@ -1005,9 +973,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
     }
 
-    for (EvalNode matchedEval: matched) {
-      transformed.remove(matchedEval);
-    }
+    matched.forEach(transformed::remove);
 
     context.setToOrigin(transformed);
     context.addFiltersTobePushed(notMatched);

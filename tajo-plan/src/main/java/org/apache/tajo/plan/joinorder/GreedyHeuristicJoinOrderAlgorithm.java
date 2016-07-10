@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This is a greedy heuristic algorithm to find a bushy join tree. This algorithm finds
@@ -46,10 +47,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
       throws TajoException {
 
-    Set<JoinVertex> vertexes = new HashSet<>();
-    for (RelationNode relationNode : block.getRelations()) {
-      vertexes.add(new RelationVertex(relationNode));
-    }
+    Set<JoinVertex> vertexes = block.getRelations().stream().map(RelationVertex::new).collect(Collectors.toSet());
 
     // As illustrated at LogicalOptimizer.JoinGraphBuilder, the join graph initially forms a kind of tree.
     // This join graph can be updated by adding new join edges or removing existing join edges

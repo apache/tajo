@@ -160,13 +160,8 @@ public class LogicalOptimizer {
     Collection<EvalNode> markAsEvaluated = new HashSet<>(joinGraphContext.getEvaluatedJoinConditions());
     markAsEvaluated.addAll(joinGraphContext.getEvaluatedJoinFilters());
     Set<EvalNode> remainingQuals = new HashSet<>(joinGraphContext.getCandidateJoinFilters());
-    for (JoinEdge eachEdge : joinEdges) {
-      for (EvalNode eachQual : eachEdge.getJoinQual()) {
-        if (!markAsEvaluated.contains(eachQual)) {
-          remainingQuals.add(eachQual);
-        }
-      }
-    }
+    joinEdges.forEach(eachEdge ->
+      eachEdge.getJoinQual().stream().filter(eachQual -> !markAsEvaluated.contains(eachQual)).forEach(remainingQuals::add));
 
     if (!remainingQuals.isEmpty()) {
       LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
@@ -199,9 +194,7 @@ public class LogicalOptimizer {
       super.visitJoin(ctx, plan, block, node, stack);
 
       if (node.hasTargets()) {
-        for (Target target : node.getTargets()) {
-          ctx.add(target);
-        }
+        node.getTargets().forEach(ctx::add);
       }
       return node;
     }

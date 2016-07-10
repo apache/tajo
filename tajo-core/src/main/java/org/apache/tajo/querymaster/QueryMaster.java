@@ -447,20 +447,18 @@ public class QueryMaster extends CompositeService implements EventHandler {
         List<QueryMasterTask> tempTasks = new ArrayList<>();
         tempTasks.addAll(queryMasterTasks.values());
 
-        for(QueryMasterTask eachTask: tempTasks) {
-          if(!eachTask.isStopped()) {
-            try {
-              long lastHeartbeat = eachTask.getLastClientHeartbeat();
-              long time = System.currentTimeMillis() - lastHeartbeat;
-              if(lastHeartbeat > 0 && time > querySessionTimeout * 1000) {
-                LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query session timeout: " + time + " ms");
-                eachTask.expireQuerySession();
-              }
-            } catch (Exception e) {
-              LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
+        tempTasks.stream().filter(eachTask -> !eachTask.isStopped()).forEach(eachTask -> {
+          try {
+            long lastHeartbeat = eachTask.getLastClientHeartbeat();
+            long time = System.currentTimeMillis() - lastHeartbeat;
+            if (lastHeartbeat > 0 && time > querySessionTimeout * 1000) {
+              LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query session timeout: " + time + " ms");
+              eachTask.expireQuerySession();
             }
+          } catch (Exception e) {
+            LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);
           }
-        }
+        });
       }
     }
   }

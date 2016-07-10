@@ -1032,9 +1032,7 @@ public class CatalogServer extends AbstractService {
         List<PartitionDescProto> partitions = store.getPartitionsOfTable(dbName, tbName);
 
         GetPartitionsResponse.Builder builder = GetPartitionsResponse.newBuilder();
-        for (PartitionDescProto partition : partitions) {
-          builder.addPartition(partition);
-        }
+        partitions.forEach(builder::addPartition);
 
         builder.setState(OK);
         return builder.build();
@@ -1414,12 +1412,8 @@ public class CatalogServer extends AbstractService {
       List<FunctionDescProto> candidates = Lists.newArrayList();
 
       if (functions.containsKey(signature)) {
-        for (FunctionDescProto func : functions.get(signature)) {
-          if (func.getSignature().getParameterTypesList() != null &&
-              func.getSignature().getParameterTypesList().equals(params)) {
-            candidates.add(func);
-          }
-        }
+        functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+          func.getSignature().getParameterTypesList().equals(params)).forEach(candidates::add);
       }
 
       /*
@@ -1432,12 +1426,8 @@ public class CatalogServer extends AbstractService {
        *
        * */
       if (functions.containsKey(signature)) {
-        for (FunctionDescProto func : functions.get(signature)) {
-          if (func.getSignature().getParameterTypesList() != null &&
-              CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)) {
-            candidates.add(func);
-          }
-        }
+        functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+            CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).forEach(candidates::add);
 
         // if there are more than one function candidates, we choose the nearest matched function.
         if (candidates.size() > 0) {
@@ -1456,19 +1446,11 @@ public class CatalogServer extends AbstractService {
 
       if (functions.containsKey(signature)) {
         if (strictTypeCheck) {
-          for (FunctionDescProto func : functions.get(signature)) {
-            if (func.getSignature().getType() == type &&
-                func.getSignature().getParameterTypesList().equals(params)) {
-              candidates.add(func);
-            }
-          }
+          functions.get(signature).stream().filter(func -> func.getSignature().getType() == type &&
+            func.getSignature().getParameterTypesList().equals(params)).forEach(candidates::add);
         } else {
-          for (FunctionDescProto func : functions.get(signature)) {
-            if (func.getSignature().getParameterTypesList() != null &&
-                CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)) {
-              candidates.add(func);
-            }
-          }
+          functions.get(signature).stream().filter(func -> func.getSignature().getParameterTypesList() != null &&
+              CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)).forEach(candidates::add);
         }
       }
 

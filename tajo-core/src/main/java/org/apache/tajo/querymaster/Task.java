@@ -56,6 +56,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.ResourceProtos.*;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -298,10 +299,7 @@ public class Task implements EventHandler<TaskEvent> {
 
     taskHistory.setFetchs(fetchList.toArray(new String[][]{}));
 
-    List<String> dataLocationList = new ArrayList<>();
-    for(DataLocation eachLocation: getDataLocations()) {
-      dataLocationList.add(eachLocation.toString());
-    }
+    List<String> dataLocationList = getDataLocations().stream().map(DataLocation::toString).collect(Collectors.toList());
 
     taskHistory.setDataLocations(dataLocationList.toArray(new String[dataLocationList.size()]));
     return taskHistory;
@@ -388,9 +386,7 @@ public class Task implements EventHandler<TaskEvent> {
 
   public Collection<FragmentProto> getAllFragments() {
     Set<FragmentProto> fragmentProtos = new HashSet<>();
-    for (Set<FragmentProto> eachFragmentSet : fragMap.values()) {
-      fragmentProtos.addAll(eachFragmentSet);
-    }
+    fragMap.values().forEach(fragmentProtos::addAll);
     return fragmentProtos;
   }
 	
@@ -786,16 +782,13 @@ public class Task implements EventHandler<TaskEvent> {
       this.volume = proto.getVolume();
 
       failureRowNums = new ArrayList<>();
-      for (FailureIntermediateProto eachFailure: proto.getFailuresList()) {
-
-        failureRowNums.add(new Pair(eachFailure.getPagePos(),
-            new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum())));
-      }
+      proto.getFailuresList().stream().map(eachFailure ->
+        new Pair(eachFailure.getPagePos(), new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum())))
+        .forEach(eachFailure -> failureRowNums.add(eachFailure));
 
       pages = new ArrayList<>();
-      for (IntermediateEntryProto.PageProto eachPage: proto.getPagesList()) {
-        pages.add(new Pair(eachPage.getPos(), eachPage.getLength()));
-      }
+      proto.getPagesList().stream().map(eachPage -> new Pair(eachPage.getPos(), eachPage.getLength()))
+        .forEach(eachPage -> pages.add(eachPage));
     }
 
     public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host) {

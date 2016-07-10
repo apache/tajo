@@ -418,10 +418,7 @@ public class CreateTable extends Expr {
       }
       hash.quantity = quantity;
       if (specifiers != null) {
-        hash.specifiers = new ArrayList<>();
-        for (PartitionSpecifier specifier : specifiers) {
-          hash.specifiers.add(specifier);
-        }
+        hash.specifiers = new ArrayList<>(specifiers);
       }
       return hash;
     }
@@ -471,10 +468,7 @@ public class CreateTable extends Expr {
         }
       }
       if (specifiers != null) {
-        listPartition.specifiers = new ArrayList<>();
-        for (ListPartitionSpecifier specifier : specifiers) {
-          listPartition.specifiers.add(specifier);
-        }
+        listPartition.specifiers = new ArrayList<>(specifiers);
       }
       return listPartition;
     }

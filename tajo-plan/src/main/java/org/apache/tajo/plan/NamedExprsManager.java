@@ -223,9 +223,9 @@ public class NamedExprsManager {
 
   public Collection<NamedExpr> getAllNamedExprs() {
     List<NamedExpr> namedExprList = Lists.newArrayList();
-    for (Map.Entry<Integer, Expr> entry: idToExprBiMap.entrySet()) {
-      namedExprList.add(new NamedExpr(entry.getValue(), idToNamesMap.get(entry.getKey()).get(0)));
-    }
+    idToExprBiMap.entrySet().stream()
+      .map(entry -> new NamedExpr(entry.getValue(), idToNamesMap.get(entry.getKey()).get(0)))
+      .forEach(namedExprList::add);
     return namedExprList;
   }
 

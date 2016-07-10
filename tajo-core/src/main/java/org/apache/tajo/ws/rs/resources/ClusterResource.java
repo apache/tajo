@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -100,12 +101,8 @@ public class ClusterResource {
       MasterContext masterContext = context.get(masterContextKey);
       
       Map<Integer, NodeStatus> workerMap = masterContext.getResourceManager().getNodes();
-      List<WorkerResponse> workerList = new ArrayList<>();
-      
-      for (NodeStatus nodeStatus : workerMap.values()) {
-        workerList.add(new WorkerResponse(nodeStatus));
-      }
-      
+      List<WorkerResponse> workerList = workerMap.values().stream().map(WorkerResponse::new).collect(Collectors.toList());
+
       Map<String, List<WorkerResponse>> workerResponseMap = new HashMap<>();
       workerResponseMap.put(workersName, workerList);
       

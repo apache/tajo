@@ -35,6 +35,7 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Column name resolution utility. A SQL statement can include many kinds of column names,
@@ -125,15 +126,8 @@ public abstract class NameResolver {
    */
   public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName) {
 
-    Set<RelationNode> found = new HashSet<>();
-
-    for (RelationNode rel : block.getRelations()) {
-      if (rel.getLogicalSchema().contains(columnName)) {
-        found.add(rel);
-      }
-    }
-
-    return found;
+    return block.getRelations().stream().filter(rel -> rel.getLogicalSchema().contains(columnName))
+        .collect(Collectors.toSet());
   }
 
   /**
@@ -246,25 +240,19 @@ public abstract class NameResolver {
 
     List<Column> candidates = new ArrayList<>();
 
-    for (RelationNode rel : block.getRelations()) {
-      if (rel.isNameResolveBase()) {
-        Column found = rel.getLogicalSchema().getColumn(columnName);
-        if (found != null) {
-          candidates.add(found);
-        }
+    block.getRelations().stream().filter(rel -> rel.isNameResolveBase()).forEach(rel -> {
+      Column found = rel.getLogicalSchema().getColumn(columnName);
+      if (found != null) {
+        candidates.add(found);
       }
-    }
+    });
 
     if (!candidates.isEmpty()) {
       return ensureUniqueColumn(candidates);
     } else {
       if (includeSelfDescTable) {
-        List<RelationNode> candidateRels = new ArrayList<>();
-        for (RelationNode rel : block.getRelations()) {
-          if (describeSchemaByItself(rel)) {
-            candidateRels.add(rel);
-          }
-        }
+        List<RelationNode> candidateRels = block.getRelations().stream().
+          filter(rel -> describeSchemaByItself(rel)).collect(Collectors.toList());
         if (candidateRels.size() == 1) {
           return guessColumn(IdentifierUtil.buildFQName(candidateRels.get(0).getCanonicalName(), columnName));
         } else if (candidateRels.size() > 1) {

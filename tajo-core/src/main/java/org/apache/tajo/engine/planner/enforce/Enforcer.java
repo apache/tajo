@@ -214,9 +214,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
       return proto.getPropertiesList();
     } else {
       List<EnforceProperty> list = new ArrayList<>();
-      for (List<EnforceProperty> propertyList : properties.values()) {
-        list.addAll(propertyList);
-      }
+      properties.values().forEach(list::addAll);
       return list;
     }
   }

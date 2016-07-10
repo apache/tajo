@@ -63,6 +63,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.apache.tajo.ResourceProtos.*;
 
@@ -285,15 +286,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   }
 
   private Set<Integer> getWorkerIds(Collection<String> hosts){
-    Set<Integer> workerIds = Sets.newHashSet();
-    if(hosts.isEmpty()) return workerIds;
+    if(hosts.isEmpty()) return new HashSet<>();
 
-    for (WorkerConnectionInfo worker : stage.getContext().getWorkerMap().values()) {
-      if(hosts.contains(worker.getHost())){
-        workerIds.add(worker.getId());
-      }
-    }
-    return workerIds;
+    return stage.getContext().getWorkerMap().values().stream().filter(worker -> hosts.contains(worker.getHost()))
+        .map(WorkerConnectionInfo::getId).collect(Collectors.toSet());
   }
 
 
@@ -328,9 +324,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     masterClientService.reserveNodeResources(callBack.getController(), request.build(), callBack);
     NodeResourceResponse response = callBack.get();
 
-    for (AllocationResourceProto resource : response.getResourceList()) {
-      taskRequestEvents.add(new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId()));
-    }
+    response.getResourceList().stream()
+        .map(resource -> new TaskRequestEvent(resource.getWorkerId(), resource, context.getBlockId()))
+        .forEach(taskRequestEvents::add);
 
     return taskRequestEvents;
   }
@@ -1012,9 +1008,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           for(Map.Entry<String, Set<FetchProto>> entry: task.getFetchMap().entrySet()) {
             Collection<FetchProto> fetches = entry.getValue();
             if (fetches != null) {
-              for (FetchProto fetch : fetches) {
-                taskAssign.addFetch(fetch);
-              }
+              fetches.forEach(taskAssign::addFetch);
             }
           }
 

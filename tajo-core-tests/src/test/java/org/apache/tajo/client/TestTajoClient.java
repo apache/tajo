@@ -175,10 +175,7 @@ public class TestTajoClient {
     String prefixName = "key_";
     String prefixValue = "val_";
 
-    List<String> unsetList = new ArrayList<>();
-    for(Map.Entry<String, String> entry: client.getAllSessionVariables().entrySet()) {
-      unsetList.add(entry.getKey());
-    }
+    List<String> unsetList = new ArrayList<>(client.getAllSessionVariables().keySet());
     client.unsetSessionVariables(unsetList);
 
     for (int i = 0; i < 10; i++) {

@@ -42,6 +42,7 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * ProjectionPushDownRule deploys expressions in a selection list to proper
@@ -366,11 +367,8 @@ public class ProjectionPushDownRule extends
       Iterator<Target> iterator;
 
       public FilteredTargetIterator(Set<String> required) {
-        for (String name : nameToIdBiMap.keySet()) {
-          if (required.contains(name)) {
-            filtered.add(getTarget(name));
-          }
-        }
+        nameToIdBiMap.keySet().stream()
+          .filter(name -> required.contains(name)).map(TargetListManager.this::getTarget).forEach(filtered::add);
         iterator = filtered.iterator();
       }
 
@@ -432,9 +430,7 @@ public class ProjectionPushDownRule extends
     }
 
     private void addNecessaryReferences(EvalNode evalNode) {
-      for (Column column : EvalTreeUtil.findUniqueColumns(evalNode)) {
-        requiredSet.add(column.getQualifiedName());
-      }
+      EvalTreeUtil.findUniqueColumns(evalNode).stream().map(Column::getQualifiedName).forEach(requiredSet::add);
     }
 
     @Override
@@ -968,12 +964,7 @@ public class ProjectionPushDownRule extends
     Iterator<String> iterator;
 
     FilteredStringsIterator(Collection<String> targetNames, Collection<String> required) {
-      List<String> filtered = new ArrayList<>();
-      for (String name : targetNames) {
-        if (required.contains(name)) {
-          filtered.add(name);
-        }
-      }
+      List<String> filtered = targetNames.stream().filter(name -> required.contains(name)).collect(Collectors.toList());
 
       iterator = filtered.iterator();
     }
@@ -1016,11 +1007,7 @@ public class ProjectionPushDownRule extends
         }
       }
 
-      for (String name : requiredReferences) {
-        if (targetSet.containsKey(name)) {
-          filtered.add(targetSet.get(name));
-        }
-      }
+      requiredReferences.stream().filter(name -> targetSet.containsKey(name)).map(targetSet::get).forEach(filtered::add);
 
       iterator = filtered.iterator();
     }

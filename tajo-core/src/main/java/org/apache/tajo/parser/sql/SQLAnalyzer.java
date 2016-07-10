@@ -1351,11 +1351,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   @Override
   public Expr visitTruncate_table_statement(@NotNull Truncate_table_statementContext ctx) {
     List<Table_nameContext> tableNameContexts = ctx.table_name();
-    List<String> tableNames = new ArrayList<>();
-
-    for (Table_nameContext eachTableNameContext: tableNameContexts) {
-      tableNames.add(buildIdentifierChain(eachTableNameContext.identifier()));
-    }
+    List<String> tableNames = tableNameContexts.stream()
+      .map(eachTableNameContext -> buildIdentifierChain(eachTableNameContext.identifier()))
+      .collect(Collectors.toList());
 
     return new TruncateTable(tableNames);
   }
@@ -1403,11 +1401,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
             visitNumeric_value_expression(hashPartitions.hash_partitions_by_quantity().quantity));
 
       } else { // ( PARTITION part_name , ...)
-        List<CreateTable.PartitionSpecifier> specifiers = Lists.newArrayList();
-        for (Individual_hash_partitionContext partition :
-            hashPartitions.individual_hash_partitions().individual_hash_partition()) {
-          specifiers.add(new CreateTable.PartitionSpecifier(partition.partition_name().getText()));
-        }
+        List<CreateTable.PartitionSpecifier> specifiers = hashPartitions.individual_hash_partitions().individual_hash_partition()
+          .stream().map(partition -> new PartitionSpecifier(partition.partition_name().getText())).collect(Collectors.toList());
         return new HashPartition(buildColumnReferenceList(hashPartitions.column_reference_list()), specifiers);
       }
 

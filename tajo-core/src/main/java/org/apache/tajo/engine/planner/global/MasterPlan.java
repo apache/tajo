@@ -36,6 +36,7 @@ import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class MasterPlan {
   private final QueryId queryId;
@@ -236,10 +237,8 @@ public class MasterPlan {
   }
 
   public List<ExecutionBlock> getChilds(ExecutionBlockId id) {
-    List<ExecutionBlock> childBlocks = new ArrayList<>();
-    for (ExecutionBlockId cid : execBlockGraph.getChilds(id)) {
-      childBlocks.add(execBlockMap.get(cid));
-    }
+    List<ExecutionBlock> childBlocks = execBlockGraph.getChilds(id).stream()
+      .map(cid -> execBlockMap.get(cid)).collect(Collectors.toList());
     return childBlocks;
   }
 

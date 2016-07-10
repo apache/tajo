@@ -140,9 +140,7 @@ public class QueryHistory implements GsonObject, History {
 
     List<StageHistoryProto> stageHistoryProtos = new ArrayList<>();
     if (stageHistories != null) {
-      for (StageHistory eachStage: stageHistories) {
-        stageHistoryProtos.add((eachStage.getProto()));
-      }
+      stageHistories.stream().map(eachStage -> (eachStage.getProto())).forEach(stageHistoryProtos::add);
     }
     builder.addAllStageHistories(stageHistoryProtos);
 

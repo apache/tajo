@@ -44,6 +44,7 @@ import org.apache.tajo.util.graph.SimpleDirectedGraph;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * This represents and keeps every information about a query plan for a query.
@@ -266,13 +267,8 @@ public class LogicalPlan {
 
   public void removeBlock(QueryBlock block) {
     queryBlocks.remove(block.getName());
-    List<Integer> tobeRemoved = new ArrayList<>();
-    for (Map.Entry<Integer, QueryBlock> entry : queryBlockByPID.entrySet()) {
-      tobeRemoved.add(entry.getKey());
-    }
-    for (Integer rn : tobeRemoved) {
-      queryBlockByPID.remove(rn);
-    }
+    List<Integer> tobeRemoved = queryBlockByPID.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList());
+    tobeRemoved.forEach(rn -> queryBlockByPID.remove(rn));
   }
 
   public void disconnectBlocks(QueryBlock srcBlock, QueryBlock targetBlock) {
@@ -288,11 +284,8 @@ public class LogicalPlan {
   }
 
   public List<QueryBlock> getChildBlocks(QueryBlock block) {
-    List<QueryBlock> childBlocks = new ArrayList<>();
-    for (String blockName : queryBlockGraph.getChilds(block.getName())) {
-      childBlocks.add(queryBlocks.get(blockName));
-    }
-    return childBlocks;
+    return queryBlockGraph.getChilds(block.getName()).stream()
+        .map(blockName -> queryBlocks.get(blockName)).collect(Collectors.toList());
   }
 
   public void mapExprToBlock(Expr expr, String blockName) {

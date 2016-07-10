@@ -30,9 +30,7 @@ public class RegexpMetricsFilter implements MetricFilter {
   List<Pattern> filterPatterns = new ArrayList<>();
 
   public RegexpMetricsFilter(Collection<String> filterExpressions) {
-    for(String eachExpression: filterExpressions) {
-      filterPatterns.add(Pattern.compile(eachExpression));
-    }
+    filterExpressions.stream().map(Pattern::compile).forEach(filterPatterns::add);
   }
 
   @Override

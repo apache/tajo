@@ -47,19 +47,13 @@ public class JoinGraphContext {
   }
 
   public void addCandidateJoinConditions(Collection<EvalNode> candidates) {
-    for (EvalNode eachCandidate : candidates) {
-      if (!evaluatedJoinConditions.contains(eachCandidate)) {
-        candidateJoinConditions.add(eachCandidate);
-      }
-    }
+    candidates.stream().filter(eachCandidate -> !evaluatedJoinConditions.contains(eachCandidate))
+      .forEach(candidateJoinConditions::add);
   }
 
   public void addCandidateJoinFilters(Collection<EvalNode> candidates) {
-    for (EvalNode eachCandidate : candidates) {
-      if (!evaluatedJoinFilters.contains(eachCandidate)) {
-        candidateJoinFilters.add(eachCandidate);
-      }
-    }
+    candidates.stream().filter(eachCandidate -> !evaluatedJoinFilters.contains(eachCandidate))
+      .forEach(candidateJoinFilters::add);
   }
 
   public void removeCandidateJoinConditions(Collection<EvalNode> willBeRemoved) {
@@ -71,21 +65,17 @@ public class JoinGraphContext {
   }
 
   public void markAsEvaluatedJoinConditions(Collection<EvalNode> willBeMarked) {
-    for (EvalNode eachEval : willBeMarked) {
-      if (candidateJoinConditions.contains(eachEval)) {
-        candidateJoinConditions.remove(eachEval);
-        evaluatedJoinConditions.add(eachEval);
-      }
-    }
+    willBeMarked.stream().filter(eachEval -> candidateJoinConditions.contains(eachEval)).forEach(eachEval -> {
+      candidateJoinConditions.remove(eachEval);
+      evaluatedJoinConditions.add(eachEval);
+    });
   }
 
   public void markAsEvaluatedJoinFilters(Collection<EvalNode> willBeMarked) {
-    for (EvalNode eachEval : willBeMarked) {
-      if (candidateJoinFilters.contains(eachEval)) {
-        candidateJoinFilters.remove(eachEval);
-        evaluatedJoinFilters.add(eachEval);
-      }
-    }
+    willBeMarked.stream().filter(eachEval -> candidateJoinFilters.contains(eachEval)).forEach(eachEval -> {
+      candidateJoinFilters.remove(eachEval);
+      evaluatedJoinFilters.add(eachEval);
+    });
   }
 
   public Set<EvalNode> getCandidateJoinConditions() {

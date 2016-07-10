@@ -43,6 +43,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class XMLCatalogSchemaManager {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -302,16 +304,10 @@ public class XMLCatalogSchemaManager {
       throw new TajoInternalError("Database schema files are not loaded.");
     }
     
-    final List<SchemaPatch> candidatePatches = new ArrayList<>();
+    final List<SchemaPatch> candidatePatches = this.catalogStore.getPatches().stream()
+      .filter(patch -> currentVersion >= patch.getPriorVersion()).sorted().collect(Collectors.toList());
     Statement stmt;
-    
-    for (SchemaPatch patch: this.catalogStore.getPatches()) {
-      if (currentVersion >= patch.getPriorVersion()) {
-        candidatePatches.add(patch);
-      }
-    }
-    
-    Collections.sort(candidatePatches);
+
     try {
       stmt = conn.createStatement();
     } catch (SQLException e) {
@@ -602,18 +598,9 @@ public class XMLCatalogSchemaManager {
           unorderedObjects.add(object);
         }
       }
-      
-      for (DatabaseObject object: orderedObjects) {
-        if (object != null) {
-          mergedObjects.add(object);
-        }
-      }
-      
-      for (DatabaseObject object: unorderedObjects) {
-        if (object != null) {
-          mergedObjects.add(object);
-        }
-      }
+
+      Stream.concat(orderedObjects.stream(), unorderedObjects.stream())
+          .filter(object -> object != null).forEach(mergedObjects::add);
       
       return mergedObjects;
     }
@@ -643,50 +630,23 @@ public class XMLCatalogSchemaManager {
     }
     
     protected void mergePatches(List<SchemaPatch> patches) {
-      final List<DatabaseObject> objects = new ArrayList<>();
-      
-      Collections.sort(patches);
-      
-      for (SchemaPatch patch: patches) {
+      patches.stream().forEachOrdered(patch -> {
         validatePatch(patches, patch);
-        
-        objects.clear();
+
         List<DatabaseObject> tempObjects = new ArrayList<>();
         tempObjects.addAll(patch.getObjects());
         patch.clearObjects();
-        patch.addObjects(mergeDatabaseObjects(tempObjects));        
-        
+        patch.addObjects(mergeDatabaseObjects(tempObjects));
+
         targetStore.addPatch(patch);
-      }
+      });
     }
     
     protected void validateSQLObject(List<SQLObject> queries, SQLObject testQuery) {
-      int occurredCount = 0;
-      
-      for (SQLObject query: queries) {
-        if (query.getType() == testQuery.getType()) {
-          occurredCount++;
-        }
-      }
+      int occurredCount = (int) queries.stream().filter(query -> query.getType() == testQuery.getType()).count();
       
       if (occurredCount > 1) {
         throw new TajoInternalError("Duplicate Query type (" + testQuery.getType() + ") has found.");
-      }
-    }
-    
-    protected void mergeExistQueries(List<SQLObject> queries) {
-      for (SQLObject query: queries) {
-        validateSQLObject(queries, query);
-        
-        targetStore.addExistQuery(query);
-      }
-    }
-    
-    protected void mergeDropStatements(List<SQLObject> queries) {
-      for (SQLObject query: queries) {
-        validateSQLObject(queries, query);
-        
-        targetStore.addDropStatement(query);
       }
     }
     
@@ -694,24 +654,28 @@ public class XMLCatalogSchemaManager {
       boolean alreadySetDatabaseObject = false;
       
       // first pass
-      for (StoreObject store : this.storeObjects) {
-        copySchemaInfo(store);
-      }
+      this.storeObjects.forEach(this::copySchemaInfo);
       
       // second pass
       for (StoreObject store: this.storeObjects) {
-        if (store.getSchema().getVersion() == targetStore.getSchema().getVersion() && 
+        if (store.getSchema().getVersion() == targetStore.getSchema().getVersion() &&
             !alreadySetDatabaseObject) {
           BaseSchema targetSchema = targetStore.getSchema();
           targetSchema.clearObjects();
           targetSchema.addObjects(mergeDatabaseObjects(store.getSchema().getObjects()));
-          
+
           alreadySetDatabaseObject = true;
         }
-        
+
         mergePatches(store.getPatches());
-        mergeExistQueries(store.getExistQueries());
-        mergeDropStatements(store.getDropStatements());
+        store.getExistQueries().forEach(query -> {
+          validateSQLObject(store.getExistQueries(), query);
+          targetStore.addExistQuery(query);
+        });
+        store.getDropStatements().forEach(query -> {
+          validateSQLObject(store.getDropStatements(), query);
+          targetStore.addDropStatement(query);
+        });
       }
       
       return this.targetStore;
