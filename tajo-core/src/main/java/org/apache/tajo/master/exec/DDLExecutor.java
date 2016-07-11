@@ -477,6 +477,9 @@ public class DDLExecutor {
       catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType
           .SET_PROPERTY));
       break;
+    case UNSET_PROPERTY:
+      catalog.alterTable(CatalogUtil.unsetProperty(qualifiedName, alterTable.getUnsetPropertyKeys()));
+      break;
     case ADD_PARTITION:
       pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());
       ensureColumnPartitionKeys(qualifiedName, alterTable.getPartitionColumns());

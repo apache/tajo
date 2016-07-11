@@ -657,6 +657,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
       case SET_PROPERTY:
         // TODO - not implemented yet
         break;
+      case UNSET_PROPERTY:
+        // TODO - not implemented yet
+        break;
       default:
         //TODO
     }

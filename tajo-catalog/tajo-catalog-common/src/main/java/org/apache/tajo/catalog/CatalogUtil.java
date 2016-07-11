@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.BuiltinStorages;
 import org.apache.tajo.DataTypeUtil;
@@ -522,6 +523,14 @@ public class CatalogUtil {
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setProperties(params);
     alterTableDesc.setAlterTableType(alterTableType);
+    return alterTableDesc;
+  }
+
+  public static AlterTableDesc unsetProperty(String tableName, String[] propertyKeys) {
+    final AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setUnsetPropertyKey(Sets.newHashSet(propertyKeys));
+    alterTableDesc.setAlterTableType(AlterTableType.UNSET_PROPERTY);
     return alterTableDesc;
   }
 

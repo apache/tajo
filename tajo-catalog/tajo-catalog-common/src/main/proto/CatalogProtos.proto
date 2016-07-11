@@ -45,6 +45,7 @@ enum AlterTableType {
   ADD_PARTITION = 3;
   DROP_PARTITION = 4;
   SET_PROPERTY = 5;
+  UNSET_PROPERTY = 6;
 }
 
 message ColumnProto {
@@ -305,6 +306,7 @@ message AlterTableDescProto {
   optional PartitionDescProto partition_desc = 6;
   optional KeyValueSetProto params = 7;
   optional string new_table_path = 8;
+  optional StringListProto unset_property_keys = 9;
 }
 
 message AlterColumnProto {
