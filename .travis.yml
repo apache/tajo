@@ -32,6 +32,10 @@ matrix:
     - jdk: oraclejdk8
       env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Ptest-storage-pgsql -DLOG_LEVEL=WARN -pl org.apache.tajo:tajo-storage-pgsql"
 
+    # Test tajo-storage-mysql
+    - jdk: oraclejdk8
+      env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="" TEST_FLAG="test -Ptest-storage-mysql -DLOG_LEVEL=WARN -pl org.apache.tajo:tajo-storage-mysql"
+
     # Test tajo-storage-hdfs for hadoop-2.7.1
     - jdk: oraclejdk8
       env: PATH=$PATH:$HOME/local/bin HADOOP_FLAG="-Dhadoop.version=2.7.1" TEST_FLAG="test -pl org.apache.tajo:tajo-storage-hdfs"

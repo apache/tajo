@@ -1,0 +1,1 @@
+select l_comment from lineitem where l_orderkey > 1 and l_linenumber > 0;
