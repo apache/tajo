@@ -488,41 +488,39 @@ public class CatalogUtil {
     Collections.addAll(IdentifierUtil.RESERVED_KEYWORDS_SET, IdentifierUtil.RESERVED_KEYWORDS);
   }
 
-  public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName,
-                                            AlterTableType alterTableType) {
+  public static AlterTableDesc renameColumn(String tableName, String oldColumName, String newColumName) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setColumnName(oldColumName);
     alterTableDesc.setNewColumnName(newColumName);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.RENAME_COLUMN);
     return alterTableDesc;
   }
 
-  public static AlterTableDesc renameTable(String tableName, String newTableName, AlterTableType alterTableType,
-                                           @Nullable Path newTablePath) {
+  public static AlterTableDesc renameTable(String tableName, String newTableName, @Nullable Path newTablePath) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setNewTableName(newTableName);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.RENAME_TABLE);
     if (newTablePath != null) {
       alterTableDesc.setNewTablePath(newTablePath);
     }
     return alterTableDesc;
   }
 
-  public static AlterTableDesc addNewColumn(String tableName, Column column, AlterTableType alterTableType) {
+  public static AlterTableDesc addNewColumn(String tableName, Column column) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setAddColumn(column);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
     return alterTableDesc;
   }
 
-  public static AlterTableDesc setProperty(String tableName, KeyValueSet params, AlterTableType alterTableType) {
+  public static AlterTableDesc setProperty(String tableName, KeyValueSet params) {
     final AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName(tableName);
     alterTableDesc.setProperties(params);
-    alterTableDesc.setAlterTableType(alterTableType);
+    alterTableDesc.setAlterTableType(AlterTableType.SET_PROPERTY);
     return alterTableDesc;
   }
 

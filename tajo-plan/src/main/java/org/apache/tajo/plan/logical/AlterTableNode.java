@@ -209,17 +209,6 @@ public class AlterTableNode extends LogicalNode {
     }
   }
 
-    /*@Override
-    public Object clone() throws CloneNotSupportedException {
-        AlterTableNode alterTableNode = (AlterTableNode) super.clone();
-        alterTableNode.tableName = tableName;
-        alterTableNode.newTableName = newTableName;
-        alterTableNode.columnName = columnName;
-        alterTableNode.newColumnName=newColumnName;
-        alterTableNode.addNewColumn =(Column) addNewColumn.clone();
-        return alterTableNode;
-    }*/
-
   @Override
   public String toString() {
     return "AlterTable (table=" + tableName + ")";
