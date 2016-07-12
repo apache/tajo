@@ -94,10 +94,10 @@ public enum SessionVars implements ConfigKey {
       Validators.bool()),
 
   // for distributed query strategies
-  BROADCAST_NON_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD,
+  BROADCAST_NON_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT,
       "restriction for the total size of broadcasted table for non-cross join (kb)", DEFAULT, Long.class,
       Validators.min("0")),
-  BROADCAST_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD,
+  BROADCAST_CROSS_JOIN_THRESHOLD(ConfVars.$DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT,
       "restriction for the total size of broadcasted table for cross join (kb)", DEFAULT, Long.class,
       Validators.min("0")),
 
@@ -125,13 +125,13 @@ public enum SessionVars implements ConfigKey {
       Integer.class, Validators.min("0")),
   HASH_SHUFFLE_BUFFER_SIZE(ConfVars.$EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE, "hash-shuffle buffer size for local disk I/O (mb)"
       , DEFAULT, Integer.class, Validators.min("1")),
-  HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash join (mb)", DEFAULT,
+  HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_LIMIT, "limited size for hash join (mb)", DEFAULT,
       Long.class, Validators.min("0")),
-  INNER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD,
+  INNER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_INNER_HASH_JOIN_SIZE_LIMIT,
       "limited size for hash inner join (mb)", DEFAULT, Long.class, Validators.min("0")),
-  OUTER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash outer join (mb)",
+  OUTER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_OUTER_HASH_JOIN_SIZE_LIMIT, "limited size for hash outer join (mb)",
       DEFAULT, Long.class, Validators.min("0")),
-  HASH_GROUPBY_SIZE_LIMIT(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD, "limited size for hash groupby (mb)",
+  HASH_GROUPBY_SIZE_LIMIT(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT, "limited size for hash groupby (mb)",
       DEFAULT, Long.class, Validators.min("0")),
   MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, "Maximum per-output file size (mb). 0 means infinite.", DEFAULT,
       Long.class, Validators.min("0")),
@@ -145,7 +145,7 @@ public enum SessionVars implements ConfigKey {
 
   // for index
   INDEX_ENABLED(ConfVars.$INDEX_ENABLED, "index scan enabled", DEFAULT),
-  INDEX_SELECTIVITY_THRESHOLD(ConfVars.$INDEX_SELECTIVITY_THRESHOLD, "the selectivity threshold for index scan",
+  INDEX_SELECTIVITY_LIMIT(ConfVars.$INDEX_SELECTIVITY_LIMIT, "the selectivity threshold for index scan",
       DEFAULT),
 
   // for partition overwrite
@@ -176,7 +176,7 @@ public enum SessionVars implements ConfigKey {
   TEST_FILTER_PUSHDOWN_ENABLED(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED, "filter push down enabled", TEST_VAR),
   TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", TEST_VAR),
   TEST_PLAN_SHAPE_FIX_ENABLED(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED, "(test only) plan shape fix enabled", TEST_VAR),
-  TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT(ConfVars.$TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT, "(test only) Tim sort threshold for radix sort", TEST_VAR)
+  TEST_TIM_SORT_LIMIT_FOR_RADIX_SORT(ConfVars.$TEST_TIM_SORT_LIMIT_FOR_RADIX_SORT, "(test only) Tim sort threshold for radix sort", TEST_VAR)
   ;
 
   public static final Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();

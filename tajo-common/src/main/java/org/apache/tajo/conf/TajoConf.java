@@ -189,7 +189,7 @@ public class TajoConf extends Configuration {
     WORKER_RESOURCE_AVAILABLE_DISK_PARALLEL_NUM("tajo.worker.resource.disk.parallel-execution.num", 2,
         Validators.min("1")),
 
-    WORKER_HEARTBEAT_QUEUE_THRESHOLD_RATE("tajo.worker.heartbeat.queue.threshold-rate", 0.1f, Validators.min("0")),//10%
+    WORKER_HEARTBEAT_QUEUE_LIMIT_RATE("tajo.worker.heartbeat.queue.limit-rate", 0.1f, Validators.min("0")),//10%
     WORKER_HEARTBEAT_IDLE_INTERVAL("tajo.worker.heartbeat.idle.interval", 10 * 1000),  // 10 sec
     WORKER_HEARTBEAT_ACTIVE_INTERVAL("tajo.worker.heartbeat.active.interval", 1000),  // 1 sec
 
@@ -333,9 +333,9 @@ public class TajoConf extends Configuration {
 
 
     // for distributed query strategies
-    $DIST_QUERY_BROADCAST_NON_CROSS_JOIN_THRESHOLD("tajo.dist-query.broadcast.non-cross-join.threshold-kb", 5 * 1024l,
+    $DIST_QUERY_BROADCAST_NON_CROSS_JOIN_LIMIT("tajo.dist-query.broadcast.non-cross-join.limit-kb", 5 * 1024l,
         Validators.min("0")), // 5 MB
-    $DIST_QUERY_BROADCAST_CROSS_JOIN_THRESHOLD("tajo.dist-query.broadcast.cross-join.threshold-kb", 1 * 1024l,
+    $DIST_QUERY_BROADCAST_CROSS_JOIN_LIMIT("tajo.dist-query.broadcast.cross-join.limit-kb", 1 * 1024l,
         Validators.min("0")), // 1 MB
 
     $DIST_QUERY_JOIN_TASK_VOLUME("tajo.dist-query.join.task-volume-mb", 64),
@@ -351,12 +351,12 @@ public class TajoConf extends Configuration {
 
     // for physical Executors
     $EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE("tajo.executor.external-sort.buffer-mb", 200),
-    $EXECUTOR_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.common.in-memory-hash-threshold-mb", 64l, Validators.min("0")),
-    $EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.inner.in-memory-hash-threshold-mb", 64l,
+    $EXECUTOR_HASH_JOIN_SIZE_LIMIT("tajo.executor.join.common.in-memory-hash-limit-mb", 64l, Validators.min("0")),
+    $EXECUTOR_INNER_HASH_JOIN_SIZE_LIMIT("tajo.executor.join.inner.in-memory-hash-limit-mb", 64l,
         Validators.min("0")),
-    $EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.outer.in-memory-hash-threshold-mb", 64l,
+    $EXECUTOR_OUTER_HASH_JOIN_SIZE_LIMIT("tajo.executor.join.outer.in-memory-hash-limit-mb", 64l,
         Validators.min("0")),
-    $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-mb", 64l,
+    $EXECUTOR_GROUPBY_INMEMORY_HASH_LIMIT("tajo.executor.groupby.in-memory-hash-limit-mb", 64l,
         Validators.min("0")),
     $EXECUTOR_HASH_SHUFFLE_BUFFER_SIZE("tajo.executor.hash-shuffle.buffer-mb", 100, Validators.min("1")),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
@@ -368,7 +368,7 @@ public class TajoConf extends Configuration {
 
     // for index
     $INDEX_ENABLED("tajo.query.index.enabled", false),
-    $INDEX_SELECTIVITY_THRESHOLD("tajo.query.index.selectivity.threshold", 0.05f),
+    $INDEX_SELECTIVITY_LIMIT("tajo.query.index.selectivity.limit", 0.05f),
 
     // Client -----------------------------------------------------------------
     $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
@@ -397,7 +397,7 @@ public class TajoConf extends Configuration {
     $TEST_FILTER_PUSHDOWN_ENABLED("tajo.test.plan.filter-pushdown.enabled", true),
     $TEST_MIN_TASK_NUM("tajo.test.min-task-num", -1),
     $TEST_PLAN_SHAPE_FIX_ENABLED("tajo.test.plan.shape.fix.enabled", false),  // used for explain statement test
-    $TEST_TIM_SORT_THRESHOLD_FOR_RADIX_SORT("tajo.test.executor.radix-sort.tim-sort-threshold", 65536),
+    $TEST_TIM_SORT_LIMIT_FOR_RADIX_SORT("tajo.test.executor.radix-sort.tim-sort-limit", 65536),
 
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),

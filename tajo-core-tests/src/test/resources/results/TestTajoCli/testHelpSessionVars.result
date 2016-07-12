@@ -42,7 +42,7 @@ Available Session Variables:
 \set SORT_LIST_SIZE [int value] - The initial size of list for in-memory sort
 \set JOIN_HASH_TABLE_SIZE [int value] - The initial size of hash table for in-memory hash join
 \set INDEX_ENABLED [true or false] - index scan enabled
-\set INDEX_SELECTIVITY_THRESHOLD [real value] - the selectivity threshold for index scan
+\set INDEX_SELECTIVITY_LIMIT [real value] - the selectivity threshold for index scan
 \set PARTITION_NO_RESULT_OVERWRITE_ENABLED [true or false] - If true, a partitioned table is overwritten even if a sub query leads to no result. Otherwise, the table data will be kept if there is no result
 \set ARITHABORT [true or false] - If true, a running query will be terminated when an overflow or divide-by-zero occurs.
 \set FETCH_ROWNUM [int value] - The number of rows to be fetched from Master at a time

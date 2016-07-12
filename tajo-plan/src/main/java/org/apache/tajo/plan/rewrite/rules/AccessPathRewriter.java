@@ -102,7 +102,7 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
           // estimation selectivity and choose the better path
           // TODO: improve the selectivity estimation
           double estimateSelectivity = 0.001;
-          double selectivityThreshold = conf.getFloat(SessionVars.INDEX_SELECTIVITY_THRESHOLD);
+          double selectivityThreshold = conf.getFloat(SessionVars.INDEX_SELECTIVITY_LIMIT);
           LOG.info("Selectivity threshold: " + selectivityThreshold);
           LOG.info("Estimated selectivity: " + estimateSelectivity);
           if (estimateSelectivity < selectivityThreshold) {

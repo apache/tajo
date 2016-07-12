@@ -157,4 +157,4 @@ Tajo provides a session variable for broadcast join configuration. (For more det
 
 * ``BROADCAST_NON_CROSS_JOIN_THRESHOLD`` and ``BROADCAST_CROSS_JOIN_THRESHOLD`` are thresholds for broadcast join. Only the relations who are larger than this threshold can be broadcasted.
 
-You can also apply this configuration system widely by setting ``tajo.dist-query.broadcast.non-cross-join.threshold-kb`` or ``tajo.dist-query.broadcast.cross-join.threshold-kb`` in ``${TAJO_HOME}/conf/tajo-site.xml``.
+You can also apply this configuration system widely by setting ``tajo.dist-query.broadcast.non-cross-join.limit-kb`` or ``tajo.dist-query.broadcast.cross-join.limit-kb`` in ``${TAJO_HOME}/conf/tajo-site.xml``.
