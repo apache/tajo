@@ -101,7 +101,7 @@ Assume that you want to give 15GB Jvm heap, 2GB memory per task, 2 SSD disks, an
   </property>
 
 * Example with HDFS
-Assume that you want to give 64GB Jvm heap, 4GB memory per task, 12 SAS disks, and 24 cores on each worker with HDFS. The example configuration is as follows:
+  Assume that you want to give 64GB Jvm heap, 4GB memory per task, 12 SAS disks, and 24 cores on each worker with HDFS. The example configuration is as follows:
 
 ``tajo-env.sh``
 

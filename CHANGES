@@ -295,6 +295,8 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2176: Refining function documents. (Jongyoung)
+
     TAJO-2154: Refactor Datum to use new Type implementation. (hyunsik)
 
     TAJO-2027: Writing Hive UDF integration document. (Jongyoung via hyunsik)
@@ -399,7 +401,7 @@ Release 0.12.0 - unreleased
 
   SUB TASKS
 
-    TAJO-2156: Create GeoIP functions taking various types instead of INET4 type. (jongyoung)
+    TAJO-2156: Create GeoIP functions taking various types instead of INET4 type. (Jongyoung)
 
     TAJO-2130: Remove inet4 data type.
     (Contributed by Jongyoung Park. Committed by jihoon)
