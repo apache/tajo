@@ -98,15 +98,9 @@ public class TestCreateTable extends QueryTestCaseBase {
     assertDatabaseNotExists("d2");
   }
 
-  @Test
+  @Test(expected = SQLSyntaxError.class)
   public final void testCreateTableWithCsv() throws Exception {
-    try {
-      executeString("CREATE TABLE D1.table1 (age int) using csv;").close();
-      fail("It should not reach here.");
-    } catch (Throwable e) {
-      assertEquals(e.getClass(), SQLSyntaxError.class);
-      assertEquals(e.getMessage(), "Creating csv storage type table is disallowed from 0.12.");
-    }
+    executeString("CREATE TABLE D1.table1 (age int) using csv;").close();
   }
 
   private final void assertPathOfCreatedTable(final String databaseName,
