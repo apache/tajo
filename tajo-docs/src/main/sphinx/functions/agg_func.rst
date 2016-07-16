@@ -93,5 +93,5 @@ Aggregation Functions
 
 
 .. note:: ``INT*`` means various size of integer types can be accepted. And ``FLOAT*`` means both of ``FLOAT4`` and ``FLOAT8`` are OK.
-      For your information, in Tajo SQL, ``INT`` is alias for ``INT4`` and ``FLOAT`` is one for ``FLOAT4``.
+      For your information, in Tajo, ``INT`` is alias for ``INT4`` and ``FLOAT`` is one for ``FLOAT4``.
       See :doc:`/sql_language/data_model` .

@@ -41,7 +41,7 @@ Math Functions and Operators
     select acos(0.8); 
     > 0.9272952180016123
 
-.. function:: atan (number FLOAT8)
+.. function:: atan (number FLOAT*)
 
   Returns the arc tangent of number value
 
@@ -253,7 +253,7 @@ Math Functions and Operators
     select sign(-8.4); 
     > -1.0
 
-.. function:: SIN (number FLOAT*)
+.. function:: sin (number FLOAT*)
 
   Returns the sine of number value
 
@@ -266,7 +266,7 @@ Math Functions and Operators
     select sin(1.0); 
     > 0.8414709848078965
 
-.. function:: sqrt (number FLOAT8)
+.. function:: sqrt (number FLOAT*)
 
   Returns the square root of a number
 
@@ -294,5 +294,5 @@ Math Functions and Operators
 
 
 .. note:: ``INT*`` means various size of integer types can be accepted. And ``FLOAT*`` means both of ``FLOAT4`` and ``FLOAT8`` are OK.
-    For your information, in Tajo SQL, ``INT`` is alias for ``INT4`` and ``FLOAT`` is one for ``FLOAT4``.
+    For your information, in Tajo, ``INT`` is alias for ``INT4`` and ``FLOAT`` is one for ``FLOAT4``.
     See :doc:`/sql_language/data_model` .

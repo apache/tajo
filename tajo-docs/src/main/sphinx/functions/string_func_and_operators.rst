@@ -360,7 +360,7 @@ String Functions and Operators
     select lower('TAJO');
     > tajo
 
-.. function:: lpad(source TEXT, number INT4, pad TEXT)
+.. function:: lpad(source TEXT, number INT4 [, pad TEXT])
 
   Fill up the string to length by prepending the characters fill (a space by default). If the string is already longer than length then it is truncated (on the right).
 
@@ -375,7 +375,7 @@ String Functions and Operators
     select lpad('hi', 5, 'xy');
     > xyxhi
 
-.. function:: rpad(source TEXT, number INT4, pad TEXT)
+.. function:: rpad(source TEXT, number INT4 [, pad TEXT])
 
   Fill up the string to length length by appending the characters fill (a space by default). If the string is already longer than length then it is truncated.
 
