@@ -55,7 +55,8 @@ public class TpchTestBase {
   }
 
   private TpchTestBase() throws IOException {
-    names = new String[] {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier", "empty_orders"};
+    names = new String[] {"customer", "lineitem", "nation", "orders", "part", "partsupp", "region", "supplier",
+        "small_supplier", "empty_orders"};
     paths = new String[names.length];
     for (int i = 0; i < names.length; i++) {
       nameMap.put(names[i], i);

@@ -4,6 +4,9 @@ Release 0.11.4 - unreleased
 
   BUG FIXES
 
+    TAJO-2177: In BroadcastJoinRule, the total volume of broadcast tables should be
+    checked before stages are merged. (jihoon)
+
     TAJO-2164: SequenceFile print wrong values with TextSerializerDeserializer.
     (jaehwa)
 

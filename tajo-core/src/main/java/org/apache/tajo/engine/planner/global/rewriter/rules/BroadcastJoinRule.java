@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.global.rewriter.rules;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
@@ -109,7 +110,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
 
     @Override
     public int compare(ScanNode o1, ScanNode o2) {
-      long compare = GlobalPlanRewriteUtil.getTableVolume(o1) - GlobalPlanRewriteUtil.getTableVolume(o2);
+      long compare = PlannerUtil.getTableVolume(o1) - PlannerUtil.getTableVolume(o2);
       if (compare == 0) {
         return 0;
       } else if (compare > 0) {
@@ -157,7 +158,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private final long thresholdForCrossJoin;
     private final boolean broadcastForNonCrossJoinEnabled;
     private final GlobalPlanRewriteUtil.ParentFinder parentFinder;
-    private final Map<ExecutionBlockId, Long> estimatedEbOutputSize = TUtil.newHashMap();
+    private final Map<String, Long> estimatedEbOutputSize = new HashMap<>(); // map of table name and its volume
 
     public BroadcastJoinPlanBuilder(MasterPlan plan, RelationSizeComparator relationSizeComparator,
                                     GlobalPlanRewriteUtil.ParentFinder parentFinder,
@@ -192,9 +193,9 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       if (!current.isPreservedRow()) {
         long totalVolume = 0;
         for (ScanNode scanNode : current.getScanNodes()) {
-          totalVolume += GlobalPlanRewriteUtil.getTableVolume(scanNode);
+          totalVolume += PlannerUtil.getTableVolume(scanNode);
         }
-        estimatedEbOutputSize.put(current.getId(), totalVolume);
+        estimatedEbOutputSize.put(current.getId().toString(), totalVolume);
       }
     }
 
@@ -223,21 +224,51 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           for (ExecutionBlock child : childs) {
             if (!child.isPreservedRow()) {
               updateBroadcastableRelForChildEb(child, joinType);
+              // Mark the scan node for the child eb as broadcastable to figure out the current and child ebs can be merged.
               updateInputBasedOnChildEb(child, current);
             }
           }
 
           if (current.hasBroadcastRelation()) {
+            long broadcastThreshold = joinType.equals(JoinType.CROSS) ?
+                thresholdForCrossJoin : thresholdForNonCrossJoin;
+
             // The current execution block and its every child are able to be merged.
             for (ExecutionBlock child : childs) {
               addUnionNodeIfNecessary(unionScanMap, plan, child, current);
-              mergeTwoPhaseJoinIfPossible(plan, child, current);
+
+              // First check that two stages can be merged.
+              // If the total volume of broadcast candidates of the merged stage exceeds the threshold,
+              // these stages cannot be merged.
+              //
+              // Note: this is a greedy approach, and there may be a better solution to find more optimized broadcast
+              // join plan. For example, it would be better to split the merged stage by marking the largest broadcast
+              // candidate as not being broadcasted because it can reduce the network cost a little bit.
+              // However, the benefit looks not large (every broadcast candidates are very small), so the simple greedy
+              // solution is used here.
+              if (getTotalVolumeOfBroadcastableRelations(current) +
+                  getTotalVolumeOfBroadcastableRelations(child)
+                  > broadcastThreshold) {
+                // If a scan node for the child eb is marked as a broadcast candidate, mark it as not being broadcasted
+                // again.
+                List<ScanNode> notBroadcastable = new ArrayList<>();
+                for (ScanNode eachScan : current.getBroadcastRelations()) {
+                  if (eachScan.getTableName().equals(child.getId().toString())) {
+                    notBroadcastable.add(eachScan);
+                  }
+                }
+
+                for (ScanNode eachScan : notBroadcastable) {
+                  current.removeBroadcastRelation(eachScan);
+                }
+              } else {
+                mergeTwoPhaseJoinIfPossible(plan, child, current);
+              }
+
             }
 
-            checkTotalSizeOfBroadcastableRelations(current);
-
             long outputVolume = estimateOutputVolume(current);
-            estimatedEbOutputSize.put(current.getId(), outputVolume);
+            estimatedEbOutputSize.put(current.getId().toString(), outputVolume);
           }
         } else {
           List<ScanNode> relations = TUtil.newList(current.getBroadcastRelations());
@@ -265,7 +296,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     private void updateBroadcastableRelForChildEb(ExecutionBlock child, JoinType joinType) {
       long threshold = joinType == JoinType.CROSS ? thresholdForCrossJoin : thresholdForNonCrossJoin;
       for (ScanNode scanNode : child.getScanNodes()) {
-        long volume = GlobalPlanRewriteUtil.getTableVolume(scanNode);
+        long volume = PlannerUtil.getTableVolume(scanNode);
         if (volume >= 0 && volume <= threshold) {
           // If the child eb is already visited, the below line may update its broadcast relations.
           // Furthermore, this operation might mark the preserved-row relation as the broadcast relation with outer join.
@@ -392,7 +423,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
           thresholdForCrossJoin : thresholdForNonCrossJoin;
       int i;
       for (i = 0; i < broadcastCandidates.size(); i++) {
-        long volumeOfCandidate = GlobalPlanRewriteUtil.getTableVolume(broadcastCandidates.get(i));
+        long volumeOfCandidate = PlannerUtil.getTableVolume(broadcastCandidates.get(i));
         if (totalBroadcastVolume + volumeOfCandidate > largeThreshold) {
           break;
         }
@@ -403,6 +434,20 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         ScanNode nonBroadcast = broadcastCandidates.remove(i);
         block.removeBroadcastRelation(nonBroadcast);
       }
+    }
+
+    private long getTotalVolumeOfBroadcastableRelations(ExecutionBlock block) {
+      long sum = 0;
+
+      for (ScanNode eachScan : block.getBroadcastRelations()) {
+        if (!estimatedEbOutputSize.containsKey(eachScan.getTableName())) {
+          long volume = PlannerUtil.getTableVolume(eachScan);
+          sum += volume == TajoConstants.UNKNOWN_LENGTH ?
+              Integer.MAX_VALUE : volume; // Use Integer.MAX to prevent overflow
+        }
+      }
+
+      return sum;
     }
 
     private void updateScanOfParentAsBroadcastable(MasterPlan plan, ExecutionBlock current, ExecutionBlock parent) {

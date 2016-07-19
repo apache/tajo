@@ -24,6 +24,7 @@ import org.apache.tajo.exception.TajoException;
 import org.apache.tajo.exception.TooLargeInputForCrossJoinException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.PostLogicalPlanVerifier.Context;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.unit.StorageUnit;
@@ -90,7 +91,7 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<Context, Ob
         List<String> largeRelationNames = TUtil.newList();
 
         if (isSimpleRelationNode(node.getLeftChild())) {
-          if (getTableVolume((ScanNode) node.getLeftChild()) <= context.bcastLimitForCrossJoin * StorageUnit.KB) {
+          if (PlannerUtil.getTableVolume((ScanNode) node.getLeftChild()) <= context.bcastLimitForCrossJoin * StorageUnit.KB) {
             crossJoinAllowed = true;
           } else {
             largeRelationNames.add(((ScanNode) node.getLeftChild()).getCanonicalName());
@@ -98,7 +99,7 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<Context, Ob
         }
 
         if (isSimpleRelationNode(node.getRightChild())) {
-          if (getTableVolume((ScanNode) node.getRightChild()) <= context.bcastLimitForCrossJoin * StorageUnit.KB) {
+          if (PlannerUtil.getTableVolume((ScanNode) node.getRightChild()) <= context.bcastLimitForCrossJoin * StorageUnit.KB) {
             crossJoinAllowed = true;
           } else {
             largeRelationNames.add(((ScanNode) node.getRightChild()).getCanonicalName());
@@ -123,27 +124,6 @@ public class PostLogicalPlanVerifier extends BasicLogicalPlanVisitor<Context, Ob
       return true;
     } else {
       return false;
-    }
-  }
-
-  /**
-   * Get a volume of a table of a partitioned table
-   * @param scanNode ScanNode corresponding to a table
-   * @return table volume (bytes)
-   */
-  private static long getTableVolume(ScanNode scanNode) {
-    if (scanNode.getTableDesc().hasStats()) {
-      long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-      if (scanNode.getType() == NodeType.PARTITIONS_SCAN) {
-        PartitionedTableScanNode pScanNode = (PartitionedTableScanNode) scanNode;
-        if (pScanNode.getInputPaths() == null || pScanNode.getInputPaths().length == 0) {
-          scanBytes = 0L;
-        }
-      }
-
-      return scanBytes;
-    } else {
-      return -1;
     }
   }
 }

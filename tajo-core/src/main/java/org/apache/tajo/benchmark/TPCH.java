@@ -49,6 +49,7 @@ public class TPCH extends BenchmarkSet {
   public static final String ORDERS = "orders";
   public static final String PARTSUPP = "partsupp";
   public static final String SUPPLIER = "supplier";
+  public static final String SUPPLIER_COPY = "small_supplier";
   public static final String EMPTY_ORDERS = "empty_orders";
 
 
@@ -64,6 +65,7 @@ public class TPCH extends BenchmarkSet {
     tableVolumes.put(ORDERS, 171952161L);
     tableVolumes.put(PARTSUPP, 118984616L);
     tableVolumes.put(SUPPLIER, 1409184L);
+    tableVolumes.put(SUPPLIER_COPY, 5120L);
     tableVolumes.put(EMPTY_ORDERS, 0L);
 
   }
@@ -169,6 +171,7 @@ public class TPCH extends BenchmarkSet {
         .addColumn("s_acctbal", Type.FLOAT8) // 5
         .addColumn("s_comment", Type.TEXT); // 6
     schemas.put(SUPPLIER, supplier);
+    schemas.put(SUPPLIER_COPY, supplier);
   }
 
   public void loadOutSchema() {
@@ -198,6 +201,7 @@ public class TPCH extends BenchmarkSet {
     loadTable(ORDERS);
     loadTable(PARTSUPP) ;
     loadTable(SUPPLIER);
+    loadTable(SUPPLIER_COPY);
     loadTable(EMPTY_ORDERS);
 
   }

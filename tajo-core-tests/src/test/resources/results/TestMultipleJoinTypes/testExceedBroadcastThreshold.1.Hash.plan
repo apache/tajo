@@ -1,0 +1,166 @@
+explain
+-------------------------------
+JOIN(18)(LEFT_OUTER)
+  => Join Cond: default.l.l_orderkey (INT4) = default.b.n_nationkey (INT4)
+  => target list: default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)
+  => out schema: {(13) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+  => in schema: {(13) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+   TABLE_SUBQUERY(13) as default.b
+     => Targets: default.b.n_nationkey (INT4), default.b.n_name (TEXT), default.b.n_regionkey (INT4), default.b.n_comment (TEXT)
+     => out schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+     => in  schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+      SCAN(11) on default.nation
+        => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+        => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+   JOIN(17)(INNER)
+     => Join Cond: default.l.l_orderkey (INT4) = default.a.s_suppkey (INT4)
+     => target list: default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)
+     => out schema: {(9) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+     => in schema: {(9) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+      TABLE_SUBQUERY(9) as default.a
+        => Targets: default.a.s_suppkey (INT4), default.a.s_name (TEXT), default.a.s_address (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_acctbal (FLOAT8), default.a.s_comment (TEXT)
+        => out schema: {(7) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4)}
+        => in  schema: {(7) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4)}
+         SCAN(7) on default.small_supplier
+           => target list: default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)
+           => out schema: {(7) default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)}
+           => in schema: {(7) default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)}
+      TABLE_SUBQUERY(6) as default.l
+        => Targets: default.l.l_orderkey (INT4), default.l.cnt (INT8)
+        => out schema: {(2) default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+        => in  schema: {(2) default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+         TABLE_SUBQUERY(4) as default.t
+           => Targets: default.t.l_orderkey (INT4), default.t.cnt (INT8)
+           => out schema: {(2) default.t.cnt (INT8), default.t.l_orderkey (INT4)}
+           => in  schema: {(2) default.t.cnt (INT8), default.t.l_orderkey (INT4)}
+            HAVING(2) (cnt (INT8) > 0)
+               GROUP_BY(1)(l_orderkey)
+                 => exprs: (count())
+                 => target list: default.lineitem.l_orderkey (INT4), cnt (INT8)
+                 => out schema:{(2) cnt (INT8), default.lineitem.l_orderkey (INT4)}
+                 => in schema:{(1) default.lineitem.l_orderkey (INT4)}
+                  SCAN(0) on default.lineitem
+                    => target list: default.lineitem.l_orderkey (INT4)
+                    => out schema: {(1) default.lineitem.l_orderkey (INT4)}
+                    => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000007)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000007
+   |-eb_0000000000000_0000_000006
+      |-eb_0000000000000_0000_000001
+      |-eb_0000000000000_0000_000005
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000005
+2: eb_0000000000000_0000_000001
+3: eb_0000000000000_0000_000006
+4: eb_0000000000000_0000_000007
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000005 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 5 => 6 (type=HASH_SHUFFLE, key=default.b.n_nationkey (INT4), num=32)
+
+TABLE_SUBQUERY(13) as default.b
+  => Targets: default.b.n_nationkey (INT4), default.b.n_name (TEXT), default.b.n_regionkey (INT4), default.b.n_comment (TEXT)
+  => out schema: {(4) default.b.n_nationkey (INT4), default.b.n_name (TEXT), default.b.n_regionkey (INT4), default.b.n_comment (TEXT)}
+  => in  schema: {(4) default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4)}
+   PROJECTION(12)
+     => Targets: default.nation.n_nationkey (INT4), default.nation.n_name (TEXT), default.nation.n_regionkey (INT4), default.nation.n_comment (TEXT)
+     => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+     => in  schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+      SCAN(11) on default.nation
+        => target list: default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)
+        => out schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+        => in schema: {(4) default.nation.n_comment (TEXT), default.nation.n_name (TEXT), default.nation.n_nationkey (INT4), default.nation.n_regionkey (INT4)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 6 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
+
+GROUP_BY(20)(l_orderkey)
+  => exprs: (count())
+  => target list: default.lineitem.l_orderkey (INT4), ?count_6 (INT8)
+  => out schema:{(2) default.lineitem.l_orderkey (INT4), ?count_6 (INT8)}
+  => in schema:{(1) default.lineitem.l_orderkey (INT4)}
+   SCAN(0) on default.lineitem
+     => target list: default.lineitem.l_orderkey (INT4)
+     => out schema: {(1) default.lineitem.l_orderkey (INT4)}
+     => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000006 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 5 => 6 (type=HASH_SHUFFLE, key=default.b.n_nationkey (INT4), num=32)
+[q_0000000000000_0000] 1 => 6 (type=HASH_SHUFFLE, key=default.lineitem.l_orderkey (INT4), num=32)
+
+[Enforcers]
+ 0: type=Broadcast, tables=default.small_supplier
+
+JOIN(18)(LEFT_OUTER)
+  => Join Cond: default.l.l_orderkey (INT4) = default.b.n_nationkey (INT4)
+  => target list: default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)
+  => out schema: {(13) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+  => in schema: {(13) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.b.n_comment (TEXT), default.b.n_name (TEXT), default.b.n_nationkey (INT4), default.b.n_regionkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+   SCAN(25) on eb_0000000000000_0000_000005
+     => out schema: {(4) default.b.n_nationkey (INT4), default.b.n_name (TEXT), default.b.n_regionkey (INT4), default.b.n_comment (TEXT)}
+     => in schema: {(4) default.b.n_nationkey (INT4), default.b.n_name (TEXT), default.b.n_regionkey (INT4), default.b.n_comment (TEXT)}
+   JOIN(17)(INNER)
+     => Join Cond: default.l.l_orderkey (INT4) = default.a.s_suppkey (INT4)
+     => target list: default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)
+     => out schema: {(9) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+     => in schema: {(9) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4), default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+      TABLE_SUBQUERY(9) as default.a
+        => Targets: default.a.s_suppkey (INT4), default.a.s_name (TEXT), default.a.s_address (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_acctbal (FLOAT8), default.a.s_comment (TEXT)
+        => out schema: {(7) default.a.s_suppkey (INT4), default.a.s_name (TEXT), default.a.s_address (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_acctbal (FLOAT8), default.a.s_comment (TEXT)}
+        => in  schema: {(7) default.a.s_acctbal (FLOAT8), default.a.s_address (TEXT), default.a.s_comment (TEXT), default.a.s_name (TEXT), default.a.s_nationkey (INT4), default.a.s_phone (TEXT), default.a.s_suppkey (INT4)}
+         PROJECTION(8)
+           => Targets: default.small_supplier.s_suppkey (INT4), default.small_supplier.s_name (TEXT), default.small_supplier.s_address (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_comment (TEXT)
+           => out schema: {(7) default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)}
+           => in  schema: {(7) default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)}
+            SCAN(7) on default.small_supplier
+              => target list: default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)
+              => out schema: {(7) default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)}
+              => in schema: {(7) default.small_supplier.s_acctbal (FLOAT8), default.small_supplier.s_address (TEXT), default.small_supplier.s_comment (TEXT), default.small_supplier.s_name (TEXT), default.small_supplier.s_nationkey (INT4), default.small_supplier.s_phone (TEXT), default.small_supplier.s_suppkey (INT4)}
+      TABLE_SUBQUERY(6) as default.l
+        => Targets: default.l.l_orderkey (INT4), default.l.cnt (INT8)
+        => out schema: {(2) default.l.l_orderkey (INT4), default.l.cnt (INT8)}
+        => in  schema: {(2) default.l.cnt (INT8), default.l.l_orderkey (INT4)}
+         PROJECTION(5)
+           => Targets: default.t.l_orderkey (INT4), default.t.cnt (INT8)
+           => out schema: {(2) default.t.cnt (INT8), default.t.l_orderkey (INT4)}
+           => in  schema: {(2) default.t.l_orderkey (INT4), default.t.cnt (INT8)}
+            TABLE_SUBQUERY(4) as default.t
+              => Targets: default.t.l_orderkey (INT4), default.t.cnt (INT8)
+              => out schema: {(2) default.t.l_orderkey (INT4), default.t.cnt (INT8)}
+              => in  schema: {(2) default.t.cnt (INT8), default.t.l_orderkey (INT4)}
+               PROJECTION(3)
+                 => Targets: default.lineitem.l_orderkey (INT4), cnt (INT8)
+                 => out schema: {(2) cnt (INT8), default.lineitem.l_orderkey (INT4)}
+                 => in  schema: {(2) cnt (INT8), default.lineitem.l_orderkey (INT4)}
+                  HAVING(2) (cnt (INT8) > 0)
+                     GROUP_BY(1)(l_orderkey)
+                       => exprs: (count(?count_6 (INT8)))
+                       => target list: default.lineitem.l_orderkey (INT4), cnt (INT8)
+                       => out schema:{(2) cnt (INT8), default.lineitem.l_orderkey (INT4)}
+                       => in schema:{(2) default.lineitem.l_orderkey (INT4), ?count_6 (INT8)}
+                        SCAN(21) on eb_0000000000000_0000_000001
+                          => out schema: {(2) default.lineitem.l_orderkey (INT4), ?count_6 (INT8)}
+                          => in schema: {(2) default.lineitem.l_orderkey (INT4), ?count_6 (INT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000007 [TERMINAL]
+=======================================================
