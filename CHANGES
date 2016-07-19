@@ -160,6 +160,9 @@ Release 0.12.0 - unreleased
 
   BUG FIXES
 
+    TAJO-2177: In BroadcastJoinRule, the total volume of broadcast tables should be 
+    checked before stages are merged. (jihoon)
+
     TAJO-2168: NullPointerException occurs when a simple query contains a python udf. 
     (jihoon)
 
