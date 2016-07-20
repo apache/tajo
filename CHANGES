@@ -298,6 +298,8 @@ Release 0.12.0 - unreleased
 
   TASKS
 
+    TAJO-2166: Disallow csv file format in DDL Languages. (Lee Dongjin via jihoon)
+
     TAJO-2176: Refining function documents. (Jongyoung)
 
     TAJO-2154: Refactor Datum to use new Type implementation. (hyunsik)

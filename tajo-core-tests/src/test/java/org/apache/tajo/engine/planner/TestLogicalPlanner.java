@@ -953,7 +953,7 @@ public class TestLogicalPlanner {
   }
 
   static final String CREATE_TABLE [] = {
-    "create external table table1 (name text, age int, earn bigint, score real) using csv with ('csv.delimiter'='|') location '/tmp/data'"
+    "create external table table1 (name text, age int, earn bigint, score real) using text with ('text.delimiter'='|') location '/tmp/data'"
   };
 
   @Test
@@ -978,7 +978,7 @@ public class TestLogicalPlanner {
     assertTrue("TEXT".equalsIgnoreCase(createTable.getStorageType()));
     assertEquals("file://tmp/data", createTable.getUri().toString());
     assertTrue(createTable.hasOptions());
-    assertEquals("|", createTable.getOptions().get("csv.delimiter"));
+    assertEquals("\\u007c", createTable.getOptions().get("text.delimiter"));
   }
 
   private static final List<Set<Column>> testGenerateCuboidsResult

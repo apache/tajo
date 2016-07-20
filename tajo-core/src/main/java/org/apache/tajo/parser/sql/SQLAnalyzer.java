@@ -1325,6 +1325,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
       if (checkIfExist(ctx.USING())) {
         String fileType = ctx.storage_type.getText();
+        if (fileType.equals("csv")) {
+          throw new TajoRuntimeException(new SQLSyntaxError("Using csv storage type is disallowed. Please use the text storage type instead."));
+        }
         createTable.setStorageType(fileType);
       }
 
