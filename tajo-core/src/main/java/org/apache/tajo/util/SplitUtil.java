@@ -37,6 +37,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class SplitUtil {
 
@@ -95,8 +96,8 @@ public class SplitUtil {
     PartitionPruningHandle pruningHandle = rewriter.getPartitionPruningHandle(conf, partitionsScan);
 
     FileTablespace tablespace = (FileTablespace) tsHandler;
-    fragments.addAll(tablespace.getPartitionSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
-      , requireSort, pruningHandle.getPartitionKeys(), pruningHandle.getPartitionPaths()));
+    fragments.addAll(tablespace.getSplits(scan.getCanonicalName(), table.getMeta(), table.getSchema()
+      , requireSort, Optional.of(pruningHandle.getPartitionKeys()), pruningHandle.getPartitionPaths()));
 
     return fragments;
 
