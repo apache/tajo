@@ -90,20 +90,6 @@ public class GlobalPlanRewriteUtil {
   }
 
   /**
-   * Get a volume of a table of a partitioned table
-   * @param scanNode ScanNode corresponding to a table
-   * @return table volume (bytes)
-   */
-  public static long getTableVolume(ScanNode scanNode) {
-    if (scanNode.getTableDesc().hasStats()) {
-      long scanBytes = scanNode.getTableDesc().getStats().getNumBytes();
-      return scanBytes;
-    } else {
-      return -1;
-    }
-  }
-
-  /**
    * It calculates the total volume of all descendent relation nodes.
    */
   public static long computeDescendentVolume(LogicalNode node) {

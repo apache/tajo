@@ -25,22 +25,6 @@ option java_generate_equals_and_hash = true;
 import "DataTypes.proto";
 import "PrimitiveProtos.proto";
 
-enum DataFormat {
-  MEM = 0;
-  TEXTFILE = 1;
-  RAW = 2;
-  RCFILE = 3;
-  ROWFILE = 4;
-  HCFILE = 5;
-  ORC = 6;
-  PARQUET = 7;
-  SEQUENCEFILE = 8;
-  AVRO = 9;
-  JSON = 10;
-  HBASE = 11;
-  SYSTEM = 12;
-}
-
 enum OrderType {
   ORDER_NONE = 0;
   ASC = 1;
@@ -61,6 +45,7 @@ enum AlterTableType {
   ADD_PARTITION = 3;
   DROP_PARTITION = 4;
   SET_PROPERTY = 5;
+  UNSET_PROPERTY = 6;
 }
 
 message ColumnProto {
@@ -321,6 +306,7 @@ message AlterTableDescProto {
   optional PartitionDescProto partition_desc = 6;
   optional KeyValueSetProto params = 7;
   optional string new_table_path = 8;
+  optional StringListProto unset_property_keys = 9;
 }
 
 message AlterColumnProto {

@@ -18,8 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -32,33 +30,32 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.AbstractFileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 
 public abstract class FileScanner implements Scanner {
-  private static final Log LOG = LogFactory.getLog(FileScanner.class);
 
   protected boolean inited = false;
   protected final Configuration conf;
   protected final TableMeta meta;
   protected final Schema schema;
-  protected final FileFragment fragment;
+  protected final AbstractFileFragment fragment;
   protected final int columnNum;
 
   protected Column [] targets;
 
   protected float progress;
 
-  protected TableStats tableStats;
+  protected TableStats inputStats;
 
   public FileScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment) {
     this.conf = conf;
     this.meta = meta;
     this.schema = schema;
-    this.fragment = (FileFragment)fragment;
-    this.tableStats = new TableStats();
+    this.fragment = (AbstractFileFragment)fragment;
+    this.inputStats = new TableStats();
     this.columnNum = this.schema.size();
   }
 
@@ -67,14 +64,14 @@ public abstract class FileScanner implements Scanner {
     progress = 0.0f;
 
     if (fragment != null) {
-      tableStats.setNumBytes(fragment.getLength());
-      tableStats.setNumBlocks(1);
+      inputStats.setNumBytes(fragment.getLength());
+      inputStats.setNumBlocks(1);
     }
 
     if (schema != null) {
       for(Column eachColumn: schema.getRootColumns()) {
         ColumnStats columnStats = new ColumnStats(eachColumn);
-        tableStats.addColumnStat(columnStats);
+        inputStats.addColumnStat(columnStats);
       }
     }
   }
@@ -112,6 +109,6 @@ public abstract class FileScanner implements Scanner {
 
   @Override
   public TableStats getInputStats() {
-    return tableStats;
+    return inputStats;
   }
 }

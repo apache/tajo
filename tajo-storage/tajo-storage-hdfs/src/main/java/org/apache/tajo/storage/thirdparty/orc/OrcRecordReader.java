@@ -32,7 +32,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.AbstractFileFragment;
 import org.apache.tajo.storage.thirdparty.orc.TreeReaderFactory.DatumTreeReader;
 
 import java.io.Closeable;
@@ -71,7 +71,7 @@ public class OrcRecordReader implements Closeable {
                          FileSystem fileSystem,
                          Schema schema,
                          Column[] targets,
-                         FileFragment fragment,
+                         AbstractFileFragment fragment,
                          List<OrcProto.Type> types,
                          CompressionCodec codec,
                          int bufferSize,

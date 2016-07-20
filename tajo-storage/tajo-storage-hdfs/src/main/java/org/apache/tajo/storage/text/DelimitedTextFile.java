@@ -348,59 +348,52 @@ public class DelimitedTextFile {
         return null;
       }
 
-      try {
+      // this loop will continue until one tuple is build or EOS (end of stream).
+      do {
+        long offset = reader.getUncompressedPosition();
+        ByteBuf buf = reader.readLine();
 
-        // this loop will continue until one tuple is build or EOS (end of stream).
-        do {
-          long offset = reader.getUnCompressedPosition();
-          ByteBuf buf = reader.readLine();
+        // if no more line, then return EOT (end of tuple)
+        if (buf == null) {
+          return null;
+        }
 
-          // if no more line, then return EOT (end of tuple)
-          if (buf == null) {
-            return null;
+        // If there is no required column, we just read each line
+        // and then return an empty tuple without parsing line.
+        if (targets.length == 0) {
+          recordCount++;
+          return EmptyTuple.get();
+        }
+
+        outTuple.setOffset(offset);
+
+        try {
+          deserializer.deserialize(buf, outTuple);
+          // if a line is read normally, it exits this loop.
+          break;
+
+        } catch (TextLineParsingError tae) {
+
+          errorNum++;
+
+          // suppress too many log prints, which probably cause performance degradation
+          if (errorNum < errorPrintOutMaxNum) {
+            LOG.warn("Ignore Text Parse Error (" + errorNum + "): ", tae);
           }
 
-          // If there is no required column, we just read each line
-          // and then return an empty tuple without parsing line.
-          if (targets.length == 0) {
-            recordCount++;
-            return EmptyTuple.get();
+          // Only when the maximum error torrence limit is set (i.e., errorTorrenceMaxNum >= 0),
+          // it checks if the number of parsing error exceeds the max limit.
+          // Otherwise, it will ignore all parsing errors.
+          if (errorTorrenceMaxNum >= 0 && errorNum > errorTorrenceMaxNum) {
+            throw new IOException(tae);
           }
+        }
+      } while (reader.isReadable()); // continue until EOS
 
-          outTuple.setOffset(offset);
+      // recordCount means the number of actual read records. We increment the count here.
+      recordCount++;
 
-          try {
-            deserializer.deserialize(buf, outTuple);
-            // if a line is read normally, it exits this loop.
-            break;
-
-          } catch (TextLineParsingError tae) {
-
-            errorNum++;
-
-            // suppress too many log prints, which probably cause performance degradation
-            if (errorNum < errorPrintOutMaxNum) {
-              LOG.warn("Ignore Text Parse Error (" + errorNum + "): ", tae);
-            }
-
-            // Only when the maximum error torrence limit is set (i.e., errorTorrenceMaxNum >= 0),
-            // it checks if the number of parsing error exceeds the max limit.
-            // Otherwise, it will ignore all parsing errors.
-            if (errorTorrenceMaxNum >= 0 && errorNum > errorTorrenceMaxNum) {
-              throw tae;
-            }
-          }
-        } while (reader.isReadable()); // continue until EOS
-
-        // recordCount means the number of actual read records. We increment the count here.
-        recordCount++;
-
-        return outTuple;
-
-      } catch (Throwable t) {
-        LOG.error(t);
-        throw new IOException(t);
-      }
+      return outTuple;
     }
 
     @Override
@@ -453,8 +446,8 @@ public class DelimitedTextFile {
         }
 
         if (reader != null) {
-          tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
-          tableStats.setNumRows(recordCount);
+          inputStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
+          inputStats.setNumRows(recordCount);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -488,17 +481,17 @@ public class DelimitedTextFile {
 
     @Override
     public TableStats getInputStats() {
-      if (tableStats != null && reader != null) {
-        tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
-        tableStats.setNumRows(recordCount);
-        tableStats.setNumBytes(fragment.getLength());
+      if (inputStats != null && reader != null) {
+        inputStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
+        inputStats.setNumRows(recordCount);
+        inputStats.setNumBytes(fragment.getLength());
       }
-      return tableStats;
+      return inputStats;
     }
 
     @Override
     public long getNextOffset() throws IOException {
-      return reader.getUnCompressedPosition();
+      return reader.getUncompressedPosition();
     }
 
     @Override

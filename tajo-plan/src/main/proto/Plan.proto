@@ -293,7 +293,8 @@ message AlterTableNode {
     SET_PROPERTY = 3;
     ADD_PARTITION = 4;
     DROP_PARTITION = 5;
-    REPAIR_PARTITION = 6;    
+    REPAIR_PARTITION = 6;
+    UNSET_PROPERTY = 7;
   }
 
   message RenameTable {
@@ -325,6 +326,7 @@ message AlterTableNode {
   optional AddColumn addColumn = 5;
   optional KeyValueSetProto properties = 6;
   optional AlterPartition alterPartition = 7;
+  optional StringListProto unsetPropertyKeys = 8;
 }
 
 message CreateIndexNode {

@@ -38,7 +38,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
+    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,ex_http_json</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -124,6 +124,11 @@
   <property>
     <name>tajo.storage.scanner-handler.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseScanner</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.scanner-handler.ex_http_json.class</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpJsonScanner</value>
   </property>
 
   <!--- Appender Handler -->

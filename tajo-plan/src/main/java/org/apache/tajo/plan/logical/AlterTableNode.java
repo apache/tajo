@@ -42,6 +42,8 @@ public class AlterTableNode extends LogicalNode {
   @Expose
   private KeyValueSet properties = new KeyValueSet();
   @Expose
+  private String[] unsetPropertyKeys;
+  @Expose
   private AlterTableOpType alterTableOpType;
   @Expose
   private String[] partitionColumns;
@@ -130,6 +132,14 @@ public class AlterTableNode extends LogicalNode {
     this.properties = properties;
   }
 
+  public String[] getUnsetPropertyKeys() {
+    return unsetPropertyKeys;
+  }
+
+  public void setUnsetPropertyKeys(String[] unsetPropertyKeys) {
+    this.unsetPropertyKeys = unsetPropertyKeys;
+  }
+
   public String[] getPartitionColumns() {
     return partitionColumns;
   }
@@ -186,7 +196,7 @@ public class AlterTableNode extends LogicalNode {
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName, addNewColumn, alterTableOpType, columnName, newColumnName, newTableName,
-      tableName, properties, partitionColumns, partitionValues, location, isPurge, ifNotExists, ifExists);
+      tableName, properties, unsetPropertyKeys, partitionColumns, partitionValues, location, isPurge, ifNotExists, ifExists);
   }
 
   @Override
@@ -198,17 +208,6 @@ public class AlterTableNode extends LogicalNode {
       return false;
     }
   }
-
-    /*@Override
-    public Object clone() throws CloneNotSupportedException {
-        AlterTableNode alterTableNode = (AlterTableNode) super.clone();
-        alterTableNode.tableName = tableName;
-        alterTableNode.newTableName = newTableName;
-        alterTableNode.columnName = columnName;
-        alterTableNode.newColumnName=newColumnName;
-        alterTableNode.addNewColumn =(Column) addNewColumn.clone();
-        return alterTableNode;
-    }*/
 
   @Override
   public String toString() {

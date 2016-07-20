@@ -457,25 +457,26 @@ public class DDLExecutor {
         fs.rename(oldPath, newPath);
       }
       catalog.alterTable(CatalogUtil.renameTable(qualifiedName, alterTable.getNewTableName(),
-          AlterTableType.RENAME_TABLE, newPath));
+          newPath));
       break;
     case RENAME_COLUMN:
       if (ensureColumnExistance(qualifiedName, alterTable.getNewColumnName())) {
         throw new DuplicateColumnException(alterTable.getNewColumnName());
       }
       catalog.alterTable(CatalogUtil.renameColumn(qualifiedName, alterTable.getColumnName(),
-          alterTable.getNewColumnName(), AlterTableType.RENAME_COLUMN));
+          alterTable.getNewColumnName()));
       break;
     case ADD_COLUMN:
       if (ensureColumnExistance(qualifiedName, alterTable.getAddNewColumn().getSimpleName())) {
         throw new DuplicateColumnException(alterTable.getAddNewColumn().getSimpleName());
       }
-      catalog.alterTable(CatalogUtil.addNewColumn(qualifiedName, alterTable.getAddNewColumn(), AlterTableType
-          .ADD_COLUMN));
+      catalog.alterTable(CatalogUtil.addNewColumn(qualifiedName, alterTable.getAddNewColumn()));
       break;
     case SET_PROPERTY:
-      catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType
-          .SET_PROPERTY));
+      catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties()));
+      break;
+    case UNSET_PROPERTY:
+      catalog.alterTable(CatalogUtil.unsetProperty(qualifiedName, alterTable.getUnsetPropertyKeys()));
       break;
     case ADD_PARTITION:
       pair = CatalogUtil.getPartitionKeyNamePair(alterTable.getPartitionColumns(), alterTable.getPartitionValues());

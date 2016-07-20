@@ -1,0 +1,1 @@
+select actor.id, count(*) from github group by actor.id;

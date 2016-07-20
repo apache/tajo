@@ -171,9 +171,9 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
 
   @Override
   public void close() throws IOException {
-    if (tableStats != null) {
-      tableStats.setReadBytes(filePosition - fragment.getStartKey());
-      tableStats.setNumRows(recordCount);
+    if (inputStats != null) {
+      inputStats.setReadBytes(filePosition - fragment.getStartKey());
+      inputStats.setNumRows(recordCount);
     }
     if(tupleBuffer != null) {
       tupleBuffer.release();
@@ -206,12 +206,12 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
 
   @Override
   public TableStats getInputStats() {
-    if(tableStats != null){
-      tableStats.setNumRows(recordCount);
-      tableStats.setReadBytes(filePosition - fragment.getStartKey()); // actual read bytes (scan + rescan * n)
-      tableStats.setNumBytes(fragment.getLength());
+    if(inputStats != null){
+      inputStats.setNumRows(recordCount);
+      inputStats.setReadBytes(filePosition - fragment.getStartKey()); // actual read bytes (scan + rescan * n)
+      inputStats.setNumBytes(fragment.getLength());
     }
-    return tableStats;
+    return inputStats;
   }
 
   @Override

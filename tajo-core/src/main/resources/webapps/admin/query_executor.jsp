@@ -112,6 +112,7 @@ function runQuery() {
     if(resultJson.success == "false") {
       clearTimer();
       alert("query execution failed.");
+      $("#queryStatus").html(getQueryStatusHtml(resultJson));
       return;
     }
     queryRunnerId = resultJson.queryRunnerId;

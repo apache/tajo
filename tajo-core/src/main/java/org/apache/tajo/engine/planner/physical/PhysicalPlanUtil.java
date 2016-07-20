@@ -217,7 +217,7 @@ public class PhysicalPlanUtil {
     }  else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       meta.putProperty(StorageConstants.RCFILE_NULL, nullChar);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
-      meta.putProperty(StorageConstants.SEQUENCEFILE_NULL, nullChar);
+      meta.putProperty(StorageConstants.TEXT_NULL, nullChar);
     }
   }
 
@@ -234,7 +234,12 @@ public class PhysicalPlanUtil {
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.RCFILE)) {
       return meta.containsProperty(StorageConstants.RCFILE_NULL);
     } else if (dataFormat.equalsIgnoreCase(BuiltinStorages.SEQUENCE_FILE)) {
-      return meta.containsProperty(StorageConstants.SEQUENCEFILE_NULL);
+      if (!meta.containsProperty(StorageConstants.TEXT_NULL)
+        && meta.containsProperty(StorageConstants.SEQUENCEFILE_NULL)) {
+        return meta.containsProperty(StorageConstants.SEQUENCEFILE_NULL);
+      } else {
+        return meta.containsProperty(StorageConstants.TEXT_NULL);
+      }
     } else {
       return false;
     }
