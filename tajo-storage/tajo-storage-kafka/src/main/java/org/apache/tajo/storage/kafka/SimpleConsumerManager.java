@@ -185,6 +185,6 @@ public class SimpleConsumerManager implements Closeable {
    */
   private static String getIdentifier(String prefix) {
     Random r = new Random();
-    return prefix + "_" + r.nextLong() + "_" + System.currentTimeMillis();
+    return prefix + "_" + r.nextInt(1000000) + "_" + System.currentTimeMillis();
   }
 }
