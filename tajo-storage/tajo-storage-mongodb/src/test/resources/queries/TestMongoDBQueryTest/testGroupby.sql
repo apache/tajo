@@ -1,1 +1,1 @@
-select actor.id, count(*) from github group by actor.id;
+select last_name, count(*) from got group by last_name;

@@ -1,1 +1,1 @@
-select actor.id, actor.login from github order by type;
+select title,first_name from got order by first_name;

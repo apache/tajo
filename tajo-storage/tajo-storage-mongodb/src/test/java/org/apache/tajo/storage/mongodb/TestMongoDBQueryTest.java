@@ -68,9 +68,24 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     @Test
     public void testSelect() throws Exception {
         runSimpleTests();
-
-//        executeString("select title, name.first_name from col1");
     }
 
 
+    @SimpleTest
+    @Test
+    public void testSort() throws Exception {
+        runSimpleTests();
+    }
+
+    @SimpleTest
+    @Test
+    public void testGroupby() throws Exception {
+        runSimpleTests();
+    }
+
+    @SimpleTest
+    @Test
+    public void testJoin() throws Exception {
+        runSimpleTests();
+    }
 }

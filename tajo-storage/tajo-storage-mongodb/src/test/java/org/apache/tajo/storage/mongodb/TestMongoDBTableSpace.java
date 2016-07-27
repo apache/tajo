@@ -34,10 +34,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -104,7 +101,9 @@ public class TestMongoDBTableSpace {
     @Test
     public void testTableVolume() throws IOException, TajoException {
         Tablespace space = TablespaceManager.getByName(server.spaceName);
-        int[] tableSizes = new int[]{4,3};
+        Map<String, Integer> tableSizes = new HashMap<String, Integer>();
+        tableSizes.put("github",4);
+        tableSizes.put("got",5);
         for (String tbl:server.collectionNames) {
 
            // assertEquals(1,space.getTableVolume(tableDesc, Optional.empty()));
@@ -117,7 +116,7 @@ public class TestMongoDBTableSpace {
                     null,
                     space.getTableUri(null,null, tbl));
 
-            assertEquals(4, space.getTableVolume(tbDesc,Optional.empty()));
+            assertEquals((int)tableSizes.get(tbl), space.getTableVolume(tbDesc,Optional.empty()));
 
         }
     }
