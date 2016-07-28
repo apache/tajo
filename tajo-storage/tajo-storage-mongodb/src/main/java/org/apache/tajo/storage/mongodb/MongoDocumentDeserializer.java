@@ -44,6 +44,11 @@ import java.nio.charset.CharsetDecoder;
 import java.util.Map;
 import java.util.TimeZone;
 
+/*
+* Used inside the Collection Reader to map mongo documents to tuples.
+* Use org.apache.tajo.storage.json.JsonLineDeserializer to understand the structure
+* */
+
 public class MongoDocumentDeserializer {
     private JSONParser parser;
 

@@ -36,9 +36,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
-/**
- * Created by janaka on 6/7/16.
- */
+/*
+* Used to provide MetaData about a particular mongodb tablespace.
+* Provides table details, list of tables and statistics of tables
+* * */
 public class MongoDBMetadataProvider implements MetadataProvider {
 
     private MongoDBTableSpace tableSpace;
@@ -79,9 +80,10 @@ public class MongoDBMetadataProvider implements MetadataProvider {
     @Override
     public Collection<String> getTables(@Nullable String schemaPattern, @Nullable String tablePattern) {
 
-
+        //Get a list of table(=collection) names
         MongoIterable<String> collectionList =  db.listCollectionNames();
 
+        //Map to a string list and return
         Collection<String> list = new ArrayList<String>();
         for (String item : collectionList) {
             list.add(item);
@@ -92,6 +94,7 @@ public class MongoDBMetadataProvider implements MetadataProvider {
     @Override
     public TableDesc getTableDesc(String schemaName, String tableName) throws UndefinedTablespaceException {
 
+        //Create table description and meta fro a specific table
         TableMeta tbMeta = new TableMeta("mongodb", new KeyValueSet());
         TableDesc tbDesc = new TableDesc(
                 IdentifierUtil.buildFQName(mappedDbName, tableName),

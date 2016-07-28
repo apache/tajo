@@ -40,6 +40,10 @@ import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+    Reads data from a mongodb collection, line by line.
+    Used within the MongoScanner to read tuples.
+ */
 public class MongoDBCollectionReader {
     private ConnectionInfo connectionInfo;
     private MongoDocumentDeserializer deserializer;

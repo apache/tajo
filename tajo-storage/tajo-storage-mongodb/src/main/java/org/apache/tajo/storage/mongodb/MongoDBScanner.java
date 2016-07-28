@@ -47,6 +47,12 @@ import java.io.IOException;
 import java.sql.DatabaseMetaData;
 import java.util.Properties;
 
+/*
+* Reads data from a MongoDB table
+* Uses MongoDBCollectionReader to read tuples
+* */
+
+//Todo Remove FileScanner
 public class MongoDBScanner extends FileScanner {
 
     MongoDBCollectionReader collectionReader;
@@ -68,7 +74,6 @@ public class MongoDBScanner extends FileScanner {
 
         super.init();
     }
-
 
     @Override
     public Tuple next() throws IOException {

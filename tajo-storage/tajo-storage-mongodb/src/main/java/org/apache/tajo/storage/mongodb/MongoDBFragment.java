@@ -24,6 +24,11 @@ import org.apache.tajo.storage.fragment.Fragment;
 import java.net.URI;
 import java.util.List;
 
+/*
+ Fragment is similar to splits in Map Reduce.
+ Which contains enough details to access, a relevant section from the storage.
+ This will be serialized and passed to the cluster.
+ */
 
 public class MongoDBFragment extends AbstractFileFragment {
 
