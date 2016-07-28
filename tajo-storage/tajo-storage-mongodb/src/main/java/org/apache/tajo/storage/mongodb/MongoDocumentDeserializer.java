@@ -44,7 +44,7 @@ import java.nio.charset.CharsetDecoder;
 import java.util.Map;
 import java.util.TimeZone;
 
-public class MongoDocumentDeserializer extends TextLineDeserializer {
+public class MongoDocumentDeserializer {
     private JSONParser parser;
 
     // Full Path -> Type
@@ -53,9 +53,12 @@ public class MongoDocumentDeserializer extends TextLineDeserializer {
     private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
 
     private final TimeZone timezone;
+    protected final Schema schema;
+    protected final TableMeta meta;
 
     public MongoDocumentDeserializer(Schema schema, TableMeta meta, Column [] projected) {
-        super(schema, meta);
+        this.schema = schema;
+        this.meta = meta;
 
         projectedPaths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(projected), true);
         types = SchemaUtil.buildTypeMap(schema.getAllColumns(), projectedPaths);
@@ -64,12 +67,10 @@ public class MongoDocumentDeserializer extends TextLineDeserializer {
                 StorageUtil.TAJO_CONF.getSystemTimezone().getID()));
     }
 
-    @Override
     public void init() {
         parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
     }
 
-    @Override
     public void deserialize(ByteBuf buf, Tuple output) throws IOException, TextLineParsingError {
 
     }
@@ -241,7 +242,6 @@ public class MongoDocumentDeserializer extends TextLineDeserializer {
         }
     }
 
-    @Override
     public void release() {
     }
 }
