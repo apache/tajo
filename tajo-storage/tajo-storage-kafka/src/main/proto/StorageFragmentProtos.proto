@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.fragment;
+option java_package = "org.apache.tajo.storage.kafka";
+option java_outer_classname = "StorageFragmentProtos";
+option optimize_for = SPEED;
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
 
-public class BuiltinFragmentKinds {
-  public static final String FILE = "FILE";
-  public static final String HBASE = "HBASE";
-  public static final String JDBC = "JDBC";
-  public static final String HTTP = "EXAMPLE-HTTP";
-  public static final String KAFKA = "KAFKA";
+import "CatalogProtos.proto";
+
+message KafkaFragmentProto {
+  required string uri = 1;
+  required string tableName = 2;
+  required string topicName = 3;
+  required int64 startOffset = 4;
+  required int64 lastOffset = 5;
+  required int32 partitionId = 6;
+  required bool last = 7;
+  required int64 length = 8;
+  optional string leaderHost = 9;
 }
