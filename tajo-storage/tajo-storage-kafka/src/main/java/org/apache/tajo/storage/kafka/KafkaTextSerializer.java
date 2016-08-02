@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.fragment;
+package org.apache.tajo.storage.kafka;
 
-public class BuiltinFragmentKinds {
-  public static final String FILE = "FILE";
-  public static final String HBASE = "HBASE";
-  public static final String JDBC = "JDBC";
-  public static final String HTTP = "EXAMPLE-HTTP";
-  public static final String KAFKA = "KAFKA";
+import java.io.IOException;
+import java.io.OutputStream;
+
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.text.TextLineSerializer;
+
+// is not used yet.
+public class KafkaTextSerializer extends TextLineSerializer {
+
+  public KafkaTextSerializer(Schema schema, TableMeta meta) {
+    super(schema, meta);
+  }
+
+  @Override
+  public void init() {
+  }
+
+  @Override
+  public int serialize(OutputStream out, Tuple input) throws IOException {
+    return 0;
+  }
+
+  @Override
+  public void release() {
+  }
+
 }

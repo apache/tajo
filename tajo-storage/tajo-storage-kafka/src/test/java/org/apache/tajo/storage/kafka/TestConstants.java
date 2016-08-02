@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.fragment;
+package org.apache.tajo.storage.kafka;
 
-public class BuiltinFragmentKinds {
-  public static final String FILE = "FILE";
-  public static final String HBASE = "HBASE";
-  public static final String JDBC = "JDBC";
-  public static final String HTTP = "EXAMPLE-HTTP";
-  public static final String KAFKA = "KAFKA";
+public class TestConstants {
+  final static int kafka_partition_num = 3;
+  final static String test_topic = "test-topic";
+  final static String[] test_data = { "1|abc|0.2", "2|def|0.4", "3|ghi|0.6", "4|jkl|0.8", "5|mno|1.0" };
+  final static String test_json_data = "{\"col1\":1, \"col2\":\"abc\", \"col3\":0.2}";
 }
