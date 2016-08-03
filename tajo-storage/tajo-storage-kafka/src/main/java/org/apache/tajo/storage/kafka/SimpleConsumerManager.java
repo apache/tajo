@@ -46,10 +46,10 @@ public class SimpleConsumerManager implements Closeable {
    *
    * @param uri Kafka Tablespace URI. ex) kafka://localhost:9092,localhost:9091
    * @param topic topic name
-   * @param partition partition id
+   * @param partitionId partition id
    */
-  public SimpleConsumerManager(URI uri, String topic, int partition) {
-    this(uri, topic, partition, Integer.MAX_VALUE);
+  public SimpleConsumerManager(URI uri, String topic, int partitionId) {
+    this(uri, topic, partitionId, Integer.MAX_VALUE);
   }
 
   /**
@@ -57,15 +57,16 @@ public class SimpleConsumerManager implements Closeable {
    *
    * @param uri Kafka Tablespace URI. ex) kafka://localhost:9092,localhost:9091
    * @param topic topic name
-   * @param partition partition id
+   * @param partitionId partition id
    * @param fragmentSize max polling size of kafka
    */
-  public SimpleConsumerManager(URI uri, String topic, int partition, int fragmentSize) {
-    this.partition = new TopicPartition(topic, partition);
-
+  public SimpleConsumerManager(URI uri, String topic, int partitionId, int fragmentSize) {
     String clientId = SimpleConsumerManager.getIdentifier("TCons");
     Properties props = getDefaultProperties(uri, clientId, fragmentSize);
+
+    partition = new TopicPartition(topic, partitionId);
     consumer = new KafkaConsumer<>(props);
+    consumer.assign(Collections.singletonList(partition));
   }
 
   /**
@@ -103,13 +104,6 @@ public class SimpleConsumerManager implements Closeable {
     long latestPosition = consumer.position(partition);
     consumer.seek(partition, currentPosition);
     return latestPosition;
-  }
-
-  /**
-   * Assign the current partition to consumer.
-   */
-  public void assign() {
-    consumer.assign(Collections.singletonList(partition));
   }
 
   /**
@@ -185,6 +179,6 @@ public class SimpleConsumerManager implements Closeable {
    */
   private static String getIdentifier(String prefix) {
     Random r = new Random();
-    return prefix + "_" + r.nextLong() + "_" + System.currentTimeMillis();
+    return prefix + "_" + r.nextInt(1000000) + "_" + System.currentTimeMillis();
   }
 }
