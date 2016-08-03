@@ -141,7 +141,6 @@ public class KafkaTablespace extends Tablespace {
       long lastOffset;
       long startOffset;
       try (SimpleConsumerManager simpleConsumerManager = new SimpleConsumerManager(uri, topic, partitionId)) {
-        simpleConsumerManager.assign();
         lastOffset = simpleConsumerManager.getLatestOffset();
         startOffset = simpleConsumerManager.getEarliestOffset();
       }

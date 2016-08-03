@@ -18,65 +18,85 @@
 
 package org.apache.tajo.storage.kafka;
 
+import static org.apache.tajo.storage.kafka.TestConstants.TOPIC_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.kafka.testUtil.EmbeddedKafka;
+import org.apache.tajo.storage.kafka.server.EmbeddedKafka;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-public class TestKafkaTablespace {
-  static EmbeddedKafka em_kafka;
-  private static String tableSpaceUri = "kafka://localhost:9092";
+import net.minidev.json.JSONObject;
 
-  // Start up EmbeddedKafka and Generate test data.
+public class TestKafkaTablespace {
+  private static EmbeddedKafka KAFKA;
+  private static URI KAFKA_SERVER_URI;
+
+  /**
+   * Start up EmbeddedKafka and Generate test data.
+   *
+   * @throws Exception
+   */
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
-    KafkaTablespace hBaseTablespace = new KafkaTablespace("cluster1", URI.create(tableSpaceUri), null);
+    KAFKA = EmbeddedKafka.createEmbeddedKafka(2181, 9092);
+    KAFKA.start();
+    KAFKA.createTopic(1, 1, TOPIC_NAME);
+    KAFKA_SERVER_URI = URI.create("kafka://" + KAFKA.getConnectString());
+
+    // Load test data.
+    try (Producer<String, String> producer = KAFKA.createProducer(KAFKA.getConnectString())) {
+      for (int i = 0; i < 20; i++) {
+        TestConstants.sendTestData(producer, TOPIC_NAME);
+      }
+    }
+
+    JSONObject configElements = new JSONObject();
+    KafkaTablespace hBaseTablespace = new KafkaTablespace("cluster1", KAFKA_SERVER_URI, configElements);
     hBaseTablespace.init(new TajoConf());
     TablespaceManager.addTableSpaceForTest(hBaseTablespace);
-
-    em_kafka = EmbeddedKafka.createEmbeddedKafka(2181, 9092);
-    em_kafka.start();
-    em_kafka.createTopic(TestConstants.kafka_partition_num, 1, TestConstants.test_topic);
-    genDataForTest();
   }
 
   @Test
   public void testTablespaceHandler() throws Exception {
     assertTrue((TablespaceManager.getByName("cluster1")) instanceof KafkaTablespace);
-    assertTrue((TablespaceManager.get(URI.create(tableSpaceUri))) instanceof KafkaTablespace);
+    assertTrue((TablespaceManager.get(KAFKA_SERVER_URI)) instanceof KafkaTablespace);
   }
 
-  // Close EmbeddedKafka.
+  /**
+   * Close EmbeddedKafka.
+   *
+   * @throws Exception
+   */
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
-    if (em_kafka != null) {
-      em_kafka.close();
-    }
-    em_kafka = null;
+    KAFKA.close();
   }
 
-  // Test for getSplit.
+  /**
+   * Test for getSplit.
+   *
+   * @throws Exception
+   */
   @Test
   public void testGetSplit() throws Exception {
     TableMeta meta = CatalogUtil.newTableMeta("KAFKA", new TajoConf());
     Map<String, String> option = new java.util.HashMap<String, String>();
-    option.put(KafkaStorageConstants.KAFKA_TOPIC, TestConstants.test_topic);
+    option.put(KafkaStorageConstants.KAFKA_TOPIC, TOPIC_NAME);
     option.put(KafkaStorageConstants.KAFKA_FRAGMENT_SIZE, "10");
     meta.setPropertySet(new KeyValueSet(option));
     TableDesc td = new TableDesc("test_table", null, meta, null);
@@ -87,25 +107,5 @@ public class TestKafkaTablespace {
       totalCount += fragmentList.get(i).getLength();
     }
     assertEquals(100, totalCount);
-  }
-
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  private static void genDataForTest() throws Exception {
-    Producer producer = null;
-    try {
-      producer = em_kafka.createProducer(em_kafka.getConnectString());
-      // Generate 100 message.
-      for (int i = 0; i < 20; i++) {
-        producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[0]));
-        producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[1]));
-        producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[2]));
-        producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[3]));
-        producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[4]));
-      }
-    } finally {
-      if (null != producer) {
-        producer.close();
-      }
-    }
   }
 }

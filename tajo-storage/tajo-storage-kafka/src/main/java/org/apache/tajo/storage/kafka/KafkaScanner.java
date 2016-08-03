@@ -108,7 +108,6 @@ public class KafkaScanner implements Scanner {
 
     simpleConsumerManager = new SimpleConsumerManager(fragment.getUri(), fragment.getTopicName(),
         fragment.getStartKey().getPartitionId(), fragmentSize);
-    simpleConsumerManager.assign();
 
     initOffset();
   }
