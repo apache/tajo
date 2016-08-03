@@ -88,4 +88,11 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     public void testJoin() throws Exception {
         runSimpleTests();
     }
+
+
+    @SimpleTest
+    @Test
+    public void testInsert() throws Exception {
+        runSimpleTests();
+    }
 }
