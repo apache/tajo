@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.kafka.testUtil;
+package org.apache.tajo.storage.kafka.server;
 
 import static io.airlift.testing.FileUtils.deleteRecursively;
 
