@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.kafka;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -48,6 +50,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class KafkaScanner implements Scanner {
+  private static final Log LOG = LogFactory.getLog(KafkaScanner.class);
   protected boolean inited = false;
 
   private int numRows = 0;
@@ -161,22 +164,30 @@ public class KafkaScanner implements Scanner {
    * @throws IOException
    */
   private List<ConsumerRecord<byte[], byte[]>> readMessage() throws IOException {
+    List<ConsumerRecord<byte[], byte[]>> receivedRecords = new ArrayList<>();
+    if (currentOffset == endKey.getOffset()) {
+      // If get the last offset, stop to read topic.
+      return receivedRecords;
+    }
     // Read data until lastOffset of partition of topic.
     // Read from simpleConsumer.
+    LOG.info("Read the data of " + fragment + ", current offset: " + currentOffset);
     ConsumerRecords<byte[], byte[]> consumerRecords = simpleConsumerManager.poll(currentOffset, pollTimeout);
     if (consumerRecords.isEmpty()) {
-      return new ArrayList<>();
+      return receivedRecords;
     }
 
-    List<ConsumerRecord<byte[], byte[]>> receivedRecords = new ArrayList<>();
+    long readLastOffset = -1;
     for (ConsumerRecord<byte[], byte[]> consumerRecord : consumerRecords) {
-      if (consumerRecord.offset() < endKey.getOffset()) {
+      readLastOffset = consumerRecord.offset();
+      if (readLastOffset < endKey.getOffset()) {
         receivedRecords.add(consumerRecord);
+        readLastOffset++; // read a next message.
       } else {
-        currentOffset = consumerRecord.offset();
         break;
       }
     }
+    currentOffset = readLastOffset;
     return receivedRecords;
   }
 
