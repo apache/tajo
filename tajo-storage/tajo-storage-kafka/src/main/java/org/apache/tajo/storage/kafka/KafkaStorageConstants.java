@@ -23,8 +23,6 @@ import org.apache.tajo.storage.StorageConstants;
 public class KafkaStorageConstants extends StorageConstants {
   public static final String KAFKA_TOPIC = "kafka.topic";
   public static final String KAFKA_TOPIC_PARTITION = "kafka.topic.partition";
-  public static final String DEFAULT_KAFKA_SERDE_CLASS = "org.apache.tajo.storage.kafka.KafkaTextSerDe";
-  public static final String KAFKA_SERDE_CLASS = "kafka.serde";
   public static final String KAFKA_FRAGMENT_SIZE = "kafka.fragment.size";
   public static final String KAFKA_POLL_TIMEOUT = "kafka.poll.timeout";
 

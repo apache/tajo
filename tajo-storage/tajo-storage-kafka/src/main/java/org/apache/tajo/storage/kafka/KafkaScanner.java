@@ -35,6 +35,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.kafka.KafkaFragment.KafkaFragmentKey;
+import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
 
@@ -99,7 +100,7 @@ public class KafkaScanner implements Scanner {
         KafkaStorageConstants.DEFAULT_POLL_TIMEOUT));
 
     // create deserializer. default is DELIMITER('|') text deserializer.
-    deserializer = KafkaSerializerDeserializer.getTextSerde(meta).createDeserializer(schema, meta, targets);
+    deserializer = DelimitedTextFile.getLineSerde(meta).createDeserializer(schema, meta, targets);
     deserializer.init();
 
     simpleConsumerManager = new SimpleConsumerManager(fragment.getUri(), fragment.getTopicName(),
