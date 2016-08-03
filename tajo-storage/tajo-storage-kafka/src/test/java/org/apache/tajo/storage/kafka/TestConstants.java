@@ -31,11 +31,13 @@ public class TestConstants {
   static final int DEFAULT_TEST_PARTITION_NUM = 3;
 
   static void sendTestData(Producer<String, String> producer, String topic) throws Exception {
-    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[0]));
-    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[1]));
-    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[2]));
-    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[3]));
-    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[4]));
+    for (int i = 0; i < TEST_DATA.length; i++) {
+      sendTestData(producer, topic, TEST_DATA[i]);
+    }
+  }
+
+  static void sendTestData(Producer<String, String> producer, String topic, String data) throws Exception {
+    producer.send(new ProducerRecord<String, String>(topic, data));
   }
 
   static boolean equalTestData(Collection<String> receivedDataSet) {
