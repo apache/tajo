@@ -188,6 +188,9 @@ public class KafkaScanner implements Scanner {
       }
     }
     currentOffset = readLastOffset;
+
+    // read length / total length
+    progress = (currentOffset - startKey.getOffset()) / (endKey.getOffset() - startKey.getOffset());
     return receivedRecords;
   }
 
