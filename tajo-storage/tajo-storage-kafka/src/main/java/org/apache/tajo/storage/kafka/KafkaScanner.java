@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.kafka;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -31,11 +33,11 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.EmptyTuple;
 import org.apache.tajo.storage.Scanner;
-import org.apache.tajo.storage.TablespaceManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.kafka.KafkaFragment.KafkaFragmentKey;
+import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
 
@@ -48,6 +50,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 public class KafkaScanner implements Scanner {
+  private static final Log LOG = LogFactory.getLog(KafkaScanner.class);
   protected boolean inited = false;
 
   private int numRows = 0;
@@ -100,7 +103,7 @@ public class KafkaScanner implements Scanner {
         KafkaStorageConstants.DEFAULT_POLL_TIMEOUT));
 
     // create deserializer. default is DELIMITER('|') text deserializer.
-    deserializer = KafkaSerializerDeserializer.getTextSerde(meta).createDeserializer(schema, meta, targets);
+    deserializer = DelimitedTextFile.getLineSerde(meta).createDeserializer(schema, meta, targets);
     deserializer.init();
 
     simpleConsumerManager = new SimpleConsumerManager(fragment.getUri(), fragment.getTopicName(),
@@ -161,22 +164,33 @@ public class KafkaScanner implements Scanner {
    * @throws IOException
    */
   private List<ConsumerRecord<byte[], byte[]>> readMessage() throws IOException {
+    List<ConsumerRecord<byte[], byte[]>> receivedRecords = new ArrayList<>();
+    if (currentOffset == endKey.getOffset()) {
+      // If get the last offset, stop to read topic.
+      return receivedRecords;
+    }
     // Read data until lastOffset of partition of topic.
     // Read from simpleConsumer.
+    LOG.info("Read the data of " + fragment + ", current offset: " + currentOffset);
     ConsumerRecords<byte[], byte[]> consumerRecords = simpleConsumerManager.poll(currentOffset, pollTimeout);
     if (consumerRecords.isEmpty()) {
-      return new ArrayList<>();
+      return receivedRecords;
     }
 
-    List<ConsumerRecord<byte[], byte[]>> receivedRecords = new ArrayList<>();
+    long readLastOffset = -1;
     for (ConsumerRecord<byte[], byte[]> consumerRecord : consumerRecords) {
-      if (consumerRecord.offset() < endKey.getOffset()) {
+      readLastOffset = consumerRecord.offset();
+      if (readLastOffset < endKey.getOffset()) {
         receivedRecords.add(consumerRecord);
+        readLastOffset++; // read a next message.
       } else {
-        currentOffset = consumerRecord.offset();
         break;
       }
     }
+    currentOffset = readLastOffset;
+
+    // read length / total length
+    progress = (currentOffset - startKey.getOffset()) / (endKey.getOffset() - startKey.getOffset());
     return receivedRecords;
   }
 

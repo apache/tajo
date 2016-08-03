@@ -26,7 +26,9 @@ import org.apache.tajo.catalog.SchemaBuilder;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
@@ -51,7 +53,7 @@ public class TestKafkaSerDe {
   @Test
   public void testDeserializer() throws Exception {
     TableMeta meta = CatalogUtil.newTableMeta("KAFKA", new TajoConf());
-    TextLineDeserializer deserializer = KafkaSerializerDeserializer.getTextSerde(meta).createDeserializer(schema, meta,
+    TextLineDeserializer deserializer = DelimitedTextFile.getLineSerde(meta).createDeserializer(schema, meta,
         schema.toArray());
     deserializer.init();
     VTuple tuple = new VTuple(schema.size());
@@ -67,13 +69,13 @@ public class TestKafkaSerDe {
   public void testJsonDeserializer() throws Exception {
     TableMeta meta = CatalogUtil.newTableMeta("KAFKA", new TajoConf());
     Map<String, String> option = new java.util.HashMap<String, String>();
-    option.put(KafkaStorageConstants.KAFKA_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
+    option.put(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
     meta.setPropertySet(new KeyValueSet(option));
     int[] targetColumnIndexes = new int[schema.size()];
     for (int i = 0; i < schema.size(); i++) {
       targetColumnIndexes[i] = i;
     }
-    TextLineDeserializer deserializer = KafkaSerializerDeserializer.getTextSerde(meta).createDeserializer(schema, meta,
+    TextLineDeserializer deserializer = DelimitedTextFile.getLineSerde(meta).createDeserializer(schema, meta,
         schema.toArray());
     deserializer.init();
     VTuple tuple = new VTuple(schema.size());

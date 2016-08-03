@@ -18,18 +18,19 @@
 
 package org.apache.tajo.storage.kafka;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.kafka.common.PartitionInfo;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
 import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
@@ -56,8 +57,6 @@ import net.minidev.json.JSONObject;
  * Tablespace for Kafka table.
  */
 public class KafkaTablespace extends Tablespace {
-  private static final Log LOG = LogFactory.getLog(KafkaTablespace.class);
-
   public static final StorageProperty KAFKA_STORAGE_PROPERTIES = new StorageProperty("kafka", false, false, false,
       false);
 
@@ -73,7 +72,18 @@ public class KafkaTablespace extends Tablespace {
 
   @Override
   public long getTableVolume(TableDesc table, Optional<EvalNode> filter) {
-    throw new TajoRuntimeException(new UnsupportedException());
+    long totalVolume;
+    try {
+      totalVolume = getSplits("", table, false, filter.orElse(null)).stream()
+          .map(f -> f.getLength())
+          .filter(size -> size > 0) // eliminate unknown sizes (-1)
+          .reduce(0L, Long::sum);
+    } catch (TajoException e) {
+      throw new TajoRuntimeException(e);
+    } catch (Throwable ioe) {
+      throw new TajoInternalError(ioe);
+    }
+    return totalVolume;
   }
 
   @Override
@@ -82,12 +92,13 @@ public class KafkaTablespace extends Tablespace {
 
   @Override
   public void createTable(TableDesc tableDesc, boolean ifNotExists) throws TajoException, IOException {
-    throw new TajoRuntimeException(new NotImplementedException());
+    TableStats stats = new TableStats();
+    stats.setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
+    tableDesc.setStats(stats);
   }
 
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
-    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
@@ -141,15 +152,24 @@ public class KafkaTablespace extends Tablespace {
 
       // If message count of partition is less than fragmentSize(message count of one fragment),
       if (messageSize <= fragmentSize) {
-        fragments.add(new KafkaFragment(table.getUri(), table.getName(), topic, startOffset,
+        fragments.add(new KafkaFragment(table.getUri(), inputSourceId, topic, startOffset,
             lastOffset, partitionId, leaderHost));
       } else { // If message count of partition is greater than fragmentSize,
         long nextFragmentStartOffset = startOffset;
         while (nextFragmentStartOffset < lastOffset) {
+          // partition data: 0 1 2 3 4 5 6 7 8 9 10
+          // start offset: 0
+          // last offset: 11
+          // fragment size: 3
+          // result: (0, 1, 2), (3, 4, 5), (6, 7, 8), (9, 10)
+          // 1st nextFragmentStartOffset=0, nextFragmentLastOffset=3
+          // 2st nextFragmentStartOffset=3, nextFragmentLastOffset=6
+          // 3st nextFragmentStartOffset=6, nextFragmentLastOffset=9
+          // 4st nextFragmentStartOffset=9, nextFragmentLastOffset=12
           long nextFragmentLastOffset = nextFragmentStartOffset + fragmentSize;
-          // the offset of last part is small than fragmentSize so that system gets the minimum value.
+          // the offset of last part is small than fragmentSize so that Tajo gets the minimum value.
           long fragmentLstOffset = Math.min(nextFragmentLastOffset, lastOffset);
-          fragments.add(new KafkaFragment(table.getUri(), table.getName(), topic,
+          fragments.add(new KafkaFragment(table.getUri(), inputSourceId, topic,
               nextFragmentStartOffset, fragmentLstOffset, partitionId, leaderHost));
           nextFragmentStartOffset = nextFragmentLastOffset;
         }
@@ -181,7 +201,6 @@ public class KafkaTablespace extends Tablespace {
 
   @Override
   public void prepareTable(LogicalNode node) throws IOException, TajoException {
-    throw new TajoRuntimeException(new NotImplementedException());
   }
 
   @Override
