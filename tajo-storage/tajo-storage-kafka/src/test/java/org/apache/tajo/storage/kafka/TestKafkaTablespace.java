@@ -35,7 +35,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.net.InetAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
