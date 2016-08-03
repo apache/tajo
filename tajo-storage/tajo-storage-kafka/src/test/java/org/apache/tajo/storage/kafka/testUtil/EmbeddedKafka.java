@@ -124,12 +124,12 @@ public class EmbeddedKafka implements Closeable {
     }
   }
 
-  public Producer<Integer, String> createProducer(String connecting) {
+  public Producer<String, String> createProducer(String connecting) {
     Properties properties = new Properties();
     properties.put("key.serializer", StringSerializer.class);
     properties.put("value.serializer", StringSerializer.class);
     properties.put("bootstrap.servers", connecting);
-    Producer<Integer, String> producer = new KafkaProducer<Integer, String>(properties);
+    Producer<String, String> producer = new KafkaProducer<String, String>(properties);
     return producer;
   }
 }
