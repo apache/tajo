@@ -26,6 +26,7 @@ import java.util.Collection;
 public class TestConstants {
   private static final String[] TEST_DATA = { "1|abc|0.2", "2|def|0.4", "3|ghi|0.6", "4|jkl|0.8", "5|mno|1.0" };
 
+  static final String TOPIC_NAME = "test_topic";
   static final String TEST_JSON_DATA = "{\"col1\":1, \"col2\":\"abc\", \"col3\":0.2}";
   static final int DEFAULT_TEST_PARTITION_NUM = 3;
 

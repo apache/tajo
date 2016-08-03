@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.kafka;
 
+import static org.apache.tajo.storage.kafka.TestConstants.TOPIC_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -34,9 +35,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class TestSimpleConsumerManager {
-  private static final String TOPIC_NAME = "test_topic";
 
   private static EmbeddedKafka KAFKA;
+
   private static URI KAFKA_SERVER_URI;
 
   /**

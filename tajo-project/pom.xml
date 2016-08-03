@@ -124,7 +124,7 @@
         <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
-    </developer>
+    </developer>      
     <developer>
       <id>hyunsik</id>
       <name>Hyunsik Choi</name>
@@ -306,12 +306,12 @@
       <name>Mai Hai Thanh</name>
       <organization>ETRI</organization>
       <roles><role>Contributor</role></roles>
-    </contributor>
+    </contributor>        
     <contributor>
       <name>Navis</name>
       <organization>SK Telecom</organization>
       <roles><role>Contributor</role></roles>
-    </contributor>
+    </contributor> 
     <contributor>
       <name>Prafulla T.</name>
       <organization />
@@ -516,7 +516,7 @@
           </configuration>
         </plugin>
 
-        <!--This plugin's configuration is used to store Eclipse m2e settings only.
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. 
           It has no influence on the Maven build itself. -->
         <plugin>
           <groupId>org.eclipse.m2e</groupId>
