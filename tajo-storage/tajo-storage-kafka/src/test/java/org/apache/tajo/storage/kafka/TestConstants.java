@@ -18,9 +18,36 @@
 
 package org.apache.tajo.storage.kafka;
 
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+import java.util.Collection;
+
 public class TestConstants {
-  final static int kafka_partition_num = 3;
-  final static String test_topic = "test-topic";
-  final static String[] test_data = { "1|abc|0.2", "2|def|0.4", "3|ghi|0.6", "4|jkl|0.8", "5|mno|1.0" };
-  final static String test_json_data = "{\"col1\":1, \"col2\":\"abc\", \"col3\":0.2}";
+  private static final String[] TEST_DATA = { "1|abc|0.2", "2|def|0.4", "3|ghi|0.6", "4|jkl|0.8", "5|mno|1.0" };
+
+  static final String TEST_JSON_DATA = "{\"col1\":1, \"col2\":\"abc\", \"col3\":0.2}";
+  static final int DEFAULT_TEST_PARTITION_NUM = 3;
+
+  static void sendTestData(Producer<String, String> producer, String topic) throws Exception {
+    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[0]));
+    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[1]));
+    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[2]));
+    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[3]));
+    producer.send(new ProducerRecord<String, String>(topic, TEST_DATA[4]));
+  }
+
+  static boolean equalTestData(Collection<String> receivedDataSet) {
+    if (receivedDataSet.size() != TEST_DATA.length) {
+      return false;
+    }
+
+    for (String td : TEST_DATA) {
+      if (!receivedDataSet.contains(td)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 }

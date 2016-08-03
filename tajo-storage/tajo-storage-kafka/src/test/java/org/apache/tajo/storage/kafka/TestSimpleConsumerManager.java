@@ -23,9 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
-import org.apache.tajo.storage.kafka.testUtil.EmbeddedKafka;
+import org.apache.tajo.storage.kafka.server.EmbeddedKafka;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,21 +34,37 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class TestSimpleConsumerManager {
-  static EmbeddedKafka em_kafka;
+  private static final String TOPIC_NAME = "test_topic";
 
-  // Start up EmbeddedKafka and Generate test data.
+  private static EmbeddedKafka KAFKA;
+  private static URI KAFKA_SERVER_URI;
+
+  /**
+   * Start up EmbeddedKafka and Generate test data.
+   *
+   * @throws Exception
+   */
   @BeforeClass
   public static void setUpBeforeClass() throws Exception {
-    em_kafka = EmbeddedKafka.createEmbeddedKafka(2181, 9092);
-    em_kafka.start();
-    em_kafka.createTopic(TestConstants.kafka_partition_num, 1, TestConstants.test_topic);
-    genDataForTest();
+    KAFKA = EmbeddedKafka.createEmbeddedKafka(2181, 9092);
+    KAFKA.start();
+    KAFKA.createTopic(TestConstants.DEFAULT_TEST_PARTITION_NUM, 1, TOPIC_NAME);
+    KAFKA_SERVER_URI = URI.create("kafka://" + KAFKA.getConnectString());
+
+    // Load test data.
+    try (Producer<String, String> producer = KAFKA.createProducer(KAFKA.getConnectString())) {
+      TestConstants.sendTestData(producer, TOPIC_NAME);
+    }
   }
 
-  // Close EmbeddedKafka.
+  /**
+   * Close EmbeddedKafka.
+   *
+   * @throws Exception
+   */
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
-    em_kafka.close();
+    KAFKA.close();
   }
 
   @Test
@@ -58,54 +73,34 @@ public class TestSimpleConsumerManager {
         SimpleConsumerManager.extractBroker(URI.create("kafka://host1:9092,host2:9092,host3:9092")));
   }
 
-  // Test for getting topic partitions.
+  /**
+   * Test for getting topic partitions.
+   *
+   * @throws Exception
+   */
   @Test
   public void testGetPartitions() throws Exception {
-    int prtition_num = SimpleConsumerManager
-        .getPartitions(new URI("kafka://" + em_kafka.getConnectString()), TestConstants.test_topic)
-        .size();
-    assertTrue(prtition_num == TestConstants.kafka_partition_num);
+    int prtition_num = SimpleConsumerManager.getPartitions(KAFKA_SERVER_URI, TOPIC_NAME).size();
+    assertTrue(prtition_num == TestConstants.DEFAULT_TEST_PARTITION_NUM);
   }
 
   // Test for to fetch data from kafka.
   @Test
   public void testFetchData() throws Exception {
     Set<String> receivedDataSet = new HashSet<>();
-    for (PartitionInfo partitionInfo : SimpleConsumerManager.getPartitions(
-        new URI("kafka://" + em_kafka.getConnectString()),
-        TestConstants.test_topic)) {
-      SimpleConsumerManager cm = new SimpleConsumerManager(new URI("kafka://" + em_kafka.getConnectString()),
-          TestConstants.test_topic, partitionInfo.partition());
-      cm.assign();
-
-      long startOffset = cm.getEarliestOffset();
-      long lastOffset = cm.getLatestOffset();
-      if (startOffset < lastOffset) {
-        for (ConsumerRecord<byte[], byte[]> message : cm.poll(startOffset, Long.MAX_VALUE)) {
-          receivedDataSet.add(new String(message.value(), "UTF-8"));
+    for (PartitionInfo partitionInfo : SimpleConsumerManager.getPartitions(KAFKA_SERVER_URI, TOPIC_NAME)) {
+      int partitionId = partitionInfo.partition();
+      try (SimpleConsumerManager cm = new SimpleConsumerManager(KAFKA_SERVER_URI, TOPIC_NAME, partitionId)) {
+        long startOffset = cm.getEarliestOffset();
+        long lastOffset = cm.getLatestOffset();
+        if (startOffset < lastOffset) {
+          for (ConsumerRecord<byte[], byte[]> message : cm.poll(startOffset, Long.MAX_VALUE)) {
+            receivedDataSet.add(new String(message.value(), "UTF-8"));
+          }
         }
       }
     }
-    for (String td : TestConstants.test_data) {
-      assertTrue(receivedDataSet.contains(td));
-    }
-  }
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  private static void genDataForTest() throws Exception {
-    Producer producer = null;
-    try {
-      producer = em_kafka.createProducer(em_kafka.getConnectString());
-
-      producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[0]));
-      producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[1]));
-      producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[2]));
-      producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[3]));
-      producer.send(new ProducerRecord<String, String>(TestConstants.test_topic, TestConstants.test_data[4]));
-    } finally {
-      if (null != producer) {
-        producer.close();
-      }
-    }
+    TestConstants.equalTestData(receivedDataSet);
   }
 }
