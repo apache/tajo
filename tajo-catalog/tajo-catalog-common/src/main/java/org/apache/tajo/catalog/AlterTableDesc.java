@@ -17,6 +17,7 @@
  */
 package org.apache.tajo.catalog;
 
+import com.google.common.collect.Sets;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
@@ -27,8 +28,10 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.ProtoUtil;
 
 import java.net.URI;
+import java.util.Set;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTableDescProto;
 
@@ -51,6 +54,8 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   @Expose
   protected KeyValueSet properties;
   @Expose
+  protected Set<String> unsetPropertyKeys;
+  @Expose
   protected URI newTablePath; // optional
 
   public AlterTableDesc() {
@@ -59,6 +64,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
 
   private void init() {
     this.properties = new KeyValueSet();
+    this.unsetPropertyKeys = Sets.newHashSet();
   }
 
   public String getTableName() {
@@ -125,6 +131,14 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     this.properties.set(key, value);
   }
 
+  public Set<String> getUnsetPropertyKeys() {
+    return unsetPropertyKeys;
+  }
+
+  public void setUnsetPropertyKey(Set<String> unsetPropertyKeys) {
+    this.unsetPropertyKeys = unsetPropertyKeys;
+  }
+
   public String getProperty(String key) {
     return this.properties.get(key);
   }
@@ -154,6 +168,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     newAlter.addColumn = addColumn;
     newAlter.partitionDesc = partitionDesc;
     newAlter.properties = (KeyValueSet)properties.clone();
+    newAlter.unsetPropertyKeys = Sets.newHashSet(unsetPropertyKeys);
     newAlter.newTablePath = URI.create(newTablePath.toString());
     return newAlter;
   }
@@ -185,6 +200,9 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     if (null != this.properties) {
       builder.setParams(properties.getProto());
     }
+    if (null != this.unsetPropertyKeys) {
+      builder.setUnsetPropertyKeys(ProtoUtil.convertStrings(unsetPropertyKeys));
+    }
 
     switch (alterTableType) {
       case RENAME_TABLE:
@@ -198,6 +216,9 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
         break;
       case SET_PROPERTY:
         builder.setAlterTableType(CatalogProtos.AlterTableType.SET_PROPERTY);
+        break;
+      case UNSET_PROPERTY:
+        builder.setAlterTableType(CatalogProtos.AlterTableType.UNSET_PROPERTY);
         break;
       case ADD_PARTITION:
         builder.setAlterTableType(CatalogProtos.AlterTableType.ADD_PARTITION);

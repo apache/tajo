@@ -45,3 +45,8 @@ message CorrProto {
   required double yvar = 5;
   required double covar = 6;
 }
+
+message StringAggProto {
+  required string value = 1;
+  required string delimiter = 2;
+}

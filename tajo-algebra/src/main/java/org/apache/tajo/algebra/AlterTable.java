@@ -25,6 +25,7 @@ import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.util.TUtil;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AlterTable extends Expr {
@@ -43,6 +44,8 @@ public class AlterTable extends Expr {
   private AlterTableOpType alterTableOpType;
   @Expose @SerializedName("TableProperties")
   private Map<String, String> params;
+  @Expose @SerializedName("UnsetPropertyKeys")
+  private List<String> unsetPropertyKeys;
 
   @Expose @SerializedName("Columns")
   ColumnReferenceExpr [] columns;
@@ -135,6 +138,14 @@ public class AlterTable extends Expr {
 
   public void setParams(Map<String, String> params) {
     this.params = params;
+  }
+
+  public List<String> getUnsetPropertyKeys() {
+    return unsetPropertyKeys;
+  }
+
+  public void setUnsetPropertyKeys(List<String> unsetPropertyKeys) {
+    this.unsetPropertyKeys = unsetPropertyKeys;
   }
 
   public boolean isPurge() {

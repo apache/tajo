@@ -1,1 +1,1 @@
-INSERT INTO got (title,first_name) values (1,2);
+INSERT INTO got select (title,first_name) got values (1,2);

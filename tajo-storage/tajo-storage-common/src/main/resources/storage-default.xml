@@ -39,7 +39,6 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,mongodb</value>
     <value>text,json,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase,mongodb,ex_http_json</value>
   </property>
 
@@ -79,7 +78,8 @@
   <property>
     <name>tajo.storage.fragment.serde.example-http</name>
     <value>org.apache.tajo.storage.http.ExampleHttpFileFragmentSerde</value>
-
+    <name>tajo.storage.fragment.serde.example-http</name>
+    <value>org.apache.tajo.storage.http.ExampleHttpFileFragmentSerde</value>
   </property>
 
   <!--- Scanner Handler -->

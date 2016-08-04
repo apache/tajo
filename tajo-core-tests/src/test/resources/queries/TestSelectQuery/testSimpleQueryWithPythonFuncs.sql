@@ -1,0 +1,1 @@
+select str_len(r_name) from region;

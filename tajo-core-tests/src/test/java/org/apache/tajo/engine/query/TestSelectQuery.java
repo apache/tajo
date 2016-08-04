@@ -726,6 +726,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public void testSimpleQueryWithPythonFuncs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public void testSelectPythonFuncs() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

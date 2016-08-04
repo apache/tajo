@@ -1,13 +1,13 @@
-************************************
+*********************************
 Data Type Functions and Operators
-************************************
+*********************************
 
-.. function:: to_bin(source int4)
+.. function:: to_bin(source INT4)
 
   Returns the binary representation of integer.
 
   :param source: source value
-  :rtype: text
+  :rtype: TEXT
   :example:
 
   .. code-block:: sql
@@ -15,13 +15,13 @@ Data Type Functions and Operators
     select to_bin(22);
     > 10110
 
-.. function:: to_char(source int8, format text)
+.. function:: to_char(source INT8, format TEXT)
 
   Convert integer to string.
 
   :param source: source value
   :param format: format
-  :rtype: text
+  :rtype: TEXT
   :example:
 
   .. code-block:: sql
@@ -29,12 +29,12 @@ Data Type Functions and Operators
     select to_char(125, '00999');
     > 00125
 
-.. function:: to_hex(source int4)
+.. function:: to_hex(source INT4)
 
   Convert the argument to hexadecimal.
 
   :param source: source value
-  :rtype: text
+  :rtype: TEXT
   :example:
 
   .. code-block:: sql
