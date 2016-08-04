@@ -72,6 +72,8 @@ public class TestSimpleConsumerManager {
   public void testExtractBroker() {
     assertEquals("host1:9092,host2:9092,host3:9092",
         SimpleConsumerManager.extractBroker(URI.create("kafka://host1:9092,host2:9092,host3:9092")));
+    assertEquals("host1:9092,host2:9092,host3:9092",
+        SimpleConsumerManager.extractBroker(URI.create("kafka://host1:9092,host2:9092,host3:9092/user")));
   }
 
   /**
