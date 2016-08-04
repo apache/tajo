@@ -107,7 +107,7 @@ public class KafkaScanner implements Scanner {
     deserializer.init();
 
     simpleConsumerManager = new SimpleConsumerManager(fragment.getUri(), fragment.getTopicName(),
-        fragment.getStartKey().getPartitionId(), fragmentSize);
+        fragment.getPartitionId(), fragmentSize);
 
     initOffset();
   }

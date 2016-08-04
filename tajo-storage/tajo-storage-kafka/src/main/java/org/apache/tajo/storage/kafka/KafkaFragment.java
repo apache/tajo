@@ -35,16 +35,14 @@ public class KafkaFragment extends Fragment<KafkaFragmentKey> {
 
   public KafkaFragment(URI uri, String tableName, String topicName, long startOffset, long lastOffset,
       int partitionId, String leaderHost) {
-    super(BuiltinFragmentKinds.KAFKA, uri, tableName, new KafkaFragmentKey(partitionId, startOffset),
-        new KafkaFragmentKey(partitionId, lastOffset), lastOffset - startOffset, new String[] { leaderHost });
-
-    this.topicName = topicName;
-    this.last = false;
+    this(uri, tableName, topicName, startOffset, lastOffset, partitionId, leaderHost, false);
   }
 
   public KafkaFragment(URI uri, String tableName, String topicName, long startOffset, long lastOffset,
       int partitionId, String leaderHost, boolean last) {
-    this(uri, tableName, topicName, startOffset, lastOffset, partitionId, leaderHost);
+    super(BuiltinFragmentKinds.KAFKA, uri, tableName, new KafkaFragmentKey(partitionId, startOffset),
+        new KafkaFragmentKey(partitionId, lastOffset), lastOffset - startOffset, new String[] { leaderHost });
+    this.topicName = topicName;
     this.last = last;
   }
 
@@ -53,6 +51,7 @@ public class KafkaFragment extends Fragment<KafkaFragmentKey> {
     return startKey.isEmpty() || endKey.isEmpty();
   }
 
+  @Override
   public Object clone() throws CloneNotSupportedException {
     KafkaFragment frag = (KafkaFragment) super.clone();
     frag.topicName = topicName;
@@ -114,6 +113,10 @@ public class KafkaFragment extends Fragment<KafkaFragmentKey> {
 
   public void setEndKey(int partitionId, long lastOffset) {
     this.endKey = new KafkaFragmentKey(partitionId, lastOffset);
+  }
+
+  public int getPartitionId() {
+    return this.startKey.getPartitionId();
   }
 
   public static class KafkaFragmentKey implements Comparable<KafkaFragmentKey> {
