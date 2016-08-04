@@ -1,1 +1,1 @@
-INSERT INTO got select (title,first_name) got values (1,2);
+INSERT OVERWRITE INTO got SELECT * FROM got values 'a','b','c';
