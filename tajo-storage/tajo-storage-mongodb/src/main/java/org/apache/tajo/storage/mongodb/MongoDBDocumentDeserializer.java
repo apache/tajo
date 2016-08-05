@@ -49,7 +49,7 @@ import java.util.TimeZone;
 * Use org.apache.tajo.storage.json.JsonLineDeserializer to understand the structure
 * */
 
-public class MongoDocumentDeserializer {
+public class MongoDBDocumentDeserializer {
     private JSONParser parser;
 
     // Full Path -> Type
@@ -61,7 +61,7 @@ public class MongoDocumentDeserializer {
     protected final Schema schema;
     protected final TableMeta meta;
 
-    public MongoDocumentDeserializer(Schema schema, TableMeta meta, Column [] projected) {
+    public MongoDBDocumentDeserializer(Schema schema, TableMeta meta, Column [] projected) {
         this.schema = schema;
         this.meta = meta;
 
@@ -72,12 +72,10 @@ public class MongoDocumentDeserializer {
                 StorageUtil.TAJO_CONF.getSystemTimezone().getID()));
     }
 
+
+    //Initialize and setup parser
     public void init() {
         parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
-    }
-
-    public void deserialize(ByteBuf buf, Tuple output) throws IOException, TextLineParsingError {
-
     }
 
     /**
@@ -226,6 +224,8 @@ public class MongoDocumentDeserializer {
         }
     }
 
+
+    //Map the given documents into the given tuple and fill with calues
     public void deserialize(Document doc, Tuple output) throws IOException, TextLineParsingError {
 
         String line = doc.toJson();
@@ -245,8 +245,5 @@ public class MongoDocumentDeserializer {
 
             //output.put(i, DatumFactory.createText( doc.get(projectedPaths[i]).toString() ));
         }
-    }
-
-    public void release() {
     }
 }

@@ -17,24 +17,16 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-import com.mongodb.DBCursor;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoClientURI;
-import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import io.netty.util.CharsetUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.json.JsonLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
 import org.bson.Document;
 
 import java.io.IOException;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.CharsetDecoder;
-import io.netty.util.CharsetUtil;
 
 import java.nio.charset.CharsetEncoder;
 import java.util.ArrayList;
@@ -46,14 +38,14 @@ import java.util.List;
  */
 public class MongoDBCollectionReader {
     private ConnectionInfo connectionInfo;
-    private MongoDocumentDeserializer deserializer;
+    private MongoDBDocumentDeserializer deserializer;
     private int targetLength;
     List<Document> documentList;
     private int currentIndex;
     private final CharsetEncoder encoder = CharsetUtil.getEncoder(CharsetUtil.UTF_8);
 
 
-    public MongoDBCollectionReader(ConnectionInfo connectionInfo,MongoDocumentDeserializer deserializer ,int targetLength)
+    public MongoDBCollectionReader(ConnectionInfo connectionInfo, MongoDBDocumentDeserializer deserializer , int targetLength)
     {
         this.connectionInfo = connectionInfo;
         this.deserializer = deserializer;

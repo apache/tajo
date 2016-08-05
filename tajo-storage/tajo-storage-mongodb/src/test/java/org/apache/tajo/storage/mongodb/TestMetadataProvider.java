@@ -24,7 +24,6 @@ import org.apache.tajo.storage.Tablespace;
 import org.apache.tajo.storage.TablespaceManager;
 import org.junit.*;
 
-import java.net.URI;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
@@ -39,16 +38,18 @@ public class TestMetadataProvider {
 
     @Test
     public void testGetTablespaceName() throws Exception {
+        //check for Space Name validity
         Tablespace tablespace = TablespaceManager.get(server.getURI());
         MetadataProvider provider = tablespace.getMetadataProvider();
-        assertEquals(server.spaceName, provider.getTablespaceName());
+        assertEquals(server.SPACE_NAME, provider.getTablespaceName());
     }
 
     @Test
     public void testGetDatabaseName() throws Exception {
+        //
         Tablespace tablespace = TablespaceManager.get(server.getURI());
         MetadataProvider provider = tablespace.getMetadataProvider();
-        assertEquals(MongoDBTestServer.mappedDbName, provider.getDatabaseName());
+        assertEquals(MongoDBTestServer.MAPPEDDBNAME, provider.getDatabaseName());
     }
 
 
@@ -77,7 +78,7 @@ public class TestMetadataProvider {
 
         for (String tableName : server.collectionNames) {
             TableDesc table = provider.getTableDesc(null, tableName);
-            assertEquals(   server.mappedDbName+"."+tableName, table.getName());
+            assertEquals(   server.MAPPEDDBNAME +"."+tableName, table.getName());
             assertEquals(server.getURI() + "?table=" + tableName, table.getUri().toASCIIString());
 
             //ToDo Check the stats

@@ -1,1 +1,1 @@
-INSERT OVERWRITE INTO got SELECT * FROM got values 'a','b','c';
+INSERT INTO got SELECT 'a','b','c';

@@ -19,7 +19,6 @@ package org.apache.tajo.storage.mongodb;
 
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.exception.TajoException;
-import org.apache.tajo.storage.TablespaceManager;
 import org.junit.*;
 
 import java.net.URI;
@@ -30,7 +29,7 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     static URI uri = server.getURI();
 
     public TestMongoDBQueryTest() {
-        super(server.mappedDbName);
+        super(server.MAPPEDDBNAME);
     }
 
     @BeforeClass
@@ -93,6 +92,6 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     @SimpleTest
     @Test
     public void testInsert() throws Exception {
-//        runSimpleTests();
+//       runSimpleTests();
     }
 }

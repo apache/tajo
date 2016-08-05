@@ -17,35 +17,16 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-import com.google.common.base.Preconditions;
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.MongoIterable;
-import io.netty.buffer.ByteBuf;
-import net.minidev.json.JSONObject;
-import net.minidev.json.parser.JSONParser;
-import net.minidev.json.parser.ParseException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.storage.FileScanner;
-import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.json.JsonLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
-import org.bson.Document;
 
 import java.io.IOException;
-import java.sql.DatabaseMetaData;
-import java.util.Properties;
 
 /*
 * Reads data from a MongoDB table
@@ -88,7 +69,7 @@ public class MongoDBScanner extends FileScanner {
 
     @Override
     public void reset() throws IOException {
-        MongoDocumentDeserializer deserializer = new MongoDocumentDeserializer(schema,meta,targets);
+        MongoDBDocumentDeserializer deserializer = new MongoDBDocumentDeserializer(schema,meta,targets);
         collectionReader = new MongoDBCollectionReader(ConnectionInfo.fromURI(fragment.getUri()),deserializer,targets.length);
 
         collectionReader.init();

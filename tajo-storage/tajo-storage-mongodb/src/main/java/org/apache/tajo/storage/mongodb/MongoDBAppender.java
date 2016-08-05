@@ -17,21 +17,55 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.NotImplementedException;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 
 /**
  * Created by janaka on 5/21/16.
  */
 public class MongoDBAppender implements Appender {
+
+    //Given at intialization
+    private final Configuration conf;
+    private final Schema schema;
+    private final TableMeta meta;
+    private final Path stagingDir;
+    private final TaskAttemptId taskAttemptId;
+    private final URI uri;
+
+
+    protected boolean inited = false;
+    private boolean[] columnStatsEnabled;
+    private boolean tableStatsEnabled;
+
+    public MongoDBAppender(Configuration conf, TaskAttemptId taskAttemptId,
+                           Schema schema, TableMeta meta, Path stagingDir, URI uri) {
+        this.conf = conf;
+        this.schema = schema;
+        this.meta = meta;
+        this.stagingDir = stagingDir;
+        this.taskAttemptId = taskAttemptId;
+        this.uri = uri;
+    }
+
     @Override
     public void init() throws IOException {
-
+        if (inited) {
+            throw new IllegalStateException("FileAppender is already initialized.");
+        }
+        inited = true;
     }
 
     @Override
@@ -46,7 +80,7 @@ public class MongoDBAppender implements Appender {
 
     @Override
     public long getEstimatedOutputSize() throws IOException {
-        return 0;
+        throw new IOException(new NotImplementedException());
     }
 
     @Override
@@ -56,6 +90,12 @@ public class MongoDBAppender implements Appender {
 
     @Override
     public void enableStats() {
+        if (inited) {
+            throw new IllegalStateException("Should enable this option before init()");
+        }
+
+        this.tableStatsEnabled = true;
+        this.columnStatsEnabled = new boolean[schema.size()];
 
     }
 

@@ -62,9 +62,9 @@ public class MongoDBTableSpace extends Tablespace {
     //Table Space Properties
     static final StorageProperty STORAGE_PROPERTY = new StorageProperty("rowstore", // type is to be defined
             false,  //not movable
-            false,   //writable at the moment
+            true,   //writable at the moment
             true,   // Absolute path
-            false); // Meta data will  be provided
+            true); // Meta data will  be provided
     static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
             false, // Insert
             false, //direct insert
@@ -170,7 +170,7 @@ public class MongoDBTableSpace extends Tablespace {
 
         //If meta  data provides. Create a table
         if(STORAGE_PROPERTY.isMetadataProvided())
-            db.createCollection(tableDesc.getName());
+            db.createCollection(IdentifierUtil.extractSimpleName(tableDesc.getName()));
     }
 
     @Override
