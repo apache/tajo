@@ -37,7 +37,7 @@ import java.util.List;
  */
 public class MongoDBAppender implements Appender {
 
-    //Given at intialization
+    //Given at constructor
     private final Configuration conf;
     private final Schema schema;
     private final TableMeta meta;
@@ -49,6 +49,8 @@ public class MongoDBAppender implements Appender {
     protected boolean inited = false;
     private boolean[] columnStatsEnabled;
     private boolean tableStatsEnabled;
+
+    private MongoDBCollectionWriter mongoDBCollectionWriter;
 
     public MongoDBAppender(Configuration conf, TaskAttemptId taskAttemptId,
                            Schema schema, TableMeta meta, Path stagingDir, URI uri) {
@@ -66,11 +68,14 @@ public class MongoDBAppender implements Appender {
             throw new IllegalStateException("FileAppender is already initialized.");
         }
         inited = true;
+        MongoDBDocumentSerializer md = new MongoDBDocumentSerializer(schema,meta);
+        mongoDBCollectionWriter = new MongoDBCollectionWriter(ConnectionInfo.fromURI(uri),md);
+        mongoDBCollectionWriter.init();
     }
 
     @Override
     public void addTuple(Tuple t) throws IOException {
-
+        mongoDBCollectionWriter.writeTuple(t);
     }
 
     @Override
@@ -85,7 +90,7 @@ public class MongoDBAppender implements Appender {
 
     @Override
     public void close() throws IOException {
-
+        mongoDBCollectionWriter.close();
     }
 
     @Override

@@ -17,9 +17,34 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.Tuple;
+import org.bson.Document;
+
+import java.io.IOException;
+
 /**
  * Serialize tuples into Mongo Documents
  */
 public class MongoDBDocumentSerializer {
+
+    private final Schema schema;
+    private final TableMeta meta;
+
+    public MongoDBDocumentSerializer(Schema schema, TableMeta meta) {
+        this.schema = schema;
+        this.meta = meta;
+    }
+
+
+    public void deserialize(Tuple inputTuple,Document outputDoc) throws IOException
+    {
+        for(int i=0; i< inputTuple.size();i++)
+        {
+            outputDoc.put(schema.getColumn(i).getSimpleName(),inputTuple.getText(i));
+        }
+    }
 
 }

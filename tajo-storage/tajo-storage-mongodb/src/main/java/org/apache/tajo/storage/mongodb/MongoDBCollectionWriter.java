@@ -28,9 +28,11 @@ import org.bson.Document;
  */
 public class MongoDBCollectionWriter {
     private ConnectionInfo connectionInfo;
+    MongoClient mongoClient;
     MongoCollection<Document> collection;
 
-    public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentDeserializer deserializer , int targetLength)
+
+    public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentSerializer deserializer)
     {
         this.connectionInfo = connectionInfo;
 //        this.deserializer = deserializer;
@@ -39,8 +41,7 @@ public class MongoDBCollectionWriter {
 
     public void init()
     {
-
-        MongoClient mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
+        mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
         MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
 
         collection = db.getCollection(connectionInfo.getTableName());
@@ -49,6 +50,11 @@ public class MongoDBCollectionWriter {
     public void writeTuple(Tuple tuple)
     {
 
+    }
+
+    public void close()
+    {
+        mongoClient.close();
     }
 
 }
