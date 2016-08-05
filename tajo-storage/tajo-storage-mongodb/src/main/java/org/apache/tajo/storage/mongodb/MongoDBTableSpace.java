@@ -64,7 +64,7 @@ public class MongoDBTableSpace extends Tablespace {
             false,  //not movable
             true,   //writable at the moment
             true,   // Absolute path
-            true); // Meta data will  be provided
+            false); // Meta data will  be provided
     static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
             false, // Insert
             false, //direct insert
