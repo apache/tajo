@@ -35,26 +35,23 @@ public class MongoDBCollectionWriter {
     MongoDBDocumentSerializer mongoDBDocumentSerializer;
 
 
-    public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentSerializer deserializer)
+    public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentSerializer serializer)
     {
         this.connectionInfo = connectionInfo;
-        this.mongoDBDocumentSerializer  = deserializer;
-//        this.deserializer = deserializer;
-//        this.targetLength = targetLength;
+        this.mongoDBDocumentSerializer  = serializer;
     }
 
     public void init()
     {
         mongoClient = new MongoClient(connectionInfo.getMongoDBURI());
         MongoDatabase db = mongoClient.getDatabase(connectionInfo.getDbName());
-
         collection = db.getCollection(connectionInfo.getTableName());
     }
 
     public void writeTuple(Tuple tuple) throws IOException {
-
         Document dc = new Document();
         mongoDBDocumentSerializer.serialize(tuple,dc);
+        collection.insertOne(dc);
     }
 
     public void close()
