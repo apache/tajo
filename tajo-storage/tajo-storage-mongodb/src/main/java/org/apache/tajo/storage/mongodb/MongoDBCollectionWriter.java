@@ -23,6 +23,8 @@ import com.mongodb.client.MongoDatabase;
 import org.apache.tajo.storage.Tuple;
 import org.bson.Document;
 
+import java.io.IOException;
+
 /**
  * Writes tuples into a mongodb collection
  */
@@ -30,11 +32,13 @@ public class MongoDBCollectionWriter {
     private ConnectionInfo connectionInfo;
     MongoClient mongoClient;
     MongoCollection<Document> collection;
+    MongoDBDocumentSerializer mongoDBDocumentSerializer;
 
 
     public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentSerializer deserializer)
     {
         this.connectionInfo = connectionInfo;
+        this.mongoDBDocumentSerializer  = deserializer;
 //        this.deserializer = deserializer;
 //        this.targetLength = targetLength;
     }
@@ -47,9 +51,10 @@ public class MongoDBCollectionWriter {
         collection = db.getCollection(connectionInfo.getTableName());
     }
 
-    public void writeTuple(Tuple tuple)
-    {
+    public void writeTuple(Tuple tuple) throws IOException {
 
+        Document dc = new Document();
+        mongoDBDocumentSerializer.serialize(tuple,dc);
     }
 
     public void close()

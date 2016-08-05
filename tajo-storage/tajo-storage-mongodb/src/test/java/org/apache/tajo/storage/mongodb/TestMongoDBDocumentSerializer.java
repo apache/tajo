@@ -17,7 +17,6 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-import com.sun.org.apache.xml.internal.security.encryption.DocumentSerializer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
@@ -53,7 +52,7 @@ public class TestMongoDBDocumentSerializer {
         tuple.put(2,DatumFactory.createText("Chathuranga"));
         Document md = new Document();
 
-        dc.deserialize(tuple,md);
+        dc.serialize(tuple,md);
 
         LOG.info(md.toJson());
 

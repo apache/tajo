@@ -39,7 +39,7 @@ public class MongoDBDocumentSerializer {
     }
 
 
-    public void deserialize(Tuple inputTuple,Document outputDoc) throws IOException
+    public void serialize(Tuple inputTuple, Document outputDoc) throws IOException
     {
         for(int i=0; i< inputTuple.size();i++)
         {
