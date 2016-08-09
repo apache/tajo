@@ -31,6 +31,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
+
 public class TestMongoDBDocumentSerializer {
 
 
@@ -44,7 +46,7 @@ public class TestMongoDBDocumentSerializer {
                 .add(new Column("last_name", TajoDataTypes.Type.TEXT))
                 .build();
 
-        MongoDBDocumentSerializer dc = new MongoDBDocumentSerializer(schem,null);
+        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem,null);
 
         Tuple tuple = new VTuple(3);
         tuple.put(0,DatumFactory.createText("Good_Man"));
@@ -52,9 +54,11 @@ public class TestMongoDBDocumentSerializer {
         tuple.put(2,DatumFactory.createText("Chathuranga"));
         Document md = new Document();
 
-        dc.serialize(tuple,md);
+        documentSerializer.serialize(tuple,md);
 
-        LOG.info(md.toJson());
+        assertEquals("Good_Man",md.getString("title"));
+        assertEquals("Janaka",md.getString("first_name"));
+        assertEquals("Chathuranga",md.getString("last_name"));
 
     }
 
