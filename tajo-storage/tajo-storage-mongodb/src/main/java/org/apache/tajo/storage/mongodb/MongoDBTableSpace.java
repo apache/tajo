@@ -174,7 +174,7 @@ public class MongoDBTableSpace extends Tablespace {
     @Override
     public void purgeTable(TableDesc tableDesc) throws IOException, TajoException {
         if(STORAGE_PROPERTY.isMetadataProvided())
-            db.getCollection(tableDesc.getName()).drop();
+            db.getCollection(IdentifierUtil.extractSimpleName(tableDesc.getName())).drop();
     }
 
     @Override

@@ -98,7 +98,7 @@ public class TestMongoDBTableSpace {
             //Purg the table
             space.purgeTable(tableDesc);
             final Set<String> found_after = Sets.newHashSet(space.getMetadataProvider().getTables(null, null));
-            assertFalse(found_after.contains(IdentifierUtil.buildFQName(server.MAPPEDDBNAME, "Table1")));
+            assertFalse(found_after.contains( "Table1"));
 
         }
     }
