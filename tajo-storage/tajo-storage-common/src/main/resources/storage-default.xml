@@ -56,6 +56,10 @@
     <value>org.apache.tajo.storage.jdbc.JdbcFragment</value>
   </property>
   <property>
+    <name>tajo.storage.fragment.kind.mongodb</name>
+    <value>org.apache.tajo.storage.mongodb.MongoDBFragment</value>
+  </property>
+  <property>
     <name>tajo.storage.fragment.kind.example-http</name>
     <value>org.apache.tajo.storage.http.ExampleHttpFileFragment</value>
   </property>
@@ -76,8 +80,6 @@
     <value>org.apache.tajo.storage.mongodb.MongoDBFragmentSerde</value>
   </property>
   <property>
-    <name>tajo.storage.fragment.serde.example-http</name>
-    <value>org.apache.tajo.storage.http.ExampleHttpFileFragmentSerde</value>
     <name>tajo.storage.fragment.serde.example-http</name>
     <value>org.apache.tajo.storage.http.ExampleHttpFileFragmentSerde</value>
   </property>
