@@ -45,8 +45,6 @@ public class MongoDBScanner extends FileScanner {
 
     @Override
     public void init() throws IOException {
-
-
         if (targets == null) {
             targets = schema.toArray();
         }
