@@ -23,30 +23,28 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import net.minidev.json.JSONObject;
-import org.apache.avro.generic.GenericData;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.exception.*;
+import org.apache.tajo.exception.NotImplementedException;
+import org.apache.tajo.exception.TajoException;
+import org.apache.tajo.exception.TajoInternalError;
+import org.apache.tajo.exception.TajoRuntimeException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.schema.IdentifierUtil;
-import org.apache.tajo.storage.FormatProperty;
-import org.apache.tajo.storage.StorageProperty;
-import org.apache.tajo.storage.Tablespace;
-import org.apache.tajo.storage.TupleRange;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.bson.Document;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,7 +62,7 @@ public class MongoDBTableSpace extends Tablespace {
             false,  //not movable
             true,   //writable at the moment
             true,   // Absolute path
-            false); // Meta data will  be provided
+            true); // Meta data will  be provided
     static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
             false, // Insert
             false, //direct insert
@@ -236,5 +234,15 @@ public class MongoDBTableSpace extends Tablespace {
 
     public ConnectionInfo getConnectionInfo() {
         return connectionInfo;
+    }
+
+
+    //ToDo Make Sure this is not an issue
+    @Override
+    public Appender getAppender(OverridableConf queryContext,
+                                TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+
+    {
+        return new MongoDBAppender(null, taskAttemptId,schema,meta,workDir,getUri());
     }
 }
