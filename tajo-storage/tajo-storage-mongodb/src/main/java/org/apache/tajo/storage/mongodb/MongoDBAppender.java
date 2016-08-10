@@ -52,6 +52,8 @@ public class MongoDBAppender implements Appender {
 
     private MongoDBCollectionWriter mongoDBCollectionWriter;
 
+
+
     public MongoDBAppender(Configuration conf, TaskAttemptId taskAttemptId,
                            Schema schema, TableMeta meta, Path stagingDir, URI uri) {
         this.conf = conf;
