@@ -89,17 +89,16 @@ public class ConnectionInfo {
             }
         }
 
-        if (params.containsKey("table")) {
-            connInfo.tableName = params.remove("table");
+        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_TABLE)) {
+            connInfo.tableName = params.remove(MongoDBTableSpace.CONFIG_KEY_TABLE);
         }
 
-        if (params.containsKey("user")) {
-            connInfo.user = params.remove("user");
+        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_USERNAME)) {
+            connInfo.user = params.remove(MongoDBTableSpace.CONFIG_KEY_USERNAME);
         }
-        if (params.containsKey("password")) {
-            connInfo.password = params.remove("password");
+        if (params.containsKey(MongoDBTableSpace.CONFIG_KEY_PASSWORD)) {
+            connInfo.password = params.remove(MongoDBTableSpace.CONFIG_KEY_PASSWORD);
         }
-
 
         connInfo.params = params;
 

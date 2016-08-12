@@ -80,6 +80,7 @@ public class MongoDBTableSpace extends Tablespace {
     public static final String CONFIG_KEY_CONN_PROPERTIES = "connection_properties";
     public static final String CONFIG_KEY_USERNAME = "user";
     public static final String CONFIG_KEY_PASSWORD = "password";
+    public static final String CONFIG_KEY_TABLE = "table";
 
     public MongoDBTableSpace(String name, URI uri, JSONObject config) {
 
@@ -92,9 +93,6 @@ public class MongoDBTableSpace extends Tablespace {
         } else {
             mappedDBName = getConnectionInfo().getDbName();
         }
-
-
-
     }
 
     @Override
