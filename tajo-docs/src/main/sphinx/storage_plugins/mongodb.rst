@@ -1,11 +1,11 @@
-*************************************
-MongoDB Storage Handler
-*************************************
+*******************
+MongoDB Integration
+*******************
 
 Overview
 ========
 
-MongoDB storage handler is available by default in Tajo.
+Apache Tajo™ storage modules contains a storage plugin for MongoDB which allows Apache Tajo to access databases and collections in MongoDB. In order to use MongoDB storage plugin user needs to follow following steps.
 
 Configuration
 =============
@@ -30,3 +30,4 @@ MongoDB storage handler configuration will be like this.. First you have to regi
             }
         }
     }
+
