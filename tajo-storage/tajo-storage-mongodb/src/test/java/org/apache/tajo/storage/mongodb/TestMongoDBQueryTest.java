@@ -48,7 +48,7 @@ public class TestMongoDBQueryTest  extends QueryTestCaseBase{
     @Before
     public void prepareTables() throws TajoException {
         if(!MongoDBTableSpace.STORAGE_PROPERTY.isMetadataProvided()) {
-            executeString("create table got (*) tablespace test_spacename using mongodb");
+            executeString("create table got (title,first_name,last_name) tablespace test_spacename using mongodb");
             executeString("create table github (*) tablespace test_spacename using mongodb");
             //   executeString("create table github (*) tablespace test_spacename using ex_http_json with ('path'='github.json')");
         }

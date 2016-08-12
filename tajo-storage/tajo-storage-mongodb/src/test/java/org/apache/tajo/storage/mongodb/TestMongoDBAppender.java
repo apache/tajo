@@ -17,6 +17,7 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -55,7 +56,7 @@ public class TestMongoDBAppender {
 
 
         TableMeta meta = space.getMetadataProvider().getTableDesc(null,"got").getMeta();
-        appender = space.getAppender(null,null,meta,schem,null);
+        appender = space.getAppender(null,null,meta,schem,new Path(server.getURI()));
 
         //appender.init();
 

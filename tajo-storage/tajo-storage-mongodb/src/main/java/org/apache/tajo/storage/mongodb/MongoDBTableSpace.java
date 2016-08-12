@@ -64,9 +64,9 @@ public class MongoDBTableSpace extends Tablespace {
             true,   // Absolute path
             true); // Meta data will  be provided
     static final FormatProperty FORMAT_PROPERTY = new FormatProperty(
-            false, // Insert
-            false, //direct insert
-            false);// result staging
+            true, // Insert
+            true, //direct insert
+            true);// result staging
 
     //Mongo Client object
     private ConnectionInfo connectionInfo;
@@ -241,6 +241,6 @@ public class MongoDBTableSpace extends Tablespace {
                                 TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
 
     {
-        return new MongoDBAppender(null, taskAttemptId,schema,meta,workDir,getUri());
+        return new MongoDBAppender(null, taskAttemptId,schema,meta,workDir,workDir.toUri());
     }
 }

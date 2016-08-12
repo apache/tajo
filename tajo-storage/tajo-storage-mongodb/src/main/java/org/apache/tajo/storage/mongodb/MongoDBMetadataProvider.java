@@ -21,11 +21,9 @@ package org.apache.tajo.storage.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
-import org.apache.tajo.catalog.MetadataProvider;
-import org.apache.tajo.catalog.SchemaBuilder;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.UndefinedTablespaceException;
 import org.apache.tajo.schema.IdentifierUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -99,6 +97,9 @@ public class MongoDBMetadataProvider implements MetadataProvider {
         TableDesc tbDesc = new TableDesc(
                 IdentifierUtil.buildFQName(mappedDbName, tableName),
                 SchemaBuilder.builder()
+//                        .add(new Column("title", TajoDataTypes.Type.TEXT))
+//                        .add(new Column("first_name", TajoDataTypes.Type.TEXT))
+//                        .add(new Column("last_name", TajoDataTypes.Type.TEXT))
                         .build(),
                 tbMeta,
                 tableSpace.getTableUri(null,null, tableName));

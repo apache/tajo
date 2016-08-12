@@ -113,6 +113,7 @@ public class MongoDBAppender implements Appender {
 
     @Override
     public TableStats getStats() {
-        return null;
+        TableStats stats = new TableStats();
+        return stats;
     }
 }
