@@ -145,7 +145,7 @@
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>text,raw,rcfile,row,parquet,orc,sequencefile,avro,hbase,regex</value>
+    <value>text,json,regex,raw,draw,rcfile,row,parquet,orc,sequencefile,avro,hbase</value>
   </property>
 
   <property>

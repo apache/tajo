@@ -96,7 +96,7 @@ public class TestRegexSerDe {
             "(KHTML, like Gecko) Chrome/1.0.154.65 Safari/525.19\""),
     })};
 
-    final String TEST_PATH = "target/test-data/TestStorages";
+    final String TEST_PATH = "target/test-data/TestRegexSerDe";
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
   }
 
