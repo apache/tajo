@@ -21,6 +21,7 @@ package org.apache.tajo;
 public class BuiltinStorages {
   public static final String TEXT = "TEXT";
   public static final String JSON = "JSON";
+  public static final String REGEX = "REGEX";
   public static final String RAW = "RAW";
   public static final String DRAW = "DRAW";
   public static final String RCFILE = "RCFILE";
