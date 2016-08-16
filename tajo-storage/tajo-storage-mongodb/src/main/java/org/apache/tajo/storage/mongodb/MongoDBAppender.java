@@ -61,7 +61,7 @@ public class MongoDBAppender implements Appender {
         this.meta = meta;
         this.stagingDir = stagingDir;
         this.taskAttemptId = taskAttemptId;
-        this.uri = uri;
+        this.uri = stagingDir.toUri();
     }
 
     @Override
@@ -71,7 +71,7 @@ public class MongoDBAppender implements Appender {
         }
         inited = true;
         MongoDBDocumentSerializer md = new MongoDBDocumentSerializer(schema,meta);
-        mongoDBCollectionWriter = new MongoDBCollectionWriter(ConnectionInfo.fromURI(uri),md);
+        mongoDBCollectionWriter = new MongoDBCollectionWriter(ConnectionInfo.fromURI(stagingDir.toString()),md);
         mongoDBCollectionWriter.init();
     }
 

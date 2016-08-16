@@ -35,9 +35,6 @@ import static org.junit.Assert.assertEquals;
 
 public class TestMongoDBDocumentSerializer {
 
-
-    private static final Log LOG = LogFactory.getLog(MongoDBTableSpace.class);
-
     @Test
     public void testSeriaalizeTextType() throws IOException {
         Schema schem = SchemaBuilder.builder().

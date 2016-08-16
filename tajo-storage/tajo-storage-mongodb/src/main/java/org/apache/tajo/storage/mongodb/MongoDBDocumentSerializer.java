@@ -17,13 +17,14 @@
  */
 package org.apache.tajo.storage.mongodb;
 
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import com.google.common.collect.Lists;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.storage.Tuple;
 import org.bson.Document;
+import org.apache.tajo.common.TajoDataTypes.Type;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Serialize tuples into Mongo Documents
@@ -32,10 +33,54 @@ public class MongoDBDocumentSerializer {
 
     private final Schema schema;
     private final TableMeta meta;
+    String[] paths;
+
+
+    private final Map<String, Type> types;
 
     public MongoDBDocumentSerializer(Schema schema, TableMeta meta) {
         this.schema = schema;
         this.meta = meta;
+
+        paths = SchemaUtil.convertColumnsToPaths(Lists.newArrayList(schema.getAllColumns()), true);
+        types = SchemaUtil.buildTypeMap(schema.getAllColumns(), paths);
+    }
+
+    public void setValue(Tuple inputTuple, String fullPath, String[] paths, int depth, int index, Document outputDoc)
+    {
+
+
+        String simpleColumnName = paths[depth];
+        switch (types.get(fullPath))
+        {
+            case TEXT:
+                outputDoc.put(simpleColumnName,inputTuple.getText(index));
+                break;
+
+            case INT1:
+            case UINT1:
+            case INT2:
+            case UINT2:
+                outputDoc.put(simpleColumnName,inputTuple.getInt2(index));
+                break;
+
+            case INT4:
+            case UINT4:
+                outputDoc.put(simpleColumnName,inputTuple.getInt4(index));
+                break;
+
+            case INT8:
+            case UINT8:
+                outputDoc.put(simpleColumnName,inputTuple.getInt8(index));
+                break;
+
+            case FLOAT4:
+                outputDoc.put(simpleColumnName,inputTuple.getFloat4(index));
+                break;
+
+            case FLOAT8:
+                outputDoc.put(simpleColumnName,inputTuple.getFloat8(index));
+        }
     }
 
 
@@ -43,7 +88,8 @@ public class MongoDBDocumentSerializer {
     {
         for(int i=0; i< inputTuple.size();i++)
         {
-            outputDoc.put(schema.getColumn(i).getSimpleName(),inputTuple.getText(i));
+            String [] newPaths = paths[i].split(NestedPathUtil.PATH_DELIMITER);
+            setValue(inputTuple,newPaths[0],newPaths,0,i,outputDoc);
         }
     }
 

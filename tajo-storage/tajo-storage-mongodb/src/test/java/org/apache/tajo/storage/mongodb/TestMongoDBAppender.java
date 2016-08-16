@@ -17,6 +17,7 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import com.mongodb.client.MongoIterable;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.Column;
@@ -33,6 +34,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.net.URI;
+
+import static org.junit.Assert.assertEquals;
 
 public class TestMongoDBAppender {
 
@@ -56,21 +59,34 @@ public class TestMongoDBAppender {
 
 
         TableMeta meta = space.getMetadataProvider().getTableDesc(null,"got").getMeta();
-        appender = space.getAppender(null,null,meta,schem,new Path(server.getURI()));
+        appender = space.getAppender(null,null,meta,schem,new Path(server.getURI()+"?"+MongoDBTableSpace.CONFIG_KEY_TABLE+"=got") );
 
-        //appender.init();
+        appender.init();
 
     }
 
     @Test
-    public void test1() throws IOException {
+    public void testAddTupleText() throws IOException {
 
+        //Create a tuple and add to  the table
         Tuple tuple = new VTuple(3);
         tuple.put(0, DatumFactory.createText("Good_Man"));
         tuple.put(1,DatumFactory.createText("Janaka"));
         tuple.put(2,DatumFactory.createText("Chathuranga"));
+        appender.addTuple(tuple);
 
-        //appender.addTuple(tuple);
+        //Take data from server
+        MongoIterable<Document> result = server.getMongoClient().getDatabase(server.DBNAME).getCollection("got").find(new Document("title","Good_Man"));
+        Document doc = result.first();
+
+        //Validate
+        assertEquals(doc.get("title"),"Good_Man");
+        assertEquals(doc.get("first_name"),"Janaka");
+        assertEquals(doc.get("last_name"),"Chathuranga");
+
+
+        //Remove the inserted doc from database
+        server.getMongoClient().getDatabase(server.DBNAME).getCollection("got").deleteOne(doc);
     }
 
 

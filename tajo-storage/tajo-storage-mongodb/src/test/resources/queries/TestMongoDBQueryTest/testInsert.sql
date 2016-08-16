@@ -1,1 +1,1 @@
-INSERT INTO got SELECT 'a','b';
+INSERT INTO got(first_name,last_name) SELECT 'a','b';

@@ -205,9 +205,9 @@ public class MongoDBTableSpace extends Tablespace {
         //ToDo Find a better way this
         String tableURI = "";
         if(this.getUri().toASCIIString().contains("?"))
-            tableURI = this.getUri().toASCIIString()+"&table="+tableName;
+            tableURI = this.getUri().toASCIIString()+"&"+CONFIG_KEY_TABLE+"="+tableName;
         else
-            tableURI = this.getUri().toASCIIString()+"?table="+tableName;
+            tableURI = this.getUri().toASCIIString()+"?"+CONFIG_KEY_TABLE+"="+tableName;
 
         return URI.create(tableURI);
     }
@@ -215,7 +215,7 @@ public class MongoDBTableSpace extends Tablespace {
     //@Override
     public URI getTableUri( String databaseName, String tableName) {
         //ToDo set the TableURI properly
-        return URI.create(this.getUri()+"&table="+tableName);
+        return URI.create(this.getUri()+"&"+CONFIG_KEY_TABLE+"="+tableName);
     }
 
 //    @Override
