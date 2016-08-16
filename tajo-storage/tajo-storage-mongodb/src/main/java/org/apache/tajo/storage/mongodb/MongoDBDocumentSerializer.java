@@ -53,10 +53,6 @@ public class MongoDBDocumentSerializer {
         String simpleColumnName = paths[depth];
         switch (types.get(fullPath))
         {
-            case TEXT:
-                outputDoc.put(simpleColumnName,inputTuple.getText(index));
-                break;
-
             case INT1:
             case UINT1:
             case INT2:
@@ -80,6 +76,19 @@ public class MongoDBDocumentSerializer {
 
             case FLOAT8:
                 outputDoc.put(simpleColumnName,inputTuple.getFloat8(index));
+                break;
+
+            case CHAR:
+                outputDoc.put(simpleColumnName,inputTuple.getChar(index));
+                break;
+
+            case BOOLEAN:
+                outputDoc.put(simpleColumnName,inputTuple.getBool(index));
+                break;
+
+            default:
+                outputDoc.put(simpleColumnName,inputTuple.getText(index));
+                break;
         }
     }
 

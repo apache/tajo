@@ -59,4 +59,31 @@ public class TestMongoDBDocumentSerializer {
 
     }
 
+    @Test
+    public void testSerializeIntFloatBoolean() throws IOException {
+        Schema schem = SchemaBuilder.builder().
+                add(new Column("title", TajoDataTypes.Type.TEXT))
+                .add(new Column("age", TajoDataTypes.Type.INT4))
+                .add(new Column("height", TajoDataTypes.Type.FLOAT8))
+                .add(new Column("single", TajoDataTypes.Type.BOOLEAN))
+                .build();
+
+        MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem,null);
+
+        Tuple tuple = new VTuple(4);
+        tuple.put(0,DatumFactory.createText("Mr"));
+        tuple.put(1,DatumFactory.createInt4(24));
+        tuple.put(2,DatumFactory.createFloat8(165.98));
+        tuple.put(3,DatumFactory.createBool(true));
+        Document md = new Document();
+
+        documentSerializer.serialize(tuple,md);
+
+        assertEquals("Mr",md.get("title"));
+        assertEquals(24,md.get("age"));
+        assertEquals(165.98,md.get("height"));
+        assertEquals(true,md.get("single"));
+
+    }
+
 }
