@@ -24,6 +24,8 @@ import org.apache.tajo.storage.Tuple;
 import org.bson.Document;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Writes tuples into a mongodb collection
@@ -34,6 +36,8 @@ public class MongoDBCollectionWriter {
     MongoCollection<Document> collection;
     MongoDBDocumentSerializer mongoDBDocumentSerializer;
 
+
+    private List<Document> documentList = new ArrayList<>();
 
     public MongoDBCollectionWriter(ConnectionInfo connectionInfo, MongoDBDocumentSerializer serializer)
     {
@@ -48,10 +52,15 @@ public class MongoDBCollectionWriter {
         collection = db.getCollection(connectionInfo.getTableName());
     }
 
-    public void writeTuple(Tuple tuple) throws IOException {
+    public void addTuple(Tuple tuple) throws IOException {
         Document dc = new Document();
         mongoDBDocumentSerializer.serialize(tuple,dc);
-        collection.insertOne(dc);
+        documentList.add(dc);
+    }
+
+    public void write()
+    {
+        collection.insertMany(documentList);
     }
 
     public void close()

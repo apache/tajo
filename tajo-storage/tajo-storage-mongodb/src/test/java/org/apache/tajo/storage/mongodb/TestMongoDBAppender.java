@@ -81,6 +81,8 @@ public class TestMongoDBAppender {
         tuple.put(5,DatumFactory.createBool(true));
         appender.addTuple(tuple);
 
+        appender.flush();
+
         //Take data from server
         MongoIterable<Document> result = server.getMongoClient().getDatabase(server.DBNAME).getCollection("got").find(new Document("title","Kingslayer"));
         Document doc = result.first();

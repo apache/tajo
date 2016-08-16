@@ -54,6 +54,7 @@ public class MongoDBAppender implements Appender {
 
 
 
+
     public MongoDBAppender(Configuration conf, TaskAttemptId taskAttemptId,
                            Schema schema, TableMeta meta, Path stagingDir, URI uri) {
         this.conf = conf;
@@ -77,12 +78,12 @@ public class MongoDBAppender implements Appender {
 
     @Override
     public void addTuple(Tuple t) throws IOException {
-        mongoDBCollectionWriter.writeTuple(t);
+        mongoDBCollectionWriter.addTuple(t);
     }
 
     @Override
     public void flush() throws IOException {
-
+        mongoDBCollectionWriter.write();
     }
 
     @Override
