@@ -55,6 +55,9 @@ public class TestMongoDBAppender {
                 add(new Column("title", TajoDataTypes.Type.TEXT))
                 .add(new Column("first_name", TajoDataTypes.Type.TEXT))
                 .add(new Column("last_name", TajoDataTypes.Type.TEXT))
+                .add(new Column("age", TajoDataTypes.Type.INT4))
+                .add(new Column("height", TajoDataTypes.Type.FLOAT8))
+                .add(new Column("single", TajoDataTypes.Type.BOOLEAN))
                 .build();
 
 
@@ -66,29 +69,33 @@ public class TestMongoDBAppender {
     }
 
     @Test
-    public void testAddTupleText() throws IOException {
+    public void testAddTuple() throws IOException {
 
         //Create a tuple and add to  the table
-        Tuple tuple = new VTuple(3);
-        tuple.put(0, DatumFactory.createText("Good_Man"));
-        tuple.put(1,DatumFactory.createText("Janaka"));
-        tuple.put(2,DatumFactory.createText("Chathuranga"));
+        Tuple tuple = new VTuple(6);
+        tuple.put(0,DatumFactory.createText("Kingslayer"));
+        tuple.put(1,DatumFactory.createText("Jaime"));
+        tuple.put(2,DatumFactory.createText("Lannister"));
+        tuple.put(3,DatumFactory.createInt4(24));
+        tuple.put(4,DatumFactory.createFloat8(165.98));
+        tuple.put(5,DatumFactory.createBool(true));
         appender.addTuple(tuple);
 
         //Take data from server
-        MongoIterable<Document> result = server.getMongoClient().getDatabase(server.DBNAME).getCollection("got").find(new Document("title","Good_Man"));
+        MongoIterable<Document> result = server.getMongoClient().getDatabase(server.DBNAME).getCollection("got").find(new Document("title","Kingslayer"));
         Document doc = result.first();
 
         //Validate
-        assertEquals(doc.get("title"),"Good_Man");
-        assertEquals(doc.get("first_name"),"Janaka");
-        assertEquals(doc.get("last_name"),"Chathuranga");
+        assertEquals(doc.get("title"),"Kingslayer");
+        assertEquals(doc.get("first_name"),"Jaime");
+        assertEquals(doc.get("last_name"),"Lannister");
+        assertEquals(doc.get("age"),24);
+        assertEquals(doc.get("height"),165.98);
+        assertEquals(doc.get("single"),true);
 
 
         //Remove the inserted doc from database
         server.getMongoClient().getDatabase(server.DBNAME).getCollection("got").deleteOne(doc);
     }
-
-
 
 }

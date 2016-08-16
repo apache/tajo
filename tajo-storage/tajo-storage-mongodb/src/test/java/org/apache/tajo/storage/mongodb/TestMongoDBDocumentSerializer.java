@@ -46,16 +46,16 @@ public class TestMongoDBDocumentSerializer {
         MongoDBDocumentSerializer documentSerializer = new MongoDBDocumentSerializer(schem,null);
 
         Tuple tuple = new VTuple(3);
-        tuple.put(0,DatumFactory.createText("Good_Man"));
-        tuple.put(1,DatumFactory.createText("Janaka"));
-        tuple.put(2,DatumFactory.createText("Chathuranga"));
+        tuple.put(0,DatumFactory.createText("Kingslayer"));
+        tuple.put(1,DatumFactory.createText("Jaime"));
+        tuple.put(2,DatumFactory.createText("Lannister"));
         Document md = new Document();
 
         documentSerializer.serialize(tuple,md);
 
-        assertEquals("Good_Man",md.getString("title"));
-        assertEquals("Janaka",md.getString("first_name"));
-        assertEquals("Chathuranga",md.getString("last_name"));
+        assertEquals("Kingslayer",md.getString("title"));
+        assertEquals("Jaime",md.getString("first_name"));
+        assertEquals("Lannister",md.getString("last_name"));
 
     }
 
