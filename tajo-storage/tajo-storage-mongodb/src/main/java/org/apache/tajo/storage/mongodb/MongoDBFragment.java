@@ -17,6 +17,7 @@
  */
 package org.apache.tajo.storage.mongodb;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.fragment.AbstractFileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -30,7 +31,7 @@ import java.util.List;
  This will be serialized and passed to the cluster.
  */
 
-public class MongoDBFragment extends AbstractFileFragment {
+public class MongoDBFragment extends Fragment<Long> {
 
 
     protected MongoDBFragment(URI uri,
